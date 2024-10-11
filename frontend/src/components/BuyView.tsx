@@ -3,12 +3,11 @@ import { PayEmbed } from "thirdweb/react";
 import { client } from "../utils/client";
 import { base } from "thirdweb/chains";
 import { BASE_USDC_ADDRESS } from "../constants";
-import { truncate } from "fs/promises";
 
 const BuyView: React.FC = ({}) => {
 
   return (
-    <div className="mt-16">
+    <div className="flex items-center justify-center mt-16 h-full w-full">
 
       <PayEmbed 
       client={client}
