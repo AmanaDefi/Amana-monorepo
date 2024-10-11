@@ -2,7 +2,7 @@ import React from "react";
 
 const About: React.FC = ({}) => {
   return (
-    <div className="mt-16 px-4 md:px-8 lg:px-16 text-gray-100">
+    <div className="mt-8 px-4 md:px-8 lg:px-16 text-gray-100">
       <h1 className="text-4xl font-bold text-center mb-8">
         Amana DeFi Yield Aggregator
       </h1>
