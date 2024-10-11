@@ -98,7 +98,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   Protocol
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-300 tracking-wider">
-                  VaultData
+                  Vault
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-300 tracking-wider">
                   Total Assets
