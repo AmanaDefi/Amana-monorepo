@@ -37,7 +37,7 @@ contract BaseAaveStrategy is Ownable {
         _;
     }
 
-    function invest(uint256 amount) external onlyVault {
+    function invest(uint256 amount) external onlyVault returns (uint256) {
         SafeERC20.safeTransferFrom(
             inputToken,
             msg.sender,
@@ -47,15 +47,17 @@ contract BaseAaveStrategy is Ownable {
         bool success = inputToken.approve(address(aavePool), amount);
         require(success, "Approval failed");
         aavePool.supply(address(inputToken), amount, address(this), 0);
+        return amount;
     }
 
-    function withdraw(uint256 _amount) external onlyVault {
+    function withdraw(uint256 _amount) external onlyVault returns (uint256) {
         uint256 withdrawn = aavePool.withdraw(
             address(inputToken),
             _amount,
             msg.sender
         );
         require(withdrawn == _amount, "Token withdrawal failed");
+        return withdrawn;
     }
 
     function totalUnderlyingAssets() external view returns (uint256) {
