@@ -1,11 +1,16 @@
 import { useEffect } from "react";
-import { fetchUserVaultBalance, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY } from "../actions/actions";
+import { fetchUserVaultBalance, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY, getSpecificProtocolApy } from "../actions/actions";
 import { Address } from "thirdweb";
 import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
 import { getContract, readContract } from "thirdweb";
 import { client } from "../utils/client";
 import { base } from "thirdweb/chains";
+
+interface TargetPool {
+  tokenAddress: string;
+  chain: string;
+}
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -110,6 +115,11 @@ export const useUpdateAPYs = (
                   contract: receiptTokenContract,
                   method: "function POOL() view returns (address)",
                 });
+                const targetPools: TargetPool[] = [
+                  { tokenAddress: '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB', chain: 'base' },
+                ];
+                let APY = await getSpecificProtocolApy("aave-v3", targetPools);
+                console.log("APY", APY);
                 APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address);

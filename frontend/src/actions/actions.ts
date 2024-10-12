@@ -15,6 +15,51 @@ import * as dotenv from "dotenv";
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
 
+import path from 'path';
+
+interface TargetPool {
+  tokenAddress: string;
+  chain: string;
+}
+
+/**
+ * Fetches APY data from DeFiLlama adapter for a given protocol and chain, and filters by specific token addresses.
+ * @param {string} protocolName - The slug of the protocol (e.g., 'aave-v3', 'compound').
+ * @param {TargetPool[]} targetPools - Array of objects containing `tokenAddress` and `chain` to identify target pools.
+ * @returns {Promise<Object[]>} - Array of APY data for the specified pools.
+ */
+export async function getSpecificProtocolApy(protocolName: string, targetPools: TargetPool[]): Promise<Object[]> {
+  try {
+    console.log(`Fetching APY data for ${protocolName}...`);
+    // Construct the path to the adapter's index file
+    const adapterPath = path.resolve(__dirname, `../yield-server/src/adaptors/${protocolName}/index.js`);
+
+    // Dynamically import the adapter
+    const adapter = await import(adapterPath);
+
+    // Ensure that the adapter has an `apy` function
+    if (!adapter || typeof adapter.apy !== 'function') {
+      throw new Error(`Adapter for ${protocolName} does not export an 'apy' function.`);
+    }
+
+    // Fetch APY data by calling the adapter's 'apy' function
+    const apyData = await adapter.apy();
+
+    // Filter APY data to match only the target pools
+    const filteredData = apyData.filter((pool: any) => {
+      return targetPools.some(target =>
+        pool.chain.toLowerCase() === target.chain.toLowerCase() &&
+        pool.underlyingTokens.includes(target.tokenAddress.toLowerCase())
+      );
+    });
+
+    return filteredData;
+  } catch (error) {
+    console.error(`Error fetching APY data for ${protocolName}:`, error);
+    return [];
+  }
+}
+
 export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address) {
   const aaveLendingPool = new ethers.Contract(poolAddress, lendingPoolABI, provider);
   const reserveData = await aaveLendingPool.getReserveData(inputTokenAddress);
