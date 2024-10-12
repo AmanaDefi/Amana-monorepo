@@ -31,11 +31,8 @@ interface TargetPool {
 export async function getSpecificProtocolApy(protocolName: string, targetPools: TargetPool[]): Promise<Object[]> {
   try {
     console.log(`Fetching APY data for ${protocolName}...`);
-    // Construct the path to the adapter's index file
-    const adapterPath = path.resolve(__dirname, `../yield-server/src/adaptors/${protocolName}/index.js`);
-
     // Dynamically import the adapter
-    const adapter = await import(adapterPath);
+    const adapter = await import(`../utils/yield-server/src/adaptors/${protocolName}/index.js`);
 
     // Ensure that the adapter has an `apy` function
     if (!adapter || typeof adapter.apy !== 'function') {
