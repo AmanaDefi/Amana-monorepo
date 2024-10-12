@@ -17,23 +17,18 @@ const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BAS
 
 export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address) {
   const aaveLendingPool = new ethers.Contract(poolAddress, lendingPoolABI, provider);
-  const averageBlockTimeInSeconds = 2;
-  const secondsInADay = 24 * 60 * 60;
-  const secondsIn7Days = 7 * secondsInADay;
-
-  const currentBlockNumber = await provider.getBlockNumber();
-  const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
-  const pastBlockNumber = BigInt(currentBlockNumber - blocksIn7Days);
-
   const reserveData = await aaveLendingPool.getReserveData(inputTokenAddress);
-  const currentLiquidityIndex = ethers.toBigInt(reserveData.liquidityIndex);
+  const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
 
-  const pastReserveData = await aaveLendingPool.getReserveData(inputTokenAddress, { blockTag: pastBlockNumber });
-  const pastLiquidityIndex = ethers.toBigInt(pastReserveData.liquidityIndex);
+  // Get the liquidity rate (in Ray) and normalize it
+  const liquidityRate = reserveData[2];
+  const depositAPR = Number(liquidityRate) / 1e27;
 
-  const rateOfChange = (currentLiquidityIndex - pastLiquidityIndex) * 10n ** 18n / pastLiquidityIndex;
-  const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
-  return Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
+  // Calculate APY using compounding
+  const depositAPY = (Math.pow(1 + (depositAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
+  console.log("depositAPY", depositAPY);
+
+  return depositAPY;
 }
 
 export async function calculateMoonwellAPY(receiptTokenAddress: Address) {
