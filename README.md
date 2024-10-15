@@ -28,6 +28,8 @@ To get started with the Amana Monorepo, follow these steps:
 - **npm** or **yarn**
 - **Git**
 - **Hardhat** or **Foundry** (for smart contract development)
+- **Next.js**
+- **Thirdweb** (for frontend)
 
 ### Cloning the Repository
 
