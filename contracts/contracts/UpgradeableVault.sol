@@ -33,6 +33,21 @@ contract UpgradeableVault is ERC4626RewardsUpgradeable, UUPSUpgradeable {
         }
     }
 
+    function getStrategy() external view returns (address) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.strategy;
+    }
+
+    function getTreasury() external view returns (address) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.treasury;
+    }
+
+    function getPerfFee() external view returns (uint16) {
+        VaultStorage storage $ = _getVaultStorage();
+        return $.perfFee;
+    }
+
     event StratUpdated(address indexed newStrategy);
     event PerfFeePaid(address indexed user, uint256 amount);
     event PerfFeeUpdated(uint256 newFee);
