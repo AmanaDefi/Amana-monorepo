@@ -48,8 +48,9 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      arbitrumOne: process.env.ARBISCAN_API_KEY || "", // Add your Arbiscan API key here
-      base: process.env.BASESCAN_API_KEY || "", // Add your Etherscan API key here
+      arbitrumOne: process.env.ARBISCAN_API_KEY || "",
+      base: process.env.BASESCAN_API_KEY || "",
+      base_sepolia: process.env.BASESCAN_API_KEY || "",
     },
     customChains: [
       {
@@ -59,7 +60,15 @@ const config: HardhatUserConfig = {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org"
         }
-      }
+      },
+      {
+        network: "base_sepolia", // Custom config for base_sepolia
+        chainId: 84532,          // Replace with the correct chainId for Base Sepolia
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org", // Testnet explorer URL
+        },
+      },
     ],
   },
   typechain: {
