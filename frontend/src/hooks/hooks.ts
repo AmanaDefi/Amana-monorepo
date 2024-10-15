@@ -5,7 +5,7 @@ import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
 import { getContract, readContract } from "thirdweb";
 import { client } from "../utils/client";
-import { base } from "thirdweb/chains";
+import { baseSepolia } from "thirdweb/chains";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -78,7 +78,7 @@ export const useUpdateAPYs = (
             try {
               const contract = getContract({
                 client,
-                chain: base,
+                chain: baseSepolia,
                 address: vault.id,
               });
 
@@ -88,7 +88,7 @@ export const useUpdateAPYs = (
               });
               const strategyContract = getContract({
                 client,
-                chain: base,
+                chain: baseSepolia,
                 address: strategyAddress,
               });
 
@@ -102,7 +102,7 @@ export const useUpdateAPYs = (
               if (vault.protocol.name === "Aave") {
                 const receiptTokenContract = getContract({
                   client,
-                  chain: base,
+                  chain: baseSepolia,
                   address: receiptTokenAddress,
                 });
 

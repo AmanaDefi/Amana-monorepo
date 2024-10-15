@@ -7,8 +7,8 @@ import VaultsContainer from "../containers/VaultsContainer";
 import BuyContainer from "../containers/BuyContainer";
 import About from "../components/About";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { base } from "thirdweb/chains";
-import { BASE_USDC_ADDRESS } from "@/constants";
+import { baseSepolia } from "thirdweb/chains";
+import { BASE_SEPOLIA_USDC_ADDRESS } from "@/constants";
 import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
 import { Account } from "thirdweb/wallets";
@@ -18,7 +18,7 @@ const wallets = [
     auth: {
       options: ["google", "email", "passkey"],
     },
-    smartAccount: { chain: base, sponsorGas: true },
+    smartAccount: { chain: baseSepolia, sponsorGas: true },
   }),
   createWallet("io.metamask"),
   createWallet("com.coinbase.wallet"),
@@ -145,12 +145,12 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
           wallets={wallets}
           connectModal={{ size: "compact" }}
           accountAbstraction={{
-            chain: base,
+            chain: baseSepolia,
             sponsorGas: true,
           }}
           detailsButton={{
             displayBalanceToken: {
-              [base.id]: BASE_USDC_ADDRESS,
+              [baseSepolia.id]: BASE_SEPOLIA_USDC_ADDRESS,
             },
           }}
         />
@@ -172,7 +172,7 @@ function UnauthenticatedLandingPage() {
               connectButton={{ label: "Launch App" }} 
               connectModal={{ size: "compact" }}
               accountAbstraction={{
-                chain: base,
+                chain: baseSepolia,
                 sponsorGas: true,
               }}/>
         </nav>

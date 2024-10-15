@@ -1,7 +1,7 @@
 import { Address, getContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { client } from "../utils/client";
-import { base } from "thirdweb/chains";
-import { BASE_USDC_ADDRESS } from "../constants";
+import { baseSepolia } from "thirdweb/chains";
+import { BASE_SEPOLIA_USDC_ADDRESS } from "../constants";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { sendBatchTransaction, readContract } from "thirdweb";
@@ -13,7 +13,7 @@ import compoundVaultABI from "../../abis/compoundVaultABI.json";
 
 import * as dotenv from "dotenv";
 dotenv.config();
-const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
+const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA);
 
 export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address) {
   const aaveLendingPool = new ethers.Contract(poolAddress, lendingPoolABI, provider);
@@ -70,8 +70,8 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
 export const executeDeposit = async (vaultId: Address, activeAccount: Account, transactionAmount: bigint) => {
   let contract = getContract({
     client,
-    chain: base,
-    address: BASE_USDC_ADDRESS
+    chain: baseSepolia,
+    address: BASE_SEPOLIA_USDC_ADDRESS
   });
   const approveTx = prepareContractCall({
     contract,
@@ -80,7 +80,7 @@ export const executeDeposit = async (vaultId: Address, activeAccount: Account, t
   });
   contract = getContract({
     client,
-    chain: base,
+    chain: baseSepolia,
     address: vaultId
   });
   const supplyTx = prepareContractCall({
@@ -98,7 +98,7 @@ export const executeDeposit = async (vaultId: Address, activeAccount: Account, t
 export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, withdrawAmount: bigint) => { //vaultId: string
   let contract = getContract({
     client,
-    chain: base,
+    chain: baseSepolia,
     address: vaultId
   });
   const withdrawTx = prepareContractCall({
@@ -116,7 +116,7 @@ export const executeWithdrawal = async (vaultId: Address, activeAccount: Account
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: base,
+    chain: baseSepolia,
     address: vaultAddress
   });
   const { value: shares, decimals } = await getBalance({
@@ -135,7 +135,7 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
 export const fetchTotalAssets = async (vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: base,
+    chain: baseSepolia,
     address: vaultAddress
   });
   const balance = await readContract({
@@ -152,7 +152,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
       try {
         const contract = getContract({
           client,
-          chain: base,
+          chain: baseSepolia,
           address: vault.id,
         });
         const strategyAddress = await readContract({
@@ -161,7 +161,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
         });
         const strategyContract = getContract({
           client,
-          chain: base,
+          chain: baseSepolia,
           address: strategyAddress,
         });
         let APY7d = 0;
@@ -173,7 +173,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
 
           const receiptTokenContract = getContract({
             client,
-            chain: base,
+            chain: baseSepolia,
             address: receiptTokenAddress,
           });
 
