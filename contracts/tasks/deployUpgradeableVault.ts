@@ -4,13 +4,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
 
-  // Ensure we're deploying on base
-  if (network !== "base") {
-    throw new Error(
-      '🚨 Please use the "base" network to deploy the contract.'
-    );
-  }
-
   const [signer] = await hre.ethers.getSigners();
   if (!signer) {
     throw new Error(
@@ -46,20 +39,20 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   console.log(`🚀 Successfully deployed UpgradeableVault on base.`);
   console.log(`📜 Contract address: ${contract.target}`);
 
-  // Verify the contract on Basescan
-  if (network === "base" && hre.config.etherscan.apiKey.base) {
-    console.log("🛠 Verifying contract on Basescan...");
+  const etherscanApiKey = hre.config.etherscan.apiKey[network];
+  if (etherscanApiKey) {
+    console.log(`🛠 Verifying contract on ${network} explorer...`);
     try {
       await hre.run("verify:verify", {
         address: contract.target,
-        constructorArguments: [], // No constructor arguments for upgradeable contracts
+        constructorArguments: [], //no constructor args for upgradeable contracts
       });
-      console.log(`✅ Contract verified: https://basescan.org/address/${contract.target}`);
+      console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
       console.error("❌ Contract verification failed:", err);
     }
   } else {
-    console.log("🚨 Etherscan API key not configured or wrong network. Skipping verification.");
+    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
   }
 
   if (args.json) {
