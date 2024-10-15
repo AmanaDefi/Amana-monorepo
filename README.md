@@ -54,16 +54,40 @@ yarn
 
 ### Environment Variables
 
-Create a `.env` file from the provided `.env.example` file and add your Thirdweb client ID:
+There are two `.env` files required for the Amana project: one for the frontend and one for the contracts. Follow the steps below to set them up.
+
+#### Frontend Environment Variables
+
+Create a `.env` file from the provided `.env.example` file in the `frontend` directory and add your Thirdweb client ID and an RPC node URL for Base:
 
 ```bash
+cd frontend
 cp .env.example .env
 ```
 
-Edit the `.env` file and add your Thirdweb client ID:
+Edit the `.env` file and add your Thirdweb client ID and RPC node URL:
 
 ```bash
 NEXT_PUBLIC_TEMPLATE_CLIENT_ID=your-client-id-here
+NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE=rpc-url-here
+```
+
+#### Contracts Environment Variables
+
+Create a `.env` file from the provided `.env.example` file in the `contracts` directory and add the required keys:
+
+```bash
+cd ../contracts
+cp .env.example .env
+```
+
+Edit the `.env` file and add the following keys:
+
+```bash
+PRIVATE_KEY=your-private-key-here
+ARBISCAN_API_KEY=your-key-here
+ALCHEMY_API_KEY=your-key-here
+BASESCAN_API_KEY=your-key-here
 ```
 
 ### Running the Application
