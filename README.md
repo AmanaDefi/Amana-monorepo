@@ -52,6 +52,20 @@ cd ../contracts
 yarn
 ```
 
+### Environment Variables
+
+Create a `.env` file from the provided `.env.example` file and add your Thirdweb client ID:
+
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file and add your Thirdweb client ID:
+
+```bash
+NEXT_PUBLIC_TEMPLATE_CLIENT_ID=your-client-id-here
+```
+
 ### Running the Application
 
 #### Frontend
