@@ -5,6 +5,36 @@
       "address": "0xab3D6F053b183547B1d64Cb0D5197C265D3e3408",
       "txHash": "0x60ad35e44a70b5124e3c01744043cd678b7f3249ab75b80d4193b03a16cab7a7",
       "kind": "uups"
+    },
+    {
+      "address": "0x7db6F565387de8DDc76C922b13B116fF361cddBF",
+      "txHash": "0xe2eaf1bb94772214021360c5e5e0ec17f55703518ec785da4ff9fd41bcdd281e",
+      "kind": "uups"
+    },
+    {
+      "address": "0xF613eb823267352704e78d9c3110dAA50aA75069",
+      "txHash": "0x186fb58bec65a0665a511180acbf74ac816e406a3874ca64eb658b171c40c5b9",
+      "kind": "uups"
+    },
+    {
+      "address": "0x2a5615E3FEa3587500C2C8064ce21C864778D611",
+      "txHash": "0xfd4b1d20a6acd1c4bf5c9366d15d073ecc4ab1eddc50e35d3363cb4419b10f9e",
+      "kind": "uups"
+    },
+    {
+      "address": "0x6695aC5eAB06a5F827d59bE9d6c9E3D907c25A60",
+      "txHash": "0x16e9fa3ef1aa13a21e963fb25d497fc030d0e7fb7d79ec9d4f45372bc1cb66c4",
+      "kind": "uups"
+    },
+    {
+      "address": "0x3E876f6Bfd132E50612a1d2958c560BF1631Dd56",
+      "txHash": "0xb66c9e0c047c21d0788717016ad540b01bf54c4b1f8b29eac89bb102cacee6e0",
+      "kind": "uups"
+    },
+    {
+      "address": "0xf6CDBA75c81E1aF9a04fCA0f57A0e49b9B277Ba3",
+      "txHash": "0x5303c13889cdc90b44815a9afae633f01b107267b775384cf8b7ddc11f4e5ab8",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -265,6 +295,339 @@
               "contract": "ERC4626Upgradeable",
               "label": "_asset",
               "type": "t_contract(IERC20)1112",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol:56",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "ERC4626Upgradeable",
+              "label": "_underlyingDecimals",
+              "type": "t_uint8",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol:57",
+              "offset": 20,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ERC20": [
+            {
+              "contract": "ERC20Upgradeable",
+              "label": "_balances",
+              "type": "t_mapping(t_address,t_uint256)",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:38",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "ERC20Upgradeable",
+              "label": "_allowances",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:40",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "ERC20Upgradeable",
+              "label": "_totalSupply",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:42",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "ERC20Upgradeable",
+              "label": "_name",
+              "type": "t_string_storage",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:44",
+              "offset": 0,
+              "slot": "3"
+            },
+            {
+              "contract": "ERC20Upgradeable",
+              "label": "_symbol",
+              "type": "t_string_storage",
+              "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:45",
+              "offset": 0,
+              "slot": "4"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "d543b69b438946abe5770828fe6d9a4b80aaa87ad8165b92ad3157c2a45d7df5": {
+      "address": "0x857698060a40239FEE5A735eeC4C2E0554aAA5b3",
+      "txHash": "0xd7953b54bade098619dfd24ce8fde66de1185595db2d187ce107b64986b6f635",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "rewardToken",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20)2769",
+            "contract": "ERC4626RewardsUpgradeable",
+            "src": "contracts/ERC4626RewardsUpgradeable.sol:40"
+          },
+          {
+            "label": "rewardsInterval",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_struct(RewardsInterval)4587_storage",
+            "contract": "ERC4626RewardsUpgradeable",
+            "src": "contracts/ERC4626RewardsUpgradeable.sol:41"
+          },
+          {
+            "label": "rewardsPerToken",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_struct(RewardsPerToken)4592_storage",
+            "contract": "ERC4626RewardsUpgradeable",
+            "src": "contracts/ERC4626RewardsUpgradeable.sol:42"
+          },
+          {
+            "label": "accumulatedRewards",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(UserRewards)4597_storage)",
+            "contract": "ERC4626RewardsUpgradeable",
+            "src": "contracts/ERC4626RewardsUpgradeable.sol:43"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IERC20)1067": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(ERC20Storage)234_storage": {
+            "label": "struct ERC20Upgradeable.ERC20Storage",
+            "members": [
+              {
+                "label": "_balances",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_allowances",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "_totalSupply",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "_name",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "_symbol",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(ERC4626Storage)436_storage": {
+            "label": "struct ERC4626Upgradeable.ERC4626Storage",
+            "members": [
+              {
+                "label": "_asset",
+                "type": "t_contract(IERC20)1067",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_underlyingDecimals",
+                "type": "t_uint8",
+                "offset": 20,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(InitializableStorage)80_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)13_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IERC20)2769": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(UserRewards)4597_storage)": {
+            "label": "mapping(address => struct ERC4626RewardsUpgradeable.UserRewards)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(RewardsInterval)4587_storage": {
+            "label": "struct ERC4626RewardsUpgradeable.RewardsInterval",
+            "members": [
+              {
+                "label": "start",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "end",
+                "type": "t_uint32",
+                "offset": 4,
+                "slot": "0"
+              },
+              {
+                "label": "rate",
+                "type": "t_uint96",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RewardsPerToken)4592_storage": {
+            "label": "struct ERC4626RewardsUpgradeable.RewardsPerToken",
+            "members": [
+              {
+                "label": "accumulated",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdated",
+                "type": "t_uint32",
+                "offset": 16,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(UserRewards)4597_storage": {
+            "label": "struct ERC4626RewardsUpgradeable.UserRewards",
+            "members": [
+              {
+                "label": "accumulated",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "checkpoint",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint96": {
+            "label": "uint96",
+            "numberOfBytes": "12"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.ERC4626": [
+            {
+              "contract": "ERC4626Upgradeable",
+              "label": "_asset",
+              "type": "t_contract(IERC20)1067",
               "src": "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol:56",
               "offset": 0,
               "slot": "0"
