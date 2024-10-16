@@ -76,16 +76,18 @@ export const useUpdateAPYs = (
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
+              console.log("vault", vault.id);
               const contract = getContract({
                 client,
                 chain: baseSepolia,
                 address: vault.id,
               });
-
+              console.log("contract", contract);
               const strategyAddress = await readContract({
                 contract,
-                method: "function strategyAddress() view returns (address)",
+                method: "function getStrategy() view returns (address)",
               });
+              console.log("strategyAddress", strategyAddress);
               const strategyContract = getContract({
                 client,
                 chain: baseSepolia,
@@ -100,12 +102,13 @@ export const useUpdateAPYs = (
               let APY7d = 0;
 
               if (vault.protocol.name === "Aave") {
+                console.log("receiptTokenAddress", receiptTokenAddress);
                 const receiptTokenContract = getContract({
                   client,
                   chain: baseSepolia,
                   address: receiptTokenAddress,
                 });
-
+                console.log("receiptTokenContract", receiptTokenContract);
                 const poolAddress = await readContract({
                   contract: receiptTokenContract,
                   method: "function POOL() view returns (address)",

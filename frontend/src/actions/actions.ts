@@ -157,7 +157,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
         });
         const strategyAddress = await readContract({
           contract,
-          method: "function strategyAddress() view returns (address)",
+          method: "function getStrategy() view returns (address)",
         });
         const strategyContract = getContract({
           client,
