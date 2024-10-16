@@ -23,7 +23,7 @@ export const COMPOUND_BASE_USDC_VAULT_ADDRESS = "0xb125E6687d4313864e53df431d542
 
 export const VAULT_DATA: VaultData[] = [
   {
-    id: "0xab3D6F053b183547B1d64Cb0D5197C265D3e3408", // Upgradeable Amana Aave Vault on Base
+    id: "0x3E876f6Bfd132E50612a1d2958c560BF1631Dd56", // Upgradeable Amana Aave Vault on Base
     name: "AaveV3 USDC",
     symbol: "aAaveUSDC",
     inputToken: {
