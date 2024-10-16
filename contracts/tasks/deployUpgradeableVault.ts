@@ -41,15 +41,34 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   const etherscanApiKey = hre.config.etherscan.apiKey[network];
   if (etherscanApiKey) {
-    console.log(`🛠 Verifying contract on ${network} explorer...`);
+    // Verifying the implementation contract first
+    console.log(`Verifying implementation: ${await hre.upgrades.erc1967.getImplementationAddress(await contract.getAddress())}`);
+    try {
+      const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(await contract.getAddress());
+      await hre.run("verify:verify", {
+        address: implementationAddress,
+        constructorArguments: [],
+      });
+      console.log(`✅ Successfully verified implementation contract at ${implementationAddress}`);
+    } catch (err) {
+      console.error("❌ Failed to verify implementation contract:", err);
+    }
+
+    // Verifying the proxy contract
+    const proxyAddress = await contract.getAddress();
+    console.log(`Verifying proxy: ${proxyAddress}`);
     try {
       await hre.run("verify:verify", {
-        address: contract.target,
-        constructorArguments: [], //no constructor args for upgradeable contracts
+        address: proxyAddress,
+        constructorArguments: [], // Proxy has no constructor arguments
       });
-      console.log(`✅ Contract verified on ${network} explorer`);
+      console.log(`✅ Successfully verified proxy contract at ${proxyAddress}`);
     } catch (err) {
-      console.error("❌ Contract verification failed:", err);
+      if (err.message.includes("Already Verified")) {
+        console.log(`ℹ️ Proxy contract at ${proxyAddress} is already verified.`);
+      } else {
+        console.error("❌ Failed to verify proxy contract:", err);
+      }
     }
   } else {
     console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
