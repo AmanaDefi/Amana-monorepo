@@ -1,5 +1,3 @@
-import "./tasks/interact";
-import "./tasks/deploy";
 import "./tasks/deployVault";
 import "./tasks/deployStrategy";
 import "./tasks/deployUpgradeableVault";
@@ -40,11 +38,23 @@ const config: HardhatUserConfig = {
     compilers: [
       {
         version: "0.8.7",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,  // Adjust this number depending on your needs
+          }
+        }
       },
       {
         version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,  // Adjust this number depending on your needs
+          }
+        }
       }
-    ]
+    ],
   },
   etherscan: {
     apiKey: {
