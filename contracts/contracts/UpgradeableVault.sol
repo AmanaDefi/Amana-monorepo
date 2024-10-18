@@ -20,6 +20,7 @@ contract UpgradeableVault is
     using Math for uint256;
 
     error InvalidStrategyAddress();
+    error InvalidStrategyChainId();
     error InvalidTreasuryAddress();
     error FeeExceedsLimit();
     error ApprovalFailed();
@@ -35,7 +36,8 @@ contract UpgradeableVault is
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
 
     struct VaultStorage {
-        address strategy;
+        address strategyAddress;
+        uint32 strategyChainId;
         address treasury;
         uint16 perfFee;
         uint256 totalPrincipal;
@@ -48,9 +50,9 @@ contract UpgradeableVault is
         }
     }
 
-    function getStrategy() external view returns (address) {
+    function getStrategy() external view returns (address, uint32) {
         VaultStorage storage $ = _getVaultStorage();
-        return $.strategy;
+        return ($.strategyAddress, $.strategyChainId);
     }
 
     function getTreasury() external view returns (address) {
@@ -66,7 +68,10 @@ contract UpgradeableVault is
     address constant _GATEWAY_ADDRESS =
         0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0;
 
-    event StrategyUpdated(address indexed newStrategy);
+    event StrategyUpdated(
+        address indexed newStrategyAddress,
+        uint32 newStrategyChainId
+    );
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
@@ -84,7 +89,8 @@ contract UpgradeableVault is
         string memory name_,
         string memory symbol_,
         IERC20 asset_,
-        address strategy_,
+        address strategyAddress_,
+        uint32 strategyChainId_,
         address treasury_,
         uint16 perfFee_
     ) external initializer {
@@ -96,7 +102,8 @@ contract UpgradeableVault is
         VaultStorage storage $ = _getVaultStorage();
         $.treasury = treasury_;
         $.perfFee = perfFee_;
-        $.strategy = strategy_;
+        $.strategyAddress = strategyAddress_;
+        $.strategyChainId = strategyChainId_;
 
         emit VaultInitialized(decimals(), perfFee_);
     }
@@ -137,11 +144,16 @@ contract UpgradeableVault is
         emit ContextDataRevert(revertContext);
     }
 
-    function setStrategy(address _strategy) external onlyOwner {
+    function setStrategy(
+        address _strategyAddress,
+        uint16 _strategyChainId
+    ) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
-        if (_strategy == address(0)) revert InvalidStrategyAddress();
-        $.strategy = _strategy;
-        emit StrategyUpdated(_strategy);
+        if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
+        if (_strategyChainId == 0) revert InvalidStrategyChainId();
+        $.strategyAddress = _strategyAddress;
+        $.strategyChainId = _strategyChainId;
+        emit StrategyUpdated(_strategyAddress, _strategyChainId);
     }
 
     function updateTreasuryAddress(address _treasury) external onlyOwner {
@@ -157,15 +169,23 @@ contract UpgradeableVault is
         emit PerformanceFeeUpdated(newFeeRate);
     }
 
-    function switchStrategy(address newStrategy) external onlyOwner {
+    function switchStrategy(
+        address newStrategyAddress,
+        uint32 newStrategyChainId
+    ) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
-        if (newStrategy == address(0)) revert InvalidStrategyAddress();
-        if (newStrategy == $.strategy) revert InvalidStrategyAddress();
+        if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
+        if (newStrategyAddress == $.strategyAddress)
+            revert InvalidStrategyAddress();
+        if (newStrategyChainId == 0) revert InvalidStrategyChainId();
 
-        address oldStrategy = $.strategy;
-        $.strategy = newStrategy;
-        emit StrategyUpdated(newStrategy);
+        address oldStrategy = $.strategyAddress;
+        uint32 oldStrategyChainId = $.strategyChainId;
+        $.strategyAddress = newStrategyAddress;
+        $.strategyChainId = newStrategyChainId;
+        emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
 
+        // TODO - update this section to withdraw and invest in the new strategy - cross-chain or same chain
         uint256 strategyBalance = IStrategy(oldStrategy)
             .totalUnderlyingAssets();
         if (strategyBalance > 0) {
@@ -174,9 +194,12 @@ contract UpgradeableVault is
 
         uint256 vaultBalance = IZRC20(asset()).balanceOf(address(this));
         if (vaultBalance > 0) {
-            bool success = IZRC20(asset()).approve($.strategy, vaultBalance);
+            bool success = IZRC20(asset()).approve(
+                $.strategyAddress,
+                vaultBalance
+            );
             if (!success) revert ApprovalFailed();
-            IStrategy($.strategy).invest(vaultBalance);
+            IStrategy($.strategyAddress).invest(vaultBalance);
         }
     }
 
@@ -191,16 +214,26 @@ contract UpgradeableVault is
         VaultStorage storage $ = _getVaultStorage();
         // Get the amount of USDC held directly by the vault
         uint256 usdcBalance = IERC20(asset()).balanceOf(address(this));
-
+        uint256 strategyUSDCValue;
         // Call the strategy to get the equivalent value of aArbUSDC in terms of USDC
-        uint256 strategyUSDCValue = IStrategy($.strategy)
-            .totalUnderlyingAssets();
-
-        // Return the total assets: USDC held in the vault + USDC equivalent held in the strategy
-        return usdcBalance + strategyUSDCValue;
+        if (block.chainid == $.strategyChainId) {
+            strategyUSDCValue = IStrategy($.strategyAddress)
+                .totalUnderlyingAssets();
+            // Return the total assets: USDC held in the vault + USDC equivalent held in the strategy
+            return usdcBalance + strategyUSDCValue;
+        } else {
+            // TODO - update this part of the function to calculate value of assets on a different chain
+            // This will have to be a cross chain call - accessing the totalUnderlyingAssets view function
+            return usdcBalance + strategyUSDCValue;
+        }
     }
 
     function investAssets(uint256 amount) internal {
+        // if (block.chainid == _getVaultStorage().strategyChainId) {
+        //     _investAssets(amount);
+        // } else {
+        //     _crossChainInvest(amount);
+        // }
         VaultStorage storage $ = _getVaultStorage();
         address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
@@ -208,7 +241,7 @@ contract UpgradeableVault is
 
         IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
 
-        bytes memory recipient = abi.encodePacked($.strategy);
+        bytes memory recipient = abi.encodePacked($.strategyAddress);
 
         bytes4 functionSelector = bytes4(keccak256(bytes("invest(uint256)")));
         bytes memory encodedArgs = abi.encode(amount);
@@ -352,6 +385,7 @@ contract UpgradeableVault is
         uint256 assets,
         uint256 shares
     ) internal override {
+        //TODO this also needs to have the conditional depending on which chain the strategy is on
         VaultStorage storage $ = _getVaultStorage();
         // if (caller != user) {
         //     _spendAllowance(user, caller, shares);
@@ -362,7 +396,7 @@ contract UpgradeableVault is
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
         uint256 gasLimit = 30000000; // could potentially reduce to 7000000
 
-        bytes memory recipient = abi.encodePacked($.strategy);
+        bytes memory recipient = abi.encodePacked($.strategyAddress);
 
         bytes4 functionSelector = bytes4(
             keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
