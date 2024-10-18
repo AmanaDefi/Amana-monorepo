@@ -2,20 +2,11 @@
 pragma solidity 0.8.26;
 
 import "./ERC4626RewardsUpgradeable.sol";
-
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
-import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
-import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
-import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
-import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
 import "./interfaces/IStrategy.sol";
 
-contract UpgradeableVault is
-    ERC4626RewardsUpgradeable,
-    UUPSUpgradeable,
-    UniversalContract
-{
+contract UpgradeableVault is ERC4626RewardsUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -24,12 +15,6 @@ contract UpgradeableVault is
     error FeeExceedsLimit();
     error ApprovalFailed();
     error NothingToWithdraw();
-    error InvalidZRC20Address();
-    error CantBeZeroAddress();
-    error DepositExceedsLimit();
-    error MintExceedsLimit();
-    error WithdrawExceedsLimit();
-    error RedeemExceedsLimit();
 
     bytes32 private constant VaultStorageLocation =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
@@ -63,14 +48,10 @@ contract UpgradeableVault is
         return $.perfFee;
     }
 
-    address constant _GATEWAY_ADDRESS =
-        0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0;
-
-    event StrategyUpdated(address indexed newStrategy);
-    event PerformanceFeePaid(address indexed user, uint256 amount);
-    event PerformanceFeeUpdated(uint256 newFeeRate);
+    event StratUpdated(address indexed newStrategy);
+    event PerfFeePaid(address indexed user, uint256 amount);
+    event PerfFeeUpdated(uint256 newFee);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event ContextDataRevert(RevertContext);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -84,7 +65,6 @@ contract UpgradeableVault is
         string memory name_,
         string memory symbol_,
         IERC20 asset_,
-        address strategy_,
         address treasury_,
         uint16 perfFee_
     ) external initializer {
@@ -96,8 +76,6 @@ contract UpgradeableVault is
         VaultStorage storage $ = _getVaultStorage();
         $.treasury = treasury_;
         $.perfFee = perfFee_;
-        $.strategy = strategy_;
-
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -108,63 +86,35 @@ contract UpgradeableVault is
         address newImplementation
     ) internal override onlyOwner {}
 
-    function onCrossChainCall(
-        zContext calldata context,
-        address zrc20,
-        uint256 amount,
-        bytes calldata message
-    ) external override {
-        (
-            address userAddress,
-            uint256 withdrawAmount,
-            uint256 fee,
-            uint256 shares
-        ) = abi.decode(message, (address, uint256, uint256, uint256));
-        if (amount == 0) {
-            withdraw(withdrawAmount, userAddress, userAddress);
-        } else if (withdrawAmount == 1) {
-            // this indicates that the strategy is sending assets back to the vault
-            // we then send the amount back to the owner on the EVM in USDC
-            _withdrawPartTwo(userAddress, amount, fee, shares);
-        } else {
-            if (zrc20 != address(asset())) revert InvalidZRC20Address();
-            if (userAddress == address(0)) revert CantBeZeroAddress();
-            deposit(amount, userAddress);
-        }
-    }
-
-    function onRevert(RevertContext calldata revertContext) external override {
-        emit ContextDataRevert(revertContext);
-    }
-
     function setStrategy(address _strategy) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
+
         if (_strategy == address(0)) revert InvalidStrategyAddress();
         $.strategy = _strategy;
-        emit StrategyUpdated(_strategy);
+        emit StratUpdated(_strategy);
     }
 
-    function updateTreasuryAddress(address _treasury) external onlyOwner {
+    function updateTreasury(address _treasury) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
         $.treasury = _treasury;
     }
 
-    function setPerformanceFee(uint16 newFeeRate) external onlyOwner {
+    function setPerfFee(uint16 newFee) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
-        if (newFeeRate > 2000) revert FeeExceedsLimit();
-        $.perfFee = newFeeRate;
-        emit PerformanceFeeUpdated(newFeeRate);
+        if (newFee > 2000) revert FeeExceedsLimit();
+        $.perfFee = newFee;
+        emit PerfFeeUpdated(newFee);
     }
 
-    function switchStrategy(address newStrategy) external onlyOwner {
+    function switchStrat(address newStrategy) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (newStrategy == address(0)) revert InvalidStrategyAddress();
         if (newStrategy == $.strategy) revert InvalidStrategyAddress();
 
         address oldStrategy = $.strategy;
         $.strategy = newStrategy;
-        emit StrategyUpdated(newStrategy);
+        emit StratUpdated(newStrategy);
 
         uint256 strategyBalance = IStrategy(oldStrategy)
             .totalUnderlyingAssets();
@@ -172,9 +122,9 @@ contract UpgradeableVault is
             IStrategy(oldStrategy).withdraw(strategyBalance);
         }
 
-        uint256 vaultBalance = IZRC20(asset()).balanceOf(address(this));
+        uint256 vaultBalance = IERC20(asset()).balanceOf(address(this));
         if (vaultBalance > 0) {
-            bool success = IZRC20(asset()).approve($.strategy, vaultBalance);
+            bool success = IERC20(asset()).approve($.strategy, vaultBalance);
             if (!success) revert ApprovalFailed();
             IStrategy($.strategy).invest(vaultBalance);
         }
@@ -198,41 +148,6 @@ contract UpgradeableVault is
 
         // Return the total assets: USDC held in the vault + USDC equivalent held in the strategy
         return usdcBalance + strategyUSDCValue;
-    }
-
-    function investAssets(uint256 amount) internal {
-        VaultStorage storage $ = _getVaultStorage();
-        address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
-        uint256 gasLimit = 30000000; // could potentially reduce to 7000000
-
-        IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
-
-        bytes memory recipient = abi.encodePacked($.strategy);
-
-        bytes4 functionSelector = bytes4(keccak256(bytes("invest(uint256)")));
-        bytes memory encodedArgs = abi.encode(amount);
-        bytes memory outgoingMessage = abi.encodePacked(
-            functionSelector,
-            encodedArgs
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-            false, // callOnRevert
-            address(this), // abortAddress
-            bytes("revert message"),
-            uint256(30000000) // onRevertGasLimit
-        );
-
-        IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-            recipient, // this contains the recipient smart contract address
-            amount, // amount of zrc20 to withdraw
-            address(asset()), // the zrc20 that is being withdrawn, also indicates which chain to target
-            outgoingMessage, // this is the function call for invest(uint256 amount) in Mock4626Strategy
-            gasLimit,
-            revertOptions
-        );
     }
 
     function _applyFee(
@@ -270,9 +185,7 @@ contract UpgradeableVault is
 
     /**
      * @dev Internal conversion function (from assets to shares) with support for rounding direction.
-     *
-     * Will revert if assets > 0, totalSupply > 0 and totalAssets = 0. That corresponds to a case where any asset
-     * would represent an infinite amount of shares.
+     * This version integrates performance fee handling into the OpenZeppelin _convertToShares logic.
      */
     function _convertToShares(
         uint256 assets,
@@ -295,6 +208,7 @@ contract UpgradeableVault is
 
     /**
      * @dev Internal conversion function (from shares to assets) with support for rounding direction.
+     * This version integrates performance fee handling into the OpenZeppelin _convertToAssets logic.
      */
     function _convertToAssets(
         uint256 shares,
@@ -335,9 +249,17 @@ contract UpgradeableVault is
         $.userPrincipal[receiver] += assets;
         $.totalPrincipal += assets;
 
+        SafeERC20.safeTransferFrom(
+            IERC20(asset()),
+            caller,
+            address(this),
+            assets
+        );
         _mint(receiver, shares);
 
-        investAssets(assets);
+        bool success = IERC20(asset()).approve($.strategy, assets);
+        if (!success) revert ApprovalFailed();
+        IStrategy($.strategy).invest(assets);
 
         emit Deposit(caller, receiver, assets, shares);
     }
@@ -353,77 +275,32 @@ contract UpgradeableVault is
         uint256 shares
     ) internal override {
         VaultStorage storage $ = _getVaultStorage();
-        // if (caller != user) {
-        //     _spendAllowance(user, caller, shares);
-        // }
+        if (caller != user) {
+            _spendAllowance(user, caller, shares);
+        }
         uint256 feeWithdrawn = _applyFee(user, assets);
 
-        address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH - TODO in future this will have to indicate target chain dynamically
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
-        uint256 gasLimit = 30000000; // could potentially reduce to 7000000
+        IStrategy($.strategy).withdraw(assets + feeWithdrawn);
+        if (feeWithdrawn > 0) {
+            emit PerfFeePaid(user, feeWithdrawn);
+            SafeERC20.safeTransfer(IERC20(asset()), $.treasury, feeWithdrawn);
+        }
+        // If _asset is ERC777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
+        // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
+        // calls the vault, which is assumed not malicious.
+        //
+        // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
+        // shares are burned and after the assets are transferred, which is a valid state.
+        _burn(user, shares);
+        SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
 
-        bytes memory recipient = abi.encodePacked($.strategy);
-
-        bytes4 functionSelector = bytes4(
-            keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
-        );
-        bytes memory encodedArgs = abi.encode(
-            user,
-            assets,
-            feeWithdrawn,
-            shares
-        );
-        bytes memory outgoingMessage = abi.encodePacked(
-            functionSelector,
-            encodedArgs
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-            false, // callOnRevert
-            address(this), // abortAddress
-            bytes("revert message"),
-            uint256(30000000) // onRevertGasLimit
-        );
-
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(asset()),
-            outgoingMessage,
-            gasLimit,
-            revertOptions
-        );
+        emit Withdraw(caller, receiver, user, assets, shares);
     }
 
-    function _withdrawPartTwo(
-        address userAddress,
-        uint256 amount,
-        uint256 fee,
-        uint256 shares
-    ) internal {
-        VaultStorage storage $ = _getVaultStorage();
-        if (fee > 0) {
-            emit PerformanceFeePaid(userAddress, fee);
-            SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee); // TODO - a better way to do this?
-        }
-        _burn(userAddress, shares);
-        IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
-
-        bytes memory recipient = abi.encodePacked(userAddress);
-
-        RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-            false, // callOnRevert
-            address(this), // abortAddress
-            bytes("revert message"),
-            uint256(30000000) // onRevertGasLimit
-        );
-        IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
-            recipient, // this has to be the address of the owner/user on the EVM
-            amount, // the amount that the strategy has sent back
-            address(asset()), // TODO - when I move beyond the localnet, may need to re - specify this? Maybe need origin_asset AND target_asset?
-            revertOptions // do these need to be different from the revertOptions in deposit?
-        );
-        emit Withdraw(userAddress, userAddress, userAddress, amount, shares);
+    /**
+     * @dev Checks if vault is "healthy" in the sense of having assets backing the circulating shares.
+     */
+    function _isVaultCollateralized() private view returns (bool) {
+        return totalAssets() > 0 || totalSupply() == 0;
     }
 }

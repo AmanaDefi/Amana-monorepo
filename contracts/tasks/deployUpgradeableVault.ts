@@ -15,18 +15,19 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const name = args.name || "UpgradeableVault";
   const symbol = args.symbol || "UV";
   const assetaddress = args.assetaddress; // This should be passed as an argument
+  const strategyAddress = args.strategyAddress; // Address for the strategy
   const treasuryAddress = args.treasuryAddress; // Address for the treasury
 
   // Set the default for performanceFeeRate if it's not provided
   const performanceFeeRate = args.performanceFeeRate ?? 1500; // Default to 15% (1500 basis points)
 
-  if (!assetaddress || !treasuryAddress) {
-    throw new Error("🚨 Asset address and Treasury address are required.");
+  if (!assetaddress || !treasuryAddress || !strategyAddress) {
+    throw new Error("🚨 Asset address, Strategy address and Treasury address are required.");
   }
 
   // Deploy the UpgradeableVault contract using OpenZeppelin Upgrades
   const factory = await hre.ethers.getContractFactory("UpgradeableVault");
-  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, assetaddress, treasuryAddress, performanceFeeRate], {
+  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, assetaddress, strategyAddress, treasuryAddress, performanceFeeRate], {
     initializer: "initialize",
   });
   console.log("Contract deployed, waiting for confirmations...");
@@ -84,6 +85,7 @@ task("deploy-upgradeable-vault", "Deploy the UpgradeableVault contract", main)
   .addOptionalParam("name", "Token name", "UpgradeableVault")
   .addOptionalParam("symbol", "Token symbol", "UV")
   .addParam("assetaddress", "The address of the asset ERC20 token")
+  .addParam("strategyAddress", "The address of the strategy")
   .addParam("treasuryAddress", "The address of the treasury")
   .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)"); // Remove the default here
 
