@@ -136,7 +136,7 @@ contract UpgradeableVault is
         } else {
             if (zrc20 != address(asset())) revert InvalidZRC20Address();
             if (userAddress == address(0)) revert CantBeZeroAddress();
-            deposit(amount, userAddress);
+            _crossChainDeposit(userAddress, amount);
         }
     }
 
@@ -368,11 +368,49 @@ contract UpgradeableVault is
         $.userPrincipal[receiver] += assets;
         $.totalPrincipal += assets;
 
+        SafeERC20.safeTransferFrom(
+            IERC20(asset()),
+            caller,
+            address(this),
+            assets
+        );
+        _mint(receiver, shares);
+
+        bool success = IERC20(asset()).approve($.strategyAddress, assets);
+        if (!success) revert ApprovalFailed();
+        IStrategy($.strategyAddress).invest(assets);
+
+        emit Deposit(caller, receiver, assets, shares);
+    }
+
+    /**
+     * @dev Deposit/mint common workflow.
+     */
+    function _crossChainDeposit(address receiver, uint256 assets) internal {
+        uint256 maxAssets = maxDeposit(receiver);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
+        }
+
+        uint256 shares = previewDeposit(assets);
+
+        VaultStorage storage $ = _getVaultStorage();
+        // If _asset is ERC777, `transferFrom` can trigger a reenterancy BEFORE the transfer happens through the
+        // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
+        // calls the vault, which is assumed not malicious.
+        //
+        // Conclusion: we need to do the transfer before we mint so that any reentrancy would happen before the
+        // assets are transferred and before the shares are minted, which is a valid state.
+        // slither-disable-next-line reentrancy-no-eth
+        $.userPrincipal[receiver] += assets;
+        $.totalPrincipal += assets;
+
         _mint(receiver, shares);
 
         investAssets(assets);
 
-        emit Deposit(caller, receiver, assets, shares);
+        emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
+        // return shares; - this is now missing from the original deposit function that used to be called by the cross chain function - is it needed?
     }
 
     /**
