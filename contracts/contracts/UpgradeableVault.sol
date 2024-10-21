@@ -147,7 +147,7 @@ contract UpgradeableVault is
 
     function setStrategy(
         address _strategyAddress,
-        uint16 _strategyChainId
+        uint32 _strategyChainId
     ) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
