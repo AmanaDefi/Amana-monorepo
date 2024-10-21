@@ -23,6 +23,7 @@ describe("Vault and BaseAaveStrategy", function () {
   const errorMargin = 5;
   const FeeRate = BigInt(1000); // 10% fee
   const rewardAmount = ethers.parseUnits("100", 6);
+  const BASE_CHAIN_ID = 8453;
 
   // other tests:
   // - withdraw max amount
@@ -71,7 +72,11 @@ describe("Vault and BaseAaveStrategy", function () {
       strategy = await BaseAaveStrategy.deploy("AaveV3USDC", await amanaVault.getAddress(), BASE_USDC_ADDRESS, BASE_AAVE_RECEIPT_TOKEN_ADDRESS);
 
       // Set the strategy address in the amanaVault
-      await amanaVault.setStrategy(await strategy.getAddress());
+      const network = await ethers.provider.getNetwork();
+
+      const chainId = network.chainId;
+      console.log("Chain ID: ", chainId);
+      await amanaVault.setStrategy(await strategy.getAddress(), chainId);
 
       // Impersonate USDC holder
       const usdcHolder = await ethers.getImpersonatedSigner(BASE_USDC_HOLDER_ADDRESS);
