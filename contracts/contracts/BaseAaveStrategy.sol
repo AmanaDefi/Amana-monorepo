@@ -52,22 +52,16 @@ contract BaseAaveStrategy is Ownable {
     }
 
     function withdraw(
+        uint256 _amountToWithdraw,
         uint256 _fractionToWithdraw
     ) external onlyVault returns (uint256) {
-        uint256 totalReceiptTokenBalance = receiptToken.balanceOf(
-            address(this)
-        );
-        console.log("totalReceiptTokenBalance: %s", totalReceiptTokenBalance);
-        uint256 amountInReceiptToken = (_fractionToWithdraw *
-            totalReceiptTokenBalance) / (10 ** 27);
-        console.log("amountInReceiptToken: %s", amountInReceiptToken);
         uint256 withdrawn = aavePool.withdraw(
             address(inputToken),
-            amountInReceiptToken,
+            _amountToWithdraw,
             msg.sender
         );
         console.log("withdrawn: %s", withdrawn);
-        require(withdrawn >= amountInReceiptToken, "Token withdrawal failed");
+        require(withdrawn == _amountToWithdraw, "Token withdrawal failed");
         return withdrawn;
     }
 
