@@ -10,6 +10,11 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContrac
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
 import "./interfaces/IStrategy.sol";
+import "hardhat/console.sol";
+
+// The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
+// This makes logical sense in that it is the underlying asset that the strategy is investing
+// It wouldn't make sense to make it the ZRC20 equivalent of the input token deposited, because this could be from any connected chain (or ZC itself)
 
 contract UpgradeableVault is
     ERC4626RewardsUpgradeable,
@@ -89,8 +94,6 @@ contract UpgradeableVault is
         string memory name_,
         string memory symbol_,
         IERC20 asset_,
-        address strategyAddress_,
-        uint32 strategyChainId_,
         address treasury_,
         uint16 perfFee_
     ) external initializer {
@@ -102,8 +105,6 @@ contract UpgradeableVault is
         VaultStorage storage $ = _getVaultStorage();
         $.treasury = treasury_;
         $.perfFee = perfFee_;
-        $.strategyAddress = strategyAddress_;
-        $.strategyChainId = strategyChainId_;
 
         emit VaultInitialized(decimals(), perfFee_);
     }
@@ -128,11 +129,11 @@ contract UpgradeableVault is
             uint256 shares
         ) = abi.decode(message, (address, uint256, uint256, uint256));
         if (amount == 0) {
-            withdraw(withdrawAmount, userAddress, userAddress);
+            _crossChainWithdraw(userAddress, withdrawAmount);
         } else if (withdrawAmount == 1) {
             // this indicates that the strategy is sending assets back to the vault
             // we then send the amount back to the owner on the EVM in USDC
-            _withdrawPartTwo(userAddress, amount, fee, shares);
+            _crossChainWithdrawPartTwo(userAddress, amount, fee, shares); // TODO does shares really need to be here?
         } else {
             if (zrc20 != address(asset())) revert InvalidZRC20Address();
             if (userAddress == address(0)) revert CantBeZeroAddress();
@@ -189,7 +190,7 @@ contract UpgradeableVault is
         uint256 strategyBalance = IStrategy(oldStrategy)
             .totalUnderlyingAssets();
         if (strategyBalance > 0) {
-            IStrategy(oldStrategy).withdraw(strategyBalance);
+            IStrategy(oldStrategy).withdraw(strategyBalance, 10 ** 27);
         }
 
         uint256 vaultBalance = IZRC20(asset()).balanceOf(address(this));
@@ -228,15 +229,17 @@ contract UpgradeableVault is
         }
     }
 
-    function investAssets(uint256 amount) internal {
+    function _crossChainInvest(uint256 amount) internal {
         // if (block.chainid == _getVaultStorage().strategyChainId) {
         //     _investAssets(amount);
         // } else {
         //     _crossChainInvest(amount);
         // }
         VaultStorage storage $ = _getVaultStorage();
+        // TODO there's a function in the Zetachain code for getting the gas token from the asset token - use this here
         address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
+
         uint256 gasLimit = 30000000; // could potentially reduce to 7000000
 
         IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
@@ -271,7 +274,7 @@ contract UpgradeableVault is
     function _applyFee(
         address user,
         uint256 assets
-    ) internal returns (uint256 feeWithdrawn) {
+    ) internal returns (uint256 feeToWithdraw) {
         VaultStorage storage $ = _getVaultStorage();
         uint256 principal = $.userPrincipal[user];
         uint256 totalUserAssets = convertToAssets(balanceOf(user));
@@ -287,14 +290,14 @@ contract UpgradeableVault is
             principalWithdrawn = (assets * principal) / totalUserAssets;
             uint256 profitWithdrawn = assets - principalWithdrawn;
 
-            feeWithdrawn =
+            feeToWithdraw =
                 (profit * $.perfFee * profitWithdrawn) /
                 (profit * (10000 - $.perfFee));
 
             $.userPrincipal[user] -= principalWithdrawn;
         } else {
             principalWithdrawn = assets;
-            feeWithdrawn = 0;
+            feeToWithdraw = 0;
             $.userPrincipal[user] -= principalWithdrawn;
         }
 
@@ -375,10 +378,15 @@ contract UpgradeableVault is
             assets
         );
         _mint(receiver, shares);
+        console.log("Chain id: ", block.chainid);
 
-        bool success = IERC20(asset()).approve($.strategyAddress, assets);
-        if (!success) revert ApprovalFailed();
-        IStrategy($.strategyAddress).invest(assets);
+        if (block.chainid == $.strategyChainId) {
+            bool success = IERC20(asset()).approve($.strategyAddress, assets);
+            if (!success) revert ApprovalFailed();
+            IStrategy($.strategyAddress).invest(assets);
+        } else {
+            _crossChainInvest(assets);
+        }
 
         emit Deposit(caller, receiver, assets, shares);
     }
@@ -407,8 +415,13 @@ contract UpgradeableVault is
 
         _mint(receiver, shares);
 
-        investAssets(assets);
-
+        if (block.chainid == $.strategyChainId) {
+            bool success = IERC20(asset()).approve($.strategyAddress, assets);
+            if (!success) revert ApprovalFailed();
+            IStrategy($.strategyAddress).invest(assets);
+        } else {
+            _crossChainInvest(assets);
+        }
         emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
         // return shares; - this is now missing from the original deposit function that used to be called by the cross chain function - is it needed?
     }
@@ -423,51 +436,159 @@ contract UpgradeableVault is
         uint256 assets,
         uint256 shares
     ) internal override {
+        VaultStorage storage $ = _getVaultStorage();
+        if (caller != user) {
+            _spendAllowance(user, caller, shares);
+        }
+        console.log("Amount to be withdrawn: ", assets);
+        uint256 feeToWithdraw = _applyFee(user, assets);
+        if (block.chainid == $.strategyChainId) {
+            // could make this if ($.strategyChainId == zetachain chain id) ?
+            uint256 fractionToWithdraw = ((assets + feeToWithdraw) *
+                (10 ** 27)) /
+                totalAssets() +
+                1;
+            uint256 withdrawnAmt = IStrategy($.strategyAddress).withdraw(
+                assets + feeToWithdraw,
+                fractionToWithdraw
+            );
+            if (feeToWithdraw > 0) {
+                emit PerformanceFeePaid(user, feeToWithdraw);
+                SafeERC20.safeTransfer(
+                    IERC20(asset()),
+                    $.treasury,
+                    feeToWithdraw
+                );
+            }
+            console.log("feeToWithdraw", feeToWithdraw);
+            // If _asset is ERC777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
+            // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
+            // calls the vault, which is assumed not malicious.
+            //
+            // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
+            // shares are burned and after the assets are transferred, which is a valid state.
+            _burn(user, shares);
+            console.log(IERC20(asset()).balanceOf(address(this)));
+            SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
+            console.log("Withdraw succeeded");
+            emit Withdraw(
+                caller,
+                receiver,
+                user,
+                withdrawnAmt - feeToWithdraw,
+                shares
+            );
+        } else {
+            address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH - TODO in future this will have to indicate target chain dynamically
+            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
+            uint256 gasLimit = 30000000; // could potentially reduce to 7000000
+
+            bytes memory recipient = abi.encodePacked($.strategyAddress);
+
+            bytes4 functionSelector = bytes4(
+                keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
+            );
+            bytes memory encodedArgs = abi.encode(
+                user,
+                assets,
+                feeToWithdraw,
+                shares
+            );
+            bytes memory outgoingMessage = abi.encodePacked(
+                functionSelector,
+                encodedArgs
+            );
+
+            RevertOptions memory revertOptions = RevertOptions(
+                0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+                false, // callOnRevert
+                address(this), // abortAddress
+                bytes("revert message"),
+                uint256(30000000) // onRevertGasLimit
+            );
+
+            IGatewayZEVM(_GATEWAY_ADDRESS).call(
+                recipient,
+                address(asset()),
+                outgoingMessage,
+                gasLimit,
+                revertOptions
+            );
+        }
+    }
+
+    /**
+     * @dev Withdraw/redeem common workflow.
+     */
+    function _crossChainWithdraw(
+        // address receiver, // Might this be needed later?
+        address user,
+        uint256 assets
+    ) internal {
+        uint256 maxAssets = maxWithdraw(user);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
+        }
+
+        uint256 shares = previewWithdraw(assets);
+
         //TODO this also needs to have the conditional depending on which chain the strategy is on
         VaultStorage storage $ = _getVaultStorage();
         // if (caller != user) {
         //     _spendAllowance(user, caller, shares);
         // }
-        uint256 feeWithdrawn = _applyFee(user, assets);
+        uint256 feeToWithdraw = _applyFee(user, assets);
+        if (block.chainid == $.strategyChainId) {
+            uint256 fractionToWithdraw = ((assets + feeToWithdraw) *
+                (10 ** 27)) /
+                totalAssets() +
+                1;
+            IStrategy($.strategyAddress).withdraw(
+                assets + feeToWithdraw,
+                fractionToWithdraw
+            );
+            _crossChainWithdrawPartTwo(user, assets, feeToWithdraw, shares);
+        } else {
+            address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH - TODO in future this will have to indicate target chain dynamically
+            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
+            uint256 gasLimit = 30000000; // could potentially reduce to 7000000
 
-        address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH - TODO in future this will have to indicate target chain dynamically
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
-        uint256 gasLimit = 30000000; // could potentially reduce to 7000000
+            bytes memory recipient = abi.encodePacked($.strategyAddress);
 
-        bytes memory recipient = abi.encodePacked($.strategyAddress);
+            bytes4 functionSelector = bytes4(
+                keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
+            );
+            bytes memory encodedArgs = abi.encode(
+                user,
+                assets,
+                feeToWithdraw,
+                shares
+            );
+            bytes memory outgoingMessage = abi.encodePacked(
+                functionSelector,
+                encodedArgs
+            );
 
-        bytes4 functionSelector = bytes4(
-            keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
-        );
-        bytes memory encodedArgs = abi.encode(
-            user,
-            assets,
-            feeWithdrawn,
-            shares
-        );
-        bytes memory outgoingMessage = abi.encodePacked(
-            functionSelector,
-            encodedArgs
-        );
+            RevertOptions memory revertOptions = RevertOptions(
+                0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+                false, // callOnRevert
+                address(this), // abortAddress
+                bytes("revert message"),
+                uint256(30000000) // onRevertGasLimit
+            );
 
-        RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-            false, // callOnRevert
-            address(this), // abortAddress
-            bytes("revert message"),
-            uint256(30000000) // onRevertGasLimit
-        );
-
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(asset()),
-            outgoingMessage,
-            gasLimit,
-            revertOptions
-        );
+            IGatewayZEVM(_GATEWAY_ADDRESS).call(
+                recipient,
+                address(asset()),
+                outgoingMessage,
+                gasLimit,
+                revertOptions
+            );
+        }
+        // return shares - do I still need this here (it's in the original withdraw external function)
     }
 
-    function _withdrawPartTwo(
+    function _crossChainWithdrawPartTwo(
         address userAddress,
         uint256 amount,
         uint256 fee,
