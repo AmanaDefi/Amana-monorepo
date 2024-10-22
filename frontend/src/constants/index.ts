@@ -22,7 +22,7 @@ export const MOONWELL_BASE_USDC_VAULT_ADDRESS = "0xc1256Ae5FF1cf2719D4937adb3bbC
 export const COMPOUND_BASE_USDC_VAULT_ADDRESS = "0xb125E6687d4313864e53df431d5425969c15Eb2F";
 
 export const ZC_USDC_ETH_ADDRESS = "0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a";
-export const ZC_USDT_ADDRESS = "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7";
+export const ZC_USDT_ETH_ADDRESS = "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7";
 export const ZC_EDDY_FOURPOOL_ADDRESS = "0x448028804461e8e5a8877c228F3adFd58c3Da6B6";
 export const ZC_EDDY4P_ADDRESS = "0xf45DC12FDEcA77afF35602d7FBE3B97f7f3dCBB2";
 
@@ -31,17 +31,17 @@ export const ZC_USDT_HOLDER_ADDRESS = "0x22BA7b2bE3DAA5fACF4969558Bf5C3009c08C7F
 
 export const VAULT_DATA: VaultData[] = [
   {
-    id: "0x3E876f6Bfd132E50612a1d2958c560BF1631Dd56", // Upgradeable Amana Aave Vault on Base
-    name: "AaveV3 USDC",
-    symbol: "aAaveUSDC",
+    id: "0x2951CeE73b27c2b1Ffd66A03b77eEdD79012d2BF", // Upgradeable Amana Aave Vault on Base
+    name: "Eddy USDC",
+    symbol: "aEddyUSDC",
     inputToken: {
       symbol: "USDC",
       decimals: 6,
-      address: BASE_SEPOLIA_USDC_ADDRESS,
+      address: ZC_USDC_ETH_ADDRESS,
     },
     protocol: {
-      name: "Aave",
-      network: "Base",
+      name: "Eddy",
+      network: "Zetachain",
     },
   },
   // {

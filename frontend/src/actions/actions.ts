@@ -1,7 +1,7 @@
 import { Address, getContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { client } from "../utils/client";
-import { baseSepolia } from "thirdweb/chains";
-import { BASE_SEPOLIA_USDC_ADDRESS } from "../constants";
+import { CURRENT_CHAIN } from "../constants/chainConfig";
+import { ZC_USDC_ETH_ADDRESS } from "../constants";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { sendBatchTransaction, readContract } from "thirdweb";
@@ -10,10 +10,46 @@ import { ethers, JsonRpcProvider } from "ethers";
 import lendingPoolABI from "../../abis/lendingPoolABI.json";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import compoundVaultABI from "../../abis/compoundVaultABI.json";
+import fourPoolABI from "../../abis/fourPoolABI.json";
 
 import * as dotenv from "dotenv";
 dotenv.config();
-const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA);
+const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA);
+
+export async function calculateEddyAPY(poolAddress: Address, inputTokenAddress: Address) {
+  const eddyFinancePool = new ethers.Contract(poolAddress, fourPoolABI, provider);
+
+  try {
+    // Fetch the current virtual price
+    const currentPrice = ethers.toBigInt(await eddyFinancePool.get_virtual_price());
+
+    // Fetch the block number and determine the number of seconds in the past (e.g., 7 days)
+    const currentBlockNumber = await provider.getBlockNumber();
+    const averageBlockTimeInSeconds = 5; // Adjust this based on the average block time for Eddy Finance
+    const secondsIn7Days = 7 * 24 * 60 * 60;
+    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const pastBlockNumber = currentBlockNumber - blocksIn7Days;
+
+    // Fetch the virtual price from 7 days ago
+    const pastPrice = ethers.toBigInt(
+      await eddyFinancePool.get_virtual_price({ blockTag: pastBlockNumber })
+    );
+
+    // Calculate the rate of change in the virtual price over 7 days
+    const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+    const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
+
+    // Calculate the annualized APY based on the 7-day change
+    const depositAPY = Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
+
+    console.log("depositAPY", depositAPY);
+
+    return depositAPY;
+  } catch (error) {
+    console.error("Error calculating APY for Eddy Finance:", error);
+    return null;
+  }
+}
 
 export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address) {
   const aaveLendingPool = new ethers.Contract(poolAddress, lendingPoolABI, provider);
@@ -70,8 +106,8 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
 export const executeDeposit = async (vaultId: Address, activeAccount: Account, transactionAmount: bigint) => {
   let contract = getContract({
     client,
-    chain: baseSepolia,
-    address: BASE_SEPOLIA_USDC_ADDRESS
+    chain: CURRENT_CHAIN,
+    address: ZC_USDC_ETH_ADDRESS
   });
   const approveTx = prepareContractCall({
     contract,
@@ -80,7 +116,7 @@ export const executeDeposit = async (vaultId: Address, activeAccount: Account, t
   });
   contract = getContract({
     client,
-    chain: baseSepolia,
+    chain: CURRENT_CHAIN,
     address: vaultId
   });
   const supplyTx = prepareContractCall({
@@ -98,7 +134,7 @@ export const executeDeposit = async (vaultId: Address, activeAccount: Account, t
 export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, withdrawAmount: bigint) => { //vaultId: string
   let contract = getContract({
     client,
-    chain: baseSepolia,
+    chain: CURRENT_CHAIN,
     address: vaultId
   });
   const withdrawTx = prepareContractCall({
@@ -116,7 +152,7 @@ export const executeWithdrawal = async (vaultId: Address, activeAccount: Account
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: baseSepolia,
+    chain: CURRENT_CHAIN,
     address: vaultAddress
   });
   const { value: shares, decimals } = await getBalance({
@@ -135,7 +171,7 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
 export const fetchTotalAssets = async (vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: baseSepolia,
+    chain: CURRENT_CHAIN,
     address: vaultAddress
   });
   const balance = await readContract({
@@ -152,7 +188,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
       try {
         const contract = getContract({
           client,
-          chain: baseSepolia,
+          chain: CURRENT_CHAIN,
           address: vault.id,
         });
         const strategyAddress = await readContract({
@@ -161,7 +197,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
         });
         const strategyContract = getContract({
           client,
-          chain: baseSepolia,
+          chain: CURRENT_CHAIN,
           address: strategyAddress,
         });
         let APY7d = 0;
@@ -173,7 +209,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
 
           const receiptTokenContract = getContract({
             client,
-            chain: baseSepolia,
+            chain: CURRENT_CHAIN,
             address: receiptTokenAddress,
           });
 
