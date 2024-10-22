@@ -5,7 +5,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { UpgradeableVault, ZcEddyStrategy, IERC20 } from "../typechain";
 
 import { ZC_USDC_ETH_ADDRESS } from "../../frontend/src/constants/index";
-import { ZC_USDT_ADDRESS } from "../../frontend/src/constants/index";
+import { ZC_USDT_ETH_ADDRESS } from "../../frontend/src/constants/index";
 
 import { ZC_EDDY4P_ADDRESS } from "../../frontend/src/constants/index";
 import { ZC_USDC_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
@@ -89,7 +89,7 @@ describe("Vault and ZcEddyStrategy", function () {
       await usdc.connect(usdcHolder).transfer(await user2.getAddress(), depositAmount2);
 
       const usdtHolder = await ethers.getImpersonatedSigner(ZC_USDT_HOLDER_ADDRESS);
-      usdt = await ethers.getContractAt("IERC20", ZC_USDT_ADDRESS);
+      usdt = await ethers.getContractAt("IERC20", ZC_USDT_ETH_ADDRESS);
 
       const vaultAddress = await amanaVault.getAddress();
       await usdt.connect(usdtHolder).transfer(vaultAddress, rewardAmount);
