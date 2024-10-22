@@ -61,6 +61,7 @@ const config: HardhatUserConfig = {
       arbitrumOne: process.env.ARBISCAN_API_KEY || "",
       base: process.env.BASESCAN_API_KEY || "",
       base_sepolia: process.env.BASESCAN_API_KEY || "",
+      zeta_mainnet: "abc", // not required for Blockscout - can be any non-empty string
     },
     customChains: [
       {
@@ -79,6 +80,15 @@ const config: HardhatUserConfig = {
           browserURL: "https://sepolia.basescan.org", // Testnet explorer URL
         },
       },
+      {
+        network: "zeta_mainnet",
+        chainId: 7000,
+        urls: {
+          apiURL: "https://zetachain.blockscout.com/api",
+          browserURL: "https://zetachain.blockscout.com"
+        }
+
+      }
     ],
   },
   typechain: {
