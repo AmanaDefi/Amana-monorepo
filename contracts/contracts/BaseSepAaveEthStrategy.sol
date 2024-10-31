@@ -49,7 +49,10 @@ contract BaseSepAaveEthStrategy is Ownable {
         _;
     }
 
-    function invest() external payable onlyGateway returns (uint256) {
+    function invest(
+        uint256 amount
+    ) external payable onlyGateway returns (uint256) {
+        // note that the amount input here doesn't get used? maybe just check it against msg.value?
         require(msg.value > 0, "No ETH sent");
         tokenGateway.depositETH(address(aavePool), address(this), 0);
         return msg.value;
