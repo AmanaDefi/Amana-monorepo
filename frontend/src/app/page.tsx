@@ -19,7 +19,7 @@ const wallets = [
     auth: {
       options: ["google", "email", "passkey"],
     },
-    smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
+    // smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
   }),
   createWallet("io.metamask"),
   createWallet("com.coinbase.wallet"),
@@ -145,7 +145,7 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
           client={client}
           wallets={wallets}
           connectModal={{ size: "compact" }}
-          accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
+          // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
           detailsButton={{
             displayBalanceToken: {
               [CURRENT_CHAIN.id]: ZC_USDC_ETH_ADDRESS,
@@ -169,7 +169,8 @@ function UnauthenticatedLandingPage() {
               wallets={wallets} 
               connectButton={{ label: "Launch App" }} 
               connectModal={{ size: "compact" }}
-              accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}/>
+              // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
+              />
         </nav>
       </header>
 

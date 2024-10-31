@@ -1,4 +1,4 @@
-import { Address, getContract, prepareContractCall, sendTransaction } from "thirdweb";
+import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction } from "thirdweb";
 import { client } from "../utils/client";
 import { CURRENT_CHAIN } from "../constants/chainConfig";
 import { ZC_USDC_ETH_ADDRESS } from "../constants";
@@ -104,31 +104,44 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
 }
 
 export const executeDeposit = async (vaultId: Address, activeAccount: Account, transactionAmount: bigint) => {
+
+  console.log("Executing Deposit");
   let contract = getContract({
     client,
     chain: CURRENT_CHAIN,
     address: ZC_USDC_ETH_ADDRESS
   });
+  console.log("contract", contract);
   const approveTx = prepareContractCall({
     contract,
     method: "function approve(address to, uint256 value)",
     params: [vaultId, transactionAmount]
   });
+  console.log("approveTx", approveTx);
   contract = getContract({
     client,
     chain: CURRENT_CHAIN,
     address: vaultId
   });
+  console.log("contract", contract);
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets,  address receiver)",
     params: [transactionAmount, activeAccount?.address]
   });
-  await sendBatchTransaction({
+  console.log("supplyTx", supplyTx);
+  await sendAndConfirmTransaction({
     account: activeAccount,
-    transactions: [approveTx, supplyTx]
+    transaction: approveTx
   });
+
+  console.log("Approval confirmed");
+  await sendTransaction({
+    account: activeAccount,
+    transaction: supplyTx
+  });
+  console.log("Deposit executed");
 };
 
 export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, withdrawAmount: bigint) => { //vaultId: string

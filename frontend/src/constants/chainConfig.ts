@@ -30,6 +30,6 @@ export const CURRENT_CHAIN = defineChain({
 
 export const ACCOUNT_ABSTRACTION_CONFIG = {
   chain: CURRENT_CHAIN,
-  sponsorGas: true,
+  sponsorGas: false,
   factoryAddress: "0x021A47c1F745cEaC5CD19DC92C5d117e84b1cD46"
 };
