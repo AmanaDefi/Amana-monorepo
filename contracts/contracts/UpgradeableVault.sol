@@ -229,17 +229,12 @@ contract UpgradeableVault is
     }
 
     function _crossChainInvest(uint256 amount) internal {
-        // if (block.chainid == _getVaultStorage().strategyChainId) {
-        //     _investAssets(amount);
-        // } else {
-        //     _crossChainInvest(amount);
-        // }
         VaultStorage storage $ = _getVaultStorage();
         // TODO there's a function in the Zetachain code for getting the gas token from the asset token - use this here
-        address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH
+        address gas_zrc20 = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // ZRC-20 ETH.BASESEPOLIA
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
 
-        uint256 gasLimit = 30000000; // could potentially reduce to 7000000
+        uint256 gasLimit = 30000000; // TODO could potentially reduce to 7000000
 
         IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
 
@@ -261,7 +256,7 @@ contract UpgradeableVault is
         );
 
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-            recipient, // this contains the recipient smart contract address
+            recipient, // this contains the recipient smart contract address - the strategy address in this case
             amount, // amount of zrc20 to withdraw
             address(asset()), // the zrc20 that is being withdrawn, also indicates which chain to target
             outgoingMessage, // this is the function call for invest(uint256 amount) in Mock4626Strategy
