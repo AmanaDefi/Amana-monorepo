@@ -13,7 +13,7 @@ import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 // BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS = 0xf53B60F4006cab2b3C4688ce41fD5362427A2A66;
 // MOCK_4626_VAULT_ADDRESS - get this on deployment to localnet
 
-contract BaseSepAaveStrategy is Ownable {
+contract BaseSepAaveUsdcStrategy is Ownable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
