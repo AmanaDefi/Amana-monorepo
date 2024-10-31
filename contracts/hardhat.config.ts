@@ -62,6 +62,7 @@ const config: HardhatUserConfig = {
       base: process.env.BASESCAN_API_KEY || "",
       base_sepolia: process.env.BASESCAN_API_KEY || "",
       zeta_mainnet: "abc", // not required for Blockscout - can be any non-empty string
+      zeta_testnet: "abc", // not required for Blockscout - can be any non-empty string
     },
     customChains: [
       {
@@ -87,8 +88,15 @@ const config: HardhatUserConfig = {
           apiURL: "https://zetachain.blockscout.com/api",
           browserURL: "https://zetachain.blockscout.com"
         }
-
-      }
+      },
+      {
+        network: "zeta_testnet",
+        chainId: 7001,
+        urls: {
+          apiURL: "https://zetachain-testnet.blockscout.com/api",
+          browserURL: "https://zetachain-testnet.blockscout.com"
+        }
+      },
     ],
   },
   typechain: {
