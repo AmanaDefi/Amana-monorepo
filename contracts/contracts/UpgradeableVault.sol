@@ -37,6 +37,8 @@ contract UpgradeableVault is
     error WithdrawExceedsLimit();
     error RedeemExceedsLimit();
 
+    address constant _GATEWAY_ADDRESS =
+        0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
     bytes32 private constant VaultStorageLocation =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
 
@@ -69,9 +71,6 @@ contract UpgradeableVault is
         VaultStorage storage $ = _getVaultStorage();
         return $.perfFee;
     }
-
-    address constant _GATEWAY_ADDRESS =
-        0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0;
 
     event StrategyUpdated(
         address indexed newStrategyAddress,
