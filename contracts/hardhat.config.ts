@@ -7,7 +7,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
 import "@typechain/hardhat";
 import "@openzeppelin/hardhat-upgrades";
-import "@nomicfoundation/hardhat-ethers"; // For ethers v6 compatibility
+import "@nomiclabs/hardhat-ethers";
 
 import { getHardhatConfigNetworks } from "@zetachain/networks";
 import { HardhatUserConfig } from "hardhat/config";
@@ -24,6 +24,10 @@ const config: HardhatUserConfig = {
     },
     base: {
       url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    sepolia_testnet: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
     hardhat: {
@@ -101,7 +105,7 @@ const config: HardhatUserConfig = {
   },
   typechain: {
     outDir: "typechain",  // This is where Typechain outputs the generated types
-    target: "ethers-v6",  // Target ethers.js
+    target: "ethers-v5",  // Target ethers.js
   },
 };
 
