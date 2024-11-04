@@ -10,7 +10,6 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContrac
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
 import "./interfaces/IStrategy.sol";
-import "hardhat/console.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
 // This makes logical sense in that it is the underlying asset that the strategy is investing
@@ -115,8 +114,8 @@ contract UpgradeableVault is
         address newImplementation
     ) internal override onlyOwner {}
 
-    function onCrossChainCall(
-        zContext calldata context,
+    function onCall(
+        MessageContext calldata context,
         address zrc20,
         uint256 amount,
         bytes calldata message
@@ -232,11 +231,12 @@ contract UpgradeableVault is
         VaultStorage storage $ = _getVaultStorage();
         // TODO there's a function in the Zetachain code for getting the gas token from the asset token - use this here
         address gas_zrc20 = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // ZRC-20 ETH.BASESEPOLIA
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
+        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
 
-        uint256 gasLimit = 30000000; // TODO could potentially reduce to 7000000
-
-        IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
+        uint256 gasLimit = 7000000; // TODO could potentially reduce to 7000000
+        if (gas_zrc20 != address(asset())) {
+            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
+        }
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
@@ -252,7 +252,7 @@ contract UpgradeableVault is
             false, // callOnRevert
             address(this), // abortAddress
             bytes("revert message"),
-            uint256(30000000) // onRevertGasLimit
+            uint256(7000000) // onRevertGasLimit
         );
 
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
@@ -308,6 +308,9 @@ contract UpgradeableVault is
         uint256 assets,
         Math.Rounding rounding
     ) internal view override returns (uint256 shares) {
+        if (totalSupply() == 0) {
+            return assets;
+        }
         VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
         uint256 totalAssetsWithFee = totalAssets() + 1;
@@ -330,6 +333,9 @@ contract UpgradeableVault is
         uint256 shares,
         Math.Rounding rounding
     ) internal view override returns (uint256 assets) {
+        if (totalSupply() == 0) {
+            return shares;
+        }
         VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
         uint256 totalAssetsWithFee = totalAssets() + 1;
@@ -372,7 +378,6 @@ contract UpgradeableVault is
             assets
         );
         _mint(receiver, shares);
-        console.log("Chain id: ", block.chainid);
 
         if (block.chainid == $.strategyChainId) {
             bool success = IERC20(asset()).approve($.strategyAddress, assets);
@@ -434,7 +439,6 @@ contract UpgradeableVault is
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
-        console.log("Amount to be withdrawn: ", assets);
         uint256 feeToWithdraw = _applyFee(user, assets);
         if (block.chainid == $.strategyChainId) {
             // could make this if ($.strategyChainId == zetachain chain id) ?
@@ -454,7 +458,6 @@ contract UpgradeableVault is
                     feeToWithdraw
                 );
             }
-            console.log("feeToWithdraw", feeToWithdraw);
             // If _asset is ERC777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
             // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
             // calls the vault, which is assumed not malicious.
@@ -462,9 +465,7 @@ contract UpgradeableVault is
             // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
             // shares are burned and after the assets are transferred, which is a valid state.
             _burn(user, shares);
-            console.log(IERC20(asset()).balanceOf(address(this)));
             SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
-            console.log("Withdraw succeeded");
             emit Withdraw(
                 caller,
                 receiver,
