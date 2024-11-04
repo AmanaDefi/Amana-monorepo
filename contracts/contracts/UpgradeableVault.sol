@@ -133,9 +133,9 @@ contract UpgradeableVault is
             // we then send the amount back to the owner on the EVM in USDC
             _crossChainWithdrawPartTwo(userAddress, amount, fee, shares); // TODO does shares really need to be here?
         } else {
-            if (zrc20 != address(asset())) revert InvalidZRC20Address();
+            // if (zrc20 != address(asset())) revert InvalidZRC20Address(); TODO - do I need a different check here?
             if (userAddress == address(0)) revert CantBeZeroAddress();
-            _crossChainDeposit(userAddress, amount);
+            _crossChainDeposit(userAddress, amount); // _crossChainDeposit means from another chain - will handle deposit to strat on ZC or other
         }
     }
 
