@@ -32,19 +32,18 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for 5 confirmations before proceeding
-  await contract.deploymentTransaction().wait(5);
-
+  await contract.deployTransaction.wait(5);  // Updated from .deploymentTransaction().wait(5)
 
   console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed UpgradeableVault on base.`);
-  console.log(`📜 Contract address: ${contract.target}`);
+  console.log(`🚀 Successfully deployed UpgradeableVault on ${network}.`);
+  console.log(`📜 Contract address: ${contract.address}`);  // Updated from contract.target
 
   const etherscanApiKey = hre.config.etherscan.apiKey[network];
   if (etherscanApiKey) {
     // Verifying the implementation contract first
-    console.log(`Verifying implementation: ${await hre.upgrades.erc1967.getImplementationAddress(await contract.getAddress())}`);
+    const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(contract.address);  // Updated from getAddress()
+    console.log(`Verifying implementation: ${implementationAddress}`);
     try {
-      const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(await contract.getAddress());
       await hre.run("verify:verify", {
         address: implementationAddress,
         constructorArguments: [],
@@ -55,7 +54,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     }
 
     // Verifying the proxy contract
-    const proxyAddress = await contract.getAddress();
+    const proxyAddress = contract.address;  // Updated from getAddress()
     console.log(`Verifying proxy: ${proxyAddress}`);
     try {
       await hre.run("verify:verify", {

@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as dotenv from "dotenv";
 
-dotenv.config();  // Load environment variables from .env
+dotenv.config(); // Load environment variables from .env
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
@@ -31,29 +31,29 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (!receiptToken) {
     throw new Error("🚨 Receipt token address is required");
   }
-  const contractName = args.contract
+  const contractName = args.contract;
   if (!contractName) {
     throw new Error("🚨 Strategy contract name is required");
   }
+
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
   const contract = await factory.deploy(name, vault, inputToken, receiptToken);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for 5 confirmations before proceeding
-  await contract.deploymentTransaction().wait(5);
-
+  await contract.deployTransaction.wait(5); // Updated from deploymentTransaction()
 
   console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed ${name} on base.`);
-  console.log(`📜 Contract address: ${contract.target}`);
+  console.log(`🚀 Successfully deployed ${name} on ${network}.`);
+  console.log(`📜 Contract address: ${contract.address}`); // Updated from contract.target
 
   const etherscanApiKey = hre.config.etherscan.apiKey[network];
   if (etherscanApiKey) {
     console.log(`🛠 Verifying contract on ${network} explorer...`);
     try {
       await hre.run("verify:verify", {
-        address: contract.target,
+        address: contract.address, // Updated from contract.target
         constructorArguments: [name, vault, inputToken, receiptToken],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
@@ -76,6 +76,6 @@ task("deploy-strategy", "Deploy a Strategy contract", main)
   .addParam("name", "The name of the strategy")
   .addParam("vault", "The address of the vault")
   .addParam("inputToken", "The address of the input token")
-  .addParam("receiptToken", "The address of the receipt token")
+  .addParam("receiptToken", "The address of the receipt token");
 
 export default {};
