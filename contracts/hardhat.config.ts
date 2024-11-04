@@ -1,4 +1,3 @@
-import "./tasks/deployVault";
 import "./tasks/deployStrategy";
 import "./tasks/deployUpgradeableVault";
 import "./tasks/deployTreasury";
