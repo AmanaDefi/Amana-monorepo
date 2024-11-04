@@ -28,8 +28,8 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       forking: {
-        url: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 5364049 // 20113140, //  
+        url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 7481000 // 20113140, //  
       },
       allowUnlimitedContractSize: true,
     },
