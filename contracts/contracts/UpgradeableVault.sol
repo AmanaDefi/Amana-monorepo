@@ -9,6 +9,8 @@ import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contra
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+
 import "./interfaces/IStrategy.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
@@ -40,6 +42,10 @@ contract UpgradeableVault is
         0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
     bytes32 private constant VaultStorageLocation =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
+    address constant uniswapv2Router02Address =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
+    uint16 internal constant MAX_DEADLINE = 200;
+    address constant WZETA_ADDRESS = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
 
     struct VaultStorage {
         address strategyAddress;
@@ -133,9 +139,8 @@ contract UpgradeableVault is
             // we then send the amount back to the owner on the EVM in USDC
             _crossChainWithdrawPartTwo(userAddress, amount, fee, shares); // TODO does shares really need to be here?
         } else {
-            // if (zrc20 != address(asset())) revert InvalidZRC20Address(); TODO - do I need a different check here?
             if (userAddress == address(0)) revert CantBeZeroAddress();
-            _crossChainDeposit(userAddress, amount); // _crossChainDeposit means from another chain - will handle deposit to strat on ZC or other
+            _crossChainDeposit(userAddress, amount, zrc20); // _crossChainDeposit means from another chain - will handle deposit to strat on ZC or other
         }
     }
 
@@ -393,7 +398,11 @@ contract UpgradeableVault is
     /**
      * @dev Deposit/mint common workflow.
      */
-    function _crossChainDeposit(address receiver, uint256 assets) internal {
+    function _crossChainDeposit(
+        address receiver,
+        uint256 assets,
+        address zrc20source
+    ) internal {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
@@ -419,10 +428,56 @@ contract UpgradeableVault is
             if (!success) revert ApprovalFailed();
             IStrategy($.strategyAddress).invest(assets);
         } else {
-            _crossChainInvest(assets);
+            uint256 outputAmount = swapExactTokensForTokens(
+                zrc20source,
+                assets,
+                address(asset()),
+                0 // minAmountOut? TODO - control for slippage here?
+            );
+            _crossChainInvest(outputAmount);
         }
         emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
         // return shares; - this is now missing from the original deposit function that used to be called by the cross chain function - is it needed?
+    }
+
+    function swapExactTokensForTokens(
+        address zrc20,
+        uint256 amount,
+        address targetZRC20,
+        uint256 minAmountOut
+    ) internal returns (uint256) {
+        address[] memory path;
+        path = new address[](2);
+        path[0] = zrc20;
+        path[1] = targetZRC20;
+
+        // bool isSufficientLiquidity = _isSufficientLiquidity(
+        //     systemContract.uniswapv2FactoryAddress(),
+        //     amount,
+        //     minAmountOut,
+        //     path
+        // );
+
+        // bool isZETA = targetZRC20 == systemContract.wZetaContractAddress() ||
+        //     zrc20 == systemContract.wZetaContractAddress();
+
+        // if (!isSufficientLiquidity && !isZETA) {
+        path = new address[](3);
+        path[0] = zrc20;
+        path[1] = WZETA_ADDRESS;
+        path[2] = targetZRC20;
+        // }
+
+        IZRC20(zrc20).approve(address(uniswapv2Router02Address), amount);
+        uint256[] memory amounts = IUniswapV2Router01(uniswapv2Router02Address)
+            .swapExactTokensForTokens(
+                amount,
+                minAmountOut,
+                path,
+                address(this),
+                block.timestamp + MAX_DEADLINE
+            );
+        return amounts[path.length - 1];
     }
 
     /**
