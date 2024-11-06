@@ -10,6 +10,7 @@ import { ethers, JsonRpcProvider } from "ethers";
 import lendingPoolABI from "../../abis/lendingPoolABI.json";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import compoundVaultABI from "../../abis/compoundVaultABI.json";
+import axios from "axios";
 
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -132,7 +133,15 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
   return formattedBalance.toString();
 }
 
+
+
+export const fetchTokenPrice = async (contract_addresses: Address)=> {
+  const response = await axios.get(`https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=${contract_addresses}&vs_currencies=USD`);
+  return response.data[contract_addresses.toLocaleLowerCase()].usd;
+};
+
 export const fetchTotalAssets = async (vaultAddress: Address) => {
+
   const contract = getContract({
     client,
     chain: base,
@@ -145,6 +154,8 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   const formattedBalance = Number(balance) / 10 ** 6; // TODO fetch decimals dynamically
   return formattedBalance.toString();
 }
+
+
 
 export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> => {
   const updatedVaults = await Promise.all(

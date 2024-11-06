@@ -31,10 +31,12 @@ export interface VaultData {
     symbol: string;
     decimals: number;
     address: string;
+    imgURL: string;
   };
   protocol: {
     name: string;
     network: string;
+    imgURL: string;
   }
 }
 
@@ -46,6 +48,11 @@ export interface UserVaultBalance {
 export interface VaultTotalAssets {
   vaultId: string;
   totalAssets: string | number | "Error"; // Adjust the type as needed
+}
+
+export interface VaultTotalAssetsinToken {
+  vaultId: string;
+  totalAssetsinToken: string | number | "Error"; // Adjust the type as needed
 }
 
 export interface VaultAPY {

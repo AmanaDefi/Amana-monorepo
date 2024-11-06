@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { fetchUserVaultBalance, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY } from "../actions/actions";
+import { fetchUserVaultBalance, fetchTotalAssets, fetchTokenPrice, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY } from "../actions/actions";
 import { Address } from "thirdweb";
 import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
@@ -12,6 +12,7 @@ export const useUpdateVaultBalanceAndTotal = (
   activeAccount: Account,
   setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
+  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   transactionCompleted: boolean,
 ) => {
   useEffect(() => {
@@ -25,17 +26,21 @@ export const useUpdateVaultBalanceAndTotal = (
                 vault.id as Address
               );
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+              const tokenPrice = await fetchTokenPrice(vault.inputToken.address as Address)
+              const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / tokenPrice;
               return {
                 vaultId: vault.id,
                 balance,
                 totalAssets: newTotalAssets.toString(),
+                totalAssetsinToken: newTotalAssetsinToken.toString(),
               };
             } catch (error) {
               console.error(`Error fetching user balance or total assets for vault ${vault.id}:`, error);
               return {
                 vaultId: vault.id,
-                balance: "Error",
-                totalAssets: "Error",
+                balance: "0",
+                totalAssets: "0",
+                totalAssetsinToken: "0"
               };
             }
           })
@@ -51,8 +56,13 @@ export const useUpdateVaultBalanceAndTotal = (
           totalAssets,
         }));
 
+        const totalAssetsinToken = balancesAndAssets.map(({ vaultId, totalAssetsinToken }) => ({
+          vaultId,
+          totalAssetsinToken,
+        }));
         setUserVaultBalances(balances); // Update user balances
         setVaultTotalAssets(totalAssets); // Update total assets
+        setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
       } catch (error) {
         console.error("Error updating vault balances and total assets:", error);
       }
