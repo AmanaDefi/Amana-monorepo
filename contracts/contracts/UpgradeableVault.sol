@@ -235,7 +235,7 @@ contract UpgradeableVault is
     function _crossChainInvest(uint256 amount) internal {
         VaultStorage storage $ = _getVaultStorage();
         // TODO there's a function in the Zetachain code for getting the gas token from the asset token - use this here
-        address gas_zrc20 = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // ZRC-20 ETH.BASESEPOLIA
+        (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 ETH.BASESEPOLIA
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
 
         uint256 gasLimit = 7000000; // TODO could potentially reduce to 7000000
