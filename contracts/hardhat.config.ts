@@ -1,6 +1,7 @@
 import "./tasks/deployStrategy";
 import "./tasks/deployUpgradeableVault";
 import "./tasks/deployTreasury";
+import "./tasks/upgradeVault";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -66,6 +67,7 @@ const config: HardhatUserConfig = {
       base_sepolia: process.env.BASESCAN_API_KEY || "",
       zeta_mainnet: "abc", // not required for Blockscout - can be any non-empty string
       zeta_testnet: "abc", // not required for Blockscout - can be any non-empty string
+      sepolia_testnet: "abc", // not required for Blockscout - can be any non-empty string
     },
     customChains: [
       {
@@ -98,6 +100,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://zetachain-testnet.blockscout.com/api",
           browserURL: "https://zetachain-testnet.blockscout.com"
+        }
+      },
+      {
+        network: "sepolia_testnet",
+        chainId: 11155111,
+        urls: {
+          apiURL: "https://eth-sepolia.blockscout.com/api",
+          browserURL: "https://eth-sepolia.blockscout.com"
         }
       },
     ],
