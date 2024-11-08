@@ -18,8 +18,7 @@ contract BaseSepAaveEthStrategy is Ownable {
     IERC20 public immutable inputToken;
     IAavePool public immutable aavePool;
     IAaveReceiptToken public immutable receiptToken;
-    address constant _GATEWAY_ADDRESS =
-        0x0c487a766110c85d301D96E33579C5B317Fa4995;
+    address immutable _GATEWAY_ADDRESS;
     address constant _WRAPPED_TOKEN_GATEWAY_ADDRESS =
         0xF6Dac650dA5616Bc3206e969D7868e7c25805171;
     IWrappedTokenGatewayV3 public tokenGateway =
@@ -31,7 +30,8 @@ contract BaseSepAaveEthStrategy is Ownable {
         string memory _name,
         address _amanaVault,
         address _inputTokenAddress,
-        address _receiptTokenAddress
+        address _receiptTokenAddress,
+        address _gateway
     ) Ownable(msg.sender) {
         require(_amanaVault != address(0), "Invalid amanaVault address");
         name = _name;
@@ -39,6 +39,7 @@ contract BaseSepAaveEthStrategy is Ownable {
         inputToken = IERC20(_inputTokenAddress);
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());
+        _GATEWAY_ADDRESS = _gateway;
     }
 
     modifier onlyGateway() {
