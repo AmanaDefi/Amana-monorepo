@@ -38,8 +38,7 @@ contract UpgradeableVault is
     error WithdrawExceedsLimit();
     error RedeemExceedsLimit();
 
-    address constant _GATEWAY_ADDRESS =
-        0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
+    address _GATEWAY_ADDRESS;
     bytes32 private constant VaultStorageLocation =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
     address constant uniswapv2Router02Address =
@@ -99,7 +98,8 @@ contract UpgradeableVault is
         string memory symbol_,
         IERC20 asset_,
         address treasury_,
-        uint16 perfFee_
+        uint16 perfFee_,
+        address gateway
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
         __ERC20_init(name_, symbol_);
@@ -109,6 +109,7 @@ contract UpgradeableVault is
         VaultStorage storage $ = _getVaultStorage();
         $.treasury = treasury_;
         $.perfFee = perfFee_;
+        _GATEWAY_ADDRESS = gateway;
 
         emit VaultInitialized(decimals(), perfFee_);
     }
@@ -428,12 +429,15 @@ contract UpgradeableVault is
             if (!success) revert ApprovalFailed();
             IStrategy($.strategyAddress).invest(assets);
         } else {
-            uint256 outputAmount = swapExactTokensForTokens(
-                zrc20source,
-                assets,
-                address(asset()),
-                0 // minAmountOut? TODO - control for slippage here?
-            );
+            uint256 outputAmount = assets;
+            if (zrc20source != address(asset())) {
+                outputAmount = swapExactTokensForTokens(
+                    zrc20source,
+                    assets,
+                    address(asset()),
+                    0 // minAmountOut? TODO - control for slippage here?
+                );
+            }
             _crossChainInvest(outputAmount);
         }
         emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
