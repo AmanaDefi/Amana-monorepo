@@ -23,7 +23,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const contract = await factory.deploy(governanceAddress);
   console.log("Contract deployed, waiting for confirmations...");
 
-  await contract.deployTransaction.wait(5); // Updated from deploymentTransaction()
+  // Wait for contract to be deployed before proceeding
+  await contract.deployed();
 
   console.log(`🔑 Using account: ${signer.address}`);
   console.log(`🚀 Successfully deployed Treasury on ${network}.`);

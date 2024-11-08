@@ -14,25 +14,26 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   // Fetch the initializer parameters
   const name = args.name || "UpgradeableVault";
   const symbol = args.symbol || "UV";
-  const assetaddress = args.assetaddress; // This should be passed as an argument
-  const treasuryAddress = args.treasuryAddress; // Address for the treasury
+  const asset = args.asset; // This should be passed as an argument
+  const treasury = args.treasury; // Address for the treasury
+  const gateway = args.gateway; // Address for the gateway
 
   // Set the default for performanceFeeRate if it's not provided
   const performanceFeeRate = args.performanceFeeRate ?? 1500; // Default to 15% (1500 basis points)
 
-  if (!assetaddress || !treasuryAddress) {
+  if (!asset || !treasury || !gateway) {
     throw new Error("🚨 Asset address, Strategy address and Treasury address are required.");
   }
 
   // Deploy the UpgradeableVault contract using OpenZeppelin Upgrades
   const factory = await hre.ethers.getContractFactory("UpgradeableVault");
-  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, assetaddress, treasuryAddress, performanceFeeRate], {
+  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gateway], {
     initializer: "initialize",
   });
   console.log("Contract deployed, waiting for confirmations...");
 
-  // Wait for 5 confirmations before proceeding
-  await contract.deployTransaction.wait(5);  // Updated from .deploymentTransaction().wait(5)
+  // Wait for contract to be deployed before proceeding
+  await contract.deployed();
 
   console.log(`🔑 Using account: ${signer.address}`);
   console.log(`🚀 Successfully deployed UpgradeableVault on ${network}.`);
@@ -82,8 +83,9 @@ task("deploy-upgradeable-vault", "Deploy the UpgradeableVault contract", main)
   .addFlag("json", "Output in JSON")
   .addOptionalParam("name", "Token name", "UpgradeableVault")
   .addOptionalParam("symbol", "Token symbol", "UV")
-  .addParam("assetaddress", "The address of the asset ERC20 token")
-  .addParam("treasuryAddress", "The address of the treasury")
+  .addParam("asset", "The address of the asset ERC20 token")
+  .addParam("treasury", "The address of the treasury")
+  .addParam("gateway", "The address of the gateway")
   .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)"); // Remove the default here
 
 // Export the task so it can be used in hardhat

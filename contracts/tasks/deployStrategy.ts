@@ -15,10 +15,13 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 
   // Fetch the vault address argument required for the BaseAaveStrategy constructor
+  const contractName = args.contract;
   const name = args.name;
   const vault = args.vault; // This should be passed as an argument
   const inputToken = args.inputToken;
   const receiptToken = args.receiptToken;
+  const gateway = args.gateway;
+
   if (!name) {
     throw new Error("🚨 Strategy name is required");
   }
@@ -31,18 +34,19 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (!receiptToken) {
     throw new Error("🚨 Receipt token address is required");
   }
-  const contractName = args.contract;
   if (!contractName) {
     throw new Error("🚨 Strategy contract name is required");
   }
-
+  if (!gateway) {
+    throw new Error("🚨 Gateway address is required");
+  }
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, inputToken, receiptToken);
+  const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway);
   console.log("Contract deployed, waiting for confirmations...");
 
-  // Wait for 5 confirmations before proceeding
-  await contract.deployTransaction.wait(5); // Updated from deploymentTransaction()
+  // Wait for contract to be deployed before proceeding
+  await contract.deployed();
 
   console.log(`🔑 Using account: ${signer.address}`);
   console.log(`🚀 Successfully deployed ${name} on ${network}.`);
@@ -76,6 +80,7 @@ task("deploy-strategy", "Deploy a Strategy contract", main)
   .addParam("name", "The name of the strategy")
   .addParam("vault", "The address of the vault")
   .addParam("inputToken", "The address of the input token")
-  .addParam("receiptToken", "The address of the receipt token");
+  .addParam("receiptToken", "The address of the receipt token")
+  .addParam("gateway", "The address of the gateway contract");
 
 export default {};
