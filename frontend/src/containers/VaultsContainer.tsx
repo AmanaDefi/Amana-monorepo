@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import {
   executeDeposit,
-  executeWithdrawal,
+  executeWithdrawal
 } from "../actions/actions";
 import VaultsView from "../components/VaultsView";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
 import { VAULT_DATA, BASE_USDC_ADDRESS } from "../constants/index";
-import { Address, getContract } from "thirdweb";
+import { Address, getContract, waitForReceipt } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useReadContract } from "thirdweb/react";
@@ -54,6 +54,7 @@ const VaultsContainer = () => {
   useUpdateAPYs(vaults, setVaultAPYs, setLoading);
 
   const handleDepositTransaction = async (vaultId: Address) => {
+    setTransactionCompleted(false)
     try {
       setTransactionAmount;
       const value = Number(transactionAmount)
@@ -62,22 +63,22 @@ const VaultsContainer = () => {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
-      await executeDeposit(
+      const receipt = await executeDeposit(
         vaultId,
         EOAaccount,
         scaledAmount, //TODO make this general for all tokens?
       );
+
       mixpanel.track("Deposit Submitted", {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
+
+      await waitForReceipt(receipt)
       toast.success("Transaction confirmed");
       queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      refetch(); //refetches usdc balance of user
-      setTimeout(() => {
-        // Trigger the custom hook after a short delay
-        setTransactionCompleted(!transactionCompleted);
-      }, 1000);  // 1 second delay
+      refetch()
+      setTransactionCompleted(true);
     } catch (error) {
       mixpanel.track("Deposit Submitted", {
         vault: vaultId.toString(),
@@ -91,6 +92,7 @@ const VaultsContainer = () => {
   };
 
   const handleWithdrawTransaction = async (vaultId: Address) => {
+    setTransactionCompleted(false)
     try {
       setTransactionAmount;
       const value = Number(transactionAmount)
@@ -99,7 +101,7 @@ const VaultsContainer = () => {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
-      await executeWithdrawal(
+      const receipt = await executeWithdrawal(
         vaultId,
         EOAaccount,
         scaledAmount,
@@ -108,13 +110,13 @@ const VaultsContainer = () => {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
+
+      await waitForReceipt(receipt)
+      //refetches usdc balance of user
       toast.success("Transaction confirmed");
       queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      refetch();
-      setTimeout(() => {
-        // Trigger the custom hook after a short delay
-        setTransactionCompleted(!transactionCompleted);
-      }, 1000);  // 1 second delay
+      refetch()
+      setTransactionCompleted(true);
     } catch (error) {
       mixpanel.track("Withdraw Failed", {
         vault: vaultId.toString(),

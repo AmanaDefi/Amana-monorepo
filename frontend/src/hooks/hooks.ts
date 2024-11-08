@@ -25,14 +25,16 @@ export const useUpdateVaultBalanceAndTotal = (
                 activeAccount?.address as Address,
                 vault.id as Address
               );
+               
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
-              const tokenPrice = await fetchTokenPrice(vault.inputToken.address as Address)
-              const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / tokenPrice;
+              // const tokenPrice = await fetchTokenPrice(vault.inputToken.address as Address)
+              // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / tokenPrice;
+           
               return {
                 vaultId: vault.id,
                 balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
+                totalAssets: "0",
+                // totalAssetsinToken: newTotalAssetsinToken.toString(),
               };
             } catch (error) {
               console.error(`Error fetching user balance or total assets for vault ${vault.id}:`, error);
@@ -40,7 +42,7 @@ export const useUpdateVaultBalanceAndTotal = (
                 vaultId: vault.id,
                 balance: "0",
                 totalAssets: "0",
-                totalAssetsinToken: "0"
+                // totalAssetsinToken: "0"
               };
             }
           })
@@ -50,19 +52,18 @@ export const useUpdateVaultBalanceAndTotal = (
           vaultId,
           balance,
         }));
-
         const totalAssets = balancesAndAssets.map(({ vaultId, totalAssets }) => ({
           vaultId,
           totalAssets,
         }));
 
-        const totalAssetsinToken = balancesAndAssets.map(({ vaultId, totalAssetsinToken }) => ({
-          vaultId,
-          totalAssetsinToken,
-        }));
+        // const totalAssetsinToken = balancesAndAssets.map(({ vaultId, totalAssetsinToken }) => ({
+        //   vaultId,
+        //   totalAssetsinToken,
+        // }));
         setUserVaultBalances(balances); // Update user balances
         setVaultTotalAssets(totalAssets); // Update total assets
-        setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
+        // setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
       } catch (error) {
         console.error("Error updating vault balances and total assets:", error);
       }

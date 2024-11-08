@@ -90,10 +90,11 @@ export const executeDeposit = async (vaultId: Address, activeAccount: Account, t
       "function deposit(uint256 assets,  address receiver)",
     params: [transactionAmount, activeAccount?.address]
   });
-  await sendBatchTransaction({
+  const receipt = await sendBatchTransaction({
     account: activeAccount,
     transactions: [approveTx, supplyTx]
   });
+  return receipt;
 };
 
 export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, withdrawAmount: bigint) => { //vaultId: string
@@ -108,10 +109,11 @@ export const executeWithdrawal = async (vaultId: Address, activeAccount: Account
       "function withdraw(uint256 assets, address receiver, address owner)",
     params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address]
   });
-  await sendTransaction({
+  const receipt = await sendTransaction({
     account: activeAccount,
     transaction: withdrawTx
   });
+  return receipt;
 };
 
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
