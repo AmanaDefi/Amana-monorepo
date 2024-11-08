@@ -1,3 +1,4 @@
+import "./tasks/deployGeneric";
 import "./tasks/deployStrategy";
 import "./tasks/deployUpgradeableVault";
 import "./tasks/deployTreasury";
