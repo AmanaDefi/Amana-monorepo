@@ -235,7 +235,6 @@ contract UpgradeableVault is
 
     function _crossChainInvest(uint256 amount) internal {
         VaultStorage storage $ = _getVaultStorage();
-        // TODO there's a function in the Zetachain code for getting the gas token from the asset token - use this here
         (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 ETH.BASESEPOLIA
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
 
@@ -533,8 +532,8 @@ contract UpgradeableVault is
                 shares
             );
         } else {
-            address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH - TODO in future this will have to indicate target chain dynamically
-            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
+            (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 address of the gas token of the strategy chain
+            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
             uint256 gasLimit = 30000000; // could potentially reduce to 7000000
 
             bytes memory recipient = abi.encodePacked($.strategyAddress);
@@ -603,9 +602,9 @@ contract UpgradeableVault is
             );
             _crossChainWithdrawPartTwo(user, assets, feeToWithdraw, shares);
         } else {
-            address gas_zrc20 = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // ZRC-20 ETH.ETH - TODO in future this will have to indicate target chain dynamically
-            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max);
-            uint256 gasLimit = 30000000; // could potentially reduce to 7000000
+            (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 address of the gas token of the strategy chain
+            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
+            uint256 gasLimit = 30000000; // TODO could potentially reduce to 7000000
 
             bytes memory recipient = abi.encodePacked($.strategyAddress);
 
