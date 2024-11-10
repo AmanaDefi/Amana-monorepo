@@ -135,13 +135,6 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
   return formattedBalance.toString();
 }
 
-
-
-export const fetchTokenPrice = async (contract_addresses: Address)=> {
-  const response = await axios.get(`https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=${contract_addresses}&vs_currencies=USD`);
-  return response.data[contract_addresses.toLocaleLowerCase()].usd;
-};
-
 export const fetchTotalAssets = async (vaultAddress: Address) => {
 
   const contract = getContract({

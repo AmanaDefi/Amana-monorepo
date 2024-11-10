@@ -32,6 +32,7 @@ export interface VaultData {
     decimals: number;
     address: string;
     imgURL: string;
+    price: number;
   };
   protocol: {
     name: string;

@@ -26,7 +26,8 @@ export const VAULT_DATA: VaultData[] = [
       symbol: "USDC",
       decimals: 6,
       address: BASE_USDC_ADDRESS,
-      imgURL: "/usd.png"
+      imgURL: "/usd.png",
+      price: 1
     },
     protocol: {
       name: "Aave",
@@ -42,7 +43,8 @@ export const VAULT_DATA: VaultData[] = [
       symbol: "USDC",
       decimals: 6,
       address: BASE_USDC_ADDRESS,
-      imgURL: "/usd.png"
+      imgURL: "/usd.png",
+      price: 1
     },
     protocol: {
       name: "Moonwell",
@@ -58,7 +60,8 @@ export const VAULT_DATA: VaultData[] = [
       symbol: "USDC",
       decimals: 6,
       address: BASE_USDC_ADDRESS,
-      imgURL: "/usd.png"
+      imgURL: "/usd.png",
+      price: 1
     },
     protocol: {
       name: "Compound",
