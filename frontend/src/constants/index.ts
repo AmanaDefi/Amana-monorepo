@@ -26,13 +26,13 @@ export const VAULT_DATA: VaultData[] = [
       symbol: "USDC",
       decimals: 6,
       address: BASE_USDC_ADDRESS,
-      imgURL: "/usd.png",
+      imgURL: "/USDC.png",
       price: 1
     },
     protocol: {
       name: "Aave",
       network: "Base",
-      imgURL: "/usd.png"
+      imgURL: "/aave.png"
     },
   },
   {
@@ -43,13 +43,13 @@ export const VAULT_DATA: VaultData[] = [
       symbol: "USDC",
       decimals: 6,
       address: BASE_USDC_ADDRESS,
-      imgURL: "/usd.png",
+      imgURL: "/USDC.png",
       price: 1
     },
     protocol: {
       name: "Moonwell",
       network: "Base",
-      imgURL: "/usd.png"
+      imgURL: "/Moonwell.png"
     },
   },
   {
@@ -60,13 +60,13 @@ export const VAULT_DATA: VaultData[] = [
       symbol: "USDC",
       decimals: 6,
       address: BASE_USDC_ADDRESS,
-      imgURL: "/usd.png",
+      imgURL: "/USDC.png",
       price: 1
     },
     protocol: {
       name: "Compound",
       network: "Base",
-      imgURL: "/usd.png"
+      imgURL: "/compound.png"
     },
   },
 ];

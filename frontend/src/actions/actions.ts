@@ -10,7 +10,6 @@ import { ethers, JsonRpcProvider } from "ethers";
 import lendingPoolABI from "../../abis/lendingPoolABI.json";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import compoundVaultABI from "../../abis/compoundVaultABI.json";
-import axios from "axios";
 
 import * as dotenv from "dotenv";
 dotenv.config();

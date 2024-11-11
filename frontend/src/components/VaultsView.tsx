@@ -136,8 +136,8 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap flex flex-col items-center justify-center">
-                    <div>$ {Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(2)}</div>
-                    <div>{Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(2)}{vault.inputToken.symbol}</div>
+                    <div className="font-semibold">$ {Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(2)}</div>
+                    <div className="text-sm font-light">{Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(2)} {vault.inputToken.symbol}</div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d) * 100).toFixed(2)}%
