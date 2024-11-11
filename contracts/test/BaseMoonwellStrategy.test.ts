@@ -5,7 +5,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { AmanaVault, IERC20, IERC4626, BaseMoonwellStrategy } from "../typechain";
 
 import { BASE_USDC_ADDRESS } from "../../constants";
-import { MOONWELL_BASE_USDC_VAULT_ADDRESS } from "../../constants";
+import { BASE_MOONWELL_USDC_VAULT_ADDRESS } from "../../constants";
 import { BASE_USDC_HOLDER_ADDRESS } from "../../constants";
 
 describe("Vault and BaseMoonwellStrategy", function () {
@@ -26,7 +26,7 @@ describe("Vault and BaseMoonwellStrategy", function () {
 
       // Forked USDC contract and Moonwell Pool
       usdc = await ethers.getContractAt("IERC20", BASE_USDC_ADDRESS);
-      moonwellVault = await ethers.getContractAt("IERC4626", MOONWELL_BASE_USDC_VAULT_ADDRESS);
+      moonwellVault = await ethers.getContractAt("IERC4626", BASE_MOONWELL_USDC_VAULT_ADDRESS);
 
       // Deploy Vault contract
       const Vault = await ethers.getContractFactory("AmanaVault", owner);
@@ -39,7 +39,7 @@ describe("Vault and BaseMoonwellStrategy", function () {
 
       // Deploy BaseMoonwellStrategy contract and set the amanaVault address
       const BaseMoonwellStrategy = await ethers.getContractFactory("BaseMoonwellStrategy", owner);
-      strategy = await BaseMoonwellStrategy.deploy("MoonwellUSDC", await amanaVault.getAddress(), BASE_USDC_ADDRESS, MOONWELL_BASE_USDC_VAULT_ADDRESS);
+      strategy = await BaseMoonwellStrategy.deploy("MoonwellUSDC", await amanaVault.getAddress(), BASE_USDC_ADDRESS, BASE_MOONWELL_USDC_VAULT_ADDRESS);
 
       // Set the strategy address in the amanaVault
       await amanaVault.setStrategy(await strategy.getAddress());

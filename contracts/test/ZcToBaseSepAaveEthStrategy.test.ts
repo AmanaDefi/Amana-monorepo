@@ -6,9 +6,9 @@ import { AmanaVault, BaseSepAaveEthStrategy, IERC20 } from "../typechain";
 
 import { ZC_TEST_WETH_ADDRESS } from "../../constants";
 import { BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS } from "../../constants";
-import { ETH_BASESEPOLIA_HOLDER_ADDRESS } from "../../constants";
+import { ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS } from "../../constants";
 import { ZC_TEST_WETH_HOLDER_ADDRESS } from "../../constants";
-import { ETH_BASESEPOLIA_ADDRESS } from "../../constants";
+import { ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../constants";
 
 describe("Vault and BaseSepAaveEthStrategy", function () {
   let amanaVault: AmanaVault;
@@ -34,23 +34,23 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       [owner, user1, user2] = await ethers.getSigners();
 
       // Forked USDC contract and Aave Pool
-      ethBaseSepolia = await ethers.getContractAt("IERC20", ETH_BASESEPOLIA_ADDRESS);
+      ethBaseSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_BASESEPOLIA_ADDRESS);
       aaveToken = await ethers.getContractAt("IERC20", BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS);
 
       // Deploy the AmanaVault using OpenZeppelin's upgrade proxy pattern
       const Vault = await ethers.getContractFactory("AmanaVault", owner);
       amanaVault = await upgrades.deployProxy(
         Vault,
-        ["AaveV3EthVault", "AVU", ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), FeeRate],
+        ["AaveV3EthVault", "AVU", ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), FeeRate],
         { initializer: "initialize" }
       );
 
       // Impersonate a holder
       await network.provider.request({
         method: "hardhat_impersonateAccount",
-        params: [ETH_BASESEPOLIA_HOLDER_ADDRESS],
+        params: [ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS],
       });
-      const ethHolder = await ethers.getSigner(ETH_BASESEPOLIA_HOLDER_ADDRESS);
+      const ethHolder = await ethers.getSigner(ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS);
 
       // Set initial balances
       const depositAmount1 = ethers.utils.parseUnits("0.01", 18);

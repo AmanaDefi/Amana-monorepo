@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IMoonwellVault.sol";
 
 // BASE_USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-// MOONWELL_BASE_USDC_VAULT_ADDRESS = 0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca;
+// BASE_MOONWELL_USDC_VAULT_ADDRESS = 0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca;
 
 contract BaseMoonwellStrategy is Ownable {
     string public name;
