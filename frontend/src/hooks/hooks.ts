@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { fetchUserVaultBalance, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY } from "../actions/actions";
+import { fetchUserVaultBalance, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY, calculateEddyAPY } from "../actions/actions";
 import { Address } from "thirdweb";
 import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
 import { getContract, readContract } from "thirdweb";
 import { client } from "../utils/client";
-import { base } from "thirdweb/chains";
+import { CURRENT_CHAIN } from "../constants/chainConfig";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -85,19 +85,21 @@ export const useUpdateAPYs = (
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
+              console.log("vault", vault.id);
               const contract = getContract({
                 client,
-                chain: base,
+                chain: CURRENT_CHAIN,
                 address: vault.id,
               });
-
+              console.log("contract", contract);
               const strategyAddress = await readContract({
                 contract,
-                method: "function strategyAddress() view returns (address)",
+                method: "function getStrategy() view returns (address)",
               });
+              console.log("strategyAddress", strategyAddress);
               const strategyContract = getContract({
                 client,
-                chain: base,
+                chain: CURRENT_CHAIN,
                 address: strategyAddress,
               });
 
@@ -111,10 +113,9 @@ export const useUpdateAPYs = (
               if (vault.protocol.name === "Aave") {
                 const receiptTokenContract = getContract({
                   client,
-                  chain: base,
+                  chain: CURRENT_CHAIN,
                   address: receiptTokenAddress,
                 });
-
                 const poolAddress = await readContract({
                   contract: receiptTokenContract,
                   method: "function POOL() view returns (address)",
@@ -123,8 +124,19 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address);
               }
-              else {
+              else if (vault.protocol.name === "Moonwell") {
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address);
+              } else if (vault.protocol.name === "Eddy") {
+                const receiptTokenContract = getContract({
+                  client,
+                  chain: CURRENT_CHAIN,
+                  address: receiptTokenAddress,
+                });
+                const poolAddress = await readContract({
+                  contract: receiptTokenContract,
+                  method: "function minter() view returns (address)",
+                });
+                APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address);
               }
 
               return { vaultId: vault.id, APY7d };

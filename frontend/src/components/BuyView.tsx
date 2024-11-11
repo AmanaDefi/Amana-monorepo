@@ -1,8 +1,8 @@
 import React from "react";
 import { PayEmbed } from "thirdweb/react";
 import { client } from "../utils/client";
-import { base } from "thirdweb/chains";
-import { BASE_USDC_ADDRESS } from "../constants";
+import { CURRENT_CHAIN } from "../constants/chainConfig";
+import { ZC_USDC_ETH_ADDRESS } from "../constants";
 
 const BuyView: React.FC = ({}) => {
 
@@ -15,12 +15,12 @@ const BuyView: React.FC = ({}) => {
         mode: "fund_wallet",
         prefillBuy: {
           token: {
-            address: BASE_USDC_ADDRESS,
-            name: "Base USDC",
+            address: ZC_USDC_ETH_ADDRESS,
+            name: "Base Sepolia USDC",
             symbol: "USDC",
             icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
           },
-          chain: base,
+          chain: CURRENT_CHAIN,
           allowEdits: {
             amount: true, // allow editing buy amount
             token: false, // disable selecting buy token
@@ -33,9 +33,9 @@ const BuyView: React.FC = ({}) => {
               chain: false,
               token: true,
             },
-            chain: base,
+            chain: CURRENT_CHAIN,
             // token: {
-            //   address: BASE_USDC_ADDRESS,
+            //   address: ZC_USDC_ETH_ADDRESS,
             //   name: "Base USDC",
             //   symbol: "USDC",
             // }

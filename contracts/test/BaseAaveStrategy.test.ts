@@ -2,7 +2,7 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
-import { UpgradeableVault, BaseAaveStrategy, IERC20 } from "../typechain";
+import { AmanaVault, BaseAaveStrategy, IERC20 } from "../typechain";
 
 import { BASE_USDC_ADDRESS } from "../../frontend/src/constants/index";
 import { BASE_USDT_ADDRESS } from "../../frontend/src/constants/index";
@@ -12,7 +12,7 @@ import { BASE_USDC_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
 import { BASE_USDT_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
 
 describe("Vault and BaseAaveStrategy", function () {
-  let amanaVault: UpgradeableVault;
+  let amanaVault: AmanaVault;
   let strategy: BaseAaveStrategy;
   let usdc: IERC20;
   let usdt: IERC20;
@@ -23,6 +23,7 @@ describe("Vault and BaseAaveStrategy", function () {
   const errorMargin = 5;
   const FeeRate = BigInt(1000); // 10% fee
   const rewardAmount = ethers.parseUnits("100", 6);
+  const BASE_CHAIN_ID = 8453;
 
   // other tests:
   // - withdraw max amount
@@ -57,8 +58,8 @@ describe("Vault and BaseAaveStrategy", function () {
       usdc = await ethers.getContractAt("IERC20", BASE_USDC_ADDRESS);
       aaveToken = await ethers.getContractAt("IERC20", BASE_AAVE_RECEIPT_TOKEN_ADDRESS);
 
-      // Deploy the UpgradeableVault using OpenZeppelin's upgrade proxy pattern
-      const Vault = await ethers.getContractFactory("UpgradeableVault", owner);
+      // Deploy the AmanaVault using OpenZeppelin's upgrade proxy pattern
+      const Vault = await ethers.getContractFactory("AmanaVault", owner);
       // Use the upgrades library to deploy the proxy
       amanaVault = await upgrades.deployProxy(
         Vault,
@@ -71,7 +72,11 @@ describe("Vault and BaseAaveStrategy", function () {
       strategy = await BaseAaveStrategy.deploy("AaveV3USDC", await amanaVault.getAddress(), BASE_USDC_ADDRESS, BASE_AAVE_RECEIPT_TOKEN_ADDRESS);
 
       // Set the strategy address in the amanaVault
-      await amanaVault.setStrategy(await strategy.getAddress());
+      const network = await ethers.provider.getNetwork();
+
+      const chainId = network.chainId;
+      console.log("Chain ID: ", chainId);
+      await amanaVault.setStrategy(await strategy.getAddress(), chainId);
 
       // Impersonate USDC holder
       const usdcHolder = await ethers.getImpersonatedSigner(BASE_USDC_HOLDER_ADDRESS);

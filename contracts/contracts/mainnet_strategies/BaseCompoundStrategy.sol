@@ -4,15 +4,16 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IMoonwellVault.sol";
-// BASE_USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-// MOONWELL_BASE_USDC_VAULT_ADDRESS = 0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca;
+import "../interfaces/ICompoundVault.sol";
 
-contract BaseMoonwellStrategy is Ownable {
+// BASE_USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+// COMPOUND_BASE_USDC_VAULT_ADDRESS = 0xb125E6687d4313864e53df431d5425969c15Eb2F;
+
+contract BaseCompoundStrategy is Ownable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
-    IMoonwellVault public immutable receiptToken;
+    ICompoundVault public immutable receiptToken;
 
     constructor(
         string memory _name,
@@ -24,7 +25,7 @@ contract BaseMoonwellStrategy is Ownable {
         name = _name;
         amanaVault = _amanaVault;
         inputToken = IERC20(_inputTokenAddress); // could get this from amanaVault
-        receiptToken = IMoonwellVault(_receiptTokenAddress);
+        receiptToken = ICompoundVault(_receiptTokenAddress);
     }
 
     modifier onlyVault() {
@@ -41,16 +42,20 @@ contract BaseMoonwellStrategy is Ownable {
         );
         bool success = inputToken.approve(address(receiptToken), amount);
         require(success, "Approval failed");
-        receiptToken.deposit(amount, address(this));
+        receiptToken.supply(address(inputToken), amount);
     }
 
     function withdraw(uint256 _amount) external onlyVault {
-        receiptToken.withdraw(_amount, msg.sender, address(this));
+        receiptToken.withdrawFrom(
+            address(this),
+            msg.sender,
+            address(inputToken),
+            _amount
+        );
     }
 
     function totalUnderlyingAssets() external view returns (uint256) {
-        uint256 shares = receiptToken.balanceOf(address(this));
-        return receiptToken.convertToAssets(shares);
+        return receiptToken.balanceOf(address(this));
     }
 
     function emergencyWithdraw(address _token) external onlyOwner {

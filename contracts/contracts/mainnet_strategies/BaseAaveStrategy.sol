@@ -4,8 +4,9 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IAavePool.sol";
-import "./interfaces/IAaveReceiptToken.sol";
+import "../interfaces/IAavePool.sol";
+import "../interfaces/IAaveReceiptToken.sol";
+import "hardhat/console.sol";
 
 // BASE_USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 // AAVE_BASE_POOL_ADDRESS = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
@@ -50,13 +51,17 @@ contract BaseAaveStrategy is Ownable {
         return amount;
     }
 
-    function withdraw(uint256 _amount) external onlyVault returns (uint256) {
+    function withdraw(
+        uint256 _amountToWithdraw,
+        uint256 _fractionToWithdraw
+    ) external onlyVault returns (uint256) {
         uint256 withdrawn = aavePool.withdraw(
             address(inputToken),
-            _amount,
+            _amountToWithdraw,
             msg.sender
         );
-        require(withdrawn == _amount, "Token withdrawal failed");
+        console.log("withdrawn: %s", withdrawn);
+        require(withdrawn == _amountToWithdraw, "Token withdrawal failed");
         return withdrawn;
     }
 

@@ -4,13 +4,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
 
-  // Ensure we're deploying on base
-  if (network !== "base") {
-    throw new Error(
-      '🚨 Please use the "base" network to deploy the contract.'
-    );
-  }
-
   const [signer] = await hre.ethers.getSigners();
   if (!signer) {
     throw new Error(
@@ -19,47 +12,67 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 
   // Fetch the initializer parameters
-  const name = args.name || "UpgradeableVault";
+  const name = args.name || "AmanaVault";
   const symbol = args.symbol || "UV";
-  const assetaddress = args.assetaddress; // This should be passed as an argument
-  const treasuryAddress = args.treasuryAddress; // Address for the treasury
+  const asset = args.asset; // This should be passed as an argument
+  const treasury = args.treasury; // Address for the treasury
+  const gateway = args.gateway; // Address for the gateway
+  const system = args.system; // Address for the system contract
 
   // Set the default for performanceFeeRate if it's not provided
   const performanceFeeRate = args.performanceFeeRate ?? 1500; // Default to 15% (1500 basis points)
 
-  if (!assetaddress || !treasuryAddress) {
-    throw new Error("🚨 Asset address and Treasury address are required.");
+  if (!asset || !treasury || !gateway || !system) {
+    throw new Error("🚨 Asset address, Treasury address, Gateway address and System Contract address are required.");
   }
 
-  // Deploy the UpgradeableVault contract using OpenZeppelin Upgrades
-  const factory = await hre.ethers.getContractFactory("UpgradeableVault");
-  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, assetaddress, treasuryAddress, performanceFeeRate], {
+  // Deploy the AmanaVault contract using OpenZeppelin Upgrades
+  const factory = await hre.ethers.getContractFactory("AmanaVault");
+  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gateway, system], {
     initializer: "initialize",
   });
   console.log("Contract deployed, waiting for confirmations...");
 
-  // Wait for 5 confirmations before proceeding
-  await contract.deploymentTransaction().wait(5);
-
+  // Wait for contract to be deployed before proceeding
+  await contract.deployed();
 
   console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed UpgradeableVault on base.`);
-  console.log(`📜 Contract address: ${contract.target}`);
+  console.log(`🚀 Successfully deployed AmanaVault on ${network}.`);
+  console.log(`📜 Contract address: ${contract.address}`);  // Updated from contract.target
 
-  // Verify the contract on Basescan
-  if (network === "base" && hre.config.etherscan.apiKey.base) {
-    console.log("🛠 Verifying contract on Basescan...");
+  const etherscanApiKey = hre.config.etherscan.apiKey[network];
+  if (etherscanApiKey) {
+    // Verifying the implementation contract first
+    const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(contract.address);  // Updated from getAddress()
+    console.log(`Verifying implementation: ${implementationAddress}`);
     try {
       await hre.run("verify:verify", {
-        address: contract.target,
-        constructorArguments: [], // No constructor arguments for upgradeable contracts
+        address: implementationAddress,
+        constructorArguments: [],
       });
-      console.log(`✅ Contract verified: https://basescan.org/address/${contract.target}`);
+      console.log(`✅ Successfully verified implementation contract at ${implementationAddress}`);
     } catch (err) {
-      console.error("❌ Contract verification failed:", err);
+      console.error("❌ Failed to verify implementation contract:", err);
+    }
+
+    // Verifying the proxy contract
+    const proxyAddress = contract.address;  // Updated from getAddress()
+    console.log(`Verifying proxy: ${proxyAddress}`);
+    try {
+      await hre.run("verify:verify", {
+        address: proxyAddress,
+        constructorArguments: [], // Proxy has no constructor arguments
+      });
+      console.log(`✅ Successfully verified proxy contract at ${proxyAddress}`);
+    } catch (err) {
+      if (err.message.includes("Already Verified")) {
+        console.log(`ℹ️ Proxy contract at ${proxyAddress} is already verified.`);
+      } else {
+        console.error("❌ Failed to verify proxy contract:", err);
+      }
     }
   } else {
-    console.log("🚨 Etherscan API key not configured or wrong network. Skipping verification.");
+    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
   }
 
   if (args.json) {
@@ -67,12 +80,14 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-task("deploy-upgradeable-vault", "Deploy the UpgradeableVault contract", main)
+task("deploy-upgradeable-vault", "Deploy the AmanaVault contract", main)
   .addFlag("json", "Output in JSON")
-  .addOptionalParam("name", "Token name", "UpgradeableVault")
+  .addOptionalParam("name", "Token name", "AmanaVault")
   .addOptionalParam("symbol", "Token symbol", "UV")
-  .addParam("assetaddress", "The address of the asset ERC20 token")
-  .addParam("treasuryAddress", "The address of the treasury")
+  .addParam("asset", "The address of the asset ERC20 token")
+  .addParam("treasury", "The address of the treasury")
+  .addParam("gateway", "The address of the gateway")
+  .addParam("system", "The address of the system contract")
   .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)"); // Remove the default here
 
 // Export the task so it can be used in hardhat

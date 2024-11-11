@@ -7,18 +7,19 @@ import VaultsContainer from "../containers/VaultsContainer";
 import BuyContainer from "../containers/BuyContainer";
 import About from "../components/About";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { base } from "thirdweb/chains";
-import { BASE_USDC_ADDRESS } from "@/constants";
+import { CURRENT_CHAIN } from "../constants/chainConfig";
+import { ZC_USDC_ETH_ADDRESS } from "@/constants";
 import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
 import { Account } from "thirdweb/wallets";
+import { ACCOUNT_ABSTRACTION_CONFIG } from "../constants/chainConfig";
 
 const wallets = [
   inAppWallet({
     auth: {
       options: ["google", "email", "passkey"],
     },
-    smartAccount: { chain: base, sponsorGas: true },
+    // smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
   }),
   createWallet("io.metamask"),
   createWallet("com.coinbase.wallet"),
@@ -144,13 +145,10 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
           client={client}
           wallets={wallets}
           connectModal={{ size: "compact" }}
-          accountAbstraction={{
-            chain: base,
-            sponsorGas: true,
-          }}
+          // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
           detailsButton={{
             displayBalanceToken: {
-              [base.id]: BASE_USDC_ADDRESS,
+              [CURRENT_CHAIN.id]: ZC_USDC_ETH_ADDRESS,
             },
           }}
         />
@@ -171,10 +169,8 @@ function UnauthenticatedLandingPage() {
               wallets={wallets} 
               connectButton={{ label: "Launch App" }} 
               connectModal={{ size: "compact" }}
-              accountAbstraction={{
-                chain: base,
-                sponsorGas: true,
-              }}/>
+              // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
+              />
         </nav>
       </header>
 

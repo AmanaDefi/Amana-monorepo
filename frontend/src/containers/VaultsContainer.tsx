@@ -5,14 +5,14 @@ import {
 } from "../actions/actions";
 import VaultsView from "../components/VaultsView";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
-import { VAULT_DATA, BASE_USDC_ADDRESS } from "../constants/index";
+import { VAULT_DATA, ZC_USDC_ETH_ADDRESS } from "../constants/index";
 import { Address, getContract, waitForReceipt } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useReadContract } from "thirdweb/react";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { client } from "../utils/client";
-import { base } from "thirdweb/chains";
+import { CURRENT_CHAIN } from "../constants/chainConfig";
 import { toast } from "react-toastify";
 import mixpanel from "mixpanel-browser";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,8 +46,8 @@ const VaultsContainer = () => {
 
   const usdcContract = getContract({
     client,
-    chain: base,
-    address: BASE_USDC_ADDRESS,
+    chain: CURRENT_CHAIN,
+    address: ZC_USDC_ETH_ADDRESS,
   });
 
   useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken, transactionCompleted);

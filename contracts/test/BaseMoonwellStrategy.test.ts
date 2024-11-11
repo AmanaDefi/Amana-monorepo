@@ -2,14 +2,14 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
-import { UpgradeableVault, IERC20, IERC4626, BaseMoonwellStrategy } from "../typechain";
+import { AmanaVault, IERC20, IERC4626, BaseMoonwellStrategy } from "../typechain";
 
 import { BASE_USDC_ADDRESS } from "../../frontend/src/constants/index";
 import { MOONWELL_BASE_USDC_VAULT_ADDRESS } from "../../frontend/src/constants/index";
 import { BASE_USDC_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
 
 describe("Vault and BaseMoonwellStrategy", function () {
-  let amanaVault: UpgradeableVault;
+  let amanaVault: AmanaVault;
   let strategy: BaseMoonwellStrategy;
   let usdc: IERC20;
   let moonwellVault: IERC4626;
@@ -29,7 +29,7 @@ describe("Vault and BaseMoonwellStrategy", function () {
       moonwellVault = await ethers.getContractAt("IERC4626", MOONWELL_BASE_USDC_VAULT_ADDRESS);
 
       // Deploy Vault contract
-      const Vault = await ethers.getContractFactory("UpgradeableVault", owner);
+      const Vault = await ethers.getContractFactory("AmanaVault", owner);
       // Use the upgrades library to deploy the proxy
       amanaVault = await upgrades.deployProxy(
         Vault,
