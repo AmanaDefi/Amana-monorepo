@@ -4,8 +4,8 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IFourPool.sol";
-import "./interfaces/IEddyReceiptToken.sol";
+import "../interfaces/IFourPool.sol";
+import "../interfaces/IEddyReceiptToken.sol";
 import "hardhat/console.sol";
 
 // ZC_USDC.ETH_ADDRESS = 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a;

@@ -4,8 +4,8 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IAavePool.sol";
-import "./interfaces/IAaveReceiptToken.sol";
+import "../interfaces/IAavePool.sol";
+import "../interfaces/IAaveReceiptToken.sol";
 import "hardhat/console.sol";
 
 // BASE_USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;

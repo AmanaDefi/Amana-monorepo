@@ -4,9 +4,9 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IAavePool.sol";
-import "./interfaces/IAaveReceiptToken.sol";
-import "./interfaces/IWrappedTokenGatewayV3.sol";
+import "../interfaces/IAavePool.sol";
+import "../interfaces/IAaveReceiptToken.sol";
+import "../interfaces/IWrappedTokenGatewayV3.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 
 // ETH_SEPOLIA_AAVE_ETH_POOL_ADDRESS = 0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951;

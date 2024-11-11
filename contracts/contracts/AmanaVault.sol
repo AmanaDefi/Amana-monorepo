@@ -38,7 +38,7 @@ contract AmanaVault is
     error WithdrawExceedsLimit();
     error RedeemExceedsLimit();
 
-    address _GATEWAY_ADDRESS;
+    address immutable _GATEWAY_ADDRESS;
     bytes32 private constant VaultStorageLocation =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
     address constant uniswapv2Router02Address =

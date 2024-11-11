@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IMoonwellVault.sol";
+import "../interfaces/IMoonwellVault.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 
 // LOCALNET_USDC_ADDRESS = 0x0B306BF915C4d645ff596e518fAf3F9669b97016;

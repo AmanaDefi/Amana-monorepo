@@ -4,8 +4,8 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IAavePool.sol";
-import "./interfaces/IAaveReceiptToken.sol";
+import "../interfaces/IAavePool.sol";
+import "../interfaces/IAaveReceiptToken.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 
 // BASE_SEPOLIA_USDC_ADDRESS = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
