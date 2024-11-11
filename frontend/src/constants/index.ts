@@ -1,5 +1,5 @@
 import { VaultData } from "../types/types";
-import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS } from "../../../constants";
+import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../../constants";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 
@@ -82,7 +82,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     inputToken: { // what is the input token here? If you're on ZC then it's ZC_ETH_BASE_SEPOLIA I think?
       symbol: "ETH",
       decimals: 18,
-      address: ZC_USDC_ETH_ADDRESS,
+      address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
       imgURL: "/USDC.png",
       price: 3040
     },
