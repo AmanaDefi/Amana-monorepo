@@ -130,17 +130,17 @@ export const executeDeposit = async (vaultId: Address, activeAccount: Account, t
       "function deposit(uint256 assets,  address receiver)",
     params: [transactionAmount, activeAccount?.address]
   });
-  console.log("supplyTx", supplyTx);
   await sendAndConfirmTransaction({
     account: activeAccount,
     transaction: approveTx
   });
 
   console.log("Approval confirmed");
-  await sendTransaction({
+  const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx
   });
+  return receipt;
   console.log("Deposit executed");
 };
 
@@ -156,10 +156,11 @@ export const executeWithdrawal = async (vaultId: Address, activeAccount: Account
       "function withdraw(uint256 assets, address receiver, address owner)",
     params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address]
   });
-  await sendTransaction({
+  const receipt = await sendTransaction({
     account: activeAccount,
     transaction: withdrawTx
   });
+  return receipt;
 };
 
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
@@ -182,6 +183,7 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
 }
 
 export const fetchTotalAssets = async (vaultAddress: Address) => {
+
   const contract = getContract({
     client,
     chain: CURRENT_CHAIN,
@@ -194,6 +196,8 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   const formattedBalance = Number(balance) / 10 ** 6; // TODO fetch decimals dynamically
   return formattedBalance.toString();
 }
+
+
 
 export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> => {
   const updatedVaults = await Promise.all(

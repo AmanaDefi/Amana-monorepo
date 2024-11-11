@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import {
   executeDeposit,
-  executeWithdrawal,
-  } from "../actions/actions";
+  executeWithdrawal
+} from "../actions/actions";
 import VaultsView from "../components/VaultsView";
-import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets } from "../types/types";
+import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
 import { VAULT_DATA, ZC_USDC_ETH_ADDRESS } from "../constants/index";
-import { Address, getContract } from "thirdweb";
+import { Address, getContract, waitForReceipt } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useReadContract } from "thirdweb/react";
@@ -25,6 +25,7 @@ const VaultsContainer = () => {
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
   const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>([]);
+  const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
   const [transactionCompleted, setTransactionCompleted] = useState(false);
 
   const vaults: VaultData[] = VAULT_DATA;
@@ -49,34 +50,35 @@ const VaultsContainer = () => {
     address: ZC_USDC_ETH_ADDRESS,
   });
 
-  useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, transactionCompleted);
+  useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken, transactionCompleted);
   useUpdateAPYs(vaults, setVaultAPYs, setLoading);
 
   const handleDepositTransaction = async (vaultId: Address) => {
+    setTransactionCompleted(false)
     try {
       setTransactionAmount;
       const value = Number(transactionAmount)
-      const scaledAmount = BigInt(value * 10**6)
+      const scaledAmount = BigInt(value * 10 ** 6)
       mixpanel.track("Deposit Submitted", {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
-      await executeDeposit(
+      const receipt = await executeDeposit(
         vaultId,
         EOAaccount,
         scaledAmount, //TODO make this general for all tokens?
       );
+
       mixpanel.track("Deposit Submitted", {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
+
+      await waitForReceipt(receipt)
       toast.success("Transaction confirmed");
       queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      refetch(); //refetches usdc balance of user
-      setTimeout(() => {
-        // Trigger the custom hook after a short delay
-        setTransactionCompleted(!transactionCompleted);
-      }, 1000);  // 1 second delay
+      refetch()
+      setTransactionCompleted(true);
     } catch (error) {
       mixpanel.track("Deposit Submitted", {
         vault: vaultId.toString(),
@@ -90,15 +92,16 @@ const VaultsContainer = () => {
   };
 
   const handleWithdrawTransaction = async (vaultId: Address) => {
+    setTransactionCompleted(false)
     try {
       setTransactionAmount;
       const value = Number(transactionAmount)
-      const scaledAmount = BigInt(value * 10**6)
+      const scaledAmount = BigInt(value * 10 ** 6)
       mixpanel.track("Withdraw Submitted", {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
-      await executeWithdrawal(
+      const receipt = await executeWithdrawal(
         vaultId,
         EOAaccount,
         scaledAmount,
@@ -107,13 +110,13 @@ const VaultsContainer = () => {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
+
+      await waitForReceipt(receipt)
+      //refetches usdc balance of user
       toast.success("Transaction confirmed");
       queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      refetch();
-      setTimeout(() => {
-        // Trigger the custom hook after a short delay
-        setTransactionCompleted(!transactionCompleted);
-      }, 1000);  // 1 second delay
+      refetch()
+      setTransactionCompleted(true);
     } catch (error) {
       mixpanel.track("Withdraw Failed", {
         vault: vaultId.toString(),
@@ -135,13 +138,13 @@ const VaultsContainer = () => {
     contract: usdcContract,
     address: activeAccount?.address as Address,
   });
-  
+
   const usdcBalance = isLoading
     ? "Loading..."
     : error
-    ? "Error"
-    : usdcBalanceResult?.displayValue || "N/A";
-    
+      ? "Error"
+      : usdcBalanceResult?.displayValue || "N/A";
+
   const handleUserChange = (username: string) => {
   };
 
@@ -152,6 +155,7 @@ const VaultsContainer = () => {
       vaultAPYs={vaultAPYs}
       userVaultBalances={userVaultBalances}
       vaultTotalAssets={vaultTotalAssets}
+      vaultTotalAssetsinToken={vaultTotalAssetsinToken}
       transactionAmount={transactionAmount}
       setTransactionAmount={setTransactionAmount}
       depositTransaction={handleDepositTransaction}

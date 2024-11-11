@@ -12,6 +12,7 @@ export const useUpdateVaultBalanceAndTotal = (
   activeAccount: Account,
   setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
+  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   transactionCompleted: boolean,
 ) => {
   useEffect(() => {
@@ -24,11 +25,14 @@ export const useUpdateVaultBalanceAndTotal = (
                 activeAccount?.address as Address,
                 vault.id as Address
               );
+
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+              const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
               return {
                 vaultId: vault.id,
                 balance,
                 totalAssets: newTotalAssets.toString(),
+                totalAssetsinToken: newTotalAssetsinToken.toString(),
               };
             } catch (error) {
               console.error(`Error fetching user balance or total assets for vault ${vault.id}:`, error);
@@ -36,6 +40,7 @@ export const useUpdateVaultBalanceAndTotal = (
                 vaultId: vault.id,
                 balance: "Error",
                 totalAssets: "Error",
+                totalAssetsinToken: "Error"
               };
             }
           })
@@ -45,14 +50,18 @@ export const useUpdateVaultBalanceAndTotal = (
           vaultId,
           balance,
         }));
-
         const totalAssets = balancesAndAssets.map(({ vaultId, totalAssets }) => ({
           vaultId,
           totalAssets,
         }));
 
+        const totalAssetsinToken = balancesAndAssets.map(({ vaultId, totalAssetsinToken }) => ({
+          vaultId,
+          totalAssetsinToken,
+        }));
         setUserVaultBalances(balances); // Update user balances
         setVaultTotalAssets(totalAssets); // Update total assets
+        setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
       } catch (error) {
         console.error("Error updating vault balances and total assets:", error);
       }

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { VaultData, VaultAPY, VaultTotalAssets, UserVaultBalance } from "../types/types";
+import React, { useEffect, useState } from "react";
+import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, UserVaultBalance } from "../types/types";
 import { Address } from "thirdweb";
 import DepositModal from "./DepositModal";
 import WithdrawModal from "./WithdrawModal";
@@ -11,6 +11,7 @@ interface VaultsViewProps {
   vaultAPYs: VaultAPY[];
   userVaultBalances: UserVaultBalance[];
   vaultTotalAssets: VaultTotalAssets[];
+  vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
   transactionAmount: string;
   setTransactionAmount: (value: string) => void;
   depositTransaction: (value: Address) => Promise<any>;
@@ -24,12 +25,14 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   vaultAPYs,
   userVaultBalances,
   vaultTotalAssets,
+  vaultTotalAssetsinToken,
   transactionAmount,
   setTransactionAmount,
   depositTransaction,
   withdrawTransaction,
   usdcBalance,
 }) => {
+
   const [isDepositModalOpen, setDepositModalOpen] = useState(false);
   const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [selectedVault, setSelectedVault] = useState<VaultData | null>(null);
@@ -119,22 +122,29 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                 <tr key={vault.id}>
                   <td className="px-4 py-4 whitespace-nowrap">
                     {vault.protocol.network}
-                    </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    {vault.protocol.name}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    {vault.name}
-                    </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    $ {Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(2)}
+                    <div className="flex items-center">
+                      <img src={vault.protocol.imgURL} width="30" height="30" alt="USD Icon" className="mr-2 rounded-full" />
+                      <div>{vault.protocol.name}</div>
+                    </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d)*100).toFixed(2)}%
-                    </td>
+                    <div className="flex items-center">
+                      <img src={vault.inputToken.imgURL} width="30" height="30" alt="USD Icon" className="mr-2" />
+                      <div>{vault.name}</div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap flex flex-col items-center justify-center">
+                    <div className="font-semibold">$ {Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(2)}</div>
+                    <div className="text-sm font-light">{Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(2)} {vault.inputToken.symbol}</div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d) * 100).toFixed(2)}%
+                  </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     $ {Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance).toFixed(2)}
-                    </td>
+                  </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex space-x-2">
                       <button
