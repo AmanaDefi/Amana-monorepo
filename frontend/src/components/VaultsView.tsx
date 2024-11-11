@@ -125,7 +125,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img src={vault.protocol.imgURL} width="30" height="30" alt="USD Icon" className="mr-2" />
+                      <img src={vault.protocol.imgURL} width="30" height="30" alt="USD Icon" className="mr-2 rounded-full" />
                       <div>{vault.protocol.name}</div>
                     </div>
                   </td>

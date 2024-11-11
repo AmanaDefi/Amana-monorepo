@@ -49,7 +49,7 @@ export const VAULT_DATA: VaultData[] = [
     protocol: {
       name: "Moonwell",
       network: "Base",
-      imgURL: "/Moonwell.png"
+      imgURL: "/Moonwell.jpg"
     },
   },
   {
