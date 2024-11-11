@@ -58,7 +58,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, inputToken, receiptToken],
+        constructorArguments: [name, vault, inputToken, receiptToken, gateway],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {

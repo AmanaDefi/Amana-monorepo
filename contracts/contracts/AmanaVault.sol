@@ -11,6 +11,7 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
+import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
@@ -38,13 +39,13 @@ contract AmanaVault is
     error WithdrawExceedsLimit();
     error RedeemExceedsLimit();
 
-    address immutable _GATEWAY_ADDRESS;
+    address public _GATEWAY_ADDRESS; // 0x6c533f7fe93fae114d0954697069df33c9b74fd7 on testnet
+    ISystem public systemContract; // 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B on testnet
     bytes32 private constant VaultStorageLocation =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
-    address constant uniswapv2Router02Address =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
+    address uniswapv2Router02Address; // 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe on testnet
     uint16 internal constant MAX_DEADLINE = 200;
-    address constant WZETA_ADDRESS = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
+    address public WZETA_ADDRESS; // 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf on testnet
 
     struct VaultStorage {
         address strategyAddress;
@@ -99,7 +100,8 @@ contract AmanaVault is
         IERC20 asset_,
         address treasury_,
         uint16 perfFee_,
-        address gateway
+        address gateway,
+        address system_contract
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
         __ERC20_init(name_, symbol_);
@@ -110,7 +112,9 @@ contract AmanaVault is
         $.treasury = treasury_;
         $.perfFee = perfFee_;
         _GATEWAY_ADDRESS = gateway;
-
+        systemContract = ISystem(system_contract);
+        uniswapv2Router02Address = systemContract.uniswapv2Router02Address();
+        WZETA_ADDRESS = systemContract.wZetaContractAddress();
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -143,10 +147,6 @@ contract AmanaVault is
             if (userAddress == address(0)) revert CantBeZeroAddress();
             _crossChainDeposit(userAddress, amount, zrc20); // _crossChainDeposit means from another chain - will handle deposit to strat on ZC or other
         }
-    }
-
-    function onRevert(RevertContext calldata revertContext) external override {
-        emit ContextDataRevert(revertContext);
     }
 
     function setStrategy(
@@ -260,12 +260,14 @@ contract AmanaVault is
             uint256(7000000) // onRevertGasLimit
         );
 
+        CallOptions memory callOptions = CallOptions(gasLimit, true);
+
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
             recipient, // this contains the recipient smart contract address - the strategy address in this case
             amount, // amount of zrc20 to withdraw
             address(asset()), // the zrc20 that is being withdrawn, also indicates which chain to target
             outgoingMessage, // this is the function call for invest(uint256 amount) in Mock4626Strategy
-            gasLimit,
+            callOptions,
             revertOptions
         );
     }
@@ -560,11 +562,13 @@ contract AmanaVault is
                 uint256(30000000) // onRevertGasLimit
             );
 
+            CallOptions memory callOptions = CallOptions(gasLimit, true);
+
             IGatewayZEVM(_GATEWAY_ADDRESS).call(
                 recipient,
                 address(asset()),
                 outgoingMessage,
-                gasLimit,
+                callOptions,
                 revertOptions
             );
         }
@@ -630,11 +634,13 @@ contract AmanaVault is
                 uint256(30000000) // onRevertGasLimit
             );
 
+            CallOptions memory callOptions = CallOptions(gasLimit, false);
+
             IGatewayZEVM(_GATEWAY_ADDRESS).call(
                 recipient,
                 address(asset()),
                 outgoingMessage,
-                gasLimit,
+                callOptions,
                 revertOptions
             );
         }
