@@ -12,7 +12,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 
   // Fetch the initializer parameters
-  const name = args.name || "UpgradeableVault";
+  const name = args.name || "AmanaVault";
   const symbol = args.symbol || "UV";
   const asset = args.asset; // This should be passed as an argument
   const treasury = args.treasury; // Address for the treasury
@@ -25,8 +25,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     throw new Error("🚨 Asset address, Strategy address and Treasury address are required.");
   }
 
-  // Deploy the UpgradeableVault contract using OpenZeppelin Upgrades
-  const factory = await hre.ethers.getContractFactory("UpgradeableVault");
+  // Deploy the AmanaVault contract using OpenZeppelin Upgrades
+  const factory = await hre.ethers.getContractFactory("AmanaVault");
   const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gateway], {
     initializer: "initialize",
   });
@@ -36,7 +36,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   await contract.deployed();
 
   console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed UpgradeableVault on ${network}.`);
+  console.log(`🚀 Successfully deployed AmanaVault on ${network}.`);
   console.log(`📜 Contract address: ${contract.address}`);  // Updated from contract.target
 
   const etherscanApiKey = hre.config.etherscan.apiKey[network];
@@ -79,9 +79,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-task("deploy-upgradeable-vault", "Deploy the UpgradeableVault contract", main)
+task("deploy-upgradeable-vault", "Deploy the AmanaVault contract", main)
   .addFlag("json", "Output in JSON")
-  .addOptionalParam("name", "Token name", "UpgradeableVault")
+  .addOptionalParam("name", "Token name", "AmanaVault")
   .addOptionalParam("symbol", "Token symbol", "UV")
   .addParam("asset", "The address of the asset ERC20 token")
   .addParam("treasury", "The address of the treasury")

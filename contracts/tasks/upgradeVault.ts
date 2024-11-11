@@ -14,13 +14,13 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const currentImplementation = await upgrades.erc1967.getImplementationAddress(proxyAddress);
   console.log(`Current implementation address of proxy at ${proxyAddress}: ${currentImplementation}`);
 
-  const UpgradeableVault = await ethers.getContractFactory("UpgradeableVault");
+  const AmanaVault = await ethers.getContractFactory("AmanaVault");
 
   console.log(`Attempting to upgrade proxy at ${proxyAddress} to new implementation...`);
 
   try {
     // Prepare the upgrade transaction
-    const upgradeTx = await upgrades.prepareUpgrade(proxyAddress, UpgradeableVault);
+    const upgradeTx = await upgrades.prepareUpgrade(proxyAddress, AmanaVault);
 
     // Set up transaction options for gas price and gas limit
     const txOptions = {

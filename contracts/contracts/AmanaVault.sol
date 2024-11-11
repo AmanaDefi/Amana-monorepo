@@ -17,7 +17,7 @@ import "./interfaces/IStrategy.sol";
 // This makes logical sense in that it is the underlying asset that the strategy is investing
 // It wouldn't make sense to make it the ZRC20 equivalent of the input token deposited, because this could be from any connected chain (or ZC itself)
 
-contract UpgradeableVault is
+contract AmanaVault is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
     UniversalContract

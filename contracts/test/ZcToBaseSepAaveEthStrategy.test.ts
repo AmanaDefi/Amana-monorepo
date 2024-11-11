@@ -2,7 +2,7 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { UpgradeableVault, BaseSepAaveEthStrategy, IERC20 } from "../typechain";
+import { AmanaVault, BaseSepAaveEthStrategy, IERC20 } from "../typechain";
 
 import { ZC_TEST_WETH_ADDRESS } from "../../frontend/src/constants/index";
 import { BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS } from "../../frontend/src/constants/index";
@@ -11,7 +11,7 @@ import { ZC_TEST_WETH_HOLDER_ADDRESS } from "../../frontend/src/constants/index"
 import { ETH_BASESEPOLIA_ADDRESS } from "../../frontend/src/constants/index";
 
 describe("Vault and BaseSepAaveEthStrategy", function () {
-  let amanaVault: UpgradeableVault;
+  let amanaVault: AmanaVault;
   let strategy: BaseSepAaveEthStrategy;
   let ethBaseSepolia: IERC20;
   let usdt: IERC20;
@@ -37,8 +37,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       ethBaseSepolia = await ethers.getContractAt("IERC20", ETH_BASESEPOLIA_ADDRESS);
       aaveToken = await ethers.getContractAt("IERC20", BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS);
 
-      // Deploy the UpgradeableVault using OpenZeppelin's upgrade proxy pattern
-      const Vault = await ethers.getContractFactory("UpgradeableVault", owner);
+      // Deploy the AmanaVault using OpenZeppelin's upgrade proxy pattern
+      const Vault = await ethers.getContractFactory("AmanaVault", owner);
       amanaVault = await upgrades.deployProxy(
         Vault,
         ["AaveV3EthVault", "AVU", ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), FeeRate],
