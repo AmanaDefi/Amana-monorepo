@@ -2,7 +2,7 @@ import React from "react";
 import { PayEmbed } from "thirdweb/react";
 import { client } from "../utils/client";
 import { CURRENT_CHAIN } from "../constants/chainConfig";
-import { ZC_USDC_ETH_ADDRESS } from "../constants";
+import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
 
 const BuyView: React.FC = ({}) => {
 

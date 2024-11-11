@@ -8,7 +8,7 @@ import BuyContainer from "../containers/BuyContainer";
 import About from "../components/About";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { CURRENT_CHAIN } from "../constants/chainConfig";
-import { ZC_USDC_ETH_ADDRESS } from "@/constants";
+import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
 import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
 import { Account } from "thirdweb/wallets";

@@ -4,9 +4,9 @@ import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { AmanaVault, IERC20, IERC4626, BaseCompoundStrategy } from "../typechain";
 
-import { BASE_USDC_ADDRESS } from "../../frontend/src/constants/index";
-import { COMPOUND_BASE_USDC_VAULT_ADDRESS } from "../../frontend/src/constants/index";
-import { BASE_USDC_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
+import { BASE_USDC_ADDRESS } from "../../constants";
+import { COMPOUND_BASE_USDC_VAULT_ADDRESS } from "../../constants";
+import { BASE_USDC_HOLDER_ADDRESS } from "../../constants";
 
 describe("Vault and BaseCompoundStrategy", function () {
   let amanaVault: AmanaVault;

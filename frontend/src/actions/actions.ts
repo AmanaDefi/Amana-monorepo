@@ -1,7 +1,7 @@
 import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction } from "thirdweb";
 import { client } from "../utils/client";
 import { CURRENT_CHAIN } from "../constants/chainConfig";
-import { ZC_USDC_ETH_ADDRESS } from "../constants";
+import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { sendBatchTransaction, readContract } from "thirdweb";

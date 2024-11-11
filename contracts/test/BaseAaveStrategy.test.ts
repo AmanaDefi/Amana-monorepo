@@ -4,12 +4,12 @@ import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
 import { AmanaVault, BaseAaveStrategy, IERC20 } from "../typechain";
 
-import { BASE_USDC_ADDRESS } from "../../frontend/src/constants/index";
-import { BASE_USDT_ADDRESS } from "../../frontend/src/constants/index";
+import { BASE_USDC_ADDRESS } from "../../constants";
+import { BASE_USDT_ADDRESS } from "../../constants";
 
-import { BASE_AAVE_RECEIPT_TOKEN_ADDRESS } from "../../frontend/src/constants/index";
-import { BASE_USDC_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
-import { BASE_USDT_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
+import { BASE_AAVE_RECEIPT_TOKEN_ADDRESS } from "../../constants";
+import { BASE_USDC_HOLDER_ADDRESS } from "../../constants";
+import { BASE_USDT_HOLDER_ADDRESS } from "../../constants";
 
 describe("Vault and BaseAaveStrategy", function () {
   let amanaVault: AmanaVault;

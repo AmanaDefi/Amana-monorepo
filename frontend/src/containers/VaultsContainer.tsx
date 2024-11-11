@@ -5,7 +5,8 @@ import {
 } from "../actions/actions";
 import VaultsView from "../components/VaultsView";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
-import { VAULT_DATA, ZC_USDC_ETH_ADDRESS } from "../constants/index";
+import { VAULT_DATA } from "../constants/index";
+import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
 import { Address, getContract, waitForReceipt } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";

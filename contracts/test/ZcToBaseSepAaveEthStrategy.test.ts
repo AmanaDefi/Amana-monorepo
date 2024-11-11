@@ -4,11 +4,11 @@ import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { AmanaVault, BaseSepAaveEthStrategy, IERC20 } from "../typechain";
 
-import { ZC_TEST_WETH_ADDRESS } from "../../frontend/src/constants/index";
-import { BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS } from "../../frontend/src/constants/index";
-import { ETH_BASESEPOLIA_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
-import { ZC_TEST_WETH_HOLDER_ADDRESS } from "../../frontend/src/constants/index";
-import { ETH_BASESEPOLIA_ADDRESS } from "../../frontend/src/constants/index";
+import { ZC_TEST_WETH_ADDRESS } from "../../constants";
+import { BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS } from "../../constants";
+import { ETH_BASESEPOLIA_HOLDER_ADDRESS } from "../../constants";
+import { ZC_TEST_WETH_HOLDER_ADDRESS } from "../../constants";
+import { ETH_BASESEPOLIA_ADDRESS } from "../../constants";
 
 describe("Vault and BaseSepAaveEthStrategy", function () {
   let amanaVault: AmanaVault;
