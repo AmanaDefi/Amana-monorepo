@@ -7,7 +7,7 @@ import VaultsContainer from "../containers/VaultsContainer";
 import BuyContainer from "../containers/BuyContainer";
 import About from "../components/About";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { CURRENT_CHAIN } from "../constants/chainConfig";
+import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
 import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
@@ -143,13 +143,13 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
       <div className="absolute top-5 right-5">
         <ConnectButton
           client={client}
-          chains={[CURRENT_CHAIN]}
+          chains={SUPPORTED_CHAINS}
           wallets={wallets}
           connectModal={{ size: "compact" }}
           // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
           detailsButton={{
             displayBalanceToken: {
-              [CURRENT_CHAIN.id]: ZC_USDC_ETH_ADDRESS,
+              [SUPPORTED_CHAINS.id]: ZC_USDC_ETH_ADDRESS,
             },
           }}
         />
@@ -167,7 +167,7 @@ function UnauthenticatedLandingPage() {
         <nav className="flex space-x-4">
           <ConnectButton 
               client={client} 
-              chains={[CURRENT_CHAIN]}
+              chains={SUPPORTED_CHAINS}
               wallets={wallets} 
               connectButton={{ label: "Launch App" }} 
               connectModal={{ size: "compact" }}

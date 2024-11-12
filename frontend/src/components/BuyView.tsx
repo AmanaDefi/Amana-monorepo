@@ -1,11 +1,12 @@
 import React from "react";
-import { PayEmbed } from "thirdweb/react";
+import { PayEmbed, useActiveWalletChain } from "thirdweb/react";
 import { client } from "../utils/client";
-import { CURRENT_CHAIN } from "../constants/chainConfig";
-import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
 
 const BuyView: React.FC = ({}) => {
-
+  const activeChain = useActiveWalletChain();
+  if (!activeChain) {
+    throw new Error("No active chain found");
+  }
   return (
     <div className="flex items-center justify-center mt-16 h-full w-full">
 
@@ -14,13 +15,13 @@ const BuyView: React.FC = ({}) => {
       payOptions={{
         mode: "fund_wallet",
         prefillBuy: {
-          token: {
-            address: ZC_USDC_ETH_ADDRESS,
-            name: "Base Sepolia USDC",
-            symbol: "USDC",
-            icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
-          },
-          chain: CURRENT_CHAIN,
+          // token: {
+          //   address: ZC_USDC_ETH_ADDRESS,
+          //   name: "Base Sepolia USDC",
+          //   symbol: "USDC",
+          //   icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
+          // },
+          chain: activeChain,
           allowEdits: {
             amount: true, // allow editing buy amount
             token: false, // disable selecting buy token
@@ -33,7 +34,7 @@ const BuyView: React.FC = ({}) => {
               chain: false,
               token: true,
             },
-            chain: CURRENT_CHAIN,
+            chain: activeChain,
             // token: {
             //   address: ZC_USDC_ETH_ADDRESS,
             //   name: "Base USDC",

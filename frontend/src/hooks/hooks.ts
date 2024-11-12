@@ -3,9 +3,9 @@ import { fetchUserVaultBalance, fetchTotalAssets, calculateAaveAPY, calculateMoo
 import { Address } from "thirdweb";
 import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
-import { getContract, readContract } from "thirdweb";
+import { getContract, readContract, defineChain } from "thirdweb";
 import { client } from "../utils/client";
-import { CURRENT_CHAIN } from "../constants/chainConfig";
+import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -88,18 +88,19 @@ export const useUpdateAPYs = (
               console.log("vault", vault.id);
               const contract = getContract({
                 client,
-                chain: CURRENT_CHAIN,
+                chain: SUPPORTED_CHAINS[0],
                 address: vault.id,
               });
               console.log("contract", contract);
-              const strategyAddress = await readContract({
+              const [strategyAddress, chainID] = await readContract({
                 contract,
-                method: "function getStrategy() view returns (address)",
+                method: "function getStrategy() view returns (address, uint32)",
               });
+              const strategyChain = defineChain(chainID); // ToDo rather grab this from supported chains?
               console.log("strategyAddress", strategyAddress);
               const strategyContract = getContract({
                 client,
-                chain: CURRENT_CHAIN,
+                chain: strategyChain,
                 address: strategyAddress,
               });
 
@@ -113,7 +114,7 @@ export const useUpdateAPYs = (
               if (vault.protocol.name === "Aave") {
                 const receiptTokenContract = getContract({
                   client,
-                  chain: CURRENT_CHAIN,
+                  chain: strategyChain,
                   address: receiptTokenAddress,
                 });
                 const poolAddress = await readContract({
@@ -129,7 +130,7 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Eddy") {
                 const receiptTokenContract = getContract({
                   client,
-                  chain: CURRENT_CHAIN,
+                  chain: strategyChain,
                   address: receiptTokenAddress,
                 });
                 const poolAddress = await readContract({

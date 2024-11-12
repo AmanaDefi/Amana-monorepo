@@ -7,7 +7,7 @@ import VaultsView from "../components/VaultsView";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { Address, waitForReceipt } from "thirdweb";
-import { useActiveAccount } from "thirdweb/react";
+import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { toast } from "react-toastify";
 import mixpanel from "mixpanel-browser";
@@ -26,6 +26,10 @@ const VaultsContainer = () => {
 
   const vaults: VaultData[] = VAULT_DATA;
   const EOAaccount = useActiveAccount();
+  const activeChain = useActiveWalletChain();
+  if (!activeChain) {
+    throw new Error("No active chain found");
+  }
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -48,14 +52,14 @@ const VaultsContainer = () => {
     try {
       setTransactionAmount;
       const value = Number(transactionAmount)
-      const scaledAmount = BigInt(value * 10 ** 6)
 
       const vault = vaults.find((v) => v.id === vaultId);
       if (!vault) {
         throw new Error("Vault not found in vaultData");
       }
-      const inputToken = vault.inputToken; // Extract inputToken from the found vault
-  
+      const inputToken = vault.inputToken;
+      const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
+
       mixpanel.track("Deposit Submitted", {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
@@ -64,6 +68,7 @@ const VaultsContainer = () => {
         vaultId,
         inputToken.address as Address,
         EOAaccount,
+        activeChain,
         scaledAmount, //TODO make this general for all tokens?
       );
 
@@ -94,14 +99,22 @@ const VaultsContainer = () => {
     try {
       setTransactionAmount;
       const value = Number(transactionAmount)
-      const scaledAmount = BigInt(value * 10 ** 6)
+      const vault = vaults.find((v) => v.id === vaultId);
+      if (!vault) {
+        throw new Error("Vault not found in vaultData");
+      }
+      const inputToken = vault.inputToken;
+      const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
+      console.log("scaledAmount", scaledAmount);
       mixpanel.track("Withdraw Submitted", {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
+
       const receipt = await executeWithdrawal(
         vaultId,
         EOAaccount,
+        activeChain,
         scaledAmount,
       );
       mixpanel.track("Withdraw Succeeded", {
@@ -126,7 +139,7 @@ const VaultsContainer = () => {
     }
   };
 
-  const handleUserChange = (username: string) => {
+  const handleUserChange = (username: string) => { // TODO fix this if needed
   };
 
   return (

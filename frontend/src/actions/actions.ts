@@ -1,6 +1,6 @@
 import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction } from "thirdweb";
 import { client } from "../utils/client";
-import { CURRENT_CHAIN } from "../constants/chainConfig";
+import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { sendBatchTransaction, readContract } from "thirdweb";
@@ -10,10 +10,20 @@ import lendingPoolABI from "../../abis/lendingPoolABI.json";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import compoundVaultABI from "../../abis/compoundVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
+import { Chain, defineChain } from "thirdweb";
 
 import * as dotenv from "dotenv";
+import { read } from "fs";
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA);
+const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
+const EVMGatewayAddress = deployEnv === "testnet"
+  ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
+  : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
+
+if (!EVMGatewayAddress) {
+  throw new Error(`EVM Gateway address is not defined for the ${deployEnv} environment.`);
+}
 
 export async function calculateEddyAPY(poolAddress: Address, inputTokenAddress: Address) {
   const eddyFinancePool = new ethers.Contract(poolAddress, fourPoolABI, provider);
@@ -102,12 +112,19 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
   return currentAPY;
 }
 
-export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, transactionAmount: bigint) => {
+export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
+    return executeDirectDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount);
+  } else {
+    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount);
+  }
+};
 
+const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Deposit");
   let contract = getContract({
     client,
-    chain: CURRENT_CHAIN,
+    chain: activeChain,
     address: inputToken
   });
   console.log("contract", contract);
@@ -119,7 +136,7 @@ export const executeDeposit = async (vaultId: Address, inputToken: Address, acti
   console.log("approveTx", approveTx);
   contract = getContract({
     client,
-    chain: CURRENT_CHAIN,
+    chain: activeChain,
     address: vaultId
   });
   console.log("contract", contract);
@@ -143,16 +160,85 @@ export const executeDeposit = async (vaultId: Address, inputToken: Address, acti
   return receipt;
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, withdrawAmount: bigint) => { //vaultId: string
+const executeCrossChainDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+
+  console.log("Executing Deposit");
   let contract = getContract({
     client,
-    chain: CURRENT_CHAIN,
+    chain: activeChain,
+    address: inputToken
+  });
+  console.log("contract", contract);
+  const approveTx = prepareContractCall({
+    contract,
+    method: "function approve(address to, uint256 value)",
+    params: [EVMGatewayAddress, transactionAmount]
+  });
+  console.log("approveTx", approveTx);
+  contract = getContract({
+    client,
+    chain: activeChain,
+    address: EVMGatewayAddress
+  });
+  console.log("contract", contract);
+  const supplyTx = prepareContractCall({ // TODO this part of the call is a lot more complex, needs to be updated
+    contract,
+    method:
+      "function depositAndCall(uint256 assets,  address receiver)",
+    params: [transactionAmount, activeAccount?.address]
+  });
+  await sendAndConfirmTransaction({
+    account: activeAccount,
+    transaction: approveTx
+  });
+
+  console.log("Approval confirmed");
+  const receipt = await sendTransaction({
+    account: activeAccount,
+    transaction: supplyTx
+  });
+  console.log("Deposit executed");
+  return receipt;
+};
+
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => {
+  if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
+    return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
+  } else {
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
+  }
+};
+
+const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => { //vaultId: string
+  let contract = getContract({
+    client,
+    chain: activeChain,
     address: vaultId
   });
   const withdrawTx = prepareContractCall({
     contract,
     method:
       "function withdraw(uint256 assets, address receiver, address owner)",
+    params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address]
+  });
+  console.log("withdrawTx", withdrawTx);
+  const receipt = await sendTransaction({
+    account: activeAccount,
+    transaction: withdrawTx
+  });
+  return receipt;
+};
+
+const executeCrossChainWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => { //vaultId: string
+  let contract = getContract({
+    client,
+    chain: activeChain,
+    address: EVMGatewayAddress
+  });
+  const withdrawTx = prepareContractCall({
+    contract,
+    method:
+      "function call(uint256 assets, address receiver, address owner)", // TODO this needs to be updated here to the gateway function
     params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address]
   });
   const receipt = await sendTransaction({
@@ -165,7 +251,7 @@ export const executeWithdrawal = async (vaultId: Address, activeAccount: Account
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: CURRENT_CHAIN,
+    chain: SUPPORTED_CHAINS[0],
     address: vaultAddress
   });
   const { value: shares, decimals } = await getBalance({
@@ -185,14 +271,19 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 
   const contract = getContract({
     client,
-    chain: CURRENT_CHAIN,
+    chain: SUPPORTED_CHAINS[0],
     address: vaultAddress
   });
   const balance = await readContract({
     contract,
     method: "function totalAssets() view returns (uint256)"
   });
-  const formattedBalance = Number(balance) / 10 ** 6; // TODO fetch decimals dynamically
+  const decimals = await readContract({
+    contract,
+    method: "function decimals() view returns (uint8)"
+  });
+  console.log("decimals", decimals);
+  const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
 
@@ -204,16 +295,18 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
       try {
         const contract = getContract({
           client,
-          chain: CURRENT_CHAIN,
+          chain: SUPPORTED_CHAINS[0],
           address: vault.id,
         });
-        const strategyAddress = await readContract({
+        const [strategyAddress, chainID] = await readContract({
           contract,
-          method: "function getStrategy() view returns (address)",
+          method: "function getStrategy() view returns (address, uint32)",
         });
+        const strategyChain = defineChain(chainID); // ToDo rather grab this from supported chains?
+
         const strategyContract = getContract({
           client,
-          chain: CURRENT_CHAIN,
+          chain: strategyChain,
           address: strategyAddress,
         });
         let APY7d = 0;
@@ -225,7 +318,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
 
           const receiptTokenContract = getContract({
             client,
-            chain: CURRENT_CHAIN,
+            chain: strategyChain,
             address: receiptTokenAddress,
           });
 

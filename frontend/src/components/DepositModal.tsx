@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Address, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { client } from "../utils/client";
-import { CURRENT_CHAIN } from "../constants/chainConfig";
+import { useActiveWalletChain } from "thirdweb/react";
 
 const DepositModal: React.FC<{
   isOpen: boolean;
@@ -26,14 +26,17 @@ const DepositModal: React.FC<{
   isProcessing,
 }) => {
   const [tokenBalance, setTokenBalance] = useState<string>("0");
-
+  const activeChain = useActiveWalletChain();
+  if (!activeChain) {
+    throw new Error("No active chain found");
+  }
   // Fetch the input token balance for the selected vault
   useEffect(() => {
     if (selectedVault && activeAccount) {
       const fetchTokenBalance = async () => {
         const contract = getContract({
           client,
-          chain: CURRENT_CHAIN,
+          chain: activeChain,
           address: selectedVault.inputToken.address as Address,
         });
         const { value, decimals } = await getBalance({ 
