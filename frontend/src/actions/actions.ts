@@ -1,7 +1,6 @@
 import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction } from "thirdweb";
 import { client } from "../utils/client";
 import { CURRENT_CHAIN } from "../constants/chainConfig";
-import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { sendBatchTransaction, readContract } from "thirdweb";
@@ -103,13 +102,13 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
   return currentAPY;
 }
 
-export const executeDeposit = async (vaultId: Address, activeAccount: Account, transactionAmount: bigint) => {
+export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, transactionAmount: bigint) => {
 
   console.log("Executing Deposit");
   let contract = getContract({
     client,
     chain: CURRENT_CHAIN,
-    address: ZC_USDC_ETH_ADDRESS
+    address: inputToken
   });
   console.log("contract", contract);
   const approveTx = prepareContractCall({
@@ -140,8 +139,8 @@ export const executeDeposit = async (vaultId: Address, activeAccount: Account, t
     account: activeAccount,
     transaction: supplyTx
   });
-  return receipt;
   console.log("Deposit executed");
+  return receipt;
 };
 
 export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, withdrawAmount: bigint) => { //vaultId: string
