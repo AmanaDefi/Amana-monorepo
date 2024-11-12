@@ -143,6 +143,7 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
       <div className="absolute top-5 right-5">
         <ConnectButton
           client={client}
+          chains={[CURRENT_CHAIN]}
           wallets={wallets}
           connectModal={{ size: "compact" }}
           // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
@@ -166,6 +167,7 @@ function UnauthenticatedLandingPage() {
         <nav className="flex space-x-4">
           <ConnectButton 
               client={client} 
+              chains={[CURRENT_CHAIN]}
               wallets={wallets} 
               connectButton={{ label: "Launch App" }} 
               connectModal={{ size: "compact" }}

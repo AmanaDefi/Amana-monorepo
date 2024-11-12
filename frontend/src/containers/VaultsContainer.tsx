@@ -6,14 +6,9 @@ import {
 import VaultsView from "../components/VaultsView";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
-import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
-import { Address, getContract, waitForReceipt } from "thirdweb";
+import { Address, waitForReceipt } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
-import { useReadContract } from "thirdweb/react";
-import { getBalance } from "thirdweb/extensions/erc20";
-import { client } from "../utils/client";
-import { CURRENT_CHAIN } from "../constants/chainConfig";
 import { toast } from "react-toastify";
 import mixpanel from "mixpanel-browser";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,12 +40,6 @@ const VaultsContainer = () => {
     throw new Error("No active account found");
   }
 
-  const usdcContract = getContract({
-    client,
-    chain: CURRENT_CHAIN,
-    address: ZC_USDC_ETH_ADDRESS,
-  });
-
   useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken, transactionCompleted);
   useUpdateAPYs(vaults, setVaultAPYs, setLoading);
 
@@ -60,12 +49,20 @@ const VaultsContainer = () => {
       setTransactionAmount;
       const value = Number(transactionAmount)
       const scaledAmount = BigInt(value * 10 ** 6)
+
+      const vault = vaults.find((v) => v.id === vaultId);
+      if (!vault) {
+        throw new Error("Vault not found in vaultData");
+      }
+      const inputToken = vault.inputToken; // Extract inputToken from the found vault
+  
       mixpanel.track("Deposit Submitted", {
         vault: vaultId.toString(),
         amount: scaledAmount.toString(),
       });
       const receipt = await executeDeposit(
         vaultId,
+        inputToken.address as Address,
         EOAaccount,
         scaledAmount, //TODO make this general for all tokens?
       );
@@ -78,7 +75,7 @@ const VaultsContainer = () => {
       await waitForReceipt(receipt)
       toast.success("Transaction confirmed");
       queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      refetch()
+      // refetch()
       setTransactionCompleted(true);
     } catch (error) {
       mixpanel.track("Deposit Submitted", {
@@ -113,10 +110,9 @@ const VaultsContainer = () => {
       });
 
       await waitForReceipt(receipt)
-      //refetches usdc balance of user
       toast.success("Transaction confirmed");
       queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      refetch()
+      // refetch()
       setTransactionCompleted(true);
     } catch (error) {
       mixpanel.track("Withdraw Failed", {
@@ -129,22 +125,6 @@ const VaultsContainer = () => {
       throw new Error("Transaction failed");
     }
   };
-
-  const {
-    data: usdcBalanceResult,
-    isLoading,
-    error,
-    refetch,
-  } = useReadContract(getBalance, {
-    contract: usdcContract,
-    address: activeAccount?.address as Address,
-  });
-
-  const usdcBalance = isLoading
-    ? "Loading..."
-    : error
-      ? "Error"
-      : usdcBalanceResult?.displayValue || "N/A";
 
   const handleUserChange = (username: string) => {
   };
@@ -161,7 +141,7 @@ const VaultsContainer = () => {
       setTransactionAmount={setTransactionAmount}
       depositTransaction={handleDepositTransaction}
       withdrawTransaction={handleWithdrawTransaction}
-      usdcBalance={usdcBalance}
+      activeAccount={EOAaccount}
     />
   );
 };

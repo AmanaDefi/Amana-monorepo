@@ -4,6 +4,7 @@ import { Address } from "thirdweb";
 import DepositModal from "./DepositModal";
 import WithdrawModal from "./WithdrawModal";
 import mixpanel from "mixpanel-browser";
+import { Account } from "thirdweb/wallets";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -16,7 +17,7 @@ interface VaultsViewProps {
   setTransactionAmount: (value: string) => void;
   depositTransaction: (value: Address) => Promise<any>;
   withdrawTransaction: (value: Address) => Promise<any>;
-  usdcBalance: string;
+  activeAccount: Account | null;
 }
 
 const VaultsView: React.FC<VaultsViewProps> = ({
@@ -30,7 +31,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   setTransactionAmount,
   depositTransaction,
   withdrawTransaction,
-  usdcBalance,
+  activeAccount,
 }) => {
 
   const [isDepositModalOpen, setDepositModalOpen] = useState(false);
@@ -168,13 +169,14 @@ const VaultsView: React.FC<VaultsViewProps> = ({
         </div>
       )}
 
-      <DepositModal
+<DepositModal
         isOpen={isDepositModalOpen}
         closeModal={() => setDepositModalOpen(false)}
         transactionAmount={transactionAmount}
         setTransactionAmount={setTransactionAmount}
         handleDeposit={handleDeposit}
-        usdcBalance={usdcBalance}
+        activeAccount={activeAccount}
+        selectedVault={selectedVault} // Pass selectedVault to DepositModal
         isProcessing={isProcessing}
       />
       <WithdrawModal
