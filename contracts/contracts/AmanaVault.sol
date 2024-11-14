@@ -13,6 +13,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
+import "hardhat/console.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
 // This makes logical sense in that it is the underlying asset that the strategy is investing
@@ -145,6 +146,7 @@ contract AmanaVault is
             _crossChainWithdrawPartTwo(userAddress, amount, fee, shares); // TODO does shares really need to be here?
         } else {
             if (userAddress == address(0)) revert CantBeZeroAddress();
+            console.log("Depositing from another chain");
             _crossChainDeposit(userAddress, amount, zrc20); // _crossChainDeposit means from another chain - will handle deposit to strat on ZC or other
         }
     }
@@ -218,27 +220,56 @@ contract AmanaVault is
     function totalAssets() public view virtual override returns (uint256) {
         VaultStorage storage $ = _getVaultStorage();
         // Get the amount of USDC held directly by the vault
-        uint256 usdcBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 strategyUSDCValue;
+        uint256 assetBalanceOnVault = IERC20(asset()).balanceOf(address(this));
+        uint256 assetBalanceInStrategy;
         // Call the strategy to get the equivalent value of aArbUSDC in terms of USDC
         if (block.chainid == $.strategyChainId) {
-            strategyUSDCValue = IStrategy($.strategyAddress)
+            // TODO - change block.chainid to the Zetachain chain id (7000 for mainnet, 7001 for testnet)
+            assetBalanceInStrategy = IStrategy($.strategyAddress)
                 .totalUnderlyingAssets();
             // Return the total assets: USDC held in the vault + USDC equivalent held in the strategy
-            return usdcBalance + strategyUSDCValue;
+            return assetBalanceOnVault + assetBalanceInStrategy;
         } else {
             // TODO - update this part of the function to calculate value of assets on a different chain
             // This will have to be a cross chain call - accessing the totalUnderlyingAssets view function
-            return usdcBalance + strategyUSDCValue;
+            uint256 gasLimit = 7000000; // could potentially reduce to 7000000
+
+            bytes memory recipient = abi.encodePacked($.strategyAddress);
+
+            bytes4 functionSelector = bytes4(
+                keccak256(bytes("totalUnderlyingAssets()"))
+            );
+
+            bytes memory outgoingMessage = abi.encodePacked(functionSelector);
+
+            RevertOptions memory revertOptions = RevertOptions(
+                0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+                false, // callOnRevert
+                address(this), // abortAddress
+                bytes("revert message"),
+                uint256(30000000) // onRevertGasLimit
+            );
+
+            CallOptions memory callOptions = CallOptions(gasLimit, true);
+
+            // this function (potentially) modifies state, so can't be used inside a view function
+            // IGatewayZEVM(_GATEWAY_ADDRESS).call(
+            //     recipient,
+            //     address(asset()),
+            //     outgoingMessage,
+            //     callOptions,
+            //     revertOptions
+            // );
+            return assetBalanceOnVault + assetBalanceInStrategy;
         }
     }
 
     function _crossChainInvest(uint256 amount) internal {
         VaultStorage storage $ = _getVaultStorage();
-        (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 ETH.BASESEPOLIA
+        (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
 
-        uint256 gasLimit = 7000000; // TODO could potentially reduce to 7000000
+        uint256 gasLimit = 350000; // TODO could potentially reduce to 7000000
         if (gas_zrc20 != address(asset())) {
             IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
         }
@@ -257,11 +288,11 @@ contract AmanaVault is
             false, // callOnRevert
             address(this), // abortAddress
             bytes("revert message"),
-            uint256(7000000) // onRevertGasLimit
+            uint256(0) // onRevertGasLimit
         );
 
         CallOptions memory callOptions = CallOptions(gasLimit, true);
-
+        console.log("Executing withdrawAndCall");
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
             recipient, // this contains the recipient smart contract address - the strategy address in this case
             amount, // amount of zrc20 to withdraw
@@ -426,12 +457,14 @@ contract AmanaVault is
         _mint(receiver, shares);
 
         if (block.chainid == $.strategyChainId) {
+            console.log("Investing on ZC");
             bool success = IERC20(asset()).approve($.strategyAddress, assets);
             if (!success) revert ApprovalFailed();
             IStrategy($.strategyAddress).invest(assets);
         } else {
             uint256 outputAmount = assets;
             if (zrc20source != address(asset())) {
+                console.log("swapping");
                 outputAmount = swapExactTokensForTokens(
                     zrc20source,
                     assets,
@@ -536,7 +569,7 @@ contract AmanaVault is
         } else {
             (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 address of the gas token of the strategy chain
             IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
-            uint256 gasLimit = 30000000; // could potentially reduce to 7000000
+            uint256 gasLimit = 7000000; // could potentially reduce to 7000000
 
             bytes memory recipient = abi.encodePacked($.strategyAddress);
 
@@ -608,7 +641,7 @@ contract AmanaVault is
         } else {
             (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 address of the gas token of the strategy chain
             IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
-            uint256 gasLimit = 30000000; // TODO could potentially reduce to 7000000
+            uint256 gasLimit = 7000000; // TODO could potentially reduce to 7000000
 
             bytes memory recipient = abi.encodePacked($.strategyAddress);
 
