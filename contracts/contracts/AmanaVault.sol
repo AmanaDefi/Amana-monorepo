@@ -86,6 +86,12 @@ contract AmanaVault is
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
     event ContextDataRevert(RevertContext);
+    event WithdrawFromStrategy(
+        address indexed user,
+        uint256 amount,
+        uint256 fee,
+        uint256 shares
+    );
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -139,11 +145,11 @@ contract AmanaVault is
             uint256 shares
         ) = abi.decode(message, (address, uint256, uint256, uint256));
         if (amount == 0) {
-            _crossChainWithdraw(userAddress, withdrawAmount);
+            _crossChainWithdrawToStrategy(userAddress, withdrawAmount);
         } else if (withdrawAmount == 1) {
             // this indicates that the strategy is sending assets back to the vault
             // we then send the amount back to the owner on the EVM in USDC
-            _crossChainWithdrawPartTwo(userAddress, amount, fee, shares); // TODO does shares really need to be here?
+            _crossChainWithdrawToUser(userAddress, amount, fee, shares); // TODO does shares really need to be here?
         } else {
             if (userAddress == address(0)) revert CantBeZeroAddress();
             console.log("Depositing from another chain");
@@ -610,7 +616,7 @@ contract AmanaVault is
     /**
      * @dev Withdraw/redeem common workflow.
      */
-    function _crossChainWithdraw(
+    function _crossChainWithdrawToStrategy(
         // address receiver, // Might this be needed later?
         address user,
         uint256 assets
@@ -637,7 +643,8 @@ contract AmanaVault is
                 assets + feeToWithdraw,
                 fractionToWithdraw
             );
-            _crossChainWithdrawPartTwo(user, assets, feeToWithdraw, shares);
+            emit WithdrawFromStrategy(user, assets, feeToWithdraw, shares);
+            _crossChainWithdrawToUser(user, assets, feeToWithdraw, shares);
         } else {
             (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 address of the gas token of the strategy chain
             IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
@@ -676,11 +683,13 @@ contract AmanaVault is
                 callOptions,
                 revertOptions
             );
+            emit WithdrawFromStrategy(user, assets, feeToWithdraw, shares);
+            console.log("shares: ", shares);
         }
         // return shares - do I still need this here (it's in the original withdraw external function)
     }
 
-    function _crossChainWithdrawPartTwo(
+    function _crossChainWithdrawToUser(
         address userAddress,
         uint256 amount,
         uint256 fee,
@@ -703,10 +712,34 @@ contract AmanaVault is
             bytes("revert message"),
             uint256(30000000) // onRevertGasLimit
         );
+        address equivalentTokenOnUserChain = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // TODO - this is ETH.BASESEPOLIA, but I need to find this dynamically
+        // I think I can pass this through from when the user initiates the withdraw?
+        uint256 outputAmount = amount;
+        console.log("amount: ", amount);
+        if (address(asset()) != equivalentTokenOnUserChain) {
+            console.log("swapping");
+            outputAmount = swapExactTokensForTokens(
+                address(asset()),
+                amount,
+                equivalentTokenOnUserChain,
+                0
+            );
+            console.log("outputAmount: ", outputAmount);
+        }
+        uint256 outputbalance = IZRC20(equivalentTokenOnUserChain).balanceOf(
+            address(this)
+        );
+        console.log("outputbalance: ", outputbalance);
+        bool success = IZRC20(equivalentTokenOnUserChain).approve(
+            _GATEWAY_ADDRESS,
+            outputAmount
+        );
+        if (!success) revert ApprovalFailed();
+        // The withdraw here requires gas for the withdrawal, so I can't withdraw the full balance (or I have to add ETH_BASESEPOLIA to the vault)
         IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
             recipient, // this has to be the address of the owner/user on the EVM
-            amount, // the amount that the strategy has sent back
-            address(asset()), // TODO - when I move beyond the localnet, may need to re - specify this? Maybe need origin_asset AND target_asset?
+            (outputAmount * 9) / 10, // the amount that the strategy has sent back
+            equivalentTokenOnUserChain,
             revertOptions // do these need to be different from the revertOptions in deposit?
         );
         emit Withdraw(userAddress, userAddress, userAddress, amount, shares);
