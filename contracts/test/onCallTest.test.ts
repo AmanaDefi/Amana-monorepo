@@ -4,7 +4,12 @@ import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { AmanaVault, IERC20 } from "../typechain";
 
-import { ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS, ZC_TEST_ETH_SEPOLIA_HOLDER_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../constants";
+import {
+  ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS,
+  ZC_TEST_ETH_SEPOLIA_HOLDER_ADDRESS,
+  ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+  ZC_TEST_ETH_SEPOLIA_ADDRESS,
+} from "../../constants";
 
 describe("Vault and BaseSepAaveEthStrategy", function () {
   let amanaVault: AmanaVault;
@@ -20,8 +25,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
   const ORIGIN_CHAIN_ID = 84532; // where the deposit/withdrawal originated from
 
-  const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE" // "0x8106Ca539dC8D40dD448FFf3cad41C8eD8C57BFB"; // BaseSepAaveEthStrategy address
-  const STRATEGY_CHAIN_ID = 11155111 // 84532; // Replace with your chain ID for testnet or mainnet
+  const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE"; // BaseSepAaveEthStrategy address
+  const STRATEGY_CHAIN_ID = 11155111; // Replace with your chain ID for testnet or mainnet
 
   before(async () => {
     // Use this function if you need global setup before tests
@@ -55,7 +60,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const depositAmount = ethers.utils.parseUnits("0.01", 18);
       console.log("Amount of ETH to be deposited: ", depositAmount.toString());
 
-      // await ethBaseSepolia.connect(ethBaseSepHolder).transfer(await user1.getAddress(), depositAmount);
+      // We simulate the deposit part of the depositAndCall tx that would normally happen in a deposit scenario
       await ethBaseSepolia.connect(ethBaseSepHolder).transfer(amanaVault.address, depositAmount);
       console.log("Amount of ethBaseSepolia sent to vault: ", depositAmount.toString());
 
@@ -64,74 +69,12 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         params: [ZC_TEST_ETH_SEPOLIA_HOLDER_ADDRESS],
       });
       const ethSepHolder = await ethers.getSigner(ZC_TEST_ETH_SEPOLIA_HOLDER_ADDRESS);
-      await ethSepolia.connect(ethSepHolder).transfer(amanaVault.address, depositAmount.mul(2));
-      console.log("Amount of ethSepolia sent to vault: ", depositAmount.mul(2).div(1000).toString());
+      // We need to send a certain amount of the gasToken of the strategyChain to the vault to pay gas fees for cross chain calls to that chain
+      await ethSepolia.connect(ethSepHolder).transfer(amanaVault.address, depositAmount.mul(2).div(1));
+      console.log("Amount of ethSepolia sent to vault: ", depositAmount.mul(2).div(10).toString());
 
-      return { owner, user1, depositAmount, ethBaseSepolia, usdt, amanaVault };
+      return { owner, user1, depositAmount, ethBaseSepolia, ethSepHolder, usdt, amanaVault };
     }
-
-    // it("should process onCall correctly with amount 0 (cross-chain withdraw)", async function () {
-    //   const { user1, amanaVault } = await loadFixture(setup);
-    //   const userAddress = await user1.getAddress();
-    //   const withdrawAmount = ethers.utils.parseUnits("0.01", 18);
-    //   const fee = 0;
-    //   const shares = 0;
-
-    //   const message = ethers.utils.defaultAbiCoder.encode(
-    //     ["address", "uint256", "uint256", "uint256"],
-    //     [userAddress, withdrawAmount, fee, shares]
-    //   );
-
-    //   // Test onCall function with amount = 0
-    //   await expect(
-    //     amanaVault.onCall(
-    //       {
-    //         // MessageContext can be empty as it's not used
-    //         chainId: 0,
-    //         sourceAddress: ethers.constants.AddressZero,
-    //         nonce: 0,
-    //         symbol: "",
-    //       },
-    //       ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-    //       0, // amount
-    //       message
-    //     )
-    //   )
-    //     .to.emit(amanaVault, "Withdraw")
-    //     .withArgs(userAddress, userAddress, userAddress, withdrawAmount, shares);
-    // });
-
-    // it("should process onCall correctly with withdrawAmount = 1 (cross-chain withdraw part two)", async function () {
-    //   const { user1, amanaVault } = await loadFixture(setup);
-    //   const userAddress = await user1.getAddress();
-    //   const withdrawAmount = 1; // Indicates strategy is sending assets back
-    //   const fee = ethers.utils.parseUnits("0.001", 18);
-    //   const shares = ethers.utils.parseUnits("0.005", 18);
-    //   const amount = ethers.utils.parseUnits("0.01", 18); // Amount sent back to vault
-
-    //   const message = ethers.utils.defaultAbiCoder.encode(
-    //     ["address", "uint256", "uint256", "uint256"],
-    //     [userAddress, withdrawAmount, fee, shares]
-    //   );
-
-    //   // Test onCall function with withdrawAmount = 1
-    //   await expect(
-    //     amanaVault.onCall(
-    //       {
-    //         // MessageContext can be empty as it's not used
-    //         chainId: 0,
-    //         sourceAddress: ethers.constants.AddressZero,
-    //         nonce: 0,
-    //         symbol: "",
-    //       },
-    //       ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-    //       amount,
-    //       message
-    //     )
-    //   )
-    //     .to.emit(amanaVault, "Withdraw")
-    //     .withArgs(userAddress, userAddress, userAddress, amount.sub(fee), shares);
-    // });
 
     it("should process onCall correctly with deposit scenario (cross-chain deposit)", async function () {
       const { user1, amanaVault } = await loadFixture(setup);
@@ -146,34 +89,156 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         ["address", "uint256", "uint256", "uint256"],
         [userAddress, withdrawAmount, fee, shares]
       );
+
       // Test onCall function with deposit scenario
-      const tx = await
-        amanaVault.onCall(
-          {
-            // MessageContext can be empty as it's not used
-            origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
-            sender: userAddress,
-            chainID: ORIGIN_CHAIN_ID,
-          },
-          ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-          amount,
-          message,
-          {
-            gasPrice: ethers.utils.parseUnits('150', 'gwei'), // Set gas price
-            // gasLimit: 2000000 // Set gas limit (adjust value as needed)
-          }
+      const tx = await amanaVault.onCall(
+        {
+          // MessageContext can be empty as it's not used
+          origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+          sender: userAddress,
+          chainID: ORIGIN_CHAIN_ID,
+        },
+        ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+        amount,
+        message,
+        {
+          gasPrice: ethers.utils.parseUnits('150', 'gwei'), // Set gas price
+        }
+      );
 
-        )
-
-      // Wait for the transaction receipt
       const receipt = await tx.wait();
-
-      // Log the gas used
-      console.log("Gas used for the deposit scenario:", receipt.gasUsed.toString());
+      console.log("Gas used for deposit scenario:", receipt.gasUsed.toString());
 
       await expect(tx)
         .to.emit(amanaVault, "Deposit")
         .withArgs(ethers.constants.AddressZero, userAddress, amount, expected_shares);
+    });
+
+    it("should process onCall correctly with amount 0 (cross-chain withdraw)", async function () {
+      const { user1, amanaVault } = await loadFixture(setup);
+
+      // Deposit first
+      const userAddress = await user1.getAddress();
+      const depositAmount = ethers.utils.parseUnits("0.01", 18);
+      const depositMessage = ethers.utils.defaultAbiCoder.encode(
+        ["address", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.BigNumber.from(0), 0, 0]
+      );
+      await amanaVault.onCall(
+        {
+          origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+          sender: userAddress,
+          chainID: ORIGIN_CHAIN_ID,
+        },
+        ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+        depositAmount,
+        depositMessage
+      );
+
+      // Proceed to withdraw
+      const withdrawAmount = ethers.utils.parseUnits("0.001", 18);
+      const fee = 0;
+      const shares = 0;
+
+      const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
+        ["address", "uint256", "uint256", "uint256"],
+        [userAddress, withdrawAmount, fee, shares]
+      );
+
+      // Test onCall function with amount = 0
+      const tx = await amanaVault.onCall(
+        {
+          origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+          sender: userAddress,
+          chainID: ORIGIN_CHAIN_ID,
+        },
+        ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+        0, // amount
+        withdrawMessage
+      );
+
+      const receipt = await tx.wait();
+      console.log("Gas used for withdrawal scenario:", receipt.gasUsed.toString());
+
+      await expect(tx)
+        .to.emit(amanaVault, "WithdrawFromStrategy")
+      // .withArgs(userAddress, userAddress, userAddress, withdrawAmount, shares);
+    });
+
+    it("should process onCall correctly with withdrawAmount = 1 (cross-chain withdraw part two)", async function () {
+      const { user1, amanaVault, ethSepHolder } = await loadFixture(setup);
+
+      // Deposit first
+      const userAddress = await user1.getAddress();
+      const depositAmount = ethers.utils.parseUnits("0.01", 18);
+      const depositMessage = ethers.utils.defaultAbiCoder.encode(
+        ["address", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.BigNumber.from(0), 0, 0]
+      );
+      await amanaVault.onCall(
+        {
+          origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+          sender: userAddress,
+          chainID: ORIGIN_CHAIN_ID,
+        },
+        ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+        depositAmount,
+        depositMessage
+      );
+
+      // Proceed to withdraw
+      const withdrawAmount = ethers.utils.parseUnits("0.001", 18);
+      const fee = 0;
+      const shares = 0;
+
+      const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
+        ["address", "uint256", "uint256", "uint256"],
+        [userAddress, withdrawAmount, fee, shares]
+      );
+
+      await amanaVault.onCall(
+        {
+          origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+          sender: userAddress,
+          chainID: ORIGIN_CHAIN_ID,
+        },
+        ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+        0, // amount
+        withdrawMessage
+      );
+
+
+      // Proceed to second part of withdrawal
+      const withdrawAmount2 = 1; // Indicates strategy is sending assets back
+      const fee2 = ethers.utils.parseUnits("0", 18);
+      const shares2 = ethers.utils.parseUnits("0.001", 18);
+      const amount2 = ethers.utils.parseUnits("0.001", 18); // Amount sent back to vault
+
+      const withdrawMessage2 = ethers.utils.defaultAbiCoder.encode(
+        ["address", "uint256", "uint256", "uint256"],
+        [userAddress, withdrawAmount2, fee2, shares2]
+      );
+
+      await ethSepolia.connect(ethSepHolder).transfer(ZC_TEST_ETH_SEPOLIA_ADDRESS, depositAmount); // TODO: make this address dynamic?
+
+      // Test onCall function with withdrawAmount = 1
+      const tx2 = await amanaVault.onCall(
+        {
+          origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+          sender: STRATEGY_ADDRESS,
+          chainID: STRATEGY_CHAIN_ID,
+        },
+        ZC_TEST_ETH_SEPOLIA_ADDRESS,
+        amount2,
+        withdrawMessage2
+      );
+
+      const receipt = await tx2.wait();
+      console.log("Gas used for withdrawal part two scenario:", receipt.gasUsed.toString());
+
+      await expect(tx2)
+        .to.emit(amanaVault, "Withdraw")
+        .withArgs(userAddress, userAddress, userAddress, amount2.sub(fee), shares);
     });
   });
 });
