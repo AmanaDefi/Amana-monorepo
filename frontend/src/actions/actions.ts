@@ -139,19 +139,17 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     chain: activeChain,
     address: vaultId
   });
-  console.log("contract", contract);
+  await sendAndConfirmTransaction({
+    account: activeAccount,
+    transaction: approveTx
+  });
+  console.log("Approval confirmed");
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets,  address receiver)",
     params: [transactionAmount, activeAccount?.address]
   });
-  await sendAndConfirmTransaction({
-    account: activeAccount,
-    transaction: approveTx
-  });
-
-  console.log("Approval confirmed");
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx
