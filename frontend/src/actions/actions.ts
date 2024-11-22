@@ -150,6 +150,7 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
       "function deposit(uint256 assets,  address receiver)",
     params: [transactionAmount, activeAccount?.address]
   });
+  console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx
