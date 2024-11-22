@@ -5,6 +5,8 @@ import DepositModal from "./DepositModal";
 import WithdrawModal from "./WithdrawModal";
 import mixpanel from "mixpanel-browser";
 import { Account } from "thirdweb/wallets";
+import { selectedVaultIdAtom } from "@/atoms";
+import { useAtom } from "jotai";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -15,6 +17,7 @@ interface VaultsViewProps {
   vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
   transactionAmount: string;
   setTransactionAmount: (value: string) => void;
+  setActiveSection: (value: string) => void;
   depositTransaction: (value: Address) => Promise<any>;
   withdrawTransaction: (value: Address) => Promise<any>;
   activeAccount: Account | null;
@@ -29,6 +32,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   vaultTotalAssetsinToken,
   transactionAmount,
   setTransactionAmount,
+  setActiveSection,
   depositTransaction,
   withdrawTransaction,
   activeAccount,
@@ -38,6 +42,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [selectedVault, setSelectedVault] = useState<VaultData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedVaultId, setSelectedVaultId] = useAtom(selectedVaultIdAtom)
 
   const handleDepositClick = (vault: VaultData) => {
     setSelectedVault(vault);
@@ -120,7 +125,10 @@ const VaultsView: React.FC<VaultsViewProps> = ({
             </thead>
             <tbody className="bg-gray-900">
               {vaults.map((vault) => (
-                <tr key={vault.id}>
+                <tr key={vault.id}
+                  onClick={() => { setActiveSection("vaultsDetail"), setSelectedVaultId(vault.id) }}
+                  role="button"
+                >
                   <td className="px-4 py-4 whitespace-nowrap">
                     {vault.protocol.network}
                   </td>
@@ -169,7 +177,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
         </div>
       )}
 
-<DepositModal
+      <DepositModal
         isOpen={isDepositModalOpen}
         closeModal={() => setDepositModalOpen(false)}
         transactionAmount={transactionAmount}

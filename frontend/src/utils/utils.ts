@@ -49,3 +49,8 @@ export function formatAddress(rawAddress: string): string {
 
   return formattedAddress;
 }
+
+export const NumberFormatter = Intl.NumberFormat("en", {
+  //@ts-ignore
+  notation: "compact",
+});

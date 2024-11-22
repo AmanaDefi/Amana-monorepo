@@ -4,11 +4,12 @@ import React, { useState, useEffect } from "react";
 import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { client } from "../utils/client";
 import VaultsContainer from "../containers/VaultsContainer";
+import VaultsDetailContainer from "../containers/VaultsDetailContainer";
 import BuyContainer from "../containers/BuyContainer";
 import About from "../components/About";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
-import { ZC_USDC_ETH_ADDRESS } from "../../../constants";
+import { ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../../constants";
 import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
 import { Account } from "thirdweb/wallets";
@@ -37,8 +38,8 @@ interface FeatureCardProps {
 
 interface AuthenticatedAppProps {
   account: Account;
-  activeSection: "vaults" | "buy" | "about";
-  setActiveSection: React.Dispatch<React.SetStateAction<"vaults" | "buy" | "about">>;
+  activeSection: string;
+  setActiveSection: (value: string) => void;
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) => (
@@ -51,7 +52,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) => (
 
 export default function Page() {
   const account = useActiveAccount();
-  const [activeSection, setActiveSection] = useState<"vaults" | "buy" | "about">("vaults");
+  const [activeSection, setActiveSection] = useState("vaults");
 
   useEffect(() => {
     mixpanel.init("1f01d05893463c7ba9d4ac7280821010", {
@@ -100,25 +101,22 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
           </div>
           <ul className="space-y-4">
             <li
-              className={`cursor-pointer ${
-                activeSection === "vaults" ? "font-bold" : ""
-              }`}
+              className={`cursor-pointer ${activeSection === "vaults" ? "font-bold" : ""
+                }`}
               onClick={() => setActiveSection("vaults")}
             >
               Vaults
             </li>
             <li
-              className={`cursor-pointer ${
-                activeSection === "buy" ? "font-bold" : ""
-              }`}
+              className={`cursor-pointer ${activeSection === "buy" ? "font-bold" : ""
+                }`}
               onClick={() => setActiveSection("buy")}
             >
               Fund Wallet
             </li>
             <li
-              className={`cursor-pointer ${
-                activeSection === "about" ? "font-bold" : ""
-              }`}
+              className={`cursor-pointer ${activeSection === "about" ? "font-bold" : ""
+                }`}
               onClick={() => setActiveSection("about")}
             >
               About
@@ -130,7 +128,8 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
       {/* Main content */}
       <div className="flex-1 flex flex-col justify-between py-20 pl-6">
         <div className="flex-1">
-          {activeSection === "vaults" && <VaultsContainer />}
+          {activeSection === "vaults" && <VaultsContainer setActiveSection={setActiveSection} />}
+          {activeSection === "vaultsDetail" && <VaultsDetailContainer setActiveSection={setActiveSection} />}
           {activeSection === "buy" && <BuyContainer />}
           {activeSection === "about" && <About />}
         </div>
@@ -149,7 +148,7 @@ function AuthenticatedApp({ account, activeSection, setActiveSection }: Authenti
           // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
           detailsButton={{
             displayBalanceToken: {
-              [SUPPORTED_CHAINS.id]: ZC_USDC_ETH_ADDRESS,
+              [7001]: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
             },
           }}
         />
@@ -165,14 +164,14 @@ function UnauthenticatedLandingPage() {
       <header className="flex justify-between items-center py-6">
         <div className="text-2xl font-bold">Amana</div>
         <nav className="flex space-x-4">
-          <ConnectButton 
-              client={client} 
-              chains={SUPPORTED_CHAINS}
-              wallets={wallets} 
-              connectButton={{ label: "Launch App" }} 
-              connectModal={{ size: "compact" }}
-              // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
-              />
+          <ConnectButton
+            client={client}
+            chains={SUPPORTED_CHAINS}
+            wallets={wallets}
+            connectButton={{ label: "Launch App" }}
+            connectModal={{ size: "compact" }}
+          // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
+          />
         </nav>
       </header>
 
