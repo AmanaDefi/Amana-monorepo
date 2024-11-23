@@ -144,6 +144,8 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     transaction: approveTx
   });
   console.log("Approval confirmed");
+  console.log("active account", activeAccount?.address);
+  console.log("transactionAmount", transactionAmount);
   const supplyTx = prepareContractCall({
     contract,
     method:
