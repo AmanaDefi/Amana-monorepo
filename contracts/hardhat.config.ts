@@ -35,7 +35,7 @@ const config: HardhatUserConfig = {
       chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
       forking: {
         url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 7668161 // 20113140, //  
+        blockNumber: 7789000 // 20113140, //  
       },
       allowUnlimitedContractSize: true,
     },
@@ -117,6 +117,9 @@ const config: HardhatUserConfig = {
   typechain: {
     outDir: "typechain",  // This is where Typechain outputs the generated types
     target: "ethers-v5",  // Target ethers.js
+  },
+  mocha: {
+    timeout: 60000,  // Set the timeout to 60 seconds,
   },
 };
 
