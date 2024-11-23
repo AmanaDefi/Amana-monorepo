@@ -102,23 +102,23 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       imgURL: "/aave.png"
     },
   },
-  // {
-  //   id: "0xBF1A6cfD6edF6E6B944ea4b55aa77B5B21356014", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
-  //   name: "AaveV3 ETH - Eth Sepolia",
-  //   symbol: "aAaveETH",
-  //   inputToken: {
-  //     symbol: "ETH",
-  //     decimals: 18,
-  //     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 3040
-  //   },
-  //   protocol: {
-  //     name: "Aave",
-  //     network: "Eth Sepolia",
-  //     imgURL: "/aave.png"
-  //   },
-  // },
+  {
+    id: "0xBF1A6cfD6edF6E6B944ea4b55aa77B5B21356014", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
+    name: "AaveV3 ETH - Eth Sepolia",
+    symbol: "aAaveETH",
+    inputToken: {
+      symbol: "ETH",
+      decimals: 18,
+      address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 3040
+    },
+    protocol: {
+      name: "Aave",
+      network: "Eth Sepolia",
+      imgURL: "/aave.png"
+    },
+  },
 ];
 
 // Export the appropriate vault data based on DEPLOY_ENV
