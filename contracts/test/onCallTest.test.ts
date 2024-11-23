@@ -45,9 +45,10 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         ["AaveV3EthVault", "AVU", VAULT_ASSET, await owner.getAddress(), 1000, ZEVM_GATEWAY_ADDRESS, SYSTEM_CONTRACT_ADDRESS], // FeeRate 10%
         { initializer: "initialize" }
       );
-
+      console.log("AmanaVault deployed to:", amanaVault.address);
       // Set the strategy in the AmanaVault contract
       await amanaVault.setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID);
+      console.log("Strategy set to:", STRATEGY_ADDRESS);
 
       // Impersonate a holder
       await network.provider.request({
