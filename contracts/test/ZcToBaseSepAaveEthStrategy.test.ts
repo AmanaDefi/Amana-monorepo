@@ -2,17 +2,61 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { AmanaVault, BaseSepAaveEthStrategy, IERC20 } from "../typechain";
+import { AmanaVault, IERC20 } from "../typechain";
 
-import { ZC_TEST_WETH_ADDRESS } from "../../constants";
 import { BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS } from "../../constants";
-import { ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS } from "../../constants";
-import { ZC_TEST_WETH_HOLDER_ADDRESS } from "../../constants";
 import { ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../constants";
+
+async function setTokenBalance(tokenAddress, account, amount) {
+  console.log("=== Starting setTokenBalance ===");
+
+  // Ensure amount is a BigNumber
+  const balanceAmount = ethers.BigNumber.from(amount);
+
+  // Compute the storage slot for balances (slot 0 for most ERC20 tokens)
+  const storageSlot = 3;
+  console.log("Using storage slot:", storageSlot);
+
+  // Normalize and log the account address
+  const normalizedAccount = ethers.utils.getAddress(account);
+  console.log("Normalized account address:", normalizedAccount);
+
+  // Compute the storage key for the account's balance
+  const key = ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(["address", "uint256"], [normalizedAccount, storageSlot])
+  );
+  console.log("Computed storage key for balance:", key);
+  // Verify the storage slot directly
+  const initialStorage = await network.provider.send("eth_getStorageAt", [tokenAddress, key, "latest"]);
+  console.log("Storage at key before update:", initialStorage);
+
+  // Log the intended balance
+  console.log("Setting balance to:", balanceAmount.toString());
+
+  // Set the balance in storage
+  await network.provider.send("hardhat_setStorageAt", [
+    tokenAddress,
+    key,
+    ethers.utils.hexZeroPad(balanceAmount.toHexString(), 32), // Ensure 32-byte padding
+  ]);
+  console.log("Updated storage at key:", key);
+
+  // Verify the storage slot directly
+  const updatedStorage = await network.provider.send("eth_getStorageAt", [tokenAddress, key, "latest"]);
+  console.log("Storage at key after update:", updatedStorage);
+
+  // Verify the new balance
+  const token = await ethers.getContractAt("IERC20", tokenAddress);
+  const newBalance = await token.balanceOf(account);
+  console.log(`Balance after update for ${account}: ${ethers.utils.formatUnits(newBalance, 18)} tokens`);
+
+  console.log("=== Completed setTokenBalance ===");
+}
+
+
 
 describe("Vault and BaseSepAaveEthStrategy", function () {
   let amanaVault: AmanaVault;
-  let strategy: BaseSepAaveEthStrategy;
   let ethBaseSepolia: IERC20;
   let usdt: IERC20;
   let aaveToken: IERC20;
@@ -22,7 +66,11 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
   const errorMargin = 5;
   const FeeRate = BigNumber.from(1000); // 10% fee
   const rewardAmount = ethers.utils.parseUnits("100", 6);
-  const BASE_CHAIN_ID = 8453;
+  const gatewayAddress = "0x6c533f7fe93fae114d0954697069df33c9b74fd7";
+  const systemAddress = "0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B";
+
+  const STRATEGY_ADDRESS = "0x8106Ca539dC8D40dD448FFf3cad41C8eD8C57BFB"; // BaseSepAaveEthStrategy address
+  const STRATEGY_CHAIN_ID = 84532; // Replace with your chain ID for testnet or mainnet
 
   before(async () => {
     // Use this function if you need global setup before tests
@@ -30,6 +78,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
   describe("BaseSepAaveEthStrategy Investment", function () {
     async function setup() {
+
       // Get signers
       [owner, user1, user2] = await ethers.getSigners();
 
@@ -41,38 +90,32 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const Vault = await ethers.getContractFactory("AmanaVault", owner);
       amanaVault = await upgrades.deployProxy(
         Vault,
-        ["AaveV3EthVault", "AVU", ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), FeeRate],
-        { initializer: "initialize" }
+        ["AaveV3EthVault", "AVU", ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), FeeRate, gatewayAddress, systemAddress],
+        {
+          initializer: "initialize",
+        },
       );
+      console.log("AmanaVault deployed to:", amanaVault.address);
 
-      // Impersonate a holder
-      await network.provider.request({
-        method: "hardhat_impersonateAccount",
-        params: [ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS],
-      });
-      const ethHolder = await ethers.getSigner(ZC_TEST_ETH_BASESEPOLIA_HOLDER_ADDRESS);
+      // Set the strategy in the AmanaVault contract
+      await amanaVault.setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID);
+      console.log("Strategy set to:", STRATEGY_ADDRESS);
 
       // Set initial balances
       const depositAmount1 = ethers.utils.parseUnits("0.01", 18);
       const depositAmount2 = ethers.utils.parseUnits("0.05", 18);
 
-      await ethBaseSepolia.connect(ethHolder).transfer(await user1.getAddress(), depositAmount1.mul(2));
-      await ethBaseSepolia.connect(ethHolder).transfer(await user2.getAddress(), depositAmount2.mul(2));
-      await ethBaseSepolia.connect(ethHolder).transfer(await amanaVault.address, depositAmount1.mul(2));
+      await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, amanaVault.address, depositAmount1.mul(2));
+      await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await user1.getAddress(), depositAmount1);
+      await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await user2.getAddress(), depositAmount2);
 
-      await network.provider.request({
-        method: "hardhat_impersonateAccount",
-        params: [ZC_TEST_WETH_HOLDER_ADDRESS],
-      });
-      const usdtHolder = await ethers.getSigner(ZC_TEST_WETH_HOLDER_ADDRESS);
-      usdt = await ethers.getContractAt("IERC20", ZC_TEST_WETH_ADDRESS);
+      console.log("ETH Base Sepolia balance: ", await ethBaseSepolia.balanceOf(amanaVault.address));
 
-      await usdt.connect(usdtHolder).transfer(amanaVault.address, rewardAmount);
       return { owner, user1, user2, depositAmount1, depositAmount2, ethBaseSepolia, usdt, amanaVault };
     }
 
     it("should invest USDC into Aave via the strategy", async function () {
-      const { user1, depositAmount1, ethBaseSepolia, amanaVault } = await loadFixture(setup);
+      const { user1, depositAmount1, amanaVault } = await loadFixture(setup);
       await ethBaseSepolia.connect(user1).approve(amanaVault.address, depositAmount1);
       await amanaVault.connect(user1).deposit(depositAmount1, await user1.getAddress());
 
