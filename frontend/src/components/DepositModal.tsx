@@ -5,6 +5,7 @@ import { Address, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { client } from "../utils/client";
 import { useActiveWalletChain } from "thirdweb/react";
+import { ethers } from "ethers";
 
 const DepositModal: React.FC<{
   isOpen: boolean;
@@ -43,7 +44,9 @@ const DepositModal: React.FC<{
           contract,
           address: activeAccount.address as Address,
         });
-        setTokenBalance(value.toString() || "0");
+        const formattedBalance = ethers.formatUnits(value, decimals);
+
+        setTokenBalance(formattedBalance || "0");
       };
       fetchTokenBalance();
     }
