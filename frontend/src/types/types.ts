@@ -1,5 +1,6 @@
 import { ThirdwebClient } from "thirdweb";
 import { ChainOptions } from "thirdweb/chains";
+import { Address } from "viem";
 
 export interface NewUserModalProps {
   isOpen: boolean;
@@ -73,4 +74,22 @@ export interface TransactionResult {
   client: ThirdwebClient;
   chain: Readonly<ChainOptions & { rpc: string }>;
   maxBlocksWaitTime?: number;
+}
+
+export type Balance = {
+  value: bigint;
+  formatted: string;
+  formattedUSD: string;
+}
+
+export interface Token {
+  address: Address;
+  symbol: string;
+  decimals: number;
+  imgURL: string;
+  price: number
+}
+
+export interface TokenByAddress {
+  [key: Address]: Token;
 }

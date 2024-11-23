@@ -27,7 +27,7 @@ const zetaChain = defineChain({
     {
       name: "Zeta Explorer",
       url: deployEnv === "testnet"
-        ? "https://testnet.explorer.zetachain.com"
+        ? "https://zetachain-testnet.blockscout.com/"
         : "https://explorer.zetachain.com",
       standard: "EIP3091",
     },

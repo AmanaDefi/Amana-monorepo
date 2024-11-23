@@ -137,7 +137,7 @@ export const useUpdateAPYs = (
                   contract: receiptTokenContract,
                   method: "function minter() view returns (address)",
                 });
-                APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address);
+                // APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address);
               }
 
               return { vaultId: vault.id, APY7d };
