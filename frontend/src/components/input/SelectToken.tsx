@@ -7,14 +7,12 @@ import Modal from "@/components/modal/Modal";
 import { Tooltip } from "react-tooltip";
 
 export interface SelectTokenProps {
-  allowSelection: boolean;
   options: Token[];
   selectedToken: Token;
   selectToken: (token: Token) => void;
 }
 
 export default function SelectToken({
-  allowSelection,
   options,
   selectedToken,
   selectToken
@@ -46,10 +44,9 @@ export default function SelectToken({
       </div>
       <div className="relative w-auto justify-end">
         <span
-          className={`flex flex-row items-center justify-end ${allowSelection ? "cursor-pointer group" : ""
-            }`}
+          className={"flex flex-row items-center justify-end cursor-pointer group"}
           onClick={() => {
-            allowSelection && setShow(true);
+            setShow(true);
           }}
         >
           <div className="md:mr-2 relative flex-none w-5 h-5">
@@ -63,7 +60,7 @@ export default function SelectToken({
             id={selectTokenId}
             className="font-medium text-lg leading-none hidden md:block text-white group-hover:text-white truncate cursor-pointer"
           >
-            {selectedToken?.symbol || "Select Toden"}
+            {selectedToken?.symbol || "Select Token"}
           </p>
           <div className="hidden md:block">
             <Tooltip
@@ -84,13 +81,11 @@ export default function SelectToken({
               {selectedToken?.symbol}
             </Tooltip>
           </div>
-          {allowSelection && (
-            <ChevronDownIcon
-              className={`w-6 h-6 ml-2 text-customGray300 group-hover:text-white 
+          <ChevronDownIcon
+            className={`w-6 h-6 ml-2 text-customGray300 group-hover:text-white 
               transform transition-all ease-in-out duration-200 ${show ? " rotate-180" : ""
-                }`}
-            />
-          )}
+              }`}
+          />
         </span>
       </div>
     </>

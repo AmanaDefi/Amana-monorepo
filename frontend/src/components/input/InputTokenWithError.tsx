@@ -8,7 +8,6 @@ export default function InputTokenWithError({
   tokenList,
   selectedToken,
   errorMessage,
-  allowSelection,
   onSelectToken,
   captionText,
   getToken,
@@ -21,7 +20,6 @@ export default function InputTokenWithError({
   onSelectToken: (token: Token) => void;
   tokenList: Token[];
   selectedToken?: Token;
-  allowSelection?: boolean;
   captionText?: string;
   getToken?: Function;
   allowInput?: boolean;
@@ -48,7 +46,6 @@ export default function InputTokenWithError({
             </div>
             <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
               <SelectToken
-                allowSelection={allowSelection!}
                 selectedToken={selectedToken!}
                 options={tokenList}
                 selectToken={onSelectToken}
