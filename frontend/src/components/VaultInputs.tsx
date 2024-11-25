@@ -8,7 +8,7 @@ import { ArrowDownIcon } from "@heroicons/react/24/outline"
 import { useState, useEffect } from "react"
 import { parseUnits } from "viem"
 import MainActionButton from "@/components/button/MainActionButton"
-import { Address, waitForReceipt, getContract } from "thirdweb";
+import { Address, Chain, waitForReceipt, getContract } from "thirdweb";
 import mixpanel from "mixpanel-browser";
 import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
 import { toast } from "react-toastify";
@@ -16,7 +16,6 @@ import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { Chain } from "thirdweb";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -40,12 +39,6 @@ export default function VaultInputs({
 
   const EOAaccount = useActiveAccount();
 
-  const activeChain = useActiveWalletChain();
-  console.log("activeChain", activeChain)
-  if (!activeChain) {
-    throw new Error("No active chain found");
-  }
-
   useEffect(() => {
     if (EOAaccount) {
       setActiveAccount(EOAaccount);
@@ -57,6 +50,13 @@ export default function VaultInputs({
   if (!EOAaccount) {
     throw new Error("No active account found");
   }
+
+  const activeChain = useActiveWalletChain();
+
+  if (!activeChain) {
+    throw new Error("No active chain found");
+  }
+
   function handleTokenSelect(input: Token): void {
     setInputToken(input);
   }
@@ -175,38 +175,29 @@ export default function VaultInputs({
         EOAaccount={EOAaccount}
         setTransactionCompleted={setTransactionCompleted}
         refetch={refetch}
+        activeChain={activeChain}
       />
     }
   </>
 }
 
-
-
-
-const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, activeChain: Chain, setTransactionCompleted: (value: boolean) => void, refetch: () => void) => {
+const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
   setTransactionCompleted(false)
-  console.log("Handling deposit transaction 1");
   try {
-    console.log("Handling deposit transaction 2");
     const value = Number(inputBalance.value)
-    console.log("value", value)
     const inputToken = vaultData.inputToken;
-    console.log("inputToken", inputToken)
-    const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
-    console.log("scaledAmount", scaledAmount)
-
+    const scaledAmount = BigInt(value)
 
     mixpanel.track("Deposit Submitted", {
       vault: vaultData.id.toString(),
       amount: scaledAmount.toString(),
     });
-    console.log(vaultData.id, inputToken.address, EOAaccount, activeChain, scaledAmount)
     const receipt = await executeDeposit(
       vaultData.id as Address,
       inputToken.address as Address,
       EOAaccount,
       activeChain,
-      scaledAmount,
+      scaledAmount, //TODO make this general for all tokens?
     );
 
     mixpanel.track("Deposit Submitted", {
@@ -231,10 +222,13 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
   }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
   setTransactionCompleted(false)
   try {
     const value = Number(inputBalance.value)
+
+
+
     const inputToken = vaultData.inputToken;
     const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
 
@@ -242,11 +236,6 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
       vault: vaultData.id.toString(),
       amount: scaledAmount.toString(),
     });
-    const activeChain = useActiveWalletChain();
-
-    if (!activeChain) {
-      throw new Error("No active chain found");
-    }
 
     const receipt = await executeWithdrawal(
       vaultData.id as Address,
@@ -288,8 +277,8 @@ function getLabel(action: Action) {
   }
 }
 
-function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch }:
-  { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; }): JSX.Element {
+function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain }:
+  { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain; }): JSX.Element {
 
 
   return <div className="w-full flex flex-col mt-5">
@@ -301,24 +290,21 @@ function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, 
       EOAaccount={EOAaccount}
       setTransactionCompleted={setTransactionCompleted}
       refetch={refetch}
+      activeChain={activeChain}
     />
   </div>
 }
 
 
-function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch }:
-  { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; }): JSX.Element {
+function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain }:
+  { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain }): JSX.Element {
+
   async function handleMainAction() {
-    console.log("Handling main action");
-    const activeChain = useActiveWalletChain();
-    if (!activeChain) {
-      throw new Error("No active chain found");
-    }
     if (action == Action.deposit) {
-      await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, activeChain, setTransactionCompleted, refetch);
+      await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
     }
     else {
-      await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch);
+      await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
     }
   }
 
