@@ -5,6 +5,7 @@ import {
   ChevronRightIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 function Selector({
   selected,
@@ -39,7 +40,7 @@ function Selector({
             <div className="h-14 flex flex-row items-center w-full gap-x-2">
               {selected?.logoURI && (
                 <div className="w-9 h-7">
-                  <img
+                  <Image
                     className="object-fill w-9 h-7 rounded-full"
                     alt="selected-asset"
                     src={selected?.logoURI}
@@ -113,7 +114,7 @@ export function Option({
             disabled={disabled}
           >
             {value.logoURI ? (
-              <img
+              <Image
                 alt=""
                 className="object-contain relative h-10 w-10 mr-4 rounded-full"
                 src={value.logoURI || "/images/icons/popLogo.svg"}

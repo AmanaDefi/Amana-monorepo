@@ -1,4 +1,5 @@
 import { Token } from "@/types/types";
+import Image from "next/image";
 
 interface TokenIconProps {
   token: Token;
@@ -18,10 +19,10 @@ export default function TokenIcon({
     } object-contain rounded-full`;
 
   if (icon) {
-    return <img src={icon} alt="token icon" className={className} />;
+    return <Image src={icon} alt="token icon" className={className} />;
   }
   return (
-    <img
+    <Image
       src={"/vcx.svg"}
       alt="token icon"
       className={className}

@@ -1,7 +1,7 @@
 import React from 'react'
 import { VaultData, UserVaultBalance, VaultTotalAssets, VaultAPY } from "../types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
-
+import Image from 'next/image';
 
 export default function VaultHeader({
     vaultData,
@@ -22,15 +22,17 @@ export default function VaultHeader({
             <div className="w-full mb-12 flex flex-row items-center">
                 <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
                     <div className="relative">
-                        <img
+                        <Image
                             src={vaultData.inputToken.imgURL}
+                            alt={vaultData.inputToken.symbol}
                             className={`w-6 md:w-10 h-6 md:h-10`}
                         />
                     </div>
                     <h2 className="font-bold text-white" >{vaultData.inputToken.symbol}</h2>
                     <div className="relative">
-                        <img
+                        <Image
                             src={vaultData.protocol.imgURL}
+                            alt={vaultData.protocol.name}
                             className={`w-6 md:w-10 h-6 md:h-10`}
                         />
                     </div>

@@ -14,6 +14,7 @@ import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
 import { Account } from "thirdweb/wallets";
 import { ACCOUNT_ABSTRACTION_CONFIG } from "../constants/chainConfig";
+import Image from "next/image";
 
 const wallets = [
   inAppWallet({
@@ -178,7 +179,7 @@ function UnauthenticatedLandingPage() {
       <section className="py-20 text-center">
         <h1 className="text-4xl md:text-6xl font-bold">Earn Yield Effortlessly Across Any Chain</h1>
         <p className="mt-4 text-lg text-zinc-400">
-        Put your crypto assets to work with Amana, the most powerful, omnichain platform for on-chain yield. Earn passive income on your crypto, with easy, 1-click transactions—regardless of the blockchain you're on.
+        Put your crypto assets to work with Amana, the most powerful, omnichain platform for on-chain yield. Earn passive income on your crypto, with easy, 1-click transactions—regardless of the blockchain you&apos;re on.
         </p>
       </section>
 
@@ -203,7 +204,7 @@ function UnauthenticatedLandingPage() {
       <section className="py-20">
         <h2 className="text-3xl font-bold text-center">Omnichain Yield, Made Simple</h2>
         <p className="text-lg text-center mt-4 text-zinc-400">
-        With Amana, it doesn’t matter which chain you start from or where you want to invest. Using Zetachain's Universal EVM, we make yield opportunities accessible across all major blockchains, including Ethereum, Base, Polygon, BNB, Solana, Ton, and many more. One click is all it takes.        </p>
+        With Amana, it doesn&apos;t matter which chain you start from or where you want to invest. Using Zetachain&apos;s Universal EVM, we make yield opportunities accessible across all major blockchains, including Ethereum, Base, Polygon, BNB, Solana, Ton, and many more. One click is all it takes.        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mt-8">
           <FeatureCard title="Earn Across Any Chain" description="Access high APY yield opportunities across a range of chains without worrying about bridging, swapping, or complex steps." />
           <FeatureCard title="Gasless Transactions" description="Benefit from gasless, 1-click transactions made possible through smart accounts. No fees, no hassle—just simple, effective yield." />
@@ -218,7 +219,7 @@ function UnauthenticatedLandingPage() {
           Amana integrates with the best yield-generating protocols across all major blockchains, making it the most versatile and powerful tool for putting your crypto to work.
         </p>
         <div className="flex justify-center mt-8">
-          <img
+          <Image
             src="/Amana_chains.jpg"
             alt="Supported Chains and Protocols"
             className="w-full max-w-3xl"
@@ -233,7 +234,7 @@ function UnauthenticatedLandingPage() {
         Multiple sign-in options—use email, SSO, or passkey. Gain non-custodial control without the hassle of crypto wallet management.
         </p>
         <div className="flex justify-center mt-8">
-          <img
+          <Image
             src="/signin_options.jpg"
             alt="Sign-in options"
             className="w-full max-w-3xl"
@@ -244,12 +245,12 @@ function UnauthenticatedLandingPage() {
       <section className="py-20">
         <h2 className="text-3xl font-bold text-center">Backed by</h2>
         <div className="flex justify-center items-center gap-8 mt-8">
-          <img
+          <Image
             src="/thirdweb_logo.jpg"
             alt="Thirdweb"
             className="w-1/3 max-w-xs"
           />
-          <img
+          <Image
             src="/ZetaChain.webp"
             alt="Zetachain"
             className="w-1/3 max-w-xs"
