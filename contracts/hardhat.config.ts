@@ -3,6 +3,7 @@ import "./tasks/deployStrategy";
 import "./tasks/deployUpgradeableVault";
 import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
+import "./tasks/deployGasTank";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
