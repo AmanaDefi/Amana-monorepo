@@ -150,7 +150,9 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     contract,
     method:
       "function deposit(uint256 assets,  address receiver)",
-    params: [transactionAmount, activeAccount?.address]
+    params: [transactionAmount, activeAccount?.address],
+    maxFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
+    maxPriorityFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
   });
   console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
@@ -213,15 +215,19 @@ export const executeWithdrawal = async (vaultId: Address, activeAccount: Account
 const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => { //vaultId: string
   let contract = getContract({
     client,
-    chain: activeChain,
+    chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
     address: vaultId
   });
   const withdrawTx = prepareContractCall({
     contract,
     method:
       "function withdraw(uint256 assets, address receiver, address owner)",
-    params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address]
+    params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address],
+    maxFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
+    maxPriorityFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
   });
+  console.log("withdraw amount", withdrawAmount);
+  console.log("withdraw amount in BigInt", BigInt(withdrawAmount));
   console.log("withdrawTx", withdrawTx);
   const receipt = await sendTransaction({
     account: activeAccount,
@@ -287,8 +293,6 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
-
-
 
 export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> => {
   const updatedVaults = await Promise.all(
