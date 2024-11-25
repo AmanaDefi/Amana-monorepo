@@ -5,7 +5,7 @@ import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../../constants";
 import { usePathname } from 'next/navigation';
 import { useState } from "react";
-
+import { useRouter } from 'next/navigation';
 
 const wallets = [
     inAppWallet({
@@ -27,6 +27,7 @@ const Header = () => {
 
     const pathname = usePathname();
     const [path] = useState(pathname)
+    const router = useRouter();
 
     return (
         <div>
@@ -36,21 +37,21 @@ const Header = () => {
                     <span
                         className={`cursor-pointer ${path === "/vaults" ? "font-bold text-primaryYellow" : ""
                             }`}
-
+                        onClick={() => router.push("/vaults")}
                     >
                         Vaults
                     </span>
                     <span
-                        className={`cursor-pointer ${path === "/fundWallet" ? "font-bold text-primaryYellow" : ""
+                        className={`cursor-pointer ${path === "/buy" ? "font-bold text-primaryYellow" : ""
                             }`}
-
+                        onClick={() => router.push("/buy")}
                     >
                         Fund Wallet
                     </span>
                     <span
                         className={`cursor-pointer ${path === "/about" ? "font-bold text-primaryYellow" : ""
                             }`}
-
+                        onClick={() => router.push("/about")}
                     >
                         About
                     </span>

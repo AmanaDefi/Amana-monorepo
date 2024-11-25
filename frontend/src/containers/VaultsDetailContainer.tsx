@@ -57,10 +57,9 @@ const VaultsDetailContainer: React.FC<{
     return (
 
       vaultData ? (
-        <div className="overflow-x-auto mt-10">
-
+        <div className="overflow-x-auto">
           <button
-            className="border border-customGray500 rounded-lg flex flex-row items-center px-4 py-2 ml-4 md:ml-0 mt-10"
+            className="border border-customGray500 rounded-lg flex flex-row items-center px-4 py-2 ml-4 md:ml-0"
             type="button"
             onClick={() => router.push("/vaults")}
           >
