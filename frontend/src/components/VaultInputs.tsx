@@ -228,9 +228,8 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
     const value = Number(inputBalance.value)
 
 
-
     const inputToken = vaultData.inputToken;
-    const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
+    const scaledAmount = BigInt(value)
 
     mixpanel.track("Withdraw Submitted", {
       vault: vaultData.id.toString(),
