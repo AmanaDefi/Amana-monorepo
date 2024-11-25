@@ -176,9 +176,9 @@ function UnauthenticatedLandingPage() {
       </header>
 
       <section className="py-20 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold">Put your crypto assets to work with Amana.</h1>
+        <h1 className="text-4xl md:text-6xl font-bold">Earn Yield Effortlessly Across Any Chain</h1>
         <p className="mt-4 text-lg text-zinc-400">
-          Earn passive income on your crypto assets with easy, 1-click transactions across multiple blockchains.
+        Put your crypto assets to work with Amana, the most powerful, omnichain platform for on-chain yield. Earn passive income on your crypto, with easy, 1-click transactions—regardless of the blockchain you're on.
         </p>
       </section>
 
@@ -201,16 +201,62 @@ function UnauthenticatedLandingPage() {
       </section>
 
       <section className="py-20">
-        <h2 className="text-3xl font-bold text-center">Key Features</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-          <FeatureCard title="Non-Custodial" description="Maintain full control of your funds—Amana only acts as a gateway to yield sources." />
-          <FeatureCard title="Omnichain" description="Deposit and earn yield on a range of chains, including Ethereum, Base, Polygon, Solana, Ton, and more." />
-          <FeatureCard title="Gasless Transactions" description="Benefit from gasless, 1-click transactions made possible through smart accounts." />
-          <FeatureCard title="Simple Yield Aggregation" description="Deposit your assets once and watch them grow automatically—no active management required." />
+        <h2 className="text-3xl font-bold text-center">Omnichain Yield, Made Simple</h2>
+        <p className="text-lg text-center mt-4 text-zinc-400">
+        With Amana, it doesn’t matter which chain you start from or where you want to invest. Using Zetachain's Universal EVM, we make yield opportunities accessible across all major blockchains, including Ethereum, Base, Polygon, BNB, Solana, Ton, and many more. One click is all it takes.        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mt-8">
+          <FeatureCard title="Earn Across Any Chain" description="Access high APY yield opportunities across a range of chains without worrying about bridging, swapping, or complex steps." />
+          <FeatureCard title="Gasless Transactions" description="Benefit from gasless, 1-click transactions made possible through smart accounts. No fees, no hassle—just simple, effective yield." />
           <FeatureCard title="Security & Transparency" description="Our platform is non-custodial and fully transparent, ensuring your assets remain under your control." />
           <FeatureCard title="Multiple sign-in options" description="Sign in with your email, SSO, or passkey - have non-custodial control without the hassle factor" />
         </div>
       </section>
+
+      <section className="py-20">
+        <h2 className="text-3xl font-bold text-center">Supported Chains and Protocols</h2>
+        <p className="text-lg text-center mt-4 text-zinc-400">
+          Amana integrates with the best yield-generating protocols across all major blockchains, making it the most versatile and powerful tool for putting your crypto to work.
+        </p>
+        <div className="flex justify-center mt-8">
+          <img
+            src="/Amana_chains.jpg"
+            alt="Supported Chains and Protocols"
+            className="w-full max-w-3xl"
+          />
+        </div>
+      </section>
+
+
+      <section className="py-20">
+        <h2 className="text-3xl font-bold text-center">Sign In, Your Way</h2>
+        <p className="text-lg text-center mt-4 text-zinc-400">
+        Multiple sign-in options—use email, SSO, or passkey. Gain non-custodial control without the hassle of crypto wallet management.
+        </p>
+        <div className="flex justify-center mt-8">
+          <img
+            src="/signin_options.jpg"
+            alt="Sign-in options"
+            className="w-full max-w-3xl"
+          />
+        </div>
+      </section>
+
+      <section className="py-20">
+        <h2 className="text-3xl font-bold text-center">Backed by</h2>
+        <div className="flex justify-center items-center gap-8 mt-8">
+          <img
+            src="/thirdweb_logo.jpg"
+            alt="Thirdweb"
+            className="w-1/3 max-w-xs"
+          />
+          <img
+            src="/ZetaChain.webp"
+            alt="Zetachain"
+            className="w-1/3 max-w-xs"
+          />
+        </div>
+      </section>
+
 
       <Footer />
     </>
