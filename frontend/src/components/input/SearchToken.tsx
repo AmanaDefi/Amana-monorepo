@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Token } from "@/types/types";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 interface SearchTokenProps {
   selectToken: (token: Token) => void;
@@ -67,7 +68,7 @@ export default function SearchToken({
                   }`}
               >
                 <span className="w-5 h-5 inline-flex mr-3 flex-shrink-0 cursor-pointer">
-                  <img
+                  <Image
                     src={option.imgURL}
                     alt={option.symbol}
                     className="h-full w-full object-contain"
