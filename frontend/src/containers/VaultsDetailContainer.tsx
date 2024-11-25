@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import { useAtom } from "jotai";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
-import { selectedVaultIdAtom } from "@/atoms/tokens";
 import VaultInputs from "@/components/VaultInputs";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { Square2StackIcon } from "@heroicons/react/24/outline";
@@ -13,16 +11,17 @@ import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { tokens } from "../constants/index";
+import { useRouter } from 'next/navigation';
 
 const VaultsDetailContainer: React.FC<{
-  setActiveSection: (value: string) => void;
+  vaultID: string | string[];
 }> = ({
-  setActiveSection
+  vaultID
 }) => {
-    const [selectedVaultId] = useAtom(selectedVaultIdAtom)
+
     const [vaultData, setVaultData] = useState<VaultData>();
     const [tokenOptions, setTokenOptions] = useState<Token[]>(tokens);
-
+    const router = useRouter();
 
     const [loading, setLoading] = useState<boolean>(true);
     const [activeAccount, setActiveAccount] = useState<Account | null>(null);
@@ -36,14 +35,11 @@ const VaultsDetailContainer: React.FC<{
     const EOAaccount = useActiveAccount();
 
     useEffect(() => {
-      const foundVault = vaults.find((v) => v.id === selectedVaultId);
+      const foundVault = vaults.find((v) => v.id === vaultID.toString());
       setVaultData(foundVault)
     }, [])
 
-
-
     useEffect(() => {
-
       if (EOAaccount) {
         setActiveAccount(EOAaccount);
       } else {
@@ -66,7 +62,7 @@ const VaultsDetailContainer: React.FC<{
           <button
             className="border border-customGray500 rounded-lg flex flex-row items-center px-4 py-2 ml-4 md:ml-0 mt-10"
             type="button"
-            onClick={() => setActiveSection("vaults")}
+            onClick={() => router.push("/vaults")}
           >
             <div className="w-5 h-5">
               <LeftArrowIcon color="white" />
@@ -77,7 +73,7 @@ const VaultsDetailContainer: React.FC<{
           <VaultHeader
             vaultData={vaultData}
             userVaultBalances={userVaultBalances}
-            selectedVaultId={selectedVaultId}
+            selectedVaultId={vaultID.toString()}
             vaultTotalAssets={vaultTotalAssets}
             vaultAPYs={vaultAPYs}
           />

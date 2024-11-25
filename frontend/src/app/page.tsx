@@ -14,6 +14,7 @@ import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
 import { Account } from "thirdweb/wallets";
 import { ACCOUNT_ABSTRACTION_CONFIG } from "../constants/chainConfig";
+import { useRouter } from 'next/navigation';
 
 const wallets = [
   inAppWallet({
@@ -51,7 +52,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) => (
 
 
 export default function Page() {
+
   const account = useActiveAccount();
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState("vaults");
 
   useEffect(() => {
@@ -73,85 +76,74 @@ export default function Page() {
       mixpanel.people.set({
         wallet_address: account.address,
       });
+      router.push("/vaults")
     }
   }, [account]);
 
   return (
     <main className="p-4 pb-10 min-h-screen flex flex-col container mx-auto relative overflow-hidden">
-      {account ? (
-        <>
-          <AuthenticatedApp account={account} activeSection={activeSection} setActiveSection={setActiveSection} />
-          {/* <Footer /> */}
-        </>
-      ) : (
+      {
+        !account &&
         <UnauthenticatedLandingPage />
-      )}
+      }
     </main>
   );
 }
 
 function AuthenticatedApp({ account, activeSection, setActiveSection }: AuthenticatedAppProps) {
   return (
-    <div className="flex flex-row h-screen">
-      {/* Sidebar */}
-      <nav className="w-1/6 bg-gray-800 text-white p-6 flex flex-col justify-start h-full">
-        <div>
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tighter text-zinc-100">Amana</h1>
-          </div>
-          <ul className="space-y-4">
-            <li
-              className={`cursor-pointer ${activeSection === "vaults" ? "font-bold" : ""
-                }`}
-              onClick={() => setActiveSection("vaults")}
-            >
-              Vaults
-            </li>
-            <li
-              className={`cursor-pointer ${activeSection === "buy" ? "font-bold" : ""
-                }`}
-              onClick={() => setActiveSection("buy")}
-            >
-              Fund Wallet
-            </li>
-            <li
-              className={`cursor-pointer ${activeSection === "about" ? "font-bold" : ""
-                }`}
-              onClick={() => setActiveSection("about")}
-            >
-              About
-            </li>
-          </ul>
+    <div className="flex flex-col h-screen">
+      {/* Header with navigation */}
+      <header className="w-5/6 text-white p-4 flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tighter text-zinc-100">Amana</h1>
+        <nav className="flex space-x-8">
+          <span
+            className={`cursor-pointer ${activeSection === "vaults" ? "font-bold" : ""}`}
+            onClick={() => setActiveSection("vaults")}
+          >
+            Vaults
+          </span>
+          <span
+            className={`cursor-pointer ${activeSection === "buy" ? "font-bold" : ""}`}
+            onClick={() => setActiveSection("buy")}
+          >
+            Fund Wallet
+          </span>
+          <span
+            className={`cursor-pointer ${activeSection === "about" ? "font-bold" : ""}`}
+            onClick={() => setActiveSection("about")}
+          >
+            About
+          </span>
+        </nav>
+
+        {/* Connect Button */}
+        <div className="absolute top-5 right-5">
+          <ConnectButton
+            client={client}
+            chains={SUPPORTED_CHAINS}
+            wallets={wallets}
+            connectModal={{ size: "compact" }}
+            detailsButton={{
+              displayBalanceToken: {
+                [7001]: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+              },
+            }}
+          />
         </div>
-      </nav>
+      </header>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col justify-between py-20 pl-6">
+      <div className="flex-1 flex flex-col justify-between py-20 px-6">
         <div className="flex-1">
-          {activeSection === "vaults" && <VaultsContainer setActiveSection={setActiveSection} />}
-          {activeSection === "vaultsDetail" && <VaultsDetailContainer setActiveSection={setActiveSection} />}
+          {/* {activeSection === "vaults" && <VaultsContainer />} */}
+          {/* {activeSection === "vaultsDetail" && <VaultsDetailContainer /> */}
           {activeSection === "buy" && <BuyContainer />}
           {activeSection === "about" && <About />}
         </div>
 
         {/* Footer aligned with the main content */}
         <Footer />
-      </div>
-
-      {/* Connect Button at the top-right */}
-      <div className="absolute top-5 right-5">
-        <ConnectButton
-          client={client}
-          chains={SUPPORTED_CHAINS}
-          wallets={wallets}
-          connectModal={{ size: "compact" }}
-          // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
-          detailsButton={{
-            displayBalanceToken: {
-              [7001]: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-            },
-          }}
-        />
       </div>
     </div>
   );
