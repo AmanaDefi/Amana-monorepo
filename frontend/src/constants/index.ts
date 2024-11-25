@@ -10,7 +10,21 @@ export const tokens: Token[] = [
     address: BASE_USDC_ADDRESS,
     imgURL: "/USDC.png",
     price: 1
-  }
+  },
+  {
+    symbol: "ETH.BASESEPOLIA",
+    decimals: 18,
+    address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+    imgURL: "/ETH.png",
+    price: 3040
+  },
+  {
+    symbol: "sETH.SEPOLIA",
+    decimals: 18,
+    address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
+    imgURL: "/ETH.png",
+    price: 3040
+  },
 ]
 
 const MAINNET_VAULT_DATA: VaultData[] = [
