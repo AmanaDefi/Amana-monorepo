@@ -288,8 +288,6 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   return formattedBalance.toString();
 }
 
-
-
 export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> => {
   const updatedVaults = await Promise.all(
     vaultData.map(async (vault) => {
