@@ -7,6 +7,7 @@ import mixpanel from "mixpanel-browser";
 import { Account } from "thirdweb/wallets";
 import { useAtom } from "jotai";
 import { useRouter } from 'next/navigation';
+import Image from "next/image";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -132,13 +133,13 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img src={vault.protocol.imgURL} width="30" height="30" alt="USD Icon" className="mr-2 rounded-full" />
+                      <Image src={vault.protocol.imgURL} width="30" height="30" alt="USD Icon" className="mr-2 rounded-full" />
                       <div>{vault.protocol.name}</div>
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img src={vault.inputToken.imgURL} width="30" height="30" alt="USD Icon" className="mr-2" />
+                      <Image src={vault.inputToken.imgURL} width="30" height="30" alt="USD Icon" className="mr-2" />
                       <div>{vault.name}</div>
                     </div>
                   </td>

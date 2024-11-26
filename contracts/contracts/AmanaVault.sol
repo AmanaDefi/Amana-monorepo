@@ -13,6 +13,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
+import "./interfaces/IGasTank.sol";
 import "hardhat/console.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
@@ -47,6 +48,14 @@ contract AmanaVault is
     address uniswapv2Router02Address; // 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe on testnet
     uint16 internal constant MAX_DEADLINE = 200;
     address public WZETA_ADDRESS; // 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf on testnet
+    IGasTank public gasTank;
+    enum AssetType {
+        USDC,
+        ETH
+    }
+    AssetType public assetType;
+    mapping(uint32 => address) public chainToZRC20;
+    uint32 private constant vaultChainId = 7001; // 7000 for mainnet, 7001 for testnet
 
     struct VaultStorage {
         address strategyAddress;
@@ -107,8 +116,9 @@ contract AmanaVault is
         IERC20 asset_,
         address treasury_,
         uint16 perfFee_,
-        address gateway,
-        address system_contract
+        address gateway_,
+        address system_contract_,
+        address gasTank_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
         __ERC20_init(name_, symbol_);
@@ -118,10 +128,20 @@ contract AmanaVault is
         VaultStorage storage $ = _getVaultStorage();
         $.treasury = treasury_;
         $.perfFee = perfFee_;
-        _GATEWAY_ADDRESS = gateway;
-        systemContract = ISystem(system_contract);
+        _GATEWAY_ADDRESS = gateway_;
+        systemContract = ISystem(system_contract_);
         uniswapv2Router02Address = systemContract.uniswapv2Router02Address();
         WZETA_ADDRESS = systemContract.wZetaContractAddress();
+        gasTank = IGasTank(gasTank_);
+        assetType = AssetType.ETH; // TODO - change this to be set in initialize function?
+        if (assetType == AssetType.ETH) {
+            chainToZRC20[84532] = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // ETH.BASESEPOLIA
+            chainToZRC20[11155111] = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // ETH.SEPOLIA
+        } else if (assetType == AssetType.USDC) {
+            chainToZRC20[97] = 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; // USDC (on BSC Testnet)
+            chainToZRC20[11155111] = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d; // USDC.SEPOLIA
+        }
+        // TODO add in for further chains and for other AssetTypes
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -142,18 +162,29 @@ contract AmanaVault is
             address userAddress,
             uint256 withdrawAmount,
             uint256 fee,
-            uint256 shares
-        ) = abi.decode(message, (address, uint256, uint256, uint256));
+            uint256 shares,
+            uint32 originChainId
+        ) = abi.decode(message, (address, uint256, uint256, uint256, uint32));
         if (amount == 0) {
-            _crossChainWithdrawToStrategy(userAddress, withdrawAmount);
+            _withdrawFromConnectedChain(
+                userAddress,
+                withdrawAmount,
+                uint32(context.chainID)
+            );
         } else if (withdrawAmount == 1) {
             // this indicates that the strategy is sending assets back to the vault
             // we then send the amount back to the owner on the EVM in USDC
-            _crossChainWithdrawToUser(userAddress, amount, fee, shares); // TODO does shares really need to be here?
+            _returnFundsToUser(
+                userAddress,
+                amount,
+                fee,
+                shares,
+                uint32(originChainId)
+            ); // TODO does shares really need to be here?
         } else {
             if (userAddress == address(0)) revert CantBeZeroAddress();
             console.log("Depositing from another chain");
-            _crossChainDeposit(userAddress, amount, zrc20); // _crossChainDeposit means from another chain - will handle deposit to strat on ZC or other
+            _depositFromConnectedChain(userAddress, amount, zrc20); // _depositFromConnectedChain means from another chain - will handle deposit to strat on ZC or other
         }
     }
 
@@ -182,39 +213,44 @@ contract AmanaVault is
         emit PerformanceFeeUpdated(newFeeRate);
     }
 
-    function switchStrategy(
-        address newStrategyAddress,
-        uint32 newStrategyChainId
-    ) external onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
-        if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (newStrategyAddress == $.strategyAddress)
-            revert InvalidStrategyAddress();
-        if (newStrategyChainId == 0) revert InvalidStrategyChainId();
-
-        address oldStrategy = $.strategyAddress;
-        uint32 oldStrategyChainId = $.strategyChainId;
-        $.strategyAddress = newStrategyAddress;
-        $.strategyChainId = newStrategyChainId;
-        emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
-
-        // TODO - update this section to withdraw and invest in the new strategy - cross-chain or same chain
-        uint256 strategyBalance = IStrategy(oldStrategy)
-            .totalUnderlyingAssets();
-        if (strategyBalance > 0) {
-            IStrategy(oldStrategy).withdraw(strategyBalance, 10 ** 27);
-        }
-
-        uint256 vaultBalance = IZRC20(asset()).balanceOf(address(this));
-        if (vaultBalance > 0) {
-            bool success = IZRC20(asset()).approve(
-                $.strategyAddress,
-                vaultBalance
-            );
-            if (!success) revert ApprovalFailed();
-            IStrategy($.strategyAddress).invest(vaultBalance);
-        }
+    function setGasTank(address newGasTank) external onlyOwner {
+        if (newGasTank == address(0)) revert CantBeZeroAddress();
+        gasTank = IGasTank(newGasTank);
     }
+
+    // function switchStrategy(
+    //     address newStrategyAddress,
+    //     uint32 newStrategyChainId
+    // ) external onlyOwner {
+    //     VaultStorage storage $ = _getVaultStorage();
+    //     if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
+    //     if (newStrategyAddress == $.strategyAddress)
+    //         revert InvalidStrategyAddress();
+    //     if (newStrategyChainId == 0) revert InvalidStrategyChainId();
+
+    //     address oldStrategy = $.strategyAddress;
+    //     uint32 oldStrategyChainId = $.strategyChainId;
+    //     $.strategyAddress = newStrategyAddress;
+    //     $.strategyChainId = newStrategyChainId;
+    //     emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
+
+    //     // TODO - update this section to withdraw and invest in the new strategy - cross-chain or same chain
+    //     uint256 strategyBalance = IStrategy(oldStrategy)
+    //         .totalUnderlyingAssets();
+    //     if (strategyBalance > 0) {
+    //         IStrategy(oldStrategy).withdraw(strategyBalance, 10 ** 27);
+    //     }
+
+    //     uint256 vaultBalance = IZRC20(asset()).balanceOf(address(this));
+    //     if (vaultBalance > 0) {
+    //         bool success = IZRC20(asset()).approve(
+    //             $.strategyAddress,
+    //             vaultBalance
+    //         );
+    //         if (!success) revert ApprovalFailed();
+    //         IStrategy($.strategyAddress).invest(vaultBalance);
+    //     }
+    // }
 
     function emergencyWithdraw(address _token) external onlyOwner {
         uint256 balance = IERC20(_token).balanceOf(address(this));
@@ -229,7 +265,7 @@ contract AmanaVault is
         uint256 assetBalanceOnVault = IERC20(asset()).balanceOf(address(this));
         uint256 assetBalanceInStrategy;
         // Call the strategy to get the equivalent value of aArbUSDC in terms of USDC
-        if (block.chainid == $.strategyChainId) {
+        if ($.strategyChainId == vaultChainId) {
             // TODO - change block.chainid to the Zetachain chain id (7000 for mainnet, 7001 for testnet)
             assetBalanceInStrategy = IStrategy($.strategyAddress)
                 .totalUnderlyingAssets();
@@ -273,12 +309,29 @@ contract AmanaVault is
 
     function _crossChainInvest(uint256 amount) internal {
         VaultStorage storage $ = _getVaultStorage();
-        (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
+        (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
+            address(asset())
+        ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
-        uint256 gasLimit = 350000; // TODO could potentially reduce to 7000000
+        uint256 gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
+        uint256 gasPrice = systemContract.gasPriceByChainId($.strategyChainId);
+        uint256 gasFeeForCall = gasPrice * gasLimitForCall;
+        console.log("gasFeeForCall: ", gasFeeForCall);
+        console.log("gasFeeForWithdraw: ", gasFeeForWithdraw);
+
+        gasTank.getGas(gas_zrc20, gasFeeForWithdraw + gasFeeForCall);
+
         if (gas_zrc20 != address(asset())) {
             IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
+            IZRC20(gas_zrc20).approve(
+                _GATEWAY_ADDRESS,
+                gasFeeForWithdraw + gasFeeForCall
+            );
+        } else {
+            IZRC20(asset()).approve(
+                _GATEWAY_ADDRESS,
+                amount + gasFeeForWithdraw + gasFeeForCall
+            );
         }
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
@@ -298,7 +351,7 @@ contract AmanaVault is
             uint256(0) // onRevertGasLimit
         );
 
-        CallOptions memory callOptions = CallOptions(gasLimit, true);
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, true);
         console.log("Executing withdrawAndCall");
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
             recipient, // this contains the recipient smart contract address - the strategy address in this case
@@ -424,7 +477,7 @@ contract AmanaVault is
         );
         _mint(receiver, shares);
 
-        if (block.chainid == $.strategyChainId) {
+        if ($.strategyChainId == vaultChainId) {
             bool success = IERC20(asset()).approve($.strategyAddress, assets);
             if (!success) revert ApprovalFailed();
             IStrategy($.strategyAddress).invest(assets);
@@ -438,7 +491,7 @@ contract AmanaVault is
     /**
      * @dev Deposit/mint common workflow.
      */
-    function _crossChainDeposit(
+    function _depositFromConnectedChain(
         address receiver,
         uint256 assets,
         address zrc20source
@@ -463,7 +516,7 @@ contract AmanaVault is
 
         _mint(receiver, shares);
 
-        if (block.chainid == $.strategyChainId) {
+        if ($.strategyChainId == vaultChainId) {
             console.log("Investing on ZC");
             bool success = IERC20(asset()).approve($.strategyAddress, assets);
             if (!success) revert ApprovalFailed();
@@ -492,9 +545,9 @@ contract AmanaVault is
         uint256 minAmountOut
     ) internal returns (uint256) {
         address[] memory path;
-        path = new address[](2);
-        path[0] = zrc20;
-        path[1] = targetZRC20;
+        // path = new address[](2);
+        // path[0] = zrc20;
+        // path[1] = targetZRC20;
 
         // bool isSufficientLiquidity = _isSufficientLiquidity(
         //     systemContract.uniswapv2FactoryAddress(),
@@ -512,7 +565,7 @@ contract AmanaVault is
         path[1] = WZETA_ADDRESS;
         path[2] = targetZRC20;
         // }
-
+        console.log("path: ", path[0], path[1], path[2]);
         IZRC20(zrc20).approve(address(uniswapv2Router02Address), amount);
         uint256[] memory amounts = IUniswapV2Router01(uniswapv2Router02Address)
             .swapExactTokensForTokens(
@@ -540,31 +593,13 @@ contract AmanaVault is
             _spendAllowance(user, caller, shares);
         }
         uint256 feeToWithdraw = _applyFee(user, assets);
-        if (block.chainid == $.strategyChainId) {
-            // could make this if ($.strategyChainId == zetachain chain id) ?
-            uint256 fractionToWithdraw = ((assets + feeToWithdraw) *
-                (10 ** 27)) /
-                totalAssets() +
-                1;
-            uint256 withdrawnAmt = IStrategy($.strategyAddress).withdraw(
-                assets + feeToWithdraw,
-                fractionToWithdraw
+        if ($.strategyChainId == vaultChainId) {
+            uint256 withdrawnAmt = _divestZetachainStrategy(
+                assets,
+                feeToWithdraw,
+                user,
+                shares
             );
-            if (feeToWithdraw > 0) {
-                emit PerformanceFeePaid(user, feeToWithdraw);
-                SafeERC20.safeTransfer(
-                    IERC20(asset()),
-                    $.treasury,
-                    feeToWithdraw
-                );
-            }
-            // If _asset is ERC777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
-            // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
-            // calls the vault, which is assumed not malicious.
-            //
-            // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
-            // shares are burned and after the assets are transferred, which is a valid state.
-            _burn(user, shares);
             SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
             emit Withdraw(
                 caller,
@@ -574,53 +609,53 @@ contract AmanaVault is
                 shares
             );
         } else {
-            (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 address of the gas token of the strategy chain
-            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
-            uint256 gasLimit = 7000000; // could potentially reduce to 7000000
-
-            bytes memory recipient = abi.encodePacked($.strategyAddress);
-
-            bytes4 functionSelector = bytes4(
-                keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
-            );
-            bytes memory encodedArgs = abi.encode(
+            _divestConnectedChainStrategy(
                 user,
                 assets,
                 feeToWithdraw,
-                shares
-            );
-            bytes memory outgoingMessage = abi.encodePacked(
-                functionSelector,
-                encodedArgs
-            );
-
-            RevertOptions memory revertOptions = RevertOptions(
-                0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-                false, // callOnRevert
-                address(this), // abortAddress
-                bytes("revert message"),
-                uint256(30000000) // onRevertGasLimit
-            );
-
-            CallOptions memory callOptions = CallOptions(gasLimit, true);
-
-            IGatewayZEVM(_GATEWAY_ADDRESS).call(
-                recipient,
-                address(asset()),
-                outgoingMessage,
-                callOptions,
-                revertOptions
+                shares,
+                vaultChainId
             );
         }
+    }
+
+    function _divestZetachainStrategy(
+        uint256 assets,
+        uint256 feeToWithdraw,
+        address user,
+        uint256 shares
+    ) internal returns (uint256 withdrawnAmt) {
+        VaultStorage storage $ = _getVaultStorage();
+
+        uint256 fractionToWithdraw = ((assets + feeToWithdraw) * (10 ** 27)) /
+            totalAssets() +
+            1;
+        withdrawnAmt = IStrategy($.strategyAddress).withdraw(
+            assets + feeToWithdraw,
+            fractionToWithdraw
+        );
+        if (feeToWithdraw > 0) {
+            emit PerformanceFeePaid(user, feeToWithdraw);
+            SafeERC20.safeTransfer(IERC20(asset()), $.treasury, feeToWithdraw);
+        }
+        // If _asset is ERC777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
+        // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
+        // calls the vault, which is assumed not malicious.
+        //
+        // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
+        // shares are burned and after the assets are transferred, which is a valid state.
+        _burn(user, shares);
+        return withdrawnAmt;
     }
 
     /**
      * @dev Withdraw/redeem common workflow.
      */
-    function _crossChainWithdrawToStrategy(
+    function _withdrawFromConnectedChain(
         // address receiver, // Might this be needed later?
         address user,
-        uint256 assets
+        uint256 assets,
+        uint32 userChainId
     ) internal {
         uint256 maxAssets = maxWithdraw(user);
         if (assets > maxAssets) {
@@ -635,76 +670,62 @@ contract AmanaVault is
         //     _spendAllowance(user, caller, shares);
         // }
         uint256 feeToWithdraw = _applyFee(user, assets);
-        if (block.chainid == $.strategyChainId) {
-            uint256 fractionToWithdraw = ((assets + feeToWithdraw) *
-                (10 ** 27)) /
-                totalAssets() +
-                1;
-            IStrategy($.strategyAddress).withdraw(
-                assets + feeToWithdraw,
-                fractionToWithdraw
-            );
-            emit WithdrawFromStrategy(user, assets, feeToWithdraw, shares);
-            _crossChainWithdrawToUser(user, assets, feeToWithdraw, shares);
-        } else {
-            (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 address of the gas token of the strategy chain
-            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, type(uint256).max); // TODO bring this down to the same amount as gas limit * gas price
-            uint256 gasLimit = 7000000; // TODO could potentially reduce to 7000000
-
-            bytes memory recipient = abi.encodePacked($.strategyAddress);
-
-            bytes4 functionSelector = bytes4(
-                keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
-            );
-            bytes memory encodedArgs = abi.encode(
+        if ($.strategyChainId == vaultChainId) {
+            _divestZetachainStrategy(assets, feeToWithdraw, user, shares);
+            _returnFundsToUser(
                 user,
                 assets,
                 feeToWithdraw,
-                shares
+                shares,
+                userChainId
             );
-            bytes memory outgoingMessage = abi.encodePacked(
-                functionSelector,
-                encodedArgs
+        } else {
+            _divestConnectedChainStrategy(
+                user,
+                assets,
+                feeToWithdraw,
+                shares,
+                userChainId
             );
-
-            RevertOptions memory revertOptions = RevertOptions(
-                0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-                false, // callOnRevert
-                address(this), // abortAddress
-                bytes("revert message"),
-                uint256(30000000) // onRevertGasLimit
-            );
-
-            CallOptions memory callOptions = CallOptions(gasLimit, false);
-
-            IGatewayZEVM(_GATEWAY_ADDRESS).call(
-                recipient,
-                address(asset()),
-                outgoingMessage,
-                callOptions,
-                revertOptions
-            );
-            emit WithdrawFromStrategy(user, assets, feeToWithdraw, shares);
-            console.log("shares: ", shares);
+            // return shares - do I still need this here (it's in the original withdraw external function)
         }
-        // return shares - do I still need this here (it's in the original withdraw external function)
     }
 
-    function _crossChainWithdrawToUser(
-        address userAddress,
-        uint256 amount,
-        uint256 fee,
-        uint256 shares
+    function _divestConnectedChainStrategy(
+        address user,
+        uint256 assets,
+        uint256 feeToWithdraw,
+        uint256 shares,
+        uint32 userChainId
     ) internal {
         VaultStorage storage $ = _getVaultStorage();
-        if (fee > 0) {
-            emit PerformanceFeePaid(userAddress, fee);
-            SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee); // TODO - a better way to do this?
-        }
-        _burn(userAddress, shares);
-        IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
 
-        bytes memory recipient = abi.encodePacked(userAddress);
+        (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
+        uint256 gasPrice = systemContract.gasPriceByChainId($.strategyChainId);
+        uint256 gasLimitForCall = 350000; // TODO bring this down as much as possible, not returned
+
+        uint256 gasFeeForCall = gasPrice * gasLimitForCall;
+
+        gasTank.getGas(gas_zrc20, gasFeeForCall);
+
+        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForCall);
+
+        bytes memory recipient = abi.encodePacked($.strategyAddress);
+
+        bytes4 functionSelector = bytes4(
+            keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
+        );
+        bytes memory encodedArgs = abi.encode(
+            user,
+            assets,
+            feeToWithdraw,
+            shares,
+            userChainId
+        );
+        bytes memory outgoingMessage = abi.encodePacked(
+            functionSelector,
+            encodedArgs
+        );
 
         RevertOptions memory revertOptions = RevertOptions(
             0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
@@ -713,36 +734,89 @@ contract AmanaVault is
             bytes("revert message"),
             uint256(30000000) // onRevertGasLimit
         );
-        address equivalentTokenOnUserChain = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // TODO - this is ETH.BASESEPOLIA, but I need to find this dynamically
-        // I think I can pass this through from when the user initiates the withdraw?
-        uint256 outputAmount = amount;
-        console.log("amount: ", amount);
-        if (address(asset()) != equivalentTokenOnUserChain) {
-            console.log("swapping");
-            outputAmount = swapExactTokensForTokens(
-                address(asset()),
-                amount,
-                equivalentTokenOnUserChain,
-                0
-            );
-            console.log("outputAmount: ", outputAmount);
+
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
+
+        IGatewayZEVM(_GATEWAY_ADDRESS).call(
+            recipient,
+            address(asset()),
+            outgoingMessage,
+            callOptions,
+            revertOptions
+        );
+    }
+
+    function _returnFundsToUser(
+        address userAddress,
+        uint256 amount,
+        uint256 fee,
+        uint256 shares,
+        uint32 userChainId
+    ) internal {
+        VaultStorage storage $ = _getVaultStorage();
+        if (fee > 0) {
+            emit PerformanceFeePaid(userAddress, fee);
+            SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee); // TODO - a better way to do this?
         }
-        uint256 outputbalance = IZRC20(equivalentTokenOnUserChain).balanceOf(
-            address(this)
-        );
-        console.log("outputbalance: ", outputbalance);
-        bool success = IZRC20(equivalentTokenOnUserChain).approve(
-            _GATEWAY_ADDRESS,
-            outputAmount
-        );
-        if (!success) revert ApprovalFailed();
-        // The withdraw here requires gas for the withdrawal, so I can't withdraw the full balance (or I have to add ETH_BASESEPOLIA to the vault)
-        IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
-            recipient, // this has to be the address of the owner/user on the EVM
-            (outputAmount * 9) / 10, // the amount that the strategy has sent back
-            equivalentTokenOnUserChain,
-            revertOptions // do these need to be different from the revertOptions in deposit?
-        );
-        emit Withdraw(userAddress, userAddress, userAddress, amount, shares);
+        _burn(userAddress, shares);
+
+        if (userChainId == vaultChainId) {
+            SafeERC20.safeTransfer(IERC20(asset()), userAddress, amount);
+            emit Withdraw(
+                userAddress,
+                userAddress,
+                userAddress,
+                amount,
+                shares
+            );
+        } else {
+            bytes memory recipient = abi.encodePacked(userAddress);
+
+            RevertOptions memory revertOptions = RevertOptions(
+                0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+                false, // callOnRevert
+                address(this), // abortAddress
+                bytes("revert message"),
+                uint256(30000000) // onRevertGasLimit
+            );
+            uint256 outputAmount = amount;
+
+            address outputZRC20 = chainToZRC20[userChainId];
+            if (address(asset()) != outputZRC20) {
+                outputAmount = swapExactTokensForTokens(
+                    address(asset()),
+                    amount,
+                    outputZRC20,
+                    0
+                );
+            }
+            (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(outputZRC20)
+                .withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
+
+            gasTank.getGas(gas_zrc20, gasFeeForWithdraw);
+
+            if (gas_zrc20 != outputZRC20) {
+                IZRC20(outputZRC20).approve(_GATEWAY_ADDRESS, amount);
+                IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForWithdraw);
+            } else {
+                IZRC20(outputZRC20).approve(
+                    _GATEWAY_ADDRESS,
+                    amount + gasFeeForWithdraw
+                );
+            }
+            IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
+                recipient, // this has to be the address of the owner/user on the EVM
+                outputAmount, // the amount that the strategy has sent back
+                outputZRC20,
+                revertOptions // do these need to be different from the revertOptions in deposit?
+            );
+            emit Withdraw(
+                userAddress,
+                userAddress,
+                userAddress,
+                amount,
+                shares
+            );
+        }
     }
 }

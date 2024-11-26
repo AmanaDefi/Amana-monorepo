@@ -2,62 +2,18 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { AmanaVault, IERC20 } from "../typechain";
+import { AmanaVault, IERC20, GasTank } from "../typechain";
+import { setTokenBalance } from "./utils";
 
 import { BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS } from "../../constants";
 import { ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../constants";
-
-async function setTokenBalance(tokenAddress, account, amount) {
-  console.log("=== Starting setTokenBalance ===");
-
-  // Ensure amount is a BigNumber
-  const balanceAmount = ethers.BigNumber.from(amount);
-
-  // Compute the storage slot for balances (slot 0 for most ERC20 tokens)
-  const storageSlot = 3;
-  console.log("Using storage slot:", storageSlot);
-
-  // Normalize and log the account address
-  const normalizedAccount = ethers.utils.getAddress(account);
-  console.log("Normalized account address:", normalizedAccount);
-
-  // Compute the storage key for the account's balance
-  const key = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(["address", "uint256"], [normalizedAccount, storageSlot])
-  );
-  console.log("Computed storage key for balance:", key);
-  // Verify the storage slot directly
-  const initialStorage = await network.provider.send("eth_getStorageAt", [tokenAddress, key, "latest"]);
-  console.log("Storage at key before update:", initialStorage);
-
-  // Log the intended balance
-  console.log("Setting balance to:", balanceAmount.toString());
-
-  // Set the balance in storage
-  await network.provider.send("hardhat_setStorageAt", [
-    tokenAddress,
-    key,
-    ethers.utils.hexZeroPad(balanceAmount.toHexString(), 32), // Ensure 32-byte padding
-  ]);
-  console.log("Updated storage at key:", key);
-
-  // Verify the storage slot directly
-  const updatedStorage = await network.provider.send("eth_getStorageAt", [tokenAddress, key, "latest"]);
-  console.log("Storage at key after update:", updatedStorage);
-
-  // Verify the new balance
-  const token = await ethers.getContractAt("IERC20", tokenAddress);
-  const newBalance = await token.balanceOf(account);
-  console.log(`Balance after update for ${account}: ${ethers.utils.formatUnits(newBalance, 18)} tokens`);
-
-  console.log("=== Completed setTokenBalance ===");
-}
-
+require("dotenv").config();
 
 
 describe("Vault and BaseSepAaveEthStrategy", function () {
   let amanaVault: AmanaVault;
   let ethBaseSepolia: IERC20;
+  let gasTank: GasTank;
   let usdt: IERC20;
   let aaveToken: IERC20;
   let owner: Signer;
@@ -68,7 +24,6 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
   const rewardAmount = ethers.utils.parseUnits("100", 6);
   const gatewayAddress = "0x6c533f7fe93fae114d0954697069df33c9b74fd7";
   const systemAddress = "0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B";
-
   const STRATEGY_ADDRESS = "0x8106Ca539dC8D40dD448FFf3cad41C8eD8C57BFB"; // BaseSepAaveEthStrategy address
   const STRATEGY_CHAIN_ID = 84532; // Replace with your chain ID for testnet or mainnet
 
@@ -86,16 +41,26 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       ethBaseSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_BASESEPOLIA_ADDRESS);
       aaveToken = await ethers.getContractAt("IERC20", BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS);
 
+      // Deploy a new GasTank
+      const GasTank = await ethers.getContractFactory("GasTank");
+      const gasTank = await GasTank.deploy();
+      await gasTank.deployed();
+
+      console.log("GasTank deployed to:", gasTank.address);
+
       // Deploy the AmanaVault using OpenZeppelin's upgrade proxy pattern
       const Vault = await ethers.getContractFactory("AmanaVault", owner);
       amanaVault = await upgrades.deployProxy(
         Vault,
-        ["AaveV3EthVault", "AVU", ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), FeeRate, gatewayAddress, systemAddress],
+        ["AaveV3EthVault", "AVU", ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), FeeRate, gatewayAddress, systemAddress, gasTank.address],
         {
           initializer: "initialize",
         },
       );
       console.log("AmanaVault deployed to:", amanaVault.address);
+
+      await gasTank.authorizeVault(amanaVault.address);
+      console.log("GasTank authorized for:", amanaVault.address);
 
       // Set the strategy in the AmanaVault contract
       await amanaVault.setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID);
@@ -105,7 +70,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const depositAmount1 = ethers.utils.parseUnits("0.01", 18);
       const depositAmount2 = ethers.utils.parseUnits("0.05", 18);
 
-      await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, amanaVault.address, depositAmount1.mul(2));
+      await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(2));
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await user1.getAddress(), depositAmount1);
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await user2.getAddress(), depositAmount2);
 

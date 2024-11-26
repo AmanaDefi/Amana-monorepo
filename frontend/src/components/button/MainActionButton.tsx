@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 export interface ButtonProps {
   label: string;
@@ -30,7 +31,7 @@ export default function MainActionButton({
     >
       <span className="flex flex-row items-center justify-center gap-2">
         <span className="font-bold">{label}</span>
-        {icon && <img src={icon} alt={label} className="w-5 h-5" />}
+        {icon && <Image src={icon} alt={label} className="w-5 h-5" />}
       </span>
     </button>
   );
