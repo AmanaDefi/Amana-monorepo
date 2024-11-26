@@ -18,6 +18,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const treasury = args.treasury; // Address for the treasury
   const gateway = args.gateway; // Address for the gateway
   const system = args.system; // Address for the system contract
+  const gasTank = args.gastank; // Address for the gas tank contract
 
   // Set the default for performanceFeeRate if it's not provided
   const performanceFeeRate = args.performanceFeeRate ?? 1500; // Default to 15% (1500 basis points)
@@ -28,7 +29,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Deploy the AmanaVault contract using OpenZeppelin Upgrades
   const factory = await hre.ethers.getContractFactory("AmanaVault");
-  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gateway, system], {
+  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gateway, system, gasTank], {
     initializer: "initialize",
   });
   console.log("Contract deployed, waiting for confirmations...");
@@ -88,6 +89,7 @@ task("deploy-upgradeable-vault", "Deploy the AmanaVault contract", main)
   .addParam("treasury", "The address of the treasury")
   .addParam("gateway", "The address of the gateway")
   .addParam("system", "The address of the system contract")
+  .addParam("gastank", "The address of the GasTank contract")
   .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)"); // Remove the default here
 
 // Export the task so it can be used in hardhat

@@ -3,6 +3,7 @@ import "./tasks/deployStrategy";
 import "./tasks/deployUpgradeableVault";
 import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
+import "./tasks/deployGasTank";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -35,7 +36,7 @@ const config: HardhatUserConfig = {
       chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
       forking: {
         url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 7789000 // 20113140, //  
+        blockNumber: 7830907 // 20113140, //  
       },
       allowUnlimitedContractSize: true,
     },
