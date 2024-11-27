@@ -5,8 +5,8 @@ import DepositModal from "./DepositModal";
 import WithdrawModal from "./WithdrawModal";
 import mixpanel from "mixpanel-browser";
 import { Account } from "thirdweb/wallets";
-import { selectedVaultIdAtom } from "@/atoms";
 import { useAtom } from "jotai";
+import { useRouter } from 'next/navigation';
 import Image from "next/image";
 
 interface VaultsViewProps {
@@ -18,7 +18,6 @@ interface VaultsViewProps {
   vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
   transactionAmount: string;
   setTransactionAmount: (value: string) => void;
-  setActiveSection: (value: string) => void;
   depositTransaction: (value: Address) => Promise<any>;
   withdrawTransaction: (value: Address) => Promise<any>;
   activeAccount: Account | null;
@@ -33,7 +32,6 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   vaultTotalAssetsinToken,
   transactionAmount,
   setTransactionAmount,
-  setActiveSection,
   depositTransaction,
   withdrawTransaction,
   activeAccount,
@@ -43,7 +41,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [selectedVault, setSelectedVault] = useState<VaultData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedVaultId, setSelectedVaultId] = useAtom(selectedVaultIdAtom)
+  const router = useRouter();
 
   const handleDepositClick = (vault: VaultData) => {
     setSelectedVault(vault);
@@ -127,7 +125,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
             <tbody className="bg-gray-900">
               {vaults.map((vault) => (
                 <tr key={vault.id}
-                  onClick={() => { setActiveSection("vaultsDetail"), setSelectedVaultId(vault.id) }}
+                  onClick={() => { router.push("/vaults/"+vault.id) }}
                   role="button"
                 >
                   <td className="px-4 py-4 whitespace-nowrap">

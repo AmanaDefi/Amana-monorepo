@@ -43,6 +43,8 @@ function Selector({
                   <Image
                     className="object-fill w-9 h-7 rounded-full"
                     alt="selected-asset"
+                    width={1200} // Adjust to your desired width
+                    height={800} // Adjust to your desired height                  
                     src={selected?.logoURI}
                   />
                 </div>
@@ -116,6 +118,8 @@ export function Option({
             {value.logoURI ? (
               <Image
                 alt=""
+                width={1200} // Adjust to your desired width
+                height={800} // Adjust to your desired height              
                 className="object-contain relative h-10 w-10 mr-4 rounded-full"
                 src={value.logoURI || "/images/icons/popLogo.svg"}
               />

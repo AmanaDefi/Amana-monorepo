@@ -125,7 +125,6 @@ export default function VaultInputs({
       selectedToken={inputToken}
       errorMessage={errorMessage}
       tokenList={tokenOptions}
-      allowSelection={isDeposit}
       disabled={false}
       allowInput
     />

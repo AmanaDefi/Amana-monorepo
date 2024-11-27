@@ -10,7 +10,7 @@ import { useState } from 'react';
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({
+export default function ({
   children,
 }: Readonly<{
   children: React.ReactNode;
