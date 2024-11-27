@@ -25,6 +25,8 @@ export default function VaultHeader({
                         <Image
                             src={vaultData.inputToken.imgURL}
                             alt={vaultData.inputToken.symbol}
+                            width={1200} // Adjust to your desired width
+                            height={800} // Adjust to your desired height                          
                             className={`w-6 md:w-10 h-6 md:h-10`}
                         />
                     </div>
@@ -33,6 +35,8 @@ export default function VaultHeader({
                         <Image
                             src={vaultData.protocol.imgURL}
                             alt={vaultData.protocol.name}
+                            width={1200} // Adjust to your desired width
+                            height={800} // Adjust to your desired height                          
                             className={`w-6 md:w-10 h-6 md:h-10`}
                         />
                     </div>

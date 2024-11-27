@@ -71,6 +71,8 @@ export default function SearchToken({
                   <Image
                     src={option.imgURL}
                     alt={option.symbol}
+                    width={1200} // Adjust to your desired width
+                    height={800} // Adjust to your desired height                  
                     className="h-full w-full object-contain"
                   />
                 </span>

@@ -19,12 +19,19 @@ export default function TokenIcon({
     } object-contain rounded-full`;
 
   if (icon) {
-    return <Image src={icon} alt="token icon" className={className} />;
+    return <Image 
+    src={icon} 
+    alt="token icon" 
+    width={1200}
+    height={800} 
+    />;
   }
   return (
     <Image
       src={"/vcx.svg"}
       alt="token icon"
+      width={1200} // Adjust to your desired width
+      height={800} // Adjust to your desired height    
       className={className}
     />
   );

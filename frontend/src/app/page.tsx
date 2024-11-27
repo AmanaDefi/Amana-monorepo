@@ -214,6 +214,8 @@ function UnauthenticatedLandingPage() {
           <Image
             src="/Amana_chains.jpg"
             alt="Supported Chains and Protocols"
+            width={1200} // Adjust to your desired width
+            height={800} // Adjust to your desired height          
             className="w-full max-w-3xl"
           />
         </div>
@@ -229,6 +231,8 @@ function UnauthenticatedLandingPage() {
           <Image
             src="/signin_options.jpg"
             alt="Sign-in options"
+            width={1200} // Adjust to your desired width
+            height={800} // Adjust to your desired height          
             className="w-full max-w-3xl"
           />
         </div>
@@ -240,11 +244,15 @@ function UnauthenticatedLandingPage() {
           <Image
             src="/thirdweb_logo.jpg"
             alt="Thirdweb"
+            width={1200} // Adjust to your desired width
+            height={800} // Adjust to your desired height          
             className="w-1/3 max-w-xs"
           />
           <Image
             src="/ZetaChain.webp"
             alt="Zetachain"
+            width={1200} // Adjust to your desired width
+            height={800} // Adjust to your desired height          
             className="w-1/3 max-w-xs"
           />
         </div>

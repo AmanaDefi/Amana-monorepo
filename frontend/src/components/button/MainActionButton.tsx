@@ -31,7 +31,9 @@ export default function MainActionButton({
     >
       <span className="flex flex-row items-center justify-center gap-2">
         <span className="font-bold">{label}</span>
-        {icon && <Image src={icon} alt={label} className="w-5 h-5" />}
+        {icon && <Image src={icon}   width={1200} 
+  height={800}
+alt={label} className="w-5 h-5" />}
       </span>
     </button>
   );
