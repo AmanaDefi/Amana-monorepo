@@ -66,7 +66,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       // Set initial balances
       const depositAmount1 = ethers.utils.parseUnits("0.01", 18);
 
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(2).div(1));
+      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(20).div(1));
       // await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(2).div(10));
 
       return { owner, user1, depositAmount1, ethBaseSepolia, usdt, amanaVault };

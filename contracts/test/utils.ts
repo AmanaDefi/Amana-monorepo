@@ -40,7 +40,9 @@ export async function setTokenBalance(tokenAddress, account, amount) {
 
   // Verify the new balance
   const token = await ethers.getContractAt("IERC20", tokenAddress);
+  console.log("account:", account);
   const newBalance = await token.balanceOf(account);
+  console.log("newBalance:", newBalance);
   console.log(`Balance after update for ${account}: ${ethers.utils.formatUnits(newBalance, 18)} tokens`);
 
   console.log("=== Completed setTokenBalance ===");
