@@ -4,12 +4,14 @@ import "./tasks/deployUpgradeableVault";
 import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
 import "./tasks/deployGasTank";
+import "./tasks/deployVaultAndStrategy";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
 import "@typechain/hardhat";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-ethers";
+// import "@nomiclabs/hardhat-verify";
 
 import { getHardhatConfigNetworks } from "@zetachain/networks";
 import { HardhatUserConfig } from "hardhat/config";
@@ -36,7 +38,7 @@ const config: HardhatUserConfig = {
       chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
       forking: {
         url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 7859530 // 20113140, //  
+        blockNumber: 7873600 // 20113140, //  
       },
       allowUnlimitedContractSize: true,
     },
