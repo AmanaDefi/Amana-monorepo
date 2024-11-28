@@ -101,8 +101,8 @@ const config: HardhatUserConfig = {
         network: "zeta_testnet",
         chainId: 7001,
         urls: {
-          apiURL: "https://athens.explorer.zetachain.com/api",
-          browserURL: "https://athens.explorer.zetachain.com"
+          apiURL: "https://zetachain-testnet.blockscout.com/api",
+          browserURL: "https://zetachain-testnet.blockscout.com"
         }
       },
       {
