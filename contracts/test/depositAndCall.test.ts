@@ -4,6 +4,7 @@ import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { IGatewayZEVM, IERC20 } from "../typechain";
 import { setTokenBalance } from "./utils";
+import { GatewayZEVM } from "../typechain";
 
 import {
   ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
