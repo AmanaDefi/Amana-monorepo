@@ -11,7 +11,7 @@ import { useRouter, useParams } from 'next/navigation';
 function index({ }) {
 
   const account = useActiveAccount();
- const router = useRouter();
+  const router = useRouter();
   useEffect(() => {
     if (!account) {
       router.push("/");

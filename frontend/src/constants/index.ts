@@ -34,6 +34,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Aave",
@@ -51,6 +52,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Moonwell",
@@ -68,6 +70,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Compound",
@@ -85,6 +88,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: ZC_USDC_ETH_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Eddy",
@@ -100,11 +104,12 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH - Base Sepolia",
     symbol: "aAaveETH",
     inputToken: {
-      symbol: "ETH",
+      symbol: "ETH.BASESEPOLIA",
       decimals: 18,
       address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 3040
+      imgURL: "/ETH.png",
+      price: 3040,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Aave",
@@ -117,11 +122,12 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH - Eth Sepolia",
     symbol: "aAaveETH",
     inputToken: {
-      symbol: "ETH",
+      symbol: "sETH.SEPOLIA",
       decimals: 18,
       address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 3040
+      imgURL: "/ETH.png",
+      price: 3040,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Aave",

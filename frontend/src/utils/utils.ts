@@ -127,7 +127,7 @@ export function formatBalance(balance: number) {
     remaining = "0.00"
   }
   else {
-    remaining = '0.' + balance.toString().split(".")[1].slice(0, position + 1);
+    remaining = '0.' + balance.toString().split(".")[1]?.slice(0, position + 1);
   }
   return remaining;
 }

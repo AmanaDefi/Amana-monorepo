@@ -128,7 +128,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   onClick={() => { router.push("/vaults/" + vault.id) }}
                   role="button"
                 >
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap text-center">
                     {vault.protocol.network}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
@@ -143,14 +143,14 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                       <div>{vault.name}</div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap flex flex-col items-center justify-center">
+                  <td className="px-4 py-4 whitespace-nowrap flex flex-col items-center justify-center text-center">
                     <div className="font-semibold">{Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(9)} {vault.inputToken.symbol}</div>
                     <div className="text-sm font-light">$ {Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(9)}</div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap text-center">
                     {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d) * 100).toFixed(2)}%
                   </td>
-                  <td className="px-9 py-4 whitespace-nowrap">
+                  <td className="px-9 py-4 whitespace-nowrap text-center">
                     {formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
                   </td>
                   {/* <td className="px-4 py-4 whitespace-nowrap">

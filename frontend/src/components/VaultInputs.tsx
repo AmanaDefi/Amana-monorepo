@@ -48,6 +48,7 @@ export default function VaultInputs({
   useEffect(() => {
     if (EOAaccount) {
       setActiveAccount(EOAaccount);
+
     } else {
       setActiveAccount(null);
     }
@@ -63,11 +64,12 @@ export default function VaultInputs({
     throw new Error("No active chain found");
   }
 
+
+
   async function handleTokenSelect(input: Token): Promise<void> {
     if (!activeChain) {
       throw new Error("No active chain found");
     }
-
     const contract = getContract({
       client,
       chain: activeChain,
@@ -91,6 +93,35 @@ export default function VaultInputs({
   }
 
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const contract = getContract({
+        client,
+        chain: activeChain,
+        address: vaultData.inputToken.address as Address,
+      });
+      const { value, decimals } = await getBalance({
+        contract,
+        address: EOAaccount?.address as Address,
+      });
+
+      const formattedBalance = ethers.formatUnits(value, decimals);
+      vaultData.inputToken.balance.formatted = formattedBalance || "0";
+      setInputToken(vaultData.inputToken);
+      setAllowInput(true)
+      if (isDeposit) {
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, vaultData.inputToken.balance.formatted, setShowModal))
+      }
+      else {
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
+      }
+    };
+
+    // Call the async function
+    fetchData();
+
+  }, [activeChain])
+
   const inputTokenContract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0],
@@ -109,12 +140,13 @@ export default function VaultInputs({
 
     if (isDeposit) {
       // Switch to Withdraw
-      setInputToken(vault);
+      if (vault) {
+        setInputToken(vault);
+      }
       setIsDeposit(false);
 
     } else {
       // Switch to Deposit
-      setInputToken(undefined);
       setIsDeposit(true);
     }
   }
@@ -165,6 +197,8 @@ export default function VaultInputs({
       onSelectToken={(option) =>
         handleTokenSelect(option)
       }
+      allowInput={allowInput}
+      vaultData={vaultData}
       onMaxClick={handleMaxClick}
       value={inputBalance.formatted}
       onChange={handleChangeInput}
@@ -172,22 +206,7 @@ export default function VaultInputs({
       errorMessage={errorMessage}
       tokenList={tokenOptions}
       disabled={false}
-      allowInput={allowInput}
     />
-    <div className="relative mt-4">
-      <div className="absolute inset-0 flex items-center" aria-hidden="true">
-        <div className="w-full border-t border-customGray500" />
-      </div>
-      <div className="relative flex justify-center">
-        <span className="bg-customNeutral300 px-4">
-          <ArrowDownIcon
-            className="h-10 w-10 p-2 text-customGray500 border border-customGray500 rounded-full cursor-pointer hover:text-white hover:border-white"
-            aria-hidden="true"
-            onClick={switchTokens}
-          />
-        </span>
-      </div>
-    </div>
     <div className="mt-4">
       <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
       <div className="bg-customNeutral200 py-2 px-4 rounded-lg space-y-2">

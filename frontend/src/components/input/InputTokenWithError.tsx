@@ -1,8 +1,9 @@
 import type { HTMLProps } from "react";
-import { Token } from "@/types/types";
+import { Token, VaultData } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
 import { NumberFormatter } from "@/utils/utils";
+
 
 export default function InputTokenWithError({
   tokenList,
@@ -10,6 +11,7 @@ export default function InputTokenWithError({
   errorMessage,
   onMaxClick,
   onSelectToken,
+  vaultData,
   captionText,
   getToken,
   allowInput,
@@ -20,6 +22,7 @@ export default function InputTokenWithError({
   errorMessage?: string;
   onMaxClick: () => void;
   onSelectToken: (token: Token) => void;
+  vaultData: VaultData
   tokenList: Token[];
   selectedToken?: Token;
   captionText?: string;
@@ -28,6 +31,7 @@ export default function InputTokenWithError({
   inputMoreThanBalance?: boolean;
   disabled?: boolean
 } & HTMLProps<HTMLInputElement>): JSX.Element {
+
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
@@ -82,11 +86,6 @@ export default function InputTokenWithError({
                 {selectedToken?.balance.formatted || "0"}
               </p>
             </div>
-          </div>
-          <div className="flex justify-between items-center mt-4 w-full text-customGray500">
-            <p className="group-hover/max:text-white">
-              $ {NumberFormatter.format(Number(props.value) * (selectedToken?.price || 0))}
-            </p>
           </div>
         </div>
       </div>

@@ -1,7 +1,13 @@
-import React from 'react'
+import React, { useEffect, useState } from "react";
 import { VaultData, UserVaultBalance, VaultTotalAssets, VaultAPY } from "../types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from 'next/image';
+import { formatBalance } from '@/utils/utils';
+import { client } from "@/utils/client";
+import { ethers } from "ethers";
+import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
+import { Address, getContract } from "thirdweb";
+import { getBalance } from "thirdweb/extensions/erc20";
 
 export default function VaultHeader({
     vaultData,
@@ -17,6 +23,43 @@ export default function VaultHeader({
     vaultAPYs: VaultAPY[];
 }): JSX.Element {
 
+    const activeChain = useActiveWalletChain();
+    const EOAaccount = useActiveAccount();
+    if (!EOAaccount) {
+        throw new Error("No active account found");
+    }
+
+    if (!activeChain) {
+        throw new Error("No active chain found");
+    }
+
+    const [walletData, setWalletData] = useState<string>("")
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const contract = getContract({
+                client,
+                chain: activeChain,
+                address: vaultData.inputToken.address as Address,
+            });
+            const { value, decimals } = await getBalance({
+                contract,
+                address: EOAaccount?.address as Address,
+            });
+
+            const formattedBalance = ethers.formatUnits(value, decimals);
+            setWalletData(formattedBalance)
+        };
+
+        // Call the async function
+        fetchData();
+
+    }, [])
+
+    const data = formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance));
+    const price = vaultData.inputToken.price;
+    const symbol = vaultData.inputToken.symbol;
+
     return (
         <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
             <div className="w-full mb-12 flex flex-row items-center">
@@ -30,7 +73,7 @@ export default function VaultHeader({
                             className={`w-6 md:w-10 h-6 md:h-10`}
                         />
                     </div>
-                    <h2 className="font-bold text-white" >{vaultData.inputToken.symbol}</h2>
+                    <h2 className="font-bold text-white" >{symbol}</h2>
                     <div className="relative">
                         <Image
                             src={vaultData.protocol.imgURL}
@@ -46,11 +89,12 @@ export default function VaultHeader({
             <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
                 <div className="grid grid-cols-2 sm:grid-cols-6 md:pr-10 gap-4 md:gap-10">
                     <div>
+
                         <LargeCardStat
                             id={"deposits"}
                             label="Deposits"
-                            value={Number(vaultTotalAssets.find((asset) => asset.vaultId === selectedVaultId)?.totalAssets).toFixed(2)}
-                            secondaryValue={Number(vaultTotalAssets.find((asset) => asset.vaultId === selectedVaultId)?.totalAssets).toFixed(2)}
+                            value={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toString()}
+                            secondaryValue={data + " " + symbol}
                             tooltip="Value of your vault deposits"
                         />
                     </div>
@@ -58,8 +102,8 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"wallet"}
                             label="Your Wallet"
-                            value={Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance).toFixed(2)}
-                            secondaryValue={Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance).toFixed(2)}
+                            value={'$ ' + (Number(walletData) * price).toString()}
+                            secondaryValue={walletData + " " + symbol}
                             tooltip="Value of deposit assets held in your wallet"
                         />
                     </div>
@@ -67,8 +111,7 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"APY"}
                             label="7d APY"
-                            value={(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2)}
-                            secondaryValue={Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance).toFixed(2)}
+                            value={(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2) + "%"}
                             tooltip="Value of deposit assets held in your wallet"
                         />
                     </div>

@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import { Token } from "@/types/types";
+import { Token, VaultData } from "@/types/types";
 import TokenIcon from "@/components/common/TokenIcon";
 import SearchToken from "@/components/input/SearchToken";
 import Modal from "@/components/modal/Modal";
 import { Tooltip } from "react-tooltip";
+import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
+import { Account } from "thirdweb/wallets";
 
 export interface SelectTokenProps {
   options: Token[];
@@ -19,7 +21,6 @@ export default function SelectToken({
 }: SelectTokenProps): JSX.Element {
   const [show, setShow] = useState(false);
   const selectTokenId = selectedToken?.symbol.split(" ").join("");
-
 
   return (
     <>
