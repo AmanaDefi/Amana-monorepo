@@ -318,7 +318,6 @@ contract AmanaVault is
         uint256 gasFeeForCall = gasPrice * gasLimitForCall;
         console.log("gasFeeForCall: ", gasFeeForCall);
         console.log("gasFeeForWithdraw: ", gasFeeForWithdraw);
-
         gasTank.getGas(gas_zrc20, gasFeeForWithdraw + gasFeeForCall);
 
         if (gas_zrc20 != address(asset())) {
@@ -523,15 +522,15 @@ contract AmanaVault is
             IStrategy($.strategyAddress).invest(assets);
         } else {
             uint256 outputAmount = assets;
-            // if (zrc20source != address(asset())) {
-            // console.log("swapping");
-            // outputAmount = swapExactTokensForTokens(
-            //     zrc20source,
-            //     assets,
-            //     address(asset()),
-            //     0 // minAmountOut? TODO - control for slippage here?
-            // );
-            // }
+            if (zrc20source != address(asset())) {
+                console.log("swapping");
+                outputAmount = swapExactTokensForTokens(
+                    zrc20source,
+                    assets,
+                    address(asset()),
+                    0 // minAmountOut? TODO - control for slippage here?
+                );
+            }
             _crossChainInvest(outputAmount);
         }
         emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
@@ -568,13 +567,13 @@ contract AmanaVault is
         console.log("path: ", path[0], path[1], path[2]);
         IZRC20(zrc20).approve(address(uniswapv2Router02Address), amount);
         uint256[] memory amounts = IUniswapV2Router01(uniswapv2Router02Address)
-            .swapExactTokensForTokens(
-                amount,
-                minAmountOut,
-                path,
-                address(this),
-                block.timestamp + MAX_DEADLINE
-            );
+            .swapExactTokensForTokens{gas: 200000}(
+            amount,
+            minAmountOut,
+            path,
+            address(this),
+            block.timestamp + MAX_DEADLINE
+        );
         return amounts[path.length - 1];
     }
 
