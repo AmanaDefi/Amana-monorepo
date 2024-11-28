@@ -87,7 +87,8 @@ export interface Token {
   symbol: string;
   decimals: number;
   imgURL: string;
-  price: number
+  price: number,
+  balance: Balance
 }
 
 export interface TokenByAddress {

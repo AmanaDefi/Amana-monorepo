@@ -1,29 +1,25 @@
 import { VaultData, Token } from "../types/types";
 import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../../constants";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 
 export const tokens: Token[] = [
   {
-    symbol: "USDC",
-    decimals: 6,
-    address: BASE_USDC_ADDRESS,
-    imgURL: "/USDC.png",
-    price: 1
-  },
-  {
     symbol: "ETH.BASESEPOLIA",
     decimals: 18,
     address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
-    price: 3040
+    price: 3040,
+    balance: EMPTY_BALANCE
   },
   {
     symbol: "sETH.SEPOLIA",
     decimals: 18,
     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
-    price: 3040
+    price: 3040,
+    balance: EMPTY_BALANCE
   },
 ]
 

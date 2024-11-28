@@ -2,7 +2,7 @@
 import TabSelector from "@/components/common/TabSelector"
 import InputTokenWithError from "@/components/input/InputTokenWithError"
 import { executeDeposit, executeWithdrawal } from "@/actions/actions"
-import { VaultData, Token, Balance } from "@/types/types";
+import { VaultData, Token, Balance, UserVaultBalance } from "@/types/types";
 import { EMPTY_BALANCE, NumberFormatter } from "@/utils/helpers";
 import { ArrowDownIcon } from "@heroicons/react/24/outline"
 import { useState, useEffect } from "react"
@@ -16,17 +16,21 @@ import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
+import { getVaultErrorMessage } from "@/utils/utils";
+import { ethers } from "ethers";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
   tokenOptions: Token[];
   setTransactionCompleted: (value: boolean) => void;
+  userVaultBalances: UserVaultBalance[];
 }
 
 export default function VaultInputs({
   vaultData,
   tokenOptions,
-  setTransactionCompleted
+  setTransactionCompleted,
+  userVaultBalances
 }: VaultInputsProps): JSX.Element {
   const vault = tokenOptions.find(t => t.address === vaultData.inputToken.address)
 
@@ -36,6 +40,8 @@ export default function VaultInputs({
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
   const [isDeposit, setIsDeposit] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showModal, setShowModal] = useState<boolean>(false)
+  const [allowInput, setAllowInput] = useState<boolean>(false)
 
   const EOAaccount = useActiveAccount();
 
@@ -57,9 +63,33 @@ export default function VaultInputs({
     throw new Error("No active chain found");
   }
 
-  function handleTokenSelect(input: Token): void {
+  async function handleTokenSelect(input: Token): Promise<void> {
+    if (!activeChain) {
+      throw new Error("No active chain found");
+    }
+
+    const contract = getContract({
+      client,
+      chain: activeChain,
+      address: input.address as Address,
+    });
+    const { value, decimals } = await getBalance({
+      contract,
+      address: activeAccount?.address as Address,
+    });
+
+    const formattedBalance = ethers.formatUnits(value, decimals);
+    input.balance.formatted = formattedBalance || "0";
     setInputToken(input);
+    setAllowInput(true)
+    if (isDeposit) {
+      setErrorMessage(getVaultErrorMessage(inputBalance.formatted, input.balance.formatted, setShowModal))
+    }
+    else {
+      setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
+    }
   }
+
 
   const inputTokenContract = getContract({
     client,
@@ -105,8 +135,23 @@ export default function VaultInputs({
     const newAmt = parseUnits(inputAmt, inputToken.decimals)
 
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * (inputToken.price || 0)) });
+    if (isDeposit) {
+      setErrorMessage(getVaultErrorMessage(value, inputToken.balance.formatted, setShowModal))
+    }
+    else {
+      setErrorMessage(getVaultErrorMessage(value, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
+    }
   }
 
+  function handleMaxClick() {
+    if (!inputToken) return;
+    if (isDeposit) {
+      handleChangeInput({ currentTarget: { value: inputToken.balance.formatted } });
+    }
+    else {
+      handleChangeInput({ currentTarget: { value: userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance || "0" } });
+    }
+  }
 
   return <>
     <TabSelector
@@ -120,13 +165,14 @@ export default function VaultInputs({
       onSelectToken={(option) =>
         handleTokenSelect(option)
       }
+      onMaxClick={handleMaxClick}
       value={inputBalance.formatted}
       onChange={handleChangeInput}
       selectedToken={inputToken}
       errorMessage={errorMessage}
       tokenList={tokenOptions}
       disabled={false}
-      allowInput
+      allowInput={allowInput}
     />
     <div className="relative mt-4">
       <div className="absolute inset-0 flex items-center" aria-hidden="true">
@@ -165,7 +211,7 @@ export default function VaultInputs({
     </div>
 
 
-    {inputToken && inputBalance.value > 0 &&
+    {inputToken && showModal &&
       <InteractionContainer
         _inputToken={inputToken}
         _inputBalance={inputBalance}
@@ -175,6 +221,7 @@ export default function VaultInputs({
         setTransactionCompleted={setTransactionCompleted}
         refetch={refetch}
         activeChain={activeChain}
+        setShowModal={setShowModal}
       />
     }
   </>
@@ -225,9 +272,6 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
   setTransactionCompleted(false)
   try {
     const value = Number(inputBalance.value)
-
-
-    const inputToken = vaultData.inputToken;
     const scaledAmount = BigInt(value)
 
     mixpanel.track("Withdraw Submitted", {
@@ -275,8 +319,8 @@ function getLabel(action: Action) {
   }
 }
 
-function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain }:
-  { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain; }): JSX.Element {
+function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, setShowModal }:
+  { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, setShowModal: Function }): JSX.Element {
 
 
   return <div className="w-full flex flex-col mt-5">
@@ -289,15 +333,17 @@ function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, 
       setTransactionCompleted={setTransactionCompleted}
       refetch={refetch}
       activeChain={activeChain}
+      setShowModal={setShowModal}
     />
   </div>
 }
 
 
-function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain }:
-  { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain }): JSX.Element {
+function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, setShowModal }:
+  { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, setShowModal: Function }): JSX.Element {
 
   async function handleMainAction() {
+    setShowModal(false)
     if (action == Action.deposit) {
       await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
     }

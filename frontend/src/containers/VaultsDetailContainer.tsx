@@ -31,6 +31,7 @@ const VaultsDetailContainer: React.FC<{
     const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
     const [transactionCompleted, setTransactionCompleted] = useState(false);
 
+
     const vaults: VaultData[] = VAULT_DATA;
     const EOAaccount = useActiveAccount();
 
@@ -78,18 +79,19 @@ const VaultsDetailContainer: React.FC<{
           />
 
           <section className="w-full md:flex md:flex-row md:justify-between md:space-x-8 py-10 px-4 md:px-0">
-            <div className="w-full md:w-1/3">
+            <div className="w-full md:w-1/2">
               <div className="bg-customNeutral200 p-6 rounded-lg">
                 <div className="bg-customNeutral300 px-6 py-6 rounded-lg">
                   <VaultInputs
                     vaultData={vaultData}
                     tokenOptions={tokenOptions}
                     setTransactionCompleted={setTransactionCompleted}
+                    userVaultBalances={userVaultBalances}
                   />
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-2/3 mt-8 md:mt-0 space-y-4">
+            <div className="w-full md:w-1/2 mt-8 md:mt-0 space-y-4">
               <div className="bg-customNeutral200 p-6 rounded-lg">
                 <p className="text-white text-2xl font-bold">Information</p>
                 <div className="md:flex md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4 mt-4">

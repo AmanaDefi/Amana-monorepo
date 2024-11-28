@@ -13,7 +13,7 @@ import fourPoolABI from "../../abis/fourPoolABI.json";
 import { Chain, defineChain } from "thirdweb";
 
 import * as dotenv from "dotenv";
-import { read } from "fs";
+
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA);
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
