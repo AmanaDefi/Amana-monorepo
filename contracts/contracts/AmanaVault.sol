@@ -184,7 +184,7 @@ contract AmanaVault is
         } else {
             if (userAddress == address(0)) revert CantBeZeroAddress();
             console.log("Depositing from another chain");
-            _depositFromConnectedChain(userAddress, amount, zrc20); // _depositFromConnectedChain means from another chain - will handle deposit to strat on ZC or other
+            _depositFromConnectedChain(userAddress, amount, zrc20); // incoming deposit from another chain - will handle deposit to strat on ZC or other
         }
     }
 
@@ -523,15 +523,15 @@ contract AmanaVault is
             IStrategy($.strategyAddress).invest(assets);
         } else {
             uint256 outputAmount = assets;
-            if (zrc20source != address(asset())) {
-                console.log("swapping");
-                outputAmount = swapExactTokensForTokens(
-                    zrc20source,
-                    assets,
-                    address(asset()),
-                    0 // minAmountOut? TODO - control for slippage here?
-                );
-            }
+            // if (zrc20source != address(asset())) {
+            // console.log("swapping");
+            // outputAmount = swapExactTokensForTokens(
+            //     zrc20source,
+            //     assets,
+            //     address(asset()),
+            //     0 // minAmountOut? TODO - control for slippage here?
+            // );
+            // }
             _crossChainInvest(outputAmount);
         }
         emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
