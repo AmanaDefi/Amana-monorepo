@@ -153,22 +153,6 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   <td className="px-9 py-4 whitespace-nowrap text-center">
                     {formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
                   </td>
-                  {/* <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded"
-                        onClick={() => handleDepositClick(vault)}
-                      >
-                        Deposit
-                      </button>
-                      <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded"
-                        onClick={() => handleWithdrawClick(vault)}
-                      >
-                        Withdraw
-                      </button>
-                    </div>
-                  </td> */}
                 </tr>
               ))}
             </tbody>
