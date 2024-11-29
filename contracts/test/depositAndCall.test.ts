@@ -1,13 +1,13 @@
-import { ethers, upgrades, network } from "hardhat";
+import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { IGatewayZEVM, IERC20 } from "../typechain";
-import { setTokenBalance } from "./utils";
+import { IERC20 } from "../typechain";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 
+// This test mocks a depositAndCall coming from Sepolia, into a strategy on BaseSepolia 
+
 import {
-  ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
   ZC_TEST_ETH_SEPOLIA_ADDRESS,
 } from "../../constants";
 
@@ -16,12 +16,10 @@ describe("GatewayZEVM depositAndCall Function", function () {
   let user1: Signer;
   let ethSepolia: IERC20;
 
-  const ZEVM_GATEWAY_ADDRESS = "0x6c533f7fe93fae114d0954697069df33c9b74fd7"; // Replace with your gateway address
+  const ZEVM_GATEWAY_ADDRESS = "0x6c533f7fe93fae114d0954697069df33c9b74fd7";
   const INCOMING_TOKEN = ZC_TEST_ETH_SEPOLIA_ADDRESS
-  const VAULT_ASSET = ZC_TEST_ETH_BASESEPOLIA_ADDRESS;
-  const TARGET_CONTRACT = "0x48326BdEa7CAF701cEee64f08faE899e90c110A1" // "0x3B3949A8dC9B1bF6EDd3D01e1BAcd8971a408039"; // Replace with your target contract address
-  const PROTOCOL_ADDRESS = "0x735b14bb79463307aacbed86daf3322b1e6226ab"; // Replace with the protocol address
-  const FUNGIBLE_MODULE_ADDRESS = "0x735b14bb79463307aacbed86daf3322b1e6226ab"
+  const VAULT_ADDRESS = "0x1Ba9b31648955c8D5653BC6AB340d5ECe5C0c11B"
+  const PROTOCOL_ADDRESS = "0x735b14bb79463307aacbed86daf3322b1e6226ab";
 
   const ORIGIN_CHAIN_ID = 84532; // where the deposit/withdrawal originated from
 
@@ -50,17 +48,11 @@ describe("GatewayZEVM depositAndCall Function", function () {
 
       ethSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_SEPOLIA_ADDRESS);
 
-      // Set initial balances for testing
-      const depositAmount = ethers.utils.parseUnits("0.01", 18);
-      console.log("Setting token balance")
-      // await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, gatewayZEVM.address, depositAmount);
-
-      return { owner, user1, depositAmount, ethSepolia, gatewayZEVM };
+      return { owner, user1, ethSepolia, gatewayZEVM };
     }
 
     it("should call depositAndCall correctly", async function () {
-      const { user1, depositAmount, gatewayZEVM } = await loadFixture(setup);
-      console.log("Fixture loaded")
+      const { user1, gatewayZEVM } = await loadFixture(setup);
       const userAddress = await user1.getAddress();
       const amount = ethers.utils.parseUnits("0.01", 18); // Amount to be deposited
       const originChainId = ORIGIN_CHAIN_ID; // Origin chain ID
@@ -69,15 +61,9 @@ describe("GatewayZEVM depositAndCall Function", function () {
         ["address", "uint256", "uint256", "uint256", "uint32"],
         [userAddress, 0, 0, 0, originChainId]
       );
-
-      const gasTank = await ethers.getContractAt("GasTank", "0xEc8461Aa545CAa0e784b395a2569Ca46641ab151");
-      console.log("GasTank found at:", gasTank.address);
-      // const isAuthorized = await gasTank.authorizedVaults(TARGET_CONTRACT);
-      // console.log("Is Vault Authorized:", isAuthorized);
-
+      const amanaVault = await ethers.getContractAt("AmanaVault", VAULT_ADDRESS);
 
       // Call depositAndCall
-      console.log("Calling depositAndCall")
       const tx = await gatewayZEVM["depositAndCall((bytes,address,uint256),address,uint256,address,bytes)"](
         {
           origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("")),
@@ -86,7 +72,7 @@ describe("GatewayZEVM depositAndCall Function", function () {
         },
         INCOMING_TOKEN,
         amount,
-        TARGET_CONTRACT,
+        VAULT_ADDRESS,
         message,
         {
           gasPrice: ethers.utils.parseUnits("150", "gwei"),
@@ -98,7 +84,7 @@ describe("GatewayZEVM depositAndCall Function", function () {
 
       // Assert that the depositAndCall was processed correctly
       await expect(tx)
-        .to.emit(TARGET_CONTRACT, "Deposit");
+        .to.emit(amanaVault, "Deposit");
     });
   });
 });
