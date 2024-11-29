@@ -14,7 +14,6 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
-import "hardhat/console.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
 // This makes logical sense in that it is the underlying asset that the strategy is investing
@@ -183,8 +182,7 @@ contract AmanaVault is
             ); // TODO does shares really need to be here?
         } else {
             if (userAddress == address(0)) revert CantBeZeroAddress();
-            console.log("Depositing from another chain");
-            _depositFromConnectedChain(userAddress, amount, zrc20); // _depositFromConnectedChain means from another chain - will handle deposit to strat on ZC or other
+            _depositFromConnectedChain(userAddress, amount, zrc20); // incoming deposit from another chain - will handle deposit to strat on ZC or other
         }
     }
 
@@ -316,9 +314,6 @@ contract AmanaVault is
         uint256 gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
         uint256 gasPrice = systemContract.gasPriceByChainId($.strategyChainId);
         uint256 gasFeeForCall = gasPrice * gasLimitForCall;
-        console.log("gasFeeForCall: ", gasFeeForCall);
-        console.log("gasFeeForWithdraw: ", gasFeeForWithdraw);
-
         gasTank.getGas(gas_zrc20, gasFeeForWithdraw + gasFeeForCall);
 
         if (gas_zrc20 != address(asset())) {
@@ -352,7 +347,6 @@ contract AmanaVault is
         );
 
         CallOptions memory callOptions = CallOptions(gasLimitForCall, true);
-        console.log("Executing withdrawAndCall");
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
             recipient, // this contains the recipient smart contract address - the strategy address in this case
             amount, // amount of zrc20 to withdraw
@@ -517,14 +511,12 @@ contract AmanaVault is
         _mint(receiver, shares);
 
         if ($.strategyChainId == vaultChainId) {
-            console.log("Investing on ZC");
             bool success = IERC20(asset()).approve($.strategyAddress, assets);
             if (!success) revert ApprovalFailed();
             IStrategy($.strategyAddress).invest(assets);
         } else {
             uint256 outputAmount = assets;
             if (zrc20source != address(asset())) {
-                console.log("swapping");
                 outputAmount = swapExactTokensForTokens(
                     zrc20source,
                     assets,
@@ -565,16 +557,15 @@ contract AmanaVault is
         path[1] = WZETA_ADDRESS;
         path[2] = targetZRC20;
         // }
-        console.log("path: ", path[0], path[1], path[2]);
         IZRC20(zrc20).approve(address(uniswapv2Router02Address), amount);
         uint256[] memory amounts = IUniswapV2Router01(uniswapv2Router02Address)
-            .swapExactTokensForTokens(
-                amount,
-                minAmountOut,
-                path,
-                address(this),
-                block.timestamp + MAX_DEADLINE
-            );
+            .swapExactTokensForTokens{gas: 200000}(
+            amount,
+            minAmountOut,
+            path,
+            address(this),
+            block.timestamp + MAX_DEADLINE
+        );
         return amounts[path.length - 1];
     }
 
@@ -759,16 +750,8 @@ contract AmanaVault is
             SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee); // TODO - a better way to do this?
         }
         _burn(userAddress, shares);
-
         if (userChainId == vaultChainId) {
             SafeERC20.safeTransfer(IERC20(asset()), userAddress, amount);
-            emit Withdraw(
-                userAddress,
-                userAddress,
-                userAddress,
-                amount,
-                shares
-            );
         } else {
             bytes memory recipient = abi.encodePacked(userAddress);
 
@@ -810,13 +793,7 @@ contract AmanaVault is
                 outputZRC20,
                 revertOptions // do these need to be different from the revertOptions in deposit?
             );
-            emit Withdraw(
-                userAddress,
-                userAddress,
-                userAddress,
-                amount,
-                shares
-            );
         }
+        emit Withdraw(userAddress, userAddress, userAddress, amount, shares);
     }
 }

@@ -67,7 +67,8 @@ contract EthSepAaveEthStrategy is Ownable {
         address ownerAddress,
         uint256 amount,
         uint256 fee,
-        uint256 shares
+        uint256 shares,
+        uint32 originChainId
     ) external onlyGateway returns (uint256) {
         bool success = receiptToken.approve(
             address(tokenGateway),
@@ -81,7 +82,13 @@ contract EthSepAaveEthStrategy is Ownable {
             address(this) // owner
         );
 
-        bytes memory outgoingMessage = abi.encode(ownerAddress, 1, fee, shares);
+        bytes memory outgoingMessage = abi.encode(
+            ownerAddress,
+            1,
+            fee,
+            shares,
+            originChainId // 0 = origin is zetachain, 1 = origin is connected chain
+        );
 
         RevertOptions memory revertOptions = RevertOptions(
             0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
