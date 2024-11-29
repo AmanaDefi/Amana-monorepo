@@ -60,7 +60,12 @@ export default function InputTokenWithError({
           </div>
           <div className="flex justify-between items-center mt-4 w-full text-customGray500">
             <p className="group-hover/max:text-white">
-              $ {NumberFormatter.format(Number(props.value) * (selectedToken?.price || 0))}
+              {
+                selectedToken ?
+                  "$ " + (Number(props.value) * selectedToken.price).toFixed(2).toString()
+                  :
+                  "$ 0.00"
+              }
             </p>
             <div
               className={`flex items-center ml-1 gap-2 group/max ${allowInput ? "group-hover/max:text-white cursor-pointer " : ""}`}
@@ -83,7 +88,7 @@ export default function InputTokenWithError({
                 </svg>
               </div>
               <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                {selectedToken?.balance.formatted || "0"}
+                {Number(selectedToken?.balance.formatted) == 0 ? "0" : Number(selectedToken?.balance.formatted).toFixed(6).toString() || "0"}
               </p>
             </div>
           </div>
