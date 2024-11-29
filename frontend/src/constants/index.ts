@@ -6,7 +6,7 @@ const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 
 export const tokens: Token[] = [
   {
-    symbol: "ETH.BASESEPOLIA",
+    symbol: "ETH",
     decimals: 18,
     address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
@@ -14,7 +14,7 @@ export const tokens: Token[] = [
     balance: EMPTY_BALANCE
   },
   {
-    symbol: "sETH.SEPOLIA",
+    symbol: "sETH",
     decimals: 18,
     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
@@ -104,7 +104,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH - Base Sepolia",
     symbol: "aAaveETH",
     inputToken: {
-      symbol: "ETH.BASESEPOLIA",
+      symbol: "ETH",
       decimals: 18,
       address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
       imgURL: "/ETH.png",
@@ -122,7 +122,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH - Eth Sepolia",
     symbol: "aAaveETH",
     inputToken: {
-      symbol: "sETH.SEPOLIA",
+      symbol: "sETH",
       decimals: 18,
       address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
       imgURL: "/ETH.png",

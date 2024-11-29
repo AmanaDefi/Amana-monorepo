@@ -56,7 +56,7 @@ export default function VaultHeader({
 
     }, [])
 
-    const data = formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance));
+    const data = formatBalance(Number(0.000000002232243));
     const price = vaultData.inputToken.price;
     const symbol = vaultData.inputToken.symbol;
 
@@ -93,7 +93,7 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"deposits"}
                             label="Deposits"
-                            value={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toString()}
+                            value={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toFixed(6).toString()}
                             secondaryValue={data + " " + symbol}
                             tooltip="Value of your vault deposits"
                         />
