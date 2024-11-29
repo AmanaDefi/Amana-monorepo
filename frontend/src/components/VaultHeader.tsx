@@ -87,14 +87,13 @@ export default function VaultHeader({
                 </div>
             </div>
             <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-                <div className="grid grid-cols-2 sm:grid-cols-6 md:pr-10 gap-4 md:gap-10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:pr-10 gap-4 md:gap-20">
                     <div>
-
                         <LargeCardStat
                             id={"deposits"}
                             label="Deposits"
-                            value={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toFixed(6).toString()}
-                            secondaryValue={Number(data).toFixed(6).toString() + " " + symbol}
+                            value={Number(data).toFixed(6).toString() + " " + symbol}
+                            secondaryValue={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toFixed(2).toString()}
                             tooltip="Value of your vault deposits"
                         />
                     </div>
@@ -102,8 +101,8 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"wallet"}
                             label="Your Wallet"
-                            value={'$ ' + (Number(walletData) * price).toString()}
-                            secondaryValue={walletData + " " + symbol}
+                            value={walletData + " " + symbol}
+                            secondaryValue={'$ ' + (Number(walletData) * price).toFixed(2).toString()}
                             tooltip="Value of deposit assets held in your wallet"
                         />
                     </div>
