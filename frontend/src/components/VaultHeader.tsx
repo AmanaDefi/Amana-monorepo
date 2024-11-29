@@ -48,7 +48,7 @@ export default function VaultHeader({
             });
 
             const formattedBalance = ethers.formatUnits(value, decimals);
-            setWalletData(formattedBalance)
+            setWalletData(Number(formattedBalance).toFixed(6))
         };
 
         // Call the async function
@@ -94,7 +94,7 @@ export default function VaultHeader({
                             id={"deposits"}
                             label="Deposits"
                             value={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toFixed(6).toString()}
-                            secondaryValue={data + " " + symbol}
+                            secondaryValue={Number(data).toFixed(6).toString() + " " + symbol}
                             tooltip="Value of your vault deposits"
                         />
                     </div>
