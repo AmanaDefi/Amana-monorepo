@@ -56,7 +56,7 @@ export default function VaultHeader({
 
     }, [])
 
-    const data = formatBalance(Number(0.000000002232243));
+    const data = formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance));
     const price = vaultData.inputToken.price;
     const symbol = vaultData.inputToken.symbol;
 
