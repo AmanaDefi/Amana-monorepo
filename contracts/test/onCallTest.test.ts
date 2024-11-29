@@ -19,14 +19,14 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
   let ethSepolia: IERC20;
   let usdt: IERC20;
 
-  const ZEVM_GATEWAY_ADDRESS = "0x6c533f7fe93fae114d0954697069df33c9b74fd7"; // Replace with your gateway address
+  const ZEVM_GATEWAY_ADDRESS = "0x6c533f7fe93fae114d0954697069df33c9b74fd7";
   const SYSTEM_CONTRACT_ADDRESS = "0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B";
   const VAULT_ASSET = ZC_TEST_ETH_SEPOLIA_ADDRESS;
 
   const ORIGIN_CHAIN_ID = 84532; // where the deposit/withdrawal originated from
 
-  const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE"; // SepAaveEthStrategy address
-  const STRATEGY_CHAIN_ID = 11155111; // Replace with your chain ID for testnet or mainnet
+  const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
+  const STRATEGY_CHAIN_ID = 11155111;
 
   before(async () => {
     // Use this function if you need global setup before tests
@@ -35,7 +35,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
   describe("AmanaVault onCall Function", function () {
     async function setup() {
       [owner, user1] = await ethers.getSigners();
-      // Forked USDC contract and Aave Pool
+
       ethBaseSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_BASESEPOLIA_ADDRESS);
       ethSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_SEPOLIA_ADDRESS);
 
@@ -44,30 +44,21 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         ZEVM_GATEWAY_ADDRESS
       );
 
-      // Deploy a new GasTank
       const GasTank = await ethers.getContractFactory("GasTank");
       const gasTank = await GasTank.deploy();
       await gasTank.deployed();
 
-      console.log("GasTank deployed to:", gasTank.address);
-
-      // Deploy the AmanaVault using OpenZeppelin's upgrade proxy pattern
       const Vault = await ethers.getContractFactory("AmanaVault", owner);
       amanaVault = await upgrades.deployProxy(
         Vault,
         ["AaveV3EthVault", "AVU", VAULT_ASSET, await owner.getAddress(), 1000, ZEVM_GATEWAY_ADDRESS, SYSTEM_CONTRACT_ADDRESS, gasTank.address], // FeeRate 10%
         { initializer: "initialize" }
       );
-      console.log("AmanaVault deployed to:", amanaVault.address);
 
       await gasTank.authorizeVault(amanaVault.address);
-      console.log("GasTank authorized for:", amanaVault.address);
 
-      // Set the strategy in the AmanaVault contract
       await amanaVault.setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID);
-      console.log("Strategy set to:", STRATEGY_ADDRESS);
 
-      // Set initial balances
       const depositAmount1 = ethers.utils.parseUnits("0.01", 18);
 
       await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(20).div(1));
@@ -82,8 +73,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const withdrawAmount = ethers.BigNumber.from(0);
       const fee = 0;
       const shares = 0;
-      const amount = ethers.utils.parseUnits("0.01", 18); // Amount to be deposited
-      const originChainId = ORIGIN_CHAIN_ID; // Origin chain ID
+      const amount = ethers.utils.parseUnits("0.01", 18);
+      const originChainId = ORIGIN_CHAIN_ID;
       const expected_shares = amount;
 
 
@@ -92,10 +83,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         [userAddress, withdrawAmount, fee, shares, originChainId]
       );
 
-      // simulate deposit of amount into vault
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, amanaVault.address, depositAmount1);
 
-      // Test onCall function with deposit scenario
       const tx = await amanaVault.onCall(
         {
           // MessageContext can be empty as it's not used
@@ -107,7 +96,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         amount,
         message,
         {
-          gasPrice: ethers.utils.parseUnits('150', 'gwei'), // Set gas price
+          gasPrice: ethers.utils.parseUnits('150', 'gwei'),
         }
       );
 
@@ -171,7 +160,6 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       await expect(tx)
         .to.emit(gatewayZEVM, "Called")
-      // .withArgs(userAddress, userAddress, userAddress, withdrawAmount, shares);
     });
 
     it("should process onCall correctly with withdrawAmount = 1 (cross-chain withdraw part two)", async function () {
@@ -253,7 +241,6 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       await expect(tx2)
         .to.emit(amanaVault, "Withdraw")
         .to.emit(gatewayZEVM, "Withdrawn")
-      // .withArgs(userAddress, userAddress, userAddress, amount2.sub(fee), shares2);
     });
   });
 });
