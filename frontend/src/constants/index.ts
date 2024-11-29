@@ -102,6 +102,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   {
     id: "0x0AebE2977E81Da0A241A2c7359f8727BB3618437", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Base Sepolia
     name: "AaveV3 ETH - Base Sepolia",
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
     inputToken: {
       symbol: "ETH",
@@ -113,12 +114,15 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     protocol: {
       name: "Aave",
       network: "Base Sepolia",
-      imgURL: "/aave.png"
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/aave.png",
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
   {
     id: "0xBF1A6cfD6edF6E6B944ea4b55aa77B5B21356014", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
     name: "AaveV3 ETH - Eth Sepolia",
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
     inputToken: {
       symbol: "ETH",
@@ -130,7 +134,9 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     protocol: {
       name: "Aave",
       network: "Eth Sepolia",
-      imgURL: "/aave.png"
+      netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/aave.png",
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
 ];

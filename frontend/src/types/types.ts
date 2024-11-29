@@ -28,6 +28,7 @@ export interface VaultData {
   id: string;
   name: string;
   symbol: string;
+  des?: string;
   inputToken: {
     symbol: string;
     decimals: number;
@@ -38,7 +39,9 @@ export interface VaultData {
   protocol: {
     name: string;
     network: string;
+    netdes?: string;
     imgURL: string;
+    des?: string;
   }
 }
 

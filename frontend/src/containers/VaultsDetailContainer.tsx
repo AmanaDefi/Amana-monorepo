@@ -2,9 +2,6 @@ import { useState, useEffect } from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
-import CopyToClipboard from "react-copy-to-clipboard";
-import { Square2StackIcon } from "@heroicons/react/24/outline";
-import { showSuccessToast } from "@/toasts";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useActiveAccount } from "thirdweb/react";
@@ -94,17 +91,14 @@ const VaultsDetailContainer: React.FC<{
                 <p className="text-white text-2xl font-bold">Information</p>
                 <div className="md:flex md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4 mt-4">
                   <div className="w-full md:w-10/12 border border-customNeutral100 rounded-lg p-4">
-                    <p className="text-white font-normal">Vault address:</p>
-                    <div className="flex flex-row items-center justify-between">
-                      <p className="font-bold text-white">
-                        {vaultData.id.slice(0, 6)}...{vaultData.id.slice(-4)}
-                      </p>
-                      <div className='w-6 h-6 group/safeAddress'>
-                        <CopyToClipboard text={"fewfweffwe"} onCopy={() => showSuccessToast("Vault address copied!")}>
-                          <Square2StackIcon className="text-white group-hover/safeAddress:text-primaryYellow" />
-                        </CopyToClipboard>
-                      </div>
-                    </div>
+                    <p className="text-white font-bold">{vaultData.name}</p>
+                    <p className="text-white font-normal mt-1">{vaultData.des}</p>
+                    <p className="text-white font-bold mt-5">{vaultData.protocol.name}</p>
+                    <p className="text-white font-normal mt-1">{vaultData.protocol.des}</p>
+                    <p className="text-white font-bold mt-5">{vaultData.protocol.network}</p>
+                    <p className="text-white font-normal mt-1">{vaultData.protocol.netdes}</p>
+                    <p className="text-white font-normal mt-5">Vault ID: {vaultData.id}</p>
+                    <p className="text-white font-normal mt-5">inputToken: {vaultData.inputToken.symbol}</p>
                   </div>
                 </div>
               </div>
