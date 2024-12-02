@@ -99,7 +99,7 @@ const VaultsDetailContainer: React.FC<{
                     <p className="text-white font-normal mt-1">{vaultData.protocol.netdes}</p>
                     <p className="text-white font-bold mt-5">Vault Address</p>
                     <p className="text-white font-normal mt-1">{vaultData.id}</p>
-                    <p className="text-white font-bold mt-5">input Token</p>
+                    <p className="text-white font-bold mt-5">Input Token</p>
                     <p className="text-white font-normal mt-1">{vaultData.inputToken.symbol}</p>
                   </div>
                 </div>
