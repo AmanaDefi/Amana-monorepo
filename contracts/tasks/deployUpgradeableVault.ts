@@ -41,6 +41,13 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   console.log(`🚀 Successfully deployed AmanaVault on ${network}.`);
   console.log(`📜 Contract address: ${contract.address}`);  // Updated from contract.target
 
+  // Authorize the vault with the GasTank
+  console.log(`⚙️ Authorizing the vault with the GasTank at ${gasTank}`);
+  const gasTankContract = await hre.ethers.getContractAt("GasTank", gasTank);
+  const tx = await gasTankContract.authorizeVault(contract.address);
+  await tx.wait();
+  console.log(`✅ Vault authorized with GasTank.`);
+
   const etherscanApiKey = hre.config.etherscan.apiKey[network];
   if (etherscanApiKey) {
     // Verifying the implementation contract first

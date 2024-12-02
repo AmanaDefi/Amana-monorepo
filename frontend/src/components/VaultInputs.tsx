@@ -1,32 +1,32 @@
 
 import TabSelector from "@/components/common/TabSelector"
 import InputTokenWithError from "@/components/input/InputTokenWithError"
-import { executeDeposit, executeWithdrawal } from "@/actions/actions"
-import { VaultData, Token, Balance } from "@/types/types";
-import { EMPTY_BALANCE, NumberFormatter } from "@/utils/helpers";
-import { ArrowDownIcon } from "@heroicons/react/24/outline"
+import { VaultData, Token, Balance, UserVaultBalance } from "@/types/types";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect } from "react"
 import { parseUnits } from "viem"
-import MainActionButton from "@/components/button/MainActionButton"
-import { Address, Chain, waitForReceipt, getContract } from "thirdweb";
-import mixpanel from "mixpanel-browser";
+import { Address, getContract } from "thirdweb";
 import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
-import { toast } from "react-toastify";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
+import { getVaultErrorMessage } from "@/utils/utils";
+import { ethers } from "ethers";
+import InteractionContainer from "./interact";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
   tokenOptions: Token[];
   setTransactionCompleted: (value: boolean) => void;
+  userVaultBalances: UserVaultBalance[];
 }
 
 export default function VaultInputs({
   vaultData,
   tokenOptions,
-  setTransactionCompleted
+  setTransactionCompleted,
+  userVaultBalances
 }: VaultInputsProps): JSX.Element {
   const vault = tokenOptions.find(t => t.address === vaultData.inputToken.address)
 
@@ -36,12 +36,15 @@ export default function VaultInputs({
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
   const [isDeposit, setIsDeposit] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showModal, setShowModal] = useState<boolean>(false)
+  const [allowInput, setAllowInput] = useState<boolean>(false)
 
   const EOAaccount = useActiveAccount();
 
   useEffect(() => {
     if (EOAaccount) {
       setActiveAccount(EOAaccount);
+
     } else {
       setActiveAccount(null);
     }
@@ -57,9 +60,63 @@ export default function VaultInputs({
     throw new Error("No active chain found");
   }
 
-  function handleTokenSelect(input: Token): void {
+
+
+  async function handleTokenSelect(input: Token): Promise<void> {
+    if (!activeChain) {
+      throw new Error("No active chain found");
+    }
+    const contract = getContract({
+      client,
+      chain: activeChain,
+      address: input.address as Address,
+    });
+    const { value, decimals } = await getBalance({
+      contract,
+      address: activeAccount?.address as Address,
+    });
+
+    const formattedBalance = ethers.formatUnits(value, decimals);
+    input.balance.formatted = formattedBalance || "0";
     setInputToken(input);
+    setAllowInput(true)
+    if (isDeposit) {
+      setErrorMessage(getVaultErrorMessage(inputBalance.formatted, input.balance.formatted, setShowModal))
+    }
+    else {
+      setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
+    }
   }
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const contract = getContract({
+        client,
+        chain: activeChain,
+        address: vaultData.inputToken.address as Address,
+      });
+      const { value, decimals } = await getBalance({
+        contract,
+        address: EOAaccount?.address as Address,
+      });
+
+      const formattedBalance = ethers.formatUnits(value, decimals);
+      vaultData.inputToken.balance.formatted = formattedBalance || "0";
+      setInputToken(vaultData.inputToken);
+      setAllowInput(true)
+      if (isDeposit) {
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, vaultData.inputToken.balance.formatted, setShowModal))
+      }
+      else {
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
+      }
+    };
+
+    // Call the async function
+    fetchData();
+
+  }, [activeChain])
 
   const inputTokenContract = getContract({
     client,
@@ -79,12 +136,13 @@ export default function VaultInputs({
 
     if (isDeposit) {
       // Switch to Withdraw
-      setInputToken(vault);
+      if (vault) {
+        setInputToken(vault);
+      }
       setIsDeposit(false);
 
     } else {
       // Switch to Deposit
-      setInputToken(undefined);
       setIsDeposit(true);
     }
   }
@@ -105,8 +163,23 @@ export default function VaultInputs({
     const newAmt = parseUnits(inputAmt, inputToken.decimals)
 
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * (inputToken.price || 0)) });
+    if (isDeposit) {
+      setErrorMessage(getVaultErrorMessage(value, inputToken.balance.formatted, setShowModal))
+    }
+    else {
+      setErrorMessage(getVaultErrorMessage(value, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
+    }
   }
 
+  function handleMaxClick() {
+    if (!inputToken) return;
+    if (isDeposit) {
+      handleChangeInput({ currentTarget: { value: inputToken.balance.formatted } });
+    }
+    else {
+      handleChangeInput({ currentTarget: { value: userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance || "0" } });
+    }
+  }
 
   return <>
     <TabSelector
@@ -120,28 +193,16 @@ export default function VaultInputs({
       onSelectToken={(option) =>
         handleTokenSelect(option)
       }
+      allowInput={allowInput}
+      vaultData={vaultData}
+      onMaxClick={handleMaxClick}
       value={inputBalance.formatted}
       onChange={handleChangeInput}
       selectedToken={inputToken}
       errorMessage={errorMessage}
       tokenList={tokenOptions}
       disabled={false}
-      allowInput
     />
-    <div className="relative mt-4">
-      <div className="absolute inset-0 flex items-center" aria-hidden="true">
-        <div className="w-full border-t border-customGray500" />
-      </div>
-      <div className="relative flex justify-center">
-        <span className="bg-customNeutral300 px-4">
-          <ArrowDownIcon
-            className="h-10 w-10 p-2 text-customGray500 border border-customGray500 rounded-full cursor-pointer hover:text-white hover:border-white"
-            aria-hidden="true"
-            onClick={switchTokens}
-          />
-        </span>
-      </div>
-    </div>
     <div className="mt-4">
       <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
       <div className="bg-customNeutral200 py-2 px-4 rounded-lg space-y-2">
@@ -165,7 +226,7 @@ export default function VaultInputs({
     </div>
 
 
-    {inputToken && inputBalance.value > 0 &&
+    {inputToken && showModal &&
       <InteractionContainer
         _inputToken={inputToken}
         _inputBalance={inputBalance}
@@ -175,158 +236,12 @@ export default function VaultInputs({
         setTransactionCompleted={setTransactionCompleted}
         refetch={refetch}
         activeChain={activeChain}
+        setShowModal={setShowModal}
       />
     }
   </>
 }
 
-const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
-  setTransactionCompleted(false)
-  try {
-    const value = Number(inputBalance.value)
-    const inputToken = vaultData.inputToken;
-    const scaledAmount = BigInt(value)
-
-    mixpanel.track("Deposit Submitted", {
-      vault: vaultData.id.toString(),
-      amount: scaledAmount.toString(),
-    });
-    const receipt = await executeDeposit(
-      vaultData.id as Address,
-      inputToken.address as Address,
-      EOAaccount,
-      activeChain,
-      scaledAmount, //TODO make this general for all tokens?
-    );
-
-    mixpanel.track("Deposit Submitted", {
-      vault: vaultData.id.toString(),
-      amount: scaledAmount.toString(),
-    });
-
-    await waitForReceipt(receipt)
-    toast.success("Transaction confirmed");
-
-    refetch()
-    setTransactionCompleted(true);
-  } catch (error) {
-    mixpanel.track("Deposit Submitted", {
-      vault: vaultData.id.toString(),
-    });
-    toast.error("Transaction failed", {
-      position: "top-right",
-      autoClose: 2000,  // Close automatically after 2 seconds
-    });
-    throw new Error("Transaction failed");
-  }
-};
-
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
-  setTransactionCompleted(false)
-  try {
-    const value = Number(inputBalance.value)
-
-
-    const inputToken = vaultData.inputToken;
-    const scaledAmount = BigInt(value)
-
-    mixpanel.track("Withdraw Submitted", {
-      vault: vaultData.id.toString(),
-      amount: scaledAmount.toString(),
-    });
-
-    const receipt = await executeWithdrawal(
-      vaultData.id as Address,
-      EOAaccount,
-      activeChain,
-      scaledAmount,
-    );
-    mixpanel.track("Withdraw Succeeded", {
-      vault: vaultData.id.toString(),
-      amount: scaledAmount.toString(),
-    });
-
-    await waitForReceipt(receipt)
-    toast.success("Transaction confirmed");
-    refetch()
-    setTransactionCompleted(true);
-  } catch (error) {
-    mixpanel.track("Withdraw Failed", {
-      vault: vaultData.id.toString(),
-    });
-    toast.error("Transaction failed", {
-      position: "top-right",
-      autoClose: 2000,  // Close automatically after 2 seconds
-    });
-    throw new Error("Transaction failed");
-  }
-};
-
-function getLabel(action: Action) {
-  switch (action) {
-    case Action.depositApprove:
-      return "Approve"
-    case Action.deposit:
-      return "Deposit"
-    case Action.withdraw:
-      return "Withdraw"
-    case Action.done:
-      return "Done"
-  }
-}
-
-function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain }:
-  { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain; }): JSX.Element {
-
-
-  return <div className="w-full flex flex-col mt-5">
-    <Interaction
-      inputToken={_inputToken}
-      vaultData={vaultData}
-      action={_action}
-      inputBalance={_inputBalance}
-      EOAaccount={EOAaccount}
-      setTransactionCompleted={setTransactionCompleted}
-      refetch={refetch}
-      activeChain={activeChain}
-    />
-  </div>
-}
-
-
-function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain }:
-  { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain }): JSX.Element {
-
-  async function handleMainAction() {
-    if (action == Action.deposit) {
-      await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
-    }
-    else {
-      await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
-    }
-  }
-
-  return (
-    <>
-      <p className="text-white text-start text-2xl font-bold leading-none mb-1">{getLabel(action)}</p>
-      <p className="text-white text-start mb-2">{getDescription(inputToken, Number(inputBalance.formatted), action)}</p>
-      <MainActionButton label={getLabel(action)} handleClick={handleMainAction} />
-    </>
-  )
-}
-
-
-function getDescription(inputToken: Token, amount: number, action: Action) {
-  const val = NumberFormatter.format(amount)
-  switch (action) {
-    case Action.deposit:
-      return `Depositing ${val} ${inputToken.symbol} into the Vault.`
-    case Action.withdraw:
-      return `Withdrawing ${val} ${inputToken.symbol}.`
-    case Action.done:
-      return ""
-  }
-}
 
 enum Action {
   depositApprove,

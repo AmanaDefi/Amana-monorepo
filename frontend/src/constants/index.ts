@@ -1,29 +1,25 @@
 import { VaultData, Token } from "../types/types";
 import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../../constants";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 
 export const tokens: Token[] = [
   {
-    symbol: "USDC",
-    decimals: 6,
-    address: BASE_USDC_ADDRESS,
-    imgURL: "/USDC.png",
-    price: 1
-  },
-  {
-    symbol: "ETH.BASESEPOLIA",
+    symbol: "ETH",
     decimals: 18,
     address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
-    price: 3040
+    price: 3040,
+    balance: EMPTY_BALANCE
   },
   {
-    symbol: "sETH.SEPOLIA",
+    symbol: "sETH",
     decimals: 18,
     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
-    price: 3040
+    price: 3040,
+    balance: EMPTY_BALANCE
   },
 ]
 
@@ -38,6 +34,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Aave",
@@ -55,6 +52,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Moonwell",
@@ -72,6 +70,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Compound",
@@ -89,6 +88,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: ZC_USDC_ETH_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Eddy",
@@ -100,7 +100,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0x0AebE2977E81Da0A241A2c7359f8727BB3618437", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Base Sepolia
+    id: "0xd1A4CF283e09e9Cf6A157DF9BAbee4274D794A61", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Base Sepolia
     name: "AaveV3 ETH - Base Sepolia",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -108,8 +108,9 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       symbol: "ETH",
       decimals: 18,
       address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 3040
+      imgURL: "/ETH.png",
+      price: 3040,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Aave",
@@ -120,16 +121,17 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xBF1A6cfD6edF6E6B944ea4b55aa77B5B21356014", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
+    id: "0x3c1E5642F46412797e5e4ACF81DAcAe953e3ab60", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
     name: "AaveV3 ETH - Eth Sepolia",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
     inputToken: {
-      symbol: "ETH",
+      symbol: "sETH",
       decimals: 18,
       address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 3040
+      imgURL: "/ETH.png",
+      price: 3040,
+      balance: EMPTY_BALANCE
     },
     protocol: {
       name: "Aave",

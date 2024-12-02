@@ -14,9 +14,12 @@ export default function LargeCardStat({ id, label, value, secondaryValue, childr
           <p className="text-3xl font-bold whitespace-nowrap text-white leading-0">
             {value}
           </p>
-          <p className={`text-xl whitespace-nowrap text-customGray300 -mt-2`}>
-            {secondaryValue}
-          </p>
+          {
+            secondaryValue &&
+            <p className={`text-xl whitespace-nowrap text-customGray300 -mt-2`}>
+              {secondaryValue}
+            </p>
+          }
         </>
         : <>
           {children}

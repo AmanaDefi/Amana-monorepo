@@ -4,12 +4,14 @@ import "./tasks/deployUpgradeableVault";
 import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
 import "./tasks/deployGasTank";
+import "./tasks/deployVaultAndStrategy";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
 import "@typechain/hardhat";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-ethers";
+// import "@nomiclabs/hardhat-verify";
 
 import { getHardhatConfigNetworks } from "@zetachain/networks";
 import { HardhatUserConfig } from "hardhat/config";
@@ -32,11 +34,19 @@ const config: HardhatUserConfig = {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
+    // hardhat: {
+    //   chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
+    //   forking: {
+    //     url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+    //     blockNumber: 7888454 // 20113140  
+    //   },
+    //   allowUnlimitedContractSize: true,
+    // },
     hardhat: {
-      chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
+      chainId: 84532,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
       forking: {
-        url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 7830907 // 20113140, //  
+        url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 18675138
       },
       allowUnlimitedContractSize: true,
     },

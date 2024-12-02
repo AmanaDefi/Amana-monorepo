@@ -70,7 +70,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const depositAmount1 = ethers.utils.parseUnits("0.01", 18);
       const depositAmount2 = ethers.utils.parseUnits("0.05", 18);
 
-      await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(2));
+      await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(2).div(10));
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await user1.getAddress(), depositAmount1);
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await user2.getAddress(), depositAmount2);
 
