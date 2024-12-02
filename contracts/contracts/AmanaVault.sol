@@ -314,7 +314,10 @@ contract AmanaVault is
         uint256 gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
         uint256 gasPrice = systemContract.gasPriceByChainId($.strategyChainId);
         uint256 gasFeeForCall = gasPrice * gasLimitForCall;
-        gasTank.getGas(gas_zrc20, gasFeeForWithdraw + gasFeeForCall);
+        gasTank.getGas{gas: 200000}(
+            gas_zrc20,
+            gasFeeForWithdraw + gasFeeForCall
+        );
 
         if (gas_zrc20 != address(asset())) {
             IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
@@ -697,14 +700,14 @@ contract AmanaVault is
 
         uint256 gasFeeForCall = gasPrice * gasLimitForCall;
 
-        gasTank.getGas(gas_zrc20, gasFeeForCall);
+        gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForCall); // TODO reduce this?
 
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForCall);
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
         bytes4 functionSelector = bytes4(
-            keccak256(bytes("withdraw(address,uint256,uint256,uint256)"))
+            keccak256(bytes("withdraw(address,uint256,uint256,uint256,uint32)"))
         );
         bytes memory encodedArgs = abi.encode(
             user,
@@ -726,8 +729,7 @@ contract AmanaVault is
             uint256(30000000) // onRevertGasLimit
         );
 
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, true);
         IGatewayZEVM(_GATEWAY_ADDRESS).call(
             recipient,
             address(asset()),
@@ -776,7 +778,7 @@ contract AmanaVault is
             (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(outputZRC20)
                 .withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
 
-            gasTank.getGas(gas_zrc20, gasFeeForWithdraw);
+            gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForWithdraw);
 
             if (gas_zrc20 != outputZRC20) {
                 IZRC20(outputZRC20).approve(_GATEWAY_ADDRESS, amount);
