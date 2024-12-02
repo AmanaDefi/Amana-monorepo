@@ -7,15 +7,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IAavePool.sol";
 import "../interfaces/IAaveReceiptToken.sol";
 import "../interfaces/IWrappedTokenGatewayV3.sol";
+import "../interfaces/IWETH.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 
 // BASE_SEPOLIA_AAVE_ETH_POOL_ADDRESS = 0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b;
 // BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS = 0x96e32dE4B1d1617B8c2AE13a88B9cC287239b13f;
+// BASE_SEPOLIA_WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
 
 contract BaseSepAaveEthStrategy is Ownable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
+    IWETH public immutable weth;
     IAavePool public immutable aavePool;
     IAaveReceiptToken public immutable receiptToken;
     address immutable _GATEWAY_ADDRESS;
@@ -23,6 +26,8 @@ contract BaseSepAaveEthStrategy is Ownable {
         0xF6Dac650dA5616Bc3206e969D7868e7c25805171;
     IWrappedTokenGatewayV3 public tokenGateway =
         IWrappedTokenGatewayV3(_WRAPPED_TOKEN_GATEWAY_ADDRESS);
+    address constant BASE_SEPOLIA_WETH_ADDRESS =
+        0x4200000000000000000000000000000000000006;
 
     error ApprovalFailed();
 
@@ -39,6 +44,7 @@ contract BaseSepAaveEthStrategy is Ownable {
         inputToken = IERC20(_inputTokenAddress);
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());
+        weth = IWETH(BASE_SEPOLIA_WETH_ADDRESS);
         _GATEWAY_ADDRESS = _gateway;
     }
 
@@ -70,18 +76,23 @@ contract BaseSepAaveEthStrategy is Ownable {
         uint256 shares,
         uint32 originChainId
     ) external onlyGateway returns (uint256) {
-        bool success = receiptToken.approve(
-            address(tokenGateway),
-            amount + fee
-        );
-        if (!success) revert ApprovalFailed();
-
-        tokenGateway.withdrawETH(
-            address(aavePool),
+        aavePool.withdraw{gas: 200000}(
+            address(weth),
             amount + fee,
-            address(this) // owner
+            address(this)
         );
-
+        weth.withdraw{gas: 50000}(amount + fee);
+        // TODO: can use tokenGateway on Mainnet - code in comments below
+        // bool success = receiptToken.approve(
+        //     address(tokenGateway),
+        //     amount + fee
+        // );
+        // if (!success) revert ApprovalFailed();
+        // tokenGateway.withdrawETH(
+        //     address(aavePool),
+        //     amount + fee,
+        //     address(this) // owner
+        // );
         bytes memory outgoingMessage = abi.encode(
             ownerAddress,
             1,
@@ -95,12 +106,12 @@ contract BaseSepAaveEthStrategy is Ownable {
             false, // callOnRevert
             address(this), // abortAddress
             bytes("revert message"),
-            uint256(30000000) // onRevertGasLimit
+            uint256(1000000) // onRevertGasLimit
         );
 
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall(
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
             amanaVault, // (just an address, not bytes)
-            outgoingMessage, //the message to send
+            outgoingMessage,
             revertOptions
         );
         return amount + fee;
