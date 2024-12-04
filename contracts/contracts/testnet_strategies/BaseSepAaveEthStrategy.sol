@@ -59,7 +59,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
     function onCall(
         MessageContext calldata context,
         bytes calldata message
-    ) external payable override returns (bytes memory) {
+    ) external payable override onlyGateway returns (bytes memory) {
         (
             address userAddress,
             address withdrawZRC20,
@@ -91,7 +91,6 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
     }
 
     function _invest(uint256) private returns (uint256) {
-        // note that the amount input here doesn't get used? maybe just check it against msg.value?
         require(msg.value > 0, "No ETH sent");
         tokenGateway.depositETH{value: msg.value}(
             address(aavePool),
@@ -103,7 +102,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
 
     function _withdraw(
         address ownerAddress,
-        address withdrawToken,
+        address withdrawZRC20,
         uint256 amount,
         uint256 fee,
         uint256 shares,
@@ -128,7 +127,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         // );
         bytes memory outgoingMessage = abi.encode(
             ownerAddress,
-            withdrawToken,
+            withdrawZRC20,
             1,
             fee,
             shares,

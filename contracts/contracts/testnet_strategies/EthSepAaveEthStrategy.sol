@@ -15,7 +15,7 @@ import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 // ETH_SEPOLIA_AAVE_ETH_RECEIPT_TOKEN_ADDRESS = 0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830;
 // SEPOLIA_WETH_ADDRESS = 0xC558DBdd856501FCd9aaF1E62eae57A9F0629a3c;
 
-contract EthSepAaveEthStrategy is Ownable {
+contract EthSepAaveEthStrategy is Ownable, Callable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
@@ -57,7 +57,41 @@ contract EthSepAaveEthStrategy is Ownable {
         _;
     }
 
-    function invest(uint256) external payable onlyGateway returns (uint256) {
+    function onCall(
+        MessageContext calldata context,
+        bytes calldata message
+    ) external payable override onlyGateway returns (bytes memory) {
+        (
+            address userAddress,
+            address withdrawZRC20,
+            uint256 withdrawAmount,
+            uint256 fee,
+            uint256 shares,
+            uint32 withdrawChainId
+        ) = abi.decode(
+                message,
+                (address, address, uint256, uint256, uint256, uint32)
+            );
+        if (context.sender != address(amanaVault)) {
+            revert("Only Vault contract can call the strategy");
+        }
+        if (withdrawZRC20 == address(0)) {
+            _invest(msg.value);
+            return abi.encode(true);
+        } else {
+            _withdraw(
+                userAddress,
+                withdrawZRC20,
+                withdrawAmount,
+                fee,
+                shares,
+                withdrawChainId
+            );
+            return abi.encode(true);
+        }
+    }
+
+    function _invest(uint256) private returns (uint256) {
         // note that the amount input here doesn't get used? maybe just check it against msg.value?
         require(msg.value > 0, "No ETH sent");
         tokenGateway.depositETH{value: msg.value}(
@@ -68,14 +102,14 @@ contract EthSepAaveEthStrategy is Ownable {
         return msg.value;
     }
 
-    function withdraw(
+    function _withdraw(
         address ownerAddress,
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
         uint256 shares,
         uint32 originChainId
-    ) external onlyGateway returns (uint256) {
+    ) private returns (uint256) {
         aavePool.withdraw{gas: 200000}(
             address(weth),
             amount + fee,
