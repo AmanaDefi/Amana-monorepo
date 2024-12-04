@@ -5,17 +5,25 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/I4626Vault.sol";
+import "../interfaces/IWETH.sol";
+
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 
-// ZC_TEST_USDC.SEPOLIA_ADDRESS = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d;
-// MOCK_4626_VAULT_ADDRESS = 0x50675d47d94724c3e9Ff80aaD9EDEb94719fC576
+// AMOY_WMATIC_ADDRESS = 0xd39986C4bc5D9Bc4A4e532e37dBC7ea4a2CcF1BB;
+// MOCK_4626_VAULT_ADDRESS = 0x617f411ec34D20225CF470c8bbF34fC4063BcAE6
 
-contract Mock4626Strategy is Ownable {
+contract Mock4626AmoyStrategy is Ownable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
+    IWETH public immutable weth;
+
     I4626Vault public immutable receiptToken;
     address immutable _GATEWAY_ADDRESS;
+    address constant AMOY_WMATIC_ADDRESS =
+        0xd39986C4bc5D9Bc4A4e532e37dBC7ea4a2CcF1BB;
+
+    error ApprovalFailed();
 
     constructor(
         string memory _name,
@@ -29,6 +37,8 @@ contract Mock4626Strategy is Ownable {
         amanaVault = _amanaVault;
         inputToken = IERC20(_inputTokenAddress);
         receiptToken = I4626Vault(_receiptTokenAddress);
+        weth = IWETH(AMOY_WMATIC_ADDRESS);
+
         _GATEWAY_ADDRESS = _gateway;
     }
 
@@ -40,18 +50,19 @@ contract Mock4626Strategy is Ownable {
         _;
     }
 
-    function invest(uint256 amount) external onlyGateway returns (uint256) {
-        bool success = inputToken.transferFrom(
-            _GATEWAY_ADDRESS,
-            address(this),
-            amount
+    function invest(uint256) external payable onlyGateway returns (uint256) {
+        require(msg.value > 0, "No ETH sent");
+        weth.deposit{value: msg.value}();
+        bool success = weth.approve(address(receiptToken), msg.value);
+        if (!success) {
+            revert ApprovalFailed();
+        }
+        uint256 receiptTokenAmount = receiptToken.deposit(
+            msg.value,
+            address(this)
         );
-        require(success, "Transfer failed");
-        success = inputToken.approve(address(receiptToken), amount);
-        require(success, "Approval failed");
-        uint256 shares = receiptToken.deposit(amount, address(this));
-        require(shares > 0, "Deposit failed");
-        return shares;
+
+        return receiptTokenAmount;
     }
 
     function withdraw(
@@ -66,12 +77,14 @@ contract Mock4626Strategy is Ownable {
             address(this), // receiver
             address(this) // owner
         );
+
+        weth.withdraw{gas: 50000}(amount + fee);
         bytes memory outgoingMessage = abi.encode(
             ownerAddress,
             1,
             fee,
             shares,
-            originChainId
+            originChainId // 0 = origin is zetachain, 1 = origin is connected chain
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -82,13 +95,9 @@ contract Mock4626Strategy is Ownable {
             uint256(1000000) // onRevertGasLimit
         );
 
-        inputToken.approve(_GATEWAY_ADDRESS, amount + fee); // is this necessary?
-
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall(
-            amanaVault, // the amana vault contract address - make this a constant? (just an address, not bytes)
-            amount + fee, // the amount of USDC to send back
-            address(inputToken), // ERC20 of the underlying asset token
-            outgoingMessage, //the message to send
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
+            amanaVault, // (just an address, not bytes)
+            outgoingMessage,
             revertOptions
         );
         return amount + fee;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-interface IMoonwellVault {
+interface I4626Vault {
     function deposit(
         uint256 assets,
         address receiver

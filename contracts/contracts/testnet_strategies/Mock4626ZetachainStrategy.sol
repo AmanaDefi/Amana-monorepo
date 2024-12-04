@@ -10,7 +10,7 @@ import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 // ZC_TEST_USDC.SEPOLIA_ADDRESS = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d;
 // MOCK_4626_VAULT_ADDRESS = 0x50675d47d94724c3e9Ff80aaD9EDEb94719fC576
 
-contract Mock4626Strategy is Ownable {
+contract Mock4626ZetachainStrategy is Ownable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
@@ -32,22 +32,19 @@ contract Mock4626Strategy is Ownable {
         _GATEWAY_ADDRESS = _gateway;
     }
 
-    modifier onlyGateway() {
-        require(
-            msg.sender == _GATEWAY_ADDRESS,
-            "Only Gateway contract can call"
-        );
+    modifier onlyVault() {
+        require(msg.sender == amanaVault, "Only Vault contract can call");
         _;
     }
 
-    function invest(uint256 amount) external onlyGateway returns (uint256) {
-        bool success = inputToken.transferFrom(
-            _GATEWAY_ADDRESS,
+    function invest(uint256 amount) external onlyVault returns (uint256) {
+        SafeERC20.safeTransferFrom(
+            inputToken,
+            msg.sender,
             address(this),
             amount
         );
-        require(success, "Transfer failed");
-        success = inputToken.approve(address(receiptToken), amount);
+        bool success = inputToken.approve(address(receiptToken), amount);
         require(success, "Approval failed");
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
@@ -55,43 +52,20 @@ contract Mock4626Strategy is Ownable {
     }
 
     function withdraw(
-        address ownerAddress,
-        uint256 amount,
-        uint256 fee,
-        uint256 shares,
-        uint32 originChainId
-    ) external onlyGateway returns (uint256) {
+        uint256 _amountToWithdraw,
+        uint256
+    ) external onlyVault returns (uint256) {
         receiptToken.withdraw(
-            amount + fee,
+            _amountToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
-        bytes memory outgoingMessage = abi.encode(
-            ownerAddress,
-            1,
-            fee,
-            shares,
-            originChainId
+        SafeERC20.safeTransfer(
+            IERC20(inputToken),
+            msg.sender,
+            _amountToWithdraw
         );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-            false, // callOnRevert
-            address(this), // abortAddress
-            bytes("revert message"),
-            uint256(1000000) // onRevertGasLimit
-        );
-
-        inputToken.approve(_GATEWAY_ADDRESS, amount + fee); // is this necessary?
-
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall(
-            amanaVault, // the amana vault contract address - make this a constant? (just an address, not bytes)
-            amount + fee, // the amount of USDC to send back
-            address(inputToken), // ERC20 of the underlying asset token
-            outgoingMessage, //the message to send
-            revertOptions
-        );
-        return amount + fee;
+        return _amountToWithdraw;
     }
 
     function totalUnderlyingAssets() external view returns (uint256) {
