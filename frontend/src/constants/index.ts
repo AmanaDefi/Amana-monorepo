@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS } from "../../../constants";
+import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -171,7 +171,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       symbol: "MATIC.AMOY",
       decimals: 18,
       address: ZC_TEST_MATIC_AMOY_ADDRESS,
-      imgURL: "/USDC.png", // TODO get a MATIC image
+      imgURL: "/polygon_logo.png",
       price: 1,
       balance: EMPTY_BALANCE
     },
@@ -179,7 +179,28 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       name: "Mock",
       network: "Polygon Amoy",
       netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
-      imgURL: "/aave.png",
+      imgURL: "/polygon_logo.png",
+      des: "This is a mock strategy for testing purposes."
+    },
+  },
+  {
+    id: "0xB53d0e53090dA7b6fc864EB3220c4Cd0dD464Dd9", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on BSC testnet
+    name: "Mock USDC - BSC testnet",
+    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+    symbol: "aMockUSDC",
+    inputToken: {
+      symbol: "USDC",
+      decimals: 18,
+      address: ZC_TEST_USDC_BSC_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE
+    },
+    protocol: {
+      name: "Mock",
+      network: "BSC Testnet",
+      netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
+      imgURL: "/bnb_logo.png",
       des: "This is a mock strategy for testing purposes."
     },
   },
