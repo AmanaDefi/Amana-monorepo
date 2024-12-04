@@ -327,11 +327,20 @@ contract AmanaVault is
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
-        bytes4 functionSelector = bytes4(keccak256(bytes("invest(uint256)")));
-        bytes memory encodedArgs = abi.encode(amount);
-        bytes memory outgoingMessage = abi.encodePacked(
-            functionSelector,
-            encodedArgs
+        // bytes4 functionSelector = bytes4(keccak256(bytes("invest(uint256)")));
+        // bytes memory encodedArgs = abi.encode(amount);
+        // bytes memory outgoingMessage = abi.encodePacked(
+        //     functionSelector,
+        //     encodedArgs
+        // );
+
+        bytes memory outgoingMessage = abi.encode(
+            address(0),
+            address(0),
+            amount,
+            0,
+            0,
+            0
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -701,24 +710,33 @@ contract AmanaVault is
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
-        bytes4 functionSelector = bytes4(
-            keccak256(
-                bytes(
-                    "withdraw(address,address,uint256,uint256,uint256,uint32)"
-                )
-            )
-        );
-        bytes memory encodedArgs = abi.encode(
+        // bytes4 functionSelector = bytes4(
+        //     keccak256(
+        //         bytes(
+        //             "withdraw(address,address,uint256,uint256,uint256,uint32)"
+        //         )
+        //     )
+        // );
+        // bytes memory encodedArgs = abi.encode(
+        //     user,
+        //     withdrawZRC20,
+        //     amount,
+        //     feeToWithdraw,
+        //     shares,
+        //     userChainId
+        // );
+        // bytes memory outgoingMessage = abi.encodePacked(
+        //     functionSelector,
+        //     encodedArgs
+        // );
+
+        bytes memory outgoingMessage = abi.encode(
             user,
             withdrawZRC20,
             amount,
             feeToWithdraw,
             shares,
             userChainId
-        );
-        bytes memory outgoingMessage = abi.encodePacked(
-            functionSelector,
-            encodedArgs
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -782,12 +800,12 @@ contract AmanaVault is
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForWithdraw);
 
             if (gas_zrc20 != withdrawZRC20) {
-                IZRC20(withdrawZRC20).approve(_GATEWAY_ADDRESS, amount);
+                IZRC20(withdrawZRC20).approve(_GATEWAY_ADDRESS, outputAmount);
                 IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForWithdraw);
             } else {
                 IZRC20(withdrawZRC20).approve(
                     _GATEWAY_ADDRESS,
-                    amount + gasFeeForWithdraw
+                    outputAmount + gasFeeForWithdraw
                 );
             }
             IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
@@ -797,6 +815,12 @@ contract AmanaVault is
                 revertOptions // do these need to be different from the revertOptions in deposit?
             );
         }
-        emit Withdraw(userAddress, userAddress, userAddress, amount, shares);
+        emit Withdraw(
+            userAddress,
+            userAddress,
+            userAddress,
+            outputAmount,
+            shares
+        );
     }
 }
