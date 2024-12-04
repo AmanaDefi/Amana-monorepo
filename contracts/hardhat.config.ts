@@ -34,6 +34,22 @@ const config: HardhatUserConfig = {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
+    polygon_amoy: {
+      url: `https://polygon-amoy.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    bsc_testnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    hardhat: {
+      chainId: 84532,
+      forking: {
+        url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 18675138,
+      },
+      allowUnlimitedContractSize: true,
+    },
     // hardhat: {
     //   chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
     //   forking: {
@@ -42,14 +58,6 @@ const config: HardhatUserConfig = {
     //   },
     //   allowUnlimitedContractSize: true,
     // },
-    hardhat: {
-      chainId: 84532,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
-      forking: {
-        url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 18675138
-      },
-      allowUnlimitedContractSize: true,
-    },
   },
   solidity: {
     compilers: [
@@ -58,19 +66,19 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000,  // Adjust this number depending on your needs
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.8.26",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000,  // Adjust this number depending on your needs
-          }
-        }
-      }
+            runs: 1000,
+          },
+        },
+      },
     ],
   },
   etherscan: {
@@ -78,9 +86,11 @@ const config: HardhatUserConfig = {
       arbitrumOne: process.env.ARBISCAN_API_KEY || "",
       base: process.env.BASESCAN_API_KEY || "",
       base_sepolia: process.env.BASESCAN_API_KEY || "",
-      zeta_mainnet: "abc", // not required for Blockscout - can be any non-empty string
-      zeta_testnet: "abc", // not required for Blockscout - can be any non-empty string
-      sepolia_testnet: "abc", // not required for Blockscout - can be any non-empty string
+      zeta_mainnet: "abc",
+      zeta_testnet: "abc",
+      sepolia_testnet: "abc",
+      polygon_amoy: process.env.POLYGONSCAN_API_KEY || "",
+      bsc_testnet: process.env.BSCSCAN_API_KEY || "",
     },
     customChains: [
       {
@@ -88,15 +98,15 @@ const config: HardhatUserConfig = {
         chainId: 8453,
         urls: {
           apiURL: "https://api.basescan.org/api",
-          browserURL: "https://basescan.org"
-        }
+          browserURL: "https://basescan.org",
+        },
       },
       {
-        network: "base_sepolia", // Custom config for base_sepolia
-        chainId: 84532,          // Replace with the correct chainId for Base Sepolia
+        network: "base_sepolia",
+        chainId: 84532,
         urls: {
           apiURL: "https://api-sepolia.basescan.org/api",
-          browserURL: "https://sepolia.basescan.org", // Testnet explorer URL
+          browserURL: "https://sepolia.basescan.org",
         },
       },
       {
@@ -104,33 +114,49 @@ const config: HardhatUserConfig = {
         chainId: 7000,
         urls: {
           apiURL: "https://zetachain.blockscout.com/api",
-          browserURL: "https://zetachain.blockscout.com"
-        }
+          browserURL: "https://zetachain.blockscout.com",
+        },
       },
       {
         network: "zeta_testnet",
         chainId: 7001,
         urls: {
           apiURL: "https://zetachain-testnet.blockscout.com/api",
-          browserURL: "https://zetachain-testnet.blockscout.com"
-        }
+          browserURL: "https://zetachain-testnet.blockscout.com",
+        },
       },
       {
         network: "sepolia_testnet",
         chainId: 11155111,
         urls: {
           apiURL: "https://eth-sepolia.blockscout.com/api",
-          browserURL: "https://eth-sepolia.blockscout.com"
-        }
+          browserURL: "https://eth-sepolia.blockscout.com",
+        },
+      },
+      {
+        network: "polygon_amoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com",
+        },
+      },
+      {
+        network: "bsc_testnet",
+        chainId: 97,
+        urls: {
+          apiURL: "https://api-testnet.bscscan.com/api",
+          browserURL: "https://testnet.bscscan.com",
+        },
       },
     ],
   },
   typechain: {
-    outDir: "typechain",  // This is where Typechain outputs the generated types
-    target: "ethers-v5",  // Target ethers.js
+    outDir: "typechain",
+    target: "ethers-v5",
   },
   mocha: {
-    timeout: 60000,  // Set the timeout to 60 seconds,
+    timeout: 60000,
   },
 };
 
