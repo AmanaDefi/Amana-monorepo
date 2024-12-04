@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../../constants";
+import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -121,7 +121,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x3c1E5642F46412797e5e4ACF81DAcAe953e3ab60", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
+    id: "0xDBD76e493e8ef76e7F8c77E1810CCb1165185e90", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
     name: "AaveV3 ETH - Eth Sepolia",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -139,6 +139,48 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
       imgURL: "/aave.png",
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+    },
+  },
+  {
+    id: "0x35f07b52Bc7a66c3D61C20EbdaBcBC40E303C0Ae", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
+    name: "Mock USDC - Zetachain",
+    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+    symbol: "aMockUSDC",
+    inputToken: {
+      symbol: "USDC.SEPOLIA",
+      decimals: 6,
+      address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE
+    },
+    protocol: {
+      name: "Mock",
+      network: "Zetachain (test)",
+      netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+      imgURL: "/aave.png",
+      des: "This is a mock strategy for testing purposes."
+    },
+  },
+  {
+    id: "0xBD8eF3D8DaDfE2448C9BAC43d2371C8a224857C6", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
+    name: "Mock POL - Polygon Amoy",
+    des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+    symbol: "aMockPOL",
+    inputToken: {
+      symbol: "MATIC.AMOY",
+      decimals: 18,
+      address: ZC_TEST_MATIC_AMOY_ADDRESS,
+      imgURL: "/USDC.png", // TODO get a MATIC image
+      price: 1,
+      balance: EMPTY_BALANCE
+    },
+    protocol: {
+      name: "Mock",
+      network: "Polygon Amoy",
+      netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
+      imgURL: "/aave.png",
+      des: "This is a mock strategy for testing purposes."
     },
   },
 ];
