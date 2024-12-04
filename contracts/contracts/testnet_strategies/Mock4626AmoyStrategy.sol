@@ -67,6 +67,7 @@ contract Mock4626AmoyStrategy is Ownable {
 
     function withdraw(
         address ownerAddress,
+        address withdrawZRC20,
         uint256 amount,
         uint256 fee,
         uint256 shares,
@@ -81,6 +82,7 @@ contract Mock4626AmoyStrategy is Ownable {
         weth.withdraw{gas: 50000}(amount + fee);
         bytes memory outgoingMessage = abi.encode(
             ownerAddress,
+            withdrawZRC20,
             1,
             fee,
             shares,

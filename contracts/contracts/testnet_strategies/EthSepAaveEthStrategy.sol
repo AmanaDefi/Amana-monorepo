@@ -57,9 +57,7 @@ contract EthSepAaveEthStrategy is Ownable {
         _;
     }
 
-    function invest(
-        uint256 amount
-    ) external payable onlyGateway returns (uint256) {
+    function invest(uint256) external payable onlyGateway returns (uint256) {
         // note that the amount input here doesn't get used? maybe just check it against msg.value?
         require(msg.value > 0, "No ETH sent");
         tokenGateway.depositETH{value: msg.value}(
@@ -72,6 +70,7 @@ contract EthSepAaveEthStrategy is Ownable {
 
     function withdraw(
         address ownerAddress,
+        address withdrawZRC20,
         uint256 amount,
         uint256 fee,
         uint256 shares,
@@ -96,6 +95,7 @@ contract EthSepAaveEthStrategy is Ownable {
         // );
         bytes memory outgoingMessage = abi.encode(
             ownerAddress,
+            withdrawZRC20,
             1,
             fee,
             shares,

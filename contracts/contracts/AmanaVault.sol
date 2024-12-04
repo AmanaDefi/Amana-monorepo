@@ -48,14 +48,7 @@ contract AmanaVault is
     uint16 internal constant MAX_DEADLINE = 200;
     address public WZETA_ADDRESS; // 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf on testnet
     IGasTank public gasTank;
-    enum AssetType {
-        USDC,
-        ETH,
-        MATIC
-    }
-    AssetType public assetType;
-    mapping(uint32 => address) public chainToZRC20;
-    uint32 private constant vaultChainId = 7001; // 7000 for mainnet, 7001 for testnet
+    uint32 private vaultChainId; // 7000 for mainnet, 7001 for testnet
 
     struct VaultStorage {
         address strategyAddress;
@@ -117,7 +110,7 @@ contract AmanaVault is
         address treasury_,
         uint16 perfFee_,
         address gateway_, // TODO remove from initializer - never changes
-        address system_contract_, // TODO remove from initializer - never change
+        address system_contract_, // TODO remove from initializer - never changes
         address gasTank_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
@@ -133,17 +126,7 @@ contract AmanaVault is
         uniswapv2Router02Address = systemContract.uniswapv2Router02Address();
         WZETA_ADDRESS = systemContract.wZetaContractAddress();
         gasTank = IGasTank(gasTank_);
-        assetType = AssetType.MATIC; // TODO - change this to be set in initialize function?
-        if (assetType == AssetType.ETH) {
-            chainToZRC20[84532] = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // ETH.BASESEPOLIA
-            chainToZRC20[11155111] = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // ETH.SEPOLIA
-        } else if (assetType == AssetType.USDC) {
-            chainToZRC20[97] = 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; // USDC (on BSC Testnet)
-            chainToZRC20[11155111] = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d; // USDC.SEPOLIA
-        } else if (assetType == AssetType.MATIC) {
-            chainToZRC20[80002] = 0x777915D031d1e8144c90D025C594b3b8Bf07a08d; // MATIC.AMOY (on Polygon)
-        }
-        // TODO add in for further chains and for other AssetTypes
+        vaultChainId = uint32(block.chainid);
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -162,30 +145,37 @@ contract AmanaVault is
     ) external override {
         (
             address userAddress,
+            address withdrawZRC20,
             uint256 withdrawAmount,
             uint256 fee,
             uint256 shares,
-            uint32 originChainId
-        ) = abi.decode(message, (address, uint256, uint256, uint256, uint32));
-        if (amount == 0) {
+            uint32 withdrawChainId
+        ) = abi.decode(
+                message,
+                (address, address, uint256, uint256, uint256, uint32)
+            );
+        VaultStorage storage $ = _getVaultStorage();
+        if (amount == 0 && context.sender != $.strategyAddress) {
             _withdrawFromConnectedChain(
-                userAddress,
+                context.sender,
+                withdrawZRC20,
                 withdrawAmount,
                 uint32(context.chainID)
             );
-        } else if (withdrawAmount == 1) {
+        } else if (context.sender == $.strategyAddress) {
             // this indicates that the strategy is sending assets back to the vault
-            // we then send the amount back to the owner on the EVM in USDC
+            // we then send the amount back to the owner
             _returnFundsToUser(
                 userAddress,
+                withdrawZRC20,
                 amount,
                 fee,
                 shares,
-                uint32(originChainId)
-            ); // TODO does shares really need to be here?
+                withdrawChainId
+            );
         } else {
-            if (userAddress == address(0)) revert CantBeZeroAddress();
-            _depositFromConnectedChain(userAddress, amount, zrc20); // incoming deposit from another chain - will handle deposit to strat on ZC or other
+            if (context.sender == address(0)) revert CantBeZeroAddress();
+            _depositFromConnectedChain(context.sender, amount, zrc20); // incoming deposit from another chain - will handle deposit to strat on ZC or other
         }
     }
 
@@ -352,7 +342,7 @@ contract AmanaVault is
             uint256(0) // onRevertGasLimit
         );
 
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, true);
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
             recipient, // this contains the recipient smart contract address - the strategy address in this case
             amount, // amount of zrc20 to withdraw
@@ -608,6 +598,7 @@ contract AmanaVault is
         } else {
             _divestConnectedChainStrategy(
                 user,
+                asset(),
                 assets,
                 feeToWithdraw,
                 shares,
@@ -649,8 +640,8 @@ contract AmanaVault is
      * @dev Withdraw/redeem common workflow.
      */
     function _withdrawFromConnectedChain(
-        // address receiver, // Might this be needed later?
         address user,
+        address withdrawZRC20,
         uint256 assets,
         uint32 userChainId
     ) internal {
@@ -661,9 +652,8 @@ contract AmanaVault is
 
         uint256 shares = previewWithdraw(assets);
 
-        //TODO this also needs to have the conditional depending on which chain the strategy is on
         VaultStorage storage $ = _getVaultStorage();
-        // if (caller != user) {
+        // if (caller != user) { TODO - does this need to be here?
         //     _spendAllowance(user, caller, shares);
         // }
         uint256 feeToWithdraw = _applyFee(user, assets);
@@ -671,6 +661,7 @@ contract AmanaVault is
             _divestZetachainStrategy(assets, feeToWithdraw, user, shares);
             _returnFundsToUser(
                 user,
+                withdrawZRC20,
                 assets,
                 feeToWithdraw,
                 shares,
@@ -679,18 +670,19 @@ contract AmanaVault is
         } else {
             _divestConnectedChainStrategy(
                 user,
+                withdrawZRC20,
                 assets,
                 feeToWithdraw,
                 shares,
                 userChainId
             );
-            // return shares - do I still need this here (it's in the original withdraw external function)
         }
     }
 
     function _divestConnectedChainStrategy(
         address user,
-        uint256 assets,
+        address withdrawZRC20,
+        uint256 amount,
         uint256 feeToWithdraw,
         uint256 shares,
         uint32 userChainId
@@ -710,11 +702,16 @@ contract AmanaVault is
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
         bytes4 functionSelector = bytes4(
-            keccak256(bytes("withdraw(address,uint256,uint256,uint256,uint32)"))
+            keccak256(
+                bytes(
+                    "withdraw(address,address,uint256,uint256,uint256,uint32)"
+                )
+            )
         );
         bytes memory encodedArgs = abi.encode(
             user,
-            assets,
+            withdrawZRC20,
+            amount,
             feeToWithdraw,
             shares,
             userChainId
@@ -732,7 +729,7 @@ contract AmanaVault is
             uint256(30000000) // onRevertGasLimit
         );
 
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, true);
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
         IGatewayZEVM(_GATEWAY_ADDRESS).call(
             recipient,
             address(asset()),
@@ -744,6 +741,7 @@ contract AmanaVault is
 
     function _returnFundsToUser(
         address userAddress,
+        address withdrawZRC20,
         uint256 amount,
         uint256 fee,
         uint256 shares,
@@ -769,25 +767,25 @@ contract AmanaVault is
             );
             uint256 outputAmount = amount;
 
-            address outputZRC20 = chainToZRC20[userChainId];
-            if (address(asset()) != outputZRC20) {
+            if (address(asset()) != withdrawZRC20) {
                 outputAmount = swapExactTokensForTokens(
                     address(asset()),
                     amount,
-                    outputZRC20,
+                    withdrawZRC20,
                     0
                 );
             }
-            (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(outputZRC20)
-                .withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
+            (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
+                withdrawZRC20
+            ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
 
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForWithdraw);
 
-            if (gas_zrc20 != outputZRC20) {
-                IZRC20(outputZRC20).approve(_GATEWAY_ADDRESS, amount);
+            if (gas_zrc20 != withdrawZRC20) {
+                IZRC20(withdrawZRC20).approve(_GATEWAY_ADDRESS, amount);
                 IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForWithdraw);
             } else {
-                IZRC20(outputZRC20).approve(
+                IZRC20(withdrawZRC20).approve(
                     _GATEWAY_ADDRESS,
                     amount + gasFeeForWithdraw
                 );
@@ -795,7 +793,7 @@ contract AmanaVault is
             IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
                 recipient, // this has to be the address of the owner/user on the EVM
                 outputAmount, // the amount that the strategy has sent back
-                outputZRC20,
+                withdrawZRC20,
                 revertOptions // do these need to be different from the revertOptions in deposit?
             );
         }

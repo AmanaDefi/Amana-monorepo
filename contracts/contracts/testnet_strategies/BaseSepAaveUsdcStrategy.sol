@@ -59,16 +59,25 @@ contract BaseSepAaveUsdcStrategy is Ownable {
 
     function withdraw(
         address ownerAddress,
+        address withdrawZRC20,
         uint256 amount,
         uint256 fee,
-        uint256 shares
+        uint256 shares,
+        uint32 chainId
     ) external onlyGateway returns (uint256) {
         aavePool.withdraw(
             address(inputToken),
             amount + fee,
             address(this) // owner
         );
-        bytes memory outgoingMessage = abi.encode(ownerAddress, 1, fee, shares);
+        bytes memory outgoingMessage = abi.encode(
+            ownerAddress,
+            withdrawZRC20,
+            1,
+            fee,
+            shares,
+            chainId
+        );
 
         RevertOptions memory revertOptions = RevertOptions(
             0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
