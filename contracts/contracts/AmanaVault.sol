@@ -327,13 +327,6 @@ contract AmanaVault is
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
-        // bytes4 functionSelector = bytes4(keccak256(bytes("invest(uint256)")));
-        // bytes memory encodedArgs = abi.encode(amount);
-        // bytes memory outgoingMessage = abi.encodePacked(
-        //     functionSelector,
-        //     encodedArgs
-        // );
-
         bytes memory outgoingMessage = abi.encode(
             address(0),
             address(0),
@@ -709,26 +702,6 @@ contract AmanaVault is
         IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForCall);
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
-
-        // bytes4 functionSelector = bytes4(
-        //     keccak256(
-        //         bytes(
-        //             "withdraw(address,address,uint256,uint256,uint256,uint32)"
-        //         )
-        //     )
-        // );
-        // bytes memory encodedArgs = abi.encode(
-        //     user,
-        //     withdrawZRC20,
-        //     amount,
-        //     feeToWithdraw,
-        //     shares,
-        //     userChainId
-        // );
-        // bytes memory outgoingMessage = abi.encodePacked(
-        //     functionSelector,
-        //     encodedArgs
-        // );
 
         bytes memory outgoingMessage = abi.encode(
             user,
