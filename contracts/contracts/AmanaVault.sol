@@ -771,8 +771,10 @@ contract AmanaVault is
             SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee); // TODO - a better way to do this?
         }
         _burn(userAddress, shares);
+        uint256 outputAmount = amount;
+
         if (userChainId == vaultChainId) {
-            SafeERC20.safeTransfer(IERC20(asset()), userAddress, amount);
+            SafeERC20.safeTransfer(IERC20(asset()), userAddress, outputAmount);
         } else {
             bytes memory recipient = abi.encodePacked(userAddress);
 
@@ -783,7 +785,6 @@ contract AmanaVault is
                 bytes("revert message"),
                 uint256(30000000) // onRevertGasLimit
             );
-            uint256 outputAmount = amount;
 
             if (address(asset()) != withdrawZRC20) {
                 outputAmount = swapExactTokensForTokens(
