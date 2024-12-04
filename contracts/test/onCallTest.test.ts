@@ -18,6 +18,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
   let ethBaseSepolia: IERC20;
   let ethSepolia: IERC20;
   let usdt: IERC20;
+  let withdrawZRC20: string;
 
   const ZEVM_GATEWAY_ADDRESS = "0x6c533f7fe93fae114d0954697069df33c9b74fd7";
   const SYSTEM_CONTRACT_ADDRESS = "0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B";
@@ -38,6 +39,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       ethBaseSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_BASESEPOLIA_ADDRESS);
       ethSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_SEPOLIA_ADDRESS);
+
+      withdrawZRC20 = ZC_TEST_ETH_BASESEPOLIA_ADDRESS;
 
       const gatewayZEVM = await ethers.getContractAt(
         GatewayZEVMABI.abi,
@@ -64,7 +67,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(20).div(1));
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(20).div(1));
 
-      return { owner, user1, depositAmount1, ethBaseSepolia, usdt, amanaVault, gatewayZEVM };
+      return { owner, user1, depositAmount1, ethBaseSepolia, usdt, amanaVault, gatewayZEVM, withdrawZRC20 };
     }
 
     it("should process onCall correctly with deposit scenario, mocking BaseSepolia to Sepolia (cross-chain deposit)", async function () {
@@ -79,15 +82,14 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
 
       const message = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "uint256", "uint32"],
-        [userAddress, withdrawAmount, fee, shares, originChainId]
+        ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+        [userAddress, withdrawZRC20, withdrawAmount, fee, shares, originChainId]
       );
 
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, amanaVault.address, depositAmount1);
 
       const tx = await amanaVault.onCall(
         {
-          // MessageContext can be empty as it's not used
           origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
           sender: userAddress,
           chainID: ORIGIN_CHAIN_ID,
@@ -115,8 +117,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const userAddress = await user1.getAddress();
       const depositAmount = ethers.utils.parseUnits("0.01", 18);
       const depositMessage = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "uint256", "uint32"],
-        [userAddress, ethers.BigNumber.from(0), 0, 0, ORIGIN_CHAIN_ID]
+        ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+        [userAddress, withdrawZRC20, ethers.BigNumber.from(0), 0, 0, ORIGIN_CHAIN_ID]
       );
 
       // simulate deposit of amount into vault
@@ -139,8 +141,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const shares = 0;
 
       const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "uint256", "uint32"],
-        [userAddress, withdrawAmount, fee, shares, ORIGIN_CHAIN_ID]
+        ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+        [userAddress, withdrawZRC20, withdrawAmount, fee, shares, ORIGIN_CHAIN_ID]
       );
 
       // Test onCall function with amount = 0
@@ -169,8 +171,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const userAddress = await user1.getAddress();
       const depositAmount = ethers.utils.parseUnits("0.01", 18);
       const depositMessage = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "uint256", "uint32"],
-        [userAddress, ethers.BigNumber.from(0), 0, 0, ORIGIN_CHAIN_ID]
+        ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+        [userAddress, withdrawZRC20, ethers.BigNumber.from(0), 0, 0, ORIGIN_CHAIN_ID]
       );
 
       // simulate deposit of amount into vault
@@ -193,8 +195,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const shares = 0;
 
       const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "uint256", "uint32"],
-        [userAddress, withdrawAmount, fee, shares, ORIGIN_CHAIN_ID]
+        ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+        [userAddress, withdrawZRC20, withdrawAmount, fee, shares, ORIGIN_CHAIN_ID]
       );
 
       await amanaVault.onCall(
@@ -216,8 +218,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const amount2 = ethers.utils.parseUnits("0.001", 18); // Amount sent back to vault
 
       const withdrawMessage2 = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256", "uint256", "uint32"],
-        [userAddress, withdrawAmount2, fee2, shares2, ORIGIN_CHAIN_ID]
+        ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+        [userAddress, withdrawZRC20, withdrawAmount2, fee2, shares2, ORIGIN_CHAIN_ID]
       );
 
       // simulate deposit of amount into vault
