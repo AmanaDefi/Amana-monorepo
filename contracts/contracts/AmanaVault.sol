@@ -50,7 +50,8 @@ contract AmanaVault is
     IGasTank public gasTank;
     enum AssetType {
         USDC,
-        ETH
+        ETH,
+        MATIC
     }
     AssetType public assetType;
     mapping(uint32 => address) public chainToZRC20;
@@ -115,8 +116,8 @@ contract AmanaVault is
         IERC20 asset_,
         address treasury_,
         uint16 perfFee_,
-        address gateway_,
-        address system_contract_,
+        address gateway_, // TODO remove from initializer - never changes
+        address system_contract_, // TODO remove from initializer - never change
         address gasTank_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
@@ -132,13 +133,15 @@ contract AmanaVault is
         uniswapv2Router02Address = systemContract.uniswapv2Router02Address();
         WZETA_ADDRESS = systemContract.wZetaContractAddress();
         gasTank = IGasTank(gasTank_);
-        assetType = AssetType.ETH; // TODO - change this to be set in initialize function?
+        assetType = AssetType.MATIC; // TODO - change this to be set in initialize function?
         if (assetType == AssetType.ETH) {
             chainToZRC20[84532] = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; // ETH.BASESEPOLIA
             chainToZRC20[11155111] = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // ETH.SEPOLIA
         } else if (assetType == AssetType.USDC) {
             chainToZRC20[97] = 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; // USDC (on BSC Testnet)
             chainToZRC20[11155111] = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d; // USDC.SEPOLIA
+        } else if (assetType == AssetType.MATIC) {
+            chainToZRC20[80002] = 0x777915D031d1e8144c90D025C594b3b8Bf07a08d; // MATIC.AMOY (on Polygon)
         }
         // TODO add in for further chains and for other AssetTypes
         emit VaultInitialized(decimals(), perfFee_);
