@@ -222,12 +222,11 @@ const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account,
     contract,
     method:
       "function withdraw(uint256 assets, address receiver, address owner)",
-    params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address],
+    params: [withdrawAmount, activeAccount?.address, activeAccount?.address],
     maxFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
     maxPriorityFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
   });
   console.log("withdraw amount", withdrawAmount);
-  console.log("withdraw amount in BigInt", BigInt(withdrawAmount));
   console.log("withdrawTx", withdrawTx);
   const receipt = await sendTransaction({
     account: activeAccount,
