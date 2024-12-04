@@ -29,13 +29,7 @@ export interface VaultData {
   name: string;
   symbol: string;
   des?: string;
-  inputToken: {
-    symbol: string;
-    decimals: number;
-    address: string;
-    imgURL: string;
-    price: number;
-  };
+  inputToken: Token;
   protocol: {
     name: string;
     network: string;
