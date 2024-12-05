@@ -6,14 +6,13 @@ import { toast } from "react-toastify";
 import { Account } from "thirdweb/wallets";
 import { NumberFormatter } from "@/utils/helpers";
 import MainActionButton from "@/components/button/MainActionButton"
+import { client } from "@/utils/client";
 
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
     setTransactionCompleted(false)
     try {
         const value = Number(inputBalance.value)
-        const inputToken = vaultData.inputToken;
         const scaledAmount = BigInt(value)
-
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
             amount: scaledAmount.toString(),
@@ -23,7 +22,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             inputToken.address as Address,
             EOAaccount,
             activeChain,
-            scaledAmount, //TODO make this general for all tokens?
+            scaledAmount,
         );
 
         mixpanel.track("Deposit Submitted", {
@@ -31,7 +30,15 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             amount: scaledAmount.toString(),
         });
 
-        await waitForReceipt(receipt)
+        // Create an object to pass to waitForReceipt with the required fields
+        const receiptObject = {
+            transactionHash: receipt.transactionHash as `0x${string}`,
+            client, // Assuming `client` is already defined somewhere in this scope
+            chain: activeChain,
+        };
+  
+        await waitForReceipt(receiptObject);
+        
         toast.success("Transaction confirmed");
 
         refetch()
