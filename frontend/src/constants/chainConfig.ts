@@ -161,6 +161,16 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       isNative: true,
       ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
     },
+    {
+      symbol: "USDC",
+      address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
+    },
   ],
   84532: [
     {
