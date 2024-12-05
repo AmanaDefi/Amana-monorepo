@@ -191,7 +191,7 @@ export default function VaultInputs({
         onChange={handleChangeInput}
         selectedToken={inputToken}
         errorMessage={errorMessage}
-        tokenList={inputToken?.isNative ? [inputToken] : APPROVED_TOKENS[activeChain.id]}
+        tokenList={activeChain.id === 7001 || activeChain.id === 7000 ? [vaultData.inputToken] : APPROVED_TOKENS[activeChain.id]}
         disabled={false}
       />
       <div className="mt-4">
