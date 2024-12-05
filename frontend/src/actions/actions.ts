@@ -11,6 +11,7 @@ import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import compoundVaultABI from "../../abis/compoundVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import { Chain, defineChain } from "thirdweb";
+import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 
 import * as dotenv from "dotenv";
 
@@ -20,6 +21,7 @@ const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 const EVMGatewayAddress = deployEnv === "testnet"
   ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
   : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
+const abiCoder = new AbiCoder();
 
 if (!EVMGatewayAddress) {
   throw new Error(`EVM Gateway address is not defined for the ${deployEnv} environment.`);
@@ -163,52 +165,137 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
   return receipt;
 };
 
-const executeCrossChainDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
 
-  console.log("Executing Deposit");
-  let contract = getContract({
-    client,
-    chain: activeChain,
-    address: inputToken
-  });
-  console.log("contract", contract);
-  const approveTx = prepareContractCall({
-    contract,
-    method: "function approve(address to, uint256 value)",
-    params: [EVMGatewayAddress, transactionAmount]
-  });
-  console.log("approveTx", approveTx);
-  contract = getContract({
-    client,
-    chain: activeChain,
-    address: EVMGatewayAddress
-  });
-  console.log("contract", contract);
-  const supplyTx = prepareContractCall({ // TODO this part of the call is a lot more complex, needs to be updated
-    contract,
-    method:
-      "function depositAndCall(uint256 assets,  address receiver)",
-    params: [transactionAmount, activeAccount?.address]
-  });
-  await sendAndConfirmTransaction({
-    account: activeAccount,
-    transaction: approveTx
-  });
+const executeCrossChainDeposit = async (
+  vaultId: Address,
+  inputToken: Address,
+  activeAccount: Account,
+  activeChain: Chain,
+  transactionAmount: bigint
+) => {
+  console.log("Executing Cross-Chain Deposit");
 
-  console.log("Approval confirmed");
-  const receipt = await sendTransaction({
-    account: activeAccount,
-    transaction: supplyTx
-  });
-  console.log("Deposit executed");
-  return receipt;
+  // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
+  const isNativeToken = inputToken === ZeroAddress;
+
+  let contract, approveTx, payload, revertOptions;
+
+  // Prepare payload (calldata to pass to the receiver)
+  payload = abiCoder.encode(
+    ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+    [activeAccount.address, ZeroAddress, 0, 0, 0, 0]
+  ) as `0x${string}`;
+
+  // Prepare revertOptions
+  revertOptions = [
+    activeAccount.address, // revertAddress
+    false, // callOnRevert
+    activeAccount.address, // abortAddress
+    hexlify(toUtf8Bytes("Revert happened")) as `0x${string}`, // revertMessage
+    BigInt(1000000), // onRevertGasLimit
+  ] as const;
+
+  const txOptions = {
+    gasLimit: 1000000, // Example value, update as needed
+    gasPrice: 100000, // TODO - this will have to change, depending on the chain?
+  };
+
+  // Case 1: Native token (ETH, BNB, etc.)
+  if (isNativeToken) {
+    console.log("Native token deposit detected");
+
+    contract = getContract({
+      client,
+      chain: activeChain,
+      address: EVMGatewayAddress,
+    });
+
+    const depositTx = prepareContractCall({
+      contract,
+      method:
+        "function depositAndCall(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+      params: [vaultId, payload, revertOptions],
+      value: transactionAmount,
+    });
+
+    const receipt = await sendAndConfirmTransaction({
+      account: activeAccount,
+      transaction: depositTx,
+      ...txOptions,
+    });
+
+    console.log("Deposit executed");
+    return receipt;
+
+  } else {
+    // Case 2: ERC20 token
+    console.log("ERC20 token deposit detected");
+
+    // Step 1: Approve the tokens for the EVM Gateway contract
+    contract = getContract({
+      client,
+      chain: activeChain,
+      address: inputToken,
+    });
+    console.log("contract", contract);
+
+    approveTx = prepareContractCall({
+      contract,
+      method: "function approve(address to, uint256 value)",
+      params: [EVMGatewayAddress, transactionAmount],
+    });
+    console.log("approveTx", approveTx);
+
+    await sendAndConfirmTransaction({
+      account: activeAccount,
+      transaction: approveTx,
+    });
+
+    console.log("Approval confirmed");
+
+    // Step 2: Deposit ERC20 tokens through the Gateway contract
+    contract = getContract({
+      client,
+      chain: activeChain,
+      address: EVMGatewayAddress,
+    });
+    console.log("contract", contract);
+
+    const depositTx = prepareContractCall({
+      contract,
+      method:
+        "function depositAndCall(address receiver, uint256 amount, address asset, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+      params: [
+        vaultId,
+        transactionAmount,
+        inputToken,
+        payload,
+        revertOptions,
+      ],
+    });
+
+    try {
+      const receipt = await sendAndConfirmTransaction({
+        account: activeAccount,
+        transaction: depositTx,
+        ...txOptions,
+      });
+
+      console.log("Deposit executed");
+      return receipt;
+
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      throw error; // Rethrow the error to allow upstream handling if needed
+    }
+  }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => {
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawZRC20: Address) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawZRC20);
   }
 };
 
@@ -235,29 +322,70 @@ const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account,
   return receipt;
 };
 
-const executeCrossChainWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => { //vaultId: string
-  let contract = getContract({
+const executeCrossChainWithdrawal = async (
+  vaultId: Address,
+  activeAccount: Account,
+  activeChain: Chain,
+  withdrawAmount: bigint,
+  withdrawZRC20: Address // TODO add this higher up in the calling functions
+) => {
+  console.log("Executing Cross-Chain Withdrawal");
+
+  // Prepare payload (calldata to pass to the receiver)
+  const payload = abiCoder.encode(
+    ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+    [activeAccount.address, withdrawZRC20, withdrawAmount, 0, 0, 0]
+  ) as `0x${string}`;
+
+  // Prepare revertOptions to match the Solidity struct
+  const revertOptions = [
+    activeAccount.address, // revertAddress
+    false, // callOnRevert
+    activeAccount.address, // abortAddress
+    hexlify(toUtf8Bytes("Revert happened")) as `0x${string}`, // revertMessage
+    BigInt(1000000), // onRevertGasLimit
+  ] as const;
+
+  const txOptions = {
+    gasLimit: BigInt(1000000), // Example value, update as needed
+    gasPrice: BigInt(100000), // This will have to change depending on the chain
+  };
+
+  // Get the Gateway contract to initiate the withdrawal
+  const contract = getContract({
     client,
     chain: activeChain,
-    address: EVMGatewayAddress
+    address: EVMGatewayAddress,
   });
+
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function call(uint256 assets, address receiver, address owner)", // TODO this needs to be updated here to the gateway function
-    params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address]
+      "function call(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+    params: [vaultId, payload, revertOptions],
   });
-  const receipt = await sendTransaction({
-    account: activeAccount,
-    transaction: withdrawTx
-  });
-  return receipt;
+
+  try {
+    const receipt = await sendAndConfirmTransaction({
+      account: activeAccount,
+      transaction: withdrawTx,
+      ...txOptions,
+    });
+
+    console.log("Withdrawal executed successfully");
+    return receipt;
+
+  } catch (error) {
+    console.error("Transaction failed:", error);
+    throw error; // Rethrow the error for upstream handling
+  }
 };
+
 
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: SUPPORTED_CHAINS[0],
+    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
     address: vaultAddress
   });
   const { value: shares, decimals } = await getBalance({
@@ -277,7 +405,7 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 
   const contract = getContract({
     client,
-    chain: SUPPORTED_CHAINS[0],
+    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
     address: vaultAddress
   });
   const balance = await readContract({
@@ -299,7 +427,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
       try {
         const contract = getContract({
           client,
-          chain: SUPPORTED_CHAINS[0],
+          chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
           address: vault.id,
         });
         const [strategyAddress, chainID] = await readContract({
