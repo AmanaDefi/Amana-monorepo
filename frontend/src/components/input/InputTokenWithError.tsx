@@ -4,7 +4,6 @@ import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
 import { NumberFormatter } from "@/utils/utils";
 
-
 export default function InputTokenWithError({
   tokenList,
   selectedToken,
@@ -22,16 +21,16 @@ export default function InputTokenWithError({
   errorMessage?: string;
   onMaxClick: () => void;
   onSelectToken: (token: Token) => void;
-  vaultData: VaultData
+  vaultData: VaultData;
   tokenList: Token[];
   selectedToken?: Token;
   captionText?: string;
   getToken?: Function;
   allowInput?: boolean;
   inputMoreThanBalance?: boolean;
-  disabled?: boolean
+  disabled?: boolean;
 } & HTMLProps<HTMLInputElement>): JSX.Element {
-
+  console.log(selectedToken);
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
@@ -44,7 +43,9 @@ export default function InputTokenWithError({
       )}
       <div className="relative flex items-center w-full">
         <div
-          className={`w-full px-5 pt-4 pb-2 rounded-lg border ${errorMessage ? "border-red-500" : "border-customGray100"}`}
+          className={`w-full px-5 pt-4 pb-2 rounded-lg border ${
+            errorMessage ? "border-red-500" : "border-customGray100"
+          }`}
         >
           <div className="flex items-center justify-between ">
             <div className="xs:w-full xs:border-r xs:border-customGray500 xs:pr-4 smmd:p-0 smmd:border-none smmd:w-1/2">
@@ -60,16 +61,20 @@ export default function InputTokenWithError({
           </div>
           <div className="flex justify-between items-center mt-4 w-full text-customGray500">
             <p className="group-hover/max:text-white">
-              {
-                selectedToken ?
-                  "$ " + (Number(props.value) * selectedToken.price).toFixed(2).toString()
-                  :
-                  "$ 0.00"
-              }
+              {selectedToken
+                ? "$ " +
+                  (Number(props.value) * (selectedToken.price || 0))
+                    .toFixed(2)
+                    .toString()
+                : "$ 0.00"}
             </p>
             <div
-              className={`flex items-center ml-1 gap-2 group/max ${allowInput ? "group-hover/max:text-white cursor-pointer " : ""}`}
-              onClick={allowInput ? onMaxClick : () => { }}
+              className={`flex items-center ml-1 gap-2 group/max ${
+                allowInput
+                  ? "group-hover/max:text-white cursor-pointer "
+                  : ""
+              }`}
+              onClick={allowInput ? onMaxClick : () => {}}
             >
               <div className={`mb-1 ${allowInput ? "group-hover/max:text-white" : ""}`}>
                 <svg
@@ -88,7 +93,9 @@ export default function InputTokenWithError({
                 </svg>
               </div>
               <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                {Number(selectedToken?.balance.formatted) == 0 ? "0" : Number(selectedToken?.balance.formatted).toFixed(6).toString() || "0"}
+                {selectedToken && selectedToken.balance && selectedToken.balance.formatted
+                  ? Number(selectedToken.balance.formatted).toFixed(2).toString()
+                  : "0.00"}
               </p>
             </div>
           </div>

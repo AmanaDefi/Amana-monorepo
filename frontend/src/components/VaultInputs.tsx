@@ -1,15 +1,13 @@
-
-import TabSelector from "@/components/common/TabSelector"
-import InputTokenWithError from "@/components/input/InputTokenWithError"
+import TabSelector from "@/components/common/TabSelector";
+import InputTokenWithError from "@/components/input/InputTokenWithError";
 import { VaultData, Token, Balance, UserVaultBalance } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
-import { useState, useEffect } from "react"
-import { parseUnits } from "viem"
+import { useState, useEffect } from "react";
+import { parseUnits } from "viem";
 import { Address, getContract } from "thirdweb";
-import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
-import { Account } from "thirdweb/wallets";
+import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { SUPPORTED_CHAINS, APPROVED_TOKENS } from "../constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { getVaultErrorMessage } from "@/utils/utils";
 import { ethers } from "ethers";
@@ -22,133 +20,127 @@ export interface VaultInputsProps {
   userVaultBalances: UserVaultBalance[];
 }
 
+// Custom hook to fetch token balance, including native tokens
+function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any) {
+  const [balance, setBalance] = useState<string>("0");
+  const { data: walletBalance, isLoading, isError } = useWalletBalance({
+    chain: activeChain,
+    address: userAddress,
+    client,
+  });
+
+  useEffect(() => {
+    const fetchTokenBalance = async () => {
+      if (!token || !userAddress || !activeChain) return;
+
+      if (token.isNative) {
+        if (!isLoading && !isError && walletBalance) {
+          // Fetch native token balance (ETH, BNB, MATIC, etc.)
+          setBalance(walletBalance.displayValue || "0");
+        }
+      } else {
+        // Fetch ERC-20 token balance
+        const contract = getContract({ client, chain: activeChain, address: token.address as Address });
+        const { value, decimals } = await getBalance({ contract, address: userAddress as Address });
+        const formattedBalance = ethers.formatUnits(value, decimals);
+        setBalance(formattedBalance || "0");
+      }
+    };
+
+    fetchTokenBalance();
+  }, [token?.address, userAddress, activeChain?.id, walletBalance, isLoading, isError]);
+
+  return balance;
+}
+
 export default function VaultInputs({
   vaultData,
   tokenOptions,
   setTransactionCompleted,
-  userVaultBalances
+  userVaultBalances,
 }: VaultInputsProps): JSX.Element {
-  const vault = tokenOptions.find(t => t.address === vaultData.inputToken.address)
-
   const [inputToken, setInputToken] = useState<Token>();
-  const [activeAccount, setActiveAccount] = useState<Account | null>(null);
-
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
+  const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
   const [isDeposit, setIsDeposit] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [showModal, setShowModal] = useState<boolean>(false)
-  const [allowInput, setAllowInput] = useState<boolean>(false)
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [allowInput, setAllowInput] = useState<boolean>(false);
 
   const EOAaccount = useActiveAccount();
-
-  useEffect(() => {
-    if (EOAaccount) {
-      setActiveAccount(EOAaccount);
-
-    } else {
-      setActiveAccount(null);
-    }
-  }, [EOAaccount]);
+  const activeChain = useActiveWalletChain();
 
   if (!EOAaccount) {
     throw new Error("No active account found");
   }
 
-  const activeChain = useActiveWalletChain();
-
   if (!activeChain) {
     throw new Error("No active chain found");
   }
 
-
-
-  async function handleTokenSelect(input: Token): Promise<void> {
-    if (!activeChain) {
-      throw new Error("No active chain found");
-    }
-    const contract = getContract({
-      client,
-      chain: activeChain,
-      address: input.address as Address,
-    });
-    const { value, decimals } = await getBalance({
-      contract,
-      address: activeAccount?.address as Address,
-    });
-
-    const formattedBalance = ethers.formatUnits(value, decimals);
-    input.balance.formatted = formattedBalance || "0";
-    setInputToken(input);
-    setAllowInput(true)
-    if (isDeposit) {
-      setErrorMessage(getVaultErrorMessage(inputBalance.formatted, input.balance.formatted, setShowModal))
-    }
-    else {
-      setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
-    }
-  }
-
+  const userAddress = EOAaccount.address;
 
   useEffect(() => {
-    const fetchData = async () => {
-      const contract = getContract({
-        client,
-        chain: activeChain,
-        address: vaultData.inputToken.address as Address,
-      });
-      const { value, decimals } = await getBalance({
-        contract,
-        address: EOAaccount?.address as Address,
-      });
-
-      const formattedBalance = ethers.formatUnits(value, decimals);
-      vaultData.inputToken.balance.formatted = formattedBalance || "0";
+    if (activeChain.id === 7001) {
+      // If on ZetaChain testnet, set inputToken to the vault token
       setInputToken(vaultData.inputToken);
-      setAllowInput(true)
+    } else {
+      // On other chains, use APPROVED_TOKENS to set available tokens
+      const approvedTokens = APPROVED_TOKENS[activeChain.id];
+      setInputToken(approvedTokens ? approvedTokens[0] : undefined); // Set to the first approved token as a default
+    }
+
+    setAllowInput(true);
+  }, [activeChain.id, vaultData.inputToken]);
+
+  // Update inputTokenBalance state when useTokenBalance returns a new value
+  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain);
+
+  useEffect(() => {
+    if (inputToken) {
+      // Create a new inputToken object with the updated balance
+      const updatedToken: Token = {
+        ...inputToken,
+        balance: {
+          ...inputToken.balance,
+          formatted: tokenBalance,
+        },
+      };
+
+      // Update the inputToken state with the updated balance
+      setInputToken(updatedToken);
+
+      // Set the inputTokenBalance separately to track balance as a string
+      setInputTokenBalance(tokenBalance);
+    }
+  }, [tokenBalance]);
+
+  useEffect(() => {
+    if (inputToken) {
       if (isDeposit) {
-        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, vaultData.inputToken.balance.formatted, setShowModal))
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, setShowModal));
+      } else {
+        const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString();
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalance, setShowModal));
       }
-      else {
-        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
-      }
-    };
+    }
+  }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, userVaultBalances, vaultData.id]);
 
-    // Call the async function
-    fetchData();
-
-  }, [activeChain])
-
-  const inputTokenContract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0],
-    address: inputToken?.address as Address,
-  });
-
-  const {
-    refetch
-  } = useReadContract(getBalance, {
-    contract: inputTokenContract,
-    address: activeAccount?.address as Address,
-  });
+  function handleTokenSelect(selectedToken: Token): void {
+    setInputToken(selectedToken);
+    setAllowInput(true);
+  }
 
   function switchTokens() {
-    setInputBalance(EMPTY_BALANCE)
-
-    if (isDeposit) {
-      // Switch to Withdraw
-      if (vault) {
-        setInputToken(vault);
-      }
-      setIsDeposit(false);
-
-    } else {
-      // Switch to Deposit
-      setIsDeposit(true);
+    setInputBalance(EMPTY_BALANCE);
+    setIsDeposit(!isDeposit);
+    if (!isDeposit && vaultData.inputToken) {
+      setInputToken(vaultData.inputToken);
     }
   }
 
-  function handleChangeInput(e: any) {
-    if (!inputToken) return
+  function handleChangeInput(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!inputToken) return;
     let value = e.currentTarget.value;
 
     const [integers, decimals] = String(value).split('.');
@@ -159,94 +151,87 @@ export default function VaultInputs({
       inputAmt = `${integers}.${decimals.slice(0, inputToken.decimals)}`;
     }
 
-    // covert string amt to bigint
-    const newAmt = parseUnits(inputAmt, inputToken.decimals)
+    // convert string amt to bigint
+    const newAmt = parseUnits(inputAmt, inputToken.decimals);
 
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * (inputToken.price || 0)) });
     if (isDeposit) {
-      setErrorMessage(getVaultErrorMessage(value, inputToken.balance.formatted, setShowModal))
-    }
-    else {
-      setErrorMessage(getVaultErrorMessage(value, userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString(), setShowModal))
+      setErrorMessage(getVaultErrorMessage(value, inputTokenBalance, setShowModal));
+    } else {
+      const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString();
+      setErrorMessage(getVaultErrorMessage(value, userVaultBalance, setShowModal));
     }
   }
 
   function handleMaxClick() {
     if (!inputToken) return;
     if (isDeposit) {
-      handleChangeInput({ currentTarget: { value: inputToken.balance.formatted } });
-    }
-    else {
-      handleChangeInput({ currentTarget: { value: userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance || "0" } });
+      handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
+    } else {
+      const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance || "0";
+      handleChangeInput({ currentTarget: { value: userVaultBalance } } as React.ChangeEvent<HTMLInputElement>);
     }
   }
 
-  return <>
-    <TabSelector
-      className="mb-6"
-      availableTabs={["Deposit", "Withdraw"]}
-      activeTab={isDeposit ? "Deposit" : "Withdraw"}
-      setActiveTab={switchTokens}
-    />
-    <InputTokenWithError
-      captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
-      onSelectToken={(option) =>
-        handleTokenSelect(option)
-      }
-      allowInput={allowInput}
-      vaultData={vaultData}
-      onMaxClick={handleMaxClick}
-      value={inputBalance.formatted}
-      onChange={handleChangeInput}
-      selectedToken={inputToken}
-      errorMessage={errorMessage}
-      tokenList={tokenOptions}
-      disabled={false}
-    />
-    <div className="mt-4">
-      <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
-      <div className="bg-customNeutral200 py-2 px-4 rounded-lg space-y-2">
-        <span className="flex flex-row items-center justify-between text-white">
-          <p>Deposit Fee</p>
-
-        </span>
-        <span className="flex flex-row items-center justify-between text-white">
-          <p>Withdrawal Fee</p>
-
-        </span>
-        <span className="flex flex-row items-center justify-between text-white">
-          <p>Management Fee</p>
-
-        </span>
-        <span className="flex flex-row items-center justify-between text-white">
-          <p>Performance Fee</p>
-
-        </span>
-      </div>
-    </div>
-
-
-    {inputToken && showModal &&
-      <InteractionContainer
-        _inputToken={inputToken}
-        _inputBalance={inputBalance}
-        _action={isDeposit ? Action.deposit : Action.withdraw}
-        vaultData={vaultData}
-        EOAaccount={EOAaccount}
-        setTransactionCompleted={setTransactionCompleted}
-        refetch={refetch}
-        activeChain={activeChain}
-        setShowModal={setShowModal}
+  return (
+    <>
+      <TabSelector
+        className="mb-6"
+        availableTabs={["Deposit", "Withdraw"]}
+        activeTab={isDeposit ? "Deposit" : "Withdraw"}
+        setActiveTab={switchTokens}
       />
-    }
-  </>
-}
+      <InputTokenWithError
+        captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
+        onSelectToken={handleTokenSelect}
+        allowInput={allowInput}
+        vaultData={vaultData}
+        onMaxClick={handleMaxClick}
+        value={inputBalance.formatted}
+        onChange={handleChangeInput}
+        selectedToken={inputToken}
+        errorMessage={errorMessage}
+        tokenList={inputToken?.isNative ? [inputToken] : APPROVED_TOKENS[activeChain.id]}
+        disabled={false}
+      />
+      <div className="mt-4">
+        <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
+        <div className="bg-customNeutral200 py-2 px-4 rounded-lg space-y-2">
+          <span className="flex flex-row items-center justify-between text-white">
+            <p>Deposit Fee</p>
+          </span>
+          <span className="flex flex-row items-center justify-between text-white">
+            <p>Withdrawal Fee</p>
+          </span>
+          <span className="flex flex-row items-center justify-between text-white">
+            <p>Management Fee</p>
+          </span>
+          <span className="flex flex-row items-center justify-between text-white">
+            <p>Performance Fee</p>
+          </span>
+        </div>
+      </div>
 
+      {inputToken && showModal && (
+        <InteractionContainer
+          _inputToken={inputToken}
+          _inputBalance={inputBalance}
+          _action={isDeposit ? Action.deposit : Action.withdraw}
+          vaultData={vaultData}
+          EOAaccount={EOAaccount}
+          setTransactionCompleted={setTransactionCompleted}
+          refetch={() => {}}
+          activeChain={activeChain}
+          setShowModal={setShowModal}
+        />
+      )}
+    </>
+  );
+}
 
 enum Action {
   depositApprove,
   deposit,
   withdraw,
-  done
+  done,
 }
-

@@ -11,7 +11,8 @@ export const tokens: Token[] = [
     address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
     price: 3040,
-    balance: EMPTY_BALANCE
+    balance: EMPTY_BALANCE,
+    isNative: false
   },
   {
     symbol: "sETH",
@@ -19,7 +20,8 @@ export const tokens: Token[] = [
     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
     price: 3040,
-    balance: EMPTY_BALANCE
+    balance: EMPTY_BALANCE,
+    isNative: false
   },
 ]
 
@@ -34,7 +36,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Aave",
@@ -52,7 +55,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Moonwell",
@@ -70,7 +74,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: BASE_USDC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Compound",
@@ -88,7 +93,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       address: ZC_USDC_ETH_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Eddy",
@@ -110,7 +116,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
       imgURL: "/ETH.png",
       price: 3040,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Aave",
@@ -131,7 +138,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
       imgURL: "/ETH.png",
       price: 3040,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Aave",
@@ -152,7 +160,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Mock",
@@ -173,7 +182,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       address: ZC_TEST_MATIC_AMOY_ADDRESS,
       imgURL: "/polygon_logo.png",
       price: 1,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Mock",
@@ -194,7 +204,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       address: ZC_TEST_USDC_BSC_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
-      balance: EMPTY_BALANCE
+      balance: EMPTY_BALANCE,
+      isNative: false
     },
     protocol: {
       name: "Mock",
