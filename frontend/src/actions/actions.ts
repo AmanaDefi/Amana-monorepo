@@ -257,7 +257,7 @@ const executeCrossChainWithdrawal = async (vaultId: Address, activeAccount: Acco
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: SUPPORTED_CHAINS[0],
+    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
     address: vaultAddress
   });
   const { value: shares, decimals } = await getBalance({
@@ -277,7 +277,7 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 
   const contract = getContract({
     client,
-    chain: SUPPORTED_CHAINS[0],
+    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
     address: vaultAddress
   });
   const balance = await readContract({
@@ -299,7 +299,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
       try {
         const contract = getContract({
           client,
-          chain: SUPPORTED_CHAINS[0],
+          chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
           address: vault.id,
         });
         const [strategyAddress, chainID] = await readContract({
