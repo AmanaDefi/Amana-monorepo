@@ -337,10 +337,10 @@ contract AmanaVault is
         );
 
         RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+            address(this), // revert address
             false, // callOnRevert
             address(this), // abortAddress
-            bytes("revert message"),
+            bytes("WithdrawAndCall Failed"),
             uint256(0) // onRevertGasLimit
         );
 
@@ -713,11 +713,11 @@ contract AmanaVault is
         );
 
         RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+            address(this), // revert address
             false, // callOnRevert
             address(this), // abortAddress
-            bytes("revert message"),
-            uint256(30000000) // onRevertGasLimit
+            bytes("Call to Strategy Failed"),
+            uint256(0) // onRevertGasLimit
         );
 
         CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
@@ -752,11 +752,11 @@ contract AmanaVault is
             bytes memory recipient = abi.encodePacked(userAddress);
 
             RevertOptions memory revertOptions = RevertOptions(
-                0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+                address(this), // revert address
                 false, // callOnRevert
                 address(this), // abortAddress
-                bytes("revert message"),
-                uint256(30000000) // onRevertGasLimit
+                bytes("Withdraw to User Failed"),
+                uint256(0) // onRevertGasLimit
             );
 
             if (address(asset()) != withdrawZRC20) {
