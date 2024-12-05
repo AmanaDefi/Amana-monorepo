@@ -86,7 +86,8 @@ export interface Token {
   imgURL: string;
   price: number;
   balance: Balance;
-  isNative: boolean
+  isNative: boolean;
+  ZRC20equivalent?: Address;
 }
 
 export interface TokenByAddress {

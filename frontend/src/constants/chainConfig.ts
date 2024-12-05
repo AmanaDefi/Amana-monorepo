@@ -159,6 +159,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
+      ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
     },
   ],
   84532: [
@@ -170,6 +171,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
+      ZRC20equivalent: "0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD"
     },
   ],
   80002: [
@@ -181,6 +183,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 0.7159,
       balance: EMPTY_BALANCE,
       isNative: true,
+      ZRC20equivalent: "0x777915D031d1e8144c90D025C594b3b8Bf07a08d",
     },
   ],
   97: [
@@ -192,6 +195,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734,
       balance: EMPTY_BALANCE,
       isNative: true,
+      ZRC20equivalent: "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
     },
     {
       symbol: "USDC",
@@ -201,6 +205,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
+      ZRC20equivalent: "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7",
     },
   ],
 };

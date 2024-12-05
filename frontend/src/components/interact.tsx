@@ -55,8 +55,12 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
     setTransactionCompleted(false)
+    const withdrawZRC20 = withdrawToken.ZRC20equivalent
+    if (!withdrawZRC20) {
+        throw new Error("Withdraw token not found");
+    }
     try {
         const value = Number(inputBalance.value)
         const scaledAmount = BigInt(value)
@@ -71,13 +75,22 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             EOAaccount,
             activeChain,
             scaledAmount,
+            withdrawZRC20
         );
         mixpanel.track("Withdraw Succeeded", {
             vault: vaultData.id.toString(),
             amount: scaledAmount.toString(),
         });
 
-        await waitForReceipt(receipt)
+        // Create an object to pass to waitForReceipt with the required fields
+        const receiptObject = {
+            transactionHash: receipt.transactionHash as `0x${string}`,
+            client, // Assuming `client` is already defined somewhere in this scope
+            chain: activeChain,
+        };
+  
+        await waitForReceipt(receiptObject);
+        
         toast.success("Transaction confirmed");
         refetch()
         setTransactionCompleted(true);

@@ -291,11 +291,11 @@ const executeCrossChainDeposit = async (
   }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => {
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawZRC20: Address) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawZRC20);
   }
 };
 
@@ -322,24 +322,65 @@ const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account,
   return receipt;
 };
 
-const executeCrossChainWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => { //vaultId: string
-  let contract = getContract({
+const executeCrossChainWithdrawal = async (
+  vaultId: Address,
+  activeAccount: Account,
+  activeChain: Chain,
+  withdrawAmount: bigint,
+  withdrawZRC20: Address // TODO add this higher up in the calling functions
+) => {
+  console.log("Executing Cross-Chain Withdrawal");
+
+  // Prepare payload (calldata to pass to the receiver)
+  const payload = abiCoder.encode(
+    ["address", "address", "uint256", "uint256", "uint256", "uint32"],
+    [activeAccount.address, withdrawZRC20, withdrawAmount, 0, 0, 0]
+  ) as `0x${string}`;
+
+  // Prepare revertOptions to match the Solidity struct
+  const revertOptions = [
+    activeAccount.address, // revertAddress
+    false, // callOnRevert
+    activeAccount.address, // abortAddress
+    hexlify(toUtf8Bytes("Revert happened")) as `0x${string}`, // revertMessage
+    BigInt(1000000), // onRevertGasLimit
+  ] as const;
+
+  const txOptions = {
+    gasLimit: BigInt(1000000), // Example value, update as needed
+    gasPrice: BigInt(100000), // This will have to change depending on the chain
+  };
+
+  // Get the Gateway contract to initiate the withdrawal
+  const contract = getContract({
     client,
     chain: activeChain,
-    address: EVMGatewayAddress
+    address: EVMGatewayAddress,
   });
+
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function call(uint256 assets, address receiver, address owner)", // TODO this needs to be updated here to the gateway function
-    params: [BigInt(withdrawAmount), activeAccount?.address, activeAccount?.address]
+      "function call(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+    params: [vaultId, payload, revertOptions],
   });
-  const receipt = await sendTransaction({
-    account: activeAccount,
-    transaction: withdrawTx
-  });
-  return receipt;
+
+  try {
+    const receipt = await sendAndConfirmTransaction({
+      account: activeAccount,
+      transaction: withdrawTx,
+      ...txOptions,
+    });
+
+    console.log("Withdrawal executed successfully");
+    return receipt;
+
+  } catch (error) {
+    console.error("Transaction failed:", error);
+    throw error; // Rethrow the error for upstream handling
+  }
 };
+
 
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
