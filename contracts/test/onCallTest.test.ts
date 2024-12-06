@@ -33,7 +33,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
     // Use this function if you need global setup before tests
   });
 
-  describe("AmanaVault onCall Function", function () {
+  describe("AmanaVault with SwapHelper", function () {
     async function setup() {
       [owner, user1] = await ethers.getSigners();
 
@@ -51,10 +51,27 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const gasTank = await GasTank.deploy();
       await gasTank.deployed();
 
+      // Deploy SwapHelper contract
+      const SwapHelper = await ethers.getContractFactory("SwapHelper");
+      const swapHelper = await SwapHelper.deploy();
+      await swapHelper.deployed();
+
+      console.log(`SwapHelper deployed at: ${swapHelper.address}`);
+
       const Vault = await ethers.getContractFactory("AmanaVault", owner);
       amanaVault = await upgrades.deployProxy(
         Vault,
-        ["AaveV3EthVault", "AVU", VAULT_ASSET, await owner.getAddress(), 1000, ZEVM_GATEWAY_ADDRESS, SYSTEM_CONTRACT_ADDRESS, gasTank.address], // FeeRate 10%
+        [
+          "AaveV3EthVault",
+          "AVU",
+          VAULT_ASSET,
+          await owner.getAddress(),
+          1000, // FeeRate 10%
+          ZEVM_GATEWAY_ADDRESS,
+          SYSTEM_CONTRACT_ADDRESS,
+          gasTank.address,
+          swapHelper.address, // Specify the SwapHelper address
+        ],
         { initializer: "initialize" }
       );
 

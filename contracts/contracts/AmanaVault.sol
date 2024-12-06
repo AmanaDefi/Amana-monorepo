@@ -14,6 +14,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
+import "./interfaces/ISwapHelper.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
 // This makes logical sense in that it is the underlying asset that the strategy is investing
@@ -49,6 +50,7 @@ contract AmanaVault is
     address public WZETA_ADDRESS; // 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf on testnet
     IGasTank public gasTank;
     uint32 private vaultChainId; // 7000 for mainnet, 7001 for testnet
+    address public swapHelper;
 
     struct VaultStorage {
         address strategyAddress;
@@ -111,7 +113,8 @@ contract AmanaVault is
         uint16 perfFee_,
         address gateway_, // TODO remove from initializer - never changes
         address system_contract_, // TODO remove from initializer - never changes
-        address gasTank_
+        address gasTank_,
+        address swapHelper_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
         __ERC20_init(name_, symbol_);
@@ -127,6 +130,7 @@ contract AmanaVault is
         WZETA_ADDRESS = systemContract.wZetaContractAddress();
         gasTank = IGasTank(gasTank_);
         vaultChainId = uint32(block.chainid);
+        swapHelper = swapHelper_;
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -209,39 +213,49 @@ contract AmanaVault is
         gasTank = IGasTank(newGasTank);
     }
 
-    // function switchStrategy(
-    //     address newStrategyAddress,
-    //     uint32 newStrategyChainId
-    // ) external onlyOwner {
-    //     VaultStorage storage $ = _getVaultStorage();
-    //     if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
-    //     if (newStrategyAddress == $.strategyAddress)
-    //         revert InvalidStrategyAddress();
-    //     if (newStrategyChainId == 0) revert InvalidStrategyChainId();
+    function switchStrategy(
+        address newStrategyAddress,
+        uint32 newStrategyChainId
+    ) external onlyOwner {
+        VaultStorage storage $ = _getVaultStorage();
+        if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
+        if (newStrategyAddress == $.strategyAddress)
+            revert InvalidStrategyAddress();
+        if (newStrategyChainId == 0) revert InvalidStrategyChainId();
+        if (newStrategyChainId != $.strategyChainId)
+            revert InvalidStrategyChainId();
 
-    //     address oldStrategy = $.strategyAddress;
-    //     uint32 oldStrategyChainId = $.strategyChainId;
-    //     $.strategyAddress = newStrategyAddress;
-    //     $.strategyChainId = newStrategyChainId;
-    //     emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
+        if ($.strategyChainId == vaultChainId) {
+            IStrategy($.strategyAddress).withdraw(
+                IStrategy($.strategyAddress).totalUnderlyingAssets(), // get total amount of assets? this should work?
+                10 ** 27
+            );
+            $.strategyAddress = newStrategyAddress;
+            bool success = IZRC20(asset()).approve(
+                $.strategyAddress,
+                IERC20(asset()).balanceOf(address(this))
+            );
+            if (!success) revert ApprovalFailed();
+            IStrategy($.strategyAddress).invest(
+                IERC20(asset()).balanceOf(address(this))
+            );
+        } else {
+            //cross-chain withdraw from strategy
+            _divestConnectedChainStrategy(
+                address(this),
+                address(asset()),
+                totalAssets(), // what should this be here?
+                0,
+                0,
+                $.strategyChainId
+            );
+            $.strategyAddress = newStrategyAddress;
+            //cross-chain invest in strategy
+            _crossChainInvest(IERC20(asset()).balanceOf(address(this)));
+        }
 
-    //     // TODO - update this section to withdraw and invest in the new strategy - cross-chain or same chain
-    //     uint256 strategyBalance = IStrategy(oldStrategy)
-    //         .totalUnderlyingAssets();
-    //     if (strategyBalance > 0) {
-    //         IStrategy(oldStrategy).withdraw(strategyBalance, 10 ** 27);
-    //     }
-
-    //     uint256 vaultBalance = IZRC20(asset()).balanceOf(address(this));
-    //     if (vaultBalance > 0) {
-    //         bool success = IZRC20(asset()).approve(
-    //             $.strategyAddress,
-    //             vaultBalance
-    //         );
-    //         if (!success) revert ApprovalFailed();
-    //         IStrategy($.strategyAddress).invest(vaultBalance);
-    //     }
-    // }
+        emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
+    }
 
     function emergencyWithdraw(address _token) external onlyOwner {
         uint256 balance = IERC20(_token).balanceOf(address(this));
@@ -257,7 +271,6 @@ contract AmanaVault is
         uint256 assetBalanceInStrategy;
         // Call the strategy to get the equivalent value of aArbUSDC in terms of USDC
         if ($.strategyChainId == vaultChainId) {
-            // TODO - change block.chainid to the Zetachain chain id (7000 for mainnet, 7001 for testnet)
             assetBalanceInStrategy = IStrategy($.strategyAddress)
                 .totalUnderlyingAssets();
             // Return the total assets: USDC held in the vault + USDC equivalent held in the strategy
@@ -265,35 +278,7 @@ contract AmanaVault is
         } else {
             assetBalanceInStrategy = $.totalPrincipal; // note - this is a temporary solution
             // TODO - update this part of the function to calculate value of assets on a different chain
-            // This will have to be a cross chain call - accessing the totalUnderlyingAssets view function
-            // uint256 gasLimit = 7000000; // could potentially reduce to 7000000
-
-            // bytes memory recipient = abi.encodePacked($.strategyAddress);
-
-            // bytes4 functionSelector = bytes4(
-            //     keccak256(bytes("totalUnderlyingAssets()"))
-            // );
-
-            // bytes memory outgoingMessage = abi.encodePacked(functionSelector);
-
-            // RevertOptions memory revertOptions = RevertOptions(
-            //     0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-            //     false, // callOnRevert
-            //     address(this), // abortAddress
-            //     bytes("revert message"),
-            //     uint256(30000000) // onRevertGasLimit
-            // );
-
-            // CallOptions memory callOptions = CallOptions(gasLimit, true);
-
-            // this function (potentially) modifies state, so can't be used inside a view function
-            // IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            //     recipient,
-            //     address(asset()),
-            //     outgoingMessage,
-            //     callOptions,
-            //     revertOptions
-            // );
+            // OR update totalAssets on every deposit or withdraw
             return assetBalanceOnVault + assetBalanceInStrategy;
         }
     }
@@ -515,7 +500,7 @@ contract AmanaVault is
         } else {
             uint256 outputAmount = assets;
             if (zrc20source != address(asset())) {
-                outputAmount = swapExactTokensForTokens(
+                outputAmount = _swapExactTokensForTokens(
                     zrc20source,
                     assets,
                     address(asset()),
@@ -528,43 +513,23 @@ contract AmanaVault is
         // return shares; - this is now missing from the original deposit function that used to be called by the cross chain function - is it needed?
     }
 
-    function swapExactTokensForTokens(
+    function _swapExactTokensForTokens(
         address zrc20,
         uint256 amount,
         address targetZRC20,
         uint256 minAmountOut
     ) internal returns (uint256) {
-        address[] memory path;
-        // path = new address[](2);
-        // path[0] = zrc20;
-        // path[1] = targetZRC20;
-
-        // bool isSufficientLiquidity = _isSufficientLiquidity(
-        //     systemContract.uniswapv2FactoryAddress(),
-        //     amount,
-        //     minAmountOut,
-        //     path
-        // );
-
-        // bool isZETA = targetZRC20 == systemContract.wZetaContractAddress() ||
-        //     zrc20 == systemContract.wZetaContractAddress();
-
-        // if (!isSufficientLiquidity && !isZETA) {
-        path = new address[](3);
-        path[0] = zrc20;
-        path[1] = WZETA_ADDRESS;
-        path[2] = targetZRC20;
-        // }
-        IZRC20(zrc20).approve(address(uniswapv2Router02Address), amount);
-        uint256[] memory amounts = IUniswapV2Router01(uniswapv2Router02Address)
-            .swapExactTokensForTokens{gas: 200000}(
-            amount,
-            minAmountOut,
-            path,
-            address(this),
-            block.timestamp + MAX_DEADLINE
-        );
-        return amounts[path.length - 1];
+        IERC20(zrc20).transfer(swapHelper, amount);
+        return
+            ISwapHelper(swapHelper).swapExactTokensForTokens(
+                uniswapv2Router02Address,
+                systemContract.uniswapv2FactoryAddress(),
+                zrc20,
+                amount,
+                targetZRC20,
+                minAmountOut,
+                address(this)
+            );
     }
 
     /**
@@ -760,7 +725,7 @@ contract AmanaVault is
             );
 
             if (address(asset()) != withdrawZRC20) {
-                outputAmount = swapExactTokensForTokens(
+                outputAmount = _swapExactTokensForTokens(
                     address(asset()),
                     amount,
                     withdrawZRC20,
