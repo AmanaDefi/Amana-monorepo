@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { VaultData, UserVaultBalance, VaultTotalAssets, VaultAPY, Token } from "../types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from 'next/image';
-import { formatBalance } from '@/utils/utils';
+import { formatBalance, formatCurrency } from '@/utils/utils';
 import { client } from "@/utils/client";
 import { ethers } from "ethers";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
@@ -121,8 +121,8 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"deposits"}
                             label="Deposits"
-                            value={Number(data).toFixed(2).toString() + " " + symbol}
-                            secondaryValue={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toFixed(2).toString()}
+                            value={formatCurrency(Number(data)).toString() + " " + vaultData.symbol}
+                            secondaryValue={'$ ' + formatCurrency((Number(data ? data : "0") * (price ? price : 0))).toString()}
                             tooltip="Value of your vault deposits"
                         />
                     </div>
@@ -130,8 +130,8 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"wallet"}
                             label="Your Wallet"
-                            value={walletData + " " + symbol}
-                            secondaryValue={'$ ' + (Number(walletData) * price).toFixed(2).toString()}
+                            value={formatCurrency(Number(walletData)).toString() + " " + symbol}
+                            secondaryValue={'$ ' + formatCurrency((Number(walletData) * price)).toString()}
                             tooltip="Value of deposit assets held in your wallet"
                         />
                     </div>
@@ -139,7 +139,9 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"APY"}
                             label="7d APY"
-                            value={(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2) + "%"}
+                            value={
+                                Number.isNaN(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100) ? "0.00%" :
+                                    (Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2) + "%"}
                             tooltip="Value of deposit assets held in your wallet"
                         />
                     </div>

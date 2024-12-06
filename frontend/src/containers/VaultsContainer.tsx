@@ -48,95 +48,95 @@ const VaultsContainer = () => {
   useUpdateAPYs(vaults, setVaultAPYs, setLoading);
 
   const handleDepositTransaction = async (vaultId: Address) => {
-    setTransactionCompleted(false)
-    try {
-      setTransactionAmount;
-      const value = Number(transactionAmount)
+    // setTransactionCompleted(false)
+    // try {
+    //   setTransactionAmount;
+    //   const value = Number(transactionAmount)
 
-      const vault = vaults.find((v) => v.id === vaultId);
-      if (!vault) {
-        throw new Error("Vault not found in vaultData");
-      }
-      const inputToken = vault.inputToken;
-      const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
+    //   const vault = vaults.find((v) => v.id === vaultId);
+    //   if (!vault) {
+    //     throw new Error("Vault not found in vaultData");
+    //   }
+    //   const inputToken = vault.inputToken;
+    //   const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
 
-      mixpanel.track("Deposit Submitted", {
-        vault: vaultId.toString(),
-        amount: scaledAmount.toString(),
-      });
-      const receipt = await executeDeposit(
-        vaultId,
-        inputToken.address as Address,
-        EOAaccount,
-        activeChain,
-        scaledAmount, //TODO make this general for all tokens?
-      );
+    //   mixpanel.track("Deposit Submitted", {
+    //     vault: vaultId.toString(),
+    //     amount: scaledAmount.toString(),
+    //   });
+    //   const receipt = await executeDeposit(
+    //     vaultId,
+    //     inputToken.address as Address,
+    //     EOAaccount,
+    //     activeChain,
+    //     scaledAmount, //TODO make this general for all tokens?
+    //   );
 
-      mixpanel.track("Deposit Submitted", {
-        vault: vaultId.toString(),
-        amount: scaledAmount.toString(),
-      });
+    //   mixpanel.track("Deposit Submitted", {
+    //     vault: vaultId.toString(),
+    //     amount: scaledAmount.toString(),
+    //   });
 
-      await waitForReceipt(receipt)
-      toast.success("Transaction confirmed");
-      queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      // refetch()
-      setTransactionCompleted(true);
-    } catch (error) {
-      mixpanel.track("Deposit Submitted", {
-        vault: vaultId.toString()
-      });
-      toast.error("Transaction failed", {
-        position: "top-right",
-        autoClose: 2000,  // Close automatically after 2 seconds
-      });
-      throw new Error("Transaction failed");
-    }
+    //   await waitForReceipt(receipt)
+    //   toast.success("Transaction confirmed");
+    //   queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
+    //   // refetch()
+    //   setTransactionCompleted(true);
+    // } catch (error) {
+    //   mixpanel.track("Deposit Submitted", {
+    //     vault: vaultId.toString()
+    //   });
+    //   toast.error("Transaction failed", {
+    //     position: "top-right",
+    //     autoClose: 2000,  // Close automatically after 2 seconds
+    //   });
+    //   throw new Error("Transaction failed");
+    // }
   };
 
   const handleWithdrawTransaction = async (vaultId: Address) => {
-    setTransactionCompleted(false)
-    try {
-      setTransactionAmount;
-      const value = Number(transactionAmount)
-      const vault = vaults.find((v) => v.id === vaultId);
-      if (!vault) {
-        throw new Error("Vault not found in vaultData");
-      }
-      const inputToken = vault.inputToken;
-      const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
-      console.log("scaledAmount", scaledAmount);
-      mixpanel.track("Withdraw Submitted", {
-        vault: vaultId.toString(),
-        amount: scaledAmount.toString(),
-      });
+    // setTransactionCompleted(false)
+    // try {
+    //   setTransactionAmount;
+    //   const value = Number(transactionAmount)
+    //   const vault = vaults.find((v) => v.id === vaultId);
+    //   if (!vault) {
+    //     throw new Error("Vault not found in vaultData");
+    //   }
+    //   const inputToken = vault.inputToken;
+    //   const scaledAmount = BigInt(value * 10 ** inputToken.decimals)
+    //   console.log("scaledAmount", scaledAmount);
+    //   mixpanel.track("Withdraw Submitted", {
+    //     vault: vaultId.toString(),
+    //     amount: scaledAmount.toString(),
+    //   });
 
-      const receipt = await executeWithdrawal(
-        vaultId,
-        EOAaccount,
-        activeChain,
-        scaledAmount,
-      );
-      mixpanel.track("Withdraw Succeeded", {
-        vault: vaultId.toString(),
-        amount: scaledAmount.toString(),
-      });
+    //   const receipt = await executeWithdrawal(
+    //     vaultId,
+    //     EOAaccount,
+    //     activeChain,
+    //     scaledAmount,
+    //   );
+    //   mixpanel.track("Withdraw Succeeded", {
+    //     vault: vaultId.toString(),
+    //     amount: scaledAmount.toString(),
+    //   });
 
-      await waitForReceipt(receipt)
-      toast.success("Transaction confirmed");
-      queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
-      // refetch()
-      setTransactionCompleted(true);
-    } catch (error) {
-      mixpanel.track("Withdraw Failed", {
-        vault: vaultId.toString(),
-      });
-      toast.error("Transaction failed", {
-        position: "top-right",
-        autoClose: 2000,  // Close automatically after 2 seconds
-      });
-      throw new Error("Transaction failed");
-    }
+    //   await waitForReceipt(receipt)
+    //   toast.success("Transaction confirmed");
+    //   queryClient.invalidateQueries({ queryKey: ["walletBalance"] });
+    //   // refetch()
+    //   setTransactionCompleted(true);
+    // } catch (error) {
+    //   mixpanel.track("Withdraw Failed", {
+    //     vault: vaultId.toString(),
+    //   });
+    //   toast.error("Transaction failed", {
+    //     position: "top-right",
+    //     autoClose: 2000,  // Close automatically after 2 seconds
+    //   });
+    //   throw new Error("Transaction failed");
+    // }
   };
 
   return (

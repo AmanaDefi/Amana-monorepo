@@ -79,6 +79,20 @@ export function getVaultErrorMessage(
   }
 }
 
+export function formatCurrency(amount: number): string {
+  if (Number.isNaN(amount)) {
+    return "0.00";
+  }
+  // Convert the amount to a string and split it into integer and decimal parts
+  const [integerPart, decimalPart] = amount == 0 ? amount.toFixed(2).toString().split('.') : amount.toString().split('.');
+
+  // Use a regular expression to add commas to the integer part
+  const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  // Combine the formatted integer part with the decimal part
+  return `${formattedIntegerPart}.${decimalPart}`;
+}
+
 function findFirstNonZeroPosition(num: number): number {
   // Convert the number to a string, ensuring precision
   const numStr: string = num.toFixed(40); // Adjust precision as needed
