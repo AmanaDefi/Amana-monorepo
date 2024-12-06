@@ -3,14 +3,16 @@ pragma solidity 0.8.26;
 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
-import "@zetachain/toolkit/contracts/shared/libraries/UniswapV2Library.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 
-contract SwapHelper {
-    uint16 internal constant MAX_DEADLINE = 200;
-
+library SwapHelperLib {
     error InvalidPathLength();
     error CantBeZeroAddress();
     error CantBeIdenticalAddresses();
+    error InsufficientLiquidity();
+    error InsufficientInputAmount();
+    error InvalidPath();
 
     function sortTokens(
         address tokenA,
@@ -27,7 +29,7 @@ contract SwapHelper {
         address factory,
         address tokenA,
         address tokenB
-    ) public pure returns (address pair) {
+    ) internal pure returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = address(
             uint160(
@@ -52,8 +54,9 @@ contract SwapHelper {
         uint256 amount,
         address targetZRC20,
         uint256 minAmountOut,
-        address vault
-    ) external returns (uint256) {
+        address vault,
+        uint16 maxDeadline
+    ) internal returns (uint256) {
         address[] memory path;
         bool existsDirectPool = _existsPairPool(factory, zrc20, targetZRC20);
 
@@ -68,7 +71,7 @@ contract SwapHelper {
                 !_existsPairPool(factory, zrc20, wZeta) ||
                 !_existsPairPool(factory, wZeta, targetZRC20)
             ) {
-                revert("Insufficient liquidity for this swap path");
+                revert InsufficientLiquidity();
             }
             path = new address[](3);
             path[0] = zrc20;
@@ -83,7 +86,7 @@ contract SwapHelper {
                 minAmountOut,
                 path,
                 vault,
-                block.timestamp + MAX_DEADLINE
+                block.timestamp + maxDeadline
             );
 
         return amounts[amounts.length - 1];
@@ -119,11 +122,71 @@ contract SwapHelper {
         if (!existsPairPool) {
             return false;
         }
-        uint256[] memory amounts = UniswapV2Library.getAmountsOut(
+        uint256[] memory amounts = getAmountsOut(
             uniswapV2Factory,
             amountIn,
             path
         );
         return amounts[amounts.length - 1] >= minAmountOut;
+    }
+
+    function getAmountOut(
+        uint amountIn,
+        uint reserveIn,
+        uint reserveOut
+    ) internal pure returns (uint amountOut) {
+        if (amountIn == 0) {
+            revert InsufficientInputAmount();
+        }
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert InsufficientLiquidity();
+        }
+        uint amountInWithFee = amountIn * 997;
+        uint numerator = amountInWithFee * reserveOut;
+        uint denominator = (reserveIn * 1000) + amountInWithFee;
+        amountOut = numerator / denominator;
+    }
+
+    function getAmountsOut(
+        address factory,
+        uint amountIn,
+        address[] memory path
+    ) internal view returns (uint[] memory amounts) {
+        if (path.length < 2) {
+            revert InvalidPath();
+        }
+        amounts = new uint[](path.length);
+        amounts[0] = amountIn;
+        for (uint i; i < path.length - 1; i++) {
+            (uint reserveIn, uint reserveOut) = getReserves(
+                factory,
+                path[i],
+                path[i + 1]
+            );
+            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+        }
+    }
+
+    // fetches and sorts the reserves for a pair
+    function getReserves(
+        address factory,
+        address tokenA,
+        address tokenB
+    ) internal view returns (uint reserveA, uint reserveB) {
+        (address token0, ) = sortTokens(tokenA, tokenB);
+        (uint reserve0, uint reserve1, ) = IUniswapV2Pair(
+            pairFor(factory, tokenA, tokenB)
+        ).getReserves();
+        (reserveA, reserveB) = tokenA == token0
+            ? (reserve0, reserve1)
+            : (reserve1, reserve0);
+    }
+
+    function pairFor(
+        address factory,
+        address tokenA,
+        address tokenB
+    ) internal view returns (address pair) {
+        pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
     }
 }

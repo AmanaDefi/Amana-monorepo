@@ -9,12 +9,12 @@ import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contra
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
-import "./interfaces/ISwapHelper.sol";
+
+import "./libraries/SwapHelperLib.sol";
 
 // The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
 // This makes logical sense in that it is the underlying asset that the strategy is investing
@@ -50,7 +50,6 @@ contract AmanaVault is
     address public WZETA_ADDRESS; // 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf on testnet
     IGasTank public gasTank;
     uint32 private vaultChainId; // 7000 for mainnet, 7001 for testnet
-    address public swapHelper;
 
     struct VaultStorage {
         address strategyAddress;
@@ -111,10 +110,9 @@ contract AmanaVault is
         IERC20 asset_,
         address treasury_,
         uint16 perfFee_,
-        address gateway_, // TODO remove from initializer - never changes
-        address system_contract_, // TODO remove from initializer - never changes
-        address gasTank_,
-        address swapHelper_
+        address gateway_,
+        address system_contract_,
+        address gasTank_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
         __ERC20_init(name_, symbol_);
@@ -130,7 +128,6 @@ contract AmanaVault is
         WZETA_ADDRESS = systemContract.wZetaContractAddress();
         gasTank = IGasTank(gasTank_);
         vaultChainId = uint32(block.chainid);
-        swapHelper = swapHelper_;
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -227,7 +224,7 @@ contract AmanaVault is
 
         if ($.strategyChainId == vaultChainId) {
             IStrategy($.strategyAddress).withdraw(
-                IStrategy($.strategyAddress).totalUnderlyingAssets(), // get total amount of assets? this should work?
+                IStrategy($.strategyAddress).totalUnderlyingAssets(),
                 10 ** 27
             );
             $.strategyAddress = newStrategyAddress;
@@ -244,7 +241,7 @@ contract AmanaVault is
             _divestConnectedChainStrategy(
                 address(this),
                 address(asset()),
-                totalAssets(), // what should this be here?
+                totalAssets(), // TODO - complete this function
                 0,
                 0,
                 $.strategyChainId
@@ -499,37 +496,23 @@ contract AmanaVault is
             IStrategy($.strategyAddress).invest(assets);
         } else {
             uint256 outputAmount = assets;
+            uint256 minAmountOut = 0; // TODO control for slippage in production
             if (zrc20source != address(asset())) {
-                outputAmount = _swapExactTokensForTokens(
+                outputAmount = SwapHelperLib.swapExactTokensForTokens(
+                    uniswapv2Router02Address,
+                    systemContract.uniswapv2FactoryAddress(),
                     zrc20source,
                     assets,
-                    address(asset()),
-                    0 // minAmountOut? TODO - control for slippage here?
+                    asset(),
+                    minAmountOut,
+                    address(this),
+                    200
                 );
             }
             _crossChainInvest(outputAmount);
         }
         emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
         // return shares; - this is now missing from the original deposit function that used to be called by the cross chain function - is it needed?
-    }
-
-    function _swapExactTokensForTokens(
-        address zrc20,
-        uint256 amount,
-        address targetZRC20,
-        uint256 minAmountOut
-    ) internal returns (uint256) {
-        IERC20(zrc20).transfer(swapHelper, amount);
-        return
-            ISwapHelper(swapHelper).swapExactTokensForTokens(
-                uniswapv2Router02Address,
-                systemContract.uniswapv2FactoryAddress(),
-                zrc20,
-                amount,
-                targetZRC20,
-                minAmountOut,
-                address(this)
-            );
     }
 
     /**
@@ -724,12 +707,18 @@ contract AmanaVault is
                 uint256(0) // onRevertGasLimit
             );
 
+            uint256 minAmountOut = 0; // TODO control for slippage
+
             if (address(asset()) != withdrawZRC20) {
-                outputAmount = _swapExactTokensForTokens(
+                outputAmount = SwapHelperLib.swapExactTokensForTokens(
+                    uniswapv2Router02Address,
+                    systemContract.uniswapv2FactoryAddress(),
                     address(asset()),
                     amount,
                     withdrawZRC20,
-                    0
+                    minAmountOut,
+                    address(this),
+                    200
                 );
             }
             (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
