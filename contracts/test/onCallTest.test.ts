@@ -52,12 +52,26 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       await gasTank.deployed();
 
       const Vault = await ethers.getContractFactory("AmanaVault", owner);
-      amanaVault = await upgrades.deployProxy(
+      const vaultDeployTransaction = await upgrades.deployProxy(
         Vault,
-        ["AaveV3EthVault", "AVU", VAULT_ASSET, await owner.getAddress(), 1000, ZEVM_GATEWAY_ADDRESS, SYSTEM_CONTRACT_ADDRESS, gasTank.address], // FeeRate 10%
+        [
+          "AaveV3EthVault",
+          "AVU",
+          VAULT_ASSET,
+          await owner.getAddress(),
+          1000,
+          ZEVM_GATEWAY_ADDRESS,
+          SYSTEM_CONTRACT_ADDRESS,
+          gasTank.address,
+        ],
         { initializer: "initialize" }
       );
+      amanaVault = await vaultDeployTransaction.deployed();
 
+      const deployReceipt = await vaultDeployTransaction.deployTransaction.wait();
+      console.log(
+        `Gas used for deploying AmanaVault: ${deployReceipt.gasUsed.toString()}`
+      );
       await gasTank.authorizeVault(amanaVault.address);
 
       await amanaVault.setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID);
