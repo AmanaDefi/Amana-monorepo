@@ -122,8 +122,8 @@ export const executeDeposit = async (vaultId: Address, inputToken: Address, acti
   }
 };
 
-const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-  console.log("Executing Deposit");
+export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("Executing DepositApprove");
   let contract = getContract({
     client,
     chain: activeChain,
@@ -136,16 +136,22 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     params: [vaultId, transactionAmount]
   });
   console.log("approveTx", approveTx);
-  contract = getContract({
-    client,
-    chain: activeChain,
-    address: vaultId
-  });
   await sendAndConfirmTransaction({
     account: activeAccount,
     transaction: approveTx
   });
   console.log("Approval confirmed");
+  return true;
+};
+
+const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("Executing Deposit");
+  let contract = getContract({
+    client,
+    chain: activeChain,
+    address: vaultId
+  });
+
   console.log("active account", activeAccount?.address);
   console.log("transactionAmount", transactionAmount);
   const supplyTx = prepareContractCall({

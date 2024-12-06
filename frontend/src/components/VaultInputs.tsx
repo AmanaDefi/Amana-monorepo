@@ -1,6 +1,6 @@
 import TabSelector from "@/components/common/TabSelector";
 import InputTokenWithError from "@/components/input/InputTokenWithError";
-import { VaultData, Token, Balance, UserVaultBalance } from "@/types/types";
+import { VaultData, Token, Balance, UserVaultBalance, SmartVaultActionType } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect } from "react";
 import { parseUnits } from "viem";
@@ -12,6 +12,7 @@ import { getBalance } from "thirdweb/extensions/erc20";
 import { getVaultErrorMessage } from "@/utils/utils";
 import { ethers } from "ethers";
 import InteractionContainer from "./interact";
+import { handleAllowance } from "@/utils/approve";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -67,6 +68,10 @@ export default function VaultInputs({
   const [showModal, setShowModal] = useState<boolean>(false);
   const [allowInput, setAllowInput] = useState<boolean>(false);
 
+  const [steps, setSteps] = useState<Action[]>([]);
+  const [step, setStep] = useState<number>(0);
+  const [action, setAction] = useState<Action>(steps[0])
+
   const EOAaccount = useActiveAccount();
   const activeChain = useActiveWalletChain();
 
@@ -84,6 +89,7 @@ export default function VaultInputs({
     if (activeChain.id === 7001) {
       // If on ZetaChain testnet, set inputToken to the vault token
       setInputToken(vaultData.inputToken);
+
     } else {
       // On other chains, use APPROVED_TOKENS to set available tokens
       const approvedTokens = APPROVED_TOKENS[activeChain.id];
@@ -98,12 +104,14 @@ export default function VaultInputs({
 
   useEffect(() => {
     if (inputToken) {
+      setShowModal(false)
       // Create a new inputToken object with the updated balance
       const updatedToken: Token = {
         ...inputToken,
         balance: {
           ...inputToken.balance,
           formatted: tokenBalance,
+          value: parseUnits(tokenBalance, inputToken.decimals)
         },
       };
 
@@ -112,6 +120,12 @@ export default function VaultInputs({
 
       // Set the inputTokenBalance separately to track balance as a string
       setInputTokenBalance(tokenBalance);
+      setInputBalance({
+        ...inputBalance,
+        value: parseUnits(tokenBalance, inputToken.decimals),
+        formatted: tokenBalance || "0",
+      })
+      setShowModal(true)
     }
   }, [tokenBalance]);
 
@@ -131,11 +145,23 @@ export default function VaultInputs({
     setAllowInput(true);
   }
 
-  function switchTokens() {
+  async function switchTokens() {
     setInputBalance(EMPTY_BALANCE);
-    setIsDeposit(!isDeposit);
-    if (!isDeposit && vaultData.inputToken) {
-      setInputToken(vaultData.inputToken);
+
+    if (isDeposit) {
+      // Switch to Withdraw
+      if (vaultData.inputToken) {
+        setInputToken(vaultData.inputToken);
+      }
+      setIsDeposit(false);
+      const newAction = SmartVaultActionType.Withdrawal;
+      setSteps(await selectActions(newAction));
+
+    } else {
+      // Switch to Deposit
+      setIsDeposit(true);
+      const newAction = SmartVaultActionType.Deposit;
+      setSteps(await selectActions(newAction));
     }
   }
 
@@ -170,6 +196,60 @@ export default function VaultInputs({
     } else {
       const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance || "0";
       handleChangeInput({ currentTarget: { value: userVaultBalance } } as React.ChangeEvent<HTMLInputElement>);
+    }
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      inputBalance.formatted != "0" && isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit)) : setSteps(await selectActions(SmartVaultActionType.Withdrawal))
+      // 
+      // inputBalance.formatted != "0" && setSteps(await selectActions(SmartVaultActionType.Deposit))
+
+    };
+
+    // Call the async function
+    fetchData();
+
+  }, [inputBalance.formatted])
+
+  async function selectActions(action: SmartVaultActionType) {
+    switch (action) {
+      case SmartVaultActionType.Deposit:
+        const value = Number(inputBalance.value)
+
+        if (!activeChain) {
+          throw new Error("No active chain found");
+        }
+
+        if (!EOAaccount) {
+          throw new Error("No active account found");
+        }
+
+
+        if (await handleAllowance({
+          token: vaultData.inputToken.address,
+          activeChain: activeChain,
+          activeAccount: EOAaccount.address as Address,
+          spender: vaultData.id as Address,
+          amount: value
+        })) {
+          return [
+            Action.deposit,
+            Action.depositConfirmed
+          ]
+        }
+        else {
+          return [
+            Action.depositApprove,
+            Action.depositApproveConfirmed,
+            Action.deposit,
+            Action.depositConfirmed
+          ]
+        }
+      case SmartVaultActionType.Withdrawal:
+        return [
+          Action.withdraw,
+        ]
     }
   }
 
@@ -214,14 +294,19 @@ export default function VaultInputs({
 
       {inputToken && showModal && (
         <InteractionContainer
+          step={step}
+          setStep={setStep}
+          action={action}
+          setAction={setAction}
           _inputToken={inputToken}
           _inputBalance={inputBalance}
-          _action={isDeposit ? Action.deposit : Action.withdraw}
           vaultData={vaultData}
           EOAaccount={EOAaccount}
           setTransactionCompleted={setTransactionCompleted}
-          refetch={() => {}}
+          refetch={() => { }}
           activeChain={activeChain}
+          _action={steps[0]}
+          actions={steps}
           setShowModal={setShowModal}
         />
       )}
@@ -231,7 +316,8 @@ export default function VaultInputs({
 
 enum Action {
   depositApprove,
+  depositApproveConfirmed,
   deposit,
+  depositConfirmed,
   withdraw,
-  done,
 }

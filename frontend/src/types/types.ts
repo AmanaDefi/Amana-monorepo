@@ -93,3 +93,8 @@ export interface Token {
 export interface TokenByAddress {
   [key: Address]: Token;
 }
+
+export enum SmartVaultActionType {
+  Deposit,
+  Withdrawal
+}
