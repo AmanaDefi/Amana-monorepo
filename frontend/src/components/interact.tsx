@@ -57,7 +57,10 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
 const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
     setTransactionCompleted(false)
-    const withdrawZRC20 = withdrawToken.ZRC20equivalent
+    let withdrawZRC20 = withdrawToken.ZRC20equivalent;
+    if (activeChain.id === 7001 || activeChain.id === 7000) {
+        withdrawZRC20 = withdrawToken.address;
+    }
     if (!withdrawZRC20) {
         throw new Error("Withdraw token not found");
     }

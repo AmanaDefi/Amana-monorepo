@@ -28,6 +28,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         IWrappedTokenGatewayV3(_WRAPPED_TOKEN_GATEWAY_ADDRESS);
     address constant BASE_SEPOLIA_WETH_ADDRESS =
         0x4200000000000000000000000000000000000006;
+    uint256 public executionNonce = 1; // we start this at 1 to sync with vault expectation
 
     error ApprovalFailed();
 
@@ -62,58 +63,81 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
     ) external payable override onlyGateway returns (bytes memory) {
         (
             address userAddress,
-            address withdrawZRC20,
-            uint256 withdrawAmount,
-            uint256 fee,
-            uint256 shares,
-            uint32 withdrawChainId
+            address withdrawZRC20, // not needed on deposit
+            uint256 amount, // not needed on native deposit?
+            uint256 fee, // not needed on deposit
+            uint32 withdrawChainId, // not needed on deposit
+            bool isDeposit
         ) = abi.decode(
                 message,
-                (address, address, uint256, uint256, uint256, uint32)
+                (address, address, uint256, uint256, uint32, bool)
             );
         if (context.sender != address(amanaVault)) {
             revert("Only Vault contract can call the strategy");
         }
-        if (withdrawZRC20 == address(0)) {
-            _invest(msg.value);
+        if (isDeposit) {
+            _invest(userAddress, msg.value);
+            executionNonce++;
             return abi.encode(true);
         } else {
-            _withdraw(
-                userAddress,
-                withdrawZRC20,
-                withdrawAmount,
-                fee,
-                shares,
-                withdrawChainId
-            );
+            _withdraw(userAddress, withdrawZRC20, amount, fee, withdrawChainId);
+            executionNonce++;
             return abi.encode(true);
         }
     }
 
-    function _invest(uint256) private returns (uint256) {
-        require(msg.value > 0, "No ETH sent");
-        tokenGateway.depositETH{value: msg.value}(
+    function _invest(
+        address userAddress,
+        uint256 amount
+    ) private returns (uint256) {
+        require(amount > 0, "No ETH sent");
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+
+        tokenGateway.depositETH{value: amount}(
             address(aavePool),
             address(this),
             0
         );
+
+        bytes memory outgoingMessage = abi.encode(
+            userAddress,
+            address(0),
+            amount,
+            0,
+            0,
+            true,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssets(), // tells the vault how much to mint
+            executionNonce
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+            false, // callOnRevert
+            address(this), // abortAddress
+            bytes("revert message"),
+            uint256(1000000) // onRevertGasLimit
+        );
+
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            amanaVault, // (just an address, not bytes)
+            outgoingMessage,
+            revertOptions
+        );
+
         return msg.value;
     }
 
     function _withdraw(
-        address ownerAddress,
+        address userAddress,
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
-        uint256 shares,
-        uint32 originChainId
+        uint32 withdrawChainId
     ) private returns (uint256) {
-        aavePool.withdraw{gas: 200000}(
-            address(weth),
-            amount + fee,
-            address(this)
-        );
-        weth.withdraw{gas: 50000}(amount + fee);
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+        aavePool.withdraw{gas: 200000}(address(weth), amount, address(this));
+        weth.withdraw{gas: 50000}(amount);
         // TODO: can use tokenGateway on Mainnet - code in comments below
         // bool success = receiptToken.approve(
         //     address(tokenGateway),
@@ -126,12 +150,15 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         //     address(this) // owner
         // );
         bytes memory outgoingMessage = abi.encode(
-            ownerAddress,
+            userAddress,
             withdrawZRC20,
-            1,
+            amount,
             fee,
-            shares,
-            originChainId // 0 = origin is zetachain, 1 = origin is connected chain
+            withdrawChainId,
+            false,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssets(),
+            executionNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -142,15 +169,15 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
             uint256(1000000) // onRevertGasLimit
         );
 
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount}(
             amanaVault, // (just an address, not bytes)
             outgoingMessage,
             revertOptions
         );
-        return amount + fee;
+        return amount;
     }
 
-    function totalUnderlyingAssets() external view returns (uint256) {
+    function totalUnderlyingAssets() public view returns (uint256) {
         return receiptToken.balanceOf(address(this));
     }
 
