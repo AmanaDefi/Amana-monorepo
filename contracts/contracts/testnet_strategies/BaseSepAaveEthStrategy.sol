@@ -61,59 +61,63 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         bytes calldata message
     ) external payable override onlyGateway returns (bytes memory) {
         (
-            address userAddress,
             address withdrawZRC20,
             uint256 withdrawAmount,
-            uint256 fee,
-            uint256 shares,
-            uint32 withdrawChainId
-        ) = abi.decode(
-                message,
-                (address, address, uint256, uint256, uint256, uint32)
-            );
+            uint256 nonce,
+            uint256 totalAssetsPlaceHolder,
+            uint32 userChainId
+        ) = abi.decode(message, (address, uint256, uint256, uint256, uint32));
         if (context.sender != address(amanaVault)) {
             revert("Only Vault contract can call the strategy");
         }
-        if (withdrawZRC20 == address(0)) {
-            _invest(msg.value);
+        if (withdrawAmount == 0) {
+            _invest(msg.value, nonce);
             return abi.encode(true);
         } else {
-            _withdraw(
-                userAddress,
-                withdrawZRC20,
-                withdrawAmount,
-                fee,
-                shares,
-                withdrawChainId
-            );
+            _withdraw(withdrawAmount, nonce);
             return abi.encode(true);
         }
     }
 
-    function _invest(uint256) private returns (uint256) {
-        require(msg.value > 0, "No ETH sent");
-        tokenGateway.depositETH{value: msg.value}(
+    function _invest(uint256 amount, uint256 nonce) private returns (uint256) {
+        require(amount > 0, "No ETH sent");
+        tokenGateway.depositETH{value: amount}(
             address(aavePool),
             address(this),
             0
         );
+
+        bytes memory outgoingMessage = abi.encode(
+            address(0),
+            address(0),
+            totalUnderlyingAssets(), // tells the vault how much to mint
+            nonce,
+            0
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+            false, // callOnRevert
+            address(this), // abortAddress
+            bytes("revert message"),
+            uint256(1000000) // onRevertGasLimit
+        );
+
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            amanaVault, // (just an address, not bytes)
+            outgoingMessage,
+            revertOptions
+        );
+
         return msg.value;
     }
 
     function _withdraw(
-        address ownerAddress,
-        address withdrawZRC20,
         uint256 amount,
-        uint256 fee,
-        uint256 shares,
-        uint32 originChainId
+        uint256 nonce
     ) private returns (uint256) {
-        aavePool.withdraw{gas: 200000}(
-            address(weth),
-            amount + fee,
-            address(this)
-        );
-        weth.withdraw{gas: 50000}(amount + fee);
+        aavePool.withdraw{gas: 200000}(address(weth), amount, address(this));
+        weth.withdraw{gas: 50000}(amount);
         // TODO: can use tokenGateway on Mainnet - code in comments below
         // bool success = receiptToken.approve(
         //     address(tokenGateway),
@@ -126,12 +130,11 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         //     address(this) // owner
         // );
         bytes memory outgoingMessage = abi.encode(
-            ownerAddress,
-            withdrawZRC20,
-            1,
-            fee,
-            shares,
-            originChainId // 0 = origin is zetachain, 1 = origin is connected chain
+            address(0),
+            address(0),
+            totalUnderlyingAssets(),
+            nonce,
+            0
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -142,15 +145,15 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
             uint256(1000000) // onRevertGasLimit
         );
 
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount}(
             amanaVault, // (just an address, not bytes)
             outgoingMessage,
             revertOptions
         );
-        return amount + fee;
+        return amount;
     }
 
-    function totalUnderlyingAssets() external view returns (uint256) {
+    function totalUnderlyingAssets() public view returns (uint256) {
         return receiptToken.balanceOf(address(this));
     }
 

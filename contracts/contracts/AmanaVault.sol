@@ -51,6 +51,29 @@ contract AmanaVault is
     IGasTank public gasTank;
     uint32 private vaultChainId; // 7000 for mainnet, 7001 for testnet
 
+    uint256 public nonceCounter;
+
+    struct Operation {
+        address user;
+        address withdrawZRC20;
+        uint256 amount;
+        uint256 fee;
+        uint32 withdrawChainId;
+        bool isDeposit;
+    }
+
+    mapping(uint256 => Operation) public pendingOperations;
+
+    mapping(uint256 => bool) public processedConfirmations;
+
+    uint256 public lastProcessedOperation;
+    
+    struct Confirmation {
+        uint256 totalAssetsBefore;
+        uint256 totalAssetsAfter;
+    }
+    mapping(uint256 => Confirmation) public pendingConfirmations;
+
     struct VaultStorage {
         address strategyAddress;
         uint32 strategyChainId;
@@ -145,39 +168,108 @@ contract AmanaVault is
         bytes calldata message
     ) external override {
         (
-            address userAddress,
             address withdrawZRC20,
             uint256 withdrawAmount,
-            uint256 fee,
-            uint256 shares,
+            uint256 nonce,
+            uint256 totalAssetsAfter,
             uint32 withdrawChainId
-        ) = abi.decode(
-                message,
-                (address, address, uint256, uint256, uint256, uint32)
-            );
+        ) = abi.decode(message, (address, address, uint256, uint256, uint256));
         VaultStorage storage $ = _getVaultStorage();
         if (amount == 0 && context.sender != $.strategyAddress) {
             _withdrawFromConnectedChain(
                 context.sender,
                 withdrawZRC20,
                 withdrawAmount,
-                uint32(context.chainID)
-            );
-        } else if (context.sender == $.strategyAddress) {
-            // this indicates that the strategy is sending assets back to the vault
-            // we then send the amount back to the owner
-            _returnFundsToUser(
-                userAddress,
-                withdrawZRC20,
-                amount,
-                fee,
-                shares,
                 withdrawChainId
             );
+        } else if (context.sender == $.strategyAddress) {
+            _processConfirmation(withdrawAmount, nonce, totalAssetsAfter);
         } else {
+            // incoming deposit from another chain - will handle deposit to strat on ZC or other
             if (context.sender == address(0)) revert CantBeZeroAddress();
-            _depositFromConnectedChain(context.sender, amount, zrc20); // incoming deposit from another chain - will handle deposit to strat on ZC or other
+            _depositFromConnectedChain(context.sender, amount, zrc20);
         }
+    }
+
+    function _processConfirmation(
+        address userAddress,
+        address withdrawZRC20,
+        uint256 withdrawAmount,
+        uint256 fee,
+        uint256 nonce,
+        uint256 totalAssetsAfter
+    ) internal {
+        // Ensure no duplicate processing
+        require(
+            pendingConfirmations[nonce].totalAssetsBefore == 0,
+            "Confirmation already exists"
+        );
+
+        // Store the confirmation
+        pendingConfirmations[nonce] = Confirmation({
+            totalAssetsBefore: totalAssetsAfter - withdrawAmount - fee, // TODO check this
+            totalAssetsAfter: totalAssetsAfter
+        });
+
+        // Try processing confirmations in order
+        _processBufferedConfirmations();
+    }
+
+    function _processBufferedConfirmations() internal {
+        while (true) {
+            uint256 nextOperation = lastProcessedOperation + 1;
+            Confirmation memory confirmation = pendingConfirmations[
+                nextOperation
+            ];
+
+            if (confirmation.totalAssetsBefore == 0) {
+                // Break if no confirmation is available for the next operation
+                break;
+            }
+
+            // Retrieve the operation associated with this nonce
+            Operation memory operation = pendingOperations[nextOperation];
+            if (operation.isDeposit) {
+                _confirmDepositAndMint(operation.user, operation.amount, operation.); // do we need to add totalAsetsAfter to operation?
+            } else {
+                _returnFundsToUser(
+                    operation.user,
+                    operation.withdrawZRC20,
+                    operation.amount,
+                    operation.fee,
+                    operation.withdrawChainId
+                );
+            }
+
+            // Update the last processed operation and clean up
+            lastProcessedOperation = nextOperation;
+            delete pendingConfirmations[nextOperation];
+            delete pendingOperations[nextOperation];
+        }
+    }
+
+    function _confirmDepositAndMint(
+        address user,
+        uint256 depositAmount,
+        uint256 totalAssetsAfterDeposit
+    ) internal {
+        uint256 newTotalAssets = totalAssetsAfterDeposit; // or calculate based on before/after
+
+        VaultStorage storage $ = _getVaultStorage();
+        updateTotalAssets(totalAssetsAfterDeposit);
+
+        uint256 shares = previewDeposit(
+            totalAssetsAfterDeposit - depositAmount
+        ); // but shares could have changed in the mean time?
+        _mint(user, shares);
+        emit Deposit(address(0), user, depositAmount, shares);
+    }
+
+    function updateTotalAssets(uint256 latestTotalAssets) internal {
+        // can we put in a check here to see if totalassets should be updated?
+        // it can't just be if latestTotalAssets > totalAssets, because the strategy could have withdrawn some assets
+        VaultStorage storage $ = _getVaultStorage();
+        $.totalAssets = latestTotalAssets;
     }
 
     function setStrategy(
@@ -280,7 +372,17 @@ contract AmanaVault is
         }
     }
 
-    function _crossChainInvest(uint256 amount) internal {
+    function _crossChainInvest(uint256 amount, address userAddress) internal {
+        nonceCounter++;
+        pendingOperations[nonceCounter] = Operation({
+            userAddress: userAddress,
+            withdrawZRC20: address(0),
+            amount: amount,
+            fee: 0,
+            withdrawChainId: 0,
+            isDeposit: false
+        });
+
         VaultStorage storage $ = _getVaultStorage();
         (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
             address(asset())
@@ -311,11 +413,10 @@ contract AmanaVault is
 
         bytes memory outgoingMessage = abi.encode(
             address(0),
-            address(0),
             amount,
             0,
             0,
-            0
+            nonceCounter
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -475,8 +576,6 @@ contract AmanaVault is
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
         }
 
-        uint256 shares = previewDeposit(assets);
-
         VaultStorage storage $ = _getVaultStorage();
         // If _asset is ERC777, `transferFrom` can trigger a reenterancy BEFORE the transfer happens through the
         // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
@@ -488,12 +587,14 @@ contract AmanaVault is
         $.userPrincipal[receiver] += assets;
         $.totalPrincipal += assets;
 
-        _mint(receiver, shares);
-
         if ($.strategyChainId == vaultChainId) {
+            uint256 shares = previewDeposit(assets);
+            _mint(receiver, shares);
+
             bool success = IERC20(asset()).approve($.strategyAddress, assets);
             if (!success) revert ApprovalFailed();
             IStrategy($.strategyAddress).invest(assets);
+            emit Deposit(address(0), receiver, assets, shares); // why address(0) here?
         } else {
             uint256 outputAmount = assets;
             uint256 minAmountOut = 0; // TODO control for slippage in production
@@ -511,7 +612,6 @@ contract AmanaVault is
             }
             _crossChainInvest(outputAmount);
         }
-        emit Deposit(address(0), receiver, assets, shares); // TODO remove the 1st argument and create a new CrossChainDeposit event?
         // return shares; - this is now missing from the original deposit function that used to be called by the cross chain function - is it needed?
     }
 
@@ -637,6 +737,16 @@ contract AmanaVault is
         uint256 shares,
         uint32 userChainId
     ) internal {
+        nonceCounter++;
+        pendingOperations[nonceCounter] = Operation({
+            userAddress: user,
+            withdrawZRC20: withdrawZRC20,
+            amount: amount,
+            fee: feeToWithdraw,
+            withdrawChainId: userChainId,
+            isDeposit: false
+        });
+
         VaultStorage storage $ = _getVaultStorage();
 
         (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
@@ -652,11 +762,10 @@ contract AmanaVault is
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
         bytes memory outgoingMessage = abi.encode(
-            user,
             withdrawZRC20,
-            amount,
-            feeToWithdraw,
-            shares,
+            amount + feeToWithdraw,
+            nonceCounter,
+            0, // totalAssetsPlaceHolder
             userChainId
         );
 
@@ -683,7 +792,6 @@ contract AmanaVault is
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
-        uint256 shares,
         uint32 userChainId
     ) internal {
         VaultStorage storage $ = _getVaultStorage();
@@ -691,6 +799,7 @@ contract AmanaVault is
             emit PerformanceFeePaid(userAddress, fee);
             SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee); // TODO - a better way to do this?
         }
+        uint256 shares = previewWithdraw(amount);
         _burn(userAddress, shares);
         uint256 outputAmount = amount;
 
