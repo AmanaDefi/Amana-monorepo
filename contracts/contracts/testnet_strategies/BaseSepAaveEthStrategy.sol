@@ -136,8 +136,12 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         uint32 withdrawChainId
     ) private returns (uint256) {
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-        aavePool.withdraw{gas: 200000}(address(weth), amount, address(this));
-        weth.withdraw{gas: 50000}(amount);
+        aavePool.withdraw{gas: 200000}(
+            address(weth),
+            amount + fee,
+            address(this)
+        );
+        weth.withdraw{gas: 50000}(amount + fee);
         // TODO: can use tokenGateway on Mainnet - code in comments below
         // bool success = receiptToken.approve(
         //     address(tokenGateway),
@@ -169,7 +173,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
             uint256(1000000) // onRevertGasLimit
         );
 
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount}(
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
             amanaVault, // (just an address, not bytes)
             outgoingMessage,
             revertOptions
