@@ -2,7 +2,7 @@ import { ethers, upgrades } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { AmanaVault, IERC20 } from "../typechain";
+import { AmanaConnectedChainVault, IERC20 } from "../typechain";
 import { setTokenBalance } from "./utils";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 
@@ -12,7 +12,7 @@ import {
 } from "../../constants";
 
 describe("Vault and BaseSepAaveEthStrategy", function () {
-  let amanaVault: AmanaVault;
+  let amanaVault: AmanaConnectedChainVault;
   let owner: Signer;
   let user1: Signer;
   let ethBaseSepolia: IERC20;
@@ -33,7 +33,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
     // Use this function if you need global setup before tests
   });
 
-  describe("AmanaVault with SwapHelperLib", function () {
+  describe("AmanaConnectedChainVault with SwapHelperLib", function () {
     async function setup() {
       [owner, user1] = await ethers.getSigners();
 
@@ -51,7 +51,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const gasTank = await GasTank.deploy();
       await gasTank.deployed();
 
-      const Vault = await ethers.getContractFactory("AmanaVault", owner);
+      const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
       const vaultDeployTransaction = await upgrades.deployProxy(
         Vault,
         [
@@ -69,7 +69,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       const deployReceipt = await vaultDeployTransaction.deployTransaction.wait();
       console.log(
-        `Gas used for deploying AmanaVault: ${deployReceipt.gasUsed.toString()}`
+        `Gas used for deploying AmanaConnectedChainVault: ${deployReceipt.gasUsed.toString()}`
       );
       await gasTank.authorizeVault(amanaVault.address);
 
