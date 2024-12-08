@@ -7,18 +7,32 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/I4626Vault.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 
-// ZC_TEST_USDC.SEPOLIA_ADDRESS = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d;
-// MOCK_4626_VAULT_ADDRESS = 0x50675d47d94724c3e9Ff80aaD9EDEb94719fC576
-
+/// @title Mock4626ZetachainStrategy
+/// @notice A mock implementation of a 4626-compatible strategy for ZetaChain.
+/// @dev This contract facilitates deposits and withdrawals into a 4626 vault via the Amana Vault.
 contract Mock4626ZetachainStrategy is Ownable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
     I4626Vault public immutable receiptToken;
     address immutable _GATEWAY_ADDRESS;
+
+    /// @notice Emitted when funds are deposited into the vault.
+    /// @param vaultAddress The address of the vault.
+    /// @param amount The amount of funds deposited.
     event FundsDeposited(address vaultAddress, uint256 amount);
+
+    /// @notice Emitted when funds are withdrawn from the vault.
+    /// @param vaultAddress The address of the vault.
+    /// @param amount The amount of funds withdrawn.
     event FundsWithdrawn(address vaultAddress, uint256 amount);
 
+    /// @notice Initializes the strategy with the necessary addresses.
+    /// @param _name Name of the strategy.
+    /// @param _amanaVault Address of the Amana vault.
+    /// @param _inputTokenAddress Address of the input token.
+    /// @param _receiptTokenAddress Address of the 4626 vault.
+    /// @param _gateway Address of the ZetaChain Gateway.
     constructor(
         string memory _name,
         address _amanaVault,
@@ -34,11 +48,15 @@ contract Mock4626ZetachainStrategy is Ownable {
         _GATEWAY_ADDRESS = _gateway;
     }
 
+    /// @notice Ensures that only the Amana Vault can call certain functions.
     modifier onlyVault() {
         require(msg.sender == amanaVault, "Only Vault contract can call");
         _;
     }
 
+    /// @notice Invests funds into the 4626 vault.
+    /// @param amount The amount of funds to invest.
+    /// @return shares The number of shares received in exchange for the deposit.
     function invest(uint256 amount) external onlyVault returns (uint256) {
         SafeERC20.safeTransferFrom(
             inputToken,
@@ -46,14 +64,20 @@ contract Mock4626ZetachainStrategy is Ownable {
             address(this),
             amount
         );
+
         bool success = inputToken.approve(address(receiptToken), amount);
         require(success, "Approval failed");
+
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
+
         emit FundsDeposited(msg.sender, amount);
         return shares;
     }
 
+    /// @notice Withdraws funds from the 4626 vault.
+    /// @param _amountToWithdraw The amount to withdraw.
+    /// @return The amount withdrawn.
     function withdraw(
         uint256 _amountToWithdraw,
         uint256
@@ -63,26 +87,33 @@ contract Mock4626ZetachainStrategy is Ownable {
             address(this), // receiver
             address(this) // owner
         );
+
         SafeERC20.safeTransfer(
             IERC20(inputToken),
             msg.sender,
             _amountToWithdraw
         );
+
         emit FundsWithdrawn(msg.sender, _amountToWithdraw);
         return _amountToWithdraw;
     }
 
+    /// @notice Gets the total underlying assets held in the strategy.
+    /// @return The total underlying assets in the vault.
     function totalUnderlyingAssets() external view returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
         return receiptToken.convertToAssets(shares);
     }
 
+    /// @notice Allows the owner to withdraw ERC20 tokens in case of emergency.
+    /// @param _token Address of the token to withdraw.
     function emergencyWithdraw(address _token) external onlyOwner {
         uint256 balance = IERC20(_token).balanceOf(address(this));
         require(balance > 0, "No tokens to withdraw");
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
+    /// @notice Allows the owner to withdraw ETH in case of emergency.
     function emergencyWithdrawETH() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No ETH to withdraw");

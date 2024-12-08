@@ -15,10 +15,9 @@ import "./interfaces/IGasTank.sol";
 
 import "./libraries/SwapHelperLib.sol";
 
-// The asset that we set here should be the ZRC20 equivalent of the input token to the strategy on the target chain
-// This makes logical sense in that it is the underlying asset that the strategy is investing
-// It wouldn't make sense to make it the ZRC20 equivalent of the input token deposited, because this could be from any connected chain (or ZC itself)
-
+/// @title AmanaZetachainVault
+/// @notice An ERC4626-compliant vault for managing cross-chain assets on ZetaChain.
+/// @dev The vault interacts with connected chain strategies and supports ZRC20 assets.
 contract AmanaZetachainVault is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
@@ -38,45 +37,53 @@ contract AmanaZetachainVault is
     error OnlyGateway();
 
     address constant _GATEWAY_ADDRESS =
-        0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
-    ISystem systemContract; // 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B on testnet
-    bytes32 private constant VaultStorageLocation =
-        0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
-    address constant uniswapv2Router02Address =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
-    IGasTank gasTank;
-    uint32 constant vaultChainId = 7001; // 7000 for mainnet, 7001 for testnet
-    uint256 crossChainTxId;
+        0x6c533f7fE93fAE114d0954697069Df33C9B74fD7; // ZetaChain Gateway address
+    ISystem systemContract; // ZetaChain system contract instance
+    bytes32 private constant VAULT_STORAGE_LOCATION =
+        0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df; // Storage slot for vault data
+    address constant UNISWAP_V2_ROUTER_02_ADDRESS =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // Uniswap router address
+    IGasTank gasTank; // Gas tank for managing gas fees
+    uint32 constant VAULT_CHAIN_ID = 7001; // ZetaChain testnet chain ID
+    uint256 crossChainTxId; // Cross-chain transaction ID tracker
 
+    /// @notice Modifier to restrict access to the ZetaChain Gateway.
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
         _;
     }
 
     struct VaultStorage {
-        address strategyAddress;
-        address treasury;
-        uint16 perfFee;
-        uint256 totalPrincipal;
-        mapping(address => uint256) userPrincipal;
+        address strategyAddress; // Address of the strategy contract
+        address treasury; // Address of the treasury for fees
+        uint16 perfFee; // Performance fee rate (in basis points)
+        uint256 totalPrincipal; // Total principal amount
+        mapping(address => uint256) userPrincipal; // Principal per user
     }
 
+    /// @notice Retrieves the vault storage using the predefined slot.
     function _getVaultStorage() private pure returns (VaultStorage storage $) {
         assembly {
-            $.slot := VaultStorageLocation
+            $.slot := VAULT_STORAGE_LOCATION
         }
     }
 
+    /// @notice Gets the address of the strategy used by the vault.
+    /// @return The address of the strategy.
     function getStrategy() external view returns (address) {
         VaultStorage storage $ = _getVaultStorage();
         return $.strategyAddress;
     }
 
+    /// @notice Gets the address of the treasury.
+    /// @return The address of the treasury.
     function getTreasury() external view returns (address) {
         VaultStorage storage $ = _getVaultStorage();
         return $.treasury;
     }
 
+    /// @notice Gets the current performance fee rate.
+    /// @return The performance fee rate (in basis points).
     function getPerfFee() external view returns (uint16) {
         VaultStorage storage $ = _getVaultStorage();
         return $.perfFee;
@@ -86,7 +93,7 @@ contract AmanaZetachainVault is
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event ContextDataRevert(RevertContext);
+    event ContextDataRevert(RevertContext context);
     event WithdrawFromStrategy(
         address indexed user,
         uint256 amount,
@@ -96,13 +103,21 @@ contract AmanaZetachainVault is
     event ReturnFundsToUserSent(uint256 indexed crossChainTxId);
     event ReturnFundsToUserFailed(uint256 indexed crossChainTxId);
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
+    /// @dev Disables initializers in the constructor for upgradeable contracts.
     constructor() {
         _disableInitializers();
     }
 
     /**
-     * @dev Initializer function to replace the constructor in upgradeable contracts.
+     * @notice Initializes the vault with its name, symbol, and configurations.
+     * @dev This function is used in place of a constructor in upgradeable contracts.
+     * @param name_ Name of the ERC20 token.
+     * @param symbol_ Symbol of the ERC20 token.
+     * @param asset_ Underlying asset of the vault.
+     * @param treasury_ Address of the treasury.
+     * @param perfFee_ Performance fee rate (in basis points).
+     * @param system_contract_ Address of the ZetaChain system contract.
+     * @param gasTank_ Address of the gas tank contract.
      */
     function initialize(
         string memory name_,
@@ -128,12 +143,21 @@ contract AmanaZetachainVault is
     }
 
     /**
-     * @dev UUPS upgrade authorization
+     * @notice Authorizes upgrades for the contract.
+     * @dev This function is restricted to the owner.
+     * @param newImplementation Address of the new contract implementation.
      */
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
 
+    /**
+     * @notice Handles incoming messages from connected chains.
+     * @param context Context of the cross-chain message.
+     * @param zrc20 Address of the ZRC20 asset.
+     * @param amount Amount of the asset received.
+     * @param message Additional data sent in the message.
+     */
     function onCall(
         MessageContext calldata context,
         address zrc20,
@@ -157,6 +181,10 @@ contract AmanaZetachainVault is
         }
     }
 
+    /**
+     * @notice Sets the address of the strategy used by the vault.
+     * @param _strategyAddress Address of the new strategy.
+     */
     function setStrategy(address _strategyAddress) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
@@ -164,12 +192,20 @@ contract AmanaZetachainVault is
         emit StrategyUpdated(_strategyAddress);
     }
 
+    /**
+     * @notice Updates the treasury address.
+     * @param _treasury Address of the new treasury.
+     */
     function updateTreasuryAddress(address _treasury) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
         $.treasury = _treasury;
     }
 
+    /**
+     * @notice Sets the performance fee rate.
+     * @param newFeeRate New performance fee rate (in basis points).
+     */
     function setPerformanceFee(uint16 newFeeRate) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (newFeeRate > 2000) revert FeeExceedsLimit();
@@ -177,11 +213,19 @@ contract AmanaZetachainVault is
         emit PerformanceFeeUpdated(newFeeRate);
     }
 
+    /**
+     * @notice Sets the gas tank contract address.
+     * @param newGasTank Address of the new gas tank contract.
+     */
     function setGasTank(address newGasTank) external onlyOwner {
         if (newGasTank == address(0)) revert CantBeZeroAddress();
         gasTank = IGasTank(newGasTank);
     }
 
+    /**
+     * @notice Switches the strategy used by the vault.
+     * @param newStrategyAddress Address of the new strategy.
+     */
     function switchStrategy(address newStrategyAddress) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
@@ -205,25 +249,34 @@ contract AmanaZetachainVault is
         emit StrategyUpdated(newStrategyAddress);
     }
 
+    /**
+     * @notice Emergency withdraws an ERC20 token from the vault.
+     * @param _token Address of the token to withdraw.
+     */
     function emergencyWithdraw(address _token) external onlyOwner {
         uint256 balance = IERC20(_token).balanceOf(address(this));
         if (balance == 0) revert NothingToWithdraw();
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
-    /** @dev See {IERC4626-totalAssets}. */
+    /**
+     * @notice Gets the total assets managed by the vault.
+     * @return The total assets in the vault and strategy combined.
+     */
     function totalAssets() public view virtual override returns (uint256) {
         VaultStorage storage $ = _getVaultStorage();
-        // Get the amount of USDC held directly by the vault
         uint256 assetBalanceOnVault = IERC20(asset()).balanceOf(address(this));
-        uint256 assetBalanceInStrategy;
-        // Call the strategy to get the equivalent value of aArbUSDC in terms of USDC
-        assetBalanceInStrategy = IStrategy($.strategyAddress)
+        uint256 assetBalanceInStrategy = IStrategy($.strategyAddress)
             .totalUnderlyingAssets();
-        // Return the total assets: USDC held in the vault + USDC equivalent held in the strategy
         return assetBalanceOnVault + assetBalanceInStrategy;
     }
 
+    /**
+     * @notice Applies performance fees to the given amount of assets.
+     * @param user The address of the user withdrawing the assets.
+     * @param assets The total amount of assets to withdraw.
+     * @return feeToWithdraw The calculated fee to withdraw.
+     */
     function _applyFee(
         address user,
         uint256 assets
@@ -253,10 +306,10 @@ contract AmanaZetachainVault is
     }
 
     /**
-     * @dev Internal conversion function (from assets to shares) with support for rounding direction.
-     *
-     * Will revert if assets > 0, totalSupply > 0 and totalAssets = 0. That corresponds to a case where any asset
-     * would represent an infinite amount of shares.
+     * @notice Converts the given asset amount to shares.
+     * @param assets The amount of assets to convert.
+     * @param rounding Specifies rounding direction in case of precision loss.
+     * @return shares The equivalent amount of shares.
      */
     function _convertToShares(
         uint256 assets,
@@ -281,7 +334,10 @@ contract AmanaZetachainVault is
     }
 
     /**
-     * @dev Internal conversion function (from shares to assets) with support for rounding direction.
+     * @notice Converts the given share amount to assets.
+     * @param shares The amount of shares to convert.
+     * @param rounding Specifies rounding direction in case of precision loss.
+     * @return assets The equivalent amount of assets.
      */
     function _convertToAssets(
         uint256 shares,
@@ -306,7 +362,11 @@ contract AmanaZetachainVault is
     }
 
     /**
-     * @dev Deposit/mint common workflow.
+     * @notice Handles the deposit and minting of shares.
+     * @param caller The address initiating the deposit.
+     * @param receiver The address receiving the shares.
+     * @param assets The amount of assets to deposit.
+     * @param shares The amount of shares to mint.
      */
     function _deposit(
         address caller,
@@ -315,13 +375,6 @@ contract AmanaZetachainVault is
         uint256 shares
     ) internal override {
         VaultStorage storage $ = _getVaultStorage();
-        // If _asset is ERC777, `transferFrom` can trigger a reenterancy BEFORE the transfer happens through the
-        // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
-        // calls the vault, which is assumed not malicious.
-        //
-        // Conclusion: we need to do the transfer before we mint so that any reentrancy would happen before the
-        // assets are transferred and before the shares are minted, which is a valid state.
-        // slither-disable-next-line reentrancy-no-eth
         $.userPrincipal[receiver] += assets;
         $.totalPrincipal += assets;
 
@@ -341,7 +394,10 @@ contract AmanaZetachainVault is
     }
 
     /**
-     * @dev Deposit/mint common workflow.
+     * @notice Handles deposits coming from a connected chain.
+     * @param receiver The address receiving the shares.
+     * @param assets The amount of assets deposited.
+     * @param zrc20source The ZRC20 token address from the connected chain.
      */
     function _depositComingFromConnectedChain(
         address receiver,
@@ -354,19 +410,12 @@ contract AmanaZetachainVault is
         }
 
         VaultStorage storage $ = _getVaultStorage();
-        // If _asset is ERC777, `transferFrom` can trigger a reenterancy BEFORE the transfer happens through the
-        // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
-        // calls the vault, which is assumed not malicious.
-        //
-        // Conclusion: we need to do the transfer before we mint so that any reentrancy would happen before the
-        // assets are transferred and before the shares are minted, which is a valid state.
-        // slither-disable-next-line reentrancy-no-eth
 
         uint256 outputAmount = assets;
-        uint256 minAmountOut = 0; // TODO control for slippage in production
+        uint256 minAmountOut = 0; // TODO: Control for slippage in production
         if (zrc20source != address(asset())) {
             outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                uniswapv2Router02Address,
+                UNISWAP_V2_ROUTER_02_ADDRESS,
                 systemContract.uniswapv2FactoryAddress(),
                 zrc20source,
                 assets,
@@ -384,11 +433,16 @@ contract AmanaZetachainVault is
         bool success = IERC20(asset()).approve($.strategyAddress, outputAmount);
         if (!success) revert ApprovalFailed();
         IStrategy($.strategyAddress).invest(outputAmount);
-        emit Deposit(address(0), receiver, outputAmount, shares); // why address(0) here?
+        emit Deposit(address(0), receiver, outputAmount, shares);
     }
 
     /**
-     * @dev Withdraw/redeem common workflow.
+     * @notice Handles withdrawals and redemption of shares.
+     * @param caller The address initiating the withdrawal.
+     * @param receiver The address receiving the withdrawn assets.
+     * @param user The address of the user whose assets are being withdrawn.
+     * @param assets The amount of assets to withdraw.
+     * @param shares The amount of shares to redeem.
      */
     function _withdraw(
         address caller,
@@ -418,7 +472,11 @@ contract AmanaZetachainVault is
     }
 
     /**
-     * @dev Withdraw/redeem common workflow.
+     * @notice Handles withdrawals coming from a connected chain.
+     * @param user The address of the user withdrawing the assets.
+     * @param withdrawZRC20 The ZRC20 token address to withdraw.
+     * @param assets The amount of assets to withdraw.
+     * @param userChainId The chain ID of the connected chain.
      */
     function _withdrawComingFromConnectedChain(
         address user,
@@ -432,10 +490,6 @@ contract AmanaZetachainVault is
         }
 
         uint256 shares = previewWithdraw(assets);
-
-        // if (caller != user) { TODO - does this need to be here?
-        //     _spendAllowance(user, caller, shares);
-        // }
         uint256 feeToWithdraw = _applyFee(user, assets);
         _divestZetachainStrategy(assets, feeToWithdraw, user, shares);
         _confirmWithdrawAndBurn(
@@ -447,6 +501,14 @@ contract AmanaZetachainVault is
         );
     }
 
+    /**
+     * @notice Divests assets from the connected Zetachain strategy and burns shares.
+     * @param assets The amount of assets to withdraw.
+     * @param feeToWithdraw The fee to be applied for the withdrawal.
+     * @param user The address of the user initiating the withdrawal.
+     * @param shares The amount of shares to burn.
+     * @return withdrawnAmt The total amount withdrawn from the strategy.
+     */
     function _divestZetachainStrategy(
         uint256 assets,
         uint256 feeToWithdraw,
@@ -466,16 +528,20 @@ contract AmanaZetachainVault is
             emit PerformanceFeePaid(user, feeToWithdraw);
             SafeERC20.safeTransfer(IERC20(asset()), $.treasury, feeToWithdraw);
         }
-        // If _asset is ERC777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
-        // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
-        // calls the vault, which is assumed not malicious.
-        //
-        // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
-        // shares are burned and after the assets are transferred, which is a valid state.
+
+        // Burn the shares after withdrawal to ensure reentrancy-safe execution.
         _burn(user, shares);
         return withdrawnAmt;
     }
 
+    /**
+     * @notice Confirms the withdrawal of assets and burns shares.
+     * @param userAddress The address of the user withdrawing assets.
+     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
+     * @param amount The amount of assets being withdrawn.
+     * @param fee The fee applied for the withdrawal.
+     * @param userChainId The chain ID of the user's connected chain.
+     */
     function _confirmWithdrawAndBurn(
         address userAddress,
         address withdrawZRC20,
@@ -515,6 +581,14 @@ contract AmanaZetachainVault is
         );
     }
 
+    /**
+     * @notice Transfers funds back to the user, either on the current chain or a connected chain.
+     * @param amount The amount of funds to return to the user.
+     * @param userChainId The chain ID of the user's connected chain.
+     * @param userAddress The address of the user receiving the funds.
+     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
+     * @return outputAmount The actual amount returned to the user.
+     */
     function _returnFundsToUser(
         uint256 amount,
         uint32 userChainId,
@@ -523,7 +597,7 @@ contract AmanaZetachainVault is
     ) internal returns (uint256 outputAmount) {
         outputAmount = amount;
 
-        if (userChainId == vaultChainId) {
+        if (userChainId == VAULT_CHAIN_ID) {
             SafeERC20.safeTransfer(IERC20(asset()), userAddress, outputAmount);
         } else {
             bytes memory recipient = abi.encodePacked(userAddress);
@@ -533,14 +607,14 @@ contract AmanaZetachainVault is
                 true, // callOnRevert
                 address(this), // abortAddress
                 abi.encode("_returnFundsToUserFailed", crossChainTxId),
-                uint256(0) // onRevertGasLimit - NA on ZEVM
+                uint256(0) // onRevertGasLimit
             );
 
-            uint256 minAmountOut = 0; // TODO control for slippage
+            uint256 minAmountOut = 0; // TODO: Control for slippage
 
             if (address(asset()) != withdrawZRC20) {
                 outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                    uniswapv2Router02Address,
+                    UNISWAP_V2_ROUTER_02_ADDRESS,
                     systemContract.uniswapv2FactoryAddress(),
                     address(asset()),
                     amount,
@@ -552,7 +626,7 @@ contract AmanaZetachainVault is
             }
             (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
                 withdrawZRC20
-            ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
+            ).withdrawGasFee(); // ZRC-20 gas token and withdrawal fee
 
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForWithdraw);
 
@@ -567,16 +641,20 @@ contract AmanaZetachainVault is
             }
 
             IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
-                recipient, // this has to be the address of the owner/user on the EVM
-                outputAmount, // the amount that the strategy has sent back
+                recipient, // User's address in EVM format
+                outputAmount, // Amount to withdraw
                 withdrawZRC20,
-                revertOptions // do these need to be different from the revertOptions in deposit?
+                revertOptions
             );
             emit ReturnFundsToUserSent(crossChainTxId);
             crossChainTxId++;
         }
     }
 
+    /**
+     * @notice Handles the revert of a transaction.
+     * @param context The revert context containing details about the transaction.
+     */
     function onRevert(RevertContext calldata context) external override {
         (string memory revertMessage, uint256 _crossChainTxId) = abi.decode(
             context.revertMessage,
