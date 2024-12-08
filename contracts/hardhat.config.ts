@@ -5,7 +5,6 @@ import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
 import "./tasks/deployGasTank";
-import "./tasks/deployVaultAndStrategy";
 import "./tasks/deploySwapHelper";
 
 import "@nomicfoundation/hardhat-toolbox";
