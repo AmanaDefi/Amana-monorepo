@@ -28,8 +28,8 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
         IWrappedTokenGatewayV3(_WRAPPED_TOKEN_GATEWAY_ADDRESS);
     address constant BASE_SEPOLIA_WETH_ADDRESS =
         0x4200000000000000000000000000000000000006;
-    uint256 public executionNonce = 1; // we start this at 1 to sync with vault expectation
-    uint256 crossChainTxId;
+    uint256 executionNonce = 1; // we start this at 1 to sync with vault expectation
+    uint256 crossChainTxId = 0;
 
     event FundsInvested(
         uint256 indexed crossChainTxId,
@@ -90,23 +90,33 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             revert("Only Vault contract can call the strategy");
         }
         if (isDeposit) {
-            _invest(userAddress, msg.value);
+            uint256 currentExecutionNonce = executionNonce;
             executionNonce++;
+            _invest(userAddress, msg.value, currentExecutionNonce);
             return abi.encode(true);
         } else {
-            _divest(userAddress, withdrawZRC20, amount, fee, withdrawChainId);
+            uint256 currentExecutionNonce = executionNonce;
             executionNonce++;
+
+            _divest(
+                userAddress,
+                withdrawZRC20,
+                amount,
+                fee,
+                withdrawChainId,
+                currentExecutionNonce
+            );
             return abi.encode(true);
         }
     }
 
     function _invest(
         address userAddress,
-        uint256 amount
+        uint256 amount,
+        uint256 _executionNonce
     ) private returns (uint256) {
         require(amount > 0, "No ETH sent");
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-
         tokenGateway.depositETH{value: amount}(
             address(aavePool),
             address(this),
@@ -122,7 +132,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             true,
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(), // tells the vault how much to mint
-            executionNonce
+            _executionNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -147,7 +157,8 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
-        uint32 withdrawChainId
+        uint32 withdrawChainId,
+        uint256 _executionNonce
     ) private returns (uint256) {
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
         aavePool.withdraw{gas: 200000}(
@@ -176,7 +187,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             false,
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
-            executionNonce
+            _executionNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
