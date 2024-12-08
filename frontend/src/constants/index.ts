@@ -150,7 +150,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x73a043bFc0D461a9597B3331545f1edB5A77bFf5", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
+    id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
