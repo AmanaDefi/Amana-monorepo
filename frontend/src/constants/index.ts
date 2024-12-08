@@ -106,7 +106,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0xc1733D3d9BA7B4FE997211692FB18CA6a016a573", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Base Sepolia
+    id: "0xFF35FDB1777048086FE79e14ba6AB39CdC82aD9c", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Base Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -150,7 +150,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x8FeFA57Ee5c1cd81fA78fc4C192D3cDcB08097D2", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
+    id: "0x73a043bFc0D461a9597B3331545f1edB5A77bFf5", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
