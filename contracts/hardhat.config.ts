@@ -1,6 +1,7 @@
 import "./tasks/deployGeneric";
 import "./tasks/deployStrategy";
-import "./tasks/deployUpgradeableVault";
+import "./tasks/deployAmanaConnectedChainVault";
+import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
 import "./tasks/deployGasTank";
