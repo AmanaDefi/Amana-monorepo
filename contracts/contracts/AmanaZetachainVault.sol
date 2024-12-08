@@ -142,7 +142,7 @@ contract AmanaZetachainVault is
     ) external override onlyGateway {
         if (context.sender == address(0)) revert CantBeZeroAddress();
         if (amount > 0) {
-            _depositComingFromConnectedChain(context.sender, amount);
+            _depositComingFromConnectedChain(context.sender, amount, zrc20);
         } else {
             (address withdrawZRC20, uint256 withdrawAmount) = abi.decode(
                 message,
@@ -322,6 +322,8 @@ contract AmanaZetachainVault is
         // Conclusion: we need to do the transfer before we mint so that any reentrancy would happen before the
         // assets are transferred and before the shares are minted, which is a valid state.
         // slither-disable-next-line reentrancy-no-eth
+        $.userPrincipal[receiver] += assets;
+        $.totalPrincipal += assets;
 
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
@@ -330,8 +332,6 @@ contract AmanaZetachainVault is
             assets
         );
 
-        $.userPrincipal[receiver] += assets;
-        $.totalPrincipal += assets;
         _mint(receiver, shares);
 
         bool success = IERC20(asset()).approve($.strategyAddress, assets);
@@ -345,7 +345,8 @@ contract AmanaZetachainVault is
      */
     function _depositComingFromConnectedChain(
         address receiver,
-        uint256 assets
+        uint256 assets,
+        address zrc20source
     ) internal {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
@@ -361,15 +362,29 @@ contract AmanaZetachainVault is
         // assets are transferred and before the shares are minted, which is a valid state.
         // slither-disable-next-line reentrancy-no-eth
 
-        $.userPrincipal[receiver] += assets;
-        $.totalPrincipal += assets;
-        uint256 shares = previewDeposit(assets);
+        uint256 outputAmount = assets;
+        uint256 minAmountOut = 0; // TODO control for slippage in production
+        if (zrc20source != address(asset())) {
+            outputAmount = SwapHelperLib.swapExactTokensForTokens(
+                uniswapv2Router02Address,
+                systemContract.uniswapv2FactoryAddress(),
+                zrc20source,
+                assets,
+                asset(),
+                minAmountOut,
+                address(this),
+                200
+            );
+        }
+        uint256 shares = previewDeposit(outputAmount);
+        $.userPrincipal[receiver] += outputAmount;
+        $.totalPrincipal += outputAmount;
         _mint(receiver, shares);
 
-        bool success = IERC20(asset()).approve($.strategyAddress, assets);
+        bool success = IERC20(asset()).approve($.strategyAddress, outputAmount);
         if (!success) revert ApprovalFailed();
-        IStrategy($.strategyAddress).invest(assets);
-        emit Deposit(address(0), receiver, assets, shares); // why address(0) here?
+        IStrategy($.strategyAddress).invest(outputAmount);
+        emit Deposit(address(0), receiver, outputAmount, shares); // why address(0) here?
     }
 
     /**
