@@ -142,7 +142,6 @@ contract AmanaZetachainVault is
     ) external override onlyGateway {
         if (context.sender == address(0)) revert CantBeZeroAddress();
         if (amount > 0) {
-            if (zrc20 != asset()) revert InvalidZRC20Address();
             _depositComingFromConnectedChain(context.sender, amount);
         } else {
             (address withdrawZRC20, uint256 withdrawAmount) = abi.decode(
