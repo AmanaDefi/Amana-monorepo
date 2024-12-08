@@ -8,7 +8,7 @@ import { NumberFormatter } from "@/utils/helpers";
 import MainActionButton from "@/components/button/MainActionButton"
 import { client } from "@/utils/client";
 
-const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
+const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any) => {
     setTransactionCompleted(false)
     try {
         const value = Number(inputBalance.value)
@@ -41,7 +41,6 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
         toast.success("Transaction confirmed");
 
-        refetch()
         setTransactionCompleted(true);
     } catch (error) {
         mixpanel.track("Deposit Submitted", {
@@ -55,7 +54,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any) => {
     setTransactionCompleted(false)
 
     let withdrawZRC20 = withdrawToken.ZRC20equivalent;
@@ -96,7 +95,6 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         await waitForReceipt(receiptObject);
 
         toast.success("Transaction confirmed");
-        refetch()
         setTransactionCompleted(true);
     } catch (error) {
         mixpanel.track("Withdraw Failed", {
@@ -110,8 +108,8 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
     }
 };
 
-export default function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, setShowModal }:
-    { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, setShowModal: Function }): JSX.Element {
+export default function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, activeChain, setShowModal }:
+    { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, setShowModal: Function }): JSX.Element {
 
 
     return <div className="w-full flex flex-col mt-5">
@@ -122,7 +120,6 @@ export default function InteractionContainer({ _inputToken, _inputBalance, _acti
             inputBalance={_inputBalance}
             EOAaccount={EOAaccount}
             setTransactionCompleted={setTransactionCompleted}
-            refetch={refetch}
             activeChain={activeChain}
             setShowModal={setShowModal}
         />
@@ -130,16 +127,16 @@ export default function InteractionContainer({ _inputToken, _inputBalance, _acti
 }
 
 
-function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, setShowModal }:
-    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, setShowModal: Function }): JSX.Element {
+function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, setShowModal }:
+    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, setShowModal: Function }): JSX.Element {
 
     async function handleMainAction() {
         setShowModal(false)
         if (action == Action.deposit) {
-            await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
+            await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
         }
         else {
-            await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
+            await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
         }
     }
 

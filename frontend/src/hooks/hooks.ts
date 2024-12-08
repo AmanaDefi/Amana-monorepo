@@ -25,8 +25,8 @@ export const useUpdateVaultBalanceAndTotal = (
                 activeAccount?.address as Address,
                 vault.id as Address
               );
-
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+           
               const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
               return {
                 vaultId: vault.id,

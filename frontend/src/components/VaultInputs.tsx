@@ -131,6 +131,7 @@ export default function VaultInputs({
     setAllowInput(true);
   }
 
+
   function switchTokens() {
     setInputBalance(EMPTY_BALANCE);
     setIsDeposit(!isDeposit);
@@ -222,7 +223,6 @@ export default function VaultInputs({
           vaultData={vaultData}
           EOAaccount={EOAaccount}
           setTransactionCompleted={setTransactionCompleted}
-          refetch={() => { }}
           activeChain={activeChain}
           setShowModal={setShowModal}
         />

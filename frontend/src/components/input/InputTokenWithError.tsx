@@ -99,13 +99,13 @@ export default function InputTokenWithError({
                 isDeposit ?
                   <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
                     {selectedToken && selectedToken.balance && selectedToken.balance.formatted
-                      ? formatCurrency(Number(selectedToken.balance.formatted)).toString()
-                      : "0.00"}
+                      ? formatBalance(Number(selectedToken.balance.formatted)).toString()
+                      : "0"}
                   </p>
                   :
                   <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                    {data ? formatCurrency(Number(data)).toString()
-                      : "0.00"}
+                    {data ? formatBalance(Number(data)).toString()
+                      : "0"}
                   </p>
               }
 
