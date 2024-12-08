@@ -20,7 +20,7 @@ import "./libraries/SwapHelperLib.sol";
 // This makes logical sense in that it is the underlying asset that the strategy is investing
 // It wouldn't make sense to make it the ZRC20 equivalent of the input token deposited, because this could be from any connected chain (or ZC itself)
 
-contract AmanaVault is
+contract AmanaConnectedChainVault is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
     UniversalContract
@@ -347,36 +347,16 @@ contract AmanaVault is
         if (newStrategyChainId != $.strategyChainId)
             revert InvalidStrategyChainId();
 
-        if ($.strategyChainId == vaultChainId) {
-            IStrategy($.strategyAddress).withdraw(
-                IStrategy($.strategyAddress).totalUnderlyingAssets(),
-                10 ** 27
-            );
-            $.strategyAddress = newStrategyAddress;
-            bool success = IZRC20(asset()).approve(
-                $.strategyAddress,
-                IERC20(asset()).balanceOf(address(this))
-            );
-            if (!success) revert ApprovalFailed();
-            IStrategy($.strategyAddress).invest(
-                IERC20(asset()).balanceOf(address(this))
-            );
-        } else {
-            //cross-chain withdraw from strategy
-            _divestConnectedChainStrategy(
-                address(this),
-                address(asset()),
-                totalAssets(), // TODO - complete this function
-                0,
-                $.strategyChainId
-            );
-            $.strategyAddress = newStrategyAddress;
-            //cross-chain invest in strategy
-            _crossChainInvest(
-                IERC20(asset()).balanceOf(address(this)),
-                address(0)
-            );
-        }
+        _divestConnectedChainStrategy(
+            address(this),
+            address(asset()),
+            totalAssets(),
+            0,
+            $.strategyChainId
+        );
+        $.strategyAddress = newStrategyAddress;
+        //cross-chain invest in strategy
+        _crossChainInvest(IERC20(asset()).balanceOf(address(this)), address(0));
 
         emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
     }
@@ -389,19 +369,9 @@ contract AmanaVault is
 
     /** @dev See {IERC4626-totalAssets}. */
     function totalAssets() public view virtual override returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
         // Get the amount of USDC held directly by the vault
         uint256 assetBalanceOnVault = IERC20(asset()).balanceOf(address(this));
-        uint256 assetBalanceInStrategy;
-        // Call the strategy to get the equivalent value of aArbUSDC in terms of USDC
-        if ($.strategyChainId == vaultChainId) {
-            assetBalanceInStrategy = IStrategy($.strategyAddress)
-                .totalUnderlyingAssets();
-            // Return the total assets: USDC held in the vault + USDC equivalent held in the strategy
-            return assetBalanceOnVault + assetBalanceInStrategy;
-        } else {
-            return assetBalanceOnVault + latestTotalAssetsUpdateFromStrategy;
-        }
+        return assetBalanceOnVault + latestTotalAssetsUpdateFromStrategy;
     }
 
     function _crossChainInvest(uint256 amount, address userAddress) internal {
@@ -549,9 +519,8 @@ contract AmanaVault is
         address caller,
         address receiver,
         uint256 assets,
-        uint256 shares
+        uint256
     ) internal override {
-        VaultStorage storage $ = _getVaultStorage();
         // If _asset is ERC777, `transferFrom` can trigger a reenterancy BEFORE the transfer happens through the
         // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
         // calls the vault, which is assumed not malicious.
@@ -567,18 +536,7 @@ contract AmanaVault is
             assets
         );
 
-        if ($.strategyChainId == vaultChainId) {
-            $.userPrincipal[receiver] += assets;
-            $.totalPrincipal += assets;
-            _mint(receiver, shares);
-
-            bool success = IERC20(asset()).approve($.strategyAddress, assets);
-            if (!success) revert ApprovalFailed();
-            IStrategy($.strategyAddress).invest(assets);
-            emit Deposit(caller, receiver, assets, shares);
-        } else {
-            _crossChainInvest(assets, receiver);
-        }
+        _crossChainInvest(assets, receiver);
     }
 
     /**
@@ -594,7 +552,6 @@ contract AmanaVault is
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
         }
 
-        VaultStorage storage $ = _getVaultStorage();
         // If _asset is ERC777, `transferFrom` can trigger a reenterancy BEFORE the transfer happens through the
         // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
         // calls the vault, which is assumed not malicious.
@@ -603,33 +560,21 @@ contract AmanaVault is
         // assets are transferred and before the shares are minted, which is a valid state.
         // slither-disable-next-line reentrancy-no-eth
 
-        if ($.strategyChainId == vaultChainId) {
-            $.userPrincipal[receiver] += assets;
-            $.totalPrincipal += assets;
-            uint256 shares = previewDeposit(assets);
-            _mint(receiver, shares);
-
-            bool success = IERC20(asset()).approve($.strategyAddress, assets);
-            if (!success) revert ApprovalFailed();
-            IStrategy($.strategyAddress).invest(assets);
-            emit Deposit(address(0), receiver, assets, shares); // why address(0) here?
-        } else {
-            uint256 outputAmount = assets;
-            uint256 minAmountOut = 0; // TODO control for slippage in production
-            if (zrc20source != address(asset())) {
-                outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                    uniswapv2Router02Address,
-                    systemContract.uniswapv2FactoryAddress(),
-                    zrc20source,
-                    assets,
-                    asset(),
-                    minAmountOut,
-                    address(this),
-                    200
-                );
-            }
-            _crossChainInvest(outputAmount, receiver);
+        uint256 outputAmount = assets;
+        uint256 minAmountOut = 0; // TODO control for slippage in production
+        if (zrc20source != address(asset())) {
+            outputAmount = SwapHelperLib.swapExactTokensForTokens(
+                uniswapv2Router02Address,
+                systemContract.uniswapv2FactoryAddress(),
+                zrc20source,
+                assets,
+                asset(),
+                minAmountOut,
+                address(this),
+                200
+            );
         }
+        _crossChainInvest(outputAmount, receiver);
     }
 
     /**
@@ -642,64 +587,19 @@ contract AmanaVault is
         uint256 assets,
         uint256 shares
     ) internal override {
-        VaultStorage storage $ = _getVaultStorage();
         if (caller != user) {
+            // TODO - check this
             _spendAllowance(user, caller, shares);
         }
         uint256 feeToWithdraw = _applyFee(user, assets);
-        if ($.strategyChainId == vaultChainId) {
-            uint256 withdrawnAmt = _divestZetachainStrategy(
-                assets,
-                feeToWithdraw,
-                user,
-                shares
-            );
-            SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
-            emit Withdraw(
-                caller,
-                receiver,
-                user,
-                withdrawnAmt - feeToWithdraw,
-                shares
-            );
-        } else {
-            _divestConnectedChainStrategy(
-                user,
-                asset(),
-                assets,
-                feeToWithdraw,
-                vaultChainId
-            );
-        }
-    }
 
-    function _divestZetachainStrategy(
-        uint256 assets,
-        uint256 feeToWithdraw,
-        address user,
-        uint256 shares
-    ) internal returns (uint256 withdrawnAmt) {
-        VaultStorage storage $ = _getVaultStorage();
-
-        uint256 fractionToWithdraw = ((assets + feeToWithdraw) * (10 ** 27)) /
-            totalAssets() +
-            1;
-        withdrawnAmt = IStrategy($.strategyAddress).withdraw(
-            assets + feeToWithdraw,
-            fractionToWithdraw
+        _divestConnectedChainStrategy(
+            user,
+            asset(),
+            assets,
+            feeToWithdraw,
+            vaultChainId
         );
-        if (feeToWithdraw > 0) {
-            emit PerformanceFeePaid(user, feeToWithdraw);
-            SafeERC20.safeTransfer(IERC20(asset()), $.treasury, feeToWithdraw);
-        }
-        // If _asset is ERC777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
-        // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
-        // calls the vault, which is assumed not malicious.
-        //
-        // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
-        // shares are burned and after the assets are transferred, which is a valid state.
-        _burn(user, shares);
-        return withdrawnAmt;
     }
 
     /**
@@ -715,34 +615,18 @@ contract AmanaVault is
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
         }
-
-        uint256 shares = previewWithdraw(assets);
-
-        VaultStorage storage $ = _getVaultStorage();
         // if (caller != user) { TODO - does this need to be here?
         //     _spendAllowance(user, caller, shares);
         // }
         uint256 feeToWithdraw = _applyFee(user, assets);
-        if ($.strategyChainId == vaultChainId) {
-            _divestZetachainStrategy(assets, feeToWithdraw, user, shares);
-            _confirmWithdrawAndBurn(
-                user,
-                withdrawZRC20,
-                assets,
-                feeToWithdraw,
-                userChainId,
-                0,
-                0
-            );
-        } else {
-            _divestConnectedChainStrategy(
-                user,
-                withdrawZRC20,
-                assets,
-                feeToWithdraw,
-                userChainId
-            );
-        }
+
+        _divestConnectedChainStrategy(
+            user,
+            withdrawZRC20,
+            assets,
+            feeToWithdraw,
+            userChainId
+        );
     }
 
     function _divestConnectedChainStrategy(
