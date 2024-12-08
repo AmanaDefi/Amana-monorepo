@@ -194,10 +194,7 @@ const executeCrossChainDeposit = async (
   let contract, approveTx, payload, revertOptions;
 
   // Prepare payload (calldata to pass to the receiver)
-  payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint256", "uint32"],
-    [activeAccount.address, ZeroAddress, 0, 0, 0, 0]
-  ) as `0x${string}`;
+  payload = "0x" as `0x${string}`;
 
   // Prepare revertOptions
   revertOptions = [
@@ -346,8 +343,8 @@ const executeCrossChainWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint256", "uint32"],
-    [activeAccount.address, withdrawZRC20, withdrawAmount, 0, 0, 0]
+    ["address", "uint256"],
+    [withdrawZRC20, withdrawAmount]
   ) as `0x${string}`;
 
   // Prepare revertOptions to match the Solidity struct
