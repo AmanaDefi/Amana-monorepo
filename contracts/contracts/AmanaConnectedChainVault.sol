@@ -747,6 +747,7 @@ contract AmanaConnectedChainVault is
 
         if (totalAssetsAfterWithdraw > 0)
             latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
+
         uint256 outputAmount = _returnFundsToUser(
             amount,
             userChainId,
