@@ -40,6 +40,7 @@ describe("BaseSepAaveEthStrategy - Simplified Tests", function () {
       BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS,
       GATEWAY_ADDRESS
     );
+    console.log("Deployed strategy address:", deployedStrategy.address);
 
     await deployedStrategy.deployed();
     return deployedStrategy as BaseSepAaveEthStrategy;
@@ -53,8 +54,8 @@ describe("BaseSepAaveEthStrategy - Simplified Tests", function () {
     const depositAmount = ethers.utils.parseEther("1");
 
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-      [owner.address, ethers.constants.AddressZero, 0, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount, 1]
+      ["address", "address", "uint256", "uint256", "uint32", "bool"],
+      [owner.address, ethers.constants.AddressZero, 0, 0, ORIGIN_CHAIN_ID, true]
     );
 
     // call onCall with a deposit message and value
@@ -82,8 +83,8 @@ describe("BaseSepAaveEthStrategy - Simplified Tests", function () {
     const depositAmount = ethers.utils.parseEther("1");
 
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256"],
-      [owner.address, ethers.constants.AddressZero, 0, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount]
+      ["address", "address", "uint256", "uint256", "uint32", "bool"],
+      [owner.address, ethers.constants.AddressZero, 0, 0, ORIGIN_CHAIN_ID, true]
     );
 
     // call onCall with a deposit message and value
@@ -109,8 +110,8 @@ describe("BaseSepAaveEthStrategy - Simplified Tests", function () {
     const fee = ethers.utils.parseEther("0.01");
 
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256"],
-      [owner.address, withdrawZRC20, withdrawAmount, fee, ORIGIN_CHAIN_ID, false, depositAmount, withdrawAmount]
+      ["address", "address", "uint256", "uint256", "uint32", "bool"],
+      [owner.address, withdrawZRC20, withdrawAmount, fee, ORIGIN_CHAIN_ID, false]
     );
 
     // call onCall with a deposit message and value

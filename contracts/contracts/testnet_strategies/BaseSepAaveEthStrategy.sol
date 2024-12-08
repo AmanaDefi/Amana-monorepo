@@ -14,7 +14,7 @@ import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 // BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS = 0x96e32dE4B1d1617B8c2AE13a88B9cC287239b13f;
 // BASE_SEPOLIA_WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
 
-contract BaseSepAaveEthStrategy is Ownable, Callable {
+contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
@@ -29,6 +29,20 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
     address constant BASE_SEPOLIA_WETH_ADDRESS =
         0x4200000000000000000000000000000000000006;
     uint256 public executionNonce = 1; // we start this at 1 to sync with vault expectation
+    uint256 crossChainTxId;
+
+    event FundsInvested(
+        uint256 indexed crossChainTxId,
+        address userAddress,
+        uint256 amount
+    );
+    event FundsDivested(
+        uint256 indexed crossChainTxId,
+        address userAddress,
+        uint256 amount
+    );
+    event InvestConfirmFailed(uint256 indexed crossChainTxId);
+    event ReturnFundsFromStrategyFailed(uint256 indexed crossChainTxId);
 
     error ApprovalFailed();
 
@@ -80,7 +94,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
             executionNonce++;
             return abi.encode(true);
         } else {
-            _withdraw(userAddress, withdrawZRC20, amount, fee, withdrawChainId);
+            _divest(userAddress, withdrawZRC20, amount, fee, withdrawChainId);
             executionNonce++;
             return abi.encode(true);
         }
@@ -112,10 +126,10 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         );
 
         RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+            address(this), // revert address
             false, // callOnRevert
             address(this), // abortAddress
-            bytes("revert message"),
+            abi.encode("_investConfirmFailed", crossChainTxId),
             uint256(1000000) // onRevertGasLimit
         );
 
@@ -124,11 +138,11 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
             outgoingMessage,
             revertOptions
         );
-
+        emit FundsInvested(crossChainTxId, userAddress, amount);
         return msg.value;
     }
 
-    function _withdraw(
+    function _divest(
         address userAddress,
         address withdrawZRC20,
         uint256 amount,
@@ -166,10 +180,10 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         );
 
         RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
+            address(this), // revert address
             false, // callOnRevert
             address(this), // abortAddress
-            bytes("revert message"),
+            abi.encode("_returnFundsFromStrategyFailed", crossChainTxId),
             uint256(1000000) // onRevertGasLimit
         );
 
@@ -178,6 +192,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
             outgoingMessage,
             revertOptions
         );
+        emit FundsDivested(crossChainTxId, userAddress, amount);
         return amount;
     }
 
@@ -195,6 +210,32 @@ contract BaseSepAaveEthStrategy is Ownable, Callable {
         uint256 balance = address(this).balance;
         require(balance > 0, "No ETH to withdraw");
         payable(owner()).transfer(balance);
+    }
+
+    function onRevert(RevertContext calldata context) external override {
+        (string memory revertMessage, uint256 _crossChainTxId) = abi.decode(
+            context.revertMessage,
+            (string, uint256)
+        );
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_investConfirmFailed"))
+        ) {
+            emit InvestConfirmFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsFromStrategyFailed"))
+        ) {
+            // we re-deposit the funds back to the Aave pool
+            tokenGateway.depositETH{value: context.amount}(
+                address(aavePool),
+                address(this),
+                0
+            );
+            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
+        }
     }
 
     receive() external payable {}

@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
-import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
 
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
@@ -23,24 +22,19 @@ import "./libraries/SwapHelperLib.sol";
 contract AmanaZetachainVault is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
-    UniversalContract
+    UniversalContract,
+    Revertable
 {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
     error InvalidStrategyAddress();
-    error InvalidStrategyChainId();
     error InvalidTreasuryAddress();
     error FeeExceedsLimit();
     error ApprovalFailed();
     error NothingToWithdraw();
     error InvalidZRC20Address();
     error CantBeZeroAddress();
-    error DepositExceedsLimit();
-    error MintExceedsLimit();
-    error WithdrawExceedsLimit();
-    error RedeemExceedsLimit();
-    error ConfirmationAlreadyProcessed();
     error OnlyGateway();
 
     address constant _GATEWAY_ADDRESS =
@@ -52,6 +46,7 @@ contract AmanaZetachainVault is
         0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
     IGasTank gasTank;
     uint32 constant vaultChainId = 7001; // 7000 for mainnet, 7001 for testnet
+    uint256 crossChainTxId;
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
@@ -98,6 +93,8 @@ contract AmanaZetachainVault is
         uint256 fee,
         uint256 shares
     );
+    event ReturnFundsToUserSent(uint256 indexed crossChainTxId);
+    event ReturnFundsToUserFailed(uint256 indexed crossChainTxId);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -519,10 +516,10 @@ contract AmanaZetachainVault is
 
             RevertOptions memory revertOptions = RevertOptions(
                 address(this), // revert address
-                false, // callOnRevert
+                true, // callOnRevert
                 address(this), // abortAddress
-                bytes("Withdraw to User Failed"),
-                uint256(0) // onRevertGasLimit
+                abi.encode("_returnFundsToUserFailed", crossChainTxId),
+                uint256(0) // onRevertGasLimit - NA on ZEVM
             );
 
             uint256 minAmountOut = 0; // TODO control for slippage
@@ -561,6 +558,23 @@ contract AmanaZetachainVault is
                 withdrawZRC20,
                 revertOptions // do these need to be different from the revertOptions in deposit?
             );
+            emit ReturnFundsToUserSent(crossChainTxId);
+            crossChainTxId++;
+        }
+    }
+
+    function onRevert(RevertContext calldata context) external override {
+        (string memory revertMessage, uint256 _crossChainTxId) = abi.decode(
+            context.revertMessage,
+            (string, uint256)
+        );
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsToUserFailed"))
+        ) {
+            emit ReturnFundsToUserFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
         }
     }
 }

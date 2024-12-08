@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
-import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
 
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
@@ -23,7 +22,8 @@ import "./libraries/SwapHelperLib.sol";
 contract AmanaConnectedChainVault is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
-    UniversalContract
+    UniversalContract,
+    Revertable
 {
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -53,6 +53,7 @@ contract AmanaConnectedChainVault is
     uint16 internal constant MAX_DEADLINE = 200;
     IGasTank gasTank;
     uint32 constant vaultChainId = 7001; // 7000 for mainnet, 7001 for testnet
+    uint256 crossChainTxId;
     uint256 latestTotalAssetsUpdateFromStrategy;
     uint256 lastProcessedNonce;
 
@@ -118,6 +119,12 @@ contract AmanaConnectedChainVault is
         uint256 fee,
         uint256 shares
     );
+    event CrossChainInvestSent(uint256 indexed crossChainTxId);
+    event CrossChainInvestFailed(uint256 indexed crossChainTxId);
+    event DivestSent(uint256 indexed crossChainTxId);
+    event DivestFailed(uint256 indexed crossChainTxId);
+    event ReturnFundsToUserSent(uint256 indexed crossChainTxId);
+    event ReturnFundsToUserFailed(uint256 indexed crossChainTxId);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -356,7 +363,12 @@ contract AmanaConnectedChainVault is
         );
         $.strategyAddress = newStrategyAddress;
         //cross-chain invest in strategy
-        _crossChainInvest(IERC20(asset()).balanceOf(address(this)), address(0));
+        _crossChainInvest(
+            IERC20(asset()).balanceOf(address(this)),
+            address(this),
+            asset(),
+            vaultChainId
+        );
 
         emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
     }
@@ -374,18 +386,26 @@ contract AmanaConnectedChainVault is
         return assetBalanceOnVault + latestTotalAssetsUpdateFromStrategy;
     }
 
-    function _crossChainInvest(uint256 amount, address userAddress) internal {
+    function _crossChainInvest(
+        uint256 amount,
+        address userAddress,
+        address userZRC20,
+        uint32 userChainId
+    ) internal {
         VaultStorage storage $ = _getVaultStorage();
         (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
             address(asset())
         ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
         uint256 gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
-        uint256 gasPrice = systemContract.gasPriceByChainId($.strategyChainId);
-        uint256 gasFeeForCall = gasPrice * gasLimitForCall;
+        uint256 gasFeeForCall = systemContract.gasPriceByChainId(
+            $.strategyChainId
+        ) * gasLimitForCall;
         gasTank.getGas{gas: 200000}(
             gas_zrc20,
-            gasFeeForWithdraw + gasFeeForCall
+            gasFeeForWithdraw +
+                systemContract.gasPriceByChainId($.strategyChainId) *
+                gasLimitForCall
         );
 
         if (gas_zrc20 != address(asset())) {
@@ -414,9 +434,15 @@ contract AmanaConnectedChainVault is
 
         RevertOptions memory revertOptions = RevertOptions(
             address(this), // revert address
-            false, // callOnRevert
+            true, // callOnRevert
             address(this), // abortAddress
-            bytes("WithdrawAndCall Failed"),
+            abi.encode(
+                "_crossChainInvestFailed",
+                crossChainTxId,
+                userAddress,
+                userZRC20,
+                userChainId
+            ),
             uint256(0) // onRevertGasLimit
         );
 
@@ -429,6 +455,8 @@ contract AmanaConnectedChainVault is
             callOptions,
             revertOptions
         );
+        emit CrossChainInvestSent(crossChainTxId);
+        crossChainTxId++;
     }
 
     function _applyFee(
@@ -536,7 +564,7 @@ contract AmanaConnectedChainVault is
             assets
         );
 
-        _crossChainInvest(assets, receiver);
+        _crossChainInvest(assets, receiver, asset(), vaultChainId);
     }
 
     /**
@@ -574,7 +602,12 @@ contract AmanaConnectedChainVault is
                 200
             );
         }
-        _crossChainInvest(outputAmount, receiver);
+        _crossChainInvest(
+            outputAmount,
+            receiver,
+            zrc20source,
+            uint32(IZRC20(zrc20source).CHAIN_ID())
+        );
     }
 
     /**
@@ -582,7 +615,7 @@ contract AmanaConnectedChainVault is
      */
     function _withdraw(
         address caller,
-        address receiver,
+        address,
         address user,
         uint256 assets,
         uint256 shares
@@ -661,10 +694,16 @@ contract AmanaConnectedChainVault is
 
         RevertOptions memory revertOptions = RevertOptions(
             address(this), // revert address
-            false, // callOnRevert
+            true, // callOnRevert
             address(this), // abortAddress
-            bytes("Call to Strategy Failed"),
-            uint256(0) // onRevertGasLimit
+            abi.encode(
+                "_divestConnectedChainStrategyFailed",
+                crossChainTxId,
+                user,
+                withdrawZRC20,
+                withdrawChainId
+            ),
+            uint256(0) // onRevertGasLimit - NA on ZEVM
         );
 
         CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
@@ -675,6 +714,8 @@ contract AmanaConnectedChainVault is
             callOptions,
             revertOptions
         );
+        emit DivestSent(crossChainTxId);
+        crossChainTxId++;
     }
 
     function _confirmWithdrawAndBurn(
@@ -737,9 +778,15 @@ contract AmanaConnectedChainVault is
 
             RevertOptions memory revertOptions = RevertOptions(
                 address(this), // revert address
-                false, // callOnRevert
+                true, // callOnRevert
                 address(this), // abortAddress
-                bytes("Withdraw to User Failed"),
+                abi.encode(
+                    "_returnFundsToUserFailed",
+                    crossChainTxId,
+                    userAddress,
+                    withdrawZRC20,
+                    userChainId
+                ),
                 uint256(0) // onRevertGasLimit
             );
 
@@ -779,6 +826,45 @@ contract AmanaConnectedChainVault is
                 withdrawZRC20,
                 revertOptions // do these need to be different from the revertOptions in deposit?
             );
+            emit ReturnFundsToUserSent(crossChainTxId);
+            crossChainTxId++;
+        }
+    }
+
+    function onRevert(RevertContext calldata context) external override {
+        (
+            string memory revertMessage,
+            uint256 _crossChainTxId,
+            address userAddress,
+            address userZRC20,
+            uint32 userChainId
+        ) = abi.decode(
+                context.revertMessage,
+                (string, uint256, address, address, uint32)
+            );
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_crossChainInvestFailed"))
+        ) {
+            _returnFundsToUser(
+                context.amount, // might have to deduct gas fee from this - how much does revert actually give back?
+                userChainId,
+                userAddress,
+                userZRC20
+            );
+            emit CrossChainInvestFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_divestConnectedChainStrategyFailed"))
+        ) {
+            emit DivestFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsToUserFailed"))
+        ) {
+            emit ReturnFundsToUserFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
         }
     }
 }

@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IZRC20.sol";
+import "../interfaces/IZRC20.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 
