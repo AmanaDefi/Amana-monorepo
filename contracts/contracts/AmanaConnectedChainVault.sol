@@ -56,6 +56,8 @@ contract AmanaConnectedChainVault is
     uint256 crossChainTxId;
     uint256 latestTotalAssetsUpdateFromStrategy;
     uint256 lastProcessedNonce;
+    uint256 public gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
+    uint256 public gasLimitForWithdrawAndCall = 350000; // bring this down as far as possible, as it doesn't get returned
 
     struct Confirmation {
         address user;
@@ -551,15 +553,14 @@ contract AmanaConnectedChainVault is
             address(asset())
         ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
-        uint256 gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
         uint256 gasFeeForCall = systemContract.gasPriceByChainId(
             $.strategyChainId
-        ) * gasLimitForCall;
+        ) * gasLimitForWithdrawAndCall;
         gasTank.getGas{gas: 200000}(
             gas_zrc20,
             gasFeeForWithdraw +
                 systemContract.gasPriceByChainId($.strategyChainId) *
-                gasLimitForCall
+                gasLimitForWithdrawAndCall
         );
 
         if (gas_zrc20 != address(asset())) {
@@ -600,7 +601,10 @@ contract AmanaConnectedChainVault is
             uint256(0) // onRevertGasLimit
         );
 
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
+        CallOptions memory callOptions = CallOptions(
+            gasLimitForWithdrawAndCall,
+            false
+        );
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
             recipient, // this contains the recipient smart contract address - the strategy address in this case
             amount, // amount of zrc20 to withdraw
@@ -675,7 +679,6 @@ contract AmanaConnectedChainVault is
 
         (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
         uint256 gasPrice = systemContract.gasPriceByChainId($.strategyChainId);
-        uint256 gasLimitForCall = 350000; // TODO bring this down as much as possible, not returned
 
         uint256 gasFeeForCall = gasPrice * gasLimitForCall;
 
