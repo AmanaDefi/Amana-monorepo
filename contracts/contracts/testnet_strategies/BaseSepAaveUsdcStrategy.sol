@@ -46,7 +46,7 @@ contract BaseSepAaveUsdcStrategy is Ownable {
 
     function invest(uint256 amount) external onlyGateway returns (uint256) {
         bool success = inputToken.transferFrom(
-            _GATEWAY_ADDRESS,
+            msg.sender,
             address(this),
             amount
         );

@@ -81,7 +81,7 @@ contract Mock4626BscUsdcStrategy is Ownable, Callable {
 
     function _invest(uint256 amount) private returns (uint256) {
         bool success = inputToken.transferFrom(
-            _GATEWAY_ADDRESS,
+            msg.sender,
             address(this),
             amount
         );
