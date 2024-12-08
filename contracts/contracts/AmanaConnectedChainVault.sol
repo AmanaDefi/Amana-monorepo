@@ -728,10 +728,7 @@ contract AmanaConnectedChainVault is
         uint256 totalAssetsAfterWithdraw
     ) internal {
         VaultStorage storage $ = _getVaultStorage();
-        if (fee > 0) {
-            emit PerformanceFeePaid(userAddress, fee);
-            SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee);
-        }
+
         if (totalAssetsBeforeWithdraw > 0)
             latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
 
@@ -755,7 +752,12 @@ contract AmanaConnectedChainVault is
             withdrawZRC20
         );
 
-        emit Withdraw(
+        if (fee > 0) {
+            emit PerformanceFeePaid(userAddress, fee);
+            SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee);
+        }
+
+        emit Withdraw( //TODO - check for return funds confirmation (cc tx back from userChain)
             userAddress,
             userAddress,
             userAddress,
@@ -771,7 +773,8 @@ contract AmanaConnectedChainVault is
         address withdrawZRC20
     ) internal returns (uint256 outputAmount) {
         outputAmount = amount;
-
+        uint256 currentCrossChainTxId = crossChainTxId;
+        crossChainTxId++;
         if (userChainId == vaultChainId) {
             SafeERC20.safeTransfer(IERC20(asset()), userAddress, outputAmount);
         } else {
@@ -783,7 +786,7 @@ contract AmanaConnectedChainVault is
                 address(this), // abortAddress
                 abi.encode(
                     "_returnFundsToUserFailed",
-                    crossChainTxId,
+                    currentCrossChainTxId,
                     userAddress,
                     withdrawZRC20,
                     userChainId
@@ -827,8 +830,7 @@ contract AmanaConnectedChainVault is
                 withdrawZRC20,
                 revertOptions // do these need to be different from the revertOptions in deposit?
             );
-            emit ReturnFundsToUserSent(crossChainTxId);
-            crossChainTxId++;
+            emit ReturnFundsToUserSent(currentCrossChainTxId);
         }
     }
 
