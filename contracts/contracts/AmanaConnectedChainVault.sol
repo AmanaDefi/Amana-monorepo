@@ -386,79 +386,6 @@ contract AmanaConnectedChainVault is
         return assetBalanceOnVault + latestTotalAssetsUpdateFromStrategy;
     }
 
-    function _crossChainInvest(
-        uint256 amount,
-        address userAddress,
-        address userZRC20,
-        uint32 userChainId
-    ) internal {
-        VaultStorage storage $ = _getVaultStorage();
-        (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
-            address(asset())
-        ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
-
-        uint256 gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
-        uint256 gasFeeForCall = systemContract.gasPriceByChainId(
-            $.strategyChainId
-        ) * gasLimitForCall;
-        gasTank.getGas{gas: 200000}(
-            gas_zrc20,
-            gasFeeForWithdraw +
-                systemContract.gasPriceByChainId($.strategyChainId) *
-                gasLimitForCall
-        );
-
-        if (gas_zrc20 != address(asset())) {
-            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
-            IZRC20(gas_zrc20).approve(
-                _GATEWAY_ADDRESS,
-                gasFeeForWithdraw + gasFeeForCall
-            );
-        } else {
-            IZRC20(asset()).approve(
-                _GATEWAY_ADDRESS,
-                amount + gasFeeForWithdraw + gasFeeForCall
-            );
-        }
-
-        bytes memory recipient = abi.encodePacked($.strategyAddress);
-
-        bytes memory outgoingMessage = abi.encode(
-            userAddress,
-            address(0),
-            amount,
-            0,
-            0,
-            true
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                "_crossChainInvestFailed",
-                crossChainTxId,
-                userAddress,
-                userZRC20,
-                userChainId
-            ),
-            uint256(0) // onRevertGasLimit
-        );
-
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-        IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-            recipient, // this contains the recipient smart contract address - the strategy address in this case
-            amount, // amount of zrc20 to withdraw
-            address(asset()), // the zrc20 that is being withdrawn, also indicates which chain to target
-            outgoingMessage, // this is the function call for invest(uint256 amount) in Mock4626Strategy
-            callOptions,
-            revertOptions
-        );
-        emit CrossChainInvestSent(crossChainTxId);
-        crossChainTxId++;
-    }
-
     function _applyFee(
         address user,
         uint256 assets
@@ -608,6 +535,81 @@ contract AmanaConnectedChainVault is
             zrc20source,
             uint32(IZRC20(zrc20source).CHAIN_ID())
         );
+    }
+
+    function _crossChainInvest(
+        uint256 amount,
+        address userAddress,
+        address userZRC20,
+        uint32 userChainId
+    ) internal {
+        uint256 currentCrossChainTxId = crossChainTxId;
+        crossChainTxId++;
+
+        VaultStorage storage $ = _getVaultStorage();
+        (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
+            address(asset())
+        ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
+
+        uint256 gasLimitForCall = 350000; // bring this down as far as possible, as it doesn't get returned
+        uint256 gasFeeForCall = systemContract.gasPriceByChainId(
+            $.strategyChainId
+        ) * gasLimitForCall;
+        gasTank.getGas{gas: 200000}(
+            gas_zrc20,
+            gasFeeForWithdraw +
+                systemContract.gasPriceByChainId($.strategyChainId) *
+                gasLimitForCall
+        );
+
+        if (gas_zrc20 != address(asset())) {
+            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
+            IZRC20(gas_zrc20).approve(
+                _GATEWAY_ADDRESS,
+                gasFeeForWithdraw + gasFeeForCall
+            );
+        } else {
+            IZRC20(asset()).approve(
+                _GATEWAY_ADDRESS,
+                amount + gasFeeForWithdraw + gasFeeForCall
+            );
+        }
+
+        bytes memory recipient = abi.encodePacked($.strategyAddress);
+
+        bytes memory outgoingMessage = abi.encode(
+            userAddress,
+            address(0),
+            amount,
+            0,
+            0,
+            true
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this), // revert address
+            true, // callOnRevert
+            address(this), // abortAddress
+            abi.encode(
+                "_crossChainInvestFailed",
+                currentCrossChainTxId,
+                userAddress,
+                userZRC20,
+                userChainId
+            ),
+            uint256(0) // onRevertGasLimit
+        );
+
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
+        IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
+            recipient, // this contains the recipient smart contract address - the strategy address in this case
+            amount, // amount of zrc20 to withdraw
+            address(asset()), // the zrc20 that is being withdrawn, also indicates which chain to target
+            outgoingMessage, // this is the function call for invest(uint256 amount) in Mock4626Strategy
+            callOptions,
+            revertOptions
+        );
+        emit CrossChainInvestSent(currentCrossChainTxId);
     }
 
     /**
