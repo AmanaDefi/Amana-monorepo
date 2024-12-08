@@ -16,6 +16,8 @@ contract Mock4626ZetachainStrategy is Ownable {
     IERC20 public immutable inputToken;
     I4626Vault public immutable receiptToken;
     address immutable _GATEWAY_ADDRESS;
+    event FundsDeposited(address vaultAddress, uint256 amount);
+    event FundsWithdrawn(address vaultAddress, uint256 amount);
 
     constructor(
         string memory _name,
@@ -48,6 +50,7 @@ contract Mock4626ZetachainStrategy is Ownable {
         require(success, "Approval failed");
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
+        emit FundsDeposited(msg.sender, amount);
         return shares;
     }
 
@@ -65,6 +68,7 @@ contract Mock4626ZetachainStrategy is Ownable {
             msg.sender,
             _amountToWithdraw
         );
+        emit FundsWithdrawn(msg.sender, _amountToWithdraw);
         return _amountToWithdraw;
     }
 
@@ -84,6 +88,4 @@ contract Mock4626ZetachainStrategy is Ownable {
         require(balance > 0, "No ETH to withdraw");
         payable(owner()).transfer(balance);
     }
-
-    receive() external payable {}
 }
