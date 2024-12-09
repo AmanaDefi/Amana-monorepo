@@ -22,7 +22,7 @@ describe("Vault and BaseAaveStrategy", function () {
   let user2: Signer;
   const errorMargin = 5;
   const FeeRate = BigInt(1000); // 10% fee
-  const rewardAmount = ethers.parseUnits("100", 6);
+  const rewardAmount = ethers.utils.parseUnits("100", 6);
   const BASE_CHAIN_ID = 8453;
 
   // other tests:
