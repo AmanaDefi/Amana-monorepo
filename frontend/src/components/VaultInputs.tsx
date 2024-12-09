@@ -125,7 +125,6 @@ export default function VaultInputs({
         value: parseUnits(tokenBalance, inputToken.decimals),
         formatted: tokenBalance || "0",
       })
-      setShowModal(true)
     }
   }, [tokenBalance, isDeposit]);
 
@@ -138,7 +137,7 @@ export default function VaultInputs({
         setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalance, setShowModal));
       }
     }
-  }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, userVaultBalances, vaultData.id]);
+  }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, userVaultBalances, vaultData.id, action]);
 
   function handleTokenSelect(selectedToken: Token): void {
     setInputToken(selectedToken);
@@ -164,6 +163,13 @@ export default function VaultInputs({
       setSteps(await selectActions(newAction));
     }
   }
+
+  useEffect(() => {
+    if (steps.length > 0) {
+      setShowModal(true)
+    }
+  }, [steps])
+
 
   function handleChangeInput(e: React.ChangeEvent<HTMLInputElement>) {
     if (!inputToken) return;
@@ -201,7 +207,10 @@ export default function VaultInputs({
 
   useEffect(() => {
     const fetchData = async () => {
-      inputBalance.formatted != "0" && isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit)) : setSteps(await selectActions(SmartVaultActionType.Withdrawal))
+      if (Number(inputBalance.value) != 0) {
+        isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit)) : setSteps(await selectActions(SmartVaultActionType.Withdrawal))
+      }
+
       // 
       // inputBalance.formatted != "0" && setSteps(await selectActions(SmartVaultActionType.Deposit))
 
@@ -210,7 +219,7 @@ export default function VaultInputs({
     // Call the async function
     fetchData();
 
-  }, [inputBalance.formatted])
+  }, [inputBalance.value])
 
   async function selectActions(action: SmartVaultActionType) {
     switch (action) {
@@ -305,7 +314,6 @@ export default function VaultInputs({
           vaultData={vaultData}
           EOAaccount={EOAaccount}
           setTransactionCompleted={setTransactionCompleted}
-          refetch={() => { }}
           activeChain={activeChain}
           _action={steps[0]}
           actions={steps}

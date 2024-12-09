@@ -110,17 +110,12 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
     }
 };
 
-export default function InteractionContainer({ step, setStep, action, setAction, _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, actions, setShowModal }:
-    { step: number, setStep: Function, action: Action, setAction: Function, _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, actions: Action[], setShowModal: Function }): JSX.Element {
+export default function InteractionContainer({ step, setStep, action, setAction, _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, activeChain, actions, setShowModal }:
+    { step: number, setStep: Function, action: Action, setAction: Function, _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, actions: Action[], setShowModal: Function }): JSX.Element {
 
     useEffect(() => {
         setAction(_action)
     }, [actions])
-
-
-    useEffect(() => {
-        console.log("stepresult", step)
-    }, [step])
 
     async function interactionPostHook(success: boolean) {
         if (success) {

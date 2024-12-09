@@ -72,12 +72,18 @@ export function getVaultErrorMessage(
     if (Number(value) == 0) {
       setShowModal(false)
     }
-    else {
-      setShowModal(true)
-    }
     return ""
   }
 }
+
+enum Action {
+  depositApprove,
+  depositApproveConfirmed,
+  deposit,
+  depositConfirmed,
+  withdraw,
+}
+
 
 export function formatCurrency(amount: number): string {
   if (Number.isNaN(amount)) {

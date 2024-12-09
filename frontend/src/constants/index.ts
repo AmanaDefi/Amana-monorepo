@@ -181,7 +181,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "Mock POL",
     des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockPOL",
-    imgURL: "/ZetaChain.png",
+    imgURL: "/polygon_logo.png",
     inputToken: {
       symbol: "MATIC.AMOY",
       decimals: 18,
