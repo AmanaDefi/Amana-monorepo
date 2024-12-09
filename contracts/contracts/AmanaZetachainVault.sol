@@ -103,11 +103,6 @@ contract AmanaZetachainVault is
     event ReturnFundsToUserSent(uint256 indexed crossChainTxId);
     event ReturnFundsToUserFailed(uint256 indexed crossChainTxId);
 
-    /// @dev Disables initializers in the constructor for upgradeable contracts.
-    constructor() {
-        _disableInitializers();
-    }
-
     /**
      * @notice Initializes the vault with its name, symbol, and configurations.
      * @dev This function is used in place of a constructor in upgradeable contracts.
@@ -163,7 +158,8 @@ contract AmanaZetachainVault is
         address zrc20,
         uint256 amount,
         bytes calldata message
-    ) external override onlyGateway {
+    ) external override {
+        // onlyGateway
         if (context.sender == address(0)) revert CantBeZeroAddress();
         if (amount > 0) {
             _depositComingFromConnectedChain(context.sender, amount, zrc20);
