@@ -647,32 +647,16 @@ contract AmanaConnectedChainVault is
         crossChainTxId++;
 
         VaultStorage storage $ = _getVaultStorage();
-        (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
-            address(asset())
-        ).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
+        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
+            .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_WITHDRAW_AND_CALL); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
-        uint256 gasFeeForCall = systemContract.gasPriceByChainId(
-            $.strategyChainId
-        ) * GAS_LIMIT_FOR_WITHDRAW_AND_CALL;
-
-        gasTank.getGas{gas: 200000}(
-            gas_zrc20,
-            gasFeeForWithdraw +
-                systemContract.gasPriceByChainId($.strategyChainId) *
-                GAS_LIMIT_FOR_WITHDRAW_AND_CALL
-        );
+        gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
 
         if (gas_zrc20 != address(asset())) {
             IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
-            IZRC20(gas_zrc20).approve(
-                _GATEWAY_ADDRESS,
-                gasFeeForWithdraw + gasFeeForCall
-            );
+            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
         } else {
-            IZRC20(asset()).approve(
-                _GATEWAY_ADDRESS,
-                amount + gasFeeForWithdraw + gasFeeForCall
-            );
+            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount + gasFee);
         }
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
@@ -712,6 +696,7 @@ contract AmanaConnectedChainVault is
             callOptions,
             revertOptions
         );
+
         emit CrossChainInvestSent(currentCrossChainTxId);
     }
 
@@ -791,14 +776,12 @@ contract AmanaConnectedChainVault is
     ) internal {
         VaultStorage storage $ = _getVaultStorage();
 
-        (address gas_zrc20, ) = IZRC20(address(asset())).withdrawGasFee(); // ZRC-20 of the gas token of the chain the strategy is on
-        uint256 gasPrice = systemContract.gasPriceByChainId($.strategyChainId);
+        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
+            .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_CALL); // ZRC-20 of the gas token of the chain the strategy is on
 
-        uint256 gasFeeForCall = gasPrice * GAS_LIMIT_FOR_CALL;
+        gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
 
-        gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForCall);
-
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForCall);
+        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
@@ -868,12 +851,10 @@ contract AmanaConnectedChainVault is
         $.userPrincipal[userAddress] -= principalWithdrawn;
         $.totalPrincipal -= principalWithdrawn;
 
-        uint256 shares = previewWithdraw(amount);
-
-        _burn(userAddress, shares);
-
         if (totalAssetsAfterWithdraw > 0)
             latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
+        uint256 shares = previewWithdraw(amount);
+        _burn(userAddress, shares);
 
         uint256 outputAmount = _returnFundsToUser(
             amount,
@@ -954,7 +935,7 @@ contract AmanaConnectedChainVault is
 
             (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
                 withdrawZRC20
-            ).withdrawGasFee();
+            ).withdrawGasFeeWithGasLimit(IZRC20(withdrawZRC20).GAS_LIMIT()); // ZRC-20 of the gas token of the chain the strategy is on
 
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForWithdraw);
 
