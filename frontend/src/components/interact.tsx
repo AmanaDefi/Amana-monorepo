@@ -160,13 +160,15 @@ export default function InteractionContainer({ step, setStep, action, setAction,
 }
 
 
-function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, interactionPostHook, setShowModal, actions }:
-    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[] }): JSX.Element {
+function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, interactionPostHook, setShowModal, actions }:
+    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[] }): JSX.Element {
 
     const [description, setDescription] = useState('')
     const [label, setlabel] = useState('')
     const [status, setStatus] = useState(false)
     const [disabled, setDisabled] = useState(true)
+
+
 
     useEffect(() => {
         const val = NumberFormatter.format(Number(inputBalance.formatted))
@@ -206,24 +208,6 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setlabel("Done")
                 setDescription("Deposit confirmed.")
                 break;
-            // default:
-            //     if (actions[0] == Action.depositApprove) {
-            //         setlabel("Approve")
-            //         setDescription("Transaction approval required.")
-            //     }
-            //     else {
-            //         setlabel("Deposit")
-            //         setDescription("Deposit confirmation required")
-            //     }
-            //     break;
-
-    async function handleMainAction() {
-        setShowModal(false)
-        if (action == Action.deposit) {
-            await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
-        }
-        else {
-            await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
         }
     }, [action, status])
 
@@ -236,7 +220,6 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
             inputToken,
             EOAaccount,
             setTransactionCompleted,
-            refetch,
             activeChain,
             action
         )()
@@ -259,7 +242,6 @@ function handleInteraction(
     inputToken: Token,
     EOAaccount: Account,
     setTransactionCompleted: (value: boolean) => void,
-    refetch: () => void,
     activeChain: any,
     action: Action
 ) {
@@ -279,12 +261,12 @@ function handleInteraction(
             }
         case Action.deposit:
             return async () => {
-                const result = await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
+                const result = await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
                 return result;
             }
         case Action.withdraw:
             return async () => {
-                const result = await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
+                const result = await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
                 return result;
             }
         default:

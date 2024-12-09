@@ -475,7 +475,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
             method: "function POOL() view returns (address)",
           });
 
-          APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address);
+          // APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address);
         } else {
           // Generic logic for other vaults (e.g., Moonwell)
           const receiptTokenAddress = await readContract({

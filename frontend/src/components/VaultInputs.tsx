@@ -145,7 +145,7 @@ export default function VaultInputs({
     setAllowInput(true);
   }
 
-  function switchTokens() {
+  async function switchTokens() {
     setInputBalance(EMPTY_BALANCE);
 
     if (isDeposit) {
