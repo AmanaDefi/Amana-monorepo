@@ -59,7 +59,8 @@ export const NumberFormatter = Intl.NumberFormat("en", {
 export function getVaultErrorMessage(
   value: string,
   inputValue: string | undefined,
-  setShowModal: Function
+  setShowModal: Function,
+  steps: Action[]
 ): string {
 
   // Input > Balance
@@ -72,6 +73,9 @@ export function getVaultErrorMessage(
     if (Number(value) == 0) {
       setShowModal(false)
     }
+    else {
+      steps.length > 0 && setShowModal(true)
+    }
     return ""
   }
 }
@@ -82,6 +86,7 @@ enum Action {
   deposit,
   depositConfirmed,
   withdraw,
+  withdrawconfirmed
 }
 
 

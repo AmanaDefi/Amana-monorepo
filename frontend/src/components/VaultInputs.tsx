@@ -125,16 +125,17 @@ export default function VaultInputs({
         value: parseUnits(tokenBalance, inputToken.decimals),
         formatted: tokenBalance || "0",
       })
+      steps.length > 0 && setShowModal(true)
     }
   }, [tokenBalance, isDeposit]);
 
   useEffect(() => {
     if (inputToken) {
       if (isDeposit) {
-        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, setShowModal));
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, setShowModal, steps));
       } else {
         const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString();
-        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalance, setShowModal));
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalance, setShowModal, steps));
       }
     }
   }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, userVaultBalances, vaultData.id, action]);
@@ -164,13 +165,6 @@ export default function VaultInputs({
     }
   }
 
-  useEffect(() => {
-    if (steps.length > 0) {
-      setShowModal(true)
-    }
-  }, [steps])
-
-
   function handleChangeInput(e: React.ChangeEvent<HTMLInputElement>) {
     if (!inputToken) return;
     let value = e.currentTarget.value;
@@ -188,10 +182,10 @@ export default function VaultInputs({
 
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * (inputToken.price || 0)) });
     if (isDeposit) {
-      setErrorMessage(getVaultErrorMessage(value, inputTokenBalance, setShowModal));
+      setErrorMessage(getVaultErrorMessage(value, inputTokenBalance, setShowModal, steps));
     } else {
       const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString();
-      setErrorMessage(getVaultErrorMessage(value, userVaultBalance, setShowModal));
+      setErrorMessage(getVaultErrorMessage(value, userVaultBalance, setShowModal, steps));
     }
   }
 
@@ -258,6 +252,7 @@ export default function VaultInputs({
       case SmartVaultActionType.Withdrawal:
         return [
           Action.withdraw,
+          Action.withdrawconfirmed
         ]
     }
   }
@@ -330,4 +325,5 @@ enum Action {
   deposit,
   depositConfirmed,
   withdraw,
+  withdrawconfirmed
 }

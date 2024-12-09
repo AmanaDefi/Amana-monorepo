@@ -203,11 +203,26 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setlabel("Done")
                 setDescription("Deposit confirmed.")
                 break;
+            case Action.withdraw:
+                setlabel("Withdraw")
+                if (status) {
+                    setDisabled(true);
+                    setDescription(`Withdrawing ${val} ${inputToken.symbol}.`)
+                }
+                else {
+                    setDisabled(false);
+                    setDescription("Withdraw confirmation required.")
+                }
+                break;
+            case Action.withdrawconfirmed:
+                setDisabled(false);
+                setlabel("Done")
+                setDescription("Withdraw confirmed.")
+                break;
         }
     }, [action, status])
 
     async function handleMainAction() {
-        // setShowModal(false)
         setStatus(true);
         const success = await handleInteraction(
             vaultData,
@@ -278,4 +293,5 @@ enum Action {
     deposit,
     depositConfirmed,
     withdraw,
+    withdrawconfirmed
 }
