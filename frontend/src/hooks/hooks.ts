@@ -121,7 +121,7 @@ export const useUpdateAPYs = (
                   contract: receiptTokenContract,
                   method: "function POOL() view returns (address)",
                 });
-                APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address);
+                APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address);
               }

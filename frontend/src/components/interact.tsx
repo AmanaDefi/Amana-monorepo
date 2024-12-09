@@ -1,6 +1,7 @@
+import { useState, useEffect } from "react"
 import { VaultData, Token, Balance } from "@/types/types";
 import mixpanel from "mixpanel-browser";
-import { executeDeposit, executeWithdrawal } from "@/actions/actions"
+import { executeDeposit, executeWithdrawal, Approvedeposit } from "@/actions/actions"
 import { Address, Chain, waitForReceipt } from "thirdweb";
 import { toast } from "react-toastify";
 import { Account } from "thirdweb/wallets";
@@ -42,6 +43,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
         toast.success("Transaction confirmed");
 
         setTransactionCompleted(true);
+        return true;
     } catch (error) {
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
@@ -56,7 +58,6 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
 const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any) => {
     setTransactionCompleted(false)
-
     let withdrawZRC20 = withdrawToken.ZRC20equivalent;
     if (activeChain.id === 7001 || activeChain.id === 7000) {
         withdrawZRC20 = withdrawToken.address;
@@ -96,6 +97,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
 
         toast.success("Transaction confirmed");
         setTransactionCompleted(true);
+        return true;
     } catch (error) {
         mixpanel.track("Withdraw Failed", {
             vault: vaultData.id.toString(),
@@ -108,27 +110,112 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
     }
 };
 
-export default function InteractionContainer({ _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, activeChain, setShowModal }:
-    { _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, setShowModal: Function }): JSX.Element {
+export default function InteractionContainer({ step, setStep, action, setAction, _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, actions, setShowModal }:
+    { step: number, setStep: Function, action: Action, setAction: Function, _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, actions: Action[], setShowModal: Function }): JSX.Element {
 
+    useEffect(() => {
+        setAction(_action)
+    }, [actions])
+
+
+    useEffect(() => {
+        console.log("stepresult", step)
+    }, [step])
+
+    async function interactionPostHook(success: boolean) {
+        if (success) {
+            const nextStep = step + 1
+            if (actions[nextStep] == Action.depositApproveConfirmed) {
+                setAction(actions[nextStep])
+                setStep(nextStep)
+                setTimeout(() => {
+                    setAction(actions[nextStep + 1])
+                    setStep(nextStep + 1)
+                }, 3000);
+            }
+            else {
+                setAction(actions[nextStep])
+                setStep(nextStep)
+            }
+
+        } else {
+            // setAction(Action.done)
+        }
+    }
 
     return <div className="w-full flex flex-col mt-5">
         <Interaction
             inputToken={_inputToken}
             vaultData={vaultData}
-            action={_action}
+            action={action}
             inputBalance={_inputBalance}
             EOAaccount={EOAaccount}
             setTransactionCompleted={setTransactionCompleted}
             activeChain={activeChain}
+            interactionPostHook={interactionPostHook}
             setShowModal={setShowModal}
+            actions={actions}
         />
     </div>
 }
 
 
-function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, setShowModal }:
-    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, setShowModal: Function }): JSX.Element {
+function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, refetch, activeChain, interactionPostHook, setShowModal, actions }:
+    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void; activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[] }): JSX.Element {
+
+    const [description, setDescription] = useState('')
+    const [label, setlabel] = useState('')
+    const [status, setStatus] = useState(false)
+    const [disabled, setDisabled] = useState(true)
+
+    useEffect(() => {
+        const val = NumberFormatter.format(Number(inputBalance.formatted))
+        switch (action) {
+            case Action.depositApprove:
+                if (status) {
+                    setDisabled(true);
+                    setDescription(`Approving for Deposit ${val} ${inputToken.symbol} into the Vault.`)
+                }
+                else {
+                    setDisabled(false);
+                    setDescription("Transaction approval required.")
+                }
+                setlabel("Approve")
+                break;
+            case Action.depositApproveConfirmed:
+                setDescription(" Approval Confirmed")
+                setlabel("Deposit")
+                setTimeout(() => {
+                    setDescription("Deposit confirmation required.");
+                    setDisabled(false);
+                }, 3000);
+                break;
+            case Action.deposit:
+                setlabel("Deposit")
+                if (status) {
+                    setDisabled(true);
+                    setDescription(`Depositing ${val} ${inputToken.symbol} into the Vault.`)
+                }
+                else {
+                    setDisabled(false);
+                    setDescription("Deposit confirmation required.")
+                }
+                break;
+            case Action.depositConfirmed:
+                setDisabled(false);
+                setlabel("Done")
+                setDescription("Deposit confirmed.")
+                break;
+            // default:
+            //     if (actions[0] == Action.depositApprove) {
+            //         setlabel("Approve")
+            //         setDescription("Transaction approval required.")
+            //     }
+            //     else {
+            //         setlabel("Deposit")
+            //         setDescription("Deposit confirmation required")
+            //     }
+            //     break;
 
     async function handleMainAction() {
         setShowModal(false)
@@ -138,45 +225,80 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
         else {
             await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
         }
+    }, [action, status])
+
+    async function handleMainAction() {
+        // setShowModal(false)
+        setStatus(true);
+        const success = await handleInteraction(
+            vaultData,
+            inputBalance,
+            inputToken,
+            EOAaccount,
+            setTransactionCompleted,
+            refetch,
+            activeChain,
+            action
+        )()
+        setStatus(false)
+        await interactionPostHook(success)
     }
 
     return (
         <>
-            <p className="text-white text-start text-2xl font-bold leading-none mb-1">{getLabel(action)}</p>
-            <p className="text-white text-start mb-2">{getDescription(inputToken, Number(inputBalance.formatted), action)}</p>
-            <MainActionButton label={getLabel(action)} handleClick={handleMainAction} />
+            <p className="text-white text-start text-2xl font-bold leading-none mb-1">{label}</p>
+            <p className="text-white text-start mb-2">{description}</p>
+            <MainActionButton disabled={disabled} label={label} handleClick={handleMainAction} />
         </>
     )
 }
 
-function getLabel(action: Action) {
+function handleInteraction(
+    vaultData: VaultData,
+    inputBalance: Balance,
+    inputToken: Token,
+    EOAaccount: Account,
+    setTransactionCompleted: (value: boolean) => void,
+    refetch: () => void,
+    activeChain: any,
+    action: Action
+) {
     switch (action) {
         case Action.depositApprove:
-            return "Approve"
+            return async () => {
+                const value = Number(inputBalance.value)
+                const scaledAmount = BigInt(value)
+                const result = await Approvedeposit(
+                    vaultData.id as Address,
+                    inputToken.address as Address,
+                    EOAaccount,
+                    activeChain,
+                    scaledAmount, //TODO make this general for all tokens?
+                )
+                return result;
+            }
         case Action.deposit:
-            return "Deposit"
+            return async () => {
+                const result = await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
+                return result;
+            }
         case Action.withdraw:
-            return "Withdraw"
-        case Action.done:
-            return "Done"
+            return async () => {
+                const result = await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, refetch, activeChain);
+                return result;
+            }
+        default:
+            return () => {
+                return false;
+            }
     }
 }
 
-function getDescription(inputToken: Token, amount: number, action: Action) {
-    const val = NumberFormatter.format(amount)
-    switch (action) {
-        case Action.deposit:
-            return `Depositing ${val} ${inputToken.symbol} into the Vault.`
-        case Action.withdraw:
-            return `Withdrawing ${val} ${inputToken.symbol}.`
-        case Action.done:
-            return ""
-    }
-}
 
 enum Action {
     depositApprove,
+    depositApproveConfirmed,
     deposit,
+    depositConfirmed,
     withdraw,
-    done
 }

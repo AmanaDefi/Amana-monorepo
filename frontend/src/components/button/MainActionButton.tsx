@@ -15,7 +15,7 @@ export default function MainActionButton({
   icon,
   handleClick,
   className,
-  disabled = false,
+  disabled,
   hidden = false,
 }: ButtonProps): JSX.Element {
   return (

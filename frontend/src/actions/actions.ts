@@ -1,9 +1,8 @@
-import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction } from "thirdweb";
+import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction, readContract } from "thirdweb";
 import { client } from "../utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { sendBatchTransaction, readContract } from "thirdweb";
 import { VaultData } from "../types/types";
 import { ethers, JsonRpcProvider } from "ethers";
 import lendingPoolABI from "../../abis/lendingPoolABI.json";
@@ -16,7 +15,8 @@ import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import * as dotenv from "dotenv";
 
 dotenv.config();
-const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA);
+const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA);
+
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 const EVMGatewayAddress = deployEnv === "testnet"
   ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
@@ -62,13 +62,25 @@ export async function calculateEddyAPY(poolAddress: Address, inputTokenAddress: 
   }
 }
 
-export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address) {
-  const aaveLendingPool = new ethers.Contract(poolAddress, lendingPoolABI, provider);
-  const reserveData = await aaveLendingPool.getReserveData(inputTokenAddress);
+
+export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address, strategyChain: Chain) {
+  // Get the Aave lending pool contract
+  const aaveLendingPool = getContract({
+    client,
+    chain: strategyChain,
+    address: poolAddress
+  });
+
+  const reserveData = await readContract({
+    contract: aaveLendingPool,
+    method: "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
+    params: [inputTokenAddress as Address]
+  });
+
   const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
 
   // Get the liquidity rate (in Ray) and normalize it
-  const liquidityRate = reserveData[2];
+  const liquidityRate = reserveData[2]; // Assuming this is the correct index for liquidity rate in reserveData
   const depositAPR = Number(liquidityRate) / 1e27;
 
   // Calculate APY using compounding
@@ -77,6 +89,7 @@ export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: 
 
   return depositAPY;
 }
+
 
 export async function calculateMoonwellAPY(receiptTokenAddress: Address) {
   const moonwellVault = new ethers.Contract(receiptTokenAddress, moonwellVaultABI, provider);
@@ -122,8 +135,8 @@ export const executeDeposit = async (vaultId: Address, inputToken: Address, acti
   }
 };
 
-const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-  console.log("Executing Deposit");
+export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("Executing DepositApprove");
   let contract = getContract({
     client,
     chain: activeChain,
@@ -136,16 +149,22 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     params: [vaultId, transactionAmount]
   });
   console.log("approveTx", approveTx);
-  contract = getContract({
-    client,
-    chain: activeChain,
-    address: vaultId
-  });
   await sendAndConfirmTransaction({
     account: activeAccount,
     transaction: approveTx
   });
   console.log("Approval confirmed");
+  return true;
+};
+
+const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("Executing Deposit");
+  let contract = getContract({
+    client,
+    chain: activeChain,
+    address: vaultId
+  });
+
   console.log("active account", activeAccount?.address);
   console.log("transactionAmount", transactionAmount);
   const supplyTx = prepareContractCall({
@@ -181,10 +200,7 @@ const executeCrossChainDeposit = async (
   let contract, approveTx, payload, revertOptions;
 
   // Prepare payload (calldata to pass to the receiver)
-  payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint256", "uint32"],
-    [activeAccount.address, ZeroAddress, 0, 0, 0, 0]
-  ) as `0x${string}`;
+  payload = "0x" as `0x${string}`;
 
   // Prepare revertOptions
   revertOptions = [
@@ -333,8 +349,8 @@ const executeCrossChainWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint256", "uint32"],
-    [activeAccount.address, withdrawZRC20, withdrawAmount, 0, 0, 0]
+    ["address", "uint256"],
+    [withdrawZRC20, withdrawAmount]
   ) as `0x${string}`;
 
   // Prepare revertOptions to match the Solidity struct
