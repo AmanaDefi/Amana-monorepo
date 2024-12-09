@@ -29,6 +29,7 @@ export interface VaultData {
   name: string;
   symbol: string;
   des?: string;
+  imgURL?: string;
   inputToken: Token;
   protocol: {
     name: string;

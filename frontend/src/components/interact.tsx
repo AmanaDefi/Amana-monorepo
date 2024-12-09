@@ -9,7 +9,7 @@ import { NumberFormatter } from "@/utils/helpers";
 import MainActionButton from "@/components/button/MainActionButton"
 import { client } from "@/utils/client";
 
-const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
+const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any) => {
     setTransactionCompleted(false)
     try {
         const value = Number(inputBalance.value)
@@ -42,7 +42,6 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
         toast.success("Transaction confirmed");
 
-        refetch()
         setTransactionCompleted(true);
         return true;
     } catch (error) {
@@ -57,7 +56,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, refetch: () => void, activeChain: any) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any) => {
     setTransactionCompleted(false)
     let withdrawZRC20 = withdrawToken.ZRC20equivalent;
     if (activeChain.id === 7001 || activeChain.id === 7000) {
@@ -97,7 +96,6 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         await waitForReceipt(receiptObject);
 
         toast.success("Transaction confirmed");
-        refetch()
         setTransactionCompleted(true);
         return true;
     } catch (error) {
@@ -118,6 +116,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     useEffect(() => {
         setAction(_action)
     }, [actions])
+
 
     useEffect(() => {
         console.log("stepresult", step)
@@ -152,7 +151,6 @@ export default function InteractionContainer({ step, setStep, action, setAction,
             inputBalance={_inputBalance}
             EOAaccount={EOAaccount}
             setTransactionCompleted={setTransactionCompleted}
-            refetch={refetch}
             activeChain={activeChain}
             interactionPostHook={interactionPostHook}
             setShowModal={setShowModal}
@@ -218,6 +216,14 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
             //         setDescription("Deposit confirmation required")
             //     }
             //     break;
+
+    async function handleMainAction() {
+        setShowModal(false)
+        if (action == Action.deposit) {
+            await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
+        }
+        else {
+            await handleWithdrawTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
         }
     }, [action, status])
 

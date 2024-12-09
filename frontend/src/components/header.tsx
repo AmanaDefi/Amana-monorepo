@@ -64,11 +64,6 @@ const Header = () => {
                         chains={SUPPORTED_CHAINS}
                         wallets={wallets}
                         connectModal={{ size: "compact" }}
-                        detailsButton={{
-                            displayBalanceToken: {
-                                [7001]: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-                            },
-                        }}
                     />
                 </div>
             </header>

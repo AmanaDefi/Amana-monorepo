@@ -1,9 +1,5 @@
-import React, { useEffect, useState } from "react";
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, UserVaultBalance } from "../types/types";
 import { Address } from "thirdweb";
-import DepositModal from "./DepositModal";
-import WithdrawModal from "./WithdrawModal";
-import mixpanel from "mixpanel-browser";
 import { Account } from "thirdweb/wallets";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
@@ -16,11 +12,6 @@ interface VaultsViewProps {
   userVaultBalances: UserVaultBalance[];
   vaultTotalAssets: VaultTotalAssets[];
   vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
-  transactionAmount: string;
-  setTransactionAmount: (value: string) => void;
-  depositTransaction: (value: Address) => Promise<any>;
-  withdrawTransaction: (value: Address) => Promise<any>;
-  activeAccount: Account | null;
 }
 
 const VaultsView: React.FC<VaultsViewProps> = ({
@@ -29,66 +20,10 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   vaultAPYs,
   userVaultBalances,
   vaultTotalAssets,
-  vaultTotalAssetsinToken,
-  transactionAmount,
-  setTransactionAmount,
-  depositTransaction,
-  withdrawTransaction,
-  activeAccount,
+  vaultTotalAssetsinToken
 }) => {
-
-  const [isDepositModalOpen, setDepositModalOpen] = useState(false);
-  const [isWithdrawModalOpen, setWithdrawModalOpen] = useState(false);
-  const [selectedVault, setSelectedVault] = useState<VaultData | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
 
-  const handleDepositClick = (vault: VaultData) => {
-    setSelectedVault(vault);
-    mixpanel.track("Deposit Button Clicked", {
-      vault: vault.name,
-    });
-
-    setDepositModalOpen(true);
-  };
-
-  const handleWithdrawClick = (vault: VaultData) => {
-    setSelectedVault(vault);
-    mixpanel.track("Withdraw Button Clicked", {
-      vault: vault.name,
-    });
-    setWithdrawModalOpen(true);
-  };
-
-  const handleDeposit = async () => {
-    if (!selectedVault) return;
-
-    setIsProcessing(true);
-
-    try {
-      await depositTransaction(selectedVault.id as Address);
-    } catch (error) {
-      console.error("Transaction failed:", error);
-    } finally {
-      setIsProcessing(false);
-      setDepositModalOpen(false);
-    }
-  };
-
-  const handleWithdraw = async () => {
-    if (!selectedVault) return;
-
-    setIsProcessing(true);
-
-    try {
-      await withdrawTransaction(selectedVault.id as Address);
-    } catch (error) {
-      console.error("Transaction failed:", error);
-    } finally {
-      setIsProcessing(false);
-      setWithdrawModalOpen(false);
-    }
-  };
 
   return (
     <div>
@@ -128,8 +63,11 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   onClick={() => { router.push("/vaults/" + vault.id) }}
                   role="button"
                 >
-                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                    {vault.protocol.network}
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {vault.imgURL && <Image src={vault.imgURL} width="30" height="30" alt="USD Icon" className="mr-2 rounded-full w-8 h-8 object-cover" />}
+                      {vault.protocol.network}
+                    </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -159,27 +97,6 @@ const VaultsView: React.FC<VaultsViewProps> = ({
           </table>
         </div>
       )}
-
-      <DepositModal
-        isOpen={isDepositModalOpen}
-        closeModal={() => setDepositModalOpen(false)}
-        transactionAmount={transactionAmount}
-        setTransactionAmount={setTransactionAmount}
-        handleDeposit={handleDeposit}
-        activeAccount={activeAccount}
-        selectedVault={selectedVault} // Pass selectedVault to DepositModal
-        isProcessing={isProcessing}
-      />
-      <WithdrawModal
-        isOpen={isWithdrawModalOpen}
-        closeModal={() => setWithdrawModalOpen(false)}
-        transactionAmount={transactionAmount}
-        setTransactionAmount={setTransactionAmount}
-        handleWithdraw={handleWithdraw}
-        vaultBalance={selectedVault ? userVaultBalances.find((balance) => balance.vaultId === selectedVault.id)?.balance : "0"}
-        vaultTokenSymbol={selectedVault ? selectedVault.symbol : ""}
-        isProcessing={isProcessing}
-      />
     </div>
   );
 };

@@ -7,7 +7,7 @@ import { parseUnits } from "viem";
 import { Address, getContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
-import { SUPPORTED_CHAINS, APPROVED_TOKENS } from "../constants/chainConfig";
+import { APPROVED_TOKENS } from "../constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { getVaultErrorMessage } from "@/utils/utils";
 import { ethers } from "ethers";
@@ -127,7 +127,7 @@ export default function VaultInputs({
       })
       setShowModal(true)
     }
-  }, [tokenBalance]);
+  }, [tokenBalance, isDeposit]);
 
   useEffect(() => {
     if (inputToken) {
@@ -145,7 +145,7 @@ export default function VaultInputs({
     setAllowInput(true);
   }
 
-  async function switchTokens() {
+  function switchTokens() {
     setInputBalance(EMPTY_BALANCE);
 
     if (isDeposit) {
@@ -273,6 +273,8 @@ export default function VaultInputs({
         errorMessage={errorMessage}
         tokenList={activeChain.id === 7001 || activeChain.id === 7000 ? [vaultData.inputToken] : APPROVED_TOKENS[activeChain.id]}
         disabled={false}
+        isDeposit={isDeposit}
+        userVaultBalances={userVaultBalances}
       />
       <div className="mt-4">
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>

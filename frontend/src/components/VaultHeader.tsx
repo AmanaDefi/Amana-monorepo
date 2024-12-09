@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { VaultData, UserVaultBalance, VaultTotalAssets, VaultAPY, Token } from "../types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from 'next/image';
-import { formatBalance } from '@/utils/utils';
+import { formatBalance, formatCurrency } from '@/utils/utils';
 import { client } from "@/utils/client";
 import { ethers } from "ethers";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
@@ -57,12 +57,16 @@ export default function VaultHeader({
         client
     });
 
+    const data = formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance));
+    const price = inputToken.price;
+    const symbol = inputToken.symbol;
+
     useEffect(() => {
         const fetchData = async () => {
             if (inputToken.isNative) {
                 if (!isLoading && !isError && walletBalance) {
                     // If it's a native token, use the wallet balance
-                    setWalletData(Number(walletBalance.displayValue).toFixed(2) || "0.00");
+                    setWalletData(walletBalance.displayValue);
                 }
             } else {
                 // If it's an ERC-20 token, use getContract and getBalance
@@ -76,18 +80,16 @@ export default function VaultHeader({
                     address: userAddress as Address,
                 });
                 const formattedBalance = ethers.formatUnits(value, decimals);
-                setWalletData(Number(formattedBalance).toFixed(2));
+                setWalletData(formattedBalance);
             }
         };
 
         // Call the async function to fetch balance data
         fetchData();
 
-    }, [inputToken, userAddress, activeChain, walletBalance, isLoading, isError]);
+    }, [inputToken, userAddress, activeChain, walletBalance, isLoading, isError, data]);
 
-    const data = formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance));
-    const price = inputToken.price;
-    const symbol = inputToken.symbol;
+
 
     return (
         <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
@@ -121,8 +123,8 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"deposits"}
                             label="Deposits"
-                            value={Number(data).toFixed(2).toString() + " " + symbol}
-                            secondaryValue={'$ ' + (Number(data ? data : "0") * (price ? price : 0)).toFixed(2).toString()}
+                            value={formatBalance(Number(data)).toString() + " " + vaultData.symbol}
+                            secondaryValue={'$ ' + formatCurrency((Number(data ? data : "0") * (price ? price : 0))).toString()}
                             tooltip="Value of your vault deposits"
                         />
                     </div>
@@ -130,8 +132,8 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"wallet"}
                             label="Your Wallet"
-                            value={walletData + " " + symbol}
-                            secondaryValue={'$ ' + (Number(walletData) * price).toFixed(2).toString()}
+                            value={formatBalance(Number(walletData)).toString() + " " + symbol}
+                            secondaryValue={'$ ' + formatCurrency((Number(walletData) * price)).toString()}
                             tooltip="Value of deposit assets held in your wallet"
                         />
                     </div>
@@ -139,7 +141,9 @@ export default function VaultHeader({
                         <LargeCardStat
                             id={"APY"}
                             label="7d APY"
-                            value={(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2) + "%"}
+                            value={
+                                Number.isNaN(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100) ? "0%" :
+                                    (Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2) + "%"}
                             tooltip="Value of deposit assets held in your wallet"
                         />
                     </div>

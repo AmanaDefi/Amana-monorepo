@@ -79,56 +79,33 @@ export function getVaultErrorMessage(
   }
 }
 
-function findFirstNonZeroPosition(num: number): number {
-  // Convert the number to a string, ensuring precision
-  const numStr: string = num.toFixed(40); // Adjust precision as needed
-
-  // Check if the number is in scientific notation
-  if (numStr.includes('e')) {
-    const parts: string[] = numStr.split('e');
-    const decimalPart: string = parts[0].split('.')[1] || '';
-    const exponent: number = parseInt(parts[1], 10);
-
-    // Find the first non-zero digit
-    const firstNonZeroIndex: number = decimalPart.search(/[1-9]/);
-    if (firstNonZeroIndex !== -1) {
-      return exponent + (firstNonZeroIndex + 1); // Adjust for the exponent
-    }
+export function formatCurrency(amount: number): string {
+  if (Number.isNaN(amount)) {
+    return "0.00";
   }
-
-  // Split the string into integer and decimal parts
-  const parts: string[] = numStr.split('.');
-
-  // If there's no decimal part, return -1 (indicating no non-zero found)
-  if (parts.length < 2) {
-    return -1;
+  // Convert the amount to a string and split it into integer and decimal parts
+  if (amount == 0) {
+    return "0.00";
   }
+  const [integerPart, decimalPart] = Number(amount.toFixed(2)).toString().split('.');
 
-  const decimalPart: string = parts[1];
-
-  // Iterate through the decimal part to find the first non-zero digit
-  for (let i = 0; i < decimalPart.length; i++) {
-    if (decimalPart[i] !== '0') {
-      return i; // Return the index of the first non-zero digit
-    }
+  // Use a regular expression to add commas to the integer part
+  const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (decimalPart == undefined) {
+    return `${formattedIntegerPart}`;
   }
-
-  return -1; // Return -1 if no non-zero digit is found
+  // Combine the formatted integer part with the decimal part
+  return `${formattedIntegerPart}.${decimalPart}`;
 }
 
 export function formatBalance(balance: number) {
 
-  const position = findFirstNonZeroPosition(balance);
+  if (Number.isNaN(balance)) {
+    return "0";
+  }
+
   let remaining: string;
-  if (balance >= 1) {
-    remaining = balance.toFixed(2)
-  }
-  else if (balance == 0) {
-    remaining = "0.00"
-  }
-  else {
-    remaining = '0.' + balance.toString().split(".")[1]?.slice(0, position + 1);
-  }
+  remaining = Number(balance.toFixed(6)).toString();
   return remaining;
 }
 
