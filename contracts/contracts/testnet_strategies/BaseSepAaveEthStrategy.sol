@@ -28,7 +28,6 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
     address constant BASE_SEPOLIA_WETH_ADDRESS =
         0x4200000000000000000000000000000000000006;
     uint256 executionNonce = 1;
-    uint256 crossChainTxId = 0;
 
     event FundsInvested(
         uint256 indexed crossChainTxId,
@@ -90,10 +89,11 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             uint256 amount,
             uint256 fee,
             uint32 withdrawChainId,
-            bool isDeposit
+            bool isDeposit,
+            uint256 crossChainTxId
         ) = abi.decode(
                 message,
-                (address, address, uint256, uint256, uint32, bool)
+                (address, address, uint256, uint256, uint32, bool, uint256)
             );
 
         if (context.sender != address(amanaVault)) {
@@ -104,7 +104,12 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
         executionNonce++;
 
         if (isDeposit) {
-            _invest(userAddress, msg.value, currentExecutionNonce);
+            _invest(
+                userAddress,
+                msg.value,
+                currentExecutionNonce,
+                crossChainTxId
+            );
             return abi.encode(true);
         } else {
             _divest(
@@ -113,7 +118,8 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
                 amount,
                 fee,
                 withdrawChainId,
-                currentExecutionNonce
+                currentExecutionNonce,
+                crossChainTxId
             );
             return abi.encode(true);
         }
@@ -126,7 +132,8 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
     function _invest(
         address userAddress,
         uint256 amount,
-        uint256 _executionNonce
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
     ) private returns (uint256) {
         require(amount > 0, "No ETH sent");
 
@@ -146,14 +153,15 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             true,
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
-            _executionNonce
+            _executionNonce,
+            _crossChainTxId
         );
 
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
             false,
             address(this),
-            abi.encode("_investConfirmFailed", crossChainTxId),
+            abi.encode("_investConfirmFailed", _crossChainTxId),
             uint256(1000000)
         );
 
@@ -163,7 +171,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             revertOptions
         );
 
-        emit FundsInvested(crossChainTxId, userAddress, amount);
+        emit FundsInvested(_crossChainTxId, userAddress, amount);
         return amount;
     }
 
@@ -180,7 +188,8 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
         uint256 amount,
         uint256 fee,
         uint32 withdrawChainId,
-        uint256 _executionNonce
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
     ) private returns (uint256) {
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
         aavePool.withdraw{gas: 200000}(
@@ -199,14 +208,15 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             false,
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
-            _executionNonce
+            _executionNonce,
+            _crossChainTxId
         );
 
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
             false,
             address(this),
-            abi.encode("_returnFundsFromStrategyFailed", crossChainTxId),
+            abi.encode("_returnFundsFromStrategyFailed", _crossChainTxId),
             uint256(1000000)
         );
 
@@ -216,7 +226,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             revertOptions
         );
 
-        emit FundsDivested(crossChainTxId, userAddress, amount);
+        emit FundsDivested(_crossChainTxId, userAddress, amount);
         return amount;
     }
 

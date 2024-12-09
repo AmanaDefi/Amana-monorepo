@@ -119,8 +119,6 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const userAddress = await user1.getAddress();
       const amount = ethers.utils.parseUnits("0.01", 18);
 
-      const message = "0x";
-
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, amanaVault.address, depositAmount1);
 
       const tx = await amanaVault.onCall(
@@ -131,7 +129,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         },
         ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
         amount,
-        message,
+        "0x",
         {
           gasPrice: ethers.utils.parseUnits('150', 'gwei'),
         }
@@ -139,8 +137,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const receipt = await tx.wait();
 
       const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, ethers.constants.AddressZero, depositAmount1, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount1, 1]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.constants.AddressZero, depositAmount1, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount1, 1, 0]
       );
 
       const tx2 = await amanaVault.onCall(
@@ -161,17 +159,16 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       console.log("Gas used for deposit scenario:", receipt2.gasUsed.toString());
 
       await expect(tx2)
-        .to.emit(amanaVault, "Deposit")
-      // .withArgs(ethers.constants.AddressZero, userAddress, amount, expected_shares);
+        .to.emit(amanaVault, "Deposited")
+        .withArgs(userAddress, amount, depositAmount1, 0);
     });
 
     it("should process onCall correctly with amount 0 - expect Gateway to emit Called (cross-chain withdraw)", async function () {
       const { user1, amanaVault, gatewayZEVM } = await loadFixture(setup);
 
-      // Deposit first
+      // Deposited first
       const userAddress = await user1.getAddress();
       const depositAmount = ethers.utils.parseUnits("0.01", 18);
-      const depositMessage = "0x";
 
       // simulate deposit of amount into vault
       await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, amanaVault.address, depositAmount);
@@ -184,13 +181,13 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
         },
         ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
         depositAmount,
-        depositMessage
+        "0x"
       );
 
       // Proceed to confirmation of deposit
       const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, ethers.constants.AddressZero, depositAmount, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount, 1]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.constants.AddressZero, depositAmount, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount, 1, 0]
       );
 
       await amanaVault.onCall(
@@ -237,7 +234,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
     it("should process onCall correctly for withdraw confirmation", async function () {
       const { user1, amanaVault, gatewayZEVM } = await loadFixture(setup);
 
-      // Deposit first
+      // Deposited first
       const userAddress = await user1.getAddress();
       const depositAmount = ethers.utils.parseUnits("0.1", 18);
       const depositMessage = "0x";
@@ -258,8 +255,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Proceed to confirmation of deposit
       const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, ethers.constants.AddressZero, depositAmount, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount, 1]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.constants.AddressZero, depositAmount, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount, 1, 0]
       );
 
       await amanaVault.onCall(
@@ -303,8 +300,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       const fee2 = ethers.utils.parseUnits("0", 18);
 
       const withdrawMessage2 = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, withdrawZRC20, withdrawAmount, fee2, ORIGIN_CHAIN_ID, false, depositAmount, withdrawAmount, 2]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, withdrawZRC20, withdrawAmount, fee2, ORIGIN_CHAIN_ID, false, depositAmount, withdrawAmount, 2, 1]
       );
 
       // simulate deposit of amount into vault
@@ -329,7 +326,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
       console.log("Gas used for withdrawal part two scenario:", receipt.gasUsed.toString());
 
       await expect(tx2)
-        .to.emit(amanaVault, "Withdraw")
+        .to.emit(amanaVault, "Withdrawn")
         .to.emit(gatewayZEVM, "Withdrawn")
     });
 
@@ -353,8 +350,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Send the higher nonce confirmation first (nonce 2)
       const confirmMessage2 = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, ethers.constants.AddressZero, depositAmount1, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount1, 2]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.constants.AddressZero, depositAmount1, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount1, 2, 1]
       );
 
       await amanaVault.onCall(
@@ -373,8 +370,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Now send the lower nonce confirmation (nonce 1)
       const confirmMessage1 = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, ethers.constants.AddressZero, depositAmount1, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount1, 1]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.constants.AddressZero, depositAmount1, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount1, 1, 0]
       );
 
       const tx = await amanaVault.onCall(
@@ -396,8 +393,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Validate that all confirmations are processed in order
       await expect(tx)
-        .to.emit(amanaVault, "Deposit")
-        .withArgs(ethers.constants.AddressZero, userAddress, depositAmount1, ethers.utils.parseUnits("0.01", 18));
+        .to.emit(amanaVault, "Deposited")
+        .withArgs(userAddress, depositAmount1, ethers.utils.parseUnits("0.01", 18), 0);
     });
 
     it("should handle out-of-sequence confirmations for withdrawals correctly", async function () {
@@ -421,8 +418,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Simulate deposit confirmation
       const confirmMessage1 = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, ethers.constants.AddressZero, depositAmount, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount, 1]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, ethers.constants.AddressZero, depositAmount, 0, ORIGIN_CHAIN_ID, true, 0, depositAmount, 1, 0]
       );
 
       await amanaVault.onCall(
@@ -459,8 +456,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Send the higher nonce confirmation first (nonce 3)
       const confirmMessage3 = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, withdrawZRC20, withdrawAmount, 0, ORIGIN_CHAIN_ID, false, depositAmount, withdrawAmount, 3]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, withdrawZRC20, withdrawAmount, 0, ORIGIN_CHAIN_ID, false, depositAmount, withdrawAmount, 3, 1]
       );
 
       await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, amanaVault.address, depositAmount);
@@ -481,8 +478,8 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Now send the lower nonce confirmation (nonce 2)
       const confirmMessage2 = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256"],
-        [userAddress, withdrawZRC20, withdrawAmount, 0, ORIGIN_CHAIN_ID, false, depositAmount, withdrawAmount, 2]
+        ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+        [userAddress, withdrawZRC20, withdrawAmount, 0, ORIGIN_CHAIN_ID, false, depositAmount, withdrawAmount, 2, 2]
       );
 
       const tx = await amanaVault.onCall(
@@ -504,7 +501,7 @@ describe("Vault and BaseSepAaveEthStrategy", function () {
 
       // Validate that all confirmations are processed in order
       await expect(tx)
-        .to.emit(amanaVault, "Withdraw")
+        .to.emit(amanaVault, "Withdrawn")
       // .withArgs(userAddress, userAddress, userAddress, withdrawAmount, withdrawAmount);
     });
 
