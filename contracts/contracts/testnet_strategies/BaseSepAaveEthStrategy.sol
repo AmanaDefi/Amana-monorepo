@@ -227,7 +227,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
         );
 
         emit FundsDivested(_crossChainTxId, userAddress, amount);
-        return amount;
+        return amount + fee;
     }
 
     /// @notice Gets the total assets held in the strategy.
