@@ -23,12 +23,27 @@ export async function handleAllowance({
         chain: activeChain, // this will always be Zetachain
         address: token
     });
+    let allow: bigint;
+    const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
+    const EVMGatewayAddress = deployEnv === "testnet"
+        ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
+        : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
 
-    let allow = await allowance({
-        contract,
-        owner: activeAccount,
-        spender: spender,
-    });
+    if (activeChain.id === 7000 || activeChain.id === 7001) {
+        allow = await allowance({
+            contract,
+            owner: activeAccount,
+            spender: spender,
+        });
+    }
+    else {
+        allow = await allowance({
+            contract,
+            owner: activeAccount,
+            spender: EVMGatewayAddress as Address,
+        });
+    }
+
     if (Number(allow) >= Number(amount)) {
         return true;
     }

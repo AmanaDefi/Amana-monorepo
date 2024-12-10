@@ -10,7 +10,7 @@ import { client } from "@/utils/client";
 import { APPROVED_TOKENS } from "../constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { getVaultErrorMessage } from "@/utils/utils";
-import { ethers } from "ethers";
+import { ethers, ZeroAddress } from "ethers";
 import InteractionContainer from "./interact";
 import { handleAllowance } from "@/utils/approve";
 
@@ -33,11 +33,13 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
   useEffect(() => {
     const fetchTokenBalance = async () => {
       if (!token || !userAddress || !activeChain) return;
-
       if (token.isNative) {
         if (!isLoading && !isError && walletBalance) {
           // Fetch native token balance (ETH, BNB, MATIC, etc.)
           setBalance(walletBalance.displayValue || "0");
+        }
+        else {
+          setBalance("0");
         }
       } else {
         // Fetch ERC-20 token balance
@@ -49,7 +51,7 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
     };
 
     fetchTokenBalance();
-  }, [token?.address, userAddress, activeChain?.id, walletBalance, isLoading, isError]);
+  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError]);
 
   return balance;
 }
@@ -97,7 +99,7 @@ export default function VaultInputs({
     }
 
     setAllowInput(true);
-  }, [activeChain.id, vaultData.inputToken]);
+  }, [activeChain.id, vaultData.inputToken, isDeposit]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain);
@@ -106,6 +108,7 @@ export default function VaultInputs({
     if (inputToken) {
       setShowModal(false)
       // Create a new inputToken object with the updated balance
+
       const updatedToken: Token = {
         ...inputToken,
         balance: {
@@ -123,11 +126,16 @@ export default function VaultInputs({
       setInputBalance({
         ...inputBalance,
         value: parseUnits(tokenBalance, inputToken.decimals),
-        formatted: tokenBalance || "0",
+        formatted: "0",
       })
       steps.length > 0 && setShowModal(true)
     }
   }, [tokenBalance, isDeposit]);
+
+  useEffect(() => {
+
+  }, [activeChain])
+
 
   useEffect(() => {
     if (inputToken) {
@@ -140,6 +148,16 @@ export default function VaultInputs({
     }
   }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, userVaultBalances, vaultData.id, action]);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      if (Number(inputBalance.value) != 0) {
+        isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit)) : setSteps(await selectActions(SmartVaultActionType.Withdrawal))
+      }
+    };
+    // Call the async function
+    fetchData();
+  }, [inputBalance.value, inputToken?.address, activeChain.id])
+
   function handleTokenSelect(selectedToken: Token): void {
     setInputToken(selectedToken);
     setAllowInput(true);
@@ -147,12 +165,9 @@ export default function VaultInputs({
 
   async function switchTokens() {
     setInputBalance(EMPTY_BALANCE);
-
     if (isDeposit) {
       // Switch to Withdraw
-      if (vaultData.inputToken) {
-        setInputToken(vaultData.inputToken);
-      }
+
       setIsDeposit(false);
       const newAction = SmartVaultActionType.Withdrawal;
       setSteps(await selectActions(newAction));
@@ -199,25 +214,12 @@ export default function VaultInputs({
     }
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (Number(inputBalance.value) != 0) {
-        isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit)) : setSteps(await selectActions(SmartVaultActionType.Withdrawal))
-      }
 
-      // 
-      // inputBalance.formatted != "0" && setSteps(await selectActions(SmartVaultActionType.Deposit))
-
-    };
-
-    // Call the async function
-    fetchData();
-
-  }, [inputBalance.value])
 
   async function selectActions(action: SmartVaultActionType) {
     switch (action) {
       case SmartVaultActionType.Deposit:
+
         const value = Number(inputBalance.value)
 
         if (!activeChain) {
@@ -227,10 +229,15 @@ export default function VaultInputs({
         if (!EOAaccount) {
           throw new Error("No active account found");
         }
-
-
-        if (await handleAllowance({
-          token: vaultData.inputToken.address,
+        const isNativeToken = inputToken?.address === ZeroAddress;
+        if (isNativeToken) {
+          return [
+            Action.deposit,
+            Action.depositConfirmed
+          ]
+        }
+        else if (await handleAllowance({
+          token: inputToken?.address as Address,
           activeChain: activeChain,
           activeAccount: EOAaccount.address as Address,
           spender: vaultData.id as Address,

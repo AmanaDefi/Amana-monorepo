@@ -73,7 +73,7 @@ export default function SearchToken({
                     alt={option.symbol}
                     width={1200} // Adjust to your desired width
                     height={800} // Adjust to your desired height                  
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain mr-2 rounded-full"
                   />
                 </span>
                 <span className="cursor-pointer w-full flex flex-row justify-between">

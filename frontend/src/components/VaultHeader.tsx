@@ -68,6 +68,9 @@ export default function VaultHeader({
                     // If it's a native token, use the wallet balance
                     setWalletData(walletBalance.displayValue);
                 }
+                else {
+                    setWalletData("0");
+                }
             } else {
                 // If it's an ERC-20 token, use getContract and getBalance
                 const contract = getContract({
@@ -101,7 +104,7 @@ export default function VaultHeader({
                             alt={inputToken.symbol}
                             width={1200} // Adjust to your desired width
                             height={800} // Adjust to your desired height                          
-                            className={`w-6 md:w-10 h-6 md:h-10`}
+                            className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
                         />
                     </div>
                     <h2 className="font-bold text-white">{symbol}</h2>
@@ -111,7 +114,7 @@ export default function VaultHeader({
                             alt={vaultData.protocol.name}
                             width={1200} // Adjust to your desired width
                             height={800} // Adjust to your desired height                          
-                            className={`w-6 md:w-10 h-6 md:h-10`}
+                            className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
                         />
                     </div>
                     <h2 className="font-bold text-white">{vaultData.protocol.name}</h2>
