@@ -23,5 +23,4 @@ export async function setTokenBalance(tokenAddress, account, amount) {
 
   const token = await ethers.getContractAt("IERC20", tokenAddress);
   const newBalance = await token.balanceOf(account);
-  console.log(`Balance after update for ${account}: ${ethers.utils.formatUnits(newBalance, 18)} tokens`);
 }
