@@ -110,6 +110,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
+    imgURL: "/BathEthsepolia.png",
     inputToken: {
       symbol: "ETH",
       decimals: 18,
@@ -132,6 +133,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
+    imgURL: "/Ethsepolia.png",
     inputToken: {
       symbol: "sETH",
       decimals: 18,
@@ -149,6 +151,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
+
   // {
   //   id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
   //   name: "Mock USDC",
@@ -171,11 +174,13 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   //     des: "This is a mock strategy for testing purposes."
   //   },
   // },
+
   {
     id: "0xD6d18C44cAC028d7c9D4bDE5A648082e3b61Aaea", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
     name: "Mock POL",
     des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockPOL",
+    imgURL: "/polygon_logo.png",
     inputToken: {
       symbol: "MATIC.AMOY",
       decimals: 18,
@@ -198,6 +203,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockUSDC",
+    imgURL: "/bscnet.jpg",
     inputToken: {
       symbol: "USDC",
       decimals: 6,

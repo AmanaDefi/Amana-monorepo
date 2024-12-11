@@ -135,8 +135,8 @@ export const executeDeposit = async (vaultId: Address, inputToken: Address, acti
   }
 };
 
-const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-  console.log("Executing Deposit");
+export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("Executing DepositApprove");
   let contract = getContract({
     client,
     chain: activeChain,
@@ -149,16 +149,22 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     params: [vaultId, transactionAmount]
   });
   console.log("approveTx", approveTx);
-  contract = getContract({
-    client,
-    chain: activeChain,
-    address: vaultId
-  });
   await sendAndConfirmTransaction({
     account: activeAccount,
     transaction: approveTx
   });
   console.log("Approval confirmed");
+  return true;
+};
+
+const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("Executing Deposit");
+  let contract = getContract({
+    client,
+    chain: activeChain,
+    address: vaultId
+  });
+
   console.log("active account", activeAccount?.address);
   console.log("transactionAmount", transactionAmount);
   const supplyTx = prepareContractCall({
@@ -469,7 +475,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
             method: "function POOL() view returns (address)",
           });
 
-          APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address);
+          // APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address);
         } else {
           // Generic logic for other vaults (e.g., Moonwell)
           const receiptTokenAddress = await readContract({

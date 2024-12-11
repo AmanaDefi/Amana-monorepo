@@ -31,7 +31,7 @@ const VaultsDetailContainer: React.FC<{
 
     const vaults: VaultData[] = VAULT_DATA;
     const EOAaccount = useActiveAccount();
-
+    
     useEffect(() => {
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
       setVaultData(foundVault)
