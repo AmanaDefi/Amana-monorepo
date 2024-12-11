@@ -110,6 +110,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
+    imgURL: "/BathEthsepolia.png",
     inputToken: {
       symbol: "ETH",
       decimals: 18,
@@ -132,6 +133,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
+    imgURL: "/Ethsepolia.png",
     inputToken: {
       symbol: "sETH",
       decimals: 18,
@@ -149,33 +151,37 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
-  {
-    id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
-    name: "Mock USDC",
-    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
-    symbol: "aMockUSDC",
-    inputToken: {
-      symbol: "USDC.SEPOLIA",
-      decimals: 6,
-      address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Mock",
-      network: "Zetachain Athens",
-      netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
-      imgURL: "/aave.png",
-      des: "This is a mock strategy for testing purposes."
-    },
-  },
+
+  // {
+  //   id: "0x35f07b52Bc7a66c3D61C20EbdaBcBC40E303C0Ae", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
+  //   name: "Mock USDC - Zetachain",
+  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+  //   symbol: "aMockUSDC",
+  //   imgURL: "/ZetaChain.png",
+  //   inputToken: {
+  //     symbol: "USDC.SEPOLIA",
+  //     decimals: 6,
+  //     address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     network: "Zetachain (test)",
+  //     netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+  //     imgURL: "/aave.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
+  
   {
     id: "0x7E5b1F0dAC52c5e50e61C1cEC28521a80419d450", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
     name: "Mock POL",
     des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockPOL",
+    imgURL: "/polygon_logo.png",
     inputToken: {
       symbol: "MATIC.AMOY",
       decimals: 18,
@@ -198,6 +204,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockUSDC",
+    imgURL: "/bscnet.jpg",
     inputToken: {
       symbol: "USDC",
       decimals: 6,

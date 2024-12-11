@@ -24,6 +24,7 @@ export default function TokenIcon({
     alt="token icon" 
     width={1200}
     height={800} 
+    className="mr-2 rounded-full"
     />;
   }
   return (

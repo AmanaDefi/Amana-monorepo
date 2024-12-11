@@ -29,6 +29,7 @@ export interface VaultData {
   name: string;
   symbol: string;
   des?: string;
+  imgURL?: string;
   inputToken: Token;
   protocol: {
     name: string;
@@ -92,4 +93,9 @@ export interface Token {
 
 export interface TokenByAddress {
   [key: Address]: Token;
+}
+
+export enum SmartVaultActionType {
+  Deposit,
+  Withdrawal
 }

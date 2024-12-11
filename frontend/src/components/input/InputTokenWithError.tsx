@@ -1,8 +1,8 @@
 import type { HTMLProps } from "react";
-import { Token, VaultData } from "@/types/types";
+import { Token, VaultData, UserVaultBalance } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
-import { NumberFormatter } from "@/utils/utils";
+import { formatCurrency, formatBalance } from "@/utils/utils";
 
 export default function InputTokenWithError({
   tokenList,
@@ -16,6 +16,8 @@ export default function InputTokenWithError({
   allowInput,
   inputMoreThanBalance,
   disabled = false,
+  isDeposit,
+  userVaultBalances,
   ...props
 }: {
   errorMessage?: string;
@@ -29,8 +31,12 @@ export default function InputTokenWithError({
   allowInput?: boolean;
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
+  isDeposit: Boolean;
+  userVaultBalances: UserVaultBalance[];
 } & HTMLProps<HTMLInputElement>): JSX.Element {
   console.log(selectedToken);
+
+  const data = formatBalance(Number(userVaultBalances?.find((balance) => balance.vaultId === vaultData.id)?.balance));
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
@@ -43,9 +49,8 @@ export default function InputTokenWithError({
       )}
       <div className="relative flex items-center w-full">
         <div
-          className={`w-full px-5 pt-4 pb-2 rounded-lg border ${
-            errorMessage ? "border-red-500" : "border-customGray100"
-          }`}
+          className={`w-full px-5 pt-4 pb-2 rounded-lg border ${errorMessage ? "border-red-500" : "border-customGray100"
+            }`}
         >
           <div className="flex items-center justify-between ">
             <div className="xs:w-full xs:border-r xs:border-customGray500 xs:pr-4 smmd:p-0 smmd:border-none smmd:w-1/2">
@@ -63,18 +68,16 @@ export default function InputTokenWithError({
             <p className="group-hover/max:text-white">
               {selectedToken
                 ? "$ " +
-                  (Number(props.value) * (selectedToken.price || 0))
-                    .toFixed(2)
-                    .toString()
+                formatCurrency((Number(props.value) * (selectedToken.price || 0)))
+                  .toString()
                 : "$ 0.00"}
             </p>
             <div
-              className={`flex items-center ml-1 gap-2 group/max ${
-                allowInput
-                  ? "group-hover/max:text-white cursor-pointer "
-                  : ""
-              }`}
-              onClick={allowInput ? onMaxClick : () => {}}
+              className={`flex items-center ml-1 gap-2 group/max ${allowInput
+                ? "group-hover/max:text-white cursor-pointer "
+                : ""
+                }`}
+              onClick={allowInput ? onMaxClick : () => { }}
             >
               <div className={`mb-1 ${allowInput ? "group-hover/max:text-white" : ""}`}>
                 <svg
@@ -92,11 +95,20 @@ export default function InputTokenWithError({
                   />
                 </svg>
               </div>
-              <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                {selectedToken && selectedToken.balance && selectedToken.balance.formatted
-                  ? Number(selectedToken.balance.formatted).toFixed(2).toString()
-                  : "0.00"}
-              </p>
+              {
+                isDeposit ?
+                  <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
+                    {selectedToken && selectedToken.balance && selectedToken.balance.formatted
+                      ? formatBalance(Number(selectedToken.balance.formatted)).toString()
+                      : "0"}
+                  </p>
+                  :
+                  <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
+                    {data ? formatBalance(Number(data)).toString()
+                      : "0"}
+                  </p>
+              }
+
             </div>
           </div>
         </div>
