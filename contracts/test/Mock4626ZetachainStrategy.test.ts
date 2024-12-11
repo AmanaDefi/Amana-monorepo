@@ -1,138 +1,144 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
-import { BaseSepAaveEthStrategy, IERC20 } from "../typechain";
+import { Mock4626ZetachainStrategy, MockERC20, Mock4626 } from "../typechain";
 import { Signer } from "ethers";
 
-const BASE_SEPOLIA_AAVE_ETH_POOL_ADDRESS = "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b";
-const BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS = "0x96e32dE4B1d1617B8c2AE13a88B9cC287239b13f";
+const AMANA_VAULT_ADDRESS = "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B";
 const GATEWAY_ADDRESS = "0x0c487a766110c85d301d96e33579c5b317fa4995";
-const ORIGIN_CHAIN_ID = 11155111;
-import {
-  ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-  ZC_TEST_ETH_SEPOLIA_ADDRESS,
-} from "../../constants";
 
-describe("BaseSepAaveEthStrategy - Simplified Tests", function () {
-  let strategy: BaseSepAaveEthStrategy;
-  let owner: any;
-  let receiptToken: IERC20;
-  let vaultSigner: Signer; // Gateway impersonation
-
-  const amanaVaultAddress = "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B";
-  const strategyName = "BaseSepAaveEthStrategy";
-
-  before(async function () {
-    [owner] = await ethers.getSigners();
-
-    // Connect to the receipt token contract
-    receiptToken = await ethers.getContractAt(
-      "IERC20",
-      BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS
-    );
-  });
-
-  async function deployStrategy() {
-    const StrategyFactory = await ethers.getContractFactory("BaseSepAaveEthStrategy", owner);
-    const deployedStrategy = await StrategyFactory.deploy(
-      strategyName,
-      amanaVaultAddress,
-      ethers.constants.AddressZero, // inputToken is ETH (address(0))
-      BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS,
-      GATEWAY_ADDRESS
-    );
-    console.log("Deployed strategy address:", deployedStrategy.address);
-
-    await deployedStrategy.deployed();
-    return deployedStrategy as BaseSepAaveEthStrategy;
-  }
+describe("Mock4626ZetachainStrategy - Full Coverage", function () {
+  let strategy: Mock4626ZetachainStrategy;
+  let mockERC20: MockERC20;
+  let mockVault: Mock4626;
+  let amanaVaultSigner: Signer;
+  let owner: Signer;
 
   beforeEach(async () => {
-    strategy = await deployStrategy();
+    [owner] = await ethers.getSigners();
+
+    // Deploy MockERC20 token
+    const ERC20Factory = await ethers.getContractFactory("MockERC20", owner);
+    mockERC20 = await ERC20Factory.deploy("Mock Token", "MTKN", 18);
+    await mockERC20.deployed();
+
+    // Deploy Mock4626 vault
+    const VaultFactory = await ethers.getContractFactory("Mock4626", owner);
+    mockVault = await VaultFactory.deploy(mockERC20.address);
+    await mockVault.deployed();
+
+    // Deploy Mock4626ZetachainStrategy
+    const StrategyFactory = await ethers.getContractFactory("Mock4626ZetachainStrategy", owner);
+    strategy = await StrategyFactory.deploy(
+      "Mock Strategy",
+      AMANA_VAULT_ADDRESS,
+      mockERC20.address,
+      mockVault.address,
+      GATEWAY_ADDRESS
+    );
+    await strategy.deployed();
+
+    // Impersonate Amana Vault
+    await network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [AMANA_VAULT_ADDRESS],
+    });
+
+    amanaVaultSigner = await ethers.getSigner(AMANA_VAULT_ADDRESS);
+
+    // Fund Amana Vault for gas and operations
+    await network.provider.send("hardhat_setBalance", [
+      AMANA_VAULT_ADDRESS,
+      ethers.utils.parseEther("10").toHexString(),
+    ]);
+
+    // Mint tokens to Amana Vault for testing
+    await mockERC20.mint(AMANA_VAULT_ADDRESS, ethers.utils.parseEther("1000"));
   });
 
-  it("should allow any address to invest ETH", async function () {
-    const depositAmount = ethers.utils.parseEther("1");
+  afterEach(async () => {
+    // Stop impersonating Amana Vault after each test
+    await network.provider.request({
+      method: "hardhat_stopImpersonatingAccount",
+      params: [AMANA_VAULT_ADDRESS],
+    });
+  });
 
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint256", "uint256", "uint32", "bool"],
-      [owner.address, ethers.constants.AddressZero, 0, 0, ORIGIN_CHAIN_ID, true]
-    );
+  it("should allow Amana Vault to deposit tokens", async function () {
+    const depositAmount = ethers.utils.parseEther("100");
 
-    // call onCall with a deposit message and value
-    const tx = await strategy.onCall(
-      {
-        sender: amanaVaultAddress,
-      },
+    // Approve tokens for strategy
+    await mockERC20.connect(amanaVaultSigner).approve(strategy.address, depositAmount);
 
-      depositMessage,
-      {
-        value: depositAmount,
-        gasPrice: ethers.utils.parseUnits('150', 'gwei'),
-      });
-
+    // Deposit tokens into strategy
+    const tx = await strategy.connect(amanaVaultSigner).invest(depositAmount);
     const receipt = await tx.wait();
-    console.log("Gas used for invest:", receipt.gasUsed.toString());
 
-    // Validate that the receipt token balance has increased
-    const strategyBalance = await receiptToken.balanceOf(strategy.address);
-    console.log("Strategy receipt token balance:", ethers.utils.formatEther(strategyBalance));
-    expect(strategyBalance).to.be.gte(depositAmount);
+    // Verify emitted event
+    await expect(tx).to.emit(strategy, "FundsDeposited").withArgs(AMANA_VAULT_ADDRESS, depositAmount);
+
+    // Verify receipt token balance in strategy
+    const strategyBalance = await mockVault.balanceOf(strategy.address);
+    expect(strategyBalance).to.be.gt(0);
+
+    // Verify tokens were deducted from Amana Vault
+    const amanaVaultBalance = await mockERC20.balanceOf(AMANA_VAULT_ADDRESS);
+    expect(amanaVaultBalance).to.be.lt(ethers.utils.parseEther("1000"));
   });
 
-  it("should allow any address to withdraw ETH", async function () {
-    const depositAmount = ethers.utils.parseEther("1");
+  it("should allow Amana Vault to withdraw tokens", async function () {
+    const depositAmount = ethers.utils.parseEther("100");
 
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint256", "uint256", "uint32", "bool"],
-      [owner.address, ethers.constants.AddressZero, 0, 0, ORIGIN_CHAIN_ID, true]
-    );
+    // Approve and deposit tokens
+    await mockERC20.connect(amanaVaultSigner).approve(strategy.address, depositAmount);
+    await strategy.connect(amanaVaultSigner).invest(depositAmount);
 
-    // call onCall with a deposit message and value
-    await strategy.onCall(
-      {
-        sender: amanaVaultAddress,
-      },
-
-      depositMessage,
-      {
-        value: depositAmount,
-        gasPrice: ethers.utils.parseUnits('150', 'gwei'),
-      });
-
-    // Validate that the receipt token balance has increased
-    const strategyBalanceAfterInvest = await receiptToken.balanceOf(strategy.address);
-    console.log("Strategy receipt token balance after invest:", ethers.utils.formatEther(strategyBalanceAfterInvest));
-    expect(strategyBalanceAfterInvest).to.be.gte(depositAmount);
-
-    // Simulate a withdrawal
-    const withdrawAmount = ethers.utils.parseEther("0.5");
-    const withdrawZRC20 = ZC_TEST_ETH_SEPOLIA_ADDRESS;
-    const fee = ethers.utils.parseEther("0.01");
-
-    const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint256", "uint256", "uint32", "bool"],
-      [owner.address, withdrawZRC20, withdrawAmount, fee, ORIGIN_CHAIN_ID, false]
-    );
-
-    // call onCall with a deposit message and value
-    const tx = await strategy.onCall(
-      {
-        sender: amanaVaultAddress,
-      },
-
-      withdrawMessage,
-      {
-        gasPrice: ethers.utils.parseUnits('150', 'gwei'),
-      });
-
+    // Withdraw tokens
+    const tx = await strategy.connect(amanaVaultSigner).withdraw(depositAmount, 0);
     const receipt = await tx.wait();
-    console.log("Gas used for withdraw:", receipt.gasUsed.toString());
 
-    // Validate the strategy's receipt token balance has decreased
-    const strategyBalanceAfterWithdraw = await receiptToken.balanceOf(strategy.address);
-    console.log("Strategy receipt token balance after withdraw:", ethers.utils.formatEther(strategyBalanceAfterWithdraw));
-    const tolerance = ethers.utils.parseUnits("0.0001", 18); // Adjust the tolerance as needed
-    expect(strategyBalanceAfterWithdraw).to.be.lte(depositAmount.sub(withdrawAmount).sub(fee).add(tolerance));
+    // Verify emitted event
+    await expect(tx).to.emit(strategy, "FundsWithdrawn").withArgs(AMANA_VAULT_ADDRESS, depositAmount);
+
+    // Verify receipt token balance in strategy
+    const strategyBalance = await mockVault.balanceOf(strategy.address);
+    expect(strategyBalance).to.equal(0);
+
+    // Verify tokens were returned to Amana Vault
+    const amanaVaultBalance = await mockERC20.balanceOf(AMANA_VAULT_ADDRESS);
+    expect(amanaVaultBalance).to.equal(ethers.utils.parseEther("1000"));
   });
+
+  it("should revert if a non-vault address tries to call invest", async function () {
+    const depositAmount = ethers.utils.parseEther("100");
+    const [nonVaultSigner] = await ethers.getSigners();
+
+    await expect(strategy.connect(nonVaultSigner).invest(depositAmount)).to.be.revertedWith(
+      "Only Vault contract can call"
+    );
+  });
+
+  it("should revert if a non-vault address tries to call withdraw", async function () {
+    const withdrawAmount = ethers.utils.parseEther("50");
+    const [nonVaultSigner] = await ethers.getSigners();
+
+    await expect(strategy.connect(nonVaultSigner).withdraw(withdrawAmount, 0)).to.be.revertedWith(
+      "Only Vault contract can call"
+    );
+  });
+
+  it("should allow the owner to perform emergencyWithdraw", async function () {
+    const tokenAddress = mockERC20.address;
+
+    // Transfer tokens to the strategy for testing
+    await mockERC20.connect(amanaVaultSigner).transfer(strategy.address, ethers.utils.parseEther("100"));
+
+    const initialBalance = await mockERC20.balanceOf(strategy.address);
+    expect(initialBalance).to.be.gt(0);
+
+    await strategy.emergencyWithdraw(tokenAddress);
+
+    const finalBalance = await mockERC20.balanceOf(strategy.address);
+    expect(finalBalance).to.equal(0);
+  });
+
 });
-
