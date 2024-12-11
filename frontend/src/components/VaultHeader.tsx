@@ -15,7 +15,7 @@ export default function VaultHeader({
     userVaultBalances,
     selectedVaultId,
     vaultTotalAssets,
-    vaultAPYs
+    vaultAPYs,
 }: {
     vaultData: VaultData;
     userVaultBalances: UserVaultBalance[];
@@ -23,9 +23,9 @@ export default function VaultHeader({
     vaultTotalAssets: VaultTotalAssets[];
     vaultAPYs: VaultAPY[];
 }): JSX.Element {
-
     const activeChain = useActiveWalletChain();
     const EOAaccount = useActiveAccount();
+
     if (!EOAaccount) {
         throw new Error("No active account found");
     }
@@ -35,64 +35,68 @@ export default function VaultHeader({
     }
 
     const userAddress = EOAaccount.address;
-
-    const [inputToken, setInputToken] = useState<Token>(vaultData.inputToken);
+    const { data: walletBalance, isLoading, isError } = useWalletBalance({
+        chain: activeChain,
+        address: userAddress,
+        client,
+    });
+    const [inputToken, setInputToken] = useState<Token | undefined>();
     const [walletData, setWalletData] = useState<string>("");
 
-    // Determine which token to use based on the active chain
+    // Step 1: Determine inputToken based on activeChain
     useEffect(() => {
         if (activeChain.id === 7001) {
-            // If on ZetaChain testnet, set inputToken to the vault token
             setInputToken(vaultData.inputToken);
         } else {
-            // On other chains, use APPROVED_TOKENS to set available tokens
             const approvedTokens = APPROVED_TOKENS[activeChain.id];
             setInputToken(approvedTokens ? approvedTokens[0] : vaultData.inputToken);
         }
     }, [activeChain, vaultData]);
 
-    const { data: walletBalance, isLoading, isError } = useWalletBalance({
-        chain: activeChain,
-        address: userAddress,
-        client
-    });
-
-    const data = formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance));
-    const price = inputToken.price;
-    const symbol = inputToken.symbol;
-
+    // Step 2: Fetch wallet data when inputToken is set
     useEffect(() => {
+        if (!inputToken) return;
+
         const fetchData = async () => {
+            console.log("Value of inputToken: ", inputToken);
+
             if (inputToken.isNative) {
                 if (!isLoading && !isError && walletBalance) {
-                    // If it's a native token, use the wallet balance
                     setWalletData(walletBalance.displayValue);
-                }
-                else {
+                } else {
                     setWalletData("0");
                 }
             } else {
-                // If it's an ERC-20 token, use getContract and getBalance
                 const contract = getContract({
                     client,
                     chain: activeChain,
                     address: inputToken.address as Address,
                 });
+
                 const { value, decimals } = await getBalance({
                     contract,
                     address: userAddress as Address,
                 });
+
                 const formattedBalance = ethers.formatUnits(value, decimals);
                 setWalletData(formattedBalance);
             }
         };
 
-        // Call the async function to fetch balance data
         fetchData();
+    }, [inputToken, userAddress, activeChain]);
 
-    }, [inputToken, userAddress, activeChain, walletBalance, isLoading, isError, data]);
+    // Handle undefined states gracefully
+    if (!inputToken) {
+        return <p>Loading...</p>;
+    }
 
+    const data = formatBalance(
+        Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance)
+    );
 
+    const price = inputToken.price || 0;
+    const symbol = inputToken.symbol || "";
 
     return (
         <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
@@ -101,9 +105,9 @@ export default function VaultHeader({
                     <div className="relative">
                         <Image
                             src={inputToken.imgURL}
-                            alt={inputToken.symbol}
-                            width={1200} // Adjust to your desired width
-                            height={800} // Adjust to your desired height                          
+                            alt={symbol}
+                            width={1200}
+                            height={800}
                             className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
                         />
                     </div>
@@ -112,8 +116,8 @@ export default function VaultHeader({
                         <Image
                             src={vaultData.protocol.imgURL}
                             alt={vaultData.protocol.name}
-                            width={1200} // Adjust to your desired width
-                            height={800} // Adjust to your desired height                          
+                            width={1200}
+                            height={800}
                             className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
                         />
                     </div>
@@ -122,34 +126,30 @@ export default function VaultHeader({
             </div>
             <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-3 md:pr-10 gap-4 md:gap-20">
-                    <div>
-                        <LargeCardStat
-                            id={"deposits"}
-                            label="Deposits"
-                            value={formatBalance(Number(data)).toString() + " " + vaultData.symbol}
-                            secondaryValue={'$ ' + formatCurrency((Number(data ? data : "0") * (price ? price : 0))).toString()}
-                            tooltip="Value of your vault deposits"
-                        />
-                    </div>
-                    <div>
-                        <LargeCardStat
-                            id={"wallet"}
-                            label="Your Wallet"
-                            value={formatBalance(Number(walletData)).toString() + " " + symbol}
-                            secondaryValue={'$ ' + formatCurrency((Number(walletData) * price)).toString()}
-                            tooltip="Value of deposit assets held in your wallet"
-                        />
-                    </div>
-                    <div>
-                        <LargeCardStat
-                            id={"APY"}
-                            label="7d APY"
-                            value={
-                                Number.isNaN(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100) ? "0%" :
-                                    (Number(vaultAPYs.find((APY7d) => APY7d.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2) + "%"}
-                            tooltip="Value of deposit assets held in your wallet"
-                        />
-                    </div>
+                    <LargeCardStat
+                        id="deposits"
+                        label="Deposits"
+                        value={`${formatBalance(Number(data))} ${vaultData.symbol}`}
+                        secondaryValue={`$ ${formatCurrency(Number(data) * price)}`}
+                        tooltip="Value of your vault deposits"
+                    />
+                    <LargeCardStat
+                        id="wallet"
+                        label="Your Wallet"
+                        value={`${formatBalance(Number(walletData))} ${symbol}`}
+                        secondaryValue={`$ ${formatCurrency(Number(walletData) * price)}`}
+                        tooltip="Value of deposit assets held in your wallet"
+                    />
+                    <LargeCardStat
+                        id="APY"
+                        label="7d APY"
+                        value={
+                            Number.isNaN(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d) * 100)
+                                ? "0%"
+                                : `${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2)}%`
+                        }
+                        tooltip="APY for the last 7 days"
+                    />
                 </div>
             </div>
         </section>
