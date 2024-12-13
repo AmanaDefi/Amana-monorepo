@@ -106,7 +106,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0x3E0b600c0B29e3Fa3F99BB2a92F0807b3cC8e55a", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Base Sepolia
+    id: "0x3E0b600c0B29e3Fa3F99BB2a92F0807b3cC8e55a", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Base Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -129,7 +129,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x15851cebC80a383d957f81E91bd51799C0b8736D", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Eth Sepolia
+    id: "0x15851cebC80a383d957f81E91bd51799C0b8736D", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -153,7 +153,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   },
 
   // {
-  //   id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
+  //   id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
   //   name: "Mock USDC",
   //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
   //   symbol: "aMockUSDC",
@@ -176,7 +176,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   // },
 
   {
-    id: "0xD6d18C44cAC028d7c9D4bDE5A648082e3b61Aaea", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on Zetachain testnet
+    id: "0x815C2cEFF6C6449dD85Ca9a5ebA1cacDB65441e5", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Polygon Amoy testnet
     name: "Mock POL",
     des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockPOL",
@@ -199,7 +199,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x8cc388165fb4367dcfD1f16E6eeE1a549eAfC22E", // Amana USDC Vault on Zetachain testnet, targeting Mock strategy on BSC testnet
+    id: "0x8cc388165fb4367dcfD1f16E6eeE1a549eAfC22E", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on BSC testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockUSDC",
