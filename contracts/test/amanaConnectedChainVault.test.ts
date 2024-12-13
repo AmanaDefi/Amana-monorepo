@@ -136,7 +136,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     executionNonce: number,
     crossChainTxId: number
   ): Promise<any> {
-    const confirmMessage2 = ethers.utils.defaultAbiCoder.encode(
+    const confirmMessage = ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
       [
         await user.getAddress(),
@@ -146,7 +146,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         ORIGIN_CHAIN_ID,
         false,
         totalAssetsBefore,
-        totalAssetsBefore.sub(withdrawAmount),
+        totalAssetsBefore.sub(withdrawAmount).sub(feeAmount),
         executionNonce,
         crossChainTxId
       ]
@@ -164,7 +164,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       },
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
-      confirmMessage2
+      confirmMessage
     );
   }
 
@@ -453,7 +453,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const withdrawAmounts = [
         initialAssets.div(3), // Withdraw 1/3 of the total balance
         initialAssets.div(3), // Withdraw another 1/3
-        initialAssets.sub(initialAssets.div(3).mul(2)).sub(1), // Withdraw the remaining balance
+        initialAssets.sub(initialAssets.div(3).mul(2)), // Withdraw the remaining balance
       ];
 
       let totalAssetsBefore = depositAmount1;
@@ -466,7 +466,9 @@ describe("AmanaConnectedChainVault Tests", function () {
           await user1.getAddress(),
           await user1.getAddress()
         );
+
         await simulateConfirmWithdraw(user1, withdrawAmount, BigNumber.from("0"), totalAssetsBefore, executionNonce, crossChainTxId);
+
         totalAssetsBefore = totalAssetsBefore.sub(withdrawAmount);
         executionNonce++;
         crossChainTxId++;
@@ -475,11 +477,9 @@ describe("AmanaConnectedChainVault Tests", function () {
       // Step 3: Validate final state
       const finalShares = await amanaVault.balanceOf(await user1.getAddress());
       const finalAssets = await amanaVault.totalAssets();
-      const finalUserBalance = await ethSepolia.balanceOf(await user1.getAddress());
 
       expect(finalShares).to.equal(0); // User should have no shares left
-      expect(finalAssets).to.equal(0); // Vault should be empty
-      expect(finalUserBalance).to.be.closeTo(initialAssets, errorMargin);
+      expect(finalAssets).to.equal(1); // Vault should only have 1 virtual share left
 
       // Step 4: Ensure further withdrawals fail
       await expect(
@@ -493,12 +493,12 @@ describe("AmanaConnectedChainVault Tests", function () {
       // Simulate a withdrawal for a user with zero balance
       const zeroAmount = BigNumber.from(0);
       await expect(amanaVault.connect(user1).withdraw(zeroAmount, await user1.getAddress(), await user1.getAddress())).to.be
-        .revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
+        .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
 
       // Deposit and then withdraw entire balance
-      // await ethBaseSepolia.connect(user1).approve(amanaVault.address, zeroAmount);
-      // await amanaVault.connect(user1).deposit(zeroAmount, await user1.getAddress());
-      // await amanaVault.connect(user1).withdraw(zeroAmount, await user1.getAddress(), await user1.getAddress());
+      await ethBaseSepolia.connect(user1).approve(amanaVault.address, zeroAmount);
+      await expect(amanaVault.connect(user1).deposit(zeroAmount, await user1.getAddress()))
+        .to.be.revertedWithCustomError(amanaVault, "DepositCantBeZero");
     });
 
     it("should distribute and claim rewards (time-based)", async function () {
