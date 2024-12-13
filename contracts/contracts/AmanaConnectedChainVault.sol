@@ -32,6 +32,8 @@ contract AmanaConnectedChainVault is
     error InvalidTreasuryAddress();
     error FeeExceedsLimit();
     error ApprovalFailed();
+    error DepositCantBeZero();
+    error WithdrawCantBeZero();
     error NothingToWithdraw();
     error InvalidZRC20Address();
     error CantBeZeroAddress();
@@ -175,6 +177,7 @@ contract AmanaConnectedChainVault is
         VaultStorage storage $ = _getVaultStorage();
         $.treasury = treasury_;
         $.perfFee = perfFee_;
+        $.totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         systemContract = ISystem(system_contract_);
         gasTank = IGasTank(gasTank_);
         emit VaultInitialized(decimals(), perfFee_);
@@ -460,8 +463,7 @@ contract AmanaConnectedChainVault is
      */
     function totalAssets() public view virtual override returns (uint256) {
         // Get the amount of USDC held directly by the vault
-        uint256 assetBalanceOnVault = IERC20(asset()).balanceOf(address(this));
-        return assetBalanceOnVault + latestTotalAssetsUpdateFromStrategy;
+        return latestTotalAssetsUpdateFromStrategy + 1;
     }
 
     /**
@@ -515,17 +517,21 @@ contract AmanaConnectedChainVault is
         }
         VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
-        uint256 totalAssetsWithFee = totalAssets() + 1;
+        uint256 totalAssetsMinusFeePortion = totalAssets();
 
         // Incorporate fee logic only if totalAssets exceeds totalPrincipal
         if (totalAssets() > $.totalPrincipal) {
-            totalAssetsWithFee -=
+            totalAssetsMinusFeePortion -=
                 ((totalAssets() - $.totalPrincipal) * $.perfFee) /
                 10000;
         }
 
         return
-            assets.mulDiv(totalSupplyWithOffset, totalAssetsWithFee, rounding);
+            assets.mulDiv(
+                totalSupplyWithOffset,
+                totalAssetsMinusFeePortion,
+                rounding
+            );
     }
 
     /**
@@ -540,17 +546,21 @@ contract AmanaConnectedChainVault is
         }
         VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
-        uint256 totalAssetsWithFee = totalAssets() + 1;
+        uint256 totalAssetsMinusFeePortion = totalAssets();
 
         // Incorporate fee logic only if totalAssets exceeds totalPrincipal
         if (totalAssets() > $.totalPrincipal) {
-            totalAssetsWithFee -=
+            totalAssetsMinusFeePortion -=
                 ((totalAssets() - $.totalPrincipal) * $.perfFee) /
                 10000;
         }
 
         return
-            shares.mulDiv(totalAssetsWithFee, totalSupplyWithOffset, rounding);
+            shares.mulDiv(
+                totalAssetsMinusFeePortion,
+                totalSupplyWithOffset,
+                rounding
+            );
     }
 
     /**
@@ -571,7 +581,9 @@ contract AmanaConnectedChainVault is
         // calls the vault, which is assumed not malicious.
         // Conclusion: Transfer happens before minting, ensuring reentrancy occurs in a valid state.
         // slither-disable-next-line reentrancy-no-eth
-
+        if (assets == 0) {
+            revert DepositCantBeZero();
+        }
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
@@ -738,6 +750,9 @@ contract AmanaConnectedChainVault is
         uint256 assets,
         uint256 shares
     ) internal override {
+        if (assets == 0) {
+            revert WithdrawCantBeZero();
+        }
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
@@ -766,6 +781,9 @@ contract AmanaConnectedChainVault is
         uint256 assets,
         uint32 userChainId
     ) internal {
+        if (assets == 0) {
+            revert WithdrawCantBeZero();
+        }
         uint256 maxAssets = maxWithdraw(user);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
@@ -867,18 +885,15 @@ contract AmanaConnectedChainVault is
         uint256 _crossChainTxId
     ) internal {
         VaultStorage storage $ = _getVaultStorage();
-        if (totalAssetsBeforeWithdraw > 0)
-            latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
-
+        latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
+        uint256 shares = previewWithdraw(amount);
         uint256 principalWithdrawn = (amount * $.userPrincipal[userAddress]) /
             convertToAssets(balanceOf(userAddress));
 
         $.userPrincipal[userAddress] -= principalWithdrawn;
         $.totalPrincipal -= principalWithdrawn;
 
-        if (totalAssetsAfterWithdraw > 0)
-            latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
-        uint256 shares = previewWithdraw(amount);
+        latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(userAddress, shares);
 
         uint256 outputAmount = _returnFundsToUser(
