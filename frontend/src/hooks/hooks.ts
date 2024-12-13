@@ -26,7 +26,7 @@ export const useUpdateVaultBalanceAndTotal = (
                 vault.id as Address
               );
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
-           
+
               const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
               return {
                 vaultId: vault.id,
@@ -45,7 +45,7 @@ export const useUpdateVaultBalanceAndTotal = (
             }
           })
         );
-
+        console.log("balancedata",balancesAndAssets)
         const balances = balancesAndAssets.map(({ vaultId, balance }) => ({
           vaultId,
           balance,
@@ -137,7 +137,7 @@ export const useUpdateAPYs = (
                   contract: receiptTokenContract,
                   method: "function minter() view returns (address)",
                 });
-                // APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address);
+                APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address)
               }
 
               return { vaultId: vault.id, APY7d };

@@ -53,6 +53,10 @@ export default function VaultHeader({
         }
     }, [activeChain, vaultData]);
 
+    const data = formatBalance(
+        Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance)
+    );
+
     // Step 2: Fetch wallet data when inputToken is set
     useEffect(() => {
         if (!inputToken) return;
@@ -84,16 +88,14 @@ export default function VaultHeader({
         };
 
         fetchData();
-    }, [inputToken, userAddress, activeChain]);
+    }, [inputToken, userAddress, activeChain, data]);
 
     // Handle undefined states gracefully
     if (!inputToken) {
         return <p>Loading...</p>;
     }
 
-    const data = formatBalance(
-        Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance)
-    );
+
 
     const price = inputToken.price || 0;
     const symbol = inputToken.symbol || "";

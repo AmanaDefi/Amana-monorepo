@@ -8,52 +8,55 @@ import { Account } from "thirdweb/wallets";
 import { NumberFormatter } from "@/utils/helpers";
 import MainActionButton from "@/components/button/MainActionButton"
 import { client } from "@/utils/client";
+import { getCrossChainInvestSent } from "@/utils/utils";
 
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any) => {
     setTransactionCompleted(false)
-    try {
-        const value = Number(inputBalance.value)
-        const scaledAmount = BigInt(value)
-        mixpanel.track("Deposit Submitted", {
-            vault: vaultData.id.toString(),
-            amount: scaledAmount.toString(),
-        });
-        const receipt = await executeDeposit(
-            vaultData.id as Address,
-            inputToken.address as Address,
-            EOAaccount,
-            activeChain,
-            scaledAmount,
-        );
+    await getCrossChainInvestSent(vaultData)
+    // try {
+    //     const value = Number(inputBalance.value)
+    //     const scaledAmount = BigInt(value)
+    //     mixpanel.track("Deposit Submitted", {
+    //         vault: vaultData.id.toString(),
+    //         amount: scaledAmount.toString(),
+    //     });
+    //     const receipt = await executeDeposit(
+    //         vaultData.id as Address,
+    //         inputToken.address as Address,
+    //         EOAaccount,
+    //         activeChain,
+    //         scaledAmount,
+    //     );
 
-        mixpanel.track("Deposit Submitted", {
-            vault: vaultData.id.toString(),
-            amount: scaledAmount.toString(),
-        });
+    //     mixpanel.track("Deposit Submitted", {
+    //         vault: vaultData.id.toString(),
+    //         amount: scaledAmount.toString(),
+    //     });
 
-        // Create an object to pass to waitForReceipt with the required fields
-        const receiptObject = {
-            transactionHash: receipt.transactionHash as `0x${string}`,
-            client, // Assuming `client` is already defined somewhere in this scope
-            chain: activeChain,
-        };
+    //     // Create an object to pass to waitForReceipt with the required fields
+    //     const receiptObject = {
+    //         transactionHash: receipt.transactionHash as `0x${string}`,
+    //         client, // Assuming `client` is already defined somewhere in this scope
+    //         chain: activeChain,
+    //     };
 
-        await waitForReceipt(receiptObject);
+    //     await waitForReceipt(receiptObject);
+    //     getCrossChainInvestSent(vaultData)
 
-        toast.success("Transaction confirmed");
+    //     toast.success("Transaction confirmed");
 
-        setTransactionCompleted(true);
-        return true;
-    } catch (error) {
-        mixpanel.track("Deposit Submitted", {
-            vault: vaultData.id.toString(),
-        });
-        toast.error("Transaction failed", {
-            position: "top-right",
-            autoClose: 2000,  // Close automatically after 2 seconds
-        });
-        throw new Error("Transaction failed");
-    }
+    //     setTransactionCompleted(true);
+    return true;
+    // } catch (error) {
+    //     mixpanel.track("Deposit Submitted", {
+    //         vault: vaultData.id.toString(),
+    //     });
+    //     toast.error("Transaction failed", {
+    //         position: "top-right",
+    //         autoClose: 2000,  // Close automatically after 2 seconds
+    //     });
+    //     throw new Error("Transaction failed");
+    // }
 };
 
 const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any) => {
@@ -187,7 +190,8 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                     setDisabled(false);
                 }, 3000);
                 break;
-            case Action.deposit:
+            case Action.depositCross:
+            case Action.depositDirect:
                 setlabel("Deposit")
                 if (status) {
                     setDisabled(true);
@@ -269,7 +273,8 @@ function handleInteraction(
                 )
                 return result;
             }
-        case Action.deposit:
+        case Action.depositDirect:
+        case Action.depositCross:
             return async () => {
                 const result = await handleDepositTransaction(vaultData, inputBalance, inputToken, EOAaccount, setTransactionCompleted, activeChain);
                 return result;
@@ -290,8 +295,15 @@ function handleInteraction(
 enum Action {
     depositApprove,
     depositApproveConfirmed,
-    deposit,
+    depositDirect,
+    depositCross,
     depositConfirmed,
+    crosschainInvest,
+    deposited,
+    FundsInvest,
     withdraw,
-    withdrawconfirmed
+    withdrawconfirmed,
+    DivestSent,
+    FundsDivested,
+    Withdrawn
 }

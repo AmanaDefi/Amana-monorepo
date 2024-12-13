@@ -9,10 +9,9 @@ import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdw
 import { client } from "@/utils/client";
 import { APPROVED_TOKENS } from "../constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { getVaultErrorMessage } from "@/utils/utils";
-import { ethers, ZeroAddress } from "ethers";
+import { getVaultErrorMessage, selectActions } from "@/utils/utils";
+import { ethers } from "ethers";
 import InteractionContainer from "./interact";
-import { handleAllowance } from "@/utils/approve";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -150,8 +149,9 @@ export default function VaultInputs({
 
   useEffect(() => {
     const fetchData = async () => {
-      if (Number(inputBalance.value) != 0) {
-        isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit)) : setSteps(await selectActions(SmartVaultActionType.Withdrawal))
+      if (Number(inputBalance.value) != 0 && inputToken) {
+        isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit, vaultData, activeChain, EOAaccount, inputBalance, inputToken))
+          : setSteps(await selectActions(SmartVaultActionType.Withdrawal, vaultData, activeChain, EOAaccount, inputBalance, inputToken))
       }
     };
     // Call the async function
@@ -164,19 +164,24 @@ export default function VaultInputs({
   }
 
   async function switchTokens() {
+    if (!EOAaccount) {
+      throw new Error("No active account found");
+    }
     setInputBalance(EMPTY_BALANCE);
-    if (isDeposit) {
-      // Switch to Withdraw
+    if (inputToken) {
+      if (isDeposit) {
+        // Switch to Withdraw
 
-      setIsDeposit(false);
-      const newAction = SmartVaultActionType.Withdrawal;
-      setSteps(await selectActions(newAction));
+        setIsDeposit(false);
+        const newAction = SmartVaultActionType.Withdrawal;
+        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount, inputBalance, inputToken));
 
-    } else {
-      // Switch to Deposit
-      setIsDeposit(true);
-      const newAction = SmartVaultActionType.Deposit;
-      setSteps(await selectActions(newAction));
+      } else {
+        // Switch to Deposit
+        setIsDeposit(true);
+        const newAction = SmartVaultActionType.Deposit;
+        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount, inputBalance, inputToken));
+      }
     }
   }
 
@@ -216,53 +221,6 @@ export default function VaultInputs({
 
 
 
-  async function selectActions(action: SmartVaultActionType) {
-    switch (action) {
-      case SmartVaultActionType.Deposit:
-
-        const value = Number(inputBalance.value)
-
-        if (!activeChain) {
-          throw new Error("No active chain found");
-        }
-
-        if (!EOAaccount) {
-          throw new Error("No active account found");
-        }
-        const isNativeToken = inputToken?.address === ZeroAddress;
-        if (isNativeToken) {
-          return [
-            Action.deposit,
-            Action.depositConfirmed
-          ]
-        }
-        else if (await handleAllowance({
-          token: inputToken?.address as Address,
-          activeChain: activeChain,
-          activeAccount: EOAaccount.address as Address,
-          spender: vaultData.id as Address,
-          amount: value
-        })) {
-          return [
-            Action.deposit,
-            Action.depositConfirmed
-          ]
-        }
-        else {
-          return [
-            Action.depositApprove,
-            Action.depositApproveConfirmed,
-            Action.deposit,
-            Action.depositConfirmed
-          ]
-        }
-      case SmartVaultActionType.Withdrawal:
-        return [
-          Action.withdraw,
-          Action.withdrawconfirmed
-        ]
-    }
-  }
 
   return (
     <>
@@ -329,8 +287,15 @@ export default function VaultInputs({
 enum Action {
   depositApprove,
   depositApproveConfirmed,
-  deposit,
+  depositDirect,
+  depositCross,
   depositConfirmed,
+  crosschainInvest,
+  deposited,
+  FundsInvest,
   withdraw,
-  withdrawconfirmed
+  withdrawconfirmed,
+  DivestSent,
+  FundsDivested,
+  Withdrawn
 }

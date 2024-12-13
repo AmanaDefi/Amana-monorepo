@@ -1,5 +1,11 @@
-import { ParseEventLogsResult } from "thirdweb";
-import { TransactionResult } from "../types/types"
+import { ParseEventLogsResult, getContract, readContract, Address, prepareEvent } from "thirdweb";
+import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token } from "../types/types"
+import { client } from "../utils/client";
+import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { Account } from "thirdweb/wallets";
+import { handleAllowance } from "@/utils/approve";
+import { ZeroAddress } from "ethers";
+import { useContractEvents } from "thirdweb/react";
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -83,10 +89,17 @@ export function getVaultErrorMessage(
 enum Action {
   depositApprove,
   depositApproveConfirmed,
-  deposit,
+  depositDirect,
+  depositCross,
   depositConfirmed,
+  crosschainInvest,
+  deposited,
+  FundsInvest,
   withdraw,
-  withdrawconfirmed
+  withdrawconfirmed,
+  DivestSent,
+  FundsDivested,
+  Withdrawn
 }
 
 
@@ -120,3 +133,233 @@ export function formatBalance(balance: number) {
   return remaining;
 }
 
+const getStrategyChain = async (
+  vault: VaultData
+) => {
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0],
+    address: vault.id,
+  });
+
+  const [strategyAddress, chainID] = await readContract({
+    contract,
+    method: "function getStrategy() view returns (address, uint32)",
+  });
+
+  return chainID;
+}
+
+export const selectActions = async (
+  action: SmartVaultActionType,
+  vaultData: VaultData,
+  activeChain: any,
+  EOAaccount: Account,
+  inputBalance: Balance,
+  inputToken: Token
+) => {
+  const isNativeToken = inputToken?.address === ZeroAddress;
+  const value = Number(inputBalance.value)
+  const StrategyChain = await getStrategyChain(vaultData)
+  switch (action) {
+    case SmartVaultActionType.Deposit:
+      if (activeChain.id == 70001) {
+        if (StrategyChain == 70001) {
+          if (isNativeToken) {
+            return [
+              Action.depositDirect,
+              Action.depositConfirmed
+            ]
+          }
+          else if (
+            await handleAllowance({
+              token: inputToken?.address as Address,
+              activeChain: activeChain,
+              activeAccount: EOAaccount.address as Address,
+              spender: vaultData.id as Address,
+              amount: value
+            })) {
+            return [
+              Action.depositDirect,
+              Action.depositConfirmed
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.depositDirect,
+              Action.depositConfirmed
+            ]
+          }
+        }
+        else {
+          if (isNativeToken) {
+            return [
+              Action.depositDirect,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.FundsInvest,
+              Action.deposited
+            ]
+          }
+          else if (
+            await handleAllowance({
+              token: inputToken?.address as Address,
+              activeChain: activeChain,
+              activeAccount: EOAaccount.address as Address,
+              spender: vaultData.id as Address,
+              amount: value
+            })) {
+            return [
+              Action.depositDirect,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.FundsInvest,
+              Action.deposited
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.depositDirect,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.FundsInvest,
+              Action.deposited
+            ]
+          }
+        }
+      }
+      else {
+        if (StrategyChain == 70001) {
+          if (isNativeToken) {
+            return [
+              Action.depositCross,
+              Action.depositConfirmed
+            ]
+          }
+          else if (
+            await handleAllowance({
+              token: inputToken?.address as Address,
+              activeChain: activeChain,
+              activeAccount: EOAaccount.address as Address,
+              spender: vaultData.id as Address,
+              amount: value
+            })) {
+            return [
+              Action.depositCross,
+              Action.depositConfirmed
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.depositCross,
+              Action.depositConfirmed
+            ]
+          }
+        }
+        else {
+          if (isNativeToken) {
+            return [
+              Action.depositCross,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.FundsInvest,
+              Action.deposited
+            ]
+          }
+          else if (
+            await handleAllowance({
+              token: inputToken?.address as Address,
+              activeChain: activeChain,
+              activeAccount: EOAaccount.address as Address,
+              spender: vaultData.id as Address,
+              amount: value
+            })) {
+            return [
+              Action.depositCross,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.FundsInvest,
+              Action.deposited
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.depositCross,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.FundsInvest,
+              Action.deposited
+            ]
+          }
+        }
+      }
+    case SmartVaultActionType.Withdrawal:
+      if (activeChain.id == 70001) {
+        if (StrategyChain == 70001) {
+          return [
+            Action.withdraw,
+            Action.withdrawconfirmed
+          ]
+        }
+        else {
+          return [
+            Action.withdraw,
+            Action.withdrawconfirmed,
+            Action.DivestSent,
+            Action.FundsDivested,
+            Action.Withdrawn
+          ]
+        }
+      }
+      else {
+        if (StrategyChain == 70001) {
+          return [
+            Action.withdraw,
+            Action.withdrawconfirmed
+          ]
+        }
+        else {
+          return [
+            Action.withdraw,
+            Action.withdrawconfirmed,
+            Action.DivestSent,
+            Action.FundsDivested,
+            Action.Withdrawn
+          ]
+        }
+      }
+  }
+}
+
+
+
+
+export function getCrossChainInvestSent(vault: VaultData) {
+
+
+  const myEvent = prepareEvent({
+    signature: "event CrossChainInvestSent(uint256 crossChainTxId)",
+  });
+
+
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0],
+    address: vault.id,
+  });
+
+  const contractEvents = useContractEvents({
+    contract,
+    events: [myEvent],
+  });
+
+  console.log("5545356456664", contract)
+}

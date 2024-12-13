@@ -58,7 +58,7 @@ export async function calculateEddyAPY(poolAddress: Address, inputTokenAddress: 
     return depositAPY;
   } catch (error) {
     console.error("Error calculating APY for Eddy Finance:", error);
-    return null;
+    return 0;
   }
 }
 
@@ -239,6 +239,7 @@ const executeCrossChainDeposit = async (
       transaction: depositTx,
       ...txOptions,
     });
+    
 
     console.log("Deposit executed");
     return receipt;
@@ -446,6 +447,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
           chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
           address: vault.id,
         });
+        
         const [strategyAddress, chainID] = await readContract({
           contract,
           method: "function getStrategy() view returns (address, uint32)",
@@ -475,7 +477,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
             method: "function POOL() view returns (address)",
           });
 
-          // APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address);
+          APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address, strategyChain);
         } else {
           // Generic logic for other vaults (e.g., Moonwell)
           const receiptTokenAddress = await readContract({
