@@ -10,18 +10,35 @@ import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 // BSC_TEST_USDC_ADDRESS = 0x64544969ed7EBf5f083679233325356EbE738930
 // MOCK_4626_VAULT_ADDRESS = 0x1fD901103F37d076c096F1F0dF03f078FBc59241
 
-contract Mock4626BscUsdcStrategy is Ownable, Callable {
+contract Mock4626BscUsdcStrategy is Ownable, Callable, Revertable {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
     I4626Vault public immutable receiptToken;
     address immutable _GATEWAY_ADDRESS;
+    uint256 executionNonce = 1;
 
-    event Invested(uint256 amount, uint256 shares);
-    event Withdrawn(uint256 amount, uint256 fee);
+    event FundsInvested(
+        uint256 indexed crossChainTxId,
+        address userAddress,
+        uint256 amount
+    );
+    event FundsDivested(
+        uint256 indexed crossChainTxId,
+        address userAddress,
+        uint256 amount
+    );
+    event InvestConfirmFailed(uint256 indexed crossChainTxId);
+    event ReturnFundsFromStrategyFailed(uint256 indexed crossChainTxId);
 
     error ApprovalFailed();
 
+    /// @notice Initializes the strategy contract.
+    /// @param _name Name of the strategy.
+    /// @param _amanaVault Address of the Amana vault.
+    /// @param _inputTokenAddress Address of the input token.
+    /// @param _receiptTokenAddress Address of the 4626 receipt token.
+    /// @param _gateway Address of the ZetaChain Gateway.
     constructor(
         string memory _name,
         address _amanaVault,
@@ -37,6 +54,7 @@ contract Mock4626BscUsdcStrategy is Ownable, Callable {
         _GATEWAY_ADDRESS = _gateway;
     }
 
+    /// @notice Modifier to restrict access to the ZetaChain Gateway.
     modifier onlyGateway() {
         require(
             msg.sender == _GATEWAY_ADDRESS,
@@ -45,6 +63,9 @@ contract Mock4626BscUsdcStrategy is Ownable, Callable {
         _;
     }
 
+    /// @notice Processes calls from the Gateway for deposits or withdrawals.
+    /// @param context The message context from the Gateway.
+    /// @param message Encoded data specifying the transaction details.
     function onCall(
         MessageContext calldata context,
         bytes calldata message
@@ -54,96 +75,202 @@ contract Mock4626BscUsdcStrategy is Ownable, Callable {
             address withdrawZRC20,
             uint256 amount,
             uint256 fee,
-            uint256 shares,
-            uint32 withdrawChainId
+            uint32 withdrawChainId,
+            bool isDeposit,
+            uint256 crossChainTxId
         ) = abi.decode(
                 message,
-                (address, address, uint256, uint256, uint256, uint32)
+                (address, address, uint256, uint256, uint32, bool, uint256)
             );
+
         if (context.sender != address(amanaVault)) {
             revert("Only Vault contract can call the strategy");
         }
-        if (withdrawZRC20 == address(0)) {
-            shares = _invest(amount);
-            return abi.encode(shares);
+
+        uint256 currentExecutionNonce = executionNonce;
+        executionNonce++;
+
+        if (isDeposit) {
+            _invest(userAddress, amount, currentExecutionNonce, crossChainTxId);
+            return abi.encode(true);
         } else {
-            _withdraw(
+            _divest(
                 userAddress,
                 withdrawZRC20,
                 amount,
                 fee,
-                shares,
-                withdrawChainId
+                withdrawChainId,
+                currentExecutionNonce,
+                crossChainTxId
             );
             return abi.encode(true);
         }
     }
 
-    function _invest(uint256 amount) private returns (uint256) {
+    /// @notice Invests ETH into the Aave pool.
+    /// @param userAddress Address of the user whose funds are being invested.
+    /// @param amount Amount of ETH to invest.
+    /// @param _executionNonce Current execution nonce for the transaction.
+    function _invest(
+        address userAddress,
+        uint256 amount,
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
+    ) private returns (uint256) {
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+
         bool success = inputToken.transferFrom(
             msg.sender,
             address(this),
             amount
         );
+
         require(success, "Transfer failed");
         success = inputToken.approve(address(receiptToken), amount);
         require(success, "Approval failed");
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
-        emit Invested(amount, shares);
+
+        bytes memory outgoingMessage = abi.encode(
+            userAddress,
+            address(0),
+            amount,
+            0,
+            0,
+            true,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssets(),
+            _executionNonce,
+            _crossChainTxId
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this),
+            false,
+            address(this),
+            abi.encode("_investConfirmFailed", _crossChainTxId),
+            uint256(1000000)
+        );
+
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            amanaVault,
+            outgoingMessage,
+            revertOptions
+        );
+
+        emit FundsInvested(_crossChainTxId, userAddress, amount);
         return shares;
     }
 
-    function _withdraw(
-        address ownerAddress,
+    /// @notice Withdraws funds from the Aave pool.
+    /// @param userAddress Address of the user whose funds are being withdrawn.
+    /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
+    /// @param amount Amount to withdraw.
+    /// @param fee Gas fee for the transaction.
+    /// @param withdrawChainId Chain ID for the withdrawal.
+    /// @param _executionNonce Current execution nonce for the transaction.
+    function _divest(
+        address userAddress,
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
-        uint256 shares,
-        uint32 originChainId
+        uint32 withdrawChainId,
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
     ) private returns (uint256) {
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+
         receiptToken.withdraw(
             amount + fee,
             address(this), // receiver
             address(this) // owner
         );
         bytes memory outgoingMessage = abi.encode(
-            ownerAddress,
+            userAddress,
             withdrawZRC20,
-            1,
+            amount,
             fee,
-            shares,
-            originChainId // 0 = origin is zetachain, 1 = origin is connected chain
+            withdrawChainId,
+            false,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssets(),
+            _executionNonce,
+            _crossChainTxId
         );
 
         RevertOptions memory revertOptions = RevertOptions(
-            0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690, // revert address
-            false, // callOnRevert
-            address(this), // abortAddress
-            bytes("revert message"),
-            uint256(1000000) // onRevertGasLimit
+            address(this),
+            false,
+            address(this),
+            abi.encode("_returnFundsFromStrategyFailed", _crossChainTxId),
+            uint256(1000000)
         );
-        inputToken.approve(_GATEWAY_ADDRESS, amount + fee); // is this necessary?
 
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall(
-            amanaVault, // the amana vault contract address - make this a constant? (just an address, not bytes)
-            amount + fee, // the amount of USDC to send back
-            address(inputToken), // ERC20 of the underlying asset token
-            outgoingMessage, //the message to send
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
+            amanaVault,
+            outgoingMessage,
             revertOptions
         );
-        emit Withdrawn(amount, fee);
+
+        emit FundsDivested(_crossChainTxId, userAddress, amount);
         return amount + fee;
     }
 
-    function totalUnderlyingAssets() external view returns (uint256) {
+    /// @notice Gets the total assets held in the strategy.
+    /// @return Total assets as an unsigned integer.
+    function totalUnderlyingAssets() public view returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
         return receiptToken.convertToAssets(shares);
     }
 
+    /// @notice Allows the owner to withdraw ERC20 tokens in case of emergency.
+    /// @param _token Address of the token to withdraw.
     function emergencyWithdraw(address _token) external onlyOwner {
         uint256 balance = IERC20(_token).balanceOf(address(this));
         require(balance > 0, "No tokens to withdraw");
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
+
+    /// @notice Allows the owner to withdraw ETH in case of emergency.
+    function emergencyWithdrawETH() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No ETH to withdraw");
+        payable(owner()).transfer(balance);
+    }
+
+    /// @notice Handles reverts from the Gateway.
+    /// @param context Context of the revert.
+    function onRevert(RevertContext calldata context) external override {
+        (string memory revertMessage, uint256 _crossChainTxId) = abi.decode(
+            context.revertMessage,
+            (string, uint256)
+        );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_investConfirmFailed"))
+        ) {
+            emit InvestConfirmFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsFromStrategyFailed"))
+        ) {
+            bool success = inputToken.approve(
+                address(receiptToken),
+                context.amount
+            );
+            require(success, "Approval on Revert Reinvest failed");
+            uint256 shares = receiptToken.deposit(
+                context.amount,
+                address(this)
+            );
+            require(shares > 0, "Revert Reinvest failed");
+            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
+        }
+    }
+
+    /// @notice Allows the contract to receive ETH.
+    receive() external payable {}
 }
