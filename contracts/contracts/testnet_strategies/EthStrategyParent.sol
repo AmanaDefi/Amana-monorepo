@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "./EVMStrategy.sol";
+import "./StrategyParent.sol";
 
-/// @title EVMEthStrategy
+/// @title EthStrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract EVMEthStrategy is EVMStrategy {
+abstract contract EthStrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
     /// @notice Invests ETH into the Aave pool.
@@ -23,7 +23,7 @@ abstract contract EVMEthStrategy is EVMStrategy {
         require(msg.value > 0, "No ETH sent");
 
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-        _depositFundsIntoYieldSource(amount);
+        _depositFundsIntoYieldSource(msg.value);
 
         bytes memory outgoingMessage = abi.encode(
             userAddress,

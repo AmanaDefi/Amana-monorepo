@@ -8,10 +8,10 @@ import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
 
-/// @title EVMStrategy
+/// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract EVMStrategy is Ownable {
+abstract contract StrategyParent is Ownable {
     using SafeERC20 for IERC20;
 
     string public name;
@@ -63,7 +63,7 @@ abstract contract EVMStrategy is Ownable {
     ) external payable onlyGateway returns (bytes memory) {
         (
             address userAddress,
-            address withdrawZRC20,
+            address ZRC20Address,
             uint256 amount,
             uint256 fee,
             uint32 withdrawChainId,
@@ -87,7 +87,7 @@ abstract contract EVMStrategy is Ownable {
         } else {
             _divest(
                 userAddress,
-                withdrawZRC20,
+                ZRC20Address,
                 amount,
                 fee,
                 withdrawChainId,
@@ -116,7 +116,7 @@ abstract contract EVMStrategy is Ownable {
 
     /// @notice Withdraws funds from the Aave pool.
     /// @param userAddress Address of the user whose funds are being withdrawn.
-    /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
+    /// @param ZRC20Address ZRC20 token address for the withdrawal.
     /// @param amount Amount to withdraw.
     /// @param fee Gas fee for the transaction.
     /// @param withdrawChainId Chain ID for the withdrawal.
@@ -124,7 +124,7 @@ abstract contract EVMStrategy is Ownable {
     /// @param _crossChainTxId Cross-chain transaction ID.
     function _divest(
         address userAddress,
-        address withdrawZRC20,
+        address ZRC20Address,
         uint256 amount,
         uint256 fee,
         uint32 withdrawChainId,

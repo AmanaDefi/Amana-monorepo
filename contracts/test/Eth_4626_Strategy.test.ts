@@ -1,17 +1,17 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
-import { BaseSepAaveEthStrategy, IERC20 } from "../typechain";
+import { Eth_4626_Strategy, IERC20, Mock4626 } from "../typechain";
 import { setTokenBalance } from "./utils";
-import { BASE_SEPOLIA_USDC_ADDRESS, BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS } from "../../constants";
 
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 const GATEWAY_ADDRESS = "0x0c487a766110c85d301d96e33579c5b317fa4995";
 const AMANA_VAULT_ADDRESS = "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B";
 const OWNER_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 
 let gatewaySigner: Signer;
-let strategy: BaseSepAaveEthStrategy;
+let strategy: Eth_4626_Strategy;
 let receiptToken: IERC20;
 
 async function setupGatewaySigner() {
@@ -28,11 +28,13 @@ async function setupGatewaySigner() {
   ]);
 }
 
-describe("BaseSepAaveEthStrategy - Full Coverage", function () {
+describe("Eth_4626_Strategy - Full Coverage", function () {
   if (network.config.chainId !== BASE_SEPOLIA_CHAIN_ID) {
-    console.log("Skipping tests because the network is not BaseSepolia");
+    console.log("Skipping ETH_4626_Strategy tests because the network is not BaseSepolia");
     return;
   }
+  let mockVault: Mock4626;
+  let owner: Signer;
 
   before(async () => {
     [gatewaySigner] = await ethers.getSigners();
@@ -40,17 +42,23 @@ describe("BaseSepAaveEthStrategy - Full Coverage", function () {
   });
 
   beforeEach(async () => {
-    const StrategyFactory = await ethers.getContractFactory("BaseSepAaveEthStrategy");
+    [owner] = await ethers.getSigners();
+    // Deploy Mock4626 vault
+    const VaultFactory = await ethers.getContractFactory("Mock4626", owner);
+    mockVault = await VaultFactory.deploy(WETH_ADDRESS);
+    await mockVault.deployed();
+
+    const StrategyFactory = await ethers.getContractFactory("Eth_4626_Strategy");
     strategy = await StrategyFactory.deploy(
-      "BaseSepAaveEthStrategy",
+      "Eth_4626_Strategy",
       AMANA_VAULT_ADDRESS,
-      ethers.constants.AddressZero, // inputToken is ETH
-      BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS,
-      GATEWAY_ADDRESS
+      mockVault.address,
+      GATEWAY_ADDRESS,
+      WETH_ADDRESS
     );
     await strategy.deployed();
 
-    receiptToken = await ethers.getContractAt("IERC20", BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS);
+    receiptToken = await ethers.getContractAt("IERC20", mockVault.address);
   });
 
   after(async () => {

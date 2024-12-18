@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "./EVMStrategy.sol";
+import "./StrategyParent.sol";
 
-/// @title EVMERC20Strategy
+/// @title ERC20StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract EVMERC20Strategy is EVMStrategy {
+abstract contract ERC20StrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable inputToken;
+    error TransferFailed();
 
     constructor(address _inputTokenAddress) {
         inputToken = IERC20(_inputTokenAddress);
@@ -26,7 +27,14 @@ abstract contract EVMERC20Strategy is EVMStrategy {
         uint256 _crossChainTxId
     ) internal override {
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-
+        bool success = inputToken.transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+        if (!success) {
+            revert TransferFailed();
+        }
         _depositFundsIntoYieldSource(amount);
 
         bytes memory outgoingMessage = abi.encode(
@@ -100,8 +108,12 @@ abstract contract EVMERC20Strategy is EVMStrategy {
             uint256(1000000)
         );
 
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
+        inputToken.approve(_GATEWAY_ADDRESS, amount + fee);
+
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall(
             amanaVault,
+            amount,
+            address(inputToken),
             outgoingMessage,
             revertOptions
         );

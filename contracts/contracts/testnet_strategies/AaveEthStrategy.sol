@@ -7,12 +7,12 @@ import "../interfaces/IAavePool.sol";
 import "../interfaces/IAaveReceiptToken.sol";
 import "../interfaces/IWrappedTokenGatewayV3.sol";
 import "../interfaces/IWETH.sol";
-import "./EVMEthStrategy.sol";
+import "./EthStrategyParent.sol";
 
-/// @title EVMAaveEthStrategy
+/// @title AaveEthStrategy
 /// @notice Base contract for Ethereum-based strategies using Aave and ZetaChain.
 /// @dev Handles ETH investments and divestments for strategies on EVM-compatible chains.
-contract EVMAaveEthStrategy is EVMEthStrategy {
+contract AaveEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
     IWETH public immutable weth;
@@ -34,7 +34,7 @@ contract EVMAaveEthStrategy is EVMEthStrategy {
         address _gateway,
         address _wrappedTokenGateway,
         address _wethAddress
-    ) EVMStrategy(_name, _amanaVault, _gateway) {
+    ) StrategyParent(_name, _amanaVault, _gateway) {
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());
         tokenGateway = IWrappedTokenGatewayV3(_wrappedTokenGateway);
@@ -44,11 +44,12 @@ contract EVMAaveEthStrategy is EVMEthStrategy {
     /// @notice Deposits funds into the Aave pool.
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
-        tokenGateway.depositETH{value: amount}(
-            address(aavePool),
-            address(this),
-            0
-        );
+        weth.deposit{value: amount}();
+        bool success = weth.approve(address(aavePool), amount);
+        if (!success) {
+            revert ApprovalFailed();
+        }
+        aavePool.supply(address(weth), amount, address(this), 0);
     }
 
     function _withdrawFundsFromYieldSource(uint256 amount) internal override {

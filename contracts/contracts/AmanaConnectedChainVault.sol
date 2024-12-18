@@ -203,8 +203,7 @@ contract AmanaConnectedChainVault is
         address zrc20,
         uint256 amount,
         bytes calldata message
-    ) external override {
-        // onlyGateway
+    ) external override onlyGateway {
         VaultStorage storage $ = _getVaultStorage();
         if (context.sender == $.strategyAddress) {
             (
