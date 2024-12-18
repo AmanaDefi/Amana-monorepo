@@ -89,8 +89,7 @@ export function getVaultErrorMessage(
 enum Action {
   depositApprove,
   depositApproveConfirmed,
-  depositDirect,
-  depositCross,
+  deposit,
   depositConfirmed,
   crosschainInvest,
   deposited,
@@ -99,7 +98,11 @@ enum Action {
   withdrawconfirmed,
   DivestSent,
   FundsDivested,
-  Withdrawn
+  ReturnFundsToUserSent,
+  Withdrawn,
+  CrossChainInvestFailed,
+  DivestFailed,
+  ReturnFundsToUserFailed
 }
 
 
@@ -133,7 +136,7 @@ export function formatBalance(balance: number) {
   return remaining;
 }
 
-const getStrategyChain = async (
+export const getStrategyChain = async (
   vault: VaultData
 ) => {
   const contract = getContract({
@@ -147,7 +150,7 @@ const getStrategyChain = async (
     method: "function getStrategy() view returns (address, uint32)",
   });
 
-  return chainID;
+  return [strategyAddress, chainID];
 }
 
 export const selectActions = async (
@@ -160,83 +163,52 @@ export const selectActions = async (
 ) => {
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value)
-  const StrategyChain = await getStrategyChain(vaultData)
+  const [chainID] = await getStrategyChain(vaultData)
   switch (action) {
     case SmartVaultActionType.Deposit:
-      if (activeChain.id == 70001) {
-        if (StrategyChain == 70001) {
-          if (isNativeToken) {
-            return [
-              Action.depositDirect,
-              Action.depositConfirmed
-            ]
-          }
-          else if (
-            await handleAllowance({
-              token: inputToken?.address as Address,
-              activeChain: activeChain,
-              activeAccount: EOAaccount.address as Address,
-              spender: vaultData.id as Address,
-              amount: value
-            })) {
-            return [
-              Action.depositDirect,
-              Action.depositConfirmed
-            ]
-          }
-          else {
-            return [
-              Action.depositApprove,
-              Action.depositApproveConfirmed,
-              Action.depositDirect,
-              Action.depositConfirmed
-            ]
-          }
+      if (chainID != 70001) {
+        if (isNativeToken) {
+          return [
+            Action.deposit,
+            Action.depositConfirmed,
+            Action.crosschainInvest,
+            Action.FundsInvest,
+            Action.deposited
+          ]
+        }
+        else if (
+          await handleAllowance({
+            token: inputToken?.address as Address,
+            activeChain: activeChain,
+            activeAccount: EOAaccount.address as Address,
+            spender: vaultData.id as Address,
+            amount: value
+          })) {
+          return [
+            Action.deposit,
+            Action.depositConfirmed,
+            Action.crosschainInvest,
+            Action.FundsInvest,
+            Action.deposited
+          ]
         }
         else {
-          if (isNativeToken) {
-            return [
-              Action.depositDirect,
-              Action.depositConfirmed,
-              Action.crosschainInvest,
-              Action.FundsInvest,
-              Action.deposited
-            ]
-          }
-          else if (
-            await handleAllowance({
-              token: inputToken?.address as Address,
-              activeChain: activeChain,
-              activeAccount: EOAaccount.address as Address,
-              spender: vaultData.id as Address,
-              amount: value
-            })) {
-            return [
-              Action.depositDirect,
-              Action.depositConfirmed,
-              Action.crosschainInvest,
-              Action.FundsInvest,
-              Action.deposited
-            ]
-          }
-          else {
-            return [
-              Action.depositApprove,
-              Action.depositApproveConfirmed,
-              Action.depositDirect,
-              Action.depositConfirmed,
-              Action.crosschainInvest,
-              Action.FundsInvest,
-              Action.deposited
-            ]
-          }
+          return [
+            Action.depositApprove,
+            Action.depositApproveConfirmed,
+            Action.deposit,
+            Action.depositConfirmed,
+            Action.crosschainInvest,
+            Action.FundsInvest,
+            Action.deposited
+          ]
         }
       }
       else {
-        if (StrategyChain == 70001) {
+        if (activeChain.id == 70001) {
           if (isNativeToken) {
             return [
-              Action.depositCross,
+              Action.deposit,
               Action.depositConfirmed
             ]
           }
@@ -249,7 +221,7 @@ export const selectActions = async (
               amount: value
             })) {
             return [
-              Action.depositCross,
+              Action.deposit,
               Action.depositConfirmed
             ]
           }
@@ -257,7 +229,7 @@ export const selectActions = async (
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
-              Action.depositCross,
+              Action.deposit,
               Action.depositConfirmed
             ]
           }
@@ -265,10 +237,8 @@ export const selectActions = async (
         else {
           if (isNativeToken) {
             return [
-              Action.depositCross,
+              Action.deposit,
               Action.depositConfirmed,
-              Action.crosschainInvest,
-              Action.FundsInvest,
               Action.deposited
             ]
           }
@@ -281,10 +251,8 @@ export const selectActions = async (
               amount: value
             })) {
             return [
-              Action.depositCross,
+              Action.deposit,
               Action.depositConfirmed,
-              Action.crosschainInvest,
-              Action.FundsInvest,
               Action.deposited
             ]
           }
@@ -292,35 +260,26 @@ export const selectActions = async (
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
-              Action.depositCross,
+              Action.deposit,
               Action.depositConfirmed,
-              Action.crosschainInvest,
-              Action.FundsInvest,
               Action.deposited
             ]
           }
         }
       }
     case SmartVaultActionType.Withdrawal:
-      if (activeChain.id == 70001) {
-        if (StrategyChain == 70001) {
-          return [
-            Action.withdraw,
-            Action.withdrawconfirmed
-          ]
-        }
-        else {
-          return [
-            Action.withdraw,
-            Action.withdrawconfirmed,
-            Action.DivestSent,
-            Action.FundsDivested,
-            Action.Withdrawn
-          ]
-        }
+      if (chainID != 70001) {
+        return [
+          Action.withdraw,
+          Action.withdrawconfirmed,
+          Action.DivestSent,
+          Action.FundsDivested,
+          Action.ReturnFundsToUserSent,
+          Action.Withdrawn
+        ]
       }
       else {
-        if (StrategyChain == 70001) {
+        if (activeChain.id == 70001) {
           return [
             Action.withdraw,
             Action.withdrawconfirmed
@@ -330,36 +289,10 @@ export const selectActions = async (
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
-            Action.DivestSent,
-            Action.FundsDivested,
+            Action.ReturnFundsToUserSent,
             Action.Withdrawn
           ]
         }
       }
   }
-}
-
-
-
-
-export function getCrossChainInvestSent(vault: VaultData) {
-
-
-  const myEvent = prepareEvent({
-    signature: "event CrossChainInvestSent(uint256 crossChainTxId)",
-  });
-
-
-  const contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0],
-    address: vault.id,
-  });
-
-  const contractEvents = useContractEvents({
-    contract,
-    events: [myEvent],
-  });
-
-  console.log("5545356456664", contract)
 }

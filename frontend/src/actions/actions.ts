@@ -180,7 +180,7 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     account: activeAccount,
     transaction: supplyTx
   });
-  console.log("Deposit executed");
+  console.log("Deposit executed2",receipt);
   return receipt;
 };
 

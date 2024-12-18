@@ -4,7 +4,7 @@ import { VaultData, Token, Balance, UserVaultBalance, SmartVaultActionType } fro
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect } from "react";
 import { parseUnits } from "viem";
-import { Address, getContract } from "thirdweb";
+import { Address, getContract, defineChain, readContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
 import { APPROVED_TOKENS } from "../constants/chainConfig";
@@ -21,7 +21,7 @@ export interface VaultInputsProps {
 }
 
 // Custom hook to fetch token balance, including native tokens
-function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any) {
+function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any, userVaultBalances: UserVaultBalance[]) {
   const [balance, setBalance] = useState<string>("0");
   const { data: walletBalance, isLoading, isError } = useWalletBalance({
     chain: activeChain,
@@ -50,7 +50,7 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
     };
 
     fetchTokenBalance();
-  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError]);
+  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError, userVaultBalances]);
 
   return balance;
 }
@@ -84,6 +84,7 @@ export default function VaultInputs({
     throw new Error("No active chain found");
   }
 
+
   const userAddress = EOAaccount.address;
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function VaultInputs({
   }, [activeChain.id, vaultData.inputToken, isDeposit]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain);
+  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, userVaultBalances);
 
   useEffect(() => {
     if (inputToken) {
@@ -130,11 +131,6 @@ export default function VaultInputs({
       steps.length > 0 && setShowModal(true)
     }
   }, [tokenBalance, isDeposit]);
-
-  useEffect(() => {
-
-  }, [activeChain])
-
 
   useEffect(() => {
     if (inputToken) {
@@ -278,6 +274,7 @@ export default function VaultInputs({
           _action={steps[0]}
           actions={steps}
           setShowModal={setShowModal}
+          setInputBalance={setInputBalance}
         />
       )}
     </>
@@ -287,8 +284,7 @@ export default function VaultInputs({
 enum Action {
   depositApprove,
   depositApproveConfirmed,
-  depositDirect,
-  depositCross,
+  deposit,
   depositConfirmed,
   crosschainInvest,
   deposited,
@@ -297,5 +293,9 @@ enum Action {
   withdrawconfirmed,
   DivestSent,
   FundsDivested,
-  Withdrawn
+  ReturnFundsToUserSent,
+  Withdrawn,
+  CrossChainInvestFailed,
+  DivestFailed,
+  ReturnFundsToUserFailed
 }
