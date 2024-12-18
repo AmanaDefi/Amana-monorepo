@@ -19,91 +19,35 @@ abstract contract EthStrategyParent is StrategyParent {
         uint256 amount,
         uint256 _executionNonce,
         uint256 _crossChainTxId
-    ) internal virtual override {
+    ) internal override {
         require(msg.value > 0, "No ETH sent");
 
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
         _depositFundsIntoYieldSource(msg.value);
 
-        bytes memory outgoingMessage = abi.encode(
+        _sendInvestConfirmation(
             userAddress,
-            address(0),
             amount,
-            0,
-            0,
-            true,
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
             _executionNonce,
             _crossChainTxId
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this),
-            false,
-            address(this),
-            abi.encode("_investConfirmFailed", _crossChainTxId),
-            uint256(1000000)
-        );
-
-        IGatewayEVM(_GATEWAY_ADDRESS).call(
-            amanaVault,
-            outgoingMessage,
-            revertOptions
         );
 
         emit FundsInvested(_crossChainTxId, userAddress, amount);
     }
 
-    /// @notice Withdraws funds from the Aave pool.
-    /// @param userAddress Address of the user whose funds are being withdrawn.
-    /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
-    /// @param amount Amount to withdraw.
-    /// @param fee Gas fee for the transaction.
-    /// @param withdrawChainId Chain ID for the withdrawal.
-    /// @param _executionNonce Current execution nonce for the transaction.
-    /// @param _crossChainTxId Cross-chain transaction ID.
-    function _divest(
-        address userAddress,
-        address withdrawZRC20,
+    function _sendDepositAndCall(
         uint256 amount,
-        uint256 fee,
-        uint32 withdrawChainId,
-        uint256 _executionNonce,
-        uint256 _crossChainTxId
-    ) internal virtual override {
-        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-
-        _withdrawFundsFromYieldSource(amount + fee);
-
-        bytes memory outgoingMessage = abi.encode(
-            userAddress,
-            withdrawZRC20,
-            amount,
-            fee,
-            withdrawChainId,
-            false,
-            totalUnderlyingAssetsBefore,
-            totalUnderlyingAssets(),
-            _executionNonce,
-            _crossChainTxId
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this),
-            true,
-            address(this),
-            abi.encode("_returnFundsFromStrategyFailed", _crossChainTxId),
-            uint256(1000000)
-        );
-
-        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount + fee}(
+        address amanaVault,
+        bytes memory outgoingMessage,
+        RevertOptions memory revertOptions
+    ) internal override {
+        IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall{value: amount}(
             amanaVault,
             outgoingMessage,
             revertOptions
         );
-
-        emit FundsDivested(_crossChainTxId, userAddress, amount);
     }
 
     function emergencyWithdrawETH() external onlyOwner {

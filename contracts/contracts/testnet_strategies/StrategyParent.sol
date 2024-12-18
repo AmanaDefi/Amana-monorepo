@@ -30,6 +30,13 @@ abstract contract StrategyParent is Ownable {
     );
     event InvestConfirmFailed(uint256 indexed crossChainTxId);
     event ReturnFundsFromStrategyFailed(uint256 indexed crossChainTxId);
+    event TotalUnderlyingAssetsSent(
+        address indexed vaultAddress,
+        uint256 totalUnderlyingAssets,
+        uint256 blockNumber,
+        uint256 blockTimestamp
+    );
+    event SendTotalUnderlyingAssetsFailed();
 
     error ApprovalFailed();
 
@@ -114,9 +121,63 @@ abstract contract StrategyParent is Ownable {
 
     function _depositFundsIntoYieldSource(uint256 amount) internal virtual;
 
+    function manualResendInvestConfirmation(
+        address userAddress,
+        uint256 amount,
+        uint256 totalUnderlyingAssetsBefore,
+        uint256 totalUnderlyingAssetsAfter,
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
+    ) external onlyOwner {
+        _sendInvestConfirmation(
+            userAddress,
+            amount,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            _executionNonce,
+            _crossChainTxId
+        );
+    }
+
+    function _sendInvestConfirmation(
+        address userAddress,
+        uint256 amount,
+        uint256 totalUnderlyingAssetsBefore,
+        uint256 totalUnderlyingAssetsAfter,
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
+    ) internal {
+        bytes memory outgoingMessage = abi.encode(
+            userAddress,
+            address(0),
+            amount,
+            0,
+            0,
+            true,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            _executionNonce,
+            _crossChainTxId
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this),
+            false,
+            address(this),
+            abi.encode("_investConfirmFailed", _crossChainTxId),
+            uint256(1000000)
+        );
+
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            amanaVault,
+            outgoingMessage,
+            revertOptions
+        );
+    }
+
     /// @notice Withdraws funds from the Aave pool.
     /// @param userAddress Address of the user whose funds are being withdrawn.
-    /// @param ZRC20Address ZRC20 token address for the withdrawal.
+    /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
     /// @param amount Amount to withdraw.
     /// @param fee Gas fee for the transaction.
     /// @param withdrawChainId Chain ID for the withdrawal.
@@ -124,15 +185,139 @@ abstract contract StrategyParent is Ownable {
     /// @param _crossChainTxId Cross-chain transaction ID.
     function _divest(
         address userAddress,
-        address ZRC20Address,
+        address withdrawZRC20,
         uint256 amount,
         uint256 fee,
         uint32 withdrawChainId,
         uint256 _executionNonce,
         uint256 _crossChainTxId
+    ) internal {
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+
+        _withdrawFundsFromYieldSource(amount + fee);
+
+        uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
+
+        _sendFundsAndDivestConfirmation(
+            userAddress,
+            withdrawZRC20,
+            amount,
+            fee,
+            withdrawChainId,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            _executionNonce,
+            _crossChainTxId
+        );
+
+        emit FundsDivested(_crossChainTxId, userAddress, amount + fee);
+    }
+
+    function manualResendFundsAndDivestConfirmation(
+        address userAddress,
+        address withdrawZRC20,
+        uint256 amount,
+        uint256 fee,
+        uint32 withdrawChainId,
+        uint256 totalUnderlyingAssetsBefore,
+        uint256 totalUnderlyingAssetsAfter,
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
+    ) external onlyOwner {
+        _sendFundsAndDivestConfirmation(
+            userAddress,
+            withdrawZRC20,
+            amount,
+            fee,
+            withdrawChainId,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            _executionNonce,
+            _crossChainTxId
+        );
+    }
+
+    function _sendFundsAndDivestConfirmation(
+        address userAddress,
+        address withdrawZRC20,
+        uint256 amount,
+        uint256 fee,
+        uint32 withdrawChainId,
+        uint256 totalUnderlyingAssetsBefore,
+        uint256 totalUnderlyingAssetsAfter,
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
+    ) internal {
+        bytes memory outgoingMessage = abi.encode(
+            userAddress,
+            withdrawZRC20,
+            amount,
+            fee,
+            withdrawChainId,
+            false,
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            _executionNonce,
+            _crossChainTxId
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this),
+            true,
+            address(this),
+            abi.encode("_returnFundsFromStrategyFailed", _crossChainTxId),
+            uint256(1000000)
+        );
+        _sendDepositAndCall(
+            amount + fee,
+            amanaVault,
+            outgoingMessage,
+            revertOptions
+        );
+    }
+
+    function _sendDepositAndCall(
+        uint256 amount,
+        address amanaVault,
+        bytes memory outgoingMessage,
+        RevertOptions memory revertOptions
     ) internal virtual;
 
     function _withdrawFundsFromYieldSource(uint256 amount) internal virtual;
+
+    function sendTotalUnderlyingAssetsToVault() external {
+        uint256 underlyingAssets = totalUnderlyingAssets();
+
+        // Construct the message payload with the desired information
+        bytes memory outgoingMessage = abi.encode(
+            underlyingAssets,
+            block.number,
+            block.timestamp
+        );
+
+        // Configure revert options for the cross-chain call
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this), // Address to send revert message to
+            false, // Flag to indicate whether to revert on failure
+            address(this), // Address to handle revert logic
+            abi.encode("_handleRevertOnSendTotalUnderlyingAssets"), // Revert handling logic
+            uint256(1000000) // Gas for revert call
+        );
+
+        // Use the GatewayEVM contract to make the call
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            amanaVault, // Destination contract (vault on ZetaChain)
+            outgoingMessage, // Encoded message payload
+            revertOptions // Revert options
+        );
+
+        emit TotalUnderlyingAssetsSent(
+            amanaVault,
+            underlyingAssets,
+            block.number,
+            block.timestamp
+        );
+    }
 
     /// @notice Handles reverts from the Gateway.
     /// @param context Context of the revert.
@@ -153,6 +338,11 @@ abstract contract StrategyParent is Ownable {
         ) {
             _depositFundsIntoYieldSource(context.amount);
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
+        ) {
+            emit SendTotalUnderlyingAssetsFailed();
         } else {
             revert("Revert not handled");
         }
