@@ -10,16 +10,8 @@ const zetaRpcUrl = deployEnv === "testnet"
   ? process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA_TESTNET || ""
   : process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA || "";
 
-const sepoliaRpcUrl =
-
-  deployEnv === "testnet"
-    ? process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA_TESTNET || ""
-    : process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
-
-const baseSepoliaRpcUrl = deployEnv === "testnet"
-  ? process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA_TESTNET || ""
-  : process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
-
+const sepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
+const baseSepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
 const polygonAmoyRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
 const bscTestnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC_TESTNET || "";
 

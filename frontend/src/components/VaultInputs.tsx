@@ -31,21 +31,25 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
 
   useEffect(() => {
     const fetchTokenBalance = async () => {
-      if (!token || !userAddress || !activeChain) return;
-      if (token.isNative) {
-        if (!isLoading && !isError && walletBalance) {
-          // Fetch native token balance (ETH, BNB, MATIC, etc.)
-          setBalance(walletBalance.displayValue || "0");
+      try {
+        if (!token || !userAddress || !activeChain) return;
+        if (token.isNative) {
+          if (!isLoading && !isError && walletBalance) {
+            // Fetch native token balance (ETH, BNB, MATIC, etc.)
+            setBalance(walletBalance.displayValue || "0");
+          }
+          else {
+            setBalance("0");
+          }
+        } else {
+          // Fetch ERC-20 token balance
+          const contract = getContract({ client, chain: activeChain, address: token.address as Address });
+          const { value, decimals } = await getBalance({ contract, address: userAddress as Address });
+          const formattedBalance = ethers.formatUnits(value, decimals);
+          setBalance(formattedBalance || "0");
         }
-        else {
-          setBalance("0");
-        }
-      } else {
-        // Fetch ERC-20 token balance
-        const contract = getContract({ client, chain: activeChain, address: token.address as Address });
-        const { value, decimals } = await getBalance({ contract, address: userAddress as Address });
-        const formattedBalance = ethers.formatUnits(value, decimals);
-        setBalance(formattedBalance || "0");
+      } catch (error) {
+        console.error("Error fetching wallet data: ", error);
       }
     };
 

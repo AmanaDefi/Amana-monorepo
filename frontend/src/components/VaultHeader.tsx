@@ -62,28 +62,30 @@ export default function VaultHeader({
         if (!inputToken) return;
 
         const fetchData = async () => {
-            console.log("Value of inputToken: ", inputToken);
+            try {
+                console.log("Value of inputToken: ", inputToken);
 
-            if (inputToken.isNative) {
-                if (!isLoading && !isError && walletBalance) {
-                    setWalletData(walletBalance.displayValue);
+                if (inputToken.isNative) {
+                    if (!isLoading && !isError && walletBalance) {
+                        setWalletData(walletBalance.displayValue);
+                    } else {
+                        setWalletData("0");
+                    }
                 } else {
-                    setWalletData("0");
+                    const contract = getContract({
+                        client,
+                        chain: activeChain,
+                        address: inputToken.address as Address,
+                    });
+                    const { value, decimals } = await getBalance({
+                        contract,
+                        address: userAddress as Address,
+                    });
+                    const formattedBalance = ethers.formatUnits(value, decimals);
+                    setWalletData(formattedBalance);
                 }
-            } else {
-                const contract = getContract({
-                    client,
-                    chain: activeChain,
-                    address: inputToken.address as Address,
-                });
-
-                const { value, decimals } = await getBalance({
-                    contract,
-                    address: userAddress as Address,
-                });
-
-                const formattedBalance = ethers.formatUnits(value, decimals);
-                setWalletData(formattedBalance);
+            } catch (error) {
+                console.error("Error fetching wallet data: ", error);
             }
         };
 

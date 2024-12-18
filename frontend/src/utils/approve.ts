@@ -29,25 +29,30 @@ export async function handleAllowance({
         ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
         : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
 
-    if (activeChain.id === 7000 || activeChain.id === 7001) {
-        allow = await allowance({
-            contract,
-            owner: activeAccount,
-            spender: spender,
-        });
-    }
-    else {
-        allow = await allowance({
-            contract,
-            owner: activeAccount,
-            spender: EVMGatewayAddress as Address,
-        });
-    }
+    try {
+        if (activeChain.id === 7000 || activeChain.id === 7001) {
+            allow = await allowance({
+                contract,
+                owner: activeAccount,
+                spender: spender,
+            });
+        }
+        else {
+            allow = await allowance({
+                contract,
+                owner: activeAccount,
+                spender: EVMGatewayAddress as Address,
+            });
+        }
 
-    if (Number(allow) >= Number(amount)) {
-        return true;
-    }
-    else {
+        if (Number(allow) >= Number(amount)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    } catch (error) {
         return false;
     }
+
 }
