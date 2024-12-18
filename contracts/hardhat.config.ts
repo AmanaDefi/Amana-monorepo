@@ -1,5 +1,6 @@
 import "./tasks/deployGeneric";
-import "./tasks/deployStrategy";
+import "./tasks/deployEVMAaveEthStrategy";
+import "./tasks/deployEVM4626EthStrategy";
 import "./tasks/deployAmanaConnectedChainVault";
 import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";

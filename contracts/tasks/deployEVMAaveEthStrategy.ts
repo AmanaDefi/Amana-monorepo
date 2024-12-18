@@ -18,18 +18,16 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const contractName = args.contract;
   const name = args.name;
   const vault = args.vault; // This should be passed as an argument
-  const inputToken = args.inputToken;
   const receiptToken = args.receiptToken;
   const gateway = args.gateway;
+  const wrappedTokenGateway = args.wrappedTokenGateway;
+  const weth = args.weth;
 
   if (!name) {
     throw new Error("🚨 Strategy name is required");
   }
   if (!vault) {
     throw new Error("🚨 Vault address is required");
-  }
-  if (!inputToken) {
-    throw new Error("🚨 Input token address is required");
   }
   if (!receiptToken) {
     throw new Error("🚨 Receipt token address is required");
@@ -40,9 +38,16 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (!gateway) {
     throw new Error("🚨 Gateway address is required");
   }
+  if (!wrappedTokenGateway) {
+    throw new Error("🚨 Wrapped token gateway address is required");
+  }
+  if (!weth) {
+    throw new Error("🚨 WETH address is required");
+  }
+
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway);
+  const contract = await factory.deploy(name, vault, receiptToken, gateway, wrappedTokenGateway, weth);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for contract to be deployed before proceeding
@@ -58,7 +63,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, inputToken, receiptToken, gateway],
+        constructorArguments: [name, vault, receiptToken, gateway, wrappedTokenGateway, weth],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -74,13 +79,14 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 };
 
 // Define the Hardhat task for deployment
-task("deploy-strategy", "Deploy a Strategy contract", main)
+task("deploy-evm-aave-eth-strategy", "Deploy a Strategy contract", main)
   .addFlag("json", "Output in JSON")
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
   .addParam("vault", "The address of the vault")
-  .addParam("inputToken", "The address of the input token")
   .addParam("receiptToken", "The address of the receipt token")
-  .addParam("gateway", "The address of the gateway contract");
+  .addParam("gateway", "The address of the gateway contract")
+  .addParam("wrappedTokenGateway", "The address of the wrapped token gateway contract")
+  .addParam("weth", "The address of the WETH contract");
 
 export default {};

@@ -138,11 +138,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
         require(amount > 0, "No ETH sent");
 
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-        tokenGateway.depositETH{value: amount}(
-            address(aavePool),
-            address(this),
-            0
-        );
+        _depositFundsIntoYieldSource(amount);
 
         bytes memory outgoingMessage = abi.encode(
             userAddress,
@@ -173,6 +169,16 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
 
         emit FundsInvested(_crossChainTxId, userAddress, amount);
         return amount;
+    }
+
+    /// @notice Deposits funds into the Aave pool.
+    /// @param amount Amount of ETH to deposit.
+    function _depositFundsIntoYieldSource(uint256 amount) private {
+        tokenGateway.depositETH{value: amount}(
+            address(aavePool),
+            address(this),
+            0
+        );
     }
 
     /// @notice Withdraws funds from the Aave pool.
@@ -268,11 +274,7 @@ contract BaseSepAaveEthStrategy is Ownable, Callable, Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            tokenGateway.depositETH{value: context.amount}(
-                address(aavePool),
-                address(this),
-                0
-            );
+            _depositFundsIntoYieldSource(context.amount);
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else {
             revert("Revert not handled");
