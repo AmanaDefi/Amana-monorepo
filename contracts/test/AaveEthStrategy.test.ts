@@ -4,6 +4,8 @@ import { Signer } from "ethers";
 import { AaveEthStrategy, IERC20 } from "../typechain";
 import { BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
+import dotenv from "dotenv";
+dotenv.config();
 
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 const SEPOLIA_CHAIN_ID = 11155111;
@@ -32,17 +34,25 @@ async function setupGatewaySigner() {
 }
 
 describe("AaveEthStrategy - Full Coverage", function () {
-  if (network.config.chainId !== BASE_SEPOLIA_CHAIN_ID) {
-    console.log("Skipping tests because the network is not BaseSepolia");
-    return;
-  }
 
   before(async () => {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+            blockNumber: 19375084,
+          },
+        },
+      ]
+    });
     [gatewaySigner] = await ethers.getSigners();
     await setupGatewaySigner();
   });
 
   beforeEach(async () => {
+
     const StrategyFactory = await ethers.getContractFactory("AaveEthStrategy");
     strategy = await StrategyFactory.deploy(
       "AaveEthStrategy",

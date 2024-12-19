@@ -5,6 +5,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { AmanaConnectedChainVault, IERC20 } from "../typechain";
 import { setTokenBalance } from "./utils";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
+import dotenv from "dotenv";
+dotenv.config();
 
 import {
   ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
@@ -12,13 +14,8 @@ import {
   ZC_TEST_USDC_BSC_ADDRESS,
 } from "../../constants";
 
-const ZETACHAIN_TESTNET_CHAIN_ID = 7001;
-
 describe("AmanaConnectedChainVault Tests", function () {
-  if (network.config.chainId !== ZETACHAIN_TESTNET_CHAIN_ID) {
-    console.log("Skipping tests because the network is not Zetachain testnet");
-    return;
-  }
+
   let amanaVault: AmanaConnectedChainVault;
   let owner: Signer;
   let user1: Signer;
@@ -168,8 +165,19 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
   }
 
-
   async function setup() {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+            blockNumber: 8063787,
+          },
+        },
+      ]
+    });
+
     [owner, user1, user2] = await ethers.getSigners();
 
     ethBaseSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_BASESEPOLIA_ADDRESS);
@@ -548,47 +556,57 @@ describe("AmanaConnectedChainVault Tests", function () {
       expect(userRewardBalance).to.be.closeTo(expectedReward, ethers.utils.parseUnits("1", 18)); // Allow a small margin for rounding
     });
 
-    it("should correctly distribute rewards proportional to user shares", async function () {
+    it("should correctly distribute rewards proportional to user shares using precise timestamps", async function () {
       const { user1, user2, depositAmount1, depositAmount2, usdcBSC, amanaVault, owner } = await loadFixture(setup);
 
       const rewardAmount = ethers.utils.parseUnits("1000", 18);
       const rewardDuration = 3600; // 1 hour in seconds
 
-      const currentBlock = await ethers.provider.getBlock("latest");
-      const currentTimestamp = currentBlock.timestamp;
-
+      // Set the start and end timestamps explicitly
+      const currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
       const startTimestamp = currentTimestamp + 600; // Start rewards 600 seconds later
       const endTimestamp = startTimestamp + rewardDuration;
 
+      // Set rewards interval
       await amanaVault.connect(owner).setRewardToken(usdcBSC.address);
       await amanaVault.connect(owner).setRewardsInterval(startTimestamp, endTimestamp, rewardAmount);
 
+      // Set reward token balance
       await setTokenBalance(ZC_TEST_USDC_BSC_ADDRESS, amanaVault.address, rewardAmount);
 
+      // Simulate deposits
       await simulateDepositCallFromBase(user1, depositAmount1);
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0);
 
       await simulateDepositCallFromBase(user2, depositAmount2);
       await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 1);
 
-      const elapsedSeconds = 1800; // 30 minutes
-      await ethers.provider.send("evm_increaseTime", [elapsedSeconds]); // Increase time by 30 minutes
-      await ethers.provider.send("evm_mine", []);
+      // Move to halfway through the rewards duration
+      const halfwayTimestamp = startTimestamp + rewardDuration / 2;
+      await ethers.provider.send("evm_setNextBlockTimestamp", [halfwayTimestamp]);
+      await ethers.provider.send("evm_mine", []); // Mine a block to apply the new timestamp
 
-      const totalDeposits = depositAmount1.add(depositAmount2);
-      const elapsedRewardAmount = rewardAmount.mul(elapsedSeconds - 600).div(rewardDuration); // Proportional rewards based on elapsed time
-      const user1Share = depositAmount1.mul(elapsedRewardAmount).div(totalDeposits);
-      const user2Share = depositAmount2.mul(elapsedRewardAmount).div(totalDeposits);
+      // Calculate expected rewards
+      const totalSupply = await amanaVault.totalSupply();
+      const elapsedRewardAmount = rewardAmount.mul(halfwayTimestamp - startTimestamp).div(rewardDuration);
 
+      const user1Shares = await amanaVault.balanceOf(await user1.getAddress());
+      const user2Shares = await amanaVault.balanceOf(await user2.getAddress());
+      const user1ExpectedRewards = user1Shares.mul(elapsedRewardAmount).div(totalSupply);
+      const user2ExpectedRewards = user2Shares.mul(elapsedRewardAmount).div(totalSupply);
+
+      // Users claim rewards
       await amanaVault.connect(user1).claimRewards(await user1.getAddress());
       const user1Reward = await usdcBSC.balanceOf(await user1.getAddress());
 
       await amanaVault.connect(user2).claimRewards(await user2.getAddress());
       const user2Reward = await usdcBSC.balanceOf(await user2.getAddress());
 
-      expect(user1Reward).to.be.closeTo(user1Share, ethers.utils.parseUnits("2", 18));
-      expect(user2Reward).to.be.closeTo(user2Share, ethers.utils.parseUnits("2", 18));
+      // Validate the rewards
+      expect(user1Reward).to.be.closeTo(user1ExpectedRewards, ethers.utils.parseUnits("1", 18));
+      expect(user2Reward).to.be.closeTo(user2ExpectedRewards, ethers.utils.parseUnits("1", 18));
     });
+
 
   });
 });

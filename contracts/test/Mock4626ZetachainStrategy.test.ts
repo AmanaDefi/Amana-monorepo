@@ -2,6 +2,8 @@ import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Mock4626ZetachainStrategy, MockERC20, Mock4626 } from "../typechain";
 import { Signer } from "ethers";
+import dotenv from "dotenv";
+dotenv.config();
 
 const AMANA_VAULT_ADDRESS = "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B";
 const GATEWAY_ADDRESS = "0x0c487a766110c85d301d96e33579c5b317fa4995";
@@ -14,6 +16,17 @@ describe("Mock4626ZetachainStrategy - Full Coverage", function () {
   let owner: Signer;
 
   beforeEach(async () => {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+            blockNumber: 8063787,
+          },
+        },
+      ]
+    });
     [owner] = await ethers.getSigners();
 
     // Deploy MockERC20 token

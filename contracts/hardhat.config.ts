@@ -50,22 +50,22 @@ const config: HardhatUserConfig = {
       url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
-    hardhat: {
-      chainId: 84532,
-      forking: {
-        url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 19375084,
-      },
-      allowUnlimitedContractSize: true,
-    },
     // hardhat: {
-    //   chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
+    //   chainId: 84532,
     //   forking: {
-    //     url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-    //     blockNumber: 8063787
+    //     url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+    //     blockNumber: 19375084,
     //   },
     //   allowUnlimitedContractSize: true,
     // },
+    hardhat: {
+      chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
+      forking: {
+        url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 8063787
+      },
+      allowUnlimitedContractSize: true,
+    },
   },
   solidity: {
     compilers: [

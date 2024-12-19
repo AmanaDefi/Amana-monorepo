@@ -4,6 +4,8 @@ import { Signer } from "ethers";
 import { Eth_4626_Strategy, IERC20, Mock4626 } from "../typechain";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../constants";
+import dotenv from "dotenv";
+dotenv.config();
 
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 const SEPOLIA_CHAIN_ID = 11155111;
@@ -32,14 +34,21 @@ async function setupGatewaySigner() {
 }
 
 describe("Eth_4626_Strategy - Full Coverage", function () {
-  if (network.config.chainId !== BASE_SEPOLIA_CHAIN_ID) {
-    console.log("Skipping ETH_4626_Strategy tests because the network is not BaseSepolia");
-    return;
-  }
   let mockVault: Mock4626;
   let owner: Signer;
 
   before(async () => {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+            blockNumber: 19375084,
+          },
+        },
+      ]
+    });
     [gatewaySigner] = await ethers.getSigners();
     await setupGatewaySigner();
   });

@@ -32,15 +32,22 @@ async function setupGatewaySigner() {
 
 describe("ERC20_4626_Strategy - Full Coverage", function () {
 
-  if (network.config.chainId !== BASE_SEPOLIA_CHAIN_ID) {
-    console.log("Skipping tests because the network is not BaseSepolia");
-    return;
-  }
   let owner: Signer;
   let mockERC20: MockERC20;
   let mockVault: Mock4626;
 
   before(async () => {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+            blockNumber: 19375084,
+          },
+        },
+      ]
+    });
     [gatewaySigner] = await ethers.getSigners();
     await setupGatewaySigner();
   });
