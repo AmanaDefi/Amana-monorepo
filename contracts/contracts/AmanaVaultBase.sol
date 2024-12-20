@@ -411,9 +411,9 @@ abstract contract AmanaVaultBase is
      * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
      */
     function _withdraw(
-        address caller,
-        address,
-        address user,
+        address caller, //caller
+        address receiver, // receiver
+        address user, // owner
         uint256 assets,
         uint256 shares
     ) internal override {
@@ -450,25 +450,7 @@ abstract contract AmanaVaultBase is
         address withdrawZRC20,
         uint256 assets,
         uint32 userChainId
-    ) internal {
-        if (assets == 0) {
-            revert WithdrawCantBeZero();
-        }
-        uint256 maxAssets = maxWithdraw(user);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
-        }
-        uint256 feeToWithdraw = _applyFee(user, assets);
-
-        _divestFromStrategy(
-            user,
-            withdrawZRC20,
-            assets,
-            feeToWithdraw,
-            0, // TODO put shares here?
-            userChainId
-        );
-    }
+    ) internal virtual;
 
     /**
      * @dev Returns funds to the user, either on the same chain or a connected chain.

@@ -272,12 +272,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
 
-        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
-            .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_CALL); // ZRC-20 of the gas token of the chain the strategy is on
-
-        gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
-
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+        _handleGasFee(GAS_LIMIT_FOR_CALL);
 
         bytes memory recipient = abi.encodePacked(oldStrategyAddress);
 
@@ -375,10 +370,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         crossChainTxId++;
 
         VaultStorage storage $ = _getVaultStorage();
+
         (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_WITHDRAW_AND_CALL); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
-        gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
+        gasTank.getGas(gas_zrc20, gasFee);
 
         if (gas_zrc20 != address(asset())) {
             IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
@@ -460,6 +456,39 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     /**
+     * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
+     * @param user The address of the user receiving the withdrawn assets.
+     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
+     * @param assets The amount of assets being withdrawn.
+     * @param userChainId The chain ID of the user's connected chain.
+     * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
+     */
+    function _withdrawComingFromConnectedChain(
+        address user,
+        address withdrawZRC20,
+        uint256 assets,
+        uint32 userChainId
+    ) internal override {
+        if (assets == 0) {
+            revert WithdrawCantBeZero();
+        }
+        uint256 maxAssets = maxWithdraw(user);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
+        }
+        uint256 feeToWithdraw = _applyFee(user, assets);
+
+        _divestFromStrategy(
+            user,
+            withdrawZRC20,
+            assets,
+            feeToWithdraw,
+            0,
+            userChainId
+        );
+    }
+
+    /**
      * @dev Initiates the process to divest assets from the strategy on a connected chain.
      * @param user The address of the user requesting the withdrawal.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
@@ -473,19 +502,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         uint256 amount,
         uint256 feeToWithdraw,
-        uint256 shares,
+        uint256,
         uint32 withdrawChainId
     ) internal override {
         VaultStorage storage $ = _getVaultStorage();
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
 
-        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
-            .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_CALL); // ZRC-20 of the gas token of the chain the strategy is on
-
-        gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
-
-        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+        _handleGasFee(GAS_LIMIT_FOR_CALL);
 
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
@@ -571,6 +595,50 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
 
         emit Withdrawn(userAddress, outputAmount, shares, _crossChainTxId);
+    }
+
+    function _handleRevertEvent(
+        string memory revertMessage,
+        uint256 _crossChainTxId,
+        address userAddress,
+        address userZRC20,
+        uint32 userChainId,
+        uint256 amount
+    ) internal {
+        bytes32 messageHash = keccak256(bytes(revertMessage));
+
+        if (messageHash == keccak256(bytes("_crossChainInvestFailed"))) {
+            _returnFundsToUser(
+                amount,
+                userChainId,
+                userAddress,
+                userZRC20,
+                _crossChainTxId
+            );
+            emit CrossChainInvestFailed(_crossChainTxId);
+        } else if (
+            messageHash ==
+            keccak256(bytes("_divestConnectedChainStrategyFailed"))
+        ) {
+            emit DivestFailed(_crossChainTxId);
+        } else if (
+            messageHash == keccak256(bytes("_returnFundsToUserFailed"))
+        ) {
+            emit ReturnFundsToUserFailed(_crossChainTxId);
+        } else if (messageHash == keccak256(bytes("_switchStrategyFailed"))) {
+            emit SwitchStrategyFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
+        }
+    }
+
+    function _handleGasFee(
+        uint256 gasLimit
+    ) private returns (address gasZRC20, uint256 gasFee) {
+        (gasZRC20, gasFee) = IZRC20(address(asset()))
+            .withdrawGasFeeWithGasLimit(gasLimit);
+        gasTank.getGas{gas: 200000}(gasZRC20, gasFee);
+        IZRC20(gasZRC20).approve(_GATEWAY_ADDRESS, gasFee);
     }
 
     /**

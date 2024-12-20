@@ -138,6 +138,40 @@ contract AmanaZetachainVault is AmanaVaultBase {
         emit Deposit(address(0), receiver, amount, shares);
     }
 
+    /**
+     * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
+     * @param user The address of the user receiving the withdrawn assets.
+     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
+     * @param assets The amount of assets being withdrawn.
+     * @param userChainId The chain ID of the user's connected chain.
+     * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
+     */
+    function _withdrawComingFromConnectedChain(
+        address user,
+        address withdrawZRC20,
+        uint256 assets,
+        uint32 userChainId
+    ) internal override {
+        if (assets == 0) {
+            revert WithdrawCantBeZero();
+        }
+        uint256 maxAssets = maxWithdraw(user);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
+        }
+        uint256 feeToWithdraw = _applyFee(user, assets);
+        uint256 shares = previewWithdraw(assets);
+
+        _divestFromStrategy(
+            user,
+            withdrawZRC20,
+            assets,
+            feeToWithdraw,
+            shares,
+            userChainId
+        );
+    }
+
     function _divestFromStrategy(
         address user,
         address withdrawZRC20,
