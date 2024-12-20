@@ -425,7 +425,14 @@ abstract contract AmanaVaultBase is
         }
         uint256 feeToWithdraw = _applyFee(user, assets);
 
-        _divestFromStrategy(user, asset(), assets, feeToWithdraw, shares, 0); // TODO put chain here?
+        _divestFromStrategy(
+            user,
+            asset(),
+            assets,
+            feeToWithdraw,
+            shares,
+            VAULT_CHAIN_ID
+        );
     }
 
     function _divestFromStrategy(
