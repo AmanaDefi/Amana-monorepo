@@ -32,6 +32,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event DivestSent(uint256 indexed crossChainTxId);
     event DivestFailed(uint256 indexed crossChainTxId);
     event TotalAssetsUpdated(uint256 totalAssets);
+    event SwitchStrategyFailed(uint256 indexed crossChainTxId);
 
     event Deposited(
         address indexed userAddress,
@@ -611,6 +612,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes("_returnFundsToUserFailed"))
         ) {
             emit ReturnFundsToUserFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_switchStrategyFailed"))
+        ) {
+            emit SwitchStrategyFailed(_crossChainTxId);
         } else {
             revert("Revert not handled");
         }
