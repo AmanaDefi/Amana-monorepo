@@ -412,7 +412,7 @@ abstract contract AmanaVaultBase is
      */
     function _withdraw(
         address caller, //caller
-        address receiver, // receiver
+        address, // receiver
         address user, // owner
         uint256 assets,
         uint256 shares
