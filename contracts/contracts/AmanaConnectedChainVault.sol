@@ -31,6 +31,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event CrossChainInvestFailed(uint256 indexed crossChainTxId);
     event DivestSent(uint256 indexed crossChainTxId);
     event DivestFailed(uint256 indexed crossChainTxId);
+    event TotalAssetsUpdated(uint256 totalAssets);
 
     event Deposited(
         address indexed userAddress,
@@ -182,10 +183,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             }
 
             // Process the confirmation
-            if (confirmation.user == address(0)) {
+            if (confirmation.crossChainTxId == 0) {
                 // update total assets
                 latestTotalAssetsUpdateFromStrategy = confirmation
                     .totalAssetsAfter;
+                emit TotalAssetsUpdated(confirmation.totalAssetsAfter);
+            } else if (confirmation.user == address(0)) {
+                VaultStorage storage $ = _getVaultStorage();
+                emit StrategyUpdated($.strategyAddress, $.strategyChainId);
             } else if (confirmation.isDeposit) {
                 _confirmDepositAndMint(
                     confirmation.user,
@@ -217,40 +222,64 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @dev Switches the strategy of the vault. Can only be called by the owner.
      *      Divests from the current strategy and invests in the new one.
      * @param newStrategyAddress The address of the new strategy.
-     * @param newStrategyChainId The chain ID of the new strategy.
      * @notice Reverts if the new strategy address is invalid or unchanged.
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function switchStrategy(
-        address newStrategyAddress,
-        uint32 newStrategyChainId
+        address newStrategyAddress
     ) external override onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
         if (newStrategyAddress == $.strategyAddress)
             revert InvalidStrategyAddress();
-        if (newStrategyChainId == 0) revert InvalidStrategyChainId();
-        if (newStrategyChainId != $.strategyChainId)
-            revert InvalidStrategyChainId();
 
-        _divestFromStrategy(
-            address(this),
-            address(asset()),
-            totalAssets(),
-            0,
-            0, // TODO - put shares here?
-            $.strategyChainId
-        );
+        address oldStrategyAddress = $.strategyAddress;
         $.strategyAddress = newStrategyAddress;
 
-        _investAssets(
-            IERC20(asset()).balanceOf(address(this)),
-            address(this),
-            asset(),
-            VAULT_CHAIN_ID
+        uint256 currentCrossChainTxId = crossChainTxId;
+        crossChainTxId++;
+
+        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
+            .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_CALL); // ZRC-20 of the gas token of the chain the strategy is on
+
+        gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
+
+        IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+
+        bytes memory recipient = abi.encodePacked(oldStrategyAddress);
+
+        bytes memory outgoingMessage = abi.encode(
+            address(0),
+            newStrategyAddress,
+            0,
+            0,
+            0,
+            false,
+            currentCrossChainTxId
         );
 
-        emit StrategyUpdated(newStrategyAddress, newStrategyChainId);
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this), // revert address
+            true, // callOnRevert
+            address(this), // abortAddress
+            abi.encode(
+                "_switchStrategyFailed",
+                currentCrossChainTxId,
+                address(0),
+                newStrategyAddress,
+                0
+            ),
+            uint256(0) // onRevertGasLimit - NA on ZEVM
+        );
+
+        CallOptions memory callOptions = CallOptions(GAS_LIMIT_FOR_CALL, false);
+        IGatewayZEVM(_GATEWAY_ADDRESS).call(
+            recipient,
+            address(asset()),
+            outgoingMessage,
+            callOptions,
+            revertOptions
+        );
     }
 
     /**

@@ -104,6 +104,55 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
   }
 
+  async function simulateConfirmSwitch(
+    transferredAmount: any,
+    executionNonce: any,
+    crossChainTxId: any
+  ): Promise<any> {
+    const transferredAmountBN = BigNumber.from(transferredAmount);
+    const totalAssetsBefore = 0;
+    const totalAssetsBeforeBN = BigNumber.from(totalAssetsBefore);
+
+    const confirmMessage = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+      [ethers.constants.AddressZero, ethers.constants.AddressZero, transferredAmount, 0, 0, true, 0, totalAssetsBeforeBN.add(transferredAmountBN), executionNonce, crossChainTxId]
+    );
+
+    const tx = await amanaVault.connect(gatewaySigner).onCall(
+      {
+        origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+        sender: STRATEGY_ADDRESS,
+        chainID: STRATEGY_CHAIN_ID,
+      },
+      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      0,
+      confirmMessage
+    );
+    return tx;
+  }
+
+  async function simulateConfirmAssetUpdate(
+    totalAssetsAmount: any,
+  ): Promise<any> {
+
+    const confirmMessage = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256"],
+      [ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0, false, 0, totalAssetsAmount, 0, 0]
+    );
+
+    const tx = await amanaVault.connect(gatewaySigner).onCall(
+      {
+        origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+        sender: STRATEGY_ADDRESS,
+        chainID: STRATEGY_CHAIN_ID,
+      },
+      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      0,
+      confirmMessage
+    );
+    return tx;
+  }
+
   async function simulateWithdrawCallFromBase(
     user: Signer,
     withdrawAmount: BigNumber
@@ -251,21 +300,50 @@ describe("AmanaConnectedChainVault Tests", function () {
       ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
     });
 
-    // it("should handle strategy switching", async function () {
-    //   const { amanaVault, owner } = await loadFixture(setup);
-    //   const newStrategyAddress = SECOND_STRATEGY_ADDRESS;
-    //   const newChainId = STRATEGY_CHAIN_ID;
+    it("should initiate switch to a new strategy successfully", async function () {
+      const { amanaVault, owner, gatewayZEVM } = await loadFixture(setup);
 
-    //   // Switch the vault strategy
-    //   await expect(amanaVault.connect(owner).switchStrategy(newStrategyAddress, newChainId))
-    //     .to.emit(amanaVault, "StrategySwitched")
-    //     .withArgs(newStrategyAddress, newChainId);
+      const newStrategyAddress = ethers.Wallet.createRandom().address;
+      const invalidStrategyAddress = ethers.constants.AddressZero;
 
-    //   // Validate that the strategy and chain ID are updated
-    //   const [strategyAddress, chainId] = await amanaVault.getStrategy();
-    //   expect(strategyAddress).to.equal(newStrategyAddress);
-    //   expect(chainId).to.equal(newChainId);
-    // });
+      // Step 1: Verify ownership restriction
+      await expect(
+        amanaVault.connect(user1).switchStrategy(newStrategyAddress)
+      ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount");
+
+      // Step 2: Validate invalid inputs
+      await expect(
+        amanaVault.connect(owner).switchStrategy(invalidStrategyAddress)
+      ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
+
+      const currentStrategy = (await amanaVault.getStrategy())[0];
+      await expect(
+        amanaVault.connect(owner).switchStrategy(currentStrategy)
+      ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
+      await expect(
+        amanaVault.connect(owner).switchStrategy(newStrategyAddress)
+      )
+        .to.emit(gatewayZEVM, "Called");
+      // .withArgs(newStrategyAddress);
+
+      const updatedStrategy = (await amanaVault.getStrategy())[0];
+
+      expect(updatedStrategy).to.equal(newStrategyAddress);
+    });
+
+    it("should process a strategy switch confirmation successfully", async function () {
+      const { } = await loadFixture(setup);
+      const transferredAmount = ethers.utils.parseUnits("0.1", 18);
+      const receipt = await simulateConfirmSwitch(transferredAmount, 1, 1);
+      expect(receipt).to.emit(amanaVault, "StrategyUpdated");
+    });
+
+    it("should process a totalAssets update confirmation successfully", async function () {
+      const { } = await loadFixture(setup);
+      const totalAssetsAmount = ethers.utils.parseUnits("0.1", 18);
+      const receipt = await simulateConfirmAssetUpdate(totalAssetsAmount);
+      expect(receipt).to.emit(amanaVault, "TotalAssetsUpdated").withArgs(totalAssetsAmount);
+    });
 
     it("should reject unauthorized access to setPerformanceFee", async function () {
       const { user1, amanaVault } = await loadFixture(setup);
@@ -294,7 +372,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateDepositCallFromBase(user1, depositAmount1);
 
       const initialTotalAssets = depositAmount1;
-      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0);
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       // Step 2: Simulate a deposit by User2
       await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await user2.getAddress(), depositAmount1.mul(20).div(1));
@@ -303,7 +381,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const profit = depositAmount1.div(10); // 10% profit
 
       // The confirmation from the second deposit shows that user1 has made a profit already
-      await simulateConfirmDeposit(user2, depositAmount1, depositAmount1.add(profit), 2, 1);
+      await simulateConfirmDeposit(user2, depositAmount1, depositAmount1.add(profit), 2, 2);
 
       const updatedTotalAssets = initialTotalAssets.add(depositAmount1).add(profit);
 
@@ -313,7 +391,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       await simulateWithdrawCallFromBase(user1, withdrawAmount);
 
-      await expect(simulateConfirmWithdraw(user1, withdrawAmount, expectedFee, updatedTotalAssets, 3, 2))
+      await expect(simulateConfirmWithdraw(user1, withdrawAmount, expectedFee, updatedTotalAssets, 3, 3))
         .to.emit(amanaVault, "PerformanceFeePaid")
         .withArgs(await user1.getAddress(), expectedFee);
     });
@@ -385,13 +463,13 @@ describe("AmanaConnectedChainVault Tests", function () {
         user1,
         depositAmount1
       )
-      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0)
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1)
 
       // Withdraw the maximum amount
       const maxWithdrawAmount = await amanaVault.maxWithdraw(await user1.getAddress());
       await simulateWithdrawCallFromBase(user1, maxWithdrawAmount)
 
-      await expect(simulateConfirmWithdraw(user1, maxWithdrawAmount, BigNumber.from("0"), depositAmount1, 2, 1))
+      await expect(simulateConfirmWithdraw(user1, maxWithdrawAmount, BigNumber.from("0"), depositAmount1, 2, 2))
         .to.emit(amanaVault, "ReturnFundsToUserSent")
         .to.emit(amanaVault, "Withdrawn");
     });
@@ -403,7 +481,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         user1,
         depositAmount1
       )
-      simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0);
+      simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       // Attempt to withdraw more than balance
       const excessiveWithdrawAmount = depositAmount1.mul(2); // Double the deposited amount
@@ -421,7 +499,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await ethSepolia.connect(user1).approve(amanaVault.address, depositAmount1);
       await amanaVault.connect(user1).deposit(depositAmount1, await user1.getAddress());
 
-      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0);
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await user2.getAddress(), depositAmount2);
 
@@ -429,13 +507,13 @@ describe("AmanaConnectedChainVault Tests", function () {
       await amanaVault.connect(user2).deposit(depositAmount2, await user2.getAddress());
 
       const totalDeposits = depositAmount1.add(depositAmount2);
-      await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 1);
+      await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 2);
 
       // User1 withdraws part of their deposit
       const withdrawAmount1 = depositAmount1.div(2);
       await amanaVault.connect(user1).withdraw(withdrawAmount1, await user1.getAddress(), await user1.getAddress());
 
-      await simulateConfirmWithdraw(user1, withdrawAmount1, BigNumber.from("0"), totalDeposits, 3, 2);
+      await simulateConfirmWithdraw(user1, withdrawAmount1, BigNumber.from("0"), totalDeposits, 3, 3);
 
       // Validate the remaining shares for User1
       const remainingShares = await amanaVault.balanceOf(await user1.getAddress());
@@ -451,7 +529,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await ethSepolia.connect(user1).approve(amanaVault.address, depositAmount1);
       await amanaVault.connect(user1).deposit(depositAmount1, await user1.getAddress());
 
-      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0);
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       const initialShares = await amanaVault.balanceOf(await user1.getAddress());
       const initialAssets = await amanaVault.convertToAssets(initialShares);
@@ -466,7 +544,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       let totalAssetsBefore = depositAmount1;
       let executionNonce = 2;
-      let crossChainTxId = 1;
+      let crossChainTxId = 2;
       for (const withdrawAmount of withdrawAmounts) {
         // Perform withdrawal
         await amanaVault.connect(user1).withdraw(
@@ -530,7 +608,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateDepositCallFromBase(user1, depositAmount1);
 
       // Confirm the deposit for User1
-      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0);
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       // Simulate time passing during the reward period
       const halfwayTime = startTimestamp + rewardDuration / 2;
@@ -576,10 +654,10 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Simulate deposits
       await simulateDepositCallFromBase(user1, depositAmount1);
-      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 0);
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       await simulateDepositCallFromBase(user2, depositAmount2);
-      await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 1);
+      await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 2);
 
       // Move to halfway through the rewards duration
       const halfwayTimestamp = startTimestamp + rewardDuration / 2;

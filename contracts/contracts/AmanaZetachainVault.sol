@@ -46,8 +46,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @param newStrategyAddress Address of the new strategy.
      */
     function switchStrategy(
-        address newStrategyAddress,
-        uint32
+        address newStrategyAddress
     ) external override onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();

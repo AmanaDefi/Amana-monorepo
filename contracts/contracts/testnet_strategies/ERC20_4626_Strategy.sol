@@ -37,16 +37,46 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
         bool success = inputToken.approve(address(receiptToken), amount);
-        require(success, "Approval failed");
+        if (!success) {
+            revert ApprovalFailed();
+        }
         uint256 shares = receiptToken.deposit(amount, address(this));
-        require(shares > 0, "Deposit failed");
+        if (shares == 0) {
+            revert DepositFailed();
+        }
     }
 
-    function _withdrawFundsFromYieldSource(uint256 amount) internal override {
-        receiptToken.withdraw(
+    function _withdrawFundsFromYieldSource(
+        uint256 amount
+    ) internal override returns (uint256 amountWithdrawn) {
+        amountWithdrawn = receiptToken.withdraw(
             amount,
             address(this), // receiver
             address(this) // owner
+        );
+    }
+
+    function _transferAssetsToNewStrategy(
+        address newStrategy,
+        uint256 currentExecutionNonce,
+        uint256 _crossChainTxId
+    ) internal override {
+        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this)); // TODO use maxwithdraw?
+        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        bool success = inputToken.approve(newStrategy, strategyTotalBalance);
+        if (!success) {
+            revert ApprovalFailed();
+        }
+        IStrategy(newStrategy).depositFromOldStrategy(
+            strategyTotalBalance,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
+        emit AssetsTransferredToNewStrategy(
+            newStrategy,
+            strategyTotalBalance,
+            _crossChainTxId,
+            currentExecutionNonce
         );
     }
 

@@ -67,9 +67,24 @@ abstract contract ERC20StrategyParent is StrategyParent {
         );
     }
 
+    function depositFromOldStrategy(
+        uint256 amount,
+        uint256 currentExecutionNonce,
+        uint256 _crossChainTxId
+    ) external {
+        if (oldStrategy == address(0)) revert OldStrategyNotSet();
+        if (msg.sender != oldStrategy) revert Unauthorized();
+        if (amount == 0) revert NoFundsReceived();
+        executionNonce = currentExecutionNonce + 1;
+        _invest(address(0), amount, currentExecutionNonce, _crossChainTxId);
+        oldStrategy = address(0);
+    }
+
     function emergencyWithdraw(address _token) external onlyOwner {
         uint256 balance = IERC20(_token).balanceOf(address(this));
-        require(balance > 0, "No tokens to withdraw");
+        if (balance == 0) {
+            revert NothingToWithdraw();
+        }
         inputToken.safeTransfer(owner(), balance);
     }
 }

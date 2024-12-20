@@ -94,7 +94,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
           gasPrice: ethers.utils.parseUnits("150", "gwei"),
         }
       )
-    ).to.be.revertedWith("Only Gateway contract can call");
+    ).to.be.revertedWithCustomError(strategy, "OnlyGateway");
 
     // Attempt withdraw from a non-gateway address
     const withdrawAmount = ethers.utils.parseEther("0.5");
@@ -114,7 +114,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
           gasPrice: ethers.utils.parseUnits("150", "gwei"),
         }
       )
-    ).to.be.revertedWith("Only Gateway contract can call");
+    ).to.be.revertedWithCustomError(strategy, "OnlyGateway");
   });
 
   it("should revert if the original sender of a deposit or withdrawal is not amanaVault", async function () {
@@ -139,7 +139,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
           gasPrice: ethers.utils.parseUnits("150", "gwei"),
         }
       )
-    ).to.be.revertedWith("Only Vault contract can call the strategy");
+    ).to.be.revertedWithCustomError(strategy, "OnlyVault");
 
     // Attempt a withdrawal from a non-vault sender
     const withdrawAmount = ethers.utils.parseEther("0.5");
@@ -160,7 +160,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
           gasPrice: ethers.utils.parseUnits("150", "gwei"),
         }
       )
-    ).to.be.revertedWith("Only Vault contract can call the strategy");
+    ).to.be.revertedWithCustomError(strategy, "OnlyVault");
   });
 
   it("should allow Gateway to invest ETH", async function () {
@@ -514,6 +514,69 @@ describe("AaveEthStrategy - Full Coverage", function () {
         payload,                // The encoded outgoingMessage
         revertOptions           // The array-formatted revertOptions
       );
+  });
+
+  it("should transfer Assets to new strategy on strategy switch via onCall", async function () {
+    const depositAmount = ethers.utils.parseEther("1");
+
+    const depositMessage = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256"],
+      [OWNER_ADDRESS, ethers.constants.AddressZero, depositAmount, 0, BASE_SEPOLIA_CHAIN_ID, true, 0]
+    );
+
+    await strategy.connect(gatewaySigner).onCall(
+      {
+        sender: AMANA_VAULT_ADDRESS,
+      },
+      depositMessage,
+      {
+        value: depositAmount,
+        gasPrice: ethers.utils.parseUnits("150", "gwei"),
+      }
+    );
+
+    const StrategyFactory = await ethers.getContractFactory("AaveEthStrategy");
+
+    const newStrategy = await StrategyFactory.deploy(
+      "AaveEthStrategy",
+      AMANA_VAULT_ADDRESS,
+      BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS,
+      GATEWAY_ADDRESS,
+      WRAPPED_TOKEN_GATEWAY_ADDRESS,
+      WETH_ADDRESS
+    );
+    await newStrategy.deployed();
+
+    await newStrategy.setOldStrategy(strategy.address);
+
+    const switchMessage = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "uint256", "uint256", "uint32", "bool", "uint256"],
+      [
+        ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
+        newStrategy.address,
+        0, // amount
+        0, // fee
+        0, // withdrawChainId
+        false, // isDeposit
+        1, // crossChainTxId
+      ]
+    );
+
+    await expect(strategy.connect(gatewaySigner).onCall(
+      {
+        sender: AMANA_VAULT_ADDRESS,
+      },
+      switchMessage,
+      {
+        gasPrice: ethers.utils.parseUnits("150", "gwei"),
+      }
+    )).to.emit(strategy, "AssetsTransferredToNewStrategy")
+      .to.emit(newStrategy, "FundsInvested");
+
+    const oldStrategyBalance = await receiptToken.balanceOf(strategy.address);
+    expect(oldStrategyBalance).to.equal(0);
+    const newStrategyBalance = await receiptToken.balanceOf(newStrategy.address);
+    expect(newStrategyBalance).to.be.gt(depositAmount);
   });
 
 });

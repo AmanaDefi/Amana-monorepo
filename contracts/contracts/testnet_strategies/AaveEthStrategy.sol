@@ -52,9 +52,38 @@ contract AaveEthStrategy is EthStrategyParent {
         aavePool.supply(address(weth), amount, address(this), 0);
     }
 
-    function _withdrawFundsFromYieldSource(uint256 amount) internal override {
-        aavePool.withdraw{gas: 200000}(address(weth), amount, address(this));
-        weth.withdraw{gas: 50000}(amount);
+    function _withdrawFundsFromYieldSource(
+        uint256 amount
+    ) internal override returns (uint256 amountWithdrawn) {
+        amountWithdrawn = aavePool.withdraw{gas: 200000}(
+            address(weth),
+            amount,
+            address(this)
+        );
+        weth.withdraw{gas: 50000}(amountWithdrawn);
+    }
+
+    function _transferAssetsToNewStrategy(
+        address newStrategy,
+        uint256 currentExecutionNonce,
+        uint256 _crossChainTxId
+    ) internal override {
+        // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            type(uint256).max
+        );
+
+        IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
+            amountWithdrawn,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
+        emit AssetsTransferredToNewStrategy(
+            newStrategy,
+            amountWithdrawn,
+            _crossChainTxId,
+            currentExecutionNonce
+        );
     }
 
     /// @notice Gets the total assets held in the strategy.

@@ -9,5 +9,11 @@ interface IStrategy {
         uint256 _fraction
     ) external returns (uint256);
 
+    function depositFromOldStrategy(
+        uint256 amount,
+        uint256 _executionNonce,
+        uint256 _crossChainTxId
+    ) external payable;
+
     function totalUnderlyingAssets() external view returns (uint256);
 }

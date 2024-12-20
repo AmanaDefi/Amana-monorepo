@@ -20,7 +20,7 @@ abstract contract EthStrategyParent is StrategyParent {
         uint256 _executionNonce,
         uint256 _crossChainTxId
     ) internal override {
-        require(msg.value > 0, "No ETH sent");
+        if (msg.value == 0) revert NoFundsReceived();
 
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
         _depositFundsIntoYieldSource(msg.value);
@@ -50,9 +50,24 @@ abstract contract EthStrategyParent is StrategyParent {
         );
     }
 
+    function depositFromOldStrategy(
+        uint256,
+        uint256 currentExecutionNonce,
+        uint256 _crossChainTxId
+    ) external payable {
+        if (oldStrategy == address(0)) revert OldStrategyNotSet();
+        if (msg.sender != oldStrategy) revert Unauthorized();
+        if (msg.value == 0) revert NoFundsReceived();
+        executionNonce = currentExecutionNonce + 1;
+        _invest(address(0), msg.value, currentExecutionNonce, _crossChainTxId);
+        oldStrategy = address(0);
+    }
+
     function emergencyWithdrawETH() external onlyOwner {
         uint256 balance = address(this).balance;
-        require(balance > 0, "No ETH to withdraw");
+        if (balance == 0) {
+            revert NothingToWithdraw();
+        }
         payable(owner()).transfer(balance);
     }
 

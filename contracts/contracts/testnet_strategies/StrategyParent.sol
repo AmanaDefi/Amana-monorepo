@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
+import "../interfaces/IStrategy.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -17,6 +18,7 @@ abstract contract StrategyParent is Ownable {
     string public name;
     address public immutable amanaVault;
     uint256 public executionNonce = 1;
+    address public oldStrategy;
 
     event FundsInvested(
         uint256 indexed crossChainTxId,
@@ -37,16 +39,29 @@ abstract contract StrategyParent is Ownable {
         uint256 blockTimestamp
     );
     event SendTotalUnderlyingAssetsFailed();
+    event AssetsTransferredToNewStrategy(
+        address indexed newStrategy,
+        uint256 totalAssetsTransferrred,
+        uint256 executionNonce,
+        uint256 crossChainTxId
+    );
 
+    error OnlyGateway();
+    error OnlyVault();
     error ApprovalFailed();
+    error InvalidAddress();
+    error OldStrategyNotSet();
+    error Unauthorized();
+    error NoFundsReceived();
+    error NothingToWithdraw();
+    error DepositFailed();
 
     address immutable _GATEWAY_ADDRESS;
 
     modifier onlyGateway() {
-        require(
-            msg.sender == _GATEWAY_ADDRESS,
-            "Only Gateway contract can call"
-        );
+        if (msg.sender != _GATEWAY_ADDRESS) {
+            revert OnlyGateway();
+        }
         _;
     }
 
@@ -55,7 +70,7 @@ abstract contract StrategyParent is Ownable {
         address _amanaVault,
         address _gateway
     ) Ownable(msg.sender) {
-        require(_amanaVault != address(0), "Invalid amanaVault address");
+        if (_amanaVault == address(0)) revert InvalidAddress();
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
@@ -67,10 +82,14 @@ abstract contract StrategyParent is Ownable {
     function onCall(
         MessageContext calldata context,
         bytes calldata message
-    ) external payable onlyGateway returns (bytes memory) {
+    ) external payable onlyGateway returns (bytes memory result) {
+        if (context.sender != address(amanaVault)) {
+            revert OnlyVault();
+        }
+
         (
             address userAddress,
-            address ZRC20Address,
+            address ZRC20AddressOrNewStrategy,
             uint256 amount,
             uint256 fee,
             uint32 withdrawChainId,
@@ -81,20 +100,23 @@ abstract contract StrategyParent is Ownable {
                 (address, address, uint256, uint256, uint32, bool, uint256)
             );
 
-        if (context.sender != address(amanaVault)) {
-            revert("Only Vault contract can call the strategy");
-        }
-
         uint256 currentExecutionNonce = executionNonce;
         executionNonce++;
 
-        if (isDeposit) {
+        if (userAddress == address(0)) {
+            _transferAssetsToNewStrategy(
+                ZRC20AddressOrNewStrategy,
+                currentExecutionNonce,
+                crossChainTxId
+            );
+            return abi.encode(true);
+        } else if (isDeposit) {
             _invest(userAddress, amount, currentExecutionNonce, crossChainTxId);
             return abi.encode(true);
         } else {
             _divest(
                 userAddress,
-                ZRC20Address,
+                ZRC20AddressOrNewStrategy,
                 amount,
                 fee,
                 withdrawChainId,
@@ -103,6 +125,12 @@ abstract contract StrategyParent is Ownable {
             );
             return abi.encode(true);
         }
+    }
+
+    function setOldStrategy(address _oldStrategy) external onlyOwner {
+        if (_oldStrategy == address(0)) revert InvalidAddress();
+        if (_oldStrategy == address(this)) revert InvalidAddress();
+        oldStrategy = _oldStrategy;
     }
 
     function totalUnderlyingAssets() public view virtual returns (uint256);
@@ -174,6 +202,12 @@ abstract contract StrategyParent is Ownable {
             revertOptions
         );
     }
+
+    function _transferAssetsToNewStrategy(
+        address newStrategy,
+        uint256 currentExecutionNonce,
+        uint256 _crossChainTxId
+    ) internal virtual;
 
     /// @notice Withdraws funds from the Aave pool.
     /// @param userAddress Address of the user whose funds are being withdrawn.
@@ -283,11 +317,14 @@ abstract contract StrategyParent is Ownable {
         RevertOptions memory revertOptions
     ) internal virtual;
 
-    function _withdrawFundsFromYieldSource(uint256 amount) internal virtual;
+    function _withdrawFundsFromYieldSource(
+        uint256 amount
+    ) internal virtual returns (uint256);
 
     function sendTotalUnderlyingAssetsToVault() external {
         uint256 underlyingAssets = totalUnderlyingAssets();
-
+        uint256 currentExecutionNonce = executionNonce;
+        executionNonce++;
         // Construct the message payload with the desired information
         bytes memory outgoingMessage = abi.encode(
             address(0),
@@ -298,7 +335,7 @@ abstract contract StrategyParent is Ownable {
             false,
             0,
             totalUnderlyingAssets(),
-            0,
+            currentExecutionNonce,
             0
         );
 

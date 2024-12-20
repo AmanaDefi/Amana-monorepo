@@ -46,14 +46,35 @@ contract Eth_4626_Strategy is EthStrategyParent {
 
     /// @notice Withdraws funds from the Aave pool.
     /// @param amount Amount to be withdrawn.
-    function _withdrawFundsFromYieldSource(uint256 amount) internal override {
-        receiptToken.withdraw(
+    function _withdrawFundsFromYieldSource(
+        uint256 amount
+    ) internal override returns (uint256 amountWithdrawn) {
+        amountWithdrawn = receiptToken.withdraw(
             amount,
             address(this), // receiver
             address(this) // owner
         );
 
-        weth.withdraw{gas: 50000}(amount);
+        weth.withdraw{gas: 50000}(amountWithdrawn);
+    }
+
+    function _transferAssetsToNewStrategy(
+        address newStrategy,
+        uint256 currentExecutionNonce,
+        uint256 _crossChainTxId
+    ) internal override {
+        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
+        _withdrawFundsFromYieldSource(strategyTotalBalance);
+
+        IStrategy(newStrategy).depositFromOldStrategy{
+            value: strategyTotalBalance
+        }(strategyTotalBalance, currentExecutionNonce, _crossChainTxId);
+        emit AssetsTransferredToNewStrategy(
+            newStrategy,
+            strategyTotalBalance,
+            _crossChainTxId,
+            currentExecutionNonce
+        );
     }
 
     /// @notice Gets the total assets held in the strategy.

@@ -152,6 +152,7 @@ abstract contract AmanaVaultBase is
         $.totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         systemContract = ISystem(system_contract_);
         gasTank = IGasTank(gasTank_);
+        crossChainTxId = 1; // Initialize to 1 to avoid zero value (reserved for asset update)
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -237,14 +238,10 @@ abstract contract AmanaVaultBase is
      * @dev Switches the strategy of the vault. Can only be called by the owner.
      *      Divests from the current strategy and invests in the new one.
      * @param newStrategyAddress The address of the new strategy.
-     * @param newStrategyChainId The chain ID of the new strategy.
      * @notice Reverts if the new strategy address is invalid or unchanged.
      * @notice Emits a `StrategyUpdated` event upon success.
      */
-    function switchStrategy(
-        address newStrategyAddress,
-        uint32 newStrategyChainId
-    ) external virtual;
+    function switchStrategy(address newStrategyAddress) external virtual;
 
     /**
      * @dev Allows the owner to withdraw all of a specified token from the vault in case of an emergency.
