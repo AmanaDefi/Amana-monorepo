@@ -164,6 +164,38 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _processBufferedConfirmations();
     }
 
+    function manuallyAddConfirmation(
+        address userAddress,
+        address withdrawZRC20,
+        uint256 withdrawAmount,
+        uint256 fee,
+        uint32 withdrawChainId,
+        bool isDeposit,
+        uint256 totalAssetsBefore,
+        uint256 totalAssetsAfter,
+        uint256 executionNonce,
+        uint256 _crossChainTxId
+    ) external onlyOwner {
+        // Ensure no duplicate processing
+        if (pendingConfirmations[executionNonce].user != address(0))
+            revert ConfirmationAlreadyProcessed();
+        // Store the confirmation in the buffer
+        pendingConfirmations[executionNonce] = Confirmation({
+            user: userAddress,
+            withdrawZRC20: withdrawZRC20,
+            amount: withdrawAmount,
+            fee: fee,
+            withdrawChainId: withdrawChainId,
+            isDeposit: isDeposit,
+            totalAssetsBefore: totalAssetsBefore,
+            totalAssetsAfter: totalAssetsAfter,
+            crossChainTxId: _crossChainTxId
+        });
+
+        // Attempt to process confirmations
+        _processBufferedConfirmations();
+    }
+
     /**
      * @dev Processes all buffered confirmations sequentially based on their execution nonce.
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
