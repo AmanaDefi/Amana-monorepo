@@ -128,29 +128,29 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
-  {
-    id: "0x15851cebC80a383d957f81E91bd51799C0b8736D", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
-    name: "AaveV3 ETH",
-    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-    symbol: "aAaveETH",
-    imgURL: "/Ethsepolia.png",
-    inputToken: {
-      symbol: "sETH",
-      decimals: 18,
-      address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-      imgURL: "/ETH.png",
-      price: 3040,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      network: "Eth Sepolia",
-      netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/aave.png",
-      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    },
-  },
+  // {
+  //   id: "0x15851cebC80a383d957f81E91bd51799C0b8736D", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
+  //   name: "AaveV3 ETH",
+  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+  //   symbol: "aAaveETH",
+  //   imgURL: "/Ethsepolia.png",
+  //   inputToken: {
+  //     symbol: "sETH",
+  //     decimals: 18,
+  //     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
+  //     imgURL: "/ETH.png",
+  //     price: 3040,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Aave",
+  //     network: "Eth Sepolia",
+  //     netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
+  //     imgURL: "/aave.png",
+  //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //   },
+  // },
 
   // {
   //   id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
@@ -176,7 +176,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   // },
 
   {
-    id: "0x165fCDB60fE3A290FA48BbEBB86Fb4E249060268", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Polygon Amoy testnet
+    id: "0x11aA2e8E090007d4Cc360fE7D5Ecc2b4EeF374Ac", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Polygon Amoy testnet
     name: "Mock POL",
     des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockPOL",
@@ -199,7 +199,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x8cc388165fb4367dcfD1f16E6eeE1a549eAfC22E", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on BSC testnet
+    id: "0x40552637AC3E3Ae8ED5da4CDB9aD8EE59432EB9f", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on BSC testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockUSDC",
