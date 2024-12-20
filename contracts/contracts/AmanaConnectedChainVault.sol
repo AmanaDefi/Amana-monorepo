@@ -174,12 +174,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             Confirmation memory confirmation = pendingConfirmations[nextNonce];
 
             // If there's no confirmation for the next nonce, stop processing
-            if (confirmation.amount == 0) {
+            if (
+                confirmation.totalAssetsBefore == 0 &&
+                confirmation.totalAssetsAfter == 0
+            ) {
                 break;
             }
 
             // Process the confirmation
-            if (confirmation.isDeposit) {
+            if (confirmation.user == address(0)) {
+                // update total assets
+                latestTotalAssetsUpdateFromStrategy = confirmation
+                    .totalAssetsAfter;
+            } else if (confirmation.isDeposit) {
                 _confirmDepositAndMint(
                     confirmation.user,
                     confirmation.amount,

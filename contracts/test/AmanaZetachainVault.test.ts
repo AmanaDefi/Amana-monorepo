@@ -190,21 +190,37 @@ describe("AmanaZetachainVault Tests", function () {
     ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
   });
 
-  // it("should handle strategy switching", async function () {
-  //   const { amanaVault, owner } = await loadFixture(setup);
-  //   const newStrategyAddress = SECOND_STRATEGY_ADDRESS;
-  //   const newChainId = STRATEGY_CHAIN_ID;
+  it("should handle strategy switching", async function () {
+    const { amanaVault, owner, mockVault, ethSepolia } = await loadFixture(setup);
+    const depositAmount = ethers.utils.parseUnits("0.1", 18);
+    await ethSepolia.approve(amanaVault.address, depositAmount);
+    await amanaVault.deposit(depositAmount, await owner.getAddress());
 
-  //   // Switch the vault strategy
-  //   await expect(amanaVault.connect(owner).switchStrategy(newStrategyAddress, newChainId))
-  //     .to.emit(amanaVault, "StrategySwitched")
-  //     .withArgs(newStrategyAddress, newChainId);
+    const StrategyFactory = await ethers.getContractFactory("Mock4626ZetachainStrategy", owner);
+    const strategy2 = await StrategyFactory.deploy(
+      "Mock Strategy",
+      amanaVault.address,
+      VAULT_ASSET,
+      mockVault.address,
+      ZEVM_GATEWAY_ADDRESS
+    );
+    await strategy2.deployed();
+    const newStrategyAddress = strategy2.address;
+    // const newChainId = STRATEGY_CHAIN_ID;
 
-  //   // Validate that the strategy and chain ID are updated
-  //   const [strategyAddress, chainId] = await amanaVault.getStrategy();
-  //   expect(strategyAddress).to.equal(newStrategyAddress);
-  //   expect(chainId).to.equal(newChainId);
-  // });
+    // Switch the vault strategy
+    await expect(amanaVault.connect(owner).switchStrategy(newStrategyAddress, 7001))
+      .to.emit(amanaVault, "StrategyUpdated")
+      .withArgs(newStrategyAddress, 7001);
+
+    // Validate that the strategy and chain ID are updated
+    const [strategyAddress, chainId] = await amanaVault.getStrategy();
+    expect(strategyAddress).to.equal(newStrategyAddress);
+    expect(chainId).to.equal(7001);
+
+    const totalAssetsNewStrategy = await amanaVault.totalAssets();
+    expect(totalAssetsNewStrategy).to.equal(depositAmount.add(1)); // add 1 for virtual share / asset
+  });
 
   it("should reject unauthorized access to setPerformanceFee", async function () {
     const { user1, amanaVault } = await loadFixture(setup);

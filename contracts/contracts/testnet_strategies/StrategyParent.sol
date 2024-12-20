@@ -290,9 +290,16 @@ abstract contract StrategyParent is Ownable {
 
         // Construct the message payload with the desired information
         bytes memory outgoingMessage = abi.encode(
-            underlyingAssets,
+            address(0),
+            address(0),
             block.number,
-            block.timestamp
+            block.timestamp,
+            0,
+            false,
+            0,
+            totalUnderlyingAssets(),
+            0,
+            0
         );
 
         // Configure revert options for the cross-chain call

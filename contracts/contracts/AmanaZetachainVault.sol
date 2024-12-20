@@ -10,6 +10,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
+    error NoAssetsToSwitch(); // TODO move this to base?
+
     /**
      * @notice Handles incoming messages from connected chains.
      * @param context Context of the cross-chain message.
@@ -52,19 +54,23 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (newStrategyAddress == $.strategyAddress)
             revert InvalidStrategyAddress();
 
-        IStrategy($.strategyAddress).withdraw(
-            IStrategy($.strategyAddress).totalUnderlyingAssets(),
-            10 ** 27
-        );
-        $.strategyAddress = newStrategyAddress;
-        bool success = IZRC20(asset()).approve(
-            $.strategyAddress,
-            IERC20(asset()).balanceOf(address(this))
-        );
-        if (!success) revert ApprovalFailed();
-        IStrategy($.strategyAddress).invest(
-            IERC20(asset()).balanceOf(address(this))
-        );
+        if (IStrategy($.strategyAddress).totalUnderlyingAssets() > 0) {
+            IStrategy($.strategyAddress).withdraw(
+                IStrategy($.strategyAddress).totalUnderlyingAssets(),
+                10 ** 27
+            );
+            $.strategyAddress = newStrategyAddress;
+            bool success = IZRC20(asset()).approve(
+                $.strategyAddress,
+                IERC20(asset()).balanceOf(address(this))
+            );
+            if (!success) revert ApprovalFailed();
+            IStrategy($.strategyAddress).invest(
+                IERC20(asset()).balanceOf(address(this))
+            );
+        } else {
+            $.strategyAddress = newStrategyAddress;
+        }
 
         emit StrategyUpdated(newStrategyAddress, VAULT_CHAIN_ID);
     }

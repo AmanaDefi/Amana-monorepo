@@ -44,6 +44,7 @@ abstract contract AmanaVaultBase is
     error RedeemExceedsLimit();
     error ConfirmationAlreadyProcessed();
     error OnlyGateway();
+    error StrategyAlreadySet();
 
     // Constants
     address constant _GATEWAY_ADDRESS =
@@ -187,6 +188,10 @@ abstract contract AmanaVaultBase is
         uint32 _strategyChainId
     ) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
+        if (
+            $.strategyAddress != address(0) ||
+            _strategyAddress == $.strategyAddress
+        ) revert StrategyAlreadySet();
         if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
         if (_strategyChainId == 0) revert InvalidStrategyChainId();
         $.strategyAddress = _strategyAddress;
