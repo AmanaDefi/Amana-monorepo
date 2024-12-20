@@ -106,7 +106,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0xA817Fae6DA371848F7B24F60082e528cC98D78d7", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Base Sepolia
+    id: "0xa54fb1a57b53971114Ae1E5F7dfeFd55fB033678", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Base Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
