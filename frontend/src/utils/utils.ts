@@ -161,9 +161,18 @@ export const selectActions = async (
   inputBalance: Balance,
   inputToken: Token
 ) => {
+
+  console.log("3432438243284283",inputBalance.value, inputToken?.address, activeChain.id)
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value)
   const [chainID] = await getStrategyChain(vaultData)
+  const allowanceResult = await handleAllowance({
+    token: inputToken?.address as Address,
+    activeChain: activeChain,
+    activeAccount: EOAaccount.address as Address,
+    spender: vaultData.id as Address,
+    amount: value
+  });
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 70001) {
@@ -176,14 +185,7 @@ export const selectActions = async (
             Action.deposited
           ]
         }
-        else if (
-          await handleAllowance({
-            token: inputToken?.address as Address,
-            activeChain: activeChain,
-            activeAccount: EOAaccount.address as Address,
-            spender: vaultData.id as Address,
-            amount: value
-          })) {
+        else if (allowanceResult) {
           return [
             Action.deposit,
             Action.depositConfirmed,
@@ -212,14 +214,7 @@ export const selectActions = async (
               Action.depositConfirmed
             ]
           }
-          else if (
-            await handleAllowance({
-              token: inputToken?.address as Address,
-              activeChain: activeChain,
-              activeAccount: EOAaccount.address as Address,
-              spender: vaultData.id as Address,
-              amount: value
-            })) {
+          else if (allowanceResult) {
             return [
               Action.deposit,
               Action.depositConfirmed
@@ -242,14 +237,7 @@ export const selectActions = async (
               Action.deposited
             ]
           }
-          else if (
-            await handleAllowance({
-              token: inputToken?.address as Address,
-              activeChain: activeChain,
-              activeAccount: EOAaccount.address as Address,
-              spender: vaultData.id as Address,
-              amount: value
-            })) {
+          else if (allowanceResult) {
             return [
               Action.deposit,
               Action.depositConfirmed,

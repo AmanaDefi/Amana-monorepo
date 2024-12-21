@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, CSSProperties, act } from "react"
 import { VaultData, Token, Balance } from "@/types/types";
 import mixpanel from "mixpanel-browser";
 import { executeDeposit, executeWithdrawal, Approvedeposit } from "@/actions/actions"
@@ -10,6 +10,8 @@ import MainActionButton from "@/components/button/MainActionButton"
 import { client } from "@/utils/client";
 import { useContractEvents } from "thirdweb/react";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { MoonLoader } from "react-spinners";
+import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setInputBalance: Function) => {
     setTransactionCompleted(false)
@@ -468,63 +470,68 @@ export default function InteractionContainer({ step, setStep, action, setAction,
             actions={actions}
             setCrosschainInvestHash={setCrosschainInvestHash}
             setInputBalance={setInputBalance}
+            step={step}
         />
     </div>
 }
 
 
-function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, interactionPostHook, setShowModal, actions, setCrosschainInvestHash, setInputBalance }:
-    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[], setCrosschainInvestHash: Function, setInputBalance: Function }): JSX.Element {
+function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, interactionPostHook, setShowModal, actions, setCrosschainInvestHash, setInputBalance, step }:
+    { inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[], setCrosschainInvestHash: Function, setInputBalance: Function, step: number }): JSX.Element {
 
-    const [description, setDescription] = useState('')
+    const [description1, setDescription1] = useState<string[]>([])
+    const [description2, setDescription2] = useState<string[]>([])
     const [label, setlabel] = useState('')
     const [status, setStatus] = useState(false)
     const [disabled, setDisabled] = useState(true)
 
+
+
+
+
     useEffect(() => {
         const val = NumberFormatter.format(Number(inputBalance.formatted))
+        console.log("24432424243", action)
         switch (action) {
             case Action.depositApprove:
-                if (status) {
-                    setDisabled(true);
-                    setDescription(`Approving for Deposit ${val} ${inputToken.symbol} into the Vault.`)
-                }
-                else {
-                    setDisabled(false);
-                    setDescription("Transaction approval required.")
-                }
+                setDisabled(status);
+                setDescription1(["Transaction approval required."]);
+                setDescription2([`Approving for Deposit ${val} ${inputToken.symbol} into the Vault.`]);
                 setlabel("Approve")
                 break;
             case Action.depositApproveConfirmed:
-                setDescription(" Approval Confirmed")
+                setDescription1([...description1, "Approval Confirmed."]);
                 setlabel("Deposit")
                 setTimeout(() => {
-                    setDescription("Deposit confirmation required.");
                     setDisabled(false);
                 }, 3000);
                 break;
             case Action.deposit:
                 setlabel("Deposit")
-                if (status) {
-                    setDisabled(true);
-                    setDescription(`Depositing ${val} ${inputToken.symbol} into the Vault.`)
+                setDisabled(status);
+                if (actions.includes(Action.depositApprove)) {
+                    setDescription1([...description1, `Please Deposit.`]);
+                    setDescription2([...description2, `Depositing ${val} ${inputToken.symbol} into the Vault.`]);
                 }
                 else {
-                    setDisabled(false);
-                    setDescription("Deposit confirmation required.")
+                    setDescription1([`Please Deposit.`]);
+                    setDescription2([`Depositing ${val} ${inputToken.symbol} into the Vault.`]);
                 }
                 break;
             case Action.depositConfirmed:
-                setDescription("Deposit confirmed.")
+                setDescription1([...description1, "Deposit confirmed."]);
+                setDescription2([...description2, "Waiting CrossChainInvest."]);
                 break;
             case Action.crosschainInvest:
-                setDescription("CrossChainInvestSent.")
+                setDescription1([...description1, "CrossChainInvestSent."]);
+                setDescription2([...description2, "Waiting FundsInvest."]);
                 break;
             case Action.FundsInvest:
-                setDescription("FundsInvested.")
+                setDescription1([...description1, "FundsInvested."]);
+                setDescription2([...description2, "Waiting Deposit."]);
                 break;
             case Action.deposited:
-                setDescription("Deposited.")
+                setDescription1([...description1, "Deposited."]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -537,27 +544,27 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setlabel("Withdraw")
                 if (status) {
                     setDisabled(true);
-                    setDescription(`Withdrawing ${val} ${inputToken.symbol}.`)
+                    setDescription1([...description1, `Withdrawing ${val} ${inputToken.symbol}.`]);
                 }
                 else {
                     setDisabled(false);
-                    setDescription("Withdraw confirmation required.")
+                    setDescription1([...description1, "Withdraw confirmation required."]);
                 }
                 break;
             case Action.withdrawconfirmed:
-                setDescription("Withdraw confirmed.")
+                setDescription1([...description1, "Withdraw confirmed."]);
                 break;
             case Action.DivestSent:
-                setDescription("DivestSent.")
+                setDescription1([...description1, "DivestSent."]);
                 break;
             case Action.FundsDivested:
-                setDescription("FundsDivested.")
+                setDescription1([...description1, "FundsDivested."]);
                 break;
             case Action.ReturnFundsToUserSent:
-                setDescription("ReturnFundsToUserSent.")
+                setDescription1([...description1, "ReturnFundsToUserSent."]);
                 break;
             case Action.Withdrawn:
-                setDescription("Withdrawn.")
+                setDescription1([...description1, "Withdrawn."]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -567,7 +574,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }, 2000);
                 break;
             case Action.CrossChainInvestFailed:
-                setDescription("CrossChainInvestFailed.")
+                setDescription1([...description1, "CrossChainInvestFailed."]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -577,7 +584,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }, 2000);
                 break;
             case Action.DivestFailed:
-                setDescription("DivestFailed.")
+                setDescription1([...description1, "DivestFailed."]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -587,7 +594,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }, 2000);
                 break;
             case Action.ReturnFundsToUserFailed:
-                setDescription("ReturnFundsToUserFailed.")
+                setDescription1([...description1, "ReturnFundsToUserFailed."]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -597,7 +604,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }, 2000);
                 break;
         }
-    }, [action, status])
+    }, [action, status, actions])
 
     async function handleMainAction() {
         setStatus(true);
@@ -614,12 +621,43 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
         )()
         setStatus(false)
         await interactionPostHook(success)
-    }
+    } const val = NumberFormatter.format(Number(inputBalance.formatted))
 
     return (
         <>
             <p className="text-white text-start text-2xl font-bold leading-none mb-1">{label}</p>
-            <p className="text-white text-start mb-2">{description}</p>
+
+            {
+                <>
+                    {
+                        actions.map((item, index) => (
+                            index <= step &&
+                            <>
+                                {
+                                    ((item != Action.deposit && item != Action.depositApprove) || (item == Action.depositApprove && !status && action == Action.depositApprove) || (item == Action.deposit && !status && action == Action.deposit)) &&
+                                    <div className="flex items-center">
+                                        {
+                                            (item == Action.deposit || item == Action.depositApprove) ?
+                                                <AiOutlineExclamation color="Green" size={20} />
+                                                :
+                                                <AiOutlineCheck color="Green" size={20} />
+                                        }
+                                        <p className="text-white text-start mb-2">{description1[item == Action.deposit || item == Action.depositApprove || item == Action.depositApproveConfirmed || !actions.includes(Action.depositApprove) ? index : index + 1]}</p>
+                                    </div>
+                                }
+                                {
+                                    index == step &&
+                                    ((item !== Action.deposit && item !== Action.depositApprove && item != Action.depositApproveConfirmed) || (item === Action.depositApprove && status) || (item === Action.deposit && status)) &&
+                                    <div className="flex items-center">
+                                        <MoonLoader color="red" size={30} speedMultiplier={0.3} />
+                                        <p className="text-white text-start mb-2">{description2[index]}</p>
+                                    </div>
+                                }
+                            </>
+                        ))
+                    }
+                </>
+            }
             <MainActionButton disabled={disabled} label={label} handleClick={handleMainAction} />
         </>
     )

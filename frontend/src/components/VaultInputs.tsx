@@ -137,6 +137,11 @@ export default function VaultInputs({
   }, [tokenBalance, isDeposit]);
 
   useEffect(() => {
+   console.log("77777777777777777",inputBalance.value)
+  }, [inputBalance.value])
+  
+
+  useEffect(() => {
     if (inputToken) {
       if (isDeposit) {
         setErrorMessage(getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, setShowModal, steps));
