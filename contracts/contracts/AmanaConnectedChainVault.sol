@@ -15,6 +15,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     struct Confirmation {
         address user;
+        address receiver;
         address withdrawZRC20;
         uint256 amount;
         uint256 fee;
@@ -35,13 +36,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event SwitchStrategyFailed(uint256 indexed crossChainTxId);
 
     event Deposited(
-        address indexed userAddress,
+        address indexed user,
         uint256 amount,
         uint256 shares,
         uint256 indexed crossChainTxId
     );
     event Withdrawn(
-        address indexed userAddress,
+        address indexed user,
+        address indexed receiver,
         uint256 amount,
         uint256 shares,
         uint256 crossChainTxId
@@ -63,7 +65,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         VaultStorage storage $ = _getVaultStorage();
         if (context.sender == $.strategyAddress) {
             (
-                address userAddress,
+                address user,
+                address receiver,
                 address withdrawZRC20,
                 uint256 withdrawAmount,
                 uint256 fee,
@@ -78,6 +81,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     (
                         address,
                         address,
+                        address,
                         uint256,
                         uint256,
                         uint32,
@@ -89,7 +93,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     )
                 );
             _processConfirmationFromStrategy(
-                userAddress,
+                user,
+                receiver,
                 withdrawZRC20,
                 withdrawAmount,
                 fee,
@@ -123,7 +128,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @dev Processes a confirmation message from the strategy.
      *      This function validates and stores the confirmation details for deposit or withdrawal actions
      *      and then attempts to process all pending confirmations in order.
-     * @param userAddress The address of the user associated with the confirmation.
+     * @param user The address of the user associated with the confirmation.
      * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
      * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
      * @param fee The fee associated with the transaction.
@@ -134,7 +139,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
      */
     function _processConfirmationFromStrategy(
-        address userAddress,
+        address user,
+        address receiver,
         address withdrawZRC20,
         uint256 withdrawAmount,
         uint256 fee,
@@ -150,7 +156,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
         pendingConfirmations[executionNonce] = Confirmation({
-            user: userAddress,
+            user: user,
+            receiver: receiver,
             withdrawZRC20: withdrawZRC20,
             amount: withdrawAmount,
             fee: fee,
@@ -166,7 +173,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     function manuallyAddConfirmation(
-        address userAddress,
+        address user,
+        address receiver,
         address withdrawZRC20,
         uint256 withdrawAmount,
         uint256 fee,
@@ -182,7 +190,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
         pendingConfirmations[executionNonce] = Confirmation({
-            user: userAddress,
+            user: user,
+            receiver: receiver,
             withdrawZRC20: withdrawZRC20,
             amount: withdrawAmount,
             fee: fee,
@@ -221,12 +230,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 latestTotalAssetsUpdateFromStrategy = confirmation
                     .totalAssetsAfter;
                 emit TotalAssetsUpdated(confirmation.totalAssetsAfter);
-            } else if (confirmation.user == address(0)) {
+            } else if (
+                confirmation.user == address(0) &&
+                confirmation.receiver == address(0)
+            ) {
                 VaultStorage storage $ = _getVaultStorage();
                 emit StrategyUpdated($.strategyAddress, $.strategyChainId);
             } else if (confirmation.isDeposit) {
                 _confirmDepositAndMint(
-                    confirmation.user,
+                    confirmation.receiver,
                     confirmation.amount,
                     confirmation.totalAssetsBefore,
                     confirmation.totalAssetsAfter,
@@ -235,6 +247,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             } else {
                 _confirmWithdrawAndBurn(
                     confirmation.user,
+                    confirmation.receiver,
                     confirmation.withdrawZRC20,
                     confirmation.amount,
                     confirmation.fee,
@@ -355,14 +368,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     /**
      * @dev Initiates cross-chain investment by interacting with the gateway and strategy.
      * @param amount The amount of assets to invest.
-     * @param userAddress The address of the user initiating the investment.
-     * @param userZRC20 The ZRC20 token address representing the user's assets.
-     * @param userChainId The chain ID of the user's connected chain.
+     * @param receiver The address of the receiver initiating the investment.
+     * @param userZRC20 The ZRC20 token address representing the receiver's assets.
+     * @param userChainId The chain ID of the receiver's connected chain.
      * @notice Approves and sends assets through the gateway to the strategy's chain.
      */
     function _investAssets(
         uint256 amount,
-        address userAddress,
+        address receiver,
         address userZRC20,
         uint32 userChainId
     ) internal override {
@@ -386,7 +399,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes memory recipient = abi.encodePacked($.strategyAddress);
 
         bytes memory outgoingMessage = abi.encode(
-            userAddress,
+            address(0),
+            receiver,
             address(0),
             amount,
             0,
@@ -402,7 +416,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             abi.encode(
                 "_crossChainInvestFailed",
                 currentCrossChainTxId,
-                userAddress,
+                receiver,
                 userZRC20,
                 userChainId
             ),
@@ -426,15 +440,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     /**
-     * @dev Confirms a deposit and mints shares for the user.
-     *      Updates the total assets and user's principal accordingly.
-     * @param user The address of the user making the deposit.
-     * @param depositAmount The amount of assets deposited by the user.
+     * @dev Confirms a deposit and mints shares for the receiver.
+     *      Updates the total assets and receiver's principal accordingly.
+     * @param receiver The address of the receiver making the deposit.
+     * @param depositAmount The amount of assets deposited by the receiver.
      * @param totalAssetsBeforeDeposit The total assets in the vault before the deposit.
      * @param totalAssetsAfterDeposit The total assets in the vault after the deposit.
      */
     function _confirmDepositAndMint(
-        address user,
+        address receiver,
         uint256 depositAmount,
         uint256 totalAssetsBeforeDeposit,
         uint256 totalAssetsAfterDeposit,
@@ -442,17 +456,50 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal {
         VaultStorage storage $ = _getVaultStorage();
 
-        $.userPrincipal[user] += depositAmount;
+        $.userPrincipal[receiver] += depositAmount;
         $.totalPrincipal += depositAmount;
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeDeposit;
 
         uint256 shares = previewDeposit(depositAmount);
-        _mint(user, shares);
+        _mint(receiver, shares);
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterDeposit;
 
-        emit Deposited(user, depositAmount, shares, _crossChainTxId);
+        emit Deposited(receiver, depositAmount, shares, _crossChainTxId);
+    }
+
+    /**
+     * @dev Withdrawn/redeem common workflow. Handles user withdrawal requests and initiates divestment from the strategy.
+     * @param caller The address of the entity initiating the withdrawal.
+     * @param user The address of the user receiving the withdrawn assets.
+     * @param assets The amount of assets being withdrawn.
+     * @param shares The number of shares being redeemed for the withdrawal.
+     * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
+     */
+    function _withdraw(
+        address caller, //caller
+        address receiver, // receiver
+        address user, // owner
+        uint256 assets,
+        uint256 shares
+    ) internal override {
+        if (assets == 0) {
+            revert WithdrawCantBeZero();
+        }
+        if (caller != user) {
+            _spendAllowance(user, caller, shares);
+        }
+        uint256 feeToWithdraw = _applyFee(user, assets);
+
+        _divestFromStrategy(
+            user,
+            receiver,
+            asset(),
+            assets,
+            feeToWithdraw,
+            VAULT_CHAIN_ID
+        );
     }
 
     /**
@@ -480,10 +527,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         _divestFromStrategy(
             user,
+            user,
             withdrawZRC20,
             assets,
             feeToWithdraw,
-            0,
             userChainId
         );
     }
@@ -499,12 +546,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      */
     function _divestFromStrategy(
         address user,
+        address receiver,
         address withdrawZRC20,
         uint256 amount,
         uint256 feeToWithdraw,
-        uint256,
         uint32 withdrawChainId
-    ) internal override {
+    ) internal {
         VaultStorage storage $ = _getVaultStorage();
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
@@ -515,6 +562,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         bytes memory outgoingMessage = abi.encode(
             user,
+            receiver,
             withdrawZRC20,
             amount,
             feeToWithdraw,
@@ -550,7 +598,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     /**
      * @dev Confirms the withdrawal process by burning shares, applying fees, and returning assets to the user.
-     * @param userAddress The address of the user requesting the withdrawal.
+     * @param user The address of the user requesting the withdrawal.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
      * @param amount The amount of assets to be withdrawn.
      * @param fee The performance fee to be applied to the withdrawal.
@@ -560,7 +608,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
      */
     function _confirmWithdrawAndBurn(
-        address userAddress,
+        address user,
+        address receiver,
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
@@ -572,35 +621,35 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         VaultStorage storage $ = _getVaultStorage();
         latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
         uint256 shares = previewWithdraw(amount);
-        uint256 principalWithdrawn = (amount * $.userPrincipal[userAddress]) /
-            convertToAssets(balanceOf(userAddress));
+        uint256 principalWithdrawn = (amount * $.userPrincipal[user]) /
+            convertToAssets(balanceOf(user));
 
-        $.userPrincipal[userAddress] -= principalWithdrawn;
+        $.userPrincipal[user] -= principalWithdrawn;
         $.totalPrincipal -= principalWithdrawn;
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
-        _burn(userAddress, shares);
+        _burn(user, shares);
 
         uint256 outputAmount = _returnFundsToUser(
             amount,
             userChainId,
-            userAddress,
+            receiver,
             withdrawZRC20,
             _crossChainTxId
         );
 
         if (fee > 0) {
-            emit PerformanceFeePaid(userAddress, fee);
+            emit PerformanceFeePaid(user, fee);
             SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee);
         }
 
-        emit Withdrawn(userAddress, outputAmount, shares, _crossChainTxId);
+        emit Withdrawn(user, receiver, outputAmount, shares, _crossChainTxId);
     }
 
     function _handleRevertEvent(
         string memory revertMessage,
         uint256 _crossChainTxId,
-        address userAddress,
+        address user,
         address userZRC20,
         uint32 userChainId,
         uint256 amount
@@ -611,7 +660,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             _returnFundsToUser(
                 amount,
                 userChainId,
-                userAddress,
+                user,
                 userZRC20,
                 _crossChainTxId
             );
@@ -650,7 +699,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         (
             string memory revertMessage,
             uint256 _crossChainTxId,
-            address userAddress,
+            address user,
             address userZRC20,
             uint32 userChainId
         ) = abi.decode(
@@ -665,7 +714,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             _returnFundsToUser(
                 context.amount,
                 userChainId,
-                userAddress,
+                user,
                 userZRC20,
                 _crossChainTxId
             );

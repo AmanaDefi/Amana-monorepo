@@ -23,12 +23,12 @@ abstract contract StrategyParent is Ownable, IErrors {
 
     event FundsInvested(
         uint256 indexed crossChainTxId,
-        address userAddress,
+        address user,
         uint256 amount
     );
     event FundsDivested(
         uint256 indexed crossChainTxId,
-        address userAddress,
+        address user,
         uint256 amount
     );
     event InvestConfirmFailed(uint256 indexed crossChainTxId);
@@ -79,7 +79,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         }
 
         (
-            address userAddress,
+            address user,
+            address receiver,
             address ZRC20AddressOrNewStrategy,
             uint256 amount,
             uint256 fee,
@@ -88,13 +89,22 @@ abstract contract StrategyParent is Ownable, IErrors {
             uint256 crossChainTxId
         ) = abi.decode(
                 message,
-                (address, address, uint256, uint256, uint32, bool, uint256)
+                (
+                    address,
+                    address,
+                    address,
+                    uint256,
+                    uint256,
+                    uint32,
+                    bool,
+                    uint256
+                )
             );
 
         uint256 currentExecutionNonce = executionNonce;
         executionNonce++;
 
-        if (userAddress == address(0)) {
+        if (user == address(0) && receiver == address(0)) {
             _transferAssetsToNewStrategy(
                 ZRC20AddressOrNewStrategy,
                 currentExecutionNonce,
@@ -102,11 +112,12 @@ abstract contract StrategyParent is Ownable, IErrors {
             );
             return abi.encode(true);
         } else if (isDeposit) {
-            _invest(userAddress, amount, currentExecutionNonce, crossChainTxId);
+            _invest(receiver, amount, currentExecutionNonce, crossChainTxId);
             return abi.encode(true);
         } else {
             _divest(
-                userAddress,
+                user,
+                receiver,
                 ZRC20AddressOrNewStrategy,
                 amount,
                 fee,
@@ -127,12 +138,12 @@ abstract contract StrategyParent is Ownable, IErrors {
     function totalUnderlyingAssets() public view virtual returns (uint256);
 
     /// @notice Invests ETH into the Aave pool.
-    /// @param userAddress Address of the user whose funds are being invested.
+    /// @param receiver Address of the receiver whose funds are being invested.
     /// @param amount Amount of ETH to invest.
     /// @param _executionNonce Current execution nonce for the transaction.
     /// @param _crossChainTxId Cross-chain transaction ID.
     function _invest(
-        address userAddress,
+        address receiver,
         uint256 amount,
         uint256 _executionNonce,
         uint256 _crossChainTxId
@@ -141,7 +152,7 @@ abstract contract StrategyParent is Ownable, IErrors {
     function _depositFundsIntoYieldSource(uint256 amount) internal virtual;
 
     function manualResendInvestConfirmation(
-        address userAddress,
+        address receiver,
         uint256 amount,
         uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
@@ -149,7 +160,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 _crossChainTxId
     ) external onlyOwner {
         _sendInvestConfirmation(
-            userAddress,
+            receiver,
             amount,
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
@@ -159,7 +170,7 @@ abstract contract StrategyParent is Ownable, IErrors {
     }
 
     function _sendInvestConfirmation(
-        address userAddress,
+        address receiver,
         uint256 amount,
         uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
@@ -167,7 +178,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 _crossChainTxId
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            userAddress,
+            address(0),
+            receiver,
             address(0),
             amount,
             0,
@@ -201,7 +213,7 @@ abstract contract StrategyParent is Ownable, IErrors {
     ) internal virtual;
 
     /// @notice Withdraws funds from the Aave pool.
-    /// @param userAddress Address of the user whose funds are being withdrawn.
+    /// @param user Address of the user whose funds are being withdrawn.
     /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
     /// @param amount Amount to withdraw.
     /// @param fee Gas fee for the transaction.
@@ -209,7 +221,8 @@ abstract contract StrategyParent is Ownable, IErrors {
     /// @param _executionNonce Current execution nonce for the transaction.
     /// @param _crossChainTxId Cross-chain transaction ID.
     function _divest(
-        address userAddress,
+        address user,
+        address receiver,
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
@@ -224,7 +237,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
 
         _sendFundsAndDivestConfirmation(
-            userAddress,
+            user,
+            receiver,
             withdrawZRC20,
             amount,
             fee,
@@ -235,11 +249,12 @@ abstract contract StrategyParent is Ownable, IErrors {
             _crossChainTxId
         );
 
-        emit FundsDivested(_crossChainTxId, userAddress, amount + fee);
+        emit FundsDivested(_crossChainTxId, user, amount + fee);
     }
 
     function manualResendFundsAndDivestConfirmation(
-        address userAddress,
+        address user,
+        address receiver,
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
@@ -250,7 +265,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 _crossChainTxId
     ) external onlyOwner {
         _sendFundsAndDivestConfirmation(
-            userAddress,
+            user,
+            receiver,
             withdrawZRC20,
             amount,
             fee,
@@ -263,7 +279,8 @@ abstract contract StrategyParent is Ownable, IErrors {
     }
 
     function _sendFundsAndDivestConfirmation(
-        address userAddress,
+        address user,
+        address receiver,
         address withdrawZRC20,
         uint256 amount,
         uint256 fee,
@@ -274,7 +291,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 _crossChainTxId
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            userAddress,
+            user,
+            receiver,
             withdrawZRC20,
             amount,
             fee,
@@ -318,6 +336,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         executionNonce++;
         // Construct the message payload with the desired information
         bytes memory outgoingMessage = abi.encode(
+            address(0),
             address(0),
             address(0),
             block.number,
