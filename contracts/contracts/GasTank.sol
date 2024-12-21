@@ -4,13 +4,9 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
-contract GasTank is Ownable {
-    error TransferFailed();
-    error InsufficientBalance();
-    error NotAuthorized();
-    error VaultAlreadyAuthorized();
-    error VaultNotAuthorized();
+import "./interfaces/IErrors.sol";
 
+contract GasTank is Ownable, IErrors {
     mapping(address => bool) public authorizedVaults;
 
     event VaultAuthorized(address indexed vault);

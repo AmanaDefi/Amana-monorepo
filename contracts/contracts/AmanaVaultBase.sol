@@ -12,9 +12,9 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
+import "./interfaces/IErrors.sol";
 
 import "./libraries/SwapHelperLib.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -23,28 +23,11 @@ abstract contract AmanaVaultBase is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
     UniversalContract,
-    Revertable
+    Revertable,
+    IErrors
 {
     using SafeERC20 for IERC20;
     using Math for uint256;
-
-    error InvalidStrategyAddress();
-    error InvalidStrategyChainId();
-    error InvalidTreasuryAddress();
-    error FeeExceedsLimit();
-    error ApprovalFailed();
-    error DepositCantBeZero();
-    error WithdrawCantBeZero();
-    error NothingToWithdraw();
-    error InvalidZRC20Address();
-    error CantBeZeroAddress();
-    error DepositExceedsLimit();
-    error MintExceedsLimit();
-    error WithdrawExceedsLimit();
-    error RedeemExceedsLimit();
-    error ConfirmationAlreadyProcessed();
-    error OnlyGateway();
-    error StrategyAlreadySet();
 
     // Constants
     address constant _GATEWAY_ADDRESS =

@@ -10,8 +10,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    error NoAssetsToSwitch(); // TODO move this to base?
-
     /**
      * @notice Handles incoming messages from connected chains.
      * @param context Context of the cross-chain message.

@@ -8,11 +8,12 @@ import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
 import "../interfaces/IStrategy.sol";
+import "../interfaces/IErrors.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract StrategyParent is Ownable {
+abstract contract StrategyParent is Ownable, IErrors {
     using SafeERC20 for IERC20;
 
     string public name;
@@ -45,16 +46,6 @@ abstract contract StrategyParent is Ownable {
         uint256 executionNonce,
         uint256 crossChainTxId
     );
-
-    error OnlyGateway();
-    error OnlyVault();
-    error ApprovalFailed();
-    error InvalidAddress();
-    error OldStrategyNotSet();
-    error Unauthorized();
-    error NoFundsReceived();
-    error NothingToWithdraw();
-    error DepositFailed();
 
     address immutable _GATEWAY_ADDRESS;
 

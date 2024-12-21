@@ -10,7 +10,6 @@ abstract contract ERC20StrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable inputToken;
-    error TransferFailed();
 
     constructor(address _inputTokenAddress) {
         inputToken = IERC20(_inputTokenAddress);
