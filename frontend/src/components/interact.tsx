@@ -485,10 +485,6 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
     const [status, setStatus] = useState(false)
     const [disabled, setDisabled] = useState(true)
 
-
-
-
-
     useEffect(() => {
         const val = NumberFormatter.format(Number(inputBalance.formatted))
         switch (action) {
@@ -541,26 +537,25 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 break;
             case Action.withdraw:
                 setlabel("Withdraw")
-                if (status) {
-                    setDisabled(true);
-                    setDescription1([...description1, `Withdrawing ${val} ${inputToken.symbol}.`]);
-                }
-                else {
-                    setDisabled(false);
-                    setDescription1([...description1, "Withdraw confirmation required."]);
-                }
+                setDisabled(status);
+                setDescription1(["Withdraw confirmation required."]);
+                setDescription2([`Withdrawing ${val} ${inputToken.symbol}.`]);
                 break;
             case Action.withdrawconfirmed:
                 setDescription1([...description1, "Withdraw confirmed."]);
+                setDescription2([...description2, "Waiting Divest."]);
                 break;
             case Action.DivestSent:
                 setDescription1([...description1, "DivestSent."]);
+                setDescription2([...description2, "Waiting FundsDivest."]);
                 break;
             case Action.FundsDivested:
                 setDescription1([...description1, "FundsDivested."]);
+                setDescription2([...description2, "Waiting ReturnFundsToUser."]);
                 break;
             case Action.ReturnFundsToUserSent:
                 setDescription1([...description1, "ReturnFundsToUserSent."]);
+                setDescription2([...description2, "Waiting Withdrawn."]);
                 break;
             case Action.Withdrawn:
                 setDescription1([...description1, "Withdrawn."]);
@@ -633,20 +628,21 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                             index <= step &&
                             <>
                                 {
-                                    ((item != Action.deposit && item != Action.depositApprove) || (item == Action.depositApprove && !status && action == Action.depositApprove) || (item == Action.deposit && !status && action == Action.deposit)) &&
+                                    ((item != Action.deposit && item != Action.withdraw && item != Action.depositApprove) || (item == Action.depositApprove && !status && action == Action.depositApprove)
+                                        || (item == Action.deposit && !status && action == Action.deposit) || (item == Action.withdraw && !status && action == Action.withdraw)) &&
                                     <div className="flex items-center">
                                         {
-                                            (item == Action.deposit || item == Action.depositApprove) ?
+                                            (item == Action.deposit || item === Action.withdraw || item == Action.depositApprove) ?
                                                 <AiOutlineExclamation color="Green" size={20} />
                                                 :
                                                 <AiOutlineCheck color="Green" size={20} />
                                         }
-                                        <p className="text-white text-start mb-2">{description1[item == Action.deposit || item == Action.depositApprove || item == Action.depositApproveConfirmed || !actions.includes(Action.depositApprove) ? index : index + 1]}</p>
+                                        <p className="text-white text-start mb-2">{description1[item == Action.deposit || item == Action.withdraw || item == Action.depositApprove || item == Action.depositApproveConfirmed || !actions.includes(Action.depositApprove) ? index : index + 1]}</p>
                                     </div>
                                 }
                                 {
                                     index == step &&
-                                    ((item !== Action.deposit && item !== Action.depositApprove && item != Action.depositApproveConfirmed) || (item === Action.depositApprove && status) || (item === Action.deposit && status)) &&
+                                    ((item !== Action.deposit && item !== Action.withdraw && item !== Action.depositApprove && item != Action.depositApproveConfirmed) || (item === Action.depositApprove && status) || (item === Action.deposit && status) || (item === Action.withdraw && status) ) &&
                                     <div className="flex items-center">
                                         <MoonLoader color="red" size={30} speedMultiplier={0.3} />
                                         <p className="text-white text-start mb-2">{description2[index]}</p>

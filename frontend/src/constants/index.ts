@@ -106,6 +106,29 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
+    id: "0x4384186eeB29ADe667fFAD9F968de7ec14f37A46", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Base Sepolia
+    name: "AaveV3 ETH",
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+    symbol: "aAaveETH",
+    imgURL: "/BathEthsepolia.png",
+    inputToken: {
+      symbol: "ETH",
+      decimals: 18,
+      address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 3040,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      network: "Base Sepolia",
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/aave.png",
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+    },
+  },
+  {
     id: "0x3E0b600c0B29e3Fa3F99BB2a92F0807b3cC8e55a", // Amana ETH Vault on Zetachain testnet, targeting Aave strategy on Base Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
