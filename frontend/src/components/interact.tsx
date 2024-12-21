@@ -129,8 +129,8 @@ export default function InteractionContainer({ step, setStep, action, setAction,
 
     useEffect(() => {
         setAction(_action)
+        setStep(0)
     }, [actions])
-
 
     const [strategyAddress, setstrategyAddress] = useState("")
     const [strategyChainID, setstrategyChainID] = useState(0)
@@ -491,7 +491,6 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
 
     useEffect(() => {
         const val = NumberFormatter.format(Number(inputBalance.formatted))
-        console.log("24432424243", action)
         switch (action) {
             case Action.depositApprove:
                 setDisabled(status);
