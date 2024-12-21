@@ -12,9 +12,9 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol
 import "./interfaces/ISystem.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
+import "./interfaces/IErrors.sol";
 
 import "./libraries/SwapHelperLib.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -23,28 +23,11 @@ abstract contract AmanaVaultBase is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
     UniversalContract,
-    Revertable
+    Revertable,
+    IErrors
 {
     using SafeERC20 for IERC20;
     using Math for uint256;
-
-    error InvalidStrategyAddress();
-    error InvalidStrategyChainId();
-    error InvalidTreasuryAddress();
-    error FeeExceedsLimit();
-    error ApprovalFailed();
-    error DepositCantBeZero();
-    error WithdrawCantBeZero();
-    error NothingToWithdraw();
-    error InvalidZRC20Address();
-    error CantBeZeroAddress();
-    error DepositExceedsLimit();
-    error MintExceedsLimit();
-    error WithdrawExceedsLimit();
-    error RedeemExceedsLimit();
-    error ConfirmationAlreadyProcessed();
-    error OnlyGateway();
-    error StrategyAlreadySet();
 
     // Constants
     address constant _GATEWAY_ADDRESS =
@@ -403,48 +386,6 @@ abstract contract AmanaVaultBase is
     ) internal virtual;
 
     /**
-     * @dev Withdrawn/redeem common workflow. Handles user withdrawal requests and initiates divestment from the strategy.
-     * @param caller The address of the entity initiating the withdrawal.
-     * @param user The address of the user receiving the withdrawn assets.
-     * @param assets The amount of assets being withdrawn.
-     * @param shares The number of shares being redeemed for the withdrawal.
-     * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
-     */
-    function _withdraw(
-        address caller, //caller
-        address, // receiver
-        address user, // owner
-        uint256 assets,
-        uint256 shares
-    ) internal override {
-        if (assets == 0) {
-            revert WithdrawCantBeZero();
-        }
-        if (caller != user) {
-            _spendAllowance(user, caller, shares);
-        }
-        uint256 feeToWithdraw = _applyFee(user, assets);
-
-        _divestFromStrategy(
-            user,
-            asset(),
-            assets,
-            feeToWithdraw,
-            shares,
-            VAULT_CHAIN_ID
-        );
-    }
-
-    function _divestFromStrategy(
-        address user,
-        address withdrawZRC20,
-        uint256 amount,
-        uint256 feeToWithdraw,
-        uint256 shares,
-        uint32 userChainId
-    ) internal virtual;
-
-    /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
      * @param user The address of the user receiving the withdrawn assets.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
@@ -463,7 +404,7 @@ abstract contract AmanaVaultBase is
      * @dev Returns funds to the user, either on the same chain or a connected chain.
      * @param amount The amount of assets to return to the user.
      * @param userChainId The chain ID of the user's chain.
-     * @param userAddress The address of the user receiving the funds.
+     * @param receiver The address of the user receiving the funds.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
      * @return outputAmount The actual amount of assets returned to the user after potential swaps.
      * @notice Handles cross-chain transfers or same-chain asset transfers. Manages gas fees and token approvals.
@@ -471,7 +412,7 @@ abstract contract AmanaVaultBase is
     function _returnFundsToUser(
         uint256 amount,
         uint32 userChainId,
-        address userAddress,
+        address receiver,
         address withdrawZRC20,
         uint256 _crossChainTxId
     ) internal returns (uint256 outputAmount) {
@@ -479,10 +420,10 @@ abstract contract AmanaVaultBase is
 
         if (userChainId == VAULT_CHAIN_ID) {
             // Same-chain transfer
-            SafeERC20.safeTransfer(IERC20(asset()), userAddress, outputAmount);
+            SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
         } else {
             // Cross-chain transfer
-            bytes memory recipient = abi.encodePacked(userAddress);
+            bytes memory recipient = abi.encodePacked(receiver);
 
             RevertOptions memory revertOptions = RevertOptions(
                 address(this), // revert address
@@ -491,7 +432,7 @@ abstract contract AmanaVaultBase is
                 abi.encode(
                     "_returnFundsToUserFailed",
                     _crossChainTxId,
-                    userAddress,
+                    receiver,
                     withdrawZRC20,
                     userChainId
                 ),

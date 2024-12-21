@@ -6,23 +6,18 @@ import "../interfaces/IZRC20.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 
-library SwapHelperLib {
-    error InvalidPathLength();
-    error CantBeZeroAddress();
-    error CantBeIdenticalAddresses();
-    error InsufficientLiquidity();
-    error InsufficientInputAmount();
-    error InvalidPath();
+import "../interfaces/IErrors.sol";
 
+library SwapHelperLib {
     function sortTokens(
         address tokenA,
         address tokenB
     ) internal pure returns (address token0, address token1) {
-        if (tokenA == tokenB) revert CantBeIdenticalAddresses();
+        if (tokenA == tokenB) revert IErrors.CantBeIdenticalAddresses();
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
-        if (token0 == address(0)) revert CantBeZeroAddress();
+        if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
     }
 
     function uniswapv2PairFor(
@@ -71,7 +66,7 @@ library SwapHelperLib {
                 !_existsPairPool(factory, zrc20, wZeta) ||
                 !_existsPairPool(factory, wZeta, targetZRC20)
             ) {
-                revert InsufficientLiquidity();
+                revert IErrors.InsufficientLiquidity();
             }
             path = new address[](3);
             path[0] = zrc20;
@@ -113,7 +108,7 @@ library SwapHelperLib {
         uint256 minAmountOut,
         address[] memory path
     ) internal view returns (bool) {
-        if (path.length != 2) revert InvalidPathLength();
+        if (path.length != 2) revert IErrors.InvalidPathLength();
         bool existsPairPool = _existsPairPool(
             uniswapV2Factory,
             path[0],
@@ -136,10 +131,10 @@ library SwapHelperLib {
         uint reserveOut
     ) internal pure returns (uint amountOut) {
         if (amountIn == 0) {
-            revert InsufficientInputAmount();
+            revert IErrors.InsufficientInputAmount();
         }
         if (reserveIn == 0 || reserveOut == 0) {
-            revert InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidity();
         }
         uint amountInWithFee = amountIn * 997;
         uint numerator = amountInWithFee * reserveOut;
@@ -153,7 +148,7 @@ library SwapHelperLib {
         address[] memory path
     ) internal view returns (uint[] memory amounts) {
         if (path.length < 2) {
-            revert InvalidPath();
+            revert IErrors.InvalidPath();
         }
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
