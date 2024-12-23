@@ -152,8 +152,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 _crossChainTxId
     ) internal {
         // Ensure no duplicate processing
-        if (pendingConfirmations[executionNonce].user != address(0))
-            revert ConfirmationAlreadyProcessed();
+        if (
+            pendingConfirmations[executionNonce].totalAssetsBefore != 0 &&
+            pendingConfirmations[executionNonce].totalAssetsAfter != 0
+        ) revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
         pendingConfirmations[executionNonce] = Confirmation({
             user: user,
@@ -186,8 +188,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 _crossChainTxId
     ) external onlyOwner {
         // Ensure no duplicate processing
-        if (pendingConfirmations[executionNonce].user != address(0))
-            revert ConfirmationAlreadyProcessed();
+        if (
+            pendingConfirmations[executionNonce].totalAssetsBefore != 0 &&
+            pendingConfirmations[executionNonce].totalAssetsAfter != 0
+        ) revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
         pendingConfirmations[executionNonce] = Confirmation({
             user: user,
