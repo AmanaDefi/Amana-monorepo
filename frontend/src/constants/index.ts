@@ -106,7 +106,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0x4384186eeB29ADe667fFAD9F968de7ec14f37A46", // Base Sepolia ETH Vault
+    id: "0xE588Ed2AC6A3D0A1A4a5833fBb4b4A026834Da57", // Base Sepolia ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -176,7 +176,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   // },
 
   {
-    id: "0xb133Ce90120CF4f1cF27389F4E30553fBe71909A", // Polygon Amoy POL Vault (POL is new name for MATIC)
+    id: "0xbEd4F3ccC116A20BA7697555F5eFFe03592c85cA", // Polygon Amoy POL Vault (POL is new name for MATIC)
     name: "Mock POL",
     des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockPOL",
@@ -199,7 +199,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xbf3BaB9e54090C46786Ad90BEB90D40175bFF396", // BSC USDC Vault
+    id: "0x126aAFD88E76099B0739d924cc0B2bF6Ec9274d3", // BSC USDC Vault
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
     symbol: "aMockUSDC",
