@@ -261,12 +261,11 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
     amanaVault = await vaultDeployTransaction.deployed();
 
-    await network.provider.send("hardhat_setBalance", [
-      amanaVault.address,
-      ethers.utils.parseEther("1000").toHexString(),
-    ]);
+    // await network.provider.send("hardhat_setBalance", [
+    //   amanaVault.address,
+    //   ethers.utils.parseEther("1000").toHexString(),
+    // ]);
 
-    console.log("Amana vault balance: ", await ethers.provider.getBalance(amanaVault.address));
 
     await gasTank.authorizeVault(amanaVault.address);
 
@@ -371,13 +370,9 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     it("should calculate and deduct the performance fee on withdrawal", async function () {
       const { user1, depositAmount1, amanaVault, ethEth } = await loadFixture(setup);
-      console.log("User1: ", await user1.getAddress());
-      console.log("User1 zeta balance: ", await ethers.provider.getBalance(await user1.getAddress()));
-      console.log("amanavault address: ", amanaVault.address);
-      console.log("amanavault zeta balance: ", await ethers.provider.getBalance(amanaVault.address));
 
       // Step 1: Simulate a deposit by User1
-      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1));
+      await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1));
       await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
       await simulateDepositCallFromBase(user1, depositAmount1);
 
@@ -385,7 +380,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       // Step 2: Simulate a deposit by User2
-      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user2.getAddress(), depositAmount1.mul(20).div(1));
+      await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user2.getAddress(), depositAmount1.mul(20).div(1));
       await ethEth.connect(user2).approve(amanaVault.address, depositAmount1);
       await simulateDepositCallFromBase(user2, depositAmount1);
       const profit = depositAmount1.div(10); // 10% profit

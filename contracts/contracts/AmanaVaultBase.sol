@@ -14,7 +14,7 @@ import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 
-import "./libraries/SwapHelperLib.sol";
+import "./libraries/SwapHelperLibEddy.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -34,8 +34,6 @@ abstract contract AmanaVaultBase is
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     bytes32 internal constant VAULT_STORAGE_LOCATION =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
-    address constant SWAP_ROUTER = 0x84A5509Dce0b68C73B89e67454C30912293c7ea0;
-    address constant SWAP_FACTORY = 0x28b5244B6CA7Cb07f2f7F40edE944c07C2395603;
 
     uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
     uint256 public constant GAS_LIMIT_FOR_CALL = 350000; // bring this down as far as possible, as it doesn't get returned
@@ -352,13 +350,10 @@ abstract contract AmanaVaultBase is
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
         }
-
         uint256 outputAmount = assets;
         uint256 minAmountOut = 0; // TODO: Implement slippage control in production
         if (zrc20source != address(asset())) {
-            outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                SWAP_ROUTER,
-                SWAP_FACTORY,
+            outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
                 zrc20source,
                 assets,
                 address(asset()),
@@ -440,9 +435,7 @@ abstract contract AmanaVaultBase is
 
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
-                outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                    SWAP_ROUTER,
-                    SWAP_FACTORY,
+                outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
                     address(asset()),
                     amount,
                     withdrawZRC20,

@@ -9,9 +9,9 @@ import "../interfaces/IAlgebraPool.sol";
 import "../interfaces/ITickMath.sol";
 import "hardhat/console.sol";
 
-address constant wzetaToken = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
+address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
 
-library SwapHelperLib {
+library SwapHelperLibBeam {
     function sortTokens(
         address tokenA,
         address tokenB
@@ -70,10 +70,10 @@ library SwapHelperLib {
         } else {
             // Check for intermediate pools via Zeta token
             console.log("Checking for intermediate pools via Zeta token");
-            address poolToZeta = algebraPairFor(factory, zrc20, wzetaToken);
+            address poolToZeta = algebraPairFor(factory, zrc20, WZETA_TOKEN);
             address poolFromZeta = algebraPairFor(
                 factory,
-                wzetaToken,
+                WZETA_TOKEN,
                 targetZRC20
             );
 
@@ -84,7 +84,7 @@ library SwapHelperLib {
             // Build path for intermediate swap: input -> Zeta -> target
             address[] memory path = new address[](3);
             path[0] = zrc20;
-            path[1] = wzetaToken;
+            path[1] = WZETA_TOKEN;
             path[2] = targetZRC20;
             console.log("path[0]", path[0]);
             console.log("path[1]", path[1]);
@@ -94,7 +94,7 @@ library SwapHelperLib {
 
             ISwapRouter.ExactInputParams memory params;
             params = ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(zrc20, wzetaToken, targetZRC20),
+                path: abi.encodePacked(zrc20, WZETA_TOKEN, targetZRC20),
                 recipient: vault,
                 deadline: block.timestamp + maxDeadline,
                 amountIn: amount,
@@ -102,6 +102,10 @@ library SwapHelperLib {
             });
             console.log("Approving ZRC20");
             IZRC20(zrc20).approve(router, amount);
+            console.log(
+                "zrc20 balance: %s",
+                IZRC20(zrc20).balanceOf(address(this))
+            );
             console.log("Swapping via Zeta token");
             try
                 ISwapRouter(router).exactInput{value: 2000000000000000000}(
