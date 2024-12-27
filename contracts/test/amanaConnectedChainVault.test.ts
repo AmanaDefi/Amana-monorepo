@@ -9,9 +9,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import {
-  ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-  ZC_TEST_ETH_SEPOLIA_ADDRESS,
-  ZC_TEST_USDC_BSC_ADDRESS,
+  ZC_ETH_BASE_ADDRESS,
+  ZC_ETH_ETH_ADDRESS,
+  ZC_USDC_BSC_ADDRESS,
 } from "../../constants";
 
 describe("AmanaConnectedChainVault Tests", function () {
@@ -21,19 +21,18 @@ describe("AmanaConnectedChainVault Tests", function () {
   let user1: Signer;
   let user2: Signer;
   let gatewaySigner: Signer;
-  let ethBaseSepolia: IERC20;
-  let ethSepolia: IERC20;
+  let ethBase: IERC20;
+  let ethEth: IERC20;
   let usdcBSC: IERC20;
   let withdrawZRC20: string;
 
-  const ZEVM_GATEWAY_ADDRESS = "0x6c533f7fe93fae114d0954697069df33c9b74fd7";
-  const SYSTEM_CONTRACT_ADDRESS = "0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B";
-  const VAULT_ASSET = ZC_TEST_ETH_SEPOLIA_ADDRESS;
+  const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
+  const VAULT_ASSET = ZC_ETH_ETH_ADDRESS;
   const FEE_RATE = 1000;
-  const ORIGIN_CHAIN_ID = 84532; // where the deposit/withdrawal originated from
+  const ORIGIN_CHAIN_ID = 8453; // where the deposit/withdrawal originated from
 
   const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
-  const STRATEGY_CHAIN_ID = 11155111;
+  const STRATEGY_CHAIN_ID = 1;
 
   const SECOND_STRATEGY_ADDRESS = "0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f";
 
@@ -62,7 +61,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     depositAmount: BigNumber
   ): Promise<void> {
     // Set token balance for the vault
-    await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, amanaVault.address, depositAmount);
+    await setTokenBalance(ZC_ETH_BASE_ADDRESS, amanaVault.address, depositAmount);
 
     // Execute the onCall function to simulate a deposit
     await amanaVault.connect(gatewaySigner).onCall(
@@ -71,7 +70,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         sender: await user.getAddress(),
         chainID: ORIGIN_CHAIN_ID,
       },
-      ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+      ZC_ETH_BASE_ADDRESS,
       depositAmount,
       "0x"
     );
@@ -98,7 +97,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         sender: STRATEGY_ADDRESS,
         chainID: STRATEGY_CHAIN_ID,
       },
-      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      ZC_ETH_ETH_ADDRESS,
       0,
       confirmMessage
     );
@@ -124,7 +123,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         sender: STRATEGY_ADDRESS,
         chainID: STRATEGY_CHAIN_ID,
       },
-      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      ZC_ETH_ETH_ADDRESS,
       0,
       confirmMessage
     );
@@ -146,7 +145,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         sender: STRATEGY_ADDRESS,
         chainID: STRATEGY_CHAIN_ID,
       },
-      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      ZC_ETH_ETH_ADDRESS,
       0,
       confirmMessage
     );
@@ -159,7 +158,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   ): Promise<void> {
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
       ["address", "uint256"],
-      [ZC_TEST_ETH_BASESEPOLIA_ADDRESS, withdrawAmount]
+      [ZC_ETH_BASE_ADDRESS, withdrawAmount]
     );
 
     await amanaVault.connect(gatewaySigner).onCall(
@@ -168,7 +167,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         sender: await user.getAddress(),
         chainID: ORIGIN_CHAIN_ID,
       },
-      ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+      ZC_ETH_BASE_ADDRESS,
       0,
       withdrawMessage
     )
@@ -187,7 +186,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       [
         await user.getAddress(),
         await user.getAddress(),
-        ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+        ZC_ETH_BASE_ADDRESS,
         withdrawAmount,
         feeAmount,
         ORIGIN_CHAIN_ID,
@@ -200,7 +199,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
 
     // Mock token balance setup for the test environment
-    await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, amanaVault.address, withdrawAmount.add(feeAmount));
+    await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, withdrawAmount.add(feeAmount));
 
     // Return the transaction object so it can be awaited or used in tests
     return await amanaVault.connect(gatewaySigner).onCall(
@@ -209,7 +208,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         sender: STRATEGY_ADDRESS,
         chainID: STRATEGY_CHAIN_ID,
       },
-      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      ZC_ETH_ETH_ADDRESS,
       withdrawAmount,
       confirmMessage
     );
@@ -221,8 +220,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       params: [
         {
           forking: {
-            jsonRpcUrl: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 8063787,
+            jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+            blockNumber: 6337797,
           },
         },
       ]
@@ -230,13 +229,13 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     [owner, user1, user2] = await ethers.getSigners();
 
-    ethBaseSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_BASESEPOLIA_ADDRESS);
-    ethSepolia = await ethers.getContractAt("IERC20", ZC_TEST_ETH_SEPOLIA_ADDRESS);
-    usdcBSC = await ethers.getContractAt("IERC20", ZC_TEST_USDC_BSC_ADDRESS);
+    ethBase = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
+    ethEth = await ethers.getContractAt("IERC20", ZC_ETH_ETH_ADDRESS);
+    usdcBSC = await ethers.getContractAt("IERC20", ZC_USDC_BSC_ADDRESS);
 
     await setupGatewaySigner();
 
-    withdrawZRC20 = ZC_TEST_ETH_BASESEPOLIA_ADDRESS;
+    withdrawZRC20 = ZC_ETH_BASE_ADDRESS;
 
     const gatewayZEVM = await ethers.getContractAt(
       GatewayZEVMABI.abi,
@@ -256,12 +255,18 @@ describe("AmanaConnectedChainVault Tests", function () {
         VAULT_ASSET,
         await owner.getAddress(),
         FEE_RATE,
-        SYSTEM_CONTRACT_ADDRESS,
         gasTank.address
       ],
       { initializer: "initialize" }
     );
     amanaVault = await vaultDeployTransaction.deployed();
+
+    await network.provider.send("hardhat_setBalance", [
+      amanaVault.address,
+      ethers.utils.parseEther("1000").toHexString(),
+    ]);
+
+    console.log("Amana vault balance: ", await ethers.provider.getBalance(amanaVault.address));
 
     await gasTank.authorizeVault(amanaVault.address);
 
@@ -272,14 +277,14 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     const rewardAmount = BigNumber.from(1000); // Example reward amount
 
-    await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(20).div(1));
-    await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, gasTank.address, depositAmount1.mul(200).div(1));
+    await setTokenBalance(ZC_ETH_ETH_ADDRESS, gasTank.address, depositAmount1.mul(20).div(1));
+    await setTokenBalance(ZC_ETH_BASE_ADDRESS, gasTank.address, depositAmount1.mul(200).div(1));
 
-    await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await owner.getAddress(), depositAmount1.mul(20).div(1));
-    await setTokenBalance(ZC_TEST_ETH_BASESEPOLIA_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
-    await setTokenBalance(ZC_TEST_USDC_BSC_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
+    await setTokenBalance(ZC_ETH_ETH_ADDRESS, await owner.getAddress(), depositAmount1.mul(20).div(1));
+    await setTokenBalance(ZC_ETH_BASE_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
+    await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
 
-    return { owner, user1, user2, depositAmount1, depositAmount2, rewardAmount, ethBaseSepolia, ethSepolia, usdcBSC, amanaVault, gatewayZEVM, withdrawZRC20 };
+    return { owner, user1, user2, depositAmount1, depositAmount2, rewardAmount, ethBase, ethEth, usdcBSC, amanaVault, gatewayZEVM, withdrawZRC20 };
   }
 
   describe("Cross-Chain Deposit and Withdraw Workflow", function () {
@@ -288,7 +293,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       expect(await amanaVault.name()).to.equal("AaveV3EthVault");
       expect(await amanaVault.symbol()).to.equal("AVU");
-      expect(await amanaVault.asset()).to.equal(ZC_TEST_ETH_SEPOLIA_ADDRESS);
+      expect(await amanaVault.asset()).to.equal(ZC_ETH_ETH_ADDRESS);
       expect(await amanaVault.owner()).to.equal(await owner.getAddress());
       expect(await amanaVault.getPerfFee()).to.equal(FEE_RATE);
     });
@@ -365,19 +370,23 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should calculate and deduct the performance fee on withdrawal", async function () {
-      const { user1, depositAmount1, amanaVault, ethSepolia } = await loadFixture(setup);
+      const { user1, depositAmount1, amanaVault, ethEth } = await loadFixture(setup);
+      console.log("User1: ", await user1.getAddress());
+      console.log("User1 zeta balance: ", await ethers.provider.getBalance(await user1.getAddress()));
+      console.log("amanavault address: ", amanaVault.address);
+      console.log("amanavault zeta balance: ", await ethers.provider.getBalance(amanaVault.address));
 
       // Step 1: Simulate a deposit by User1
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1));
-      await ethSepolia.connect(user1).approve(amanaVault.address, depositAmount1);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1));
+      await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
       await simulateDepositCallFromBase(user1, depositAmount1);
 
       const initialTotalAssets = depositAmount1;
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       // Step 2: Simulate a deposit by User2
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await user2.getAddress(), depositAmount1.mul(20).div(1));
-      await ethSepolia.connect(user2).approve(amanaVault.address, depositAmount1);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user2.getAddress(), depositAmount1.mul(20).div(1));
+      await ethEth.connect(user2).approve(amanaVault.address, depositAmount1);
       await simulateDepositCallFromBase(user2, depositAmount1);
       const profit = depositAmount1.div(10); // 10% profit
 
@@ -398,26 +407,26 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should handle emergency withdrawal by the owner", async function () {
-      const { amanaVault, owner, ethBaseSepolia } = await loadFixture(setup);
+      const { amanaVault, owner, ethBase } = await loadFixture(setup);
 
       const depositAmount = ethers.utils.parseUnits("0.1", 18);
-      await ethBaseSepolia.transfer(amanaVault.address, depositAmount);
+      await ethBase.transfer(amanaVault.address, depositAmount);
 
-      const balanceBefore = await ethBaseSepolia.balanceOf(await owner.getAddress());
-      await amanaVault.connect(owner).emergencyWithdraw(ZC_TEST_ETH_BASESEPOLIA_ADDRESS);
+      const balanceBefore = await ethBase.balanceOf(await owner.getAddress());
+      await amanaVault.connect(owner).emergencyWithdraw(ZC_ETH_BASE_ADDRESS);
 
-      const balanceAfter = await ethBaseSepolia.balanceOf(await owner.getAddress());
+      const balanceAfter = await ethBase.balanceOf(await owner.getAddress());
       expect(balanceAfter.sub(balanceBefore)).to.equal(depositAmount);
     });
 
     it("should reject unauthorized emergency withdrawal", async function () {
-      const { amanaVault, user1, ethBaseSepolia } = await loadFixture(setup);
+      const { amanaVault, user1, ethBase } = await loadFixture(setup);
 
       const depositAmount = ethers.utils.parseUnits("0.1", 18);
-      await ethBaseSepolia.transfer(amanaVault.address, depositAmount);
+      await ethBase.transfer(amanaVault.address, depositAmount);
 
       await expect(
-        amanaVault.connect(user1).emergencyWithdraw(ZC_TEST_ETH_BASESEPOLIA_ADDRESS)
+        amanaVault.connect(user1).emergencyWithdraw(ZC_ETH_BASE_ADDRESS)
       ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
     });
 
@@ -433,10 +442,10 @@ describe("AmanaConnectedChainVault Tests", function () {
       // Simulate _crossChainInvest reverting
       const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
         ["string", "uint256", "address", "address", "uint32"],
-        ["_crossChainInvestFailed", 0, await user1.getAddress(), ZC_TEST_ETH_BASESEPOLIA_ADDRESS, 84532]
+        ["_crossChainInvestFailed", 0, await user1.getAddress(), ZC_ETH_BASE_ADDRESS, 84532]
       );
       // the revert will send back some ETH_SEPOLIA
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, amanaVault.address, depositAmount.mul(95).div(100));
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, depositAmount.mul(95).div(100));
 
       await expect(
         amanaVault.onRevert({
@@ -493,18 +502,18 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     it("should update user shares correctly after multiple deposits and withdrawals", async function () {
       const { user1, user2, depositAmount1, depositAmount2, amanaVault } = await loadFixture(setup);
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, amanaVault.address, 0);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
 
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await user1.getAddress(), depositAmount1);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1);
 
-      await ethSepolia.connect(user1).approve(amanaVault.address, depositAmount1);
+      await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
       await amanaVault.connect(user1).deposit(depositAmount1, await user1.getAddress());
 
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await user2.getAddress(), depositAmount2);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user2.getAddress(), depositAmount2);
 
-      await ethSepolia.connect(user2).approve(amanaVault.address, depositAmount2);
+      await ethEth.connect(user2).approve(amanaVault.address, depositAmount2);
       await amanaVault.connect(user2).deposit(depositAmount2, await user2.getAddress());
 
       const totalDeposits = depositAmount1.add(depositAmount2);
@@ -526,8 +535,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       const { user1, depositAmount1, amanaVault } = await loadFixture(setup);
 
       // Step 1: Deposit into the vault
-      await setTokenBalance(ZC_TEST_ETH_SEPOLIA_ADDRESS, await user1.getAddress(), depositAmount1);
-      await ethSepolia.connect(user1).approve(amanaVault.address, depositAmount1);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1);
+      await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
       await amanaVault.connect(user1).deposit(depositAmount1, await user1.getAddress());
 
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
@@ -575,7 +584,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should handle zero balances without errors", async function () {
-      const { user1, ethBaseSepolia, amanaVault } = await loadFixture(setup);
+      const { user1, ethBase, amanaVault } = await loadFixture(setup);
 
       // Simulate a withdrawal for a user with zero balance
       const zeroAmount = BigNumber.from(0);
@@ -583,7 +592,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
 
       // Deposit and then withdraw entire balance
-      await ethBaseSepolia.connect(user1).approve(amanaVault.address, zeroAmount);
+      await ethBase.connect(user1).approve(amanaVault.address, zeroAmount);
       await expect(amanaVault.connect(user1).deposit(zeroAmount, await user1.getAddress()))
         .to.be.revertedWithCustomError(amanaVault, "DepositCantBeZero");
     });
@@ -625,7 +634,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const timeElapsed = BigNumber.from(newTimestamp - startTimestamp);
       const expectedReward = expectedRewardPerSecond.mul(timeElapsed);
 
-      await setTokenBalance(ZC_TEST_USDC_BSC_ADDRESS, amanaVault.address, rewardAmount); // Set the reward amount
+      await setTokenBalance(ZC_USDC_BSC_ADDRESS, amanaVault.address, rewardAmount); // Set the reward amount
 
       // User1 should now have accumulated rewards halfway through the campaign
       await amanaVault.connect(user1).claimRewards(await user1.getAddress()); // Claim the rewards
@@ -651,7 +660,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await amanaVault.connect(owner).setRewardsInterval(startTimestamp, endTimestamp, rewardAmount);
 
       // Set reward token balance
-      await setTokenBalance(ZC_TEST_USDC_BSC_ADDRESS, amanaVault.address, rewardAmount);
+      await setTokenBalance(ZC_USDC_BSC_ADDRESS, amanaVault.address, rewardAmount);
 
       // Simulate deposits
       await simulateDepositCallFromBase(user1, depositAmount1);

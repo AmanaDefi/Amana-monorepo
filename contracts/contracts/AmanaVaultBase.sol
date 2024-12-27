@@ -31,18 +31,18 @@ abstract contract AmanaVaultBase is
 
     // Constants
     address constant _GATEWAY_ADDRESS =
-        0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
+        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     bytes32 internal constant VAULT_STORAGE_LOCATION =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
-    address constant UNISWAP_V2_ROUTER_02_ADDRESS =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
-    uint32 constant VAULT_CHAIN_ID = 7001; // 7000 for mainnet, 7001 for testnet
+    address constant SWAP_ROUTER = 0x84A5509Dce0b68C73B89e67454C30912293c7ea0;
+    address constant SWAP_FACTORY = 0x28b5244B6CA7Cb07f2f7F40edE944c07C2395603;
+
+    uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
     uint256 public constant GAS_LIMIT_FOR_CALL = 350000; // bring this down as far as possible, as it doesn't get returned
     uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 350000; // bring this down as far as possible, as it doesn't get returned
 
     uint256 crossChainTxId;
 
-    ISystem systemContract; // 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B on testnet
     IGasTank gasTank;
 
     struct VaultStorage {
@@ -112,7 +112,6 @@ abstract contract AmanaVaultBase is
      * @param asset_ The underlying asset for the vault.
      * @param treasury_ Treasury address for performance fees.
      * @param perfFee_ Performance fee rate.
-     * @param system_contract_ System contract address.
      * @param gasTank_ Gas tank contract address.
      */
     function initialize(
@@ -121,7 +120,6 @@ abstract contract AmanaVaultBase is
         IERC20 asset_,
         address treasury_,
         uint16 perfFee_,
-        address system_contract_,
         address gasTank_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
@@ -133,7 +131,6 @@ abstract contract AmanaVaultBase is
         $.treasury = treasury_;
         $.perfFee = perfFee_;
         $.totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
-        systemContract = ISystem(system_contract_);
         gasTank = IGasTank(gasTank_);
         crossChainTxId = 1; // Initialize to 1 to avoid zero value (reserved for asset update)
         emit VaultInitialized(decimals(), perfFee_);
@@ -360,14 +357,14 @@ abstract contract AmanaVaultBase is
         uint256 minAmountOut = 0; // TODO: Implement slippage control in production
         if (zrc20source != address(asset())) {
             outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                UNISWAP_V2_ROUTER_02_ADDRESS,
-                systemContract.uniswapv2FactoryAddress(),
+                SWAP_ROUTER,
+                SWAP_FACTORY,
                 zrc20source,
                 assets,
-                asset(),
+                address(asset()),
                 minAmountOut,
                 address(this),
-                200
+                20000
             );
         }
         _investAssets(
@@ -444,8 +441,8 @@ abstract contract AmanaVaultBase is
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
                 outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                    UNISWAP_V2_ROUTER_02_ADDRESS,
-                    systemContract.uniswapv2FactoryAddress(),
+                    SWAP_ROUTER,
+                    SWAP_FACTORY,
                     address(asset()),
                     amount,
                     withdrawZRC20,

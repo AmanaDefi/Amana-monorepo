@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "../interfaces/ISwapRouter.sol";
+import "../interfaces/IAlgebraFactory.sol";
 import "../interfaces/IZRC20.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-
 import "../interfaces/IErrors.sol";
+import "../interfaces/IAlgebraPool.sol";
+import "../interfaces/ITickMath.sol";
+import "hardhat/console.sol";
+
+address constant wzetaToken = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
 
 library SwapHelperLib {
     function sortTokens(
@@ -20,26 +23,15 @@ library SwapHelperLib {
         if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
     }
 
-    function uniswapv2PairFor(
+    function algebraPairFor(
         address factory,
         address tokenA,
         address tokenB
-    ) internal pure returns (address pair) {
+    ) internal view returns (address pool) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
-        pair = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            hex"ff",
-                            factory,
-                            keccak256(abi.encodePacked(token0, token1)),
-                            hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f" // init code hash
-                        )
-                    )
-                )
-            )
-        );
+        console.log("token0: %s, token1: %s", token0, token1);
+
+        pool = IAlgebraFactory(factory).poolByPair(token0, token1);
     }
 
     function swapExactTokensForTokens(
@@ -52,77 +44,84 @@ library SwapHelperLib {
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {
-        address[] memory path;
-        bool existsDirectPool = _existsPairPool(factory, zrc20, targetZRC20);
-
-        if (existsDirectPool) {
-            path = new address[](2);
-            path[0] = zrc20;
-            path[1] = targetZRC20;
+        console.log("zrc20: %s, targetZRC20: %s", zrc20, targetZRC20);
+        address pool = algebraPairFor(factory, zrc20, targetZRC20);
+        console.log("pool: %s", pool);
+        console.log("msg.sender: %s", msg.sender);
+        if (pool != address(0)) {
+            console.log("Direct pool exists");
+            // Direct pool exists
+            ISwapRouter.ExactInputSingleParams memory singleParams = ISwapRouter
+                .ExactInputSingleParams({
+                    tokenIn: zrc20,
+                    tokenOut: targetZRC20,
+                    recipient: vault,
+                    deadline: block.timestamp + maxDeadline,
+                    amountIn: amount,
+                    amountOutMinimum: minAmountOut,
+                    limitSqrtPrice: 0
+                });
+            console.log(
+                "zrc20 balance: %s",
+                IZRC20(zrc20).balanceOf(address(this))
+            );
+            IZRC20(zrc20).approve(router, amount);
+            return ISwapRouter(router).exactInputSingle(singleParams);
         } else {
-            // Check for intermediate liquidity via WZeta
-            address wZeta = IUniswapV2Router02(router).WETH(); // Replace with WZeta if needed
-            if (
-                !_existsPairPool(factory, zrc20, wZeta) ||
-                !_existsPairPool(factory, wZeta, targetZRC20)
-            ) {
-                revert IErrors.InsufficientLiquidity();
-            }
-            path = new address[](3);
-            path[0] = zrc20;
-            path[1] = wZeta;
-            path[2] = targetZRC20;
-        }
-        IZRC20(zrc20).approve(router, amount);
-        // Perform the swap
-        uint256[] memory amounts = IUniswapV2Router02(router)
-            .swapExactTokensForTokens(
-                amount,
-                minAmountOut,
-                path,
-                vault,
-                block.timestamp + maxDeadline
+            // Check for intermediate pools via Zeta token
+            console.log("Checking for intermediate pools via Zeta token");
+            address poolToZeta = algebraPairFor(factory, zrc20, wzetaToken);
+            address poolFromZeta = algebraPairFor(
+                factory,
+                wzetaToken,
+                targetZRC20
             );
 
-        return amounts[amounts.length - 1];
-    }
+            if (poolToZeta == address(0) || poolFromZeta == address(0)) {
+                revert IErrors.InsufficientLiquidity();
+            }
 
-    function _existsPairPool(
-        address uniswapV2Factory,
-        address zrc20A,
-        address zrc20B
-    ) internal view returns (bool) {
-        address uniswapPool = uniswapv2PairFor(
-            uniswapV2Factory,
-            zrc20A,
-            zrc20B
-        );
-        return
-            IZRC20(zrc20A).balanceOf(uniswapPool) > 0 &&
-            IZRC20(zrc20B).balanceOf(uniswapPool) > 0;
-    }
+            // Build path for intermediate swap: input -> Zeta -> target
+            address[] memory path = new address[](3);
+            path[0] = zrc20;
+            path[1] = wzetaToken;
+            path[2] = targetZRC20;
+            console.log("path[0]", path[0]);
+            console.log("path[1]", path[1]);
+            console.log("path[2]", path[2]);
+            console.log("vault: %s", vault);
+            console.log("amount: %s", amount);
 
-    function _isSufficientLiquidity(
-        address uniswapV2Factory,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        address[] memory path
-    ) internal view returns (bool) {
-        if (path.length != 2) revert IErrors.InvalidPathLength();
-        bool existsPairPool = _existsPairPool(
-            uniswapV2Factory,
-            path[0],
-            path[1]
-        );
-        if (!existsPairPool) {
-            return false;
+            ISwapRouter.ExactInputParams memory params;
+            params = ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(zrc20, wzetaToken, targetZRC20),
+                recipient: vault,
+                deadline: block.timestamp + maxDeadline,
+                amountIn: amount,
+                amountOutMinimum: minAmountOut
+            });
+            console.log("Approving ZRC20");
+            IZRC20(zrc20).approve(router, amount);
+            console.log("Swapping via Zeta token");
+            try
+                ISwapRouter(router).exactInput{value: 2000000000000000000}(
+                    params
+                )
+            returns (uint256 amountOut) {
+                console.log("Swap successful, output amount: ", amountOut);
+                return amountOut;
+            } catch (bytes memory reason) {
+                string memory revertReason;
+                if (reason.length > 0) {
+                    revertReason = abi.decode(reason, (string)); // Decodes the revert reason
+                    console.log(revertReason);
+                } else {
+                    revertReason = "Unknown error";
+                    console.log("Unknown error");
+                }
+                revert("Swap failed");
+            }
         }
-        uint256[] memory amounts = getAmountsOut(
-            uniswapV2Factory,
-            amountIn,
-            path
-        );
-        return amounts[amounts.length - 1] >= minAmountOut;
     }
 
     function getAmountOut(
@@ -140,6 +139,25 @@ library SwapHelperLib {
         uint numerator = amountInWithFee * reserveOut;
         uint denominator = (reserveIn * 1000) + amountInWithFee;
         amountOut = numerator / denominator;
+    }
+
+    function getReserves(
+        address factory,
+        address tokenA,
+        address tokenB
+    ) internal view returns (uint reserveA, uint reserveB) {
+        address pool = algebraPairFor(factory, tokenA, tokenB);
+        if (pool == address(0)) revert IErrors.InsufficientLiquidity();
+        IAlgebraPool algebraPool = IAlgebraPool(pool);
+        (uint160 liquidity, , , , , , ) = algebraPool.slot0();
+
+        uint reserve0 = liquidity; // Use liquidity as a proxy for reserves
+        uint reserve1 = liquidity; // This is specific to Algebra pools
+
+        (address token0, ) = sortTokens(tokenA, tokenB);
+        (reserveA, reserveB) = tokenA == token0
+            ? (reserve0, reserve1)
+            : (reserve1, reserve0);
     }
 
     function getAmountsOut(
@@ -162,26 +180,12 @@ library SwapHelperLib {
         }
     }
 
-    // fetches and sorts the reserves for a pair
-    function getReserves(
-        address factory,
-        address tokenA,
-        address tokenB
-    ) internal view returns (uint reserveA, uint reserveB) {
-        (address token0, ) = sortTokens(tokenA, tokenB);
-        (uint reserve0, uint reserve1, ) = IUniswapV2Pair(
-            pairFor(factory, tokenA, tokenB)
-        ).getReserves();
-        (reserveA, reserveB) = tokenA == token0
-            ? (reserve0, reserve1)
-            : (reserve1, reserve0);
-    }
-
-    function pairFor(
-        address factory,
-        address tokenA,
-        address tokenB
-    ) internal view returns (address pair) {
-        pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
+    function _existsPairPool(
+        address algebraFactory,
+        address zrc20A,
+        address zrc20B
+    ) internal view returns (bool) {
+        address algebraPool = algebraPairFor(algebraFactory, zrc20A, zrc20B);
+        return algebraPool != address(0);
     }
 }
