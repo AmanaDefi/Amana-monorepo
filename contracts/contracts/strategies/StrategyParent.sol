@@ -129,12 +129,20 @@ abstract contract StrategyParent is Ownable, IErrors {
         }
     }
 
+    /**
+     * @dev Sets the address of the old strategy to enable migration of funds.
+     * @param _oldStrategy The address of the old strategy contract.
+     */
     function setOldStrategy(address _oldStrategy) external onlyOwner {
         if (_oldStrategy == address(0)) revert InvalidAddress();
         if (_oldStrategy == address(this)) revert InvalidAddress();
         oldStrategy = _oldStrategy;
     }
 
+    /**
+     * @notice Returns the total underlying assets managed by the contract.
+     * @return The total amount of underlying assets in the contract.
+     */
     function totalUnderlyingAssets() public view virtual returns (uint256);
 
     /// @notice Invests ETH into the Aave pool.
@@ -149,8 +157,22 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 _crossChainTxId
     ) internal virtual;
 
+    /**
+     * @notice Deposits funds into the configured yield source.
+     * @dev This function is intended to be overridden in derived contracts to define specific deposit logic.
+     * @param amount The amount of funds to deposit into the yield source.
+     */
     function _depositFundsIntoYieldSource(uint256 amount) internal virtual;
 
+    /**
+     * @notice Allows the owner to manually resend an investment confirmation message.
+     * @param receiver The address of the receiver to whom the confirmation is sent.
+     * @param amount The amount of assets being invested.
+     * @param totalUnderlyingAssetsBefore The total underlying assets before the investment.
+     * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
+     * @param _executionNonce The execution nonce associated with the investment.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function manualResendInvestConfirmation(
         address receiver,
         uint256 amount,
@@ -169,6 +191,19 @@ abstract contract StrategyParent is Ownable, IErrors {
         );
     }
 
+    /**
+     * @dev Sends an investment confirmation message to the gateway.
+     * @param receiver The address of the receiver to whom the confirmation is sent.
+     * @param amount The amount of assets being invested.
+     * @param totalUnderlyingAssetsBefore The total underlying assets before the investment.
+     * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
+     * @param _executionNonce The execution nonce associated with the investment.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     *
+     * Notes:
+     * - This function encodes the investment details and sends them via the gateway contract.
+     * - Includes revert options in case of failure.
+     */
     function _sendInvestConfirmation(
         address receiver,
         uint256 amount,
@@ -206,6 +241,13 @@ abstract contract StrategyParent is Ownable, IErrors {
         );
     }
 
+    /**
+     * @notice Transfers assets from the current strategy to a new strategy during a strategy switch.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,
@@ -252,6 +294,20 @@ abstract contract StrategyParent is Ownable, IErrors {
         emit FundsDivested(_crossChainTxId, user, amount + fee);
     }
 
+    /**
+     * @notice Allows the owner to manually resend a funds and divest confirmation message.
+     * @dev Calls the internal `_sendFundsAndDivestConfirmation` function with the provided parameters.
+     * @param user The address of the user whose funds are being processed.
+     * @param receiver The address of the receiver of the funds.
+     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
+     * @param amount The amount of funds to process.
+     * @param fee The fee associated with the transaction.
+     * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
+     * @param totalUnderlyingAssetsBefore The total underlying assets before the divestment.
+     * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
+     * @param _executionNonce The execution nonce associated with the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function manualResendFundsAndDivestConfirmation(
         address user,
         address receiver,
@@ -278,6 +334,23 @@ abstract contract StrategyParent is Ownable, IErrors {
         );
     }
 
+    /**
+     * @dev Sends a funds and divest confirmation message to the Amana vault.
+     * @param user The address of the user whose funds are being processed.
+     * @param receiver The address of the receiver of the funds.
+     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
+     * @param amount The amount of funds to process.
+     * @param fee The fee associated with the transaction.
+     * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
+     * @param totalUnderlyingAssetsBefore The total underlying assets before the divestment.
+     * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
+     * @param _executionNonce The execution nonce associated with the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     *
+     * Notes:
+     * - Constructs the message payload for the funds and divestment confirmation.
+     * - Configures revert options in case of failure and sends the message using `_sendDepositAndCall`.
+     */
     function _sendFundsAndDivestConfirmation(
         address user,
         address receiver,
@@ -319,6 +392,13 @@ abstract contract StrategyParent is Ownable, IErrors {
         );
     }
 
+    /**
+     * @dev Sends a deposit and calls the `amanaVault` with the specified outgoing message and revert options.
+     * @param amount The amount of native tokens to send with the transaction.
+     * @param amanaVault The address of the vault to which the deposit and call are sent.
+     * @param outgoingMessage The payload to be passed to the `amanaVault`.
+     * @param revertOptions Options specifying how to handle transaction reverts.
+     */
     function _sendDepositAndCall(
         uint256 amount,
         address amanaVault,
@@ -326,10 +406,24 @@ abstract contract StrategyParent is Ownable, IErrors {
         RevertOptions memory revertOptions
     ) internal virtual;
 
+    /**
+     * @notice Withdraws funds from the configured yield source.
+     * @dev This function is intended to be overridden in derived contracts to define specific withdrawal logic.
+     * @param amount The amount of funds to withdraw from the yield source.
+     * @return The amount of funds successfully withdrawn.
+     */
     function _withdrawFundsFromYieldSource(
         uint256 amount
     ) internal virtual returns (uint256);
 
+    /**
+     * @notice Sends an update of total underlying assets managed by this contract to the configured vault.
+     * @dev Encodes the message payload and uses the GatewayEVM contract to send the message.
+     *
+     * Notes:
+     * - Configures revert options in case of failure.
+     * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
+     */
     function sendTotalUnderlyingAssetsToVault() external {
         uint256 underlyingAssets = totalUnderlyingAssets();
         uint256 currentExecutionNonce = executionNonce;

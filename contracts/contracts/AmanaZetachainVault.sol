@@ -124,6 +124,13 @@ contract AmanaZetachainVault is AmanaVaultBase {
         emit Deposit(caller, receiver, assets, shares);
     }
 
+    /**
+     * @dev Handles the investment of assets into the strategy and mints shares for the receiver.
+     *      This function updates the vault's internal accounting, approves the strategy to spend the assets,
+     *      and calls the strategy's `invest` function to deposit the assets.
+     * @param amount The amount of assets to invest.
+     * @param receiver The address of the user receiving the shares.
+     **/
     function _investAssets(
         uint256 amount,
         address receiver,

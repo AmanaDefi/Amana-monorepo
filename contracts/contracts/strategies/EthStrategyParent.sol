@@ -37,6 +37,13 @@ abstract contract EthStrategyParent is StrategyParent {
         emit FundsInvested(_crossChainTxId, userAddress, amount);
     }
 
+    /**
+     * @dev Sends a deposit and calls the `amanaVault` with the specified outgoing message and revert options.
+     * @param amount The amount of native tokens to send with the transaction.
+     * @param amanaVault The address of the vault to which the deposit and call are sent.
+     * @param outgoingMessage The payload to be passed to the `amanaVault`.
+     * @param revertOptions Options specifying how to handle transaction reverts.
+     */
     function _sendDepositAndCall(
         uint256 amount,
         address amanaVault,
@@ -50,6 +57,12 @@ abstract contract EthStrategyParent is StrategyParent {
         );
     }
 
+    /**
+     * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
+     *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
+     * @param currentExecutionNonce The current execution nonce from the old strategy.
+     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
+     */
     function depositFromOldStrategy(
         uint256,
         uint256 currentExecutionNonce,

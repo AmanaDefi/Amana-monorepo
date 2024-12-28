@@ -33,7 +33,7 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
         receiptToken = I4626Vault(_receiptTokenAddress);
     }
 
-    /// @notice Deposits funds into the Aave pool.
+    /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
         bool success = inputToken.approve(address(receiptToken), amount);
@@ -46,6 +46,11 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
         }
     }
 
+    /**
+     * @notice Withdraws funds from the configured yield source.
+     * @param amount The amount of funds to withdraw from the yield source.
+     * @return amountWithdrawn The amount of funds successfully withdrawn.
+     */
     function _withdrawFundsFromYieldSource(
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
@@ -56,6 +61,13 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
         );
     }
 
+    /**
+     * @notice Transfers assets from the current strategy to a new strategy.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,

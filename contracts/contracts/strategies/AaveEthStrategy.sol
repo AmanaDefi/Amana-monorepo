@@ -57,6 +57,11 @@ contract AaveEthStrategy is EthStrategyParent {
         aavePool.supply(address(weth), amount, address(this), 0);
     }
 
+    /**
+     * @notice Withdraws funds from the configured yield source.
+     * @param amount The amount of funds to withdraw from the yield source.
+     * @return amountWithdrawn The amount of funds successfully withdrawn.
+     */
     function _withdrawFundsFromYieldSource(
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
@@ -68,6 +73,13 @@ contract AaveEthStrategy is EthStrategyParent {
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
+    /**
+     * @notice Transfers assets from the current strategy to a new strategy.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,

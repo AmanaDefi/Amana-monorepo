@@ -131,7 +131,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     /**
      * @dev Processes a confirmation message from the strategy.
-     *      This function validates and stores the confirmation details for deposit or withdrawal actions
+     *      This function validates and stores the confirmation details for deposit, withdrawal or totalAsset update actions
      *      and then attempts to process all pending confirmations in order.
      * @param user The address of the user associated with the confirmation.
      * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
@@ -179,6 +179,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _processBufferedConfirmations();
     }
 
+    /**
+     * @dev Allows for manual input of a confirmation message, mimicking _processConfirmationFromStrategy.
+     * @param user The address of the user associated with the confirmation.
+     * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
+     * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
+     * @param fee The fee associated with the transaction.
+     * @param withdrawChainId The chain ID of the withdrawal, if applicable.
+     * @param isDeposit A boolean indicating if the confirmation is for a deposit (true) or withdrawal (false).
+     * @param totalAssetsBefore The total assets in the vault before the operation.
+     * @param totalAssetsAfter The total assets in the vault after the operation.
+     * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
+     */
     function manuallyAddConfirmation(
         address user,
         address receiver,
@@ -335,11 +347,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     /**
      * @dev Returns the total assets currently held by the vault, including assets directly held
      *      and the latest update from the strategy's total assets.
+     *      1 unit of virtual assets is added to prevent donation attacks and division by zero.
      * @return The total amount of assets held by the vault.
      * @notice Overrides the {IERC4626-totalAssets} function.
      */
     function totalAssets() public view virtual override returns (uint256) {
-        // Get the amount of USDC held directly by the vault
         return latestTotalAssetsUpdateFromStrategy + 1;
     }
 
@@ -655,6 +667,16 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         emit Withdrawn(user, receiver, outputAmount, shares, _crossChainTxId);
     }
 
+    /**
+     * @dev Handles revert events based on the provided revert message hash.
+     *      This function determines the appropriate course of action depending on the type of revert and emits the corresponding event.
+     * @param revertMessage The revert message as a string.
+     * @param _crossChainTxId The unique identifier for the cross-chain transaction.
+     * @param user The address of the user associated with the transaction.
+     * @param userZRC20 The address of the ZRC20 token used in the transaction.
+     * @param userChainId The chain ID of the user's originating chain.
+     * @param amount The amount of tokens involved in the transaction.
+     */
     function _handleRevertEvent(
         string memory revertMessage,
         uint256 _crossChainTxId,
@@ -690,6 +712,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
     }
 
+    /**
+     * @dev Handles gas fee calculation and approval for cross-chain operations.
+     *      This function retrieves the gas fee for the given gas limit, ensures the required amount is available,
+     *      and approves the gateway to use the gas fee.
+     * @param gasLimit The maximum amount of gas to be used for the transaction.
+     * @return gasZRC20 The address of the ZRC20 token representing the gas fee.
+     * @return gasFee The amount of gas fee required for the transaction.
+     **/
     function _handleGasFee(
         uint256 gasLimit
     ) private returns (address gasZRC20, uint256 gasFee) {

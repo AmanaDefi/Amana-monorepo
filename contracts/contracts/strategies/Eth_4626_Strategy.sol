@@ -61,6 +61,13 @@ contract Eth_4626_Strategy is EthStrategyParent {
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
+    /**
+     * @notice Transfers assets from the current strategy to a new strategy.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,
