@@ -108,7 +108,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         } else {
             if (context.sender == address(0)) revert CantBeZeroAddress();
             if (amount > 0) {
-                _depositComingFromConnectedChain(context.sender, amount, zrc20);
+                _depositComingFromConnectedChain(
+                    context.sender,
+                    context.chainID,
+                    amount,
+                    zrc20
+                );
             } else {
                 (address withdrawZRC20, uint256 withdrawAmount) = abi.decode(
                     message,

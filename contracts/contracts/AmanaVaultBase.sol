@@ -10,7 +10,6 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContrac
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 
 import "./interfaces/ISystem.sol";
-import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 
@@ -32,12 +31,14 @@ abstract contract AmanaVaultBase is
     // Constants
     address constant _GATEWAY_ADDRESS =
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
+    address constant _SYSTEM_ADDRESS =
+        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
     bytes32 internal constant VAULT_STORAGE_LOCATION =
         0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
 
     uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
-    uint256 public constant GAS_LIMIT_FOR_CALL = 350000; // bring this down as far as possible, as it doesn't get returned
-    uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 350000; // bring this down as far as possible, as it doesn't get returned
+    uint256 public constant GAS_LIMIT_FOR_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
+    uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
 
     uint256 crossChainTxId;
 
@@ -343,12 +344,18 @@ abstract contract AmanaVaultBase is
      */
     function _depositComingFromConnectedChain(
         address receiver,
+        uint256 userChainId,
         uint256 assets,
         address zrc20source
     ) internal {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
+        }
+        if (zrc20source == address(0)) {
+            zrc20source = ISystem(_SYSTEM_ADDRESS).gasCoinZRC20ByChainId(
+                userChainId
+            );
         }
         uint256 outputAmount = assets;
         uint256 minAmountOut = 0; // TODO: Implement slippage control in production
@@ -359,7 +366,7 @@ abstract contract AmanaVaultBase is
                 address(asset()),
                 minAmountOut,
                 address(this),
-                20000
+                200
             );
         }
         _investAssets(

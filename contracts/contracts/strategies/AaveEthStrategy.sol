@@ -3,58 +3,68 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/I4626Vault.sol";
+import "../interfaces/IAavePool.sol";
+import "../interfaces/IAaveReceiptToken.sol";
 import "../interfaces/IWrappedTokenGatewayV3.sol";
 import "../interfaces/IWETH.sol";
 import "./EthStrategyParent.sol";
 
-/// @title Eth_4626_Strategy
+// Wrapped Token Gateway (Base): 0x729b3EA8C005AbC58c9150fb57Ec161296F06766
+// ABasWETH: 0xD4a0e0b9149BCee3C920d2E00b5dE09138fd8bb7
+// Aave Pool (Base): 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5
+// Base Weth: 0x4200000000000000000000000000000000000006
+
+/// @title AaveEthStrategy
 /// @notice Base contract for Ethereum-based strategies using Aave and ZetaChain.
 /// @dev Handles ETH investments and divestments for strategies on EVM-compatible chains.
-contract Eth_4626_Strategy is EthStrategyParent {
+contract AaveEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
     IWETH public immutable weth;
-    I4626Vault public immutable receiptToken;
+    IAavePool public immutable aavePool;
+    IAaveReceiptToken public immutable receiptToken;
+    IWrappedTokenGatewayV3 public immutable tokenGateway;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
     /// @param _amanaVault Address of the Amana vault.
     /// @param _receiptTokenAddress Address of the Aave receipt token.
     /// @param _gateway Address of the ZetaChain Gateway.
+    /// @param _wrappedTokenGateway Address of the Wrapped Token Gateway.
     /// @param _wethAddress Address of the WETH contract.
     constructor(
         string memory _name,
         address _amanaVault,
         address _receiptTokenAddress,
         address _gateway,
+        address _wrappedTokenGateway,
         address _wethAddress
     ) StrategyParent(_name, _amanaVault, _gateway) {
-        receiptToken = I4626Vault(_receiptTokenAddress);
+        receiptToken = IAaveReceiptToken(_receiptTokenAddress);
+        aavePool = IAavePool(receiptToken.POOL());
+        tokenGateway = IWrappedTokenGatewayV3(_wrappedTokenGateway);
         weth = IWETH(_wethAddress);
     }
 
-    /// @notice deposits funds into the yield source.
+    /// @notice Deposits funds into the Aave pool.
+    /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
         weth.deposit{value: amount}();
-        bool success = weth.approve(address(receiptToken), amount);
+        bool success = weth.approve(address(aavePool), amount);
         if (!success) {
             revert ApprovalFailed();
         }
-        receiptToken.deposit(amount, address(this));
+        aavePool.supply(address(weth), amount, address(this), 0);
     }
 
-    /// @notice Withdraws funds from the Aave pool.
-    /// @param amount Amount to be withdrawn.
     function _withdrawFundsFromYieldSource(
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
-        amountWithdrawn = receiptToken.withdraw(
+        amountWithdrawn = aavePool.withdraw{gas: 200000}(
+            address(weth),
             amount,
-            address(this), // receiver
-            address(this) // owner
+            address(this)
         );
-
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
@@ -63,15 +73,19 @@ contract Eth_4626_Strategy is EthStrategyParent {
         uint256 currentExecutionNonce,
         uint256 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            type(uint256).max
+        );
 
-        IStrategy(newStrategy).depositFromOldStrategy{
-            value: strategyTotalBalance
-        }(strategyTotalBalance, currentExecutionNonce, _crossChainTxId);
+        IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
+            amountWithdrawn,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            amountWithdrawn,
             _crossChainTxId,
             currentExecutionNonce
         );
@@ -80,7 +94,6 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @notice Gets the total assets held in the strategy.
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
-        uint256 shares = receiptToken.balanceOf(address(this));
-        return receiptToken.convertToAssets(shares);
+        return receiptToken.balanceOf(address(this));
     }
 }

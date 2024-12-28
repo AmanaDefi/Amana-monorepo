@@ -10,6 +10,7 @@ import "./tasks/deploySwapHelper";
 import "./tasks/deployMockERC20";
 import "./tasks/deployMock4626";
 import "./tasks/deployERC20_4626_Strategy";
+import "./tasks/deployZetachainStrategy";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";

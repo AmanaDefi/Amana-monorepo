@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
+import "./interfaces/IStrategy.sol";
 
 /// @title AmanaZetachainVault
 /// @notice An ERC4626-compliant vault for managing cross-chain assets on ZetaChain.
@@ -24,7 +25,12 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (amount > 0) {
-            _depositComingFromConnectedChain(context.sender, amount, zrc20);
+            _depositComingFromConnectedChain(
+                context.sender,
+                context.chainID,
+                amount,
+                zrc20
+            );
         } else {
             (address withdrawZRC20, uint256 withdrawAmount) = abi.decode(
                 message,
