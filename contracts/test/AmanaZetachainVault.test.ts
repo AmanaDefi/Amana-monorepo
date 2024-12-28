@@ -48,7 +48,7 @@ async function setup() {
       {
         forking: {
           jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-          blockNumber: 6337797,
+          blockNumber: 6345093,
         },
       },
     ]
@@ -88,8 +88,7 @@ async function setup() {
     "Mock Strategy",
     amanaVault.address,
     VAULT_ASSET,
-    mockVault.address,
-    ZEVM_GATEWAY_ADDRESS
+    mockVault.address
   );
   await strategy.deployed();
 
@@ -199,8 +198,7 @@ describe("AmanaZetachainVault Tests", function () {
       "Mock Strategy",
       amanaVault.address,
       VAULT_ASSET,
-      mockVault.address,
-      ZEVM_GATEWAY_ADDRESS
+      mockVault.address
     );
     await strategy2.deployed();
     const newStrategyAddress = strategy2.address;

@@ -64,7 +64,7 @@ const config: HardhatUserConfig = {
       chainId: 7000,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
       forking: {
         url: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 6338797
+        blockNumber: 6345093
       },
       allowUnlimitedContractSize: true,
     },

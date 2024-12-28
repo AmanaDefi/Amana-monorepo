@@ -221,7 +221,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         {
           forking: {
             jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 6337797,
+            blockNumber: 6345093,
           },
         },
       ]
