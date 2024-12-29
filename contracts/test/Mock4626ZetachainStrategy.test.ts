@@ -45,8 +45,7 @@ describe("Mock4626ZetachainStrategy - Full Coverage", function () {
       "Mock Strategy",
       AMANA_VAULT_ADDRESS,
       mockERC20.address,
-      mockVault.address,
-      GATEWAY_ADDRESS
+      mockVault.address
     );
     await strategy.deployed();
 
