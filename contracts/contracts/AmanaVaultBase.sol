@@ -39,6 +39,7 @@ abstract contract AmanaVaultBase is
     uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
     uint256 public constant GAS_LIMIT_FOR_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
     uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
+    uint256 public slippage;
 
     uint256 crossChainTxId;
 
@@ -132,6 +133,7 @@ abstract contract AmanaVaultBase is
         $.totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         gasTank = IGasTank(gasTank_);
         crossChainTxId = 1; // Initialize to 1 to avoid zero value (reserved for asset update)
+        slippage = 200; // 2%
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -156,6 +158,11 @@ abstract contract AmanaVaultBase is
         uint256 amount,
         bytes calldata message
     ) external virtual override;
+
+    function setSlippage(uint256 _newSlippage) external onlyOwner {
+        require(_newSlippage <= 10000, "Slippage too high");
+        slippage = _newSlippage;
+    }
 
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
@@ -358,13 +365,12 @@ abstract contract AmanaVaultBase is
             );
         }
         uint256 outputAmount = assets;
-        uint256 minAmountOut = 0; // TODO: Implement slippage control in production
         if (zrc20source != address(asset())) {
             outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
                 zrc20source,
                 assets,
                 address(asset()),
-                minAmountOut,
+                slippage,
                 address(this),
                 200
             );
@@ -438,15 +444,13 @@ abstract contract AmanaVaultBase is
                 uint256(0) // onRevertGasLimit
             );
 
-            uint256 minAmountOut = 0; // TODO: Control for slippage in production
-
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
                 outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
                     address(asset()),
                     amount,
                     withdrawZRC20,
-                    minAmountOut,
+                    slippage,
                     address(this),
                     200
                 );

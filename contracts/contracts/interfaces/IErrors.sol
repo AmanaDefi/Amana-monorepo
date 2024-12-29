@@ -39,4 +39,5 @@ interface IErrors {
     error InsufficientLiquidity();
     error InsufficientInputAmount();
     error InvalidPath();
+    error InvalidTokenPair();
 }

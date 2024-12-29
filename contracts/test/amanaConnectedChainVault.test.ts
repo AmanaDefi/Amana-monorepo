@@ -6,6 +6,8 @@ import { AmanaConnectedChainVault, IERC20 } from "../typechain";
 import { setTokenBalance } from "./utils";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import dotenv from "dotenv";
+import { PriceServiceConnection } from "@pythnetwork/price-service-client";
+
 dotenv.config();
 
 import {
@@ -25,6 +27,10 @@ describe("AmanaConnectedChainVault Tests", function () {
   let ethEth: IERC20;
   let usdcBSC: IERC20;
   let withdrawZRC20: string;
+
+  const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43"; // Replace with your Pyth contract address
+  const PRICE_FEED_ID = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"; // ETH/USD price feed ID
+  const HERMES_ENDPOINT = `https://hermes.pyth.network/api/latest_vaas?ids[]=${PRICE_FEED_ID}`;
 
   const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
   const VAULT_ASSET = ZC_ETH_ETH_ADDRESS;
@@ -56,10 +62,48 @@ describe("AmanaConnectedChainVault Tests", function () {
     // Use this function if you need global setup before tests
   });
 
+  async function updatePythPrices(pythContract: any, signer: Signer): Promise<void> {
+
+    const connection = new PriceServiceConnection("https://hermes.pyth.network", {
+      priceFeedRequestConfig: {
+        // Provide this option to retrieve signed price updates for on-chain contracts.
+        // Ignore this option for off-chain use.
+        binary: true,
+      },
+    }); // See Hermes endpoints section below for other endpoints
+
+    const priceIds = [
+      "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD price id
+    ];
+
+    // Fetch price updates
+    const priceUpdateDataBase64 = await connection.getLatestVaas(priceIds);
+
+    if (!priceUpdateDataBase64 || priceUpdateDataBase64.length === 0) {
+      throw new Error("No price updates available from Hermes");
+    }
+
+    // Decode base64 data into binary (Buffer)
+    const priceUpdateData: Uint8Array[] = priceUpdateDataBase64.map((data) =>
+      Buffer.from(data, "base64")
+    );
+
+    const updateFee = await pythContract.getUpdateFee(priceUpdateData);
+
+    const tx = await pythContract
+      .connect(signer)
+      .updatePriceFeeds(priceUpdateData, { value: updateFee });
+
+    await tx.wait();
+  }
+
   async function simulateDepositCallFromBase(
     user: Signer,
-    depositAmount: BigNumber
+    depositAmount: BigNumber,
+    pythContract: any
   ): Promise<void> {
+    await updatePythPrices(pythContract, user);
+
     // Set token balance for the vault
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, amanaVault.address, depositAmount);
 
@@ -154,8 +198,11 @@ describe("AmanaConnectedChainVault Tests", function () {
 
   async function simulateWithdrawCallFromBase(
     user: Signer,
-    withdrawAmount: BigNumber
+    withdrawAmount: BigNumber,
+    pythContract: any
   ): Promise<void> {
+    await updatePythPrices(pythContract, user);
+
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
       ["address", "uint256"],
       [ZC_ETH_BASE_ADDRESS, withdrawAmount]
@@ -221,13 +268,14 @@ describe("AmanaConnectedChainVault Tests", function () {
         {
           forking: {
             jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 6345093,
+            blockNumber: 6366501,
           },
         },
       ]
     });
 
     [owner, user1, user2] = await ethers.getSigners();
+    const pythContract = await ethers.getContractAt("contracts/interfaces/IPyth.sol:IPyth", PYTH_CONTRACT_ADDRESS, owner);
 
     ethBase = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
     ethEth = await ethers.getContractAt("IERC20", ZC_ETH_ETH_ADDRESS);
@@ -283,7 +331,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
     await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
 
-    return { owner, user1, user2, depositAmount1, depositAmount2, rewardAmount, ethBase, ethEth, usdcBSC, amanaVault, gatewayZEVM, withdrawZRC20 };
+    return { owner, user1, user2, pythContract, depositAmount1, depositAmount2, rewardAmount, ethBase, ethEth, usdcBSC, amanaVault, gatewayZEVM, withdrawZRC20 };
   }
 
   describe("Cross-Chain Deposit and Withdraw Workflow", function () {
@@ -369,12 +417,12 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should calculate and deduct the performance fee on withdrawal", async function () {
-      const { user1, depositAmount1, amanaVault, ethEth } = await loadFixture(setup);
+      const { user1, depositAmount1, amanaVault, ethEth, pythContract } = await loadFixture(setup);
 
       // Step 1: Simulate a deposit by User1
       await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1));
       await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
-      await simulateDepositCallFromBase(user1, depositAmount1);
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
 
       const initialTotalAssets = depositAmount1;
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
@@ -382,7 +430,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       // Step 2: Simulate a deposit by User2
       await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user2.getAddress(), depositAmount1.mul(20).div(1));
       await ethEth.connect(user2).approve(amanaVault.address, depositAmount1);
-      await simulateDepositCallFromBase(user2, depositAmount1);
+      await simulateDepositCallFromBase(user2, depositAmount1, pythContract);
       const profit = depositAmount1.div(10); // 10% profit
 
       // The confirmation from the second deposit shows that user1 has made a profit already
@@ -394,7 +442,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const expectedFee = profit.mul(FEE_RATE).div(10000);
       const withdrawAmount = depositAmount1.div(2); // Withdraw everything except the fee
 
-      await simulateWithdrawCallFromBase(user1, withdrawAmount);
+      await simulateWithdrawCallFromBase(user1, withdrawAmount, pythContract);
 
       await expect(simulateConfirmWithdraw(user1, withdrawAmount, expectedFee, updatedTotalAssets, 3, 3))
         .to.emit(amanaVault, "PerformanceFeePaid")
@@ -426,12 +474,13 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should correctly handle _crossChainInvest revert during cross-chain deposits", async function () {
-      const { user1, amanaVault } = await loadFixture(setup);
+      const { user1, amanaVault, pythContract } = await loadFixture(setup);
       const depositAmount = ethers.utils.parseUnits("0.1", 18);
 
       await simulateDepositCallFromBase(
         user1,
-        depositAmount
+        depositAmount,
+        pythContract
       )
 
       // Simulate _crossChainInvest reverting
@@ -462,17 +511,17 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should withdraw the maximum amount possible for a user", async function () {
-      const { user1, depositAmount1, amanaVault } = await loadFixture(setup);
+      const { user1, depositAmount1, amanaVault, pythContract } = await loadFixture(setup);
 
       await simulateDepositCallFromBase(
         user1,
-        depositAmount1
+        depositAmount1, pythContract
       )
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1)
 
       // Withdraw the maximum amount
       const maxWithdrawAmount = await amanaVault.maxWithdraw(await user1.getAddress());
-      await simulateWithdrawCallFromBase(user1, maxWithdrawAmount)
+      await simulateWithdrawCallFromBase(user1, maxWithdrawAmount, pythContract)
 
       await expect(simulateConfirmWithdraw(user1, maxWithdrawAmount, BigNumber.from("0"), depositAmount1, 2, 2))
         .to.emit(amanaVault, "ReturnFundsToUserSent")
@@ -480,18 +529,18 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should fail to withdraw more than the user balance", async function () {
-      const { user1, depositAmount1, amanaVault } = await loadFixture(setup);
+      const { user1, depositAmount1, amanaVault, pythContract } = await loadFixture(setup);
 
       await simulateDepositCallFromBase(
         user1,
-        depositAmount1
+        depositAmount1, pythContract
       )
       simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       // Attempt to withdraw more than balance
       const excessiveWithdrawAmount = depositAmount1.mul(2); // Double the deposited amount
 
-      await expect(simulateWithdrawCallFromBase(user1, excessiveWithdrawAmount))
+      await expect(simulateWithdrawCallFromBase(user1, excessiveWithdrawAmount, pythContract))
         .to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
     });
 
@@ -593,7 +642,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should distribute and claim rewards (time-based)", async function () {
-      const { user1, depositAmount1, usdcBSC, amanaVault, owner } = await loadFixture(setup);
+      const { user1, depositAmount1, usdcBSC, amanaVault, owner, pythContract } = await loadFixture(setup);
 
       // Get the current block timestamp to calculate the reward period
       const currentBlock = await ethers.provider.getBlock("latest");
@@ -610,7 +659,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await amanaVault.connect(owner).setRewardsInterval(startTimestamp, endTimestamp, rewardAmount);
 
       // Simulate deposit for User1
-      await simulateDepositCallFromBase(user1, depositAmount1);
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
 
       // Confirm the deposit for User1
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
@@ -640,7 +689,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should correctly distribute rewards proportional to user shares using precise timestamps", async function () {
-      const { user1, user2, depositAmount1, depositAmount2, usdcBSC, amanaVault, owner } = await loadFixture(setup);
+      const { user1, user2, depositAmount1, depositAmount2, usdcBSC, amanaVault, owner, pythContract } = await loadFixture(setup);
 
       const rewardAmount = ethers.utils.parseUnits("1000", 18);
       const rewardDuration = 3600; // 1 hour in seconds
@@ -658,10 +707,10 @@ describe("AmanaConnectedChainVault Tests", function () {
       await setTokenBalance(ZC_USDC_BSC_ADDRESS, amanaVault.address, rewardAmount);
 
       // Simulate deposits
-      await simulateDepositCallFromBase(user1, depositAmount1);
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
-      await simulateDepositCallFromBase(user2, depositAmount2);
+      await simulateDepositCallFromBase(user2, depositAmount2, pythContract);
       await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 2);
 
       // Move to halfway through the rewards duration
