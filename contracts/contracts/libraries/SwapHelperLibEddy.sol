@@ -30,10 +30,22 @@ address constant USDT_POL_ADDRESS = 0xdbfF6471a79E5374d771922F2194eccc42210B9F;
 address constant USDC_POL_ADDRESS = 0xfC9201f4116aE6b054722E10b98D904829b469c3;
 
 library SwapHelperLibEddy {
+    /**
+     * @notice Determines if a token address corresponds to an ETH token.
+     * @dev Compares the token address against predefined ETH token addresses.
+     * @param token The address of the token to check.
+     * @return True if the token is an ETH token, false otherwise.
+     */
     function isEthToken(address token) internal pure returns (bool) {
         return token == ETH_ETH_ADDRESS || token == ETH_BASE_ADDRESS;
     }
 
+    /**
+     * @notice Determines if a token address corresponds to a USD stablecoin.
+     * @dev Compares the token address against predefined USD stablecoin addresses.
+     * @param token The address of the token to check.
+     * @return True if the token is a USD stablecoin, false otherwise.
+     */
     function isUsdStablecoin(address token) internal pure returns (bool) {
         return
             token == USDC_ETH_ADDRESS ||
@@ -41,6 +53,16 @@ library SwapHelperLibEddy {
             token == USDC_BSC_ADDRESS;
     }
 
+    /**
+     * @notice Calculates the minimum output amount based on the input token, output token, and slippage tolerance.
+     * @dev Adjusts the output based on slippage and the price from a price oracle for cross-category token swaps.
+     * @param inputToken The address of the input token.
+     * @param outputToken The address of the output token.
+     * @param amount The input amount in token units.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @return The minimum acceptable output amount.
+     * @custom:reverts InvalidTokenPair if the token pair is not supported.
+     */
     function calculateMinAmountOut(
         address inputToken,
         address outputToken,
@@ -72,6 +94,16 @@ library SwapHelperLibEddy {
         }
     }
 
+    /**
+     * @notice Sorts two token addresses in ascending order.
+     * @dev Ensures consistent order for token pairs in Uniswap and other protocols.
+     * @param tokenA The first token address.
+     * @param tokenB The second token address.
+     * @return token0 The address of the token that comes first.
+     * @return token1 The address of the token that comes second.
+     * @custom:reverts CantBeIdenticalAddresses if the two token addresses are identical.
+     * @custom:reverts CantBeZeroAddress if one of the token addresses is the zero address.
+     */
     function sortTokens(
         address tokenA,
         address tokenB
@@ -83,7 +115,13 @@ library SwapHelperLibEddy {
         if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
     }
 
-    function uniswapv2PairFor(
+    /**
+     * @notice Computes the address of a Uniswap V2 pair for two tokens.
+     * @dev Uses Uniswap's init code hash to derive the pair address.
+     * @param tokenA The first token address.
+     * @param tokenB The second token address.
+     * @return pair The address of the Uniswap V2 pair for the tokens.
+     */ function uniswapv2PairFor(
         address tokenA,
         address tokenB
     ) internal pure returns (address pair) {
@@ -104,6 +142,18 @@ library SwapHelperLibEddy {
         );
     }
 
+    /**
+     * @notice Swaps a specific amount of tokens for another token.
+     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
+     * @param zrc20 The address of the input token.
+     * @param amount The amount of input tokens to swap.
+     * @param targetZRC20 The address of the output token.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @param vault The address where the swapped tokens will be sent.
+     * @param maxDeadline The maximum deadline for the swap to complete.
+     * @return The amount of output tokens received.
+     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     */
     function swapExactTokensForTokens(
         address zrc20,
         uint256 amount,
@@ -154,6 +204,13 @@ library SwapHelperLibEddy {
         return amounts[amounts.length - 1];
     }
 
+    /**
+     * @notice Checks if a liquidity pool exists for two tokens.
+     * @dev Verifies the balance of both tokens in the Uniswap V2 pair contract.
+     * @param zrc20A The address of the first token.
+     * @param zrc20B The address of the second token.
+     * @return True if the liquidity pool exists, false otherwise.
+     */
     function _existsPairPool(
         address zrc20A,
         address zrc20B
@@ -164,6 +221,15 @@ library SwapHelperLibEddy {
             IZRC20(zrc20B).balanceOf(uniswapPool) > 0;
     }
 
+    /**
+     * @notice Checks if sufficient liquidity exists for a token swap.
+     * @dev Validates liquidity and calculates output using Uniswap's formula.
+     * @param amountIn The amount of input tokens.
+     * @param minAmountOut The minimum acceptable output amount.
+     * @param path The token swap path.
+     * @return True if sufficient liquidity exists, false otherwise.
+     * @custom:reverts InvalidPathLength if the path length is not exactly 2.
+     */
     function _isSufficientLiquidity(
         uint256 amountIn,
         uint256 minAmountOut,
@@ -178,6 +244,16 @@ library SwapHelperLibEddy {
         return amounts[amounts.length - 1] >= minAmountOut;
     }
 
+    /**
+     * @notice Calculates the output amount for a given input amount and reserves.
+     * @dev Uses Uniswap's constant product formula with a fee factor.
+     * @param amountIn The amount of input tokens.
+     * @param reserveIn The reserve of the input token in the pool.
+     * @param reserveOut The reserve of the output token in the pool.
+     * @return amountOut The amount of output tokens.
+     * @custom:reverts InsufficientInputAmount if `amountIn` is zero.
+     * @custom:reverts InsufficientLiquidity if either reserve is zero.
+     */
     function getAmountOut(
         uint amountIn,
         uint reserveIn,
@@ -195,6 +271,14 @@ library SwapHelperLibEddy {
         amountOut = numerator / denominator;
     }
 
+    /**
+     * @notice Calculates the output amounts for a series of token swaps.
+     * @dev Iterates over the path to calculate the amount for each swap step.
+     * @param amountIn The amount of input tokens.
+     * @param path The token swap path.
+     * @return amounts An array of output amounts for each swap step.
+     * @custom:reverts InvalidPath if the path length is less than 2.
+     */
     function getAmountsOut(
         uint amountIn,
         address[] memory path
@@ -213,7 +297,14 @@ library SwapHelperLibEddy {
         }
     }
 
-    // fetches and sorts the reserves for a pair
+    /**
+     * @notice Fetches and sorts the reserves for a token pair.
+     * @dev Uses the Uniswap V2 pair contract to retrieve reserve data.
+     * @param tokenA The address of the first token.
+     * @param tokenB The address of the second token.
+     * @return reserveA The reserve of tokenA.
+     * @return reserveB The reserve of tokenB.
+     */
     function getReserves(
         address tokenA,
         address tokenB
@@ -227,6 +318,13 @@ library SwapHelperLibEddy {
             : (reserve1, reserve0);
     }
 
+    /**
+     * @notice Fetches the address of the Uniswap V2 pair for two tokens.
+     * @dev Calls the Uniswap V2 factory to retrieve the pair address.
+     * @param tokenA The address of the first token.
+     * @param tokenB The address of the second token.
+     * @return pair The address of the Uniswap V2 pair contract.
+     */
     function pairFor(
         address tokenA,
         address tokenB

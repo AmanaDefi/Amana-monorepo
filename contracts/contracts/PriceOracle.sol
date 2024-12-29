@@ -36,6 +36,12 @@ contract PriceOracle {
         return uint256(uint64(price.price));
     }
 
+    /**
+     * @notice Updates the on-chain price feeds using the provided price updates from Pyth.
+     * @dev This function calculates the required fee for the price update and ensures the caller has sent sufficient funds to cover it.
+     *      The `pyth.updatePriceFeeds` method is called to update the prices on-chain.
+     * @param priceUpdate An array of encoded price update data to be submitted to the Pyth contract.
+     */
     function updatePrices(bytes[] calldata priceUpdate) external payable {
         uint256 updateFee = pyth.getUpdateFee(priceUpdate);
         require(msg.value >= updateFee, "Insufficient fee");
