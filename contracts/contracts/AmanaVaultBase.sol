@@ -33,52 +33,23 @@ abstract contract AmanaVaultBase is
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
-    bytes32 internal constant VAULT_STORAGE_LOCATION =
-        0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
-
     uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
     uint256 public constant GAS_LIMIT_FOR_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
     uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
+
+    // Variables
+    address public strategyAddress;
+    address public treasury;
+    uint16 public perfFee;
+    uint256 internal totalPrincipal;
+    mapping(address => uint256) internal userPrincipal;
     uint256 public slippage;
-
     uint256 crossChainTxId;
-
     IGasTank gasTank;
-
-    struct VaultStorage {
-        address strategyAddress;
-        address treasury;
-        uint16 perfFee;
-        uint256 totalPrincipal;
-        mapping(address => uint256) userPrincipal;
-    }
-
-    // Buffer for out-of-order confirmations
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
         _;
-    }
-
-    function _getVaultStorage() internal pure returns (VaultStorage storage $) {
-        assembly {
-            $.slot := VAULT_STORAGE_LOCATION
-        }
-    }
-
-    function getStrategy() external view returns (address) {
-        VaultStorage storage $ = _getVaultStorage();
-        return ($.strategyAddress);
-    }
-
-    function getTreasury() external view returns (address) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.treasury;
-    }
-
-    function getPerfFee() external view returns (uint16) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.perfFee;
     }
 
     event StrategyUpdated(address indexed newStrategyAddress);
@@ -123,10 +94,9 @@ abstract contract AmanaVaultBase is
         __ERC4626_init(asset_);
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        VaultStorage storage $ = _getVaultStorage();
-        $.treasury = treasury_;
-        $.perfFee = perfFee_;
-        $.totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
+        treasury = treasury_;
+        perfFee = perfFee_;
+        totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         gasTank = IGasTank(gasTank_);
         crossChainTxId = 1; // Initialize to 1 to avoid zero value (reserved for asset update)
         slippage = 200; // 2%
@@ -166,13 +136,11 @@ abstract contract AmanaVaultBase is
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function setStrategy(address _strategyAddress) external onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
         if (
-            $.strategyAddress != address(0) ||
-            _strategyAddress == $.strategyAddress
+            strategyAddress != address(0) || _strategyAddress == strategyAddress
         ) revert StrategyAlreadySet();
         if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
-        $.strategyAddress = _strategyAddress;
+        strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
     }
 
@@ -182,9 +150,8 @@ abstract contract AmanaVaultBase is
      * @notice Reverts if the treasury address is zero.
      */
     function updateTreasuryAddress(address _treasury) external onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
-        $.treasury = _treasury;
+        treasury = _treasury;
     }
 
     /**
@@ -194,9 +161,8 @@ abstract contract AmanaVaultBase is
      * @notice Emits a `PerformanceFeeUpdated` event upon success.
      */
     function setPerformanceFee(uint16 newFeeRate) external onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
         if (newFeeRate > 2000) revert FeeExceedsLimit();
-        $.perfFee = newFeeRate;
+        perfFee = newFeeRate;
         emit PerformanceFeeUpdated(newFeeRate);
     }
 
@@ -270,14 +236,13 @@ abstract contract AmanaVaultBase is
         if (totalSupply() == 0) {
             return assets;
         }
-        VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
         uint256 totalAssetsMinusFeePortion = totalAssets();
 
         // Incorporate fee logic only if totalAssets exceeds totalPrincipal
-        if (totalAssets() > $.totalPrincipal) {
+        if (totalAssets() > totalPrincipal) {
             totalAssetsMinusFeePortion -=
-                ((totalAssets() - $.totalPrincipal) * $.perfFee) /
+                ((totalAssets() - totalPrincipal) * perfFee) /
                 10000;
         }
 
@@ -299,14 +264,13 @@ abstract contract AmanaVaultBase is
         if (totalSupply() == 0) {
             return shares;
         }
-        VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
         uint256 totalAssetsMinusFeePortion = totalAssets();
 
         // Incorporate fee logic only if totalAssets exceeds totalPrincipal
-        if (totalAssets() > $.totalPrincipal) {
+        if (totalAssets() > totalPrincipal) {
             totalAssetsMinusFeePortion -=
-                ((totalAssets() - $.totalPrincipal) * $.perfFee) /
+                ((totalAssets() - totalPrincipal) * perfFee) /
                 10000;
         }
 

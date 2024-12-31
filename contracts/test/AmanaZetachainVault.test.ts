@@ -168,7 +168,7 @@ describe("AmanaZetachainVault Tests", function () {
     expect(await amanaVault.symbol()).to.equal("AVU");
     expect(await amanaVault.asset()).to.equal(VAULT_ASSET);
     expect(await amanaVault.owner()).to.equal(await owner.getAddress());
-    expect(await amanaVault.getPerfFee()).to.equal(FEE_RATE);
+    expect(await amanaVault.perfFee()).to.equal(FEE_RATE);
   });
 
   it("should reject unauthorized access to setStrategy", async function () {
@@ -202,7 +202,7 @@ describe("AmanaZetachainVault Tests", function () {
       .withArgs(newStrategyAddress);
 
     // Validate that the strategy and chain ID are updated
-    const strategyAddress = await amanaVault.getStrategy();
+    const strategyAddress = await amanaVault.strategyAddress();
     expect(strategyAddress).to.equal(newStrategyAddress);
 
     const totalAssetsNewStrategy = await amanaVault.totalAssets();
@@ -224,7 +224,7 @@ describe("AmanaZetachainVault Tests", function () {
     const newFeeRate = ethers.BigNumber.from(1500); // 15%
     await amanaVault.connect(owner).setPerformanceFee(newFeeRate);
 
-    expect(await amanaVault.getPerfFee()).to.equal(newFeeRate);
+    expect(await amanaVault.perfFee()).to.equal(newFeeRate);
   });
 
   it("should calculate and deduct the performance fee on withdrawal", async function () {

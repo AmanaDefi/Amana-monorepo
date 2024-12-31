@@ -62,8 +62,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amount,
         bytes calldata message
     ) external override onlyGateway {
-        VaultStorage storage $ = _getVaultStorage();
-        if (context.sender == $.strategyAddress) {
+        if (context.sender == strategyAddress) {
             (
                 address user,
                 address receiver,
@@ -255,8 +254,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 confirmation.user == address(0) &&
                 confirmation.receiver == address(0)
             ) {
-                VaultStorage storage $ = _getVaultStorage();
-                emit StrategyUpdated($.strategyAddress);
+                emit StrategyUpdated(strategyAddress);
             } else if (confirmation.isDeposit) {
                 _confirmDepositAndMint(
                     confirmation.receiver,
@@ -295,13 +293,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function switchStrategy(
         address newStrategyAddress
     ) external override onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (newStrategyAddress == $.strategyAddress)
+        if (newStrategyAddress == strategyAddress)
             revert InvalidStrategyAddress();
 
-        address oldStrategyAddress = $.strategyAddress;
-        $.strategyAddress = newStrategyAddress;
+        address oldStrategyAddress = strategyAddress;
+        strategyAddress = newStrategyAddress;
 
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
@@ -403,8 +400,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
 
-        VaultStorage storage $ = _getVaultStorage();
-
         (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_WITHDRAW_AND_CALL); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
@@ -417,7 +412,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount + gasFee);
         }
 
-        bytes memory recipient = abi.encodePacked($.strategyAddress);
+        bytes memory recipient = abi.encodePacked(strategyAddress);
 
         bytes memory outgoingMessage = abi.encode(
             address(0),
@@ -475,10 +470,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsAfterDeposit,
         uint256 _crossChainTxId
     ) internal {
-        VaultStorage storage $ = _getVaultStorage();
-
-        $.userPrincipal[receiver] += depositAmount;
-        $.totalPrincipal += depositAmount;
+        userPrincipal[receiver] += depositAmount;
+        totalPrincipal += depositAmount;
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeDeposit;
 
@@ -573,13 +566,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 feeToWithdraw,
         uint32 withdrawChainId
     ) internal {
-        VaultStorage storage $ = _getVaultStorage();
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
 
         _handleGasFee(GAS_LIMIT_FOR_CALL);
 
-        bytes memory recipient = abi.encodePacked($.strategyAddress);
+        bytes memory recipient = abi.encodePacked(strategyAddress);
 
         bytes memory outgoingMessage = abi.encode(
             user,
@@ -639,14 +631,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsAfterWithdraw,
         uint256 _crossChainTxId
     ) internal {
-        VaultStorage storage $ = _getVaultStorage();
         latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
         uint256 shares = previewWithdraw(amount);
-        uint256 principalWithdrawn = (amount * $.userPrincipal[user]) /
+        uint256 principalWithdrawn = (amount * userPrincipal[user]) /
             convertToAssets(balanceOf(user));
 
-        $.userPrincipal[user] -= principalWithdrawn;
-        $.totalPrincipal -= principalWithdrawn;
+        userPrincipal[user] -= principalWithdrawn;
+        totalPrincipal -= principalWithdrawn;
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(user, shares);
@@ -661,7 +652,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         if (fee > 0) {
             emit PerformanceFeePaid(user, fee);
-            SafeERC20.safeTransfer(IERC20(address(asset())), $.treasury, fee);
+            SafeERC20.safeTransfer(IERC20(address(asset())), treasury, fee);
         }
 
         emit Withdrawn(user, receiver, outputAmount, shares, _crossChainTxId);

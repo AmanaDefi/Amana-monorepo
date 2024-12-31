@@ -342,7 +342,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       expect(await amanaVault.symbol()).to.equal("AVU");
       expect(await amanaVault.asset()).to.equal(ZC_ETH_ETH_ADDRESS);
       expect(await amanaVault.owner()).to.equal(await owner.getAddress());
-      expect(await amanaVault.getPerfFee()).to.equal(FEE_RATE);
+      expect(await amanaVault.perfFee()).to.equal(FEE_RATE);
     });
 
     it("should reject unauthorized access to setStrategy", async function () {
@@ -369,7 +369,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         amanaVault.connect(owner).switchStrategy(invalidStrategyAddress)
       ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
 
-      const currentStrategy = await amanaVault.getStrategy();
+      const currentStrategy = await amanaVault.strategyAddress();
       await expect(
         amanaVault.connect(owner).switchStrategy(currentStrategy)
       ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
@@ -379,7 +379,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         .to.emit(gatewayZEVM, "Called");
       // .withArgs(newStrategyAddress);
 
-      const updatedStrategy = await amanaVault.getStrategy();
+      const updatedStrategy = await amanaVault.strategyAddress();
 
       expect(updatedStrategy).to.equal(newStrategyAddress);
     });
@@ -413,7 +413,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const newFeeRate = ethers.BigNumber.from(1500); // 15%
       await amanaVault.connect(owner).setPerformanceFee(newFeeRate);
 
-      expect(await amanaVault.getPerfFee()).to.equal(newFeeRate);
+      expect(await amanaVault.perfFee()).to.equal(newFeeRate);
     });
 
     it("should calculate and deduct the performance fee on withdrawal", async function () {
