@@ -9,7 +9,7 @@ contract PriceOracle {
         0x2880aB155794e7179c9eE2e38200202908C17B43;
     uint256 public maxStaleness = 60; // Require price to be updated within the last 60 seconds
 
-    IPyth public pyth = IPyth(0x2880aB155794e7179c9eE2e38200202908C17B43);
+    IPyth public pyth = IPyth(PYTH_CONTRACT_ADDRESS);
 
     function setMaxStaleness(uint256 _maxStaleness) external {
         maxStaleness = _maxStaleness;
@@ -35,18 +35,4 @@ contract PriceOracle {
         // Return the price in uint256 format
         return uint256(uint64(price.price));
     }
-
-    /**
-     * @notice Updates the on-chain price feeds using the provided price updates from Pyth.
-     * @dev This function calculates the required fee for the price update and ensures the caller has sent sufficient funds to cover it.
-     *      The `pyth.updatePriceFeeds` method is called to update the prices on-chain.
-     * @param priceUpdate An array of encoded price update data to be submitted to the Pyth contract.
-     */
-    function updatePrices(bytes[] calldata priceUpdate) external payable {
-        uint256 updateFee = pyth.getUpdateFee(priceUpdate);
-        require(msg.value >= updateFee, "Insufficient fee");
-        pyth.updatePriceFeeds{value: updateFee}(priceUpdate);
-    }
-
-    receive() external payable {}
 }
