@@ -62,7 +62,7 @@ library SwapHelperLibEddy {
         address inputToken,
         address outputToken,
         uint256 amount,
-        uint256 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
+        uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
     ) internal view returns (uint256) {
         if (isEthToken(inputToken) && isEthToken(outputToken)) {
             // ETH -> ETH
@@ -126,7 +126,7 @@ library SwapHelperLibEddy {
         address zrc20,
         uint256 amount,
         address targetZRC20,
-        uint256 slippageBps,
+        uint16 slippageBps,
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {

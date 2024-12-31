@@ -43,7 +43,7 @@ abstract contract AmanaVaultBase is
     uint16 public perfFee;
     uint256 internal totalPrincipal;
     mapping(address => uint256) internal userPrincipal;
-    uint256 public slippage;
+    uint16 public slippage;
     uint256 crossChainTxId;
     IGasTank gasTank;
 
@@ -125,7 +125,7 @@ abstract contract AmanaVaultBase is
         bytes calldata message
     ) external virtual override;
 
-    function setSlippage(uint256 _newSlippage) external onlyOwner {
+    function setSlippage(uint16 _newSlippage) external onlyOwner {
         require(_newSlippage <= 10000, "Slippage too high");
         slippage = _newSlippage;
     }
