@@ -425,7 +425,6 @@ abstract contract StrategyParent is Ownable, IErrors {
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        uint256 underlyingAssets = totalUnderlyingAssets();
         uint256 currentExecutionNonce = executionNonce;
         executionNonce++;
         // Construct the message payload with the desired information
@@ -461,7 +460,7 @@ abstract contract StrategyParent is Ownable, IErrors {
 
         emit TotalUnderlyingAssetsSent(
             amanaVault,
-            underlyingAssets,
+            totalUnderlyingAssets(),
             block.number,
             block.timestamp
         );

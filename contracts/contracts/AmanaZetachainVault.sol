@@ -170,9 +170,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
             assets,
-            feeToWithdraw,
-            user,
-            shares
+            feeToWithdraw
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
@@ -210,9 +208,9 @@ contract AmanaZetachainVault is AmanaVaultBase {
             revert WithdrawCantBeZero();
         }
         uint256 maxAssets = maxWithdraw(user);
-        if (assets > maxAssets) {
+        if (assets > maxAssets)
             revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
-        }
+
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
         uint256 feeToWithdraw = _applyFee(user, assets);
@@ -220,9 +218,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
             assets,
-            feeToWithdraw,
-            user,
-            shares
+            feeToWithdraw
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
@@ -246,22 +242,15 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @notice Divests assets from the connected Zetachain strategy and burns shares.
      * @param assets The amount of assets to withdraw.
      * @param feeToWithdraw The fee to be applied for the withdrawal.
-     * @param user The address of the user initiating the withdrawal.
-     * @param shares The amount of shares to burn.
      * @return withdrawnAmt The total amount withdrawn from the strategy.
      */
     function _divestZetachainStrategy(
         uint256 assets,
-        uint256 feeToWithdraw,
-        address user,
-        uint256 shares
+        uint256 feeToWithdraw
     ) internal returns (uint256 withdrawnAmt) {
-        uint256 fractionToWithdraw = ((assets + feeToWithdraw) * (10 ** 27)) /
-            totalAssets() +
-            1;
         withdrawnAmt = IStrategy(strategyAddress).withdraw(
             assets + feeToWithdraw,
-            fractionToWithdraw
+            ((assets + feeToWithdraw) * (10 ** 27)) / totalAssets() + 1
         );
 
         return withdrawnAmt;

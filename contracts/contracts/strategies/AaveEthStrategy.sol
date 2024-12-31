@@ -51,9 +51,8 @@ contract AaveEthStrategy is EthStrategyParent {
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
         weth.deposit{value: amount}();
         bool success = weth.approve(address(aavePool), amount);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+        if (!success) revert ApprovalFailed();
+
         aavePool.supply(address(weth), amount, address(this), 0);
     }
 
