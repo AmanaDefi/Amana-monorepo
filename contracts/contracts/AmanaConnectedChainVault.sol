@@ -256,7 +256,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 confirmation.receiver == address(0)
             ) {
                 VaultStorage storage $ = _getVaultStorage();
-                emit StrategyUpdated($.strategyAddress, $.strategyChainId);
+                emit StrategyUpdated($.strategyAddress);
             } else if (confirmation.isDeposit) {
                 _confirmDepositAndMint(
                     confirmation.receiver,

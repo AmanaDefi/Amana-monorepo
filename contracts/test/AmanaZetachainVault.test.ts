@@ -2,12 +2,6 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-// import {
-//   AmanaZetachainVault,
-//   IERC20,
-//   Mock4626ZetachainStrategy,
-//   Mock4626,
-// } from "../typechain";
 import { setTokenBalance } from "./utils";
 import {
   ZC_ETH_ETH_ADDRESS,
@@ -17,13 +11,11 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-const ZETACHAIN_TESTNET_CHAIN_ID = 7000;
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const VAULT_ASSET = ZC_ETH_ETH_ADDRESS;
 const FEE_RATE = 1000;
 const ORIGIN_CHAIN_ID = 8453;
 const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
-const STRATEGY_CHAIN_ID = 1;
 const ERROR_MARGIN = ethers.utils.parseUnits("0.00015", 18);
 
 async function setupGatewaySigner() {
@@ -92,7 +84,7 @@ async function setup() {
   );
   await strategy.deployed();
 
-  await amanaVault.setStrategy(strategy.address, ZETACHAIN_TESTNET_CHAIN_ID);
+  await amanaVault.setStrategy(strategy.address);
 
   const usdcBSC = await ethers.getContractAt("IERC20", ZC_USDC_BSC_ADDRESS);
   const ethBaseSepolia = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
@@ -183,7 +175,7 @@ describe("AmanaZetachainVault Tests", function () {
     const { user1, amanaVault } = await loadFixture(setup);
 
     await expect(
-      amanaVault.connect(user1).setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID)
+      amanaVault.connect(user1).setStrategy(STRATEGY_ADDRESS)
     ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
   });
 
@@ -207,12 +199,11 @@ describe("AmanaZetachainVault Tests", function () {
     // Switch the vault strategy
     await expect(amanaVault.connect(owner).switchStrategy(newStrategyAddress))
       .to.emit(amanaVault, "StrategyUpdated")
-      .withArgs(newStrategyAddress, 7000);
+      .withArgs(newStrategyAddress);
 
     // Validate that the strategy and chain ID are updated
-    const [strategyAddress, chainId] = await amanaVault.getStrategy();
+    const strategyAddress = await amanaVault.getStrategy();
     expect(strategyAddress).to.equal(newStrategyAddress);
-    expect(chainId).to.equal(7000);
 
     const totalAssetsNewStrategy = await amanaVault.totalAssets();
     expect(totalAssetsNewStrategy).to.equal(depositAmount.add(1)); // add 1 for virtual share / asset

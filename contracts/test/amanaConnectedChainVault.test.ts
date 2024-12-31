@@ -317,7 +317,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     await gasTank.authorizeVault(amanaVault.address);
 
-    await amanaVault.setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID);
+    await amanaVault.setStrategy(STRATEGY_ADDRESS);
 
     const depositAmount1 = ethers.utils.parseUnits("0.01", 18);
     const depositAmount2 = ethers.utils.parseUnits("0.005", 18);
@@ -349,7 +349,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const { user1, amanaVault } = await loadFixture(setup);
 
       await expect(
-        amanaVault.connect(user1).setStrategy(STRATEGY_ADDRESS, STRATEGY_CHAIN_ID)
+        amanaVault.connect(user1).setStrategy(STRATEGY_ADDRESS)
       ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
     });
 
@@ -369,7 +369,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         amanaVault.connect(owner).switchStrategy(invalidStrategyAddress)
       ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
 
-      const currentStrategy = (await amanaVault.getStrategy())[0];
+      const currentStrategy = await amanaVault.getStrategy();
       await expect(
         amanaVault.connect(owner).switchStrategy(currentStrategy)
       ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
@@ -379,7 +379,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         .to.emit(gatewayZEVM, "Called");
       // .withArgs(newStrategyAddress);
 
-      const updatedStrategy = (await amanaVault.getStrategy())[0];
+      const updatedStrategy = await amanaVault.getStrategy();
 
       expect(updatedStrategy).to.equal(newStrategyAddress);
     });

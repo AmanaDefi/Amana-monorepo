@@ -75,7 +75,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
             $.strategyAddress = newStrategyAddress;
         }
 
-        emit StrategyUpdated(newStrategyAddress, VAULT_CHAIN_ID);
+        emit StrategyUpdated(newStrategyAddress);
     }
 
     /**

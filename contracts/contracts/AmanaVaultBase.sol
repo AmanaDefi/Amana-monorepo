@@ -47,7 +47,6 @@ abstract contract AmanaVaultBase is
 
     struct VaultStorage {
         address strategyAddress;
-        uint32 strategyChainId;
         address treasury;
         uint16 perfFee;
         uint256 totalPrincipal;
@@ -67,9 +66,9 @@ abstract contract AmanaVaultBase is
         }
     }
 
-    function getStrategy() external view returns (address, uint32) {
+    function getStrategy() external view returns (address) {
         VaultStorage storage $ = _getVaultStorage();
-        return ($.strategyAddress, $.strategyChainId);
+        return ($.strategyAddress);
     }
 
     function getTreasury() external view returns (address) {
@@ -82,10 +81,7 @@ abstract contract AmanaVaultBase is
         return $.perfFee;
     }
 
-    event StrategyUpdated(
-        address indexed newStrategyAddress,
-        uint32 newStrategyChainId
-    );
+    event StrategyUpdated(address indexed newStrategyAddress);
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
@@ -167,23 +163,17 @@ abstract contract AmanaVaultBase is
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
      * @param _strategyAddress The address of the new strategy.
-     * @param _strategyChainId The chain ID of the new strategy.
      * @notice Emits a `StrategyUpdated` event upon success.
      */
-    function setStrategy(
-        address _strategyAddress,
-        uint32 _strategyChainId
-    ) external onlyOwner {
+    function setStrategy(address _strategyAddress) external onlyOwner {
         VaultStorage storage $ = _getVaultStorage();
         if (
             $.strategyAddress != address(0) ||
             _strategyAddress == $.strategyAddress
         ) revert StrategyAlreadySet();
         if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (_strategyChainId == 0) revert InvalidStrategyChainId();
         $.strategyAddress = _strategyAddress;
-        $.strategyChainId = _strategyChainId;
-        emit StrategyUpdated(_strategyAddress, _strategyChainId);
+        emit StrategyUpdated(_strategyAddress);
     }
 
     /**
