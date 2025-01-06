@@ -25,22 +25,26 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (amount > 0) {
+            uint16 slippage = abi.decode(message, (uint16));
             _depositComingFromConnectedChain(
                 context.sender,
                 context.chainID,
                 amount,
-                zrc20
+                zrc20,
+                slippage
             );
         } else {
-            (address withdrawZRC20, uint256 withdrawAmount) = abi.decode(
-                message,
-                (address, uint256)
-            );
+            (
+                address withdrawZRC20,
+                uint256 withdrawAmount,
+                uint16 slippage
+            ) = abi.decode(message, (address, uint256, uint16));
             _withdrawComingFromConnectedChain(
                 context.sender,
                 withdrawZRC20,
                 withdrawAmount,
-                uint32(context.chainID)
+                uint32(context.chainID),
+                slippage
             );
         }
     }
@@ -202,7 +206,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address user,
         address withdrawZRC20,
         uint256 assets,
-        uint32 userChainId
+        uint32 userChainId,
+        uint16 slippage
     ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
@@ -234,7 +239,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
             userChainId,
             user,
             withdrawZRC20,
-            currentCrossChainTxId
+            currentCrossChainTxId,
+            slippage
         );
     }
 

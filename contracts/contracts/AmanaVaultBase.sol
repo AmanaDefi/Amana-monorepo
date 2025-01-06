@@ -43,7 +43,6 @@ abstract contract AmanaVaultBase is
     uint16 public perfFee;
     uint256 internal totalPrincipal;
     mapping(address => uint256) internal userPrincipal;
-    uint16 public slippage;
     uint256 crossChainTxId;
     IGasTank gasTank;
 
@@ -99,7 +98,6 @@ abstract contract AmanaVaultBase is
         totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         gasTank = IGasTank(gasTank_);
         crossChainTxId = 1; // Initialize to 1 to avoid zero value (reserved for asset update)
-        slippage = 200; // 2%
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -124,11 +122,6 @@ abstract contract AmanaVaultBase is
         uint256 amount,
         bytes calldata message
     ) external virtual override;
-
-    function setSlippage(uint16 _newSlippage) external onlyOwner {
-        require(_newSlippage <= 10000, "Slippage too high");
-        slippage = _newSlippage;
-    }
 
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
@@ -307,7 +300,8 @@ abstract contract AmanaVaultBase is
         address receiver,
         uint256 userChainId,
         uint256 assets,
-        address zrc20source
+        address zrc20source,
+        uint16 slippage
     ) internal {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
@@ -356,7 +350,8 @@ abstract contract AmanaVaultBase is
         address user,
         address withdrawZRC20,
         uint256 assets,
-        uint32 userChainId
+        uint32 userChainId,
+        uint16 slippage
     ) internal virtual;
 
     /**
@@ -373,7 +368,8 @@ abstract contract AmanaVaultBase is
         uint32 userChainId,
         address receiver,
         address withdrawZRC20,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 slippage
     ) internal returns (uint256 outputAmount) {
         outputAmount = amount;
 

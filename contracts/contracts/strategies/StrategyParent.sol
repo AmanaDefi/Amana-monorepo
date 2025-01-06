@@ -86,7 +86,8 @@ abstract contract StrategyParent is Ownable, IErrors {
             uint256 fee,
             uint32 withdrawChainId,
             bool isDeposit,
-            uint256 crossChainTxId
+            uint256 crossChainTxId,
+            uint16 slippage
         ) = abi.decode(
                 message,
                 (
@@ -97,7 +98,8 @@ abstract contract StrategyParent is Ownable, IErrors {
                     uint256,
                     uint32,
                     bool,
-                    uint256
+                    uint256,
+                    uint16
                 )
             );
 
@@ -123,7 +125,8 @@ abstract contract StrategyParent is Ownable, IErrors {
                 fee,
                 withdrawChainId,
                 currentExecutionNonce,
-                crossChainTxId
+                crossChainTxId,
+                slippage
             );
             return abi.encode(true);
         }
@@ -223,7 +226,8 @@ abstract contract StrategyParent is Ownable, IErrors {
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
-            _crossChainTxId
+            _crossChainTxId,
+            0
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -270,7 +274,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 fee,
         uint32 withdrawChainId,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 slippage
     ) internal {
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
 
@@ -288,7 +293,8 @@ abstract contract StrategyParent is Ownable, IErrors {
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
-            _crossChainTxId
+            _crossChainTxId,
+            slippage
         );
 
         emit FundsDivested(_crossChainTxId, user, amount + fee);
@@ -318,7 +324,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 slippage
     ) external onlyOwner {
         _sendFundsAndDivestConfirmation(
             user,
@@ -330,7 +337,8 @@ abstract contract StrategyParent is Ownable, IErrors {
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
-            _crossChainTxId
+            _crossChainTxId,
+            slippage
         );
     }
 
@@ -361,7 +369,8 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 slippage
     ) internal {
         bytes memory outgoingMessage = abi.encode(
             user,
@@ -374,7 +383,8 @@ abstract contract StrategyParent is Ownable, IErrors {
             totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
-            _crossChainTxId
+            _crossChainTxId,
+            slippage
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -439,6 +449,7 @@ abstract contract StrategyParent is Ownable, IErrors {
             0,
             totalUnderlyingAssets(),
             currentExecutionNonce,
+            0,
             0
         );
 

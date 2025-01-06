@@ -24,6 +24,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsBefore;
         uint256 totalAssetsAfter;
         uint256 crossChainTxId;
+        uint16 slippage;
     }
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
@@ -74,7 +75,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 totalAssetsBefore,
                 uint256 totalAssetsAfter,
                 uint256 executionNonce,
-                uint256 _crossChainTxId
+                uint256 _crossChainTxId,
+                uint16 slippage
             ) = abi.decode(
                     message,
                     (
@@ -88,7 +90,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                         uint256,
                         uint256,
                         uint256,
-                        uint256
+                        uint256,
+                        uint16
                     )
                 );
             _processConfirmationFromStrategy(
@@ -102,27 +105,32 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 totalAssetsBefore,
                 totalAssetsAfter,
                 executionNonce,
-                _crossChainTxId
+                _crossChainTxId,
+                slippage
             );
         } else {
             if (context.sender == address(0)) revert CantBeZeroAddress();
             if (amount > 0) {
+                uint16 slippage = abi.decode(message, (uint16));
                 _depositComingFromConnectedChain(
                     context.sender,
                     context.chainID,
                     amount,
-                    zrc20
+                    zrc20,
+                    slippage
                 );
             } else {
-                (address withdrawZRC20, uint256 withdrawAmount) = abi.decode(
-                    message,
-                    (address, uint256)
-                );
+                (
+                    address withdrawZRC20,
+                    uint256 withdrawAmount,
+                    uint16 slippage
+                ) = abi.decode(message, (address, uint256, uint16));
                 _withdrawComingFromConnectedChain(
                     context.sender,
                     withdrawZRC20,
                     withdrawAmount,
-                    uint32(context.chainID)
+                    uint32(context.chainID),
+                    slippage
                 );
             }
         }
@@ -153,7 +161,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsBefore,
         uint256 totalAssetsAfter,
         uint256 executionNonce,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 _slippage
     ) internal {
         // Ensure no duplicate processing
         if (
@@ -171,7 +180,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             isDeposit: isDeposit,
             totalAssetsBefore: totalAssetsBefore,
             totalAssetsAfter: totalAssetsAfter,
-            crossChainTxId: _crossChainTxId
+            crossChainTxId: _crossChainTxId,
+            slippage: _slippage
         });
 
         // Attempt to process confirmations
@@ -201,7 +211,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsBefore,
         uint256 totalAssetsAfter,
         uint256 executionNonce,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 _slippage
     ) external onlyOwner {
         // Ensure no duplicate processing
         if (
@@ -219,7 +230,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             isDeposit: isDeposit,
             totalAssetsBefore: totalAssetsBefore,
             totalAssetsAfter: totalAssetsAfter,
-            crossChainTxId: _crossChainTxId
+            crossChainTxId: _crossChainTxId,
+            slippage: _slippage
         });
 
         // Attempt to process confirmations
@@ -273,7 +285,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     confirmation.withdrawChainId,
                     confirmation.totalAssetsBefore,
                     confirmation.totalAssetsAfter,
-                    confirmation.crossChainTxId
+                    confirmation.crossChainTxId,
+                    confirmation.slippage
                 );
             }
 
@@ -512,7 +525,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             asset(),
             assets,
             feeToWithdraw,
-            VAULT_CHAIN_ID
+            VAULT_CHAIN_ID,
+            0
         );
     }
 
@@ -528,7 +542,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user,
         address withdrawZRC20,
         uint256 assets,
-        uint32 userChainId
+        uint32 userChainId,
+        uint16 slippage
     ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
@@ -545,7 +560,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             withdrawZRC20,
             assets,
             feeToWithdraw,
-            userChainId
+            userChainId,
+            slippage
         );
     }
 
@@ -564,7 +580,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         uint256 amount,
         uint256 feeToWithdraw,
-        uint32 withdrawChainId
+        uint32 withdrawChainId,
+        uint16 slippage
     ) internal {
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
@@ -581,7 +598,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             feeToWithdraw,
             withdrawChainId,
             false,
-            currentCrossChainTxId
+            currentCrossChainTxId,
+            slippage
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -629,7 +647,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 userChainId,
         uint256 totalAssetsBeforeWithdraw,
         uint256 totalAssetsAfterWithdraw,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 slippage
     ) internal {
         latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
         uint256 shares = previewWithdraw(amount);
@@ -647,7 +666,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             userChainId,
             receiver,
             withdrawZRC20,
-            _crossChainTxId
+            _crossChainTxId,
+            slippage
         );
 
         if (fee > 0) {
@@ -677,14 +697,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amount
     ) internal {
         bytes32 messageHash = keccak256(bytes(revertMessage));
-
+        uint16 slippage = 200;
         if (messageHash == keccak256(bytes("_crossChainInvestFailed"))) {
             _returnFundsToUser(
                 amount,
                 userChainId,
                 user,
                 userZRC20,
-                _crossChainTxId
+                _crossChainTxId,
+                slippage
             );
             emit CrossChainInvestFailed(_crossChainTxId);
         } else if (
@@ -741,12 +762,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
+            uint16 slippage = 200;
             _returnFundsToUser(
                 context.amount,
                 userChainId,
                 user,
                 userZRC20,
-                _crossChainTxId
+                _crossChainTxId,
+                slippage
             );
             emit CrossChainInvestFailed(_crossChainTxId);
         } else if (

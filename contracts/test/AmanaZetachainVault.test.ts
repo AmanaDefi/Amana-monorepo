@@ -105,6 +105,11 @@ async function setup() {
   ): Promise<void> {
     // Set token balance for the vault
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, amanaVault.address, depositAmount);
+    const slippage = 200;
+    const depositMessage = ethers.utils.defaultAbiCoder.encode(
+      ["uint16"],
+      [slippage]
+    );
     // Execute the onCall function to simulate a deposit
     await amanaVault.connect(gatewaySigner).onCall(
       {
@@ -114,7 +119,7 @@ async function setup() {
       },
       ZC_ETH_BASE_ADDRESS,
       depositAmount,
-      "0x"
+      depositMessage
     );
   }
 
@@ -122,9 +127,10 @@ async function setup() {
     user: Signer,
     withdrawAmount: BigNumber
   ): Promise<any> {
+    const slippage = 200;
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256"],
-      [ZC_ETH_BASE_ADDRESS, withdrawAmount]
+      ["address", "uint256", "uint16"],
+      [ZC_ETH_BASE_ADDRESS, withdrawAmount, slippage]
     );
     const tx = await amanaVault.connect(gatewaySigner).onCall(
       {
