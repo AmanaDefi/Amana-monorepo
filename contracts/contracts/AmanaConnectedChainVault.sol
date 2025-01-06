@@ -327,7 +327,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             0,
             0,
             false,
-            currentCrossChainTxId
+            currentCrossChainTxId,
+            0
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -435,7 +436,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             0,
             0,
             true,
-            currentCrossChainTxId
+            currentCrossChainTxId,
+            0
         );
 
         RevertOptions memory revertOptions = RevertOptions(
