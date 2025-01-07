@@ -27,7 +27,7 @@ export const tokens: Token[] = [
 
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0x1C08A4a21f32B18fD0B5Be916b2597D3033a0486", // Base ETH Vault
+    id: "0x36c7fEdE7556A07AE4f4a4165532f75aa21f2710", // Base ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -49,25 +49,25 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
-  // {
-  //   id: "0xFa99a92B181a24bE8f6144620F55615639BcD53a",
-  //   name: "Moonwell Flagship USDC",
-  //   symbol: "aMoonwellUSDC",
-  //   inputToken: {
-  //     symbol: "USDC",
-  //     decimals: 6,
-  //     address: BASE_USDC_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Moonwell",
-  //     network: "Base",
-  //     imgURL: "/Moonwell.jpg",
-  //   },
-  // },
+  {
+    id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
+    name: "Moonwell Flagship USDC",
+    symbol: "aMoonwellUSDC",
+    inputToken: {
+      symbol: "USDC",
+      decimals: 6,
+      address: BASE_USDC_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Moonwell",
+      network: "Base",
+      imgURL: "/Moonwell.jpg",
+    },
+  },
   // {
   //   id: "0x9d4d38e8a68390643E436AdB7Af2e80b2f7536bc",
   //   name: "Compound USDC",
