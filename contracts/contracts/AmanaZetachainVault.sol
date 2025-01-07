@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
+import "./interfaces/IStrategy.sol";
 
 /// @title AmanaZetachainVault
 /// @notice An ERC4626-compliant vault for managing cross-chain assets on ZetaChain.
@@ -24,17 +25,26 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (amount > 0) {
-            _depositComingFromConnectedChain(context.sender, amount, zrc20);
-        } else {
-            (address withdrawZRC20, uint256 withdrawAmount) = abi.decode(
-                message,
-                (address, uint256)
+            uint16 slippage = abi.decode(message, (uint16));
+            _depositComingFromConnectedChain(
+                context.sender,
+                context.chainID,
+                amount,
+                zrc20,
+                slippage
             );
+        } else {
+            (
+                address withdrawZRC20,
+                uint256 withdrawAmount,
+                uint16 slippage
+            ) = abi.decode(message, (address, uint256, uint16));
             _withdrawComingFromConnectedChain(
                 context.sender,
                 withdrawZRC20,
                 withdrawAmount,
-                uint32(context.chainID)
+                uint32(context.chainID),
+                slippage
             );
         }
     }
@@ -46,30 +56,29 @@ contract AmanaZetachainVault is AmanaVaultBase {
     function switchStrategy(
         address newStrategyAddress
     ) external override onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (newStrategyAddress == $.strategyAddress)
+        if (newStrategyAddress == strategyAddress)
             revert InvalidStrategyAddress();
 
-        if (IStrategy($.strategyAddress).totalUnderlyingAssets() > 0) {
-            IStrategy($.strategyAddress).withdraw(
-                IStrategy($.strategyAddress).totalUnderlyingAssets(),
+        if (IStrategy(strategyAddress).totalUnderlyingAssets() > 0) {
+            IStrategy(strategyAddress).withdraw(
+                IStrategy(strategyAddress).totalUnderlyingAssets(),
                 10 ** 27
             );
-            $.strategyAddress = newStrategyAddress;
+            strategyAddress = newStrategyAddress;
             bool success = IZRC20(asset()).approve(
-                $.strategyAddress,
+                strategyAddress,
                 IERC20(asset()).balanceOf(address(this))
             );
             if (!success) revert ApprovalFailed();
-            IStrategy($.strategyAddress).invest(
+            IStrategy(strategyAddress).invest(
                 IERC20(asset()).balanceOf(address(this))
             );
         } else {
-            $.strategyAddress = newStrategyAddress;
+            strategyAddress = newStrategyAddress;
         }
 
-        emit StrategyUpdated(newStrategyAddress, VAULT_CHAIN_ID);
+        emit StrategyUpdated(newStrategyAddress);
     }
 
     /**
@@ -77,8 +86,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @return The total assets in the vault and strategy combined.
      */
     function totalAssets() public view virtual override returns (uint256) {
-        VaultStorage storage $ = _getVaultStorage();
-        uint256 assetBalanceInStrategy = IStrategy($.strategyAddress)
+        uint256 assetBalanceInStrategy = IStrategy(strategyAddress)
             .totalUnderlyingAssets();
         return assetBalanceInStrategy + 1;
     }
@@ -99,9 +107,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (assets == 0) {
             revert DepositCantBeZero();
         }
-        VaultStorage storage $ = _getVaultStorage();
-        $.userPrincipal[receiver] += assets;
-        $.totalPrincipal += assets;
+        userPrincipal[receiver] += assets;
+        totalPrincipal += assets;
 
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
@@ -112,27 +119,33 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         _mint(receiver, shares);
 
-        bool success = IERC20(asset()).approve($.strategyAddress, assets);
+        bool success = IERC20(asset()).approve(strategyAddress, assets);
         if (!success) revert ApprovalFailed();
-        IStrategy($.strategyAddress).invest(assets);
+        IStrategy(strategyAddress).invest(assets);
         emit Deposit(caller, receiver, assets, shares);
     }
 
+    /**
+     * @dev Handles the investment of assets into the strategy and mints shares for the receiver.
+     *      This function updates the vault's internal accounting, approves the strategy to spend the assets,
+     *      and calls the strategy's `invest` function to deposit the assets.
+     * @param amount The amount of assets to invest.
+     * @param receiver The address of the user receiving the shares.
+     **/
     function _investAssets(
         uint256 amount,
         address receiver,
         address,
         uint32
     ) internal override {
-        VaultStorage storage $ = _getVaultStorage();
         uint256 shares = previewDeposit(amount);
-        $.userPrincipal[receiver] += amount;
-        $.totalPrincipal += amount;
+        userPrincipal[receiver] += amount;
+        totalPrincipal += amount;
         _mint(receiver, shares);
 
-        bool success = IERC20(asset()).approve($.strategyAddress, amount);
+        bool success = IERC20(asset()).approve(strategyAddress, amount);
         if (!success) revert ApprovalFailed();
-        IStrategy($.strategyAddress).invest(amount);
+        IStrategy(strategyAddress).invest(amount);
         emit Deposit(address(0), receiver, amount, shares);
     }
 
@@ -154,7 +167,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (assets == 0) {
             revert WithdrawCantBeZero();
         }
-        VaultStorage storage $ = _getVaultStorage();
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
@@ -162,9 +174,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
             assets,
-            feeToWithdraw,
-            user,
-            shares
+            feeToWithdraw
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
@@ -172,7 +182,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         if (feeToWithdraw > 0) {
             emit PerformanceFeePaid(user, feeToWithdraw);
-            SafeERC20.safeTransfer(IERC20(asset()), $.treasury, feeToWithdraw);
+            SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
 
         SafeERC20.safeTransfer(
@@ -196,26 +206,24 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address user,
         address withdrawZRC20,
         uint256 assets,
-        uint32 userChainId
+        uint32 userChainId,
+        uint16 slippage
     ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
         }
         uint256 maxAssets = maxWithdraw(user);
-        if (assets > maxAssets) {
+        if (assets > maxAssets)
             revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
-        }
+
         uint256 currentCrossChainTxId = crossChainTxId;
         crossChainTxId++;
-        VaultStorage storage $ = _getVaultStorage();
         uint256 feeToWithdraw = _applyFee(user, assets);
         uint256 shares = previewWithdraw(assets);
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
             assets,
-            feeToWithdraw,
-            user,
-            shares
+            feeToWithdraw
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
@@ -223,7 +231,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         if (feeToWithdraw > 0) {
             emit PerformanceFeePaid(user, feeToWithdraw);
-            SafeERC20.safeTransfer(IERC20(asset()), $.treasury, feeToWithdraw);
+            SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
 
         _returnFundsToUser(
@@ -231,7 +239,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
             userChainId,
             user,
             withdrawZRC20,
-            currentCrossChainTxId
+            currentCrossChainTxId,
+            slippage
         );
     }
 
@@ -239,24 +248,15 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @notice Divests assets from the connected Zetachain strategy and burns shares.
      * @param assets The amount of assets to withdraw.
      * @param feeToWithdraw The fee to be applied for the withdrawal.
-     * @param user The address of the user initiating the withdrawal.
-     * @param shares The amount of shares to burn.
      * @return withdrawnAmt The total amount withdrawn from the strategy.
      */
     function _divestZetachainStrategy(
         uint256 assets,
-        uint256 feeToWithdraw,
-        address user,
-        uint256 shares
+        uint256 feeToWithdraw
     ) internal returns (uint256 withdrawnAmt) {
-        VaultStorage storage $ = _getVaultStorage();
-
-        uint256 fractionToWithdraw = ((assets + feeToWithdraw) * (10 ** 27)) /
-            totalAssets() +
-            1;
-        withdrawnAmt = IStrategy($.strategyAddress).withdraw(
+        withdrawnAmt = IStrategy(strategyAddress).withdraw(
             assets + feeToWithdraw,
-            fractionToWithdraw
+            ((assets + feeToWithdraw) * (10 ** 27)) / totalAssets() + 1
         );
 
         return withdrawnAmt;

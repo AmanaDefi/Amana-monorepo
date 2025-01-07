@@ -10,6 +10,8 @@ import "./tasks/deploySwapHelper";
 import "./tasks/deployMockERC20";
 import "./tasks/deployMock4626";
 import "./tasks/deployERC20_4626_Strategy";
+import "./tasks/deployZetachainStrategy";
+import "./tasks/deployPriceOracle";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -60,10 +62,10 @@ const config: HardhatUserConfig = {
     //   allowUnlimitedContractSize: true,
     // },
     hardhat: {
-      chainId: 7001,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
+      chainId: 7000,  // Set the chain ID for your forked network, for example, the ZetaChain testnet chain ID.
       forking: {
-        url: `https://zetachain-testnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 8063787
+        url: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 6366501
       },
       allowUnlimitedContractSize: true,
     },

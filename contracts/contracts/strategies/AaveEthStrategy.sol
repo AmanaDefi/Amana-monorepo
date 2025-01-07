@@ -9,6 +9,11 @@ import "../interfaces/IWrappedTokenGatewayV3.sol";
 import "../interfaces/IWETH.sol";
 import "./EthStrategyParent.sol";
 
+// Wrapped Token Gateway (Base): 0x729b3EA8C005AbC58c9150fb57Ec161296F06766
+// ABasWETH: 0xD4a0e0b9149BCee3C920d2E00b5dE09138fd8bb7
+// Aave Pool (Base): 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5
+// Base Weth: 0x4200000000000000000000000000000000000006
+
 /// @title AaveEthStrategy
 /// @notice Base contract for Ethereum-based strategies using Aave and ZetaChain.
 /// @dev Handles ETH investments and divestments for strategies on EVM-compatible chains.
@@ -46,12 +51,16 @@ contract AaveEthStrategy is EthStrategyParent {
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
         weth.deposit{value: amount}();
         bool success = weth.approve(address(aavePool), amount);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+        if (!success) revert ApprovalFailed();
+
         aavePool.supply(address(weth), amount, address(this), 0);
     }
 
+    /**
+     * @notice Withdraws funds from the configured yield source.
+     * @param amount The amount of funds to withdraw from the yield source.
+     * @return amountWithdrawn The amount of funds successfully withdrawn.
+     */
     function _withdrawFundsFromYieldSource(
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
@@ -63,6 +72,13 @@ contract AaveEthStrategy is EthStrategyParent {
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
+    /**
+     * @notice Transfers assets from the current strategy to a new strategy.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,

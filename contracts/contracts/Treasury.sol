@@ -65,14 +65,4 @@ contract Treasury {
         bool success = IERC20(_token).transfer(_to, _amount);
         require(success, "Token transfer failed");
     }
-
-    // Returns Ether balance of the contract
-    function etherBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
-    // Returns ERC-20 token balance of the contract
-    function erc20Balance(address _token) public view returns (uint256) {
-        return IERC20(_token).balanceOf(address(this));
-    }
 }

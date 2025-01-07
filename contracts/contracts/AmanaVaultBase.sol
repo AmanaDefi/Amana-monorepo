@@ -10,11 +10,10 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContrac
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 
 import "./interfaces/ISystem.sol";
-import "./interfaces/IStrategy.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 
-import "./libraries/SwapHelperLib.sol";
+import "./libraries/SwapHelperLibEddy.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -31,61 +30,28 @@ abstract contract AmanaVaultBase is
 
     // Constants
     address constant _GATEWAY_ADDRESS =
-        0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
-    bytes32 internal constant VAULT_STORAGE_LOCATION =
-        0x1a0ee6983e121525fbe4b5f5f8fd996faa9a018f8e366b3f036f295ddafb46df;
-    address constant UNISWAP_V2_ROUTER_02_ADDRESS =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
-    uint32 constant VAULT_CHAIN_ID = 7001; // 7000 for mainnet, 7001 for testnet
-    uint256 public constant GAS_LIMIT_FOR_CALL = 350000; // bring this down as far as possible, as it doesn't get returned
-    uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 350000; // bring this down as far as possible, as it doesn't get returned
+        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
+    address constant _SYSTEM_ADDRESS =
+        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
+    uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
+    uint256 public constant GAS_LIMIT_FOR_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
+    uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
 
+    // Variables
+    address public strategyAddress;
+    address public treasury;
+    uint16 public perfFee;
+    uint256 internal totalPrincipal;
+    mapping(address => uint256) internal userPrincipal;
     uint256 crossChainTxId;
-
-    ISystem systemContract; // 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B on testnet
     IGasTank gasTank;
-
-    struct VaultStorage {
-        address strategyAddress;
-        uint32 strategyChainId;
-        address treasury;
-        uint16 perfFee;
-        uint256 totalPrincipal;
-        mapping(address => uint256) userPrincipal;
-    }
-
-    // Buffer for out-of-order confirmations
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
         _;
     }
 
-    function _getVaultStorage() internal pure returns (VaultStorage storage $) {
-        assembly {
-            $.slot := VAULT_STORAGE_LOCATION
-        }
-    }
-
-    function getStrategy() external view returns (address, uint32) {
-        VaultStorage storage $ = _getVaultStorage();
-        return ($.strategyAddress, $.strategyChainId);
-    }
-
-    function getTreasury() external view returns (address) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.treasury;
-    }
-
-    function getPerfFee() external view returns (uint16) {
-        VaultStorage storage $ = _getVaultStorage();
-        return $.perfFee;
-    }
-
-    event StrategyUpdated(
-        address indexed newStrategyAddress,
-        uint32 newStrategyChainId
-    );
+    event StrategyUpdated(address indexed newStrategyAddress);
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
@@ -112,7 +78,6 @@ abstract contract AmanaVaultBase is
      * @param asset_ The underlying asset for the vault.
      * @param treasury_ Treasury address for performance fees.
      * @param perfFee_ Performance fee rate.
-     * @param system_contract_ System contract address.
      * @param gasTank_ Gas tank contract address.
      */
     function initialize(
@@ -121,7 +86,6 @@ abstract contract AmanaVaultBase is
         IERC20 asset_,
         address treasury_,
         uint16 perfFee_,
-        address system_contract_,
         address gasTank_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
@@ -129,11 +93,9 @@ abstract contract AmanaVaultBase is
         __ERC4626_init(asset_);
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        VaultStorage storage $ = _getVaultStorage();
-        $.treasury = treasury_;
-        $.perfFee = perfFee_;
-        $.totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
-        systemContract = ISystem(system_contract_);
+        treasury = treasury_;
+        perfFee = perfFee_;
+        totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         gasTank = IGasTank(gasTank_);
         crossChainTxId = 1; // Initialize to 1 to avoid zero value (reserved for asset update)
         emit VaultInitialized(decimals(), perfFee_);
@@ -164,23 +126,15 @@ abstract contract AmanaVaultBase is
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
      * @param _strategyAddress The address of the new strategy.
-     * @param _strategyChainId The chain ID of the new strategy.
      * @notice Emits a `StrategyUpdated` event upon success.
      */
-    function setStrategy(
-        address _strategyAddress,
-        uint32 _strategyChainId
-    ) external onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
+    function setStrategy(address _strategyAddress) external onlyOwner {
         if (
-            $.strategyAddress != address(0) ||
-            _strategyAddress == $.strategyAddress
+            strategyAddress != address(0) || _strategyAddress == strategyAddress
         ) revert StrategyAlreadySet();
         if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (_strategyChainId == 0) revert InvalidStrategyChainId();
-        $.strategyAddress = _strategyAddress;
-        $.strategyChainId = _strategyChainId;
-        emit StrategyUpdated(_strategyAddress, _strategyChainId);
+        strategyAddress = _strategyAddress;
+        emit StrategyUpdated(_strategyAddress);
     }
 
     /**
@@ -189,9 +143,8 @@ abstract contract AmanaVaultBase is
      * @notice Reverts if the treasury address is zero.
      */
     function updateTreasuryAddress(address _treasury) external onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
-        $.treasury = _treasury;
+        treasury = _treasury;
     }
 
     /**
@@ -201,9 +154,8 @@ abstract contract AmanaVaultBase is
      * @notice Emits a `PerformanceFeeUpdated` event upon success.
      */
     function setPerformanceFee(uint16 newFeeRate) external onlyOwner {
-        VaultStorage storage $ = _getVaultStorage();
         if (newFeeRate > 2000) revert FeeExceedsLimit();
-        $.perfFee = newFeeRate;
+        perfFee = newFeeRate;
         emit PerformanceFeeUpdated(newFeeRate);
     }
 
@@ -277,14 +229,13 @@ abstract contract AmanaVaultBase is
         if (totalSupply() == 0) {
             return assets;
         }
-        VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
         uint256 totalAssetsMinusFeePortion = totalAssets();
 
         // Incorporate fee logic only if totalAssets exceeds totalPrincipal
-        if (totalAssets() > $.totalPrincipal) {
+        if (totalAssets() > totalPrincipal) {
             totalAssetsMinusFeePortion -=
-                ((totalAssets() - $.totalPrincipal) * $.perfFee) /
+                ((totalAssets() - totalPrincipal) * perfFee) /
                 10000;
         }
 
@@ -306,14 +257,13 @@ abstract contract AmanaVaultBase is
         if (totalSupply() == 0) {
             return shares;
         }
-        VaultStorage storage $ = _getVaultStorage();
         uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
         uint256 totalAssetsMinusFeePortion = totalAssets();
 
         // Incorporate fee logic only if totalAssets exceeds totalPrincipal
-        if (totalAssets() > $.totalPrincipal) {
+        if (totalAssets() > totalPrincipal) {
             totalAssetsMinusFeePortion -=
-                ((totalAssets() - $.totalPrincipal) * $.perfFee) /
+                ((totalAssets() - totalPrincipal) * perfFee) /
                 10000;
         }
 
@@ -348,24 +298,27 @@ abstract contract AmanaVaultBase is
      */
     function _depositComingFromConnectedChain(
         address receiver,
+        uint256 userChainId,
         uint256 assets,
-        address zrc20source
+        address zrc20source,
+        uint16 slippage
     ) internal {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
         }
-
+        if (zrc20source == address(0)) {
+            zrc20source = ISystem(_SYSTEM_ADDRESS).gasCoinZRC20ByChainId(
+                userChainId
+            );
+        }
         uint256 outputAmount = assets;
-        uint256 minAmountOut = 0; // TODO: Implement slippage control in production
         if (zrc20source != address(asset())) {
-            outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                UNISWAP_V2_ROUTER_02_ADDRESS,
-                systemContract.uniswapv2FactoryAddress(),
+            outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
                 zrc20source,
                 assets,
-                asset(),
-                minAmountOut,
+                address(asset()),
+                slippage,
                 address(this),
                 200
             );
@@ -397,7 +350,8 @@ abstract contract AmanaVaultBase is
         address user,
         address withdrawZRC20,
         uint256 assets,
-        uint32 userChainId
+        uint32 userChainId,
+        uint16 slippage
     ) internal virtual;
 
     /**
@@ -414,7 +368,8 @@ abstract contract AmanaVaultBase is
         uint32 userChainId,
         address receiver,
         address withdrawZRC20,
-        uint256 _crossChainTxId
+        uint256 _crossChainTxId,
+        uint16 slippage
     ) internal returns (uint256 outputAmount) {
         outputAmount = amount;
 
@@ -439,17 +394,13 @@ abstract contract AmanaVaultBase is
                 uint256(0) // onRevertGasLimit
             );
 
-            uint256 minAmountOut = 0; // TODO: Control for slippage in production
-
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
-                outputAmount = SwapHelperLib.swapExactTokensForTokens(
-                    UNISWAP_V2_ROUTER_02_ADDRESS,
-                    systemContract.uniswapv2FactoryAddress(),
+                outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
                     address(asset()),
                     amount,
                     withdrawZRC20,
-                    minAmountOut,
+                    slippage,
                     address(this),
                     200
                 );

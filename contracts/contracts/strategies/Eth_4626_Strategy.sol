@@ -8,6 +8,9 @@ import "../interfaces/IWrappedTokenGatewayV3.sol";
 import "../interfaces/IWETH.sol";
 import "./EthStrategyParent.sol";
 
+// Moonwell Eth vault: 0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1
+// Base Weth: 0x4200000000000000000000000000000000000006
+
 /// @title Eth_4626_Strategy
 /// @notice Base contract for Ethereum-based strategies using Aave and ZetaChain.
 /// @dev Handles ETH investments and divestments for strategies on EVM-compatible chains.
@@ -58,6 +61,13 @@ contract Eth_4626_Strategy is EthStrategyParent {
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
+    /**
+     * @notice Transfers assets from the current strategy to a new strategy.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,

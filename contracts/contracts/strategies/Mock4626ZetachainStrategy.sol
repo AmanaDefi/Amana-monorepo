@@ -5,7 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/I4626Vault.sol";
-import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
+
+// USDC.ETH 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a
+// Mock 4626 0xcfc479dC5371D21C52eeAd66290b21CDa2eB0C9f
 
 /// @title Mock4626ZetachainStrategy
 /// @notice A mock implementation of a 4626-compatible strategy for ZetaChain.
@@ -15,7 +17,6 @@ contract Mock4626ZetachainStrategy is Ownable {
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
     I4626Vault public immutable receiptToken;
-    address immutable _GATEWAY_ADDRESS;
 
     /// @notice Emitted when funds are deposited into the vault.
     /// @param vaultAddress The address of the vault.
@@ -32,20 +33,17 @@ contract Mock4626ZetachainStrategy is Ownable {
     /// @param _amanaVault Address of the Amana vault.
     /// @param _inputTokenAddress Address of the input token.
     /// @param _receiptTokenAddress Address of the 4626 vault.
-    /// @param _gateway Address of the ZetaChain Gateway.
     constructor(
         string memory _name,
         address _amanaVault,
         address _inputTokenAddress,
-        address _receiptTokenAddress,
-        address _gateway
+        address _receiptTokenAddress
     ) Ownable(msg.sender) {
         require(_amanaVault != address(0), "Invalid amanaVault address");
         name = _name;
         amanaVault = _amanaVault;
         inputToken = IERC20(_inputTokenAddress);
         receiptToken = I4626Vault(_receiptTokenAddress);
-        _GATEWAY_ADDRESS = _gateway;
     }
 
     /// @notice Ensures that only the Amana Vault can call certain functions.

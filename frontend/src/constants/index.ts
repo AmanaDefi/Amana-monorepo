@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -27,26 +27,30 @@ export const tokens: Token[] = [
 
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0x916b2a7312783Cf1538f6aAcFa1850fD24De205d",
-    name: "AaveV3 USDC",
-    symbol: "aAaveUSDC",
+    id: "0x36c7fEdE7556A07AE4f4a4165532f75aa21f2710", // Base ETH Vault
+    name: "AaveV3 ETH",
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+    symbol: "aAaveETH",
+    imgURL: "/BathEthsepolia.png",
     inputToken: {
-      symbol: "USDC",
-      decimals: 6,
-      address: BASE_USDC_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
+      symbol: "ETH",
+      decimals: 18,
+      address: ZC_ETH_BASE_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 3040,
       balance: EMPTY_BALANCE,
       isNative: false
     },
     protocol: {
       name: "Aave",
       network: "Base",
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
       imgURL: "/aave.png",
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
   {
-    id: "0xFa99a92B181a24bE8f6144620F55615639BcD53a",
+    id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
     name: "Moonwell Flagship USDC",
     symbol: "aMoonwellUSDC",
     inputToken: {
@@ -64,44 +68,44 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/Moonwell.jpg",
     },
   },
-  {
-    id: "0x9d4d38e8a68390643E436AdB7Af2e80b2f7536bc",
-    name: "Compound USDC",
-    symbol: "aCompoundUSDC",
-    inputToken: {
-      symbol: "USDC",
-      decimals: 6,
-      address: BASE_USDC_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Compound",
-      network: "Base",
-      imgURL: "/compound.png",
-    },
-  },
-  {
-    id: "0x2951CeE73b27c2b1Ffd66A03b77eEdD79012d2BF",
-    name: "Eddy USDC",
-    symbol: "aEddyUSDC",
-    inputToken: {
-      symbol: "USDC",
-      decimals: 6,
-      address: ZC_USDC_ETH_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Eddy",
-      network: "Zetachain",
-      imgURL: "/compound.png",
-    },
-  },
+  // {
+  //   id: "0x9d4d38e8a68390643E436AdB7Af2e80b2f7536bc",
+  //   name: "Compound USDC",
+  //   symbol: "aCompoundUSDC",
+  //   inputToken: {
+  //     symbol: "USDC",
+  //     decimals: 6,
+  //     address: BASE_USDC_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Compound",
+  //     network: "Base",
+  //     imgURL: "/compound.png",
+  //   },
+  // },
+  // {
+  //   id: "0x2951CeE73b27c2b1Ffd66A03b77eEdD79012d2BF",
+  //   name: "Eddy USDC",
+  //   symbol: "aEddyUSDC",
+  //   inputToken: {
+  //     symbol: "USDC",
+  //     decimals: 6,
+  //     address: ZC_USDC_ETH_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Eddy",
+  //     network: "Zetachain",
+  //     imgURL: "/compound.png",
+  //   },
+  // },
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [
