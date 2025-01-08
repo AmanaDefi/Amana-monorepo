@@ -56,12 +56,6 @@ abstract contract AmanaVaultBase is
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
     event ContextDataRevert(RevertContext context);
-    event WithdrawFromStrategy(
-        address indexed user,
-        uint256 amount,
-        uint256 fee,
-        uint256 shares
-    );
 
     event ReturnFundsToUserSent(uint256 indexed crossChainTxId);
     event ReturnFundsToUserFailed(uint256 indexed crossChainTxId);
