@@ -43,7 +43,6 @@ abstract contract AmanaVaultBase is
     uint16 public perfFee;
     uint256 internal totalPrincipal;
     mapping(address => uint256) internal userPrincipal;
-    uint256 crossChainTxId;
     IGasTank gasTank;
 
     modifier onlyGateway() {
@@ -57,8 +56,8 @@ abstract contract AmanaVaultBase is
     event VaultInitialized(uint8 decimals, uint256 perfFee);
     event ContextDataRevert(RevertContext context);
 
-    event ReturnFundsToUserSent(uint256 indexed crossChainTxId);
-    event ReturnFundsToUserFailed(uint256 indexed crossChainTxId);
+    event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
+    event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -91,7 +90,6 @@ abstract contract AmanaVaultBase is
         perfFee = perfFee_;
         totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         gasTank = IGasTank(gasTank_);
-        crossChainTxId = 1; // Initialize to 1 to avoid zero value (reserved for asset update)
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -295,7 +293,8 @@ abstract contract AmanaVaultBase is
         uint256 userChainId,
         uint256 assets,
         address zrc20source,
-        uint16 slippage
+        uint16 slippage,
+        bytes32 crossChainTxId
     ) internal {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
@@ -321,7 +320,8 @@ abstract contract AmanaVaultBase is
             outputAmount,
             receiver,
             zrc20source,
-            uint32(IZRC20(zrc20source).CHAIN_ID())
+            uint32(IZRC20(zrc20source).CHAIN_ID()),
+            crossChainTxId
         );
     }
 
@@ -329,7 +329,8 @@ abstract contract AmanaVaultBase is
         uint256 amount,
         address receiver,
         address zrc20source,
-        uint32 userChainId
+        uint32 userChainId,
+        bytes32 crossChainTxId
     ) internal virtual;
 
     /**
@@ -345,7 +346,8 @@ abstract contract AmanaVaultBase is
         address withdrawZRC20,
         uint256 assets,
         uint32 userChainId,
-        uint16 slippage
+        uint16 slippage,
+        bytes32 crossChainTxId
     ) internal virtual;
 
     /**
@@ -362,7 +364,7 @@ abstract contract AmanaVaultBase is
         uint32 userChainId,
         address receiver,
         address withdrawZRC20,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         uint16 slippage
     ) internal returns (uint256 outputAmount) {
         outputAmount = amount;

@@ -25,26 +25,32 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (amount > 0) {
-            uint16 slippage = abi.decode(message, (uint16));
+            (uint16 slippage, bytes32 crossChainTxId) = abi.decode(
+                message,
+                (uint16, bytes32)
+            );
             _depositComingFromConnectedChain(
                 context.sender,
                 context.chainID,
                 amount,
                 zrc20,
-                slippage
+                slippage,
+                crossChainTxId
             );
         } else {
             (
                 address withdrawZRC20,
                 uint256 withdrawAmount,
-                uint16 slippage
-            ) = abi.decode(message, (address, uint256, uint16));
+                uint16 slippage,
+                bytes32 crossChainTxId
+            ) = abi.decode(message, (address, uint256, uint16, bytes32));
             _withdrawComingFromConnectedChain(
                 context.sender,
                 withdrawZRC20,
                 withdrawAmount,
                 uint32(context.chainID),
-                slippage
+                slippage,
+                crossChainTxId
             );
         }
     }
@@ -136,7 +142,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint256 amount,
         address receiver,
         address,
-        uint32
+        uint32,
+        bytes32
     ) internal override {
         uint256 shares = previewDeposit(amount);
         userPrincipal[receiver] += amount;
@@ -207,7 +214,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address withdrawZRC20,
         uint256 assets,
         uint32 userChainId,
-        uint16 slippage
+        uint16 slippage,
+        bytes32 crossChainTxId
     ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
@@ -216,8 +224,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (assets > maxAssets)
             revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
 
-        uint256 currentCrossChainTxId = crossChainTxId;
-        crossChainTxId++;
         uint256 feeToWithdraw = _applyFee(user, assets);
         uint256 shares = previewWithdraw(assets);
 
@@ -239,7 +245,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
             userChainId,
             user,
             withdrawZRC20,
-            currentCrossChainTxId,
+            crossChainTxId,
             slippage
         );
     }
@@ -267,9 +273,9 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @param context The revert context containing details about the transaction.
      */
     function onRevert(RevertContext calldata context) external override {
-        (string memory revertMessage, uint256 _crossChainTxId) = abi.decode(
+        (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
             context.revertMessage,
-            (string, uint256)
+            (string, bytes32)
         );
         if (
             keccak256(bytes(revertMessage)) ==

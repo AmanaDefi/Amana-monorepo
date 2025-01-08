@@ -23,31 +23,31 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bool isDeposit;
         uint256 totalAssetsBefore;
         uint256 totalAssetsAfter;
-        uint256 crossChainTxId;
+        bytes32 crossChainTxId;
         uint16 slippage;
     }
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
 
-    event CrossChainInvestSent(uint256 indexed crossChainTxId);
-    event CrossChainInvestFailed(uint256 indexed crossChainTxId);
-    event DivestSent(uint256 indexed crossChainTxId);
-    event DivestFailed(uint256 indexed crossChainTxId);
+    event CrossChainInvestSent(bytes32 indexed crossChainTxId);
+    event CrossChainInvestFailed(bytes32 indexed crossChainTxId);
+    event DivestSent(bytes32 indexed crossChainTxId);
+    event DivestFailed(bytes32 indexed crossChainTxId);
     event TotalAssetsUpdated(uint256 totalAssets);
-    event SwitchStrategyFailed(uint256 indexed crossChainTxId);
+    event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
 
     event Deposited(
         address indexed user,
         uint256 amount,
         uint256 shares,
-        uint256 indexed crossChainTxId
+        bytes32 indexed crossChainTxId
     );
     event Withdrawn(
         address indexed user,
         address indexed receiver,
         uint256 amount,
         uint256 shares,
-        uint256 crossChainTxId
+        bytes32 crossChainTxId
     );
 
     /**
@@ -75,7 +75,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 totalAssetsBefore,
                 uint256 totalAssetsAfter,
                 uint256 executionNonce,
-                uint256 _crossChainTxId,
+                bytes32 _crossChainTxId,
                 uint16 slippage
             ) = abi.decode(
                     message,
@@ -90,7 +90,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                         uint256,
                         uint256,
                         uint256,
-                        uint256,
+                        bytes32,
                         uint16
                     )
                 );
@@ -111,26 +111,32 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         } else {
             if (context.sender == address(0)) revert CantBeZeroAddress();
             if (amount > 0) {
-                uint16 slippage = abi.decode(message, (uint16));
+                (uint16 slippage, bytes32 crossChainTxId) = abi.decode(
+                    message,
+                    (uint16, bytes32)
+                );
                 _depositComingFromConnectedChain(
                     context.sender,
                     context.chainID,
                     amount,
                     zrc20,
-                    slippage
+                    slippage,
+                    crossChainTxId
                 );
             } else {
                 (
                     address withdrawZRC20,
                     uint256 withdrawAmount,
-                    uint16 slippage
-                ) = abi.decode(message, (address, uint256, uint16));
+                    uint16 slippage,
+                    bytes32 crossChainTxId
+                ) = abi.decode(message, (address, uint256, uint16, bytes32));
                 _withdrawComingFromConnectedChain(
                     context.sender,
                     withdrawZRC20,
                     withdrawAmount,
                     uint32(context.chainID),
-                    slippage
+                    slippage,
+                    crossChainTxId
                 );
             }
         }
@@ -161,7 +167,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsBefore,
         uint256 totalAssetsAfter,
         uint256 executionNonce,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         uint16 _slippage
     ) internal {
         // Ensure no duplicate processing
@@ -211,7 +217,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsBefore,
         uint256 totalAssetsAfter,
         uint256 executionNonce,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         uint16 _slippage
     ) external onlyOwner {
         // Ensure no duplicate processing
@@ -313,12 +319,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address oldStrategyAddress = strategyAddress;
         strategyAddress = newStrategyAddress;
 
-        uint256 currentCrossChainTxId = crossChainTxId;
-        crossChainTxId++;
-
         _handleGasFee(GAS_LIMIT_FOR_CALL);
 
         bytes memory recipient = abi.encodePacked(oldStrategyAddress);
+
+        // Generate a unique crossChainTxId
+        bytes32 crossChainTxId = keccak256(
+            abi.encodePacked(
+                oldStrategyAddress,
+                newStrategyAddress,
+                block.timestamp, // Current timestamp
+                block.number // Current block number
+            )
+        );
 
         bytes memory outgoingMessage = abi.encode(
             address(0),
@@ -327,7 +340,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             0,
             0,
             false,
-            currentCrossChainTxId,
+            crossChainTxId,
             0
         );
 
@@ -337,7 +350,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             address(this), // abortAddress
             abi.encode(
                 "_switchStrategyFailed",
-                currentCrossChainTxId,
+                crossChainTxId,
                 address(0),
                 newStrategyAddress,
                 0
@@ -387,6 +400,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert DepositCantBeZero();
         }
+
+        // Generate a unique crossChainTxId
+        bytes32 crossChainTxId = keccak256(
+            abi.encodePacked(
+                caller,
+                receiver,
+                assets,
+                block.timestamp, // Current timestamp
+                block.number // Current block number
+            )
+        );
+
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
@@ -394,7 +419,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             assets
         );
 
-        _investAssets(assets, receiver, asset(), VAULT_CHAIN_ID);
+        _investAssets(
+            assets,
+            receiver,
+            asset(),
+            VAULT_CHAIN_ID,
+            crossChainTxId
+        );
     }
 
     /**
@@ -409,11 +440,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amount,
         address receiver,
         address userZRC20,
-        uint32 userChainId
+        uint32 userChainId,
+        bytes32 crossChainTxId
     ) internal override {
-        uint256 currentCrossChainTxId = crossChainTxId;
-        crossChainTxId++;
-
         (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_WITHDRAW_AND_CALL); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
@@ -436,7 +465,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             0,
             0,
             true,
-            currentCrossChainTxId,
+            crossChainTxId,
             0
         );
 
@@ -446,7 +475,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             address(this), // abortAddress
             abi.encode(
                 "_crossChainInvestFailed",
-                currentCrossChainTxId,
+                crossChainTxId,
                 receiver,
                 userZRC20,
                 userChainId
@@ -467,7 +496,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             revertOptions
         );
 
-        emit CrossChainInvestSent(currentCrossChainTxId);
+        emit CrossChainInvestSent(crossChainTxId);
     }
 
     /**
@@ -483,7 +512,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 depositAmount,
         uint256 totalAssetsBeforeDeposit,
         uint256 totalAssetsAfterDeposit,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal {
         userPrincipal[receiver] += depositAmount;
         totalPrincipal += depositAmount;
@@ -521,6 +550,17 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
         uint256 feeToWithdraw = _applyFee(user, assets);
 
+        // Generate a unique crossChainTxId
+        bytes32 crossChainTxId = keccak256(
+            abi.encodePacked(
+                caller,
+                receiver,
+                assets,
+                block.timestamp, // Current timestamp
+                block.number // Current block number
+            )
+        );
+
         _divestFromStrategy(
             user,
             receiver,
@@ -528,7 +568,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             assets,
             feeToWithdraw,
             VAULT_CHAIN_ID,
-            0
+            0,
+            crossChainTxId
         );
     }
 
@@ -545,7 +586,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         uint256 assets,
         uint32 userChainId,
-        uint16 slippage
+        uint16 slippage,
+        bytes32 crossChainTxId
     ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
@@ -563,7 +605,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             assets,
             feeToWithdraw,
             userChainId,
-            slippage
+            slippage,
+            crossChainTxId
         );
     }
 
@@ -583,11 +626,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amount,
         uint256 feeToWithdraw,
         uint32 withdrawChainId,
-        uint16 slippage
+        uint16 slippage,
+        bytes32 crossChainTxId
     ) internal {
-        uint256 currentCrossChainTxId = crossChainTxId;
-        crossChainTxId++;
-
         _handleGasFee(GAS_LIMIT_FOR_CALL);
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
@@ -600,7 +641,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             feeToWithdraw,
             withdrawChainId,
             false,
-            currentCrossChainTxId,
+            crossChainTxId,
             slippage
         );
 
@@ -610,7 +651,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             address(this), // abortAddress
             abi.encode(
                 "_divestConnectedChainStrategyFailed",
-                currentCrossChainTxId,
+                crossChainTxId,
                 user,
                 withdrawZRC20,
                 withdrawChainId
@@ -626,7 +667,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             callOptions,
             revertOptions
         );
-        emit DivestSent(currentCrossChainTxId);
+        emit DivestSent(crossChainTxId);
     }
 
     /**
@@ -649,7 +690,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 userChainId,
         uint256 totalAssetsBeforeWithdraw,
         uint256 totalAssetsAfterWithdraw,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
         latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
@@ -692,7 +733,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      */
     function _handleRevertEvent(
         string memory revertMessage,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         address user,
         address userZRC20,
         uint32 userChainId,
@@ -751,13 +792,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function onRevert(RevertContext calldata context) external override {
         (
             string memory revertMessage,
-            uint256 _crossChainTxId,
+            bytes32 _crossChainTxId,
             address user,
             address userZRC20,
             uint32 userChainId
         ) = abi.decode(
                 context.revertMessage,
-                (string, uint256, address, address, uint32)
+                (string, bytes32, address, address, uint32)
             );
 
         if (
