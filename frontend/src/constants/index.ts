@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { BASE_USDC_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { BASE_USDC_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -31,7 +31,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
-    imgURL: "/BathEthsepolia.png",
+    imgURL: "/base.png",
     inputToken: {
       symbol: "ETH",
       decimals: 18,
@@ -43,7 +43,9 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
+      strategyAddress: "0x03E55642EA26d681d6Ddfd818259F8E4986eca69",
       network: "Base",
+      chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
       imgURL: "/aave.png",
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
@@ -52,11 +54,13 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   {
     id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
     name: "Moonwell Flagship USDC",
+    des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
     symbol: "aMoonwellUSDC",
+    imgURL: "/base.png",
     inputToken: {
       symbol: "USDC",
       decimals: 6,
-      address: BASE_USDC_ADDRESS,
+      address: ZC_USDC_BASE_ADDRESS,
       imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
@@ -64,29 +68,64 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Moonwell",
+      strategyAddress: "0x804615ef2d82eDCbc3794C880a4e3EFDb0b526e3",
       network: "Base",
+      chainId: 8453,
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
       imgURL: "/Moonwell.jpg",
+      des: "Moonwell is a relatively new protocol."
     },
   },
-  // {
-  //   id: "0x9d4d38e8a68390643E436AdB7Af2e80b2f7536bc",
-  //   name: "Compound USDC",
-  //   symbol: "aCompoundUSDC",
-  //   inputToken: {
-  //     symbol: "USDC",
-  //     decimals: 6,
-  //     address: BASE_USDC_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Compound",
-  //     network: "Base",
-  //     imgURL: "/compound.png",
-  //   },
-  // },
+  {
+    id: "0xBF1A6cfD6edF6E6B944ea4b55aa77B5B21356014",
+    name: "Moonwell Eth",
+    des: " This vault invests ETH into a strategy which deposits the funds into the Moonwell Eth vault.",
+    symbol: "aMoonwellEth",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "ETH",
+      decimals: 18,
+      address: ZC_ETH_BASE_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Moonwell",
+      strategyAddress: "0xB4490Fc6D83A7A87bf8B83E310147089C6a96E1F",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/Moonwell.jpg",
+      des: "Moonwell is a relatively new protocol."
+    },
+  },
+  {
+    id: "0x5Feb6E013A6f1fd2135ccA330D875Fd0b4e6F2F5",
+    name: "Compound USDC",
+    des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Compound USDC pool, which earns interest every block.",
+    symbol: "aCompoundUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Compound",
+      strategyAddress: "0x74fCAd57C966cAB6fa02a0A5425b1c76DcaFe9A0",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/compound.png",
+      des: "Compound is one of the OG lending protocols."
+    },
+  },
   // {
   //   id: "0x2951CeE73b27c2b1Ffd66A03b77eEdD79012d2BF",
   //   name: "Eddy USDC",
@@ -114,7 +153,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
-    imgURL: "/BathEthsepolia.png",
+    imgURL: "/base.png",
     inputToken: {
       symbol: "ETH",
       decimals: 18,
