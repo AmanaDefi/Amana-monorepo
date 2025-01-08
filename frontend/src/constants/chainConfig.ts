@@ -14,8 +14,11 @@ const sepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
 const baseSepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
 const polygonAmoyRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
 const bscTestnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC_TESTNET || "";
+const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
+const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
+const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
+const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
 
-// Define ZetaChain configuration
 const zetaChain = defineChain({
   chainId: deployEnv === "testnet" ? 7001 : 7000, // 7001 for testnet, 7000 for mainnet
   name: deployEnv === "testnet" ? "ZetaChain Testnet" : "ZetaChain Mainnet",
@@ -40,59 +43,63 @@ const zetaChain = defineChain({
   slug: "zetachain",
 });
 
-// Define Sepolia Testnet configuration
-const sepoliaTestnet = defineChain({
-  chainId: 11155111,
-  name: "Sepolia Testnet",
-  shortName: "sepolia",
+// Define Sepolia configuration
+const ethereumChain = defineChain({
+  chainId: deployEnv === "testnet" ? 11155111 : 1, // 11155111 for Sepolia Testnet, 1 for Ethereum Mainnet
+  name: deployEnv === "testnet" ? "Sepolia Testnet" : "Ethereum Mainnet",
+  shortName: deployEnv === "testnet" ? "sepolia" : "eth",
   chain: "ETH",
-  rpc: [sepoliaRpcUrl], // Replace with your RPC URL if available
+  rpc: [deployEnv === "testnet" ? sepoliaRpcUrl : ethMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
-    name: "Sepolia Ether",
+    name: "Ether",
     symbol: "ETH",
     decimals: 18,
   },
   explorers: [
     {
       name: "Etherscan",
-      url: "https://sepolia.etherscan.io",
+      url: deployEnv === "testnet"
+        ? "https://sepolia.etherscan.io"
+        : "https://etherscan.io",
       standard: "EIP3091",
     },
   ],
-  testnet: true,
-  slug: "sepolia",
+  testnet: deployEnv === "testnet",
+  slug: deployEnv === "testnet" ? "sepolia" : "ethereum",
 });
 
-// Define Base Sepolia Testnet configuration
-const baseSepoliaTestnet = defineChain({
-  chainId: 84532,
-  name: "Base Sepolia Testnet",
-  shortName: "base-sepolia",
+// Define Base configuration
+const baseChain = defineChain({
+  chainId: deployEnv === "testnet" ? 84532 : 8453, // 84532 for Base Sepolia Testnet, 8453 for Base Mainnet
+  name: deployEnv === "testnet" ? "Base Sepolia Testnet" : "Base Mainnet",
+  shortName: "base",
   chain: "Base",
-  rpc: [baseSepoliaRpcUrl], // Replace with your RPC URL if available
+  rpc: [deployEnv === "testnet" ? baseSepoliaRpcUrl : baseMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
-    name: "Sepolia Ether",
+    name: "Ether",
     symbol: "ETH",
     decimals: 18,
   },
   explorers: [
     {
-      name: "Base Scout",
-      url: "https://base-sepolia.blockscout.com",
+      name: "Base Explorer",
+      url: deployEnv === "testnet"
+        ? "https://base-sepolia.blockscout.com"
+        : "https://explorer.base.org",
       standard: "EIP3091",
     },
   ],
-  testnet: true,
-  slug: "base-sepolia",
+  testnet: deployEnv === "testnet",
+  slug: "base",
 });
 
-// Define Polygon Amoy Testnet configuration
-const polygonAmoyTestnet = defineChain({
-  chainId: 80002,
-  name: "Polygon Amoy Testnet",
-  shortName: "polygon-amoy",
+// Define Polygon configuration
+const polygonChain = defineChain({
+  chainId: deployEnv === "testnet" ? 137 : 137, // 137 for Mumbai Testnet, 137 for Polygon Mainnet
+  name: deployEnv === "testnet" ? "Polygon Mumbai Testnet" : "Polygon Mainnet",
+  shortName: "polygon",
   chain: "Polygon",
-  rpc: [polygonAmoyRpcUrl],
+  rpc: [deployEnv === "testnet" ? polygonAmoyRpcUrl : polygonMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "MATIC",
     symbol: "MATIC",
@@ -101,21 +108,23 @@ const polygonAmoyTestnet = defineChain({
   explorers: [
     {
       name: "Polygonscan",
-      url: "https://mumbai.polygonscan.com",
+      url: deployEnv === "testnet"
+        ? "https://mumbai.polygonscan.com"
+        : "https://polygonscan.com",
       standard: "EIP3091",
     },
   ],
-  testnet: true,
-  slug: "polygon-amoy",
+  testnet: deployEnv === "testnet",
+  slug: "polygon",
 });
 
-// Define BSC Testnet configuration
-const bscTestnet = defineChain({
-  chainId: 97,
-  name: "BSC Testnet",
-  shortName: "bsc-testnet",
+// Define BSC configuration
+const bscChain = defineChain({
+  chainId: deployEnv === "testnet" ? 97 : 56, // 97 for BSC Testnet, 56 for BSC Mainnet
+  name: deployEnv === "testnet" ? "BSC Testnet" : "BSC Mainnet",
+  shortName: "bsc",
   chain: "BSC",
-  rpc: [bscTestnetRpcUrl],
+  rpc: [deployEnv === "testnet" ? bscTestnetRpcUrl : bscMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "Binance Coin",
     symbol: "BNB",
@@ -124,18 +133,21 @@ const bscTestnet = defineChain({
   explorers: [
     {
       name: "BSCScan",
-      url: "https://testnet.bscscan.com",
+      url: deployEnv === "testnet"
+        ? "https://testnet.bscscan.com"
+        : "https://bscscan.com",
       standard: "EIP3091",
     },
   ],
-  testnet: true,
-  slug: "bsc-testnet",
+  testnet: deployEnv === "testnet",
+  slug: "bsc",
 });
+
 
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"
-  ? [zetaChain, sepoliaTestnet, baseSepoliaTestnet, polygonAmoyTestnet, bscTestnet] // always put Zetachain first
-  : [zetaChain]; // always put Zetachain first
+  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain] // always put Zetachain first
+  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain]; // always put Zetachain first
 
 // Define approved tokens per chain
 export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
@@ -150,6 +162,28 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   //   },
 
   // ],
+  1: [
+    {
+      symbol: "ETH",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      imgURL: "/ETH.png",
+      price: 3904,
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
+    },
+    {
+      symbol: "USDC",
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a",
+    },
+  ],
   11155111: [
     {
       symbol: "ETH",
@@ -172,6 +206,28 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
     },
   ],
+  8453: [
+    {
+      symbol: "ETH",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      imgURL: "/ETH.png",
+      price: 3904,
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0x1de70f3e971B62A0707dA18100392af14f7fB677"
+    },
+    {
+      symbol: "USDC",
+      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x96152E6180E085FA57c7708e18AF8F05e37B479D",
+    },
+  ],
   84532: [
     {
       symbol: "ETH",
@@ -184,9 +240,21 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD"
     },
   ],
+  137: [
+    {
+      symbol: "POL",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      imgURL: "/polygon_logo.png",
+      price: 0.7159,
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501",
+    },
+  ],
   80002: [
     {
-      symbol: "MATIC",
+      symbol: "POL",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/polygon_logo.png",
@@ -194,6 +262,28 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       balance: EMPTY_BALANCE,
       isNative: true,
       ZRC20equivalent: "0x777915D031d1e8144c90D025C594b3b8Bf07a08d",
+    },
+  ],
+  56: [
+    {
+      symbol: "BNB",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      imgURL: "/bnb_logo.png",
+      price: 734,
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb",
+    },
+    {
+      symbol: "USDC",
+      address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+      decimals: 18,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
     },
   ],
   97: [
