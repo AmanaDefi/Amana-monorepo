@@ -132,30 +132,8 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         setStep(0)
     }, [actions])
 
-    const [strategyAddress, setstrategyAddress] = useState("")
-    const [strategyChainID, setstrategyChainID] = useState(0)
-
-    async function getStrategyChain() {
-        const contract = getContract({
-            client,
-            chain: SUPPORTED_CHAINS[0],
-            address: vaultData.id,
-        });
-        const [strategyAddress, chainID] = await readContract({
-            contract,
-            method: "function getStrategy() view returns (address, uint32)",
-        });
-
-        setstrategyAddress(strategyAddress)
-        setstrategyChainID(chainID)
-
-    }
-
-    useEffect(() => {
-
-        getStrategyChain()
-
-    }, [])
+    const [strategyAddress, setstrategyAddress] = useState(vaultData.protocol.strategyAddress)
+    const [strategyChainID, setstrategyChainID] = useState(vaultData.protocol.chainId)
 
     const [crosschainInvestHash, setCrosschainInvestHash] = useState("")
 

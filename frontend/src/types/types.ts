@@ -33,7 +33,9 @@ export interface VaultData {
   inputToken: Token;
   protocol: {
     name: string;
+    strategyAddress: string;
     network: string;
+    chainId: number;
     netdes?: string;
     imgURL: string;
     des?: string;

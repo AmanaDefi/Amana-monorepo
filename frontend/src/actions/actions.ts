@@ -15,7 +15,7 @@ import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import * as dotenv from "dotenv";
 
 dotenv.config();
-const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA);
+const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 const EVMGatewayAddress = deployEnv === "testnet"
@@ -91,9 +91,13 @@ export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: 
 }
 
 
-export async function calculateMoonwellAPY(receiptTokenAddress: Address) {
+export async function calculateMoonwellAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   const moonwellVault = new ethers.Contract(receiptTokenAddress, moonwellVaultABI, provider);
-
+  // const moonwellVault = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: receiptTokenAddress
+  // });
   const averageBlockTimeInSeconds = 2;
   const secondsInADay = 24 * 60 * 60;
   const secondsIn7Days = 7 * secondsInADay;
@@ -102,10 +106,20 @@ export async function calculateMoonwellAPY(receiptTokenAddress: Address) {
   const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
   const pastBlockNumber = BigInt(currentBlockNumber - blocksIn7Days);
 
+  // const currentPrice = await readContract({
+  //   contract: moonwellVault,
+  //   method: "function convertToAssets(uint256) view returns (uint256)",
+  //   params: [BigInt(1e18)]
+  // });
+
   const currentPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18)));
 
   const pastPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18), { blockTag: pastBlockNumber }));
-
+  // const pastPrice = await readContract({
+  //   contract: moonwellVault,
+  //   method: "function convertToAssets(uint256) view returns (uint256)",
+  //   params: [BigInt(1e18)]
+  // });
   const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
   const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
 
@@ -172,15 +186,15 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
     method:
       "function deposit(uint256 assets,  address receiver)",
     params: [transactionAmount, activeAccount?.address],
-    maxFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
-    maxPriorityFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
+    // maxFeePerGas: BigInt(25000000), // TODO - check what this value should be optimally
+    // maxPriorityFeePerGas: BigInt(25000000), // TODO - check what this value should be optimally
   });
   console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx
   });
-  console.log("Deposit executed2",receipt);
+  console.log("Deposit executed2", receipt);
   return receipt;
 };
 
@@ -198,9 +212,12 @@ const executeCrossChainDeposit = async (
   const isNativeToken = inputToken === ZeroAddress;
 
   let contract, approveTx, payload, revertOptions;
-
+  const slippage = 200; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
-  payload = "0x" as `0x${string}`;
+  payload = abiCoder.encode(
+    ["uint16"],
+    [slippage]
+  ) as `0x${string}`;
 
   // Prepare revertOptions
   revertOptions = [
@@ -239,7 +256,7 @@ const executeCrossChainDeposit = async (
       transaction: depositTx,
       ...txOptions,
     });
-    
+
 
     console.log("Deposit executed");
     return receipt;
@@ -347,11 +364,11 @@ const executeCrossChainWithdrawal = async (
   withdrawZRC20: Address // TODO add this higher up in the calling functions
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
-
+  const slippage = 200; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "uint256"],
-    [withdrawZRC20, withdrawAmount]
+    ["address", "uint256", "uint16"],
+    [withdrawZRC20, withdrawAmount, slippage]
   ) as `0x${string}`;
 
   // Prepare revertOptions to match the Solidity struct
@@ -442,22 +459,12 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
   const updatedVaults = await Promise.all(
     vaultData.map(async (vault) => {
       try {
-        const contract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
-          address: vault.id,
-        });
-        
-        const [strategyAddress, chainID] = await readContract({
-          contract,
-          method: "function getStrategy() view returns (address, uint32)",
-        });
-        const strategyChain = defineChain(chainID); // ToDo rather grab this from supported chains?
+        const strategyChain = defineChain(vault.protocol.chainId); // ToDo rather grab this from supported chains?
 
         const strategyContract = getContract({
           client,
           chain: strategyChain,
-          address: strategyAddress,
+          address: vault.protocol.strategyAddress,
         });
         let APY7d = 0;
         if (vault.protocol.name === "Aave") {
@@ -484,7 +491,7 @@ export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> =
             contract: strategyContract,
             method: "function receiptToken() view returns (address)",
           });
-          APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address);
+          APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
         }
 
         return {

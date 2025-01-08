@@ -45,7 +45,7 @@ export const useUpdateVaultBalanceAndTotal = (
             }
           })
         );
-        console.log("balancedata",balancesAndAssets)
+        console.log("balancedata", balancesAndAssets)
         const balances = balancesAndAssets.map(({ vaultId, balance }) => ({
           vaultId,
           balance,
@@ -85,23 +85,11 @@ export const useUpdateAPYs = (
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
-              console.log("vault", vault.id);
-              const contract = getContract({
-                client,
-                chain: SUPPORTED_CHAINS[0],
-                address: vault.id,
-              });
-              console.log("contract", contract);
-              const [strategyAddress, chainID] = await readContract({
-                contract,
-                method: "function getStrategy() view returns (address, uint32)",
-              });
-              const strategyChain = defineChain(chainID); // ToDo rather grab this from supported chains?
-              console.log("strategyAddress", strategyAddress);
+              const strategyChain = defineChain(vault.protocol.chainId); // ToDo rather grab this from supported chains?
               const strategyContract = getContract({
                 client,
                 chain: strategyChain,
-                address: strategyAddress,
+                address: vault.protocol.strategyAddress,
               });
 
               const receiptTokenAddress = await readContract({

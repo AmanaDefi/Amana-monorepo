@@ -1,11 +1,8 @@
-import { ParseEventLogsResult, getContract, readContract, Address, prepareEvent } from "thirdweb";
+import { ParseEventLogsResult, Address } from "thirdweb";
 import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token } from "../types/types"
-import { client } from "../utils/client";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { handleAllowance } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
-import { useContractEvents } from "thirdweb/react";
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -136,23 +133,6 @@ export function formatBalance(balance: number) {
   return remaining;
 }
 
-export const getStrategyChain = async (
-  vault: VaultData
-) => {
-  const contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0],
-    address: vault.id,
-  });
-
-  const [strategyAddress, chainID] = await readContract({
-    contract,
-    method: "function getStrategy() view returns (address, uint32)",
-  });
-
-  return [strategyAddress, chainID];
-}
-
 export const selectActions = async (
   action: SmartVaultActionType,
   vaultData: VaultData,
@@ -162,10 +142,10 @@ export const selectActions = async (
   inputToken: Token
 ) => {
 
-  console.log("3432438243284283",inputBalance.value, inputToken?.address, activeChain.id)
+  console.log("3432438243284283", inputBalance.value, inputToken?.address, activeChain.id)
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value)
-  const [chainID] = await getStrategyChain(vaultData)
+  const chainID = vaultData.protocol.chainId
   const allowanceResult = await handleAllowance({
     token: inputToken?.address as Address,
     activeChain: activeChain,
