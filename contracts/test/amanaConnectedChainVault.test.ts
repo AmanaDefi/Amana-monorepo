@@ -7,6 +7,7 @@ import { setTokenBalance } from "./utils";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import dotenv from "dotenv";
 import { PriceServiceConnection } from "@pythnetwork/price-service-client";
+import { generateTransactionId } from "./utils";
 
 dotenv.config();
 
@@ -101,16 +102,22 @@ describe("AmanaConnectedChainVault Tests", function () {
     user: Signer,
     depositAmount: BigNumber,
     pythContract: any
-  ): Promise<void> {
+  ): Promise<`0x${string}`> {
+    // Update Pyth prices
     await updatePythPrices(pythContract, user);
 
     // Set token balance for the vault
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, amanaVault.address, depositAmount);
 
     const slippage = 200;
+
+    // Generate a transaction ID using your generateTransactionId function
+    const transactionId = generateTransactionId(await user.getAddress(), 8453);
+
+    // Encode the deposit message
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["uint16"],
-      [slippage]
+      ["uint16", "bytes32"],
+      [slippage, transactionId]
     );
 
     // Execute the onCall function to simulate a deposit
@@ -124,7 +131,11 @@ describe("AmanaConnectedChainVault Tests", function () {
       depositAmount,
       depositMessage
     );
+
+    // Return the transaction ID
+    return transactionId;
   }
+
 
   async function simulateConfirmDeposit(
     user: Signer,
@@ -209,9 +220,11 @@ describe("AmanaConnectedChainVault Tests", function () {
   ): Promise<void> {
     await updatePythPrices(pythContract, user);
     const slippage = 200;
+    const transactionId = generateTransactionId(await user.getAddress(), 8453)
+
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256", "uint16"],
-      [ZC_ETH_BASE_ADDRESS, withdrawAmount, slippage]
+      ["address", "uint256", "uint16", "bytes32"],
+      [ZC_ETH_BASE_ADDRESS, withdrawAmount, slippage, transactionId]
     );
 
     await amanaVault.connect(gatewaySigner).onCall(
@@ -484,7 +497,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const { user1, amanaVault, pythContract } = await loadFixture(setup);
       const depositAmount = ethers.utils.parseUnits("0.1", 18);
 
-      await simulateDepositCallFromBase(
+      const txId = await simulateDepositCallFromBase(
         user1,
         depositAmount,
         pythContract
@@ -492,9 +505,11 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Simulate _crossChainInvest reverting
       const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
-        ["string", "uint256", "address", "address", "uint32"],
-        ["_crossChainInvestFailed", 0, await user1.getAddress(), ZC_ETH_BASE_ADDRESS, 84532]
+        ["string", "bytes32", "address", "address", "uint32"],
+        ["_crossChainInvestFailed", txId, await user1.getAddress(), ZC_ETH_BASE_ADDRESS, 84532]
       );
+      console.log("Encoded mockRevertMessage:", mockRevertMessage);
+
       // the revert will send back some ETH_SEPOLIA
       await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, depositAmount.mul(95).div(100));
 
@@ -505,7 +520,7 @@ describe("AmanaConnectedChainVault Tests", function () {
           revertMessage: mockRevertMessage,
           amount: 100000000n,
         })
-      ).to.emit(amanaVault, "CrossChainInvestFailed").withArgs(0);
+      ).to.emit(amanaVault, "CrossChainInvestFailed").withArgs(txId);
     });
 
     it("should reject unauthorized treasury updates", async function () {
@@ -522,7 +537,8 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       await simulateDepositCallFromBase(
         user1,
-        depositAmount1, pythContract
+        depositAmount1,
+        pythContract
       )
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1)
 

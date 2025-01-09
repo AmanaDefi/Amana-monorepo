@@ -2,7 +2,8 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { setTokenBalance } from "./utils";
+import { setTokenBalance, generateTransactionId } from "./utils";
+
 import {
   ZC_ETH_ETH_ADDRESS,
   ZC_ETH_BASE_ADDRESS,
@@ -106,9 +107,10 @@ async function setup() {
     // Set token balance for the vault
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, amanaVault.address, depositAmount);
     const slippage = 200;
+    const transactionId = generateTransactionId(await user.getAddress(), 8453)
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["uint16"],
-      [slippage]
+      ["uint16", "bytes32"],
+      [slippage, transactionId]
     );
     // Execute the onCall function to simulate a deposit
     await amanaVault.connect(gatewaySigner).onCall(
@@ -128,9 +130,11 @@ async function setup() {
     withdrawAmount: BigNumber
   ): Promise<any> {
     const slippage = 200;
+    const transactionId = generateTransactionId(await user.getAddress(), 8453)
+
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256", "uint16"],
-      [ZC_ETH_BASE_ADDRESS, withdrawAmount, slippage]
+      ["address", "uint256", "uint16", "bytes32"],
+      [ZC_ETH_BASE_ADDRESS, withdrawAmount, slippage, transactionId]
     );
     const tx = await amanaVault.connect(gatewaySigner).onCall(
       {

@@ -1,4 +1,5 @@
 import { ethers, network } from "hardhat";
+import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
 
 export async function setTokenBalance(tokenAddress, account, amount) {
 
@@ -24,3 +25,14 @@ export async function setTokenBalance(tokenAddress, account, amount) {
   const token = await ethers.getContractAt("IERC20", tokenAddress);
   const newBalance = await token.balanceOf(account);
 }
+
+// Helper function to generate a unique transaction ID (bytes32)
+export const generateTransactionId = (
+  userAddress: string,
+  chainId: number
+): `0x${string}` => {
+  const timestamp = Date.now().toString(); // Current timestamp in milliseconds
+  const randomValue = Math.floor(Math.random() * 100000).toString(); // Random number
+  const inputString = `${userAddress}-${chainId}-${timestamp}-${randomValue}`;
+  return keccak256(toUtf8Bytes(inputString)) as `0x${string}`;
+};
