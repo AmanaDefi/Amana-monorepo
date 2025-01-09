@@ -508,7 +508,6 @@ describe("AmanaConnectedChainVault Tests", function () {
         ["string", "bytes32", "address", "address", "uint32"],
         ["_crossChainInvestFailed", txId, await user1.getAddress(), ZC_ETH_BASE_ADDRESS, 84532]
       );
-      console.log("Encoded mockRevertMessage:", mockRevertMessage);
 
       // the revert will send back some ETH_SEPOLIA
       await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, depositAmount.mul(95).div(100));
