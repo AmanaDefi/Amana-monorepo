@@ -11,6 +11,7 @@ import compoundVaultABI from "../../abis/compoundVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import { Chain, defineChain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
+import { keccak256 } from "thirdweb";
 
 import * as dotenv from "dotenv";
 
@@ -198,6 +199,16 @@ const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activ
   return receipt;
 };
 
+// Helper function to generate a unique transaction ID (bytes32)
+const generateTransactionId = (
+  activeAccount: Account,
+  activeChain: Chain
+): `0x${string}` => {
+  const timestamp = Date.now().toString(); // Current timestamp in milliseconds
+  const randomValue = Math.floor(Math.random() * 100000).toString(); // Random number
+  const inputString = `${activeAccount.address}-${activeChain.id}-${timestamp}-${randomValue}`;
+  return keccak256(toUtf8Bytes(inputString)) as `0x${string}`;
+};
 
 const executeCrossChainDeposit = async (
   vaultId: Address,
@@ -208,6 +219,10 @@ const executeCrossChainDeposit = async (
 ) => {
   console.log("Executing Cross-Chain Deposit");
 
+  // Generate a unique transaction ID
+  const transactionId = generateTransactionId(activeAccount, activeChain);
+  console.log("Generated Transaction ID (bytes32):", transactionId);
+
   // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
   const isNativeToken = inputToken === ZeroAddress;
 
@@ -215,8 +230,8 @@ const executeCrossChainDeposit = async (
   const slippage = 200; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
-    ["uint16"],
-    [slippage]
+    ["uint16", "bytes32"],
+    [slippage, transactionId]
   ) as `0x${string}`;
 
   // Prepare revertOptions
@@ -364,6 +379,11 @@ const executeCrossChainWithdrawal = async (
   withdrawZRC20: Address // TODO add this higher up in the calling functions
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
+
+  // Generate a unique transaction ID
+  const transactionId = generateTransactionId(activeAccount, activeChain);
+  console.log("Generated Transaction ID (bytes32):", transactionId);
+
   const slippage = 200; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
