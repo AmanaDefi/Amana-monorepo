@@ -12,6 +12,7 @@ import "./tasks/deployMock4626";
 import "./tasks/deployERC20_4626_Strategy";
 import "./tasks/deployZetachainStrategy";
 import "./tasks/deployPriceOracle";
+import "./tasks/deployWithdrawalReceiver";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -97,8 +98,8 @@ const config: HardhatUserConfig = {
       arbitrumOne: process.env.ARBISCAN_API_KEY || "",
       base: process.env.BASESCAN_API_KEY || "",
       base_sepolia: process.env.BASESCAN_API_KEY || "",
-      zeta_mainnet: "abc",
-      zeta_testnet: "abc",
+      zeta_mainnet: process.env.BLOCKSCOUT_API_KEY || "",
+      zeta_testnet: process.env.BLOCKSCOUT_API_KEY || "",
       sepolia_testnet: "abc",
       polygon_amoy: process.env.POLYGONSCAN_API_KEY || "",
       bsc_testnet: process.env.BSCSCAN_API_KEY || "",
