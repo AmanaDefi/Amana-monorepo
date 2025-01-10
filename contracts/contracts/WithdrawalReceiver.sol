@@ -3,13 +3,12 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 
-contract WithdrawalReceiver is Ownable {
+contract WithdrawalReceiver {
     using SafeERC20 for IERC20;
 
-    address immutable _GATEWAY_ADDRESS =
+    address public constant _GATEWAY_ADDRESS =
         0x48B9AACC350b20147001f88821d31731Ba4C30ed;
 
     event FundsReturned(
@@ -26,15 +25,12 @@ contract WithdrawalReceiver is Ownable {
         _;
     }
 
-    constructor() Ownable(msg.sender) {}
-
     /**
      * @notice Handles calls from the ZetaChain gateway to return funds to users.
-     * @param context The message context from the gateway.
      * @param message Encoded details of the funds to be returned.
      */
     function onCall(
-        MessageContext calldata context,
+        MessageContext calldata,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory) {
         (
