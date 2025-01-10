@@ -14,6 +14,7 @@ import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
 
 import * as dotenv from "dotenv";
+import { VAULT_DATA } from "@/constants";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -435,7 +436,6 @@ const executeCrossChainWithdrawal = async (
   }
 };
 
-
 export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
@@ -453,6 +453,21 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
   });
   const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
+}
+
+export const fetchUserVaultMaxWithdraw = async (decimals: number, userAddress: Address, vaultAddress: Address) => {
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
+    address: vaultAddress
+  });
+  const maxWithdraw = await readContract({
+    contract,
+    method: "function maxWithdraw(address) view returns (uint256)",
+    params: [userAddress]
+  });
+  const formattedMaxWithdraw = Number(maxWithdraw) / 10 ** decimals;
+  return formattedMaxWithdraw.toString();
 }
 
 export const fetchTotalAssets = async (vaultAddress: Address) => {

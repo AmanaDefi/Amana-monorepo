@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { fetchUserVaultBalance, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY, calculateEddyAPY } from "../actions/actions";
+import { fetchUserVaultBalance, fetchUserVaultMaxWithdraw, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY, calculateEddyAPY } from "../actions/actions";
 import { Address } from "thirdweb";
 import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
@@ -27,7 +27,13 @@ export const useUpdateVaultBalanceAndTotal = (
               );
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
 
-              const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
+              // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
+              const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+                vault.inputToken.decimals,
+                activeAccount?.address as Address,
+                vault.id as Address
+              );
+
               return {
                 vaultId: vault.id,
                 balance,
