@@ -145,7 +145,7 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
 
 export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
-    return executeDirectDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount);
+    return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
   } else {
     return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount);
   }
@@ -158,13 +158,11 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
     chain: activeChain,
     address: inputToken
   });
-  console.log("contract", contract);
   const approveTx = prepareContractCall({
     contract,
     method: "function approve(address to, uint256 value)",
     params: [vaultId, transactionAmount]
   });
-  console.log("approveTx", approveTx);
   await sendAndConfirmTransaction({
     account: activeAccount,
     transaction: approveTx
@@ -173,30 +171,23 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
   return true;
 };
 
-const executeDirectDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+const executeDirectDeposit = async (vaultId: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Deposit");
   let contract = getContract({
     client,
     chain: activeChain,
     address: vaultId
   });
-
-  console.log("active account", activeAccount?.address);
-  console.log("transactionAmount", transactionAmount);
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets,  address receiver)",
     params: [transactionAmount, activeAccount?.address],
-    // maxFeePerGas: BigInt(25000000), // TODO - check what this value should be optimally
-    // maxPriorityFeePerGas: BigInt(25000000), // TODO - check what this value should be optimally
   });
-  console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx
   });
-  console.log("Deposit executed2", receipt);
   return receipt;
 };
 
@@ -360,11 +351,7 @@ const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account,
     method:
       "function withdraw(uint256 assets, address receiver, address owner)",
     params: [withdrawAmount, activeAccount?.address, activeAccount?.address],
-    maxFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
-    maxPriorityFeePerGas: BigInt(1000000000), // TODO - check what this value should be optimally
   });
-  console.log("withdraw amount", withdrawAmount);
-  console.log("withdrawTx", withdrawTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: withdrawTx
