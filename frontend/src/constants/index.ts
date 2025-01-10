@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { BASE_USDC_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -124,6 +124,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
       imgURL: "/compound.png",
       des: "Compound is one of the OG lending protocols."
+    },
+  },
+  {
+    id: "0x07d3d9f8917f1d0961397CAd5B9Ebb5E8C0575D6", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+    name: "Mock USDC",
+    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+    symbol: "aMockUSDC",
+    imgURL: "/ZetaChain.png",
+    inputToken: {
+      symbol: "USDC.ETH",
+      decimals: 6,
+      address: ZC_USDC_ETH_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Mock",
+      strategyAddress: "0xEF2D1463de249b1b74Ea60B73D05D25A0C8516A3",
+      network: "Zetachain",
+      chainId: 7000,
+      netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+      imgURL: "/aave.png",
+      des: "This is a mock strategy for testing purposes."
     },
   },
   // {
