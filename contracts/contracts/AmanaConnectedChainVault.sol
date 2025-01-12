@@ -36,20 +36,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event TotalAssetsUpdated(uint256 totalAssets);
     event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
 
-    event Deposited(
-        address indexed user,
-        uint256 amount,
-        uint256 shares,
-        bytes32 indexed crossChainTxId
-    );
-    event Withdrawn(
-        address indexed user,
-        address indexed receiver,
-        uint256 amount,
-        uint256 shares,
-        bytes32 crossChainTxId
-    );
-
     /**
      * @dev Handles cross-chain communication via the gateway.
      * @param context Message context including origin and sender.

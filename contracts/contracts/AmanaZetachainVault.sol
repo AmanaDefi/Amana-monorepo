@@ -143,7 +143,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address receiver,
         address,
         uint32,
-        bytes32
+        bytes32 crossChainTxId
     ) internal override {
         uint256 shares = previewDeposit(amount);
         userPrincipal[receiver] += amount;
@@ -153,7 +153,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bool success = IERC20(asset()).approve(strategyAddress, amount);
         if (!success) revert ApprovalFailed();
         IStrategy(strategyAddress).invest(amount);
-        emit Deposit(address(0), receiver, amount, shares);
+        emit Deposited(receiver, amount, shares, crossChainTxId);
     }
 
     /**

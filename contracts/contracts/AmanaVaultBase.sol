@@ -59,6 +59,20 @@ abstract contract AmanaVaultBase is
     event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
     event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
 
+    event Deposited(
+        address indexed user,
+        uint256 amount,
+        uint256 shares,
+        bytes32 indexed crossChainTxId
+    );
+    event Withdrawn(
+        address indexed user,
+        address indexed receiver,
+        uint256 amount,
+        uint256 shares,
+        bytes32 indexed crossChainTxId
+    );
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();

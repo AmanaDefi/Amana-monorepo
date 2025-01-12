@@ -41,7 +41,7 @@ async function setup() {
       {
         forking: {
           jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-          blockNumber: 6345093,
+          blockNumber: 6537382,
         },
       },
     ]
