@@ -1,7 +1,14 @@
+# Node.js dependencies
 node_modules
+
+# Environment variables
 .env
+
+# Test coverage outputs
 coverage
 coverage.json
+
+# Typechain generated files
 typechain
 typechain-types
 
@@ -13,7 +20,14 @@ artifacts
 out
 cache_forge
 
+# Foundry libraries in default lib directory (not needed if using node_modules)
+lib/
+
+# Access token
 access_token
 
-venv/
+# macOS-specific files
 .DS_Store
+
+# Python virtual environment
+venv/
