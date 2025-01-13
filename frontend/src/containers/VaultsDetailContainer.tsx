@@ -23,7 +23,7 @@ const VaultsDetailContainer: React.FC<{
     const [loading, setLoading] = useState<boolean>(true);
     const [activeAccount, setActiveAccount] = useState<Account | null>(null);
     const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
-    const [userVaultBalance, setUserVaultBalance] = useState<UserVaultBalance>();
+    const [userVaultBalance, setUserVaultBalance] = useState<string>();
     const [vaultTotalAsset, setVaultTotalAsset] = useState<VaultTotalAssets>();
     const [vaultTotalAssetinToken, setVaultTotalAssetinToken] = useState<VaultTotalAssetsinToken>();
     const [transactionCompleted, setTransactionCompleted] = useState(false);

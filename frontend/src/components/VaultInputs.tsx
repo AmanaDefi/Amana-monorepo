@@ -17,7 +17,7 @@ export interface VaultInputsProps {
   vaultData: VaultData;
   tokenOptions: Token[];
   setTransactionCompleted: (value: boolean) => void;
-  userVaultBalance?: UserVaultBalance;
+  userVaultBalance?: string;
   vaultTotalAssetinToken?: VaultTotalAssetsinToken
 }
 
@@ -196,7 +196,7 @@ export default function VaultInputs({
     if (isDeposit) {
       handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
     } else {
-      handleChangeInput({ currentTarget: { value: userVaultBalance?.balance.toString() } } as React.ChangeEvent<HTMLInputElement>);
+      handleChangeInput({ currentTarget: { value: userVaultBalance } } as React.ChangeEvent<HTMLInputElement>);
     }
   }
 

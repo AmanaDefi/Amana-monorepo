@@ -18,7 +18,7 @@ export default function VaultHeader({
     vaultAPYs,
 }: {
     vaultData: VaultData;
-    userVaultBalance?: UserVaultBalance;
+    userVaultBalance?: string;
     selectedVaultId: string;
     vaultTotalAsset?: VaultTotalAssets;
     vaultAPYs: VaultAPY[];
@@ -42,6 +42,7 @@ export default function VaultHeader({
     });
     const [inputToken, setInputToken] = useState<Token | undefined>();
     const [walletData, setWalletData] = useState<string>("");
+    const [data1, setdata1] = useState('')
 
     // Step 1: Determine inputToken based on activeChain
     useEffect(() => {
@@ -53,9 +54,14 @@ export default function VaultHeader({
         }
     }, [activeChain, vaultData]);
 
-    const data = formatBalance(
-        Number(userVaultBalance?.balance)
-    );
+    
+
+    useEffect(() => {
+        setdata1(formatBalance(
+            Number(userVaultBalance)
+        ))
+    }, [userVaultBalance])
+    
 
     // Step 2: Fetch wallet data when inputToken is set
     useEffect(() => {
@@ -90,7 +96,7 @@ export default function VaultHeader({
         };
 
         fetchData();
-    }, [inputToken, userAddress, activeChain, data]);
+    }, [inputToken, userAddress, activeChain, data1]);
 
     // Handle undefined states gracefully
     if (!inputToken) {
@@ -133,8 +139,8 @@ export default function VaultHeader({
                     <LargeCardStat
                         id="deposits"
                         label="Deposits"
-                        value={`${formatBalance(Number(data))} ${vaultData.symbol}`}
-                        secondaryValue={`$ ${formatCurrency(Number(data) * price)}`}
+                        value={`${formatBalance(Number(data1))} ${vaultData.symbol}`}
+                        secondaryValue={`$ ${formatCurrency(Number(data1) * price)}`}
                         tooltip="Value of your vault deposits"
                     />
                     <LargeCardStat

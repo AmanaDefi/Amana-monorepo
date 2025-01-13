@@ -3,6 +3,7 @@ import { Token, VaultData, UserVaultBalance } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency, formatBalance } from "@/utils/utils";
+import { useState, useEffect } from "react";
 
 export default function InputTokenWithError({
   tokenList,
@@ -34,11 +35,17 @@ export default function InputTokenWithError({
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
   isDeposit: Boolean;
-  userVaultBalance?: UserVaultBalance;
+  userVaultBalance?: string;
 } & HTMLProps<HTMLInputElement>): JSX.Element {
   console.log(selectedToken);
 
-  const data = formatBalance(Number(userVaultBalance?.balance));
+  const [data1, setdata1] = useState('')
+
+  useEffect(() => {
+    setdata1(formatBalance(Number(userVaultBalance)))
+  }, [userVaultBalance])
+
+
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
@@ -106,7 +113,7 @@ export default function InputTokenWithError({
                   </p>
                   :
                   <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                    {data ? formatBalance(Number(data)).toString()
+                    {data1 ? formatBalance(Number(data1)).toString()
                       : "0"}
                   </p>
               }

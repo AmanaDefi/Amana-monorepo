@@ -142,7 +142,6 @@ export const selectActions = async (
   inputToken: Token
 ) => {
 
-  console.log("3432438243284283", inputBalance.value, inputToken?.address, activeChain.id)
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value)
   const chainID = vaultData.protocol.chainId
@@ -155,7 +154,7 @@ export const selectActions = async (
   });
   switch (action) {
     case SmartVaultActionType.Deposit:
-      if (activeChain.id != 7001 && activeChain.id != 7000) {
+      if (chainID != 7001 && chainID != 7000) {
         if (isNativeToken) {
           return [
             Action.deposit,
@@ -187,7 +186,7 @@ export const selectActions = async (
         }
       }
       else {
-        if (chainID == 7001 || chainID == 7000) {
+        if (activeChain.id == 7001 || activeChain.id == 7000) {
           if (isNativeToken) {
             return [
               Action.deposit,
@@ -236,7 +235,7 @@ export const selectActions = async (
         }
       }
     case SmartVaultActionType.Withdrawal:
-      if (activeChain.id != 7001 && activeChain.id != 7000) {
+      if (chainID != 7001 && chainID != 7000) {
         return [
           Action.withdraw,
           Action.withdrawconfirmed,
@@ -247,7 +246,7 @@ export const selectActions = async (
         ]
       }
       else {
-        if (chainID == 7001 || chainID == 7000) {
+        if (activeChain.id == 7001 || activeChain.id == 7000) {
           return [
             Action.withdraw,
             Action.withdrawconfirmed
