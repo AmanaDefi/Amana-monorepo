@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { VaultData, UserVaultBalance, VaultTotalAssets, VaultAPY, Token } from "../types/types";
+import { VaultData, VaultTotalAssets, VaultAPY, Token } from "../types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from 'next/image';
 import { formatBalance, formatCurrency } from '@/utils/utils';
@@ -12,15 +12,15 @@ import { APPROVED_TOKENS } from "../constants/chainConfig";
 
 export default function VaultHeader({
     vaultData,
-    userVaultBalances,
+    userVaultBalance,
     selectedVaultId,
-    vaultTotalAssets,
+    vaultTotalAsset,
     vaultAPYs,
 }: {
     vaultData: VaultData;
-    userVaultBalances: UserVaultBalance[];
+    userVaultBalance?: string;
     selectedVaultId: string;
-    vaultTotalAssets: VaultTotalAssets[];
+    vaultTotalAsset?: VaultTotalAssets;
     vaultAPYs: VaultAPY[];
 }): JSX.Element {
     const activeChain = useActiveWalletChain();
@@ -42,6 +42,7 @@ export default function VaultHeader({
     });
     const [inputToken, setInputToken] = useState<Token | undefined>();
     const [walletData, setWalletData] = useState<string>("");
+    const [data1, setdata1] = useState('')
 
     // Step 1: Determine inputToken based on activeChain
     useEffect(() => {
@@ -53,9 +54,14 @@ export default function VaultHeader({
         }
     }, [activeChain, vaultData]);
 
-    const data = formatBalance(
-        Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance)
-    );
+    
+
+    useEffect(() => {
+        setdata1(formatBalance(
+            Number(userVaultBalance)
+        ))
+    }, [userVaultBalance])
+    
 
     // Step 2: Fetch wallet data when inputToken is set
     useEffect(() => {
@@ -90,7 +96,7 @@ export default function VaultHeader({
         };
 
         fetchData();
-    }, [inputToken, userAddress, activeChain, data]);
+    }, [inputToken, userAddress, activeChain, data1]);
 
     // Handle undefined states gracefully
     if (!inputToken) {
@@ -133,8 +139,8 @@ export default function VaultHeader({
                     <LargeCardStat
                         id="deposits"
                         label="Deposits"
-                        value={`${formatBalance(Number(data))} ${vaultData.symbol}`}
-                        secondaryValue={`$ ${formatCurrency(Number(data) * price)}`}
+                        value={`${formatBalance(Number(data1))} ${vaultData.symbol}`}
+                        secondaryValue={`$ ${formatCurrency(Number(data1) * price)}`}
                         tooltip="Value of your vault deposits"
                     />
                     <LargeCardStat

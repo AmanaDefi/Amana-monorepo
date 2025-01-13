@@ -1,12 +1,14 @@
 import type { HTMLProps } from "react";
-import { Token, VaultData, UserVaultBalance } from "@/types/types";
+import { Token, VaultData } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency, formatBalance } from "@/utils/utils";
+import { useState, useEffect } from "react";
 
 export default function InputTokenWithError({
   tokenList,
   selectedToken,
+  inputTokenbalance,
   errorMessage,
   onMaxClick,
   onSelectToken,
@@ -17,7 +19,7 @@ export default function InputTokenWithError({
   inputMoreThanBalance,
   disabled = false,
   isDeposit,
-  userVaultBalances,
+  userVaultBalance,
   ...props
 }: {
   errorMessage?: string;
@@ -26,17 +28,24 @@ export default function InputTokenWithError({
   vaultData: VaultData;
   tokenList: Token[];
   selectedToken?: Token;
+  inputTokenbalance?: string;
   captionText?: string;
   getToken?: Function;
   allowInput?: boolean;
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
   isDeposit: Boolean;
-  userVaultBalances: UserVaultBalance[];
+  userVaultBalance?: string;
 } & HTMLProps<HTMLInputElement>): JSX.Element {
   console.log(selectedToken);
 
-  const data = formatBalance(Number(userVaultBalances?.find((balance) => balance.vaultId === vaultData.id)?.balance));
+  const [data1, setdata1] = useState('')
+
+  useEffect(() => {
+    setdata1(formatBalance(Number(userVaultBalance)))
+  }, [userVaultBalance])
+
+
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
@@ -98,17 +107,16 @@ export default function InputTokenWithError({
               {
                 isDeposit ?
                   <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                    {selectedToken && selectedToken.balance && selectedToken.balance.formatted
-                      ? formatBalance(Number(selectedToken.balance.formatted)).toString()
+                    {inputTokenbalance
+                      ? formatBalance(Number(inputTokenbalance)).toString()
                       : "0"}
                   </p>
                   :
                   <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                    {data ? formatBalance(Number(data)).toString()
+                    {data1 ? formatBalance(Number(data1)).toString()
                       : "0"}
                   </p>
               }
-
             </div>
           </div>
         </div>

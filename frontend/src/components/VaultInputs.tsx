@@ -1,6 +1,6 @@
 import TabSelector from "@/components/common/TabSelector";
 import InputTokenWithError from "@/components/input/InputTokenWithError";
-import { VaultData, Token, Balance, UserVaultBalance, SmartVaultActionType } from "@/types/types";
+import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToken } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect } from "react";
 import { parseUnits } from "viem";
@@ -17,11 +17,12 @@ export interface VaultInputsProps {
   vaultData: VaultData;
   tokenOptions: Token[];
   setTransactionCompleted: (value: boolean) => void;
-  userVaultBalances: UserVaultBalance[];
+  userVaultBalance?: string;
+  vaultTotalAssetinToken?: VaultTotalAssetsinToken
 }
 
 // Custom hook to fetch token balance, including native tokens
-function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any, userVaultBalances: UserVaultBalance[]) {
+function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any) {
   const [balance, setBalance] = useState<string>("0");
   const { data: walletBalance, isLoading, isError } = useWalletBalance({
     chain: activeChain,
@@ -54,7 +55,7 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
     };
 
     fetchTokenBalance();
-  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError, userVaultBalances]);
+  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError]);
 
   return balance;
 }
@@ -63,7 +64,8 @@ export default function VaultInputs({
   vaultData,
   tokenOptions,
   setTransactionCompleted,
-  userVaultBalances,
+  userVaultBalance,
+  vaultTotalAssetinToken
 }: VaultInputsProps): JSX.Element {
   const [inputToken, setInputToken] = useState<Token>();
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
@@ -92,7 +94,7 @@ export default function VaultInputs({
   const userAddress = EOAaccount.address;
 
   useEffect(() => {
-    if (activeChain.id === 7001) {
+    if (activeChain.id === 7001 || activeChain.id === 7000) {
       // If on ZetaChain testnet, set inputToken to the vault token
       setInputToken(vaultData.inputToken);
 
@@ -106,51 +108,32 @@ export default function VaultInputs({
   }, [activeChain.id, vaultData.inputToken, isDeposit]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, userVaultBalances);
+  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain);
 
   useEffect(() => {
     if (inputToken) {
       setShowModal(false)
-      // Create a new inputToken object with the updated balance
-
-      const updatedToken: Token = {
-        ...inputToken,
-        balance: {
-          ...inputToken.balance,
-          formatted: tokenBalance,
-          value: parseUnits(tokenBalance, inputToken.decimals)
-        },
-      };
-
-      // Update the inputToken state with the updated balance
-      setInputToken(updatedToken);
 
       // Set the inputTokenBalance separately to track balance as a string
       setInputTokenBalance(tokenBalance);
       setInputBalance({
         ...inputBalance,
-        value: parseUnits(tokenBalance, inputToken.decimals),
         formatted: "0",
       })
       steps.length > 0 && setShowModal(true)
     }
   }, [tokenBalance, isDeposit]);
 
-  useEffect(() => {
-   console.log("77777777777777777",inputBalance.value)
-  }, [inputBalance.value])
-  
 
   useEffect(() => {
-    if (inputToken) {
+    if (inputToken && vaultTotalAssetinToken) {
       if (isDeposit) {
         setErrorMessage(getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, setShowModal, steps));
       } else {
-        const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString();
-        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, userVaultBalance, setShowModal, steps));
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, vaultTotalAssetinToken.toString(), setShowModal, steps));
       }
     }
-  }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, userVaultBalances, vaultData.id, action]);
+  }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, vaultData.id, action, vaultTotalAssetinToken, steps]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -206,12 +189,6 @@ export default function VaultInputs({
     const newAmt = parseUnits(inputAmt, inputToken.decimals);
 
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * (inputToken.price || 0)) });
-    if (isDeposit) {
-      setErrorMessage(getVaultErrorMessage(value, inputTokenBalance, setShowModal, steps));
-    } else {
-      const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance.toString();
-      setErrorMessage(getVaultErrorMessage(value, userVaultBalance, setShowModal, steps));
-    }
   }
 
   function handleMaxClick() {
@@ -219,7 +196,6 @@ export default function VaultInputs({
     if (isDeposit) {
       handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
     } else {
-      const userVaultBalance = userVaultBalances.find((balance) => balance.vaultId === vaultData.id)?.balance || "0";
       handleChangeInput({ currentTarget: { value: userVaultBalance } } as React.ChangeEvent<HTMLInputElement>);
     }
   }
@@ -244,11 +220,12 @@ export default function VaultInputs({
         value={inputBalance.formatted}
         onChange={handleChangeInput}
         selectedToken={inputToken}
+        inputTokenbalance={inputTokenBalance}
         errorMessage={errorMessage}
         tokenList={activeChain.id === 7001 || activeChain.id === 7000 ? [vaultData.inputToken] : APPROVED_TOKENS[activeChain.id]}
         disabled={false}
         isDeposit={isDeposit}
-        userVaultBalances={userVaultBalances}
+        userVaultBalance={userVaultBalance}
       />
       <div className="mt-4">
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
