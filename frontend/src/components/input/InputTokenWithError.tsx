@@ -7,6 +7,7 @@ import { formatCurrency, formatBalance } from "@/utils/utils";
 export default function InputTokenWithError({
   tokenList,
   selectedToken,
+  inputTokenbalance,
   errorMessage,
   onMaxClick,
   onSelectToken,
@@ -17,7 +18,7 @@ export default function InputTokenWithError({
   inputMoreThanBalance,
   disabled = false,
   isDeposit,
-  userVaultBalances,
+  userVaultBalance,
   ...props
 }: {
   errorMessage?: string;
@@ -26,17 +27,18 @@ export default function InputTokenWithError({
   vaultData: VaultData;
   tokenList: Token[];
   selectedToken?: Token;
+  inputTokenbalance?: string;
   captionText?: string;
   getToken?: Function;
   allowInput?: boolean;
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
   isDeposit: Boolean;
-  userVaultBalances: UserVaultBalance[];
+  userVaultBalance?: UserVaultBalance;
 } & HTMLProps<HTMLInputElement>): JSX.Element {
   console.log(selectedToken);
 
-  const data = formatBalance(Number(userVaultBalances?.find((balance) => balance.vaultId === vaultData.id)?.balance));
+  const data = formatBalance(Number(userVaultBalance?.balance));
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
@@ -98,8 +100,8 @@ export default function InputTokenWithError({
               {
                 isDeposit ?
                   <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
-                    {selectedToken && selectedToken.balance && selectedToken.balance.formatted
-                      ? formatBalance(Number(selectedToken.balance.formatted)).toString()
+                    {inputTokenbalance
+                      ? formatBalance(Number(inputTokenbalance)).toString()
                       : "0"}
                   </p>
                   :
@@ -108,7 +110,6 @@ export default function InputTokenWithError({
                       : "0"}
                   </p>
               }
-
             </div>
           </div>
         </div>

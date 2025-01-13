@@ -13,7 +13,6 @@ export const useUpdateVaultBalanceAndTotal = (
   setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
-  transactionCompleted: boolean,
 ) => {
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
@@ -76,9 +75,46 @@ export const useUpdateVaultBalanceAndTotal = (
     if (activeAccount && vaults.length > 0) {
       updateVaultBalanceAndTotal();
     }
-  }, [vaults, activeAccount, setUserVaultBalances, setVaultTotalAssets, transactionCompleted]);
+  }, [vaults, activeAccount, setUserVaultBalances, setVaultTotalAssets]);
 };
 
+export const useUpdateVaultBalanceAndTotalPerVault = (
+  vault: any,
+  activeAccount: Account,
+  setUserVaultBalance: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
+  setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
+  setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
+  transactionCompleted: boolean,
+) => {
+  useEffect(() => {
+    const updateVaultBalanceAndTotal = async () => {
+      try {
+        const balance = await fetchUserVaultBalance(
+          activeAccount?.address as Address,
+          vault.id as Address
+        );
+        const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+        // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
+        const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+          vault.inputToken.decimals,
+          activeAccount?.address as Address,
+          vault.id as Address
+        );
+        setUserVaultBalance(balance);
+
+        setVaultTotalAsset(newTotalAssets);
+
+        setVaultTotalAssetinToken(newTotalAssetsinToken);
+
+      } catch (error) {
+        console.error("Error updating vault balances and total assets:", error);
+      }
+    };
+    if (activeAccount) {
+      updateVaultBalanceAndTotal();
+    }
+  }, [vault, activeAccount, setUserVaultBalance, setVaultTotalAsset, transactionCompleted]);
+};
 
 export const useUpdateAPYs = (
   vaults: VaultData[],
@@ -120,7 +156,7 @@ export const useUpdateAPYs = (
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address);
               }
               else if (vault.protocol.name === "Moonwell") {
-                APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address);
+                // APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address);
               } else if (vault.protocol.name === "Eddy") {
                 const receiptTokenContract = getContract({
                   client,

@@ -12,15 +12,15 @@ import { APPROVED_TOKENS } from "../constants/chainConfig";
 
 export default function VaultHeader({
     vaultData,
-    userVaultBalances,
+    userVaultBalance,
     selectedVaultId,
-    vaultTotalAssets,
+    vaultTotalAsset,
     vaultAPYs,
 }: {
     vaultData: VaultData;
-    userVaultBalances: UserVaultBalance[];
+    userVaultBalance?: UserVaultBalance;
     selectedVaultId: string;
-    vaultTotalAssets: VaultTotalAssets[];
+    vaultTotalAsset?: VaultTotalAssets;
     vaultAPYs: VaultAPY[];
 }): JSX.Element {
     const activeChain = useActiveWalletChain();
@@ -54,7 +54,7 @@ export default function VaultHeader({
     }, [activeChain, vaultData]);
 
     const data = formatBalance(
-        Number(userVaultBalances.find((balance) => balance.vaultId === selectedVaultId)?.balance)
+        Number(userVaultBalance?.balance)
     );
 
     // Step 2: Fetch wallet data when inputToken is set

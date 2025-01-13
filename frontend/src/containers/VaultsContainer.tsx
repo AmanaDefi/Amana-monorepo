@@ -11,7 +11,7 @@ const VaultsContainer = () => {
   const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
   const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>([]);
   const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
-  const [transactionCompleted, setTransactionCompleted] = useState(false);
+
 
   const vaults: VaultData[] = VAULT_DATA;
   const EOAaccount = useActiveAccount();
@@ -24,7 +24,7 @@ const VaultsContainer = () => {
     throw new Error("No active account found");
   }
 
-  useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken, transactionCompleted);
+  useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken);
   useUpdateAPYs(vaults, setVaultAPYs, setLoading);
 
   return (

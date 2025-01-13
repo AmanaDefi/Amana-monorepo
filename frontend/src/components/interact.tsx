@@ -49,20 +49,22 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
         toast.success("Transaction confirmed");
 
         return true;
-    } catch (error) {
-        setTransactionCompleted(true);
-        setInputBalance({
-            ...inputBalance,
-            formatted: "0",
-        })
-        mixpanel.track("Deposit Submitted", {
-            vault: vaultData.id.toString(),
-        });
-        toast.error("Transaction failed", {
-            position: "top-right",
-            autoClose: 2000,  // Close automatically after 2 seconds
-        });
-        throw new Error("Transaction failed");
+    } catch (error: any) {
+        if (!error.message.includes("User denied transaction")) {
+            setTransactionCompleted(true);
+            setInputBalance({
+                ...inputBalance,
+                formatted: "0",
+            })
+            mixpanel.track("Deposit Submitted", {
+                vault: vaultData.id.toString(),
+            });
+            toast.error("Transaction failed", {
+                position: "top-right",
+                autoClose: 2000,  // Close automatically after 2 seconds
+            });
+            throw new Error("Transaction failed");
+        }
     }
 };
 
@@ -354,45 +356,45 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         }
     }, [ReturnFundsToUserFailedEvents.data, crosschainInvestHash])
 
-    useEffect(() => {
-        if (contract1.address != "" && contract1.chain.id != 0) {
-            if (FundsEvents && typeof FundsEvents === 'object' && FundsEvents !== null && crosschainInvestHash != "") {
-                if (FundsEvents.data?.length) {
-                    for (let index = 0; index < FundsEvents.data.length; index++) {
-                        for (let index = 0; index < FundsEvents.data.length; index++) {
-                            const element = FundsEvents.data[index];
-                            if (element.transactionHash == crosschainInvestHash) {
-                                const nextStep = step + 1;
-                                setAction(actions[nextStep]);
-                                setStep(nextStep);
-                                return
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }, [FundsEvents, crosschainInvestHash])
+    // useEffect(() => {
+    //     if (contract1.address != "" && contract1.chain.id != 0) {
+    //         if (FundsEvents && typeof FundsEvents === 'object' && FundsEvents !== null && crosschainInvestHash != "") {
+    //             if (FundsEvents.data?.length) {
+    //                 for (let index = 0; index < FundsEvents.data.length; index++) {
+    //                     for (let index = 0; index < FundsEvents.data.length; index++) {
+    //                         const element = FundsEvents.data[index];
+    //                         if (element.transactionHash == crosschainInvestHash) {
+    //                             const nextStep = step + 1;
+    //                             setAction(actions[nextStep]);
+    //                             setStep(nextStep);
+    //                             return
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }, [FundsEvents, crosschainInvestHash])
 
-    useEffect(() => {
-        if (contract1.address != "" && contract1.chain.id != 0) {
-            if (FundsDivestedEvents && typeof FundsDivestedEvents === 'object' && FundsDivestedEvents !== null && crosschainInvestHash != "") {
-                if (FundsDivestedEvents.data?.length) {
-                    for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
-                        for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
-                            const element = FundsDivestedEvents.data[index];
-                            if (element.transactionHash == crosschainInvestHash) {
-                                const nextStep = step + 1;
-                                setAction(actions[nextStep]);
-                                setStep(nextStep);
-                                return
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }, [FundsDivestedEvents, crosschainInvestHash])
+    // useEffect(() => {
+    //     if (contract1.address != "" && contract1.chain.id != 0) {
+    //         if (FundsDivestedEvents && typeof FundsDivestedEvents === 'object' && FundsDivestedEvents !== null && crosschainInvestHash != "") {
+    //             if (FundsDivestedEvents.data?.length) {
+    //                 for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
+    //                     for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
+    //                         const element = FundsDivestedEvents.data[index];
+    //                         if (element.transactionHash == crosschainInvestHash) {
+    //                             const nextStep = step + 1;
+    //                             setAction(actions[nextStep]);
+    //                             setStep(nextStep);
+    //                             return
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }, [FundsDivestedEvents, crosschainInvestHash])
 
     useEffect(() => {
         if (DepositedEvents.data?.length && crosschainInvestHash != "") {
@@ -469,11 +471,12 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
             case Action.depositApprove:
                 setDisabled(status);
                 setDescription1(["Transaction approval required."]);
-                setDescription2([`Approving for Deposit ${val} ${inputToken.symbol} into the Vault.`]);
+                setDescription2([`Approving in progress.`]);
+                setlabel("Approve")
                 setlabel("Approve")
                 break;
             case Action.depositApproveConfirmed:
-                setDescription1([...description1, "Approval Confirmed."]);
+                setDescription1([...description1, "Approval completed."]);
                 setlabel("Deposit")
                 setTimeout(() => {
                     setDisabled(false);
@@ -483,17 +486,28 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setlabel("Deposit")
                 setDisabled(status);
                 if (actions.includes(Action.depositApprove)) {
-                    setDescription1([...description1, `Please Deposit.`]);
-                    setDescription2([...description2, `Depositing ${val} ${inputToken.symbol} into the Vault.`]);
+                    setDescription1([...description1, `Deposit.`]);
+                    setDescription2([...description2, `Deposit in progress`]);
                 }
                 else {
-                    setDescription1([`Please Deposit.`]);
-                    setDescription2([`Depositing ${val} ${inputToken.symbol} into the Vault.`]);
+                    setDescription1([`Deposit.`]);
+                    setDescription2([`Deposit in progress.`]);
                 }
                 break;
             case Action.depositConfirmed:
                 setDescription1([...description1, "Deposit confirmed."]);
-                setDescription2([...description2, "Waiting CrossChainInvest."]);
+                if (actions[actions.length - 1] == Action.depositConfirmed) {
+                    setTimeout(() => {
+                        setTransactionCompleted(true);
+                        setInputBalance({
+                            ...inputBalance,
+                            formatted: "0",
+                        })
+                    }, 2000);
+                }
+                else {
+                    setDescription2([...description2, "Waiting CrossChainInvest."]);
+                }
                 break;
             case Action.crosschainInvest:
                 setDescription1([...description1, "CrossChainInvestSent."]);
@@ -521,7 +535,18 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 break;
             case Action.withdrawconfirmed:
                 setDescription1([...description1, "Withdraw confirmed."]);
-                setDescription2([...description2, "Waiting Divest."]);
+                if (actions[actions.length - 1] == Action.withdrawconfirmed) {
+                    setTimeout(() => {
+                        setTransactionCompleted(true);
+                        setInputBalance({
+                            ...inputBalance,
+                            formatted: "0",
+                        })
+                    }, 2000);
+                }
+                else {
+                    setDescription2([...description2, "Waiting Divest."]);
+                }
                 break;
             case Action.DivestSent:
                 setDescription1([...description1, "DivestSent."]);
@@ -619,8 +644,8 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                                     </div>
                                 }
                                 {
-                                    index == step &&
-                                    ((item !== Action.deposit && item !== Action.withdraw && item !== Action.depositApprove && item != Action.depositApproveConfirmed) || (item === Action.depositApprove && status) || (item === Action.deposit && status) || (item === Action.withdraw && status) ) &&
+                                    index == step && index < actions.length - 1 &&
+                                    ((item !== Action.deposit && item !== Action.withdraw && item !== Action.depositApprove && item != Action.depositApproveConfirmed) || (item === Action.depositApprove && status) || (item === Action.deposit && status) || (item === Action.withdraw && status)) &&
                                     <div className="flex items-center">
                                         <MoonLoader color="red" size={30} speedMultiplier={0.3} />
                                         <p className="text-white text-start mb-2">{description2[index]}</p>

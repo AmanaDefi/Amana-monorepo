@@ -6,7 +6,7 @@ import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAsse
 import { VAULT_DATA } from "../constants/index";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
-import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
+import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
 import { tokens } from "../constants/index";
 import { useRouter } from 'next/navigation';
 
@@ -23,15 +23,15 @@ const VaultsDetailContainer: React.FC<{
     const [loading, setLoading] = useState<boolean>(true);
     const [activeAccount, setActiveAccount] = useState<Account | null>(null);
     const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
-    const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
-    const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>([]);
-    const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
+    const [userVaultBalance, setUserVaultBalance] = useState<UserVaultBalance>();
+    const [vaultTotalAsset, setVaultTotalAsset] = useState<VaultTotalAssets>();
+    const [vaultTotalAssetinToken, setVaultTotalAssetinToken] = useState<VaultTotalAssetsinToken>();
     const [transactionCompleted, setTransactionCompleted] = useState(false);
 
 
     const vaults: VaultData[] = VAULT_DATA;
     const EOAaccount = useActiveAccount();
-    
+
     useEffect(() => {
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
       setVaultData(foundVault)
@@ -49,7 +49,7 @@ const VaultsDetailContainer: React.FC<{
       throw new Error("No active account found");
     }
 
-    useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken, transactionCompleted);
+    useUpdateVaultBalanceAndTotalPerVault(vaultData, EOAaccount, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     useUpdateAPYs(vaults, setVaultAPYs, setLoading);
 
     return (
@@ -69,9 +69,9 @@ const VaultsDetailContainer: React.FC<{
 
           <VaultHeader
             vaultData={vaultData}
-            userVaultBalances={userVaultBalances}
+            userVaultBalance={userVaultBalance}
             selectedVaultId={vaultID.toString()}
-            vaultTotalAssets={vaultTotalAssets}
+            vaultTotalAsset={vaultTotalAsset}
             vaultAPYs={vaultAPYs}
           />
 
@@ -83,7 +83,8 @@ const VaultsDetailContainer: React.FC<{
                     vaultData={vaultData}
                     tokenOptions={tokenOptions}
                     setTransactionCompleted={setTransactionCompleted}
-                    userVaultBalances={userVaultBalances}
+                    userVaultBalance={userVaultBalance}
+                    vaultTotalAssetinToken={vaultTotalAssetinToken}
                   />
                 </div>
               </div>

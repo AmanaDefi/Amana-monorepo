@@ -153,22 +153,26 @@ export const executeDeposit = async (vaultId: Address, inputToken: Address, acti
 
 export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing DepositApprove");
-  let contract = getContract({
-    client,
-    chain: activeChain,
-    address: inputToken
-  });
-  const approveTx = prepareContractCall({
-    contract,
-    method: "function approve(address to, uint256 value)",
-    params: [vaultId, transactionAmount]
-  });
-  await sendAndConfirmTransaction({
-    account: activeAccount,
-    transaction: approveTx
-  });
-  console.log("Approval confirmed");
-  return true;
+  try {
+    let contract = getContract({
+      client,
+      chain: activeChain,
+      address: inputToken
+    });
+    const approveTx = prepareContractCall({
+      contract,
+      method: "function approve(address to, uint256 value)",
+      params: [vaultId, transactionAmount]
+    });
+    await sendAndConfirmTransaction({
+      account: activeAccount,
+      transaction: approveTx
+    });
+    console.log("Approval confirmed");
+    return true;
+  } catch (error: any) {
+    return false;
+  }
 };
 
 const executeDirectDeposit = async (vaultId: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
