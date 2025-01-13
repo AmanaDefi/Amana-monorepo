@@ -470,13 +470,13 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
         switch (action) {
             case Action.depositApprove:
                 setDisabled(status);
-                setDescription1(["Transaction approval required."]);
-                setDescription2([`Approving in progress.`]);
+                setDescription1(["Transaction approval required"]);
+                setDescription2([`Approving in progress`]);
                 setlabel("Approve")
                 setlabel("Approve")
                 break;
             case Action.depositApproveConfirmed:
-                setDescription1([...description1, "Approval completed."]);
+                setDescription1([...description1, "Approval completed"]);
                 setlabel("Deposit")
                 setTimeout(() => {
                     setDisabled(false);
@@ -486,16 +486,16 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setlabel("Deposit")
                 setDisabled(status);
                 if (actions.includes(Action.depositApprove)) {
-                    setDescription1([...description1, `Deposit.`]);
+                    setDescription1([...description1, `Deposit`]);
                     setDescription2([...description2, `Deposit in progress`]);
                 }
                 else {
-                    setDescription1([`Deposit.`]);
-                    setDescription2([`Deposit in progress.`]);
+                    setDescription1([`Deposit`]);
+                    setDescription2([`Deposit in progress`]);
                 }
                 break;
             case Action.depositConfirmed:
-                setDescription1([...description1, "Deposit confirmed."]);
+                setDescription1([...description1, "Deposit confirmed"]);
                 if (actions[actions.length - 1] == Action.depositConfirmed) {
                     setTimeout(() => {
                         setTransactionCompleted(true);
@@ -506,19 +506,19 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                     }, 2000);
                 }
                 else {
-                    setDescription2([...description2, "Waiting CrossChainInvest."]);
+                    setDescription2([...description2, "Waiting CrossChainInvest"]);
                 }
                 break;
             case Action.crosschainInvest:
-                setDescription1([...description1, "CrossChainInvestSent."]);
-                setDescription2([...description2, "Waiting FundsInvest."]);
+                setDescription1([...description1, "CrossChainInvestSent"]);
+                setDescription2([...description2, "Waiting FundsInvest"]);
                 break;
             case Action.FundsInvest:
-                setDescription1([...description1, "FundsInvested."]);
-                setDescription2([...description2, "Waiting Deposit."]);
+                setDescription1([...description1, "FundsInvested"]);
+                setDescription2([...description2, "Waiting Deposit"]);
                 break;
             case Action.deposited:
-                setDescription1([...description1, "Deposited."]);
+                setDescription1([...description1, "Deposited"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -530,11 +530,11 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
             case Action.withdraw:
                 setlabel("Withdraw")
                 setDisabled(status);
-                setDescription1(["Withdraw confirmation required."]);
-                setDescription2([`Withdrawing ${val} ${inputToken.symbol}.`]);
+                setDescription1(["Withdraw confirmation required"]);
+                setDescription2([`Withdraw in progress`]);
                 break;
             case Action.withdrawconfirmed:
-                setDescription1([...description1, "Withdraw confirmed."]);
+                setDescription1([...description1, "Withdraw confirmed"]);
                 if (actions[actions.length - 1] == Action.withdrawconfirmed) {
                     setTimeout(() => {
                         setTransactionCompleted(true);
@@ -545,23 +545,23 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                     }, 2000);
                 }
                 else {
-                    setDescription2([...description2, "Waiting Divest."]);
+                    setDescription2([...description2, "Waiting Divest"]);
                 }
                 break;
             case Action.DivestSent:
-                setDescription1([...description1, "DivestSent."]);
-                setDescription2([...description2, "Waiting FundsDivest."]);
+                setDescription1([...description1, "DivestSent"]);
+                setDescription2([...description2, "Waiting FundsDivest"]);
                 break;
             case Action.FundsDivested:
-                setDescription1([...description1, "FundsDivested."]);
-                setDescription2([...description2, "Waiting ReturnFundsToUser."]);
+                setDescription1([...description1, "FundsDivested"]);
+                setDescription2([...description2, "Waiting ReturnFundsToUser"]);
                 break;
             case Action.ReturnFundsToUserSent:
-                setDescription1([...description1, "ReturnFundsToUserSent."]);
-                setDescription2([...description2, "Waiting Withdrawn."]);
+                setDescription1([...description1, "ReturnFundsToUserSent"]);
+                setDescription2([...description2, "Waiting Withdrawn"]);
                 break;
             case Action.Withdrawn:
-                setDescription1([...description1, "Withdrawn."]);
+                setDescription1([...description1, "Withdrawn"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -571,7 +571,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }, 2000);
                 break;
             case Action.CrossChainInvestFailed:
-                setDescription1([...description1, "CrossChainInvestFailed."]);
+                setDescription1([...description1, "CrossChainInvestFailed"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -581,7 +581,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }, 2000);
                 break;
             case Action.DivestFailed:
-                setDescription1([...description1, "DivestFailed."]);
+                setDescription1([...description1, "DivestFailed"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -591,7 +591,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }, 2000);
                 break;
             case Action.ReturnFundsToUserFailed:
-                setDescription1([...description1, "ReturnFundsToUserFailed."]);
+                setDescription1([...description1, "ReturnFundsToUserFailed"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
