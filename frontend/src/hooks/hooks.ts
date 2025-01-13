@@ -89,22 +89,25 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
       try {
-        const balance = await fetchUserVaultBalance(
-          activeAccount?.address as Address,
-          vault.id as Address
-        );
-        const newTotalAssets = await fetchTotalAssets(vault.id as Address);
-        // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
-        const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
-          vault.inputToken.decimals,
-          activeAccount?.address as Address,
-          vault.id as Address
-        );
-        setUserVaultBalance(balance);
+        if (vault?.id) {
+          const balance = await fetchUserVaultBalance(
+            activeAccount?.address as Address,
+            vault.id as Address
+          );
 
-        setVaultTotalAsset(newTotalAssets);
+          const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+            vault.inputToken.decimals,
+            activeAccount?.address as Address,
+            vault?.id as Address
+          );
+          setUserVaultBalance(balance);
+          
+          const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+          setVaultTotalAsset(newTotalAssets);
 
-        setVaultTotalAssetinToken(newTotalAssetsinToken);
+          setVaultTotalAssetinToken(newTotalAssetsinToken);
+
+        }
 
       } catch (error) {
         console.error("Error updating vault balances and total assets:", error);
