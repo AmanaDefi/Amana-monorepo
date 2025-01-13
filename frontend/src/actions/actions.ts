@@ -277,26 +277,26 @@ const executeCrossChainDeposit = async (
     console.log("ERC20 token deposit detected");
 
     // Step 1: Approve the tokens for the EVM Gateway contract
-    contract = getContract({
-      client,
-      chain: activeChain,
-      address: inputToken,
-    });
-    console.log("contract", contract);
+    // contract = getContract({
+    //   client,
+    //   chain: activeChain,
+    //   address: inputToken,
+    // });
+    // console.log("contract", contract);
 
-    approveTx = prepareContractCall({
-      contract,
-      method: "function approve(address to, uint256 value)",
-      params: [EVMGatewayAddress, transactionAmount],
-    });
-    console.log("approveTx", approveTx);
+    // approveTx = prepareContractCall({
+    //   contract,
+    //   method: "function approve(address to, uint256 value)",
+    //   params: [EVMGatewayAddress, transactionAmount],
+    // });
+    // console.log("approveTx", approveTx);
 
-    await sendAndConfirmTransaction({
-      account: activeAccount,
-      transaction: approveTx,
-    });
+    // await sendAndConfirmTransaction({
+    //   account: activeAccount,
+    //   transaction: approveTx,
+    // });
 
-    console.log("Approval confirmed");
+    // console.log("Approval confirmed");
 
     // Step 2: Deposit ERC20 tokens through the Gateway contract
     contract = getContract({
