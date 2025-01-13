@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { VaultData, UserVaultBalance, VaultTotalAssets, VaultAPY, Token } from "../types/types";
+import { VaultData, VaultTotalAssets, VaultAPY, Token } from "../types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from 'next/image';
 import { formatBalance, formatCurrency } from '@/utils/utils';

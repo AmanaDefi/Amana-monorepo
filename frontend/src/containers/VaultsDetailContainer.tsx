@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
-import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "../types/types";
+import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";

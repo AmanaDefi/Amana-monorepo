@@ -1,5 +1,5 @@
 import type { HTMLProps } from "react";
-import { Token, VaultData, UserVaultBalance } from "@/types/types";
+import { Token, VaultData } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency, formatBalance } from "@/utils/utils";

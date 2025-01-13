@@ -1,6 +1,6 @@
 import TabSelector from "@/components/common/TabSelector";
 import InputTokenWithError from "@/components/input/InputTokenWithError";
-import { VaultData, Token, Balance, UserVaultBalance, SmartVaultActionType, VaultTotalAssetsinToken } from "@/types/types";
+import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToken } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect } from "react";
 import { parseUnits } from "viem";
