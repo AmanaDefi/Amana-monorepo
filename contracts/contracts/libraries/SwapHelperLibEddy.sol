@@ -45,7 +45,11 @@ library SwapHelperLibEddy {
         return
             token == USDC_ETH_ADDRESS ||
             token == USDT_ETH_ADDRESS ||
-            token == USDC_BSC_ADDRESS;
+            token == USDC_BSC_ADDRESS ||
+            token == USDT_BSC_ADDRESS ||
+            token == USDC_BASE_ADDRESS ||
+            token == USDC_POL_ADDRESS ||
+            token == USDT_POL_ADDRESS;
     }
 
     /**
