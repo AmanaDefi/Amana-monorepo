@@ -239,10 +239,10 @@ const executeCrossChainDeposit = async (
     BigInt(1000000), // onRevertGasLimit
   ] as const;
 
-  const txOptions = {
-    gasLimit: 1000000, // Example value, update as needed
-    gasPrice: 100000, // TODO - this will have to change, depending on the chain?
-  };
+  // const txOptions = {
+  //   gasLimit: 1000000, // Example value, update as needed
+  //   gasPrice: 100000, // TODO - this will have to change, depending on the chain?
+  // };
 
   // Case 1: Native token (ETH, BNB, etc.)
   if (isNativeToken) {
@@ -265,7 +265,7 @@ const executeCrossChainDeposit = async (
     const receipt = await sendAndConfirmTransaction({
       account: activeAccount,
       transaction: depositTx,
-      ...txOptions,
+      // ...txOptions,
     });
 
 
@@ -323,7 +323,7 @@ const executeCrossChainDeposit = async (
       const receipt = await sendAndConfirmTransaction({
         account: activeAccount,
         transaction: depositTx,
-        ...txOptions,
+        // ...txOptions,
       });
 
       console.log("Deposit executed");
@@ -375,12 +375,12 @@ const executeCrossChainWithdrawal = async (
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-
+  const withdrawERC20 = ethers.ZeroAddress; // TODO this should be a user input / system input
   const slippage = 200; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "uint256", "uint16"],
-    [withdrawZRC20, withdrawAmount, slippage]
+    ["address", "address", "uint256", "uint16", "bytes32"],
+    [withdrawZRC20, withdrawERC20, withdrawAmount, slippage, transactionId]
   ) as `0x${string}`;
 
   // Prepare revertOptions to match the Solidity struct
@@ -392,10 +392,10 @@ const executeCrossChainWithdrawal = async (
     BigInt(1000000), // onRevertGasLimit
   ] as const;
 
-  const txOptions = {
-    gasLimit: BigInt(1000000), // Example value, update as needed
-    gasPrice: BigInt(100000), // This will have to change depending on the chain
-  };
+  // const txOptions = {
+  //   gasLimit: BigInt(1000000), // Example value, update as needed
+  //   gasPrice: BigInt(100000), // This will have to change depending on the chain
+  // };
 
   // Get the Gateway contract to initiate the withdrawal
   const contract = getContract({
@@ -415,7 +415,7 @@ const executeCrossChainWithdrawal = async (
     const receipt = await sendAndConfirmTransaction({
       account: activeAccount,
       transaction: withdrawTx,
-      ...txOptions,
+      // ...txOptions,
     });
 
     console.log("Withdrawal executed successfully");
