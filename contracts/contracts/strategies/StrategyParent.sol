@@ -82,6 +82,7 @@ abstract contract StrategyParent is Ownable, IErrors {
             address user,
             address receiver,
             address ZRC20AddressOrNewStrategy,
+            address withdrawERC20,
             uint256 amount,
             uint256 fee,
             uint32 withdrawChainId,
@@ -91,6 +92,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         ) = abi.decode(
                 message,
                 (
+                    address,
                     address,
                     address,
                     address,
@@ -121,6 +123,7 @@ abstract contract StrategyParent is Ownable, IErrors {
                 user,
                 receiver,
                 ZRC20AddressOrNewStrategy,
+                withdrawERC20,
                 amount,
                 fee,
                 withdrawChainId,
@@ -171,7 +174,6 @@ abstract contract StrategyParent is Ownable, IErrors {
      * @notice Allows the owner to manually resend an investment confirmation message.
      * @param receiver The address of the receiver to whom the confirmation is sent.
      * @param amount The amount of assets being invested.
-     * @param totalUnderlyingAssetsBefore The total underlying assets before the investment.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
      * @param _executionNonce The execution nonce associated with the investment.
      * @param _crossChainTxId The cross-chain transaction ID.
@@ -179,7 +181,6 @@ abstract contract StrategyParent is Ownable, IErrors {
     function manualResendInvestConfirmation(
         address receiver,
         uint256 amount,
-        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
         uint256 _crossChainTxId
@@ -187,7 +188,6 @@ abstract contract StrategyParent is Ownable, IErrors {
         _sendInvestConfirmation(
             receiver,
             amount,
-            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
             _crossChainTxId
@@ -198,7 +198,6 @@ abstract contract StrategyParent is Ownable, IErrors {
      * @dev Sends an investment confirmation message to the gateway.
      * @param receiver The address of the receiver to whom the confirmation is sent.
      * @param amount The amount of assets being invested.
-     * @param totalUnderlyingAssetsBefore The total underlying assets before the investment.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
      * @param _executionNonce The execution nonce associated with the investment.
      * @param _crossChainTxId The cross-chain transaction ID.
@@ -210,7 +209,6 @@ abstract contract StrategyParent is Ownable, IErrors {
     function _sendInvestConfirmation(
         address receiver,
         uint256 amount,
-        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
         uint256 _crossChainTxId
@@ -219,11 +217,11 @@ abstract contract StrategyParent is Ownable, IErrors {
             address(0),
             receiver,
             address(0),
+            address(0),
             amount,
             0,
             0,
             true,
-            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
             _crossChainTxId,
@@ -270,6 +268,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         address user,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 amount,
         uint256 fee,
         uint32 withdrawChainId,
@@ -277,8 +276,6 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 _crossChainTxId,
         uint16 slippage
     ) internal {
-        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-
         _withdrawFundsFromYieldSource(amount + fee);
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
@@ -287,10 +284,10 @@ abstract contract StrategyParent is Ownable, IErrors {
             user,
             receiver,
             withdrawZRC20,
+            withdrawERC20,
             amount,
             fee,
             withdrawChainId,
-            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
             _crossChainTxId,
@@ -309,7 +306,6 @@ abstract contract StrategyParent is Ownable, IErrors {
      * @param amount The amount of funds to process.
      * @param fee The fee associated with the transaction.
      * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
-     * @param totalUnderlyingAssetsBefore The total underlying assets before the divestment.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
      * @param _executionNonce The execution nonce associated with the transaction.
      * @param _crossChainTxId The cross-chain transaction ID.
@@ -318,10 +314,10 @@ abstract contract StrategyParent is Ownable, IErrors {
         address user,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 amount,
         uint256 fee,
         uint32 withdrawChainId,
-        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
         uint256 _crossChainTxId,
@@ -331,10 +327,10 @@ abstract contract StrategyParent is Ownable, IErrors {
             user,
             receiver,
             withdrawZRC20,
+            withdrawERC20,
             amount,
             fee,
             withdrawChainId,
-            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
             _crossChainTxId,
@@ -350,7 +346,6 @@ abstract contract StrategyParent is Ownable, IErrors {
      * @param amount The amount of funds to process.
      * @param fee The fee associated with the transaction.
      * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
-     * @param totalUnderlyingAssetsBefore The total underlying assets before the divestment.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
      * @param _executionNonce The execution nonce associated with the transaction.
      * @param _crossChainTxId The cross-chain transaction ID.
@@ -363,10 +358,10 @@ abstract contract StrategyParent is Ownable, IErrors {
         address user,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 amount,
         uint256 fee,
         uint32 withdrawChainId,
-        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
         uint256 _crossChainTxId,
@@ -376,11 +371,11 @@ abstract contract StrategyParent is Ownable, IErrors {
             user,
             receiver,
             withdrawZRC20,
+            withdrawERC20,
             amount,
             fee,
             withdrawChainId,
             false,
-            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             _executionNonce,
             _crossChainTxId,
@@ -442,11 +437,11 @@ abstract contract StrategyParent is Ownable, IErrors {
             address(0),
             address(0),
             address(0),
+            address(0),
             block.number,
             block.timestamp,
             0,
             false,
-            0,
             totalUnderlyingAssets(),
             currentExecutionNonce,
             0,

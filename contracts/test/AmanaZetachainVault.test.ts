@@ -18,6 +18,7 @@ const FEE_RATE = 1000;
 const ORIGIN_CHAIN_ID = 8453;
 const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
 const ERROR_MARGIN = ethers.utils.parseUnits("0.00015", 18);
+const WITHDRAWAL_RECEIVER = "0x4463868180D2831e61101F6dC2E814197A9b750a";
 
 async function setupGatewaySigner() {
   await network.provider.request({
@@ -65,6 +66,7 @@ async function setup() {
       await owner.getAddress(),
       FEE_RATE,
       gasTank.address,
+      WITHDRAWAL_RECEIVER
     ],
     { initializer: "initialize" }
   );
@@ -133,8 +135,8 @@ async function setup() {
     const transactionId = generateTransactionId(await user.getAddress(), 8453)
 
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256", "uint16", "bytes32"],
-      [ZC_ETH_BASE_ADDRESS, withdrawAmount, slippage, transactionId]
+      ["address", "address", "uint256", "uint16", "bytes32"],
+      [ZC_ETH_BASE_ADDRESS, ethers.constants.AddressZero, withdrawAmount, slippage, transactionId]
     );
     const tx = await amanaVault.connect(gatewaySigner).onCall(
       {

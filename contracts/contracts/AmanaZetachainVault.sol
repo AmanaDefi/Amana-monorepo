@@ -40,13 +40,18 @@ contract AmanaZetachainVault is AmanaVaultBase {
         } else {
             (
                 address withdrawZRC20,
+                address withdrawERC20,
                 uint256 withdrawAmount,
                 uint16 slippage,
                 bytes32 crossChainTxId
-            ) = abi.decode(message, (address, uint256, uint16, bytes32));
+            ) = abi.decode(
+                    message,
+                    (address, address, uint256, uint16, bytes32)
+                );
             _withdrawComingFromConnectedChain(
                 context.sender,
                 withdrawZRC20,
+                withdrawERC20,
                 withdrawAmount,
                 uint32(context.chainID),
                 slippage,
@@ -212,6 +217,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
     function _withdrawComingFromConnectedChain(
         address user,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 assets,
         uint32 userChainId,
         uint16 slippage,
@@ -245,6 +251,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
             userChainId,
             user,
             withdrawZRC20,
+            withdrawERC20,
             crossChainTxId,
             slippage
         );

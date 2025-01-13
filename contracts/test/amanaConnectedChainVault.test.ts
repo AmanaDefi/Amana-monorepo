@@ -37,6 +37,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   const VAULT_ASSET = ZC_ETH_ETH_ADDRESS;
   const FEE_RATE = 1000;
   const ORIGIN_CHAIN_ID = 8453; // where the deposit/withdrawal originated from
+  const WITHDRAWAL_RECEIVER = "0x4463868180D2831e61101F6dC2E814197A9b750a";
 
   const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
   const STRATEGY_CHAIN_ID = 1;
@@ -148,8 +149,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const totalAssetsBeforeBN = BigNumber.from(totalAssetsBefore);
 
     const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256", "uint16"],
-      [ethers.constants.AddressZero, await user.getAddress(), ethers.constants.AddressZero, depositAmount, 0, 0, true, totalAssetsBefore, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, crossChainTxId, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+      [ethers.constants.AddressZero, await user.getAddress(), ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, 0, true, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, crossChainTxId, 0]
     );
 
     await amanaVault.connect(gatewaySigner).onCall(
@@ -170,12 +171,10 @@ describe("AmanaConnectedChainVault Tests", function () {
     crossChainTxId: any
   ): Promise<any> {
     const transferredAmountBN = BigNumber.from(transferredAmount);
-    const totalAssetsBefore = 0;
-    const totalAssetsBeforeBN = BigNumber.from(totalAssetsBefore);
 
     const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256", "uint16"],
-      [ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, transferredAmount, 0, 0, true, 0, totalAssetsBeforeBN.add(transferredAmountBN), executionNonce, crossChainTxId, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+      [ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, transferredAmount, 0, 0, true, transferredAmountBN, executionNonce, crossChainTxId, 0]
     );
 
     const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -196,8 +195,8 @@ describe("AmanaConnectedChainVault Tests", function () {
   ): Promise<any> {
 
     const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256", "uint16"],
-      [ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0, false, 0, totalAssetsAmount, 0, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+      [ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0, false, totalAssetsAmount, 0, 0, 0]
     );
 
     const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -223,8 +222,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const transactionId = generateTransactionId(await user.getAddress(), 8453)
 
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256", "uint16", "bytes32"],
-      [ZC_ETH_BASE_ADDRESS, withdrawAmount, slippage, transactionId]
+      ["address", "address", "uint256", "uint16", "bytes32"],
+      [ZC_ETH_BASE_ADDRESS, ethers.constants.AddressZero, withdrawAmount, slippage, transactionId]
     );
 
     await amanaVault.connect(gatewaySigner).onCall(
@@ -248,16 +247,16 @@ describe("AmanaConnectedChainVault Tests", function () {
     crossChainTxId: number
   ): Promise<any> {
     const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint256", "uint16"],
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
       [
         await user.getAddress(),
         await user.getAddress(),
         ZC_ETH_BASE_ADDRESS,
+        ethers.constants.AddressZero,
         withdrawAmount,
         feeAmount,
         ORIGIN_CHAIN_ID,
         false,
-        totalAssetsBefore,
         totalAssetsBefore.sub(withdrawAmount).sub(feeAmount),
         executionNonce,
         crossChainTxId,
@@ -323,7 +322,8 @@ describe("AmanaConnectedChainVault Tests", function () {
         VAULT_ASSET,
         await owner.getAddress(),
         FEE_RATE,
-        gasTank.address
+        gasTank.address,
+        WITHDRAWAL_RECEIVER
       ],
       { initializer: "initialize" }
     );

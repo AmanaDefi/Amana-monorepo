@@ -22,13 +22,11 @@ abstract contract EthStrategyParent is StrategyParent {
     ) internal override {
         if (msg.value == 0) revert NoFundsReceived();
 
-        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
         _depositFundsIntoYieldSource(msg.value);
 
         _sendInvestConfirmation(
             userAddress,
             amount,
-            totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
             _executionNonce,
             _crossChainTxId

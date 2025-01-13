@@ -40,6 +40,7 @@ abstract contract AmanaVaultBase is
     // Variables
     address public strategyAddress;
     address public treasury;
+    address public withdrawalReceiver;
     uint16 public perfFee;
     uint256 internal totalPrincipal;
     mapping(address => uint256) internal userPrincipal;
@@ -93,7 +94,8 @@ abstract contract AmanaVaultBase is
         IERC20 asset_,
         address treasury_,
         uint16 perfFee_,
-        address gasTank_
+        address gasTank_,
+        address withdrawalReceiver_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
         __ERC20_init(name_, symbol_);
@@ -104,6 +106,7 @@ abstract contract AmanaVaultBase is
         perfFee = perfFee_;
         totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         gasTank = IGasTank(gasTank_);
+        withdrawalReceiver = withdrawalReceiver_;
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -151,6 +154,18 @@ abstract contract AmanaVaultBase is
     function updateTreasuryAddress(address _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
         treasury = _treasury;
+    }
+
+    /**
+     * @dev Updates the withdrawalReceiver address for the vault. Can only be called by the owner.
+     * @param _withdrawalReceiver The address of the new withdrawalReceiver.
+     * @notice Reverts if the withdrawalReceiver address is zero.
+     */
+    function updateWithdrawalReceiverAddress(
+        address _withdrawalReceiver
+    ) external onlyOwner {
+        if (_withdrawalReceiver == address(0)) revert InvalidAddress();
+        withdrawalReceiver = _withdrawalReceiver;
     }
 
     /**
@@ -358,6 +373,7 @@ abstract contract AmanaVaultBase is
     function _withdrawComingFromConnectedChain(
         address user,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 assets,
         uint32 userChainId,
         uint16 slippage,
@@ -378,6 +394,7 @@ abstract contract AmanaVaultBase is
         uint32 userChainId,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal returns (uint256 outputAmount) {
@@ -388,7 +405,7 @@ abstract contract AmanaVaultBase is
             SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
         } else {
             // Cross-chain transfer
-            bytes memory recipient = abi.encodePacked(receiver);
+            bytes memory recipient = abi.encodePacked(withdrawalReceiver);
 
             RevertOptions memory revertOptions = RevertOptions(
                 address(this), // revert address
@@ -399,6 +416,7 @@ abstract contract AmanaVaultBase is
                     _crossChainTxId,
                     receiver,
                     withdrawZRC20,
+                    withdrawERC20,
                     userChainId
                 ),
                 uint256(0) // onRevertGasLimit
@@ -416,26 +434,39 @@ abstract contract AmanaVaultBase is
                 );
             }
 
-            (address gas_zrc20, uint256 gasFeeForWithdraw) = IZRC20(
-                withdrawZRC20
-            ).withdrawGasFeeWithGasLimit(IZRC20(withdrawZRC20).GAS_LIMIT()); // ZRC-20 of the gas token of the chain the strategy is on
+            (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
+                .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_WITHDRAW_AND_CALL); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
-            gasTank.getGas{gas: 200000}(gas_zrc20, gasFeeForWithdraw);
+            gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
 
             if (gas_zrc20 != withdrawZRC20) {
                 IZRC20(withdrawZRC20).approve(_GATEWAY_ADDRESS, outputAmount);
-                IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFeeForWithdraw);
+                IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
             } else {
                 IZRC20(withdrawZRC20).approve(
                     _GATEWAY_ADDRESS,
-                    outputAmount + gasFeeForWithdraw
+                    outputAmount + gasFee
                 );
             }
 
-            IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
+            bytes memory outgoingMessage = abi.encode(
+                receiver, // the user the funds have to go to
+                withdrawERC20, // the token on the target chain that the user receives (can be native)
+                outputAmount, // amount to be sent
+                _crossChainTxId
+            );
+
+            CallOptions memory callOptions = CallOptions(
+                GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
+                false
+            );
+
+            IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
                 recipient,
                 outputAmount,
                 withdrawZRC20,
+                outgoingMessage,
+                callOptions,
                 revertOptions
             );
 

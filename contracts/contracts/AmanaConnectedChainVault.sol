@@ -17,11 +17,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user;
         address receiver;
         address withdrawZRC20;
+        address withdrawERC20;
         uint256 amount;
         uint256 fee;
         uint32 withdrawChainId;
         bool isDeposit;
-        uint256 totalAssetsBefore;
         uint256 totalAssetsAfter;
         bytes32 crossChainTxId;
         uint16 slippage;
@@ -54,11 +54,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 address user,
                 address receiver,
                 address withdrawZRC20,
+                address withdrawERC20,
                 uint256 withdrawAmount,
                 uint256 fee,
                 uint32 withdrawChainId,
                 bool isDeposit,
-                uint256 totalAssetsBefore,
                 uint256 totalAssetsAfter,
                 uint256 executionNonce,
                 bytes32 _crossChainTxId,
@@ -69,11 +69,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                         address,
                         address,
                         address,
+                        address,
                         uint256,
                         uint256,
                         uint32,
                         bool,
-                        uint256,
                         uint256,
                         uint256,
                         bytes32,
@@ -84,11 +84,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 user,
                 receiver,
                 withdrawZRC20,
+                withdrawERC20,
                 withdrawAmount,
                 fee,
                 withdrawChainId,
                 isDeposit,
-                totalAssetsBefore,
                 totalAssetsAfter,
                 executionNonce,
                 _crossChainTxId,
@@ -112,13 +112,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             } else {
                 (
                     address withdrawZRC20,
+                    address withdrawERC20,
                     uint256 withdrawAmount,
                     uint16 slippage,
                     bytes32 crossChainTxId
-                ) = abi.decode(message, (address, uint256, uint16, bytes32));
+                ) = abi.decode(
+                        message,
+                        (address, address, uint256, uint16, bytes32)
+                    );
                 _withdrawComingFromConnectedChain(
                     context.sender,
                     withdrawZRC20,
+                    withdrawERC20,
                     withdrawAmount,
                     uint32(context.chainID),
                     slippage,
@@ -138,7 +143,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param fee The fee associated with the transaction.
      * @param withdrawChainId The chain ID of the withdrawal, if applicable.
      * @param isDeposit A boolean indicating if the confirmation is for a deposit (true) or withdrawal (false).
-     * @param totalAssetsBefore The total assets in the vault before the operation.
      * @param totalAssetsAfter The total assets in the vault after the operation.
      * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
      */
@@ -146,11 +150,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 withdrawAmount,
         uint256 fee,
         uint32 withdrawChainId,
         bool isDeposit,
-        uint256 totalAssetsBefore,
         uint256 totalAssetsAfter,
         uint256 executionNonce,
         bytes32 _crossChainTxId,
@@ -158,7 +162,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal {
         // Ensure no duplicate processing
         if (
-            pendingConfirmations[executionNonce].totalAssetsBefore != 0 &&
+            pendingConfirmations[executionNonce].amount != 0 &&
             pendingConfirmations[executionNonce].totalAssetsAfter != 0
         ) revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
@@ -166,11 +170,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             user: user,
             receiver: receiver,
             withdrawZRC20: withdrawZRC20,
+            withdrawERC20: withdrawERC20,
             amount: withdrawAmount,
             fee: fee,
             withdrawChainId: withdrawChainId,
             isDeposit: isDeposit,
-            totalAssetsBefore: totalAssetsBefore,
             totalAssetsAfter: totalAssetsAfter,
             crossChainTxId: _crossChainTxId,
             slippage: _slippage
@@ -188,7 +192,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param fee The fee associated with the transaction.
      * @param withdrawChainId The chain ID of the withdrawal, if applicable.
      * @param isDeposit A boolean indicating if the confirmation is for a deposit (true) or withdrawal (false).
-     * @param totalAssetsBefore The total assets in the vault before the operation.
      * @param totalAssetsAfter The total assets in the vault after the operation.
      * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
      */
@@ -196,11 +199,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 withdrawAmount,
         uint256 fee,
         uint32 withdrawChainId,
         bool isDeposit,
-        uint256 totalAssetsBefore,
         uint256 totalAssetsAfter,
         uint256 executionNonce,
         bytes32 _crossChainTxId,
@@ -208,7 +211,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) external onlyOwner {
         // Ensure no duplicate processing
         if (
-            pendingConfirmations[executionNonce].totalAssetsBefore != 0 &&
+            pendingConfirmations[executionNonce].amount != 0 && // TODO - fix here too
             pendingConfirmations[executionNonce].totalAssetsAfter != 0
         ) revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
@@ -216,11 +219,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             user: user,
             receiver: receiver,
             withdrawZRC20: withdrawZRC20,
+            withdrawERC20: withdrawERC20,
             amount: withdrawAmount,
             fee: fee,
             withdrawChainId: withdrawChainId,
             isDeposit: isDeposit,
-            totalAssetsBefore: totalAssetsBefore,
             totalAssetsAfter: totalAssetsAfter,
             crossChainTxId: _crossChainTxId,
             slippage: _slippage
@@ -242,8 +245,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
             // If there's no confirmation for the next nonce, stop processing
             if (
-                confirmation.totalAssetsBefore == 0 &&
-                confirmation.totalAssetsAfter == 0
+                confirmation.totalAssetsAfter == 0 && confirmation.amount == 0
             ) {
                 break;
             }
@@ -263,7 +265,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 _confirmDepositAndMint(
                     confirmation.receiver,
                     confirmation.amount,
-                    confirmation.totalAssetsBefore,
                     confirmation.totalAssetsAfter,
                     confirmation.crossChainTxId
                 );
@@ -272,10 +273,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     confirmation.user,
                     confirmation.receiver,
                     confirmation.withdrawZRC20,
+                    confirmation.withdrawERC20,
                     confirmation.amount,
                     confirmation.fee,
                     confirmation.withdrawChainId,
-                    confirmation.totalAssetsBefore,
                     confirmation.totalAssetsAfter,
                     confirmation.crossChainTxId,
                     confirmation.slippage
@@ -490,20 +491,20 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      Updates the total assets and receiver's principal accordingly.
      * @param receiver The address of the receiver making the deposit.
      * @param depositAmount The amount of assets deposited by the receiver.
-     * @param totalAssetsBeforeDeposit The total assets in the vault before the deposit.
      * @param totalAssetsAfterDeposit The total assets in the vault after the deposit.
      */
     function _confirmDepositAndMint(
         address receiver,
         uint256 depositAmount,
-        uint256 totalAssetsBeforeDeposit,
         uint256 totalAssetsAfterDeposit,
         bytes32 _crossChainTxId
     ) internal {
         userPrincipal[receiver] += depositAmount;
         totalPrincipal += depositAmount;
 
-        latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeDeposit;
+        latestTotalAssetsUpdateFromStrategy =
+            totalAssetsAfterDeposit -
+            depositAmount;
 
         uint256 shares = previewDeposit(depositAmount);
         _mint(receiver, shares);
@@ -551,6 +552,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             user,
             receiver,
             asset(),
+            asset(),
             assets,
             feeToWithdraw,
             VAULT_CHAIN_ID,
@@ -570,6 +572,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function _withdrawComingFromConnectedChain(
         address user,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 assets,
         uint32 userChainId,
         uint16 slippage,
@@ -588,6 +591,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             user,
             user,
             withdrawZRC20,
+            withdrawERC20,
             assets,
             feeToWithdraw,
             userChainId,
@@ -609,6 +613,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 amount,
         uint256 feeToWithdraw,
         uint32 withdrawChainId,
@@ -623,6 +628,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             user,
             receiver,
             withdrawZRC20,
+            withdrawERC20,
             amount,
             feeToWithdraw,
             withdrawChainId,
@@ -640,6 +646,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 crossChainTxId,
                 user,
                 withdrawZRC20,
+                withdrawERC20,
                 withdrawChainId
             ),
             uint256(0) // onRevertGasLimit - NA on ZEVM
@@ -663,7 +670,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param amount The amount of assets to be withdrawn.
      * @param fee The performance fee to be applied to the withdrawal.
      * @param userChainId The chain ID of the user's connected chain.
-     * @param totalAssetsBeforeWithdraw The total assets held by the vault before the withdrawal.
      * @param totalAssetsAfterWithdraw The total assets held by the vault after the withdrawal.
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
      */
@@ -671,15 +677,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user,
         address receiver,
         address withdrawZRC20,
+        address withdrawERC20,
         uint256 amount,
         uint256 fee,
         uint32 userChainId,
-        uint256 totalAssetsBeforeWithdraw,
         uint256 totalAssetsAfterWithdraw,
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
-        latestTotalAssetsUpdateFromStrategy = totalAssetsBeforeWithdraw;
+        latestTotalAssetsUpdateFromStrategy =
+            totalAssetsAfterWithdraw +
+            amount +
+            fee; // TODO double check this
         uint256 shares = previewWithdraw(amount);
         uint256 principalWithdrawn = (amount * userPrincipal[user]) /
             convertToAssets(balanceOf(user));
@@ -695,6 +704,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             userChainId,
             receiver,
             withdrawZRC20,
+            withdrawERC20,
             _crossChainTxId,
             slippage
         );
@@ -722,6 +732,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes32 _crossChainTxId,
         address user,
         address userZRC20,
+        address userERC20,
         uint32 userChainId,
         uint256 amount
     ) internal {
@@ -733,6 +744,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 userChainId,
                 user,
                 userZRC20,
+                userERC20,
                 _crossChainTxId,
                 slippage
             );
@@ -781,10 +793,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             bytes32 _crossChainTxId,
             address user,
             address userZRC20,
+            address userERC20,
             uint32 userChainId
         ) = abi.decode(
                 context.revertMessage,
-                (string, bytes32, address, address, uint32)
+                (string, bytes32, address, address, address, uint32)
             );
 
         if (
@@ -797,6 +810,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 userChainId,
                 user,
                 userZRC20,
+                userERC20,
                 _crossChainTxId,
                 slippage
             );

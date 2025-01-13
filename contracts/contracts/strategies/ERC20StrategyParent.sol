@@ -26,7 +26,6 @@ abstract contract ERC20StrategyParent is StrategyParent {
         uint256 _executionNonce,
         uint256 _crossChainTxId
     ) internal override {
-        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
         bool success = inputToken.transferFrom(
             msg.sender,
             address(this),
@@ -40,7 +39,6 @@ abstract contract ERC20StrategyParent is StrategyParent {
         _sendInvestConfirmation(
             userAddress,
             amount,
-            totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
             _executionNonce,
             _crossChainTxId

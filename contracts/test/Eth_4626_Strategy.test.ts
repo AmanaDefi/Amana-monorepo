@@ -85,8 +85,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
     // Attempt deposit from a non-gateway address
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
     );
 
     await expect(
@@ -106,8 +106,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const withdrawAmount = ethers.utils.parseEther("0.5");
     const fee = ethers.utils.parseEther("0.01");
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
     );
 
     await expect(
@@ -127,8 +127,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const depositAmount = ethers.utils.parseEther("1");
 
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
     );
 
     // Attempt to call onCall from an address other than amanaVault
@@ -152,8 +152,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const fee = ethers.utils.parseEther("0.01");
 
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
     );
 
     await expect(
@@ -173,8 +173,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const depositAmount = ethers.utils.parseEther("1");
 
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
     );
 
     const tx = await strategy.connect(gatewaySigner).onCall(
@@ -199,8 +199,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const depositAmount = ethers.utils.parseEther("1");
 
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
     );
 
     await strategy.connect(gatewaySigner).onCall(
@@ -218,8 +218,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const fee = ethers.utils.parseEther("0.01");
 
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
     );
 
     const tx = await strategy.connect(gatewaySigner).onCall(
@@ -312,8 +312,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const depositAmount = ethers.utils.parseEther("1");
 
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
     );
 
     await strategy.connect(gatewaySigner).onCall(
@@ -342,7 +342,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     // Mock data for the test
     const userAddress = OWNER_ADDRESS;
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
-    const totalUnderlyingAssetsBefore = ethers.utils.parseEther("5000");
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("6000");
     const executionNonce = 1;
     const crossChainTxId = 12345;
@@ -353,11 +352,11 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         "address", // userAddress
         "address", // receiverAddress
         "address", // address(0) (ZRC20 token address)
+        "address", // withdrawERC20
         "uint256", // amount
         "uint256", // fee
         "uint32",  // withdrawChainId
         "bool",    // isInvest
-        "uint256", // totalUnderlyingAssetsBefore
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
         "uint256",  // crossChainTxId
@@ -367,11 +366,11 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         ethers.constants.AddressZero,
         userAddress,
         ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
         amount,
         0,
         0,
         true,
-        totalUnderlyingAssetsBefore,
         totalUnderlyingAssetsAfter,
         executionNonce,
         crossChainTxId,
@@ -403,7 +402,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       strategy.manualResendInvestConfirmation(
         userAddress,
         amount,
-        totalUnderlyingAssetsBefore,
         totalUnderlyingAssetsAfter,
         executionNonce,
         crossChainTxId
@@ -425,7 +423,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
     const fee = ethers.utils.parseEther("10"); // 10 tokens as fee
     const withdrawChainId = SEPOLIA_CHAIN_ID; // Example chain ID
-    const totalUnderlyingAssetsBefore = ethers.utils.parseEther("5000");
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
     const executionNonce = 1;
     const crossChainTxId = 12345;
@@ -437,11 +434,11 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         "address", // userAddress
         "address", // receiverAddress
         "address", // withdrawZRC20
+        "address", // withdrawERC20
         "uint256", // amount
         "uint256", // fee
         "uint32",  // withdrawChainId
         "bool",    // isInvest (false for divestment)
-        "uint256", // totalUnderlyingAssetsBefore
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
         "uint256",  // crossChainTxId
@@ -451,11 +448,11 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         userAddress,
         userAddress,
         withdrawZRC20,
+        ethers.constants.AddressZero,
         amount,
         fee,
         withdrawChainId,
         false,
-        totalUnderlyingAssetsBefore,
         totalUnderlyingAssetsAfter,
         executionNonce,
         crossChainTxId,
@@ -492,10 +489,10 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         userAddress,
         userAddress,
         withdrawZRC20,
+        ethers.constants.AddressZero,
         amount,
         fee,
         withdrawChainId,
-        totalUnderlyingAssetsBefore,
         totalUnderlyingAssetsAfter,
         executionNonce,
         crossChainTxId,
@@ -517,8 +514,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const depositAmount = ethers.utils.parseEther("1");
 
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, depositAmount, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
     );
 
     await strategy.connect(gatewaySigner).onCall(
@@ -546,11 +543,12 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     await newStrategy.setOldStrategy(strategy.address);
 
     const switchMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
       [
         ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
         ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
         newStrategy.address,
+        ethers.constants.AddressZero,
         0, // amount
         0, // fee
         0, // withdrawChainId
