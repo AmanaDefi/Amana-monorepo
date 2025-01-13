@@ -17,17 +17,18 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const asset = args.asset; // This should be passed as an argument
   const treasury = args.treasury; // Address for the treasury
   const gasTank = args.gastank; // Address for the gas tank contract
+  const receiver = args.receiver;
 
   // Set the default for performanceFeeRate if it's not provided
   const performanceFeeRate = args.performanceFeeRate ?? 1500; // Default to 15% (1500 basis points)
 
-  if (!asset || !treasury) {
-    throw new Error("🚨 Asset address, Treasury address and System Contract address are required.");
+  if (!asset || !treasury || !gasTank || !receiver) {
+    throw new Error("🚨 Asset address, Treasury address, GasTank address and WithdrawalReceiver address are required.");
   }
 
   // Deploy the AmanaConnectedChainVault contract using OpenZeppelin Upgrades
   const factory = await hre.ethers.getContractFactory("AmanaConnectedChainVault");
-  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gasTank], {
+  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gasTank, receiver], {
     initializer: "initialize",
   });
   console.log("Contract deployed, waiting for confirmations...");
@@ -93,6 +94,7 @@ task("deploy-amana-connected-chain-vault", "Deploy the AmanaConnectedChainVault 
   .addParam("asset", "The address of the asset ERC20 token")
   .addParam("treasury", "The address of the treasury")
   .addParam("gastank", "The address of the GasTank contract")
+  .addParam("receiver", "The address of the WithdrawalReceiver contract on connected chains")
   .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)"); // Remove the default here
 
 // Export the task so it can be used in hardhat
