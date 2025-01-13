@@ -18,11 +18,12 @@ export interface VaultInputsProps {
   tokenOptions: Token[];
   setTransactionCompleted: (value: boolean) => void;
   userVaultBalance?: string;
-  vaultTotalAssetinToken?: VaultTotalAssetsinToken
+  vaultTotalAssetinToken?: VaultTotalAssetsinToken,
+  transactionCompleted: boolean
 }
 
 // Custom hook to fetch token balance, including native tokens
-function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any) {
+function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any, transactionCompleted: Boolean) {
   const [balance, setBalance] = useState<string>("0");
   const { data: walletBalance, isLoading, isError } = useWalletBalance({
     chain: activeChain,
@@ -55,7 +56,7 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
     };
 
     fetchTokenBalance();
-  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError]);
+  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError, transactionCompleted]);
 
   return balance;
 }
@@ -65,7 +66,8 @@ export default function VaultInputs({
   tokenOptions,
   setTransactionCompleted,
   userVaultBalance,
-  vaultTotalAssetinToken
+  vaultTotalAssetinToken,
+  transactionCompleted
 }: VaultInputsProps): JSX.Element {
   const [inputToken, setInputToken] = useState<Token>();
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
@@ -108,7 +110,7 @@ export default function VaultInputs({
   }, [activeChain.id, vaultData.inputToken, isDeposit]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain);
+  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, transactionCompleted);
 
   useEffect(() => {
     if (inputToken) {

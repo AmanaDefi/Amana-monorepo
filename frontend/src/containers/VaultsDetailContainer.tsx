@@ -85,6 +85,7 @@ const VaultsDetailContainer: React.FC<{
                     setTransactionCompleted={setTransactionCompleted}
                     userVaultBalance={userVaultBalance}
                     vaultTotalAssetinToken={vaultTotalAssetinToken}
+                    transactionCompleted={transactionCompleted}
                   />
                 </div>
               </div>
