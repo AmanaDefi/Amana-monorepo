@@ -38,6 +38,10 @@ const config: HardhatUserConfig = {
       url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+    },
     sepolia_testnet: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
@@ -101,6 +105,7 @@ const config: HardhatUserConfig = {
       zeta_mainnet: process.env.BLOCKSCOUT_API_KEY || "",
       zeta_testnet: process.env.BLOCKSCOUT_API_KEY || "",
       sepolia_testnet: "abc",
+      polygon: process.env.POLYGONSCAN_API_KEY || "",
       polygon_amoy: process.env.POLYGONSCAN_API_KEY || "",
       bsc_testnet: process.env.BSCSCAN_API_KEY || "",
     },
@@ -111,6 +116,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "polygon",
+        chainId: 137,
+        urls: {
+          apiURL: "https://api.polygonscan.com/api",
+          browserURL: "https://polygonscan.com",
         },
       },
       {

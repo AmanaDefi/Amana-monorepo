@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -33,7 +33,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aAaveETH",
     imgURL: "/base.png",
     inputToken: {
-      symbol: "ETH",
+      symbol: "ETH.BASE",
       decimals: 18,
       address: ZC_ETH_BASE_ADDRESS,
       imgURL: "/ETH.png",
@@ -52,13 +52,38 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
+    id: "0x564bC0142813fDb8C5567C5c8A3d5Ecea729c7Dd", // Base ETH Vault
+    name: "AaveV3 POL",
+    des: " This vault invests POL into a simple strategy which deposits the funds as collateral into an Aave POL pool, which earns interest every block.",
+    symbol: "aAavePOL",
+    imgURL: "/polygon_logo.png",
+    inputToken: {
+      symbol: "POL.POL",
+      decimals: 18,
+      address: ZC_POL_POL_ADDRESS,
+      imgURL: "/polygon_logo.png",
+      price: 0.5,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x2951CeE73b27c2b1Ffd66A03b77eEdD79012d2BF",
+      network: "Polygon",
+      chainId: 137,
+      netdes: "Polygon is a POS side chain to Ethereum.",
+      imgURL: "/aave.png",
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+    },
+  },
+  {
     id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
     name: "Moonwell Flagship USDC",
     des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
     symbol: "aMoonwellUSDC",
     imgURL: "/base.png",
     inputToken: {
-      symbol: "USDC",
+      symbol: "USDC.BASE",
       decimals: 6,
       address: ZC_USDC_BASE_ADDRESS,
       imgURL: "/USDC.png",
@@ -83,7 +108,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aMoonwellEth",
     imgURL: "/base.png",
     inputToken: {
-      symbol: "ETH",
+      symbol: "ETH.BASE",
       decimals: 18,
       address: ZC_ETH_BASE_ADDRESS,
       imgURL: "/ETH.png",
@@ -108,7 +133,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aCompoundUSDC",
     imgURL: "/base.png",
     inputToken: {
-      symbol: "USDC",
+      symbol: "USDC.BASE",
       decimals: 6,
       address: ZC_USDC_BASE_ADDRESS,
       imgURL: "/USDC.png",

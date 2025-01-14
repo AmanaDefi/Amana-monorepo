@@ -305,7 +305,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         address oldStrategyAddress = strategyAddress;
         strategyAddress = newStrategyAddress;
-
+        if (totalAssets() == 1) {
+            return;
+        }
         _handleGasFee(GAS_LIMIT_FOR_CALL);
 
         bytes memory recipient = abi.encodePacked(oldStrategyAddress);

@@ -14,6 +14,11 @@ import "./EthStrategyParent.sol";
 // Aave Pool (Base): 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5
 // Base Weth: 0x4200000000000000000000000000000000000006
 
+// Wrapped Token Gateway (Polygon): 0xF5f61a1ab3488fCB6d86451846bcFa9cdc108eB0
+// APolWMATIC: 0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97
+// Aave Pool (Polygon): 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+// Polygon WMATIC: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+
 /// @title AaveEthStrategy
 /// @notice Base contract for Ethereum-based strategies using Aave and ZetaChain.
 /// @dev Handles ETH investments and divestments for strategies on EVM-compatible chains.
