@@ -306,6 +306,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address oldStrategyAddress = strategyAddress;
         strategyAddress = newStrategyAddress;
         if (totalAssets() == 1) {
+            emit StrategyUpdated(newStrategyAddress);
             return;
         }
         _handleGasFee(GAS_LIMIT_FOR_CALL);
@@ -324,7 +325,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         bytes memory outgoingMessage = abi.encode(
             address(0),
+            address(0),
             newStrategyAddress,
+            address(0),
             0,
             0,
             0,
@@ -449,6 +452,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes memory outgoingMessage = abi.encode(
             address(0),
             receiver,
+            address(0),
             address(0),
             amount,
             0,
