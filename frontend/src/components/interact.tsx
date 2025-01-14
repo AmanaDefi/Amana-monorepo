@@ -46,11 +46,9 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
         setCrosschainInvestHash(receipt.transactionHash)
 
-        toast.success("Transaction confirmed");
-
         return true;
     } catch (error: any) {
-        console.log("0-0-0-0-0",error)
+        console.log("0-0-0-0-0", error)
         if (!error.message.includes("User denied transaction")) {
             setTransactionCompleted(true);
             setInputBalance({
@@ -60,10 +58,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             mixpanel.track("Deposit Submitted", {
                 vault: vaultData.id.toString(),
             });
-            toast.error("Transaction failed", {
-                position: "top-right",
-                autoClose: 2000,  // Close automatically after 2 seconds
-            });
+          
             throw new Error("Transaction failed");
         }
     }
@@ -107,8 +102,6 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         };
 
         await waitForReceipt(receiptObject);
-
-        toast.success("Transaction confirmed");
         return true;
     } catch (error) {
         setTransactionCompleted(true);
@@ -119,10 +112,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         mixpanel.track("Withdraw Failed", {
             vault: vaultData.id.toString(),
         });
-        toast.error("Transaction failed", {
-            position: "top-right",
-            autoClose: 2000,  // Close automatically after 2 seconds
-        });
+        
         throw new Error("Transaction failed");
     }
 };
@@ -146,7 +136,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     });
 
     const FundsInvested = prepareEvent({
-        signature: "event FundsInvested(uint256 indexed crossChainTxId,address user,uint256 amount)",
+        signature: "event FundsInvested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
     });
 
     const Deposited = prepareEvent({
@@ -192,13 +182,13 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         address: strategyAddress,
     });
 
-    const FundsEvents = contract1 != undefined &&
+    const FundsEvents =
         useContractEvents({
             contract: contract1,
             events: [FundsInvested],
         })
 
-    const FundsDivestedEvents = contract1 != undefined &&
+    const FundsDivestedEvents =
         useContractEvents({
             contract: contract1,
             events: [FundsDivested],
@@ -237,10 +227,8 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 for (let index = 0; index < contractEvents.data.length; index++) {
                     const element = contractEvents.data[index];
                     if (element.transactionHash == crosschainInvestHash) {
-                        console.log("a-------1", element)
                         setcrossChainTxId(element.args.crossChainTxId.toString())
                         const nextStep = step + 1;
-                        console.log("a-------2", nextStep)
                         setAction(actions[nextStep]);
                         setStep(nextStep);
                         return
@@ -248,7 +236,6 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
         }
-        console.log("a-------0", contractEvents)
     }, [contractEvents.data, crosschainInvestHash])
 
 
@@ -305,7 +292,6 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
         }
-        console.log("CrossChainInvestFailedEvents", CrossChainInvestFailedEvents)
     }, [CrossChainInvestFailedEvents.data, crosschainInvestHash])
 
     useEffect(() => {
@@ -330,10 +316,8 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 for (let index = 0; index < FundsEvents.data.length; index++) {
                     for (let index = 0; index < FundsEvents.data.length; index++) {
                         const element = FundsEvents.data[index];
-                        console.log("Fundsdata-----1", element)
                         if (element.args.crossChainTxId.toString() == crossChainTxId) {
                             const nextStep = step + 1;
-                            console.log("Fundsdata-----2", nextStep)
                             setAction(actions[nextStep]);
                             setStep(nextStep);
                             return
@@ -342,7 +326,6 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
         }
-        console.log("FundsEvents", FundsEvents)
     }, [FundsEvents])
 
 
@@ -375,7 +358,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 for (let index = 0; index < DepositedEvents.data.length; index++) {
                     for (let index = 0; index < DepositedEvents.data.length; index++) {
                         const element = DepositedEvents.data[index];
-                        if (element.args.crossChainTxId == crossChainTxId) {
+                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
                             console.log("d---------1", element)
                             console.log("d---------3", DepositedEvents)
 
@@ -385,16 +368,6 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                             console.log("d---------7", actions[nextStep])
                             setAction(actions[nextStep]);
                             setStep(nextStep);
-                            setTimeout(() => {
-                                setStep(0)
-                                setInputBalance({
-                                    ..._inputBalance,
-                                    formatted: "0",
-                                })
-                            }, 1000);
-                            setTimeout(() => {
-                                setTransactionCompleted(true);
-                            }, 3000);
                             return
                         }
                     }
@@ -423,9 +396,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 setStep(nextStep)
             }
 
-        } else {
-            // setAction(Action.done)
-        }
+        } 
     }
 
     return <div className="w-full flex flex-col mt-5">
@@ -487,7 +458,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 }
                 break;
             case Action.depositConfirmed:
-                setDescription1([...description1, "Deposit confirmed"]);
+                setDescription1([...description1, (vaultData.protocol.chainId != 7000 && vaultData.protocol.chainId != 7001) ? "Deposit confirmed" : "Deposit completed"]);
                 if (actions[actions.length - 1] == Action.depositConfirmed) {
                     setTimeout(() => {
                         setTransactionCompleted(true);
@@ -498,19 +469,19 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                     }, 2000);
                 }
                 else {
-                    setDescription2([...description2, "Waiting CrossChainInvest"]);
+                    setDescription2([...description2, "Initial deposit transaction on zetachain in progress"]);
                 }
                 break;
             case Action.crosschainInvest:
-                setDescription1([...description1, "CrossChainInvestSent"]);
-                setDescription2([...description2, "Waiting FundsInvest"]);
+                setDescription1([...description1, "Initial deposit transaction on zetachain completed and:"]);
+                setDescription2([...description2, "Cross chain transfer and investment of funds in progress"]);
                 break;
             case Action.FundsInvest:
-                setDescription1([...description1, "FundsInvested"]);
-                setDescription2([...description2, "Waiting Deposit"]);
+                setDescription1([...description1, "Cross chain transfer and investment of funds completed and:"]);
+                setDescription2([...description2, "Final confirmation and issue of shares by vault in progress"]);
                 break;
             case Action.deposited:
-                setDescription1([...description1, "Deposited"]);
+                setDescription1([...description1, "Final confirmation completed, shares issued by vault"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
@@ -534,7 +505,7 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                             ...inputBalance,
                             formatted: "0",
                         })
-                    }, 2000);
+                    }, 3000);
                 }
                 else {
                     setDescription2([...description2, "Waiting Divest"]);
