@@ -68,12 +68,7 @@ library SwapHelperLibEddy {
         uint256 amount,
         uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
     ) internal view returns (uint256) {
-        if (isEthToken(inputToken) && isEthToken(outputToken)) {
-            // ETH -> ETH
-            return amount - ((amount * slippageBps) / 10000);
-        } else if (
-            isUsdStablecoin(inputToken) && isUsdStablecoin(outputToken)
-        ) {
+        if (isUsdStablecoin(inputToken) && isUsdStablecoin(outputToken)) {
             // USD -> USD
             return amount - ((amount * slippageBps) / 10000);
         } else if (isEthToken(inputToken) && isUsdStablecoin(outputToken)) {
@@ -89,7 +84,7 @@ library SwapHelperLibEddy {
             uint256 ethAmount = (amount * 10 ** 8) / ethUsdPrice; // Adjust for Chainlink decimals
             return ethAmount - ((ethAmount * slippageBps) / 10000);
         } else {
-            revert IErrors.InvalidTokenPair();
+            return amount - ((amount * slippageBps) / 10000);
         }
     }
 
