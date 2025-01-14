@@ -5,3 +5,13 @@ viaIR = true                   # Enable the Yul Intermediate Representation comp
 libs = ['node_modules','lib']          # Use node_modules for libraries (Hardhat-compatible)
 test = 'test'                  # Test folder
 cache_path = 'cache_forge'     # Cache folder for Forge
+
+[rpc_endpoints]
+base = "${BASE_RPC_URL}"
+bsc = "${BSC_RPC_URL}"
+mainnet = "${ETHEREUM_RPC_URL}"
+
+[etherscan]
+base = { key = "${BASESCAN_API_KEY}" }
+bsc = { key = "${BSCSCAN_API_KEY}" }
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
