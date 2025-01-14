@@ -253,8 +253,8 @@ describe("AaveEthStrategy - Full Coverage", function () {
 
   it("should emit events on failed invest confirmation", async function () {
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "uint256"],
-      ["_investConfirmFailed", 1]
+      ["string", "bytes32"],
+      ["_investConfirmFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32)]
     );
 
     const revertContext = {
@@ -266,13 +266,13 @@ describe("AaveEthStrategy - Full Coverage", function () {
 
     await expect(strategy.onRevert(revertContext))
       .to.emit(strategy, "InvestConfirmFailed")
-      .withArgs(1);
+      .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
   });
 
   it("should emit event and re-invest ETH on _returnFundsFromStrategyFailed revert", async function () {
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "uint256"],
-      ["_returnFundsFromStrategyFailed", 1]
+      ["string", "bytes32"],
+      ["_returnFundsFromStrategyFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32)]
     );
 
     const withdrawPlusFee = ethers.utils.parseEther("1");
@@ -294,7 +294,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
 
     await expect(strategy.onRevert(revertContext))
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
-      .withArgs(1);
+      .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
 
     const finalBalance = await receiptToken.balanceOf(strategy.address);
 
@@ -360,7 +360,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("6000");
     const executionNonce = 1;
-    const crossChainTxId = 12345;
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
 
     // Construct the payload (outgoingMessage)
     const payload = ethers.utils.defaultAbiCoder.encode(
@@ -375,7 +375,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         "bool",    // isInvest
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
-        "uint256",  // crossChainTxId
+        "bytes32",  // crossChainTxId
         "uint16"
       ],
       [
@@ -400,7 +400,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       false,            // callOnRevert
       strategy.address, // abortAddress
       ethers.utils.defaultAbiCoder.encode(
-        ["string", "uint256"], // Revert handler function name and crossChainTxId
+        ["string", "bytes32"], // Revert handler function name and crossChainTxId
         ["_investConfirmFailed", crossChainTxId]
       ),                         // revertMessage
       ethers.BigNumber.from("1000000") // onRevertGasLimit
@@ -439,7 +439,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
     const withdrawChainId = SEPOLIA_CHAIN_ID; // Example chain ID
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
     const executionNonce = 1;
-    const crossChainTxId = 12345;
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
     const slippage = 200;
 
     // Construct the payload (outgoingMessage)
@@ -455,7 +455,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         "bool",    // isInvest (false for divestment)
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
-        "uint256",  // crossChainTxId
+        "bytes32",  // crossChainTxId
         "uint16"
       ],
       [
@@ -480,7 +480,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       true,             // callOnRevert
       strategy.address, // abortAddress
       ethers.utils.defaultAbiCoder.encode(
-        ["string", "uint256"], // Revert handler function name and crossChainTxId
+        ["string", "bytes32"], // Revert handler function name and crossChainTxId
         ["_returnFundsFromStrategyFailed", crossChainTxId]
       ),                         // revertMessage
       ethers.BigNumber.from("1000000") // onRevertGasLimit
@@ -558,7 +558,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
     await newStrategy.setOldStrategy(strategy.address);
 
     const switchMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "bytes32", "uint16"],
       [
         ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
         ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
@@ -568,7 +568,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         0, // fee
         0, // withdrawChainId
         false, // isDeposit
-        1, // crossChainTxId
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId
         0
       ]
     );
