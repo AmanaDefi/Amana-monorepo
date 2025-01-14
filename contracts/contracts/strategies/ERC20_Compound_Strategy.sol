@@ -76,7 +76,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.balanceOf(address(this)); // TODO use maxwithdraw?
         _withdrawFundsFromYieldSource(strategyTotalBalance);
@@ -92,8 +92,8 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         emit AssetsTransferredToNewStrategy(
             newStrategy,
             strategyTotalBalance,
-            _crossChainTxId,
-            currentExecutionNonce
+            currentExecutionNonce,
+            _crossChainTxId
         );
     }
 

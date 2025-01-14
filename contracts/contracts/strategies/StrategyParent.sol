@@ -22,17 +22,17 @@ abstract contract StrategyParent is Ownable, IErrors {
     address public oldStrategy;
 
     event FundsInvested(
-        uint256 indexed crossChainTxId,
+        bytes32 indexed crossChainTxId,
         address user,
         uint256 amount
     );
     event FundsDivested(
-        uint256 indexed crossChainTxId,
+        bytes32 indexed crossChainTxId,
         address user,
         uint256 amount
     );
-    event InvestConfirmFailed(uint256 indexed crossChainTxId);
-    event ReturnFundsFromStrategyFailed(uint256 indexed crossChainTxId);
+    event InvestConfirmFailed(bytes32 indexed crossChainTxId);
+    event ReturnFundsFromStrategyFailed(bytes32 indexed crossChainTxId);
     event TotalUnderlyingAssetsSent(
         address indexed vaultAddress,
         uint256 totalUnderlyingAssets,
@@ -44,7 +44,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         address indexed newStrategy,
         uint256 totalAssetsTransferrred,
         uint256 executionNonce,
-        uint256 crossChainTxId
+        bytes32 crossChainTxId
     );
 
     address immutable _GATEWAY_ADDRESS;
@@ -87,7 +87,7 @@ abstract contract StrategyParent is Ownable, IErrors {
             uint256 fee,
             uint32 withdrawChainId,
             bool isDeposit,
-            uint256 crossChainTxId,
+            bytes32 crossChainTxId,
             uint16 slippage
         ) = abi.decode(
                 message,
@@ -100,7 +100,7 @@ abstract contract StrategyParent is Ownable, IErrors {
                     uint256,
                     uint32,
                     bool,
-                    uint256,
+                    bytes32,
                     uint16
                 )
             );
@@ -160,7 +160,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         address receiver,
         uint256 amount,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal virtual;
 
     /**
@@ -183,7 +183,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) external onlyOwner {
         _sendInvestConfirmation(
             receiver,
@@ -211,7 +211,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal {
         bytes memory outgoingMessage = abi.encode(
             address(0),
@@ -253,7 +253,7 @@ abstract contract StrategyParent is Ownable, IErrors {
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal virtual;
 
     /// @notice Withdraws funds from the Aave pool.
@@ -273,7 +273,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint256 fee,
         uint32 withdrawChainId,
         uint256 _executionNonce,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
         _withdrawFundsFromYieldSource(amount + fee);
@@ -320,7 +320,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         uint16 slippage
     ) external onlyOwner {
         _sendFundsAndDivestConfirmation(
@@ -364,7 +364,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
-        uint256 _crossChainTxId,
+        bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
         bytes memory outgoingMessage = abi.encode(
@@ -475,9 +475,9 @@ abstract contract StrategyParent is Ownable, IErrors {
     /// @notice Handles reverts from the Gateway.
     /// @param context Context of the revert.
     function onRevert(RevertContext calldata context) external {
-        (string memory revertMessage, uint256 _crossChainTxId) = abi.decode(
+        (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
             context.revertMessage,
-            (string, uint256)
+            (string, bytes32)
         );
 
         if (

@@ -87,7 +87,7 @@ contract AaveEthStrategy is EthStrategyParent {
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal override {
         // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
@@ -102,8 +102,8 @@ contract AaveEthStrategy is EthStrategyParent {
         emit AssetsTransferredToNewStrategy(
             newStrategy,
             amountWithdrawn,
-            _crossChainTxId,
-            currentExecutionNonce
+            currentExecutionNonce,
+            _crossChainTxId
         );
     }
 

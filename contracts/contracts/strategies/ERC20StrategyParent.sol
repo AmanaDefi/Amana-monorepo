@@ -24,7 +24,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         address userAddress,
         uint256 amount,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal override {
         bool success = inputToken.transferFrom(
             msg.sender,
@@ -81,7 +81,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
     function depositFromOldStrategy(
         uint256 amount,
         uint256 currentExecutionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) external {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert Unauthorized();

@@ -18,7 +18,7 @@ abstract contract EthStrategyParent is StrategyParent {
         address userAddress,
         uint256 amount,
         uint256 _executionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal override {
         if (msg.value == 0) revert NoFundsReceived();
 
@@ -64,7 +64,7 @@ abstract contract EthStrategyParent is StrategyParent {
     function depositFromOldStrategy(
         uint256,
         uint256 currentExecutionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) external payable {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert Unauthorized();

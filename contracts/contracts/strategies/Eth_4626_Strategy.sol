@@ -71,7 +71,7 @@ contract Eth_4626_Strategy is EthStrategyParent {
     function _transferAssetsToNewStrategy(
         address newStrategy,
         uint256 currentExecutionNonce,
-        uint256 _crossChainTxId
+        bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
         _withdrawFundsFromYieldSource(strategyTotalBalance);
@@ -82,8 +82,8 @@ contract Eth_4626_Strategy is EthStrategyParent {
         emit AssetsTransferredToNewStrategy(
             newStrategy,
             strategyTotalBalance,
-            _crossChainTxId,
-            currentExecutionNonce
+            currentExecutionNonce,
+            _crossChainTxId
         );
     }
 
