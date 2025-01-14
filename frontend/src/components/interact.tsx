@@ -50,6 +50,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
         return true;
     } catch (error: any) {
+        console.log("0-0-0-0-0",error)
         if (!error.message.includes("User denied transaction")) {
             setTransactionCompleted(true);
             setInputBalance({
@@ -134,50 +135,45 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         setStep(0)
     }, [actions])
 
-    const [strategyAddress, setstrategyAddress] = useState(vaultData.protocol.strategyAddress)
-    const [strategyChainID, setstrategyChainID] = useState(vaultData.protocol.chainId)
+    const [strategyAddress] = useState(vaultData.protocol.strategyAddress)
+    const [strategyChainID] = useState(vaultData.protocol.chainId)
 
     const [crosschainInvestHash, setCrosschainInvestHash] = useState("")
+    const [crossChainTxId, setcrossChainTxId] = useState<string>("");
 
     const CrossChainInvestSent = prepareEvent({
-        signature: "event CrossChainInvestSent(uint256 indexed crossChainTxId)",
+        signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId)",
     });
 
     const FundsInvested = prepareEvent({
-        signature: "event FundsInvested(uint256 indexed crossChainTxId,address userAddress,uint256 amount)",
+        signature: "event FundsInvested(uint256 indexed crossChainTxId,address user,uint256 amount)",
     });
 
     const Deposited = prepareEvent({
-        signature: "event Deposited(address indexed userAddress,uint256 amount,uint256 shares,uint256 indexed crossChainTxId)",
+        signature: "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
     });
 
     const DivestSent = prepareEvent({
-        signature: "event DivestSent(uint256 indexed crossChainTxId)",
+        signature: "event DivestSent(bytes32 indexed crossChainTxId)",
     });
 
     const FundsDivested = prepareEvent({
-        signature: "event FundsDivested(uint256 indexed crossChainTxId,address userAddress,uint256 amount)",
+        signature: "event FundsDivested(uint256 indexed crossChainTxId,address user,uint256 amount)",
     });
 
-    const ReturnFundsToUserSent = prepareEvent({
-        signature: "event ReturnFundsToUserSent(uint256 indexed crossChainTxId)",
-    });
 
     const Withdrawn = prepareEvent({
-        signature: "event Withdrawn( address indexed userAddress,uint256 amount,uint256 shares,uint256 crossChainTxId)",
+        signature: "event Withdrawn(address indexed user,address indexed receiver,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
     });
 
     const CrossChainInvestFailed = prepareEvent({
-        signature: "event CrossChainInvestFailed(uint256 indexed crossChainTxId)",
+        signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId)",
     });
 
     const DivestFailed = prepareEvent({
-        signature: "event DivestFailed(uint256 indexed crossChainTxId)",
+        signature: "event DivestFailed(bytes32 indexed crossChainTxId)",
     });
 
-    const ReturnFundsToUserFailed = prepareEvent({
-        signature: "event ReturnFundsToUserFailed(uint256 indexed crossChainTxId)",
-    });
 
     const contract = getContract({
         client,
@@ -219,10 +215,6 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         events: [DivestSent],
     });
 
-    const ReturnFundsToUserSentEvents = useContractEvents({
-        contract,
-        events: [ReturnFundsToUserSent],
-    });
 
     const WithdrawnEvents = useContractEvents({
         contract,
@@ -239,19 +231,16 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         events: [DivestFailed],
     });
 
-    const ReturnFundsToUserFailedEvents = useContractEvents({
-        contract,
-        events: [ReturnFundsToUserFailed],
-    });
-
-
     useEffect(() => {
-        if (contractEvents.data?.length && crosschainInvestHash != "") {
+        if (contractEvents.data?.length && crosschainInvestHash != "" && action == Action.depositConfirmed) {
             for (let index = 0; index < contractEvents.data.length; index++) {
                 for (let index = 0; index < contractEvents.data.length; index++) {
                     const element = contractEvents.data[index];
                     if (element.transactionHash == crosschainInvestHash) {
+                        console.log("a-------1", element)
+                        setcrossChainTxId(element.args.crossChainTxId.toString())
                         const nextStep = step + 1;
+                        console.log("a-------2", nextStep)
                         setAction(actions[nextStep]);
                         setStep(nextStep);
                         return
@@ -259,14 +248,17 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
         }
+        console.log("a-------0", contractEvents)
     }, [contractEvents.data, crosschainInvestHash])
 
+
     useEffect(() => {
-        if (DivestSentEvents.data?.length && crosschainInvestHash != "") {
+        if (DivestSentEvents.data?.length && crosschainInvestHash != "" && action == Action.withdrawconfirmed) {
             for (let index = 0; index < DivestSentEvents.data.length; index++) {
                 for (let index = 0; index < DivestSentEvents.data.length; index++) {
                     const element = DivestSentEvents.data[index];
                     if (element.transactionHash == crosschainInvestHash) {
+                        setcrossChainTxId(element.args.crossChainTxId.toString())
                         const nextStep = step + 1;
                         setAction(actions[nextStep]);
                         setStep(nextStep);
@@ -278,38 +270,28 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     }, [DivestSentEvents.data, crosschainInvestHash])
 
     useEffect(() => {
-        if (ReturnFundsToUserSentEvents.data?.length && crosschainInvestHash != "") {
-            for (let index = 0; index < ReturnFundsToUserSentEvents.data.length; index++) {
-                for (let index = 0; index < ReturnFundsToUserSentEvents.data.length; index++) {
-                    const element = ReturnFundsToUserSentEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
-                        const nextStep = step + 1;
-                        setAction(actions[nextStep]);
-                        setStep(nextStep);
-                        return
-                    }
-                }
-            }
-        }
-    }, [ReturnFundsToUserSentEvents.data, crosschainInvestHash])
-
-
-    useEffect(() => {
-        if (WithdrawnEvents.data?.length && crosschainInvestHash != "") {
-            for (let index = 0; index < WithdrawnEvents.data.length; index++) {
+        const fetchData = async () => {
+            if (WithdrawnEvents.data?.length && crosschainInvestHash != "" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsDivested : Action.withdrawconfirmed)) {
                 for (let index = 0; index < WithdrawnEvents.data.length; index++) {
-                    const element = WithdrawnEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
-                        const nextStep = step + 1;
-                        setAction(actions[nextStep]);
-                        setStep(nextStep);
-                        return
+                    for (let index = 0; index < WithdrawnEvents.data.length; index++) {
+                        const element = WithdrawnEvents.data[index];
+                        if (element.args.crossChainTxId == crossChainTxId) {
+                            console.log("w---------1", element)
+                            console.log("w---------3", WithdrawnEvents)
+                            const nextStep = step + 1;
+                            console.log("w---------5", nextStep)
+                            console.log("w---------6", actions)
+                            console.log("w---------7", actions[nextStep])
+                            setAction(actions[nextStep]);
+                            setStep(nextStep);
+                            return
+                        }
                     }
                 }
             }
         }
-    }, [WithdrawnEvents.data, crosschainInvestHash])
-
+        fetchData()
+    }, [WithdrawnEvents.data])
     useEffect(() => {
         if (CrossChainInvestFailedEvents.data?.length && crosschainInvestHash != "") {
             for (let index = 0; index < CrossChainInvestFailedEvents.data.length; index++) {
@@ -342,76 +324,86 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     }, [DivestFailedEvents.data, crosschainInvestHash])
 
     useEffect(() => {
-        if (ReturnFundsToUserFailedEvents.data?.length && crosschainInvestHash != "") {
-            for (let index = 0; index < ReturnFundsToUserFailedEvents.data.length; index++) {
-                for (let index = 0; index < ReturnFundsToUserFailedEvents.data.length; index++) {
-                    const element = ReturnFundsToUserFailedEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
-                        setAction(Action.ReturnFundsToUserFailed);
-                        setStep(0);
-                        return
+
+        if (FundsEvents && typeof FundsEvents === 'object' && FundsEvents !== null && crosschainInvestHash != "" && action == Action.crosschainInvest) {
+            if (FundsEvents.data?.length) {
+                for (let index = 0; index < FundsEvents.data.length; index++) {
+                    for (let index = 0; index < FundsEvents.data.length; index++) {
+                        const element = FundsEvents.data[index];
+                        console.log("Fundsdata-----1", element)
+                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
+                            const nextStep = step + 1;
+                            console.log("Fundsdata-----2", nextStep)
+                            setAction(actions[nextStep]);
+                            setStep(nextStep);
+                            return
+                        }
                     }
                 }
             }
         }
-    }, [ReturnFundsToUserFailedEvents.data, crosschainInvestHash])
+        console.log("FundsEvents", FundsEvents)
+    }, [FundsEvents])
 
-    // useEffect(() => {
-    //     if (contract1.address != "" && contract1.chain.id != 0) {
-    //         if (FundsEvents && typeof FundsEvents === 'object' && FundsEvents !== null && crosschainInvestHash != "") {
-    //             if (FundsEvents.data?.length) {
-    //                 for (let index = 0; index < FundsEvents.data.length; index++) {
-    //                     for (let index = 0; index < FundsEvents.data.length; index++) {
-    //                         const element = FundsEvents.data[index];
-    //                         if (element.transactionHash == crosschainInvestHash) {
-    //                             const nextStep = step + 1;
-    //                             setAction(actions[nextStep]);
-    //                             setStep(nextStep);
-    //                             return
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }, [FundsEvents, crosschainInvestHash])
-
-    // useEffect(() => {
-    //     if (contract1.address != "" && contract1.chain.id != 0) {
-    //         if (FundsDivestedEvents && typeof FundsDivestedEvents === 'object' && FundsDivestedEvents !== null && crosschainInvestHash != "") {
-    //             if (FundsDivestedEvents.data?.length) {
-    //                 for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
-    //                     for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
-    //                         const element = FundsDivestedEvents.data[index];
-    //                         if (element.transactionHash == crosschainInvestHash) {
-    //                             const nextStep = step + 1;
-    //                             setAction(actions[nextStep]);
-    //                             setStep(nextStep);
-    //                             return
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }, [FundsDivestedEvents, crosschainInvestHash])
 
     useEffect(() => {
-        if (DepositedEvents.data?.length && crosschainInvestHash != "") {
-            for (let index = 0; index < DepositedEvents.data.length; index++) {
-                for (let index = 0; index < DepositedEvents.data.length; index++) {
-                    const element = DepositedEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
-                        const nextStep = step + 1;
-                        setAction(actions[nextStep]);
-                        setStep(nextStep);
-                        return
+        if (FundsDivestedEvents && typeof FundsDivestedEvents === 'object' && FundsDivestedEvents !== null && crosschainInvestHash != "" && action == Action.DivestSent) {
+            if (FundsDivestedEvents.data?.length) {
+                for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
+                    for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
+                        const element = FundsDivestedEvents.data[index];
+                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
+                            console.log("f---------1", element)
+                            console.log("f---------3", FundsDivestedEvents)
+                            const nextStep = step + 1;
+                            console.log("f---------5", nextStep)
+                            console.log("f---------6", actions)
+                            console.log("f---------7", actions[nextStep])
+                            setAction(actions[nextStep]);
+                            setStep(nextStep);
+                            return
+                        }
                     }
                 }
             }
         }
-    }, [DepositedEvents.data, crosschainInvestHash])
+    }, [FundsDivestedEvents])
 
+    useEffect(() => {
+        const fetchData = async () => {
+            if (DepositedEvents.data?.length && crosschainInvestHash != "" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsInvest : Action.depositConfirmed)) {
+                for (let index = 0; index < DepositedEvents.data.length; index++) {
+                    for (let index = 0; index < DepositedEvents.data.length; index++) {
+                        const element = DepositedEvents.data[index];
+                        if (element.args.crossChainTxId == crossChainTxId) {
+                            console.log("d---------1", element)
+                            console.log("d---------3", DepositedEvents)
+
+                            const nextStep = step + 1;
+                            console.log("d---------5", nextStep)
+                            console.log("d---------6", actions)
+                            console.log("d---------7", actions[nextStep])
+                            setAction(actions[nextStep]);
+                            setStep(nextStep);
+                            setTimeout(() => {
+                                setStep(0)
+                                setInputBalance({
+                                    ..._inputBalance,
+                                    formatted: "0",
+                                })
+                            }, 1000);
+                            setTimeout(() => {
+                                setTransactionCompleted(true);
+                            }, 3000);
+                            return
+                        }
+                    }
+                }
+            }
+        }
+        console.log("DepositedEvents", DepositedEvents)
+        fetchData()
+    }, [DepositedEvents.data])
 
 
     async function interactionPostHook(success: boolean) {
