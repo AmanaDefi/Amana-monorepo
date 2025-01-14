@@ -258,9 +258,10 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
   });
 
   it("should emit events on failed invest confirmation", async function () {
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32)
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "uint256"],
-      ["_investConfirmFailed", 1]
+      ["string", "bytes32"],
+      ["_investConfirmFailed", crossChainTxId]
     );
 
     const revertContext = {
@@ -272,13 +273,14 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
     await expect(strategy.onRevert(revertContext))
       .to.emit(strategy, "InvestConfirmFailed")
-      .withArgs(1);
+      .withArgs(crossChainTxId);
   });
 
   it("should emit event and re-invest ETH on _returnFundsFromStrategyFailed revert", async function () {
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32)
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
       ["string", "uint256"],
-      ["_returnFundsFromStrategyFailed", 1]
+      ["_returnFundsFromStrategyFailed", crossChainTxId]
     );
 
     const withdrawPlusFee = ethers.utils.parseEther("1");
@@ -300,7 +302,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
     await expect(strategy.onRevert(revertContext))
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
-      .withArgs(1);
+      .withArgs(crossChainTxId);
 
     const finalBalance = await receiptToken.balanceOf(strategy.address);
 
@@ -344,7 +346,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("6000");
     const executionNonce = 1;
-    const crossChainTxId = 12345;
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
 
     // Construct the payload (outgoingMessage)
     const payload = ethers.utils.defaultAbiCoder.encode(
@@ -359,13 +361,13 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         "bool",    // isInvest
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
-        "uint256",  // crossChainTxId
+        "bytes32",  // crossChainTxId
         "uint16"
       ],
       [
         ethers.constants.AddressZero,
         userAddress,
-        ethers.constants.AddressZero,
+        strategy.address,
         ethers.constants.AddressZero,
         amount,
         0,
@@ -425,7 +427,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const withdrawChainId = SEPOLIA_CHAIN_ID; // Example chain ID
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
     const executionNonce = 1;
-    const crossChainTxId = 12345;
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
     const slippage = 200;
 
     // Construct the payload (outgoingMessage)
@@ -441,7 +443,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         "bool",    // isInvest (false for divestment)
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
-        "uint256",  // crossChainTxId
+        "bytes32",  // crossChainTxId
         "uint16" // slippage
       ],
       [

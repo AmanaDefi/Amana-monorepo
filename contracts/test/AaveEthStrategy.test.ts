@@ -381,7 +381,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       [
         ethers.constants.AddressZero, // TODO check this
         userAddress,
-        ethers.constants.AddressZero,
+        strategy.address,
         ethers.constants.AddressZero,
         amount,
         0,

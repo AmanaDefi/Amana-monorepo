@@ -16,12 +16,12 @@ abstract contract ERC20StrategyParent is StrategyParent {
     }
 
     /// @notice Invests ETH into the Aave pool.
-    /// @param userAddress Address of the user whose funds are being invested.
+    /// @param receiverAddress Address of the user whose funds are being invested.
     /// @param amount Amount of ETH to invest.
     /// @param _executionNonce Current execution nonce for the transaction.
     /// @param _crossChainTxId Cross-chain transaction ID.
     function _invest(
-        address userAddress,
+        address receiverAddress,
         uint256 amount,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
@@ -37,14 +37,14 @@ abstract contract ERC20StrategyParent is StrategyParent {
         _depositFundsIntoYieldSource(amount);
 
         _sendInvestConfirmation(
-            userAddress,
+            receiverAddress,
             amount,
             totalUnderlyingAssets(),
             _executionNonce,
             _crossChainTxId
         );
 
-        emit FundsInvested(_crossChainTxId, userAddress, amount);
+        emit FundsInvested(_crossChainTxId, receiverAddress, amount);
     }
 
     /**

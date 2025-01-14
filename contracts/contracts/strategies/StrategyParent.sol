@@ -216,7 +216,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         bytes memory outgoingMessage = abi.encode(
             address(0),
             receiver,
-            address(0),
+            address(this),
             address(0),
             amount,
             0,

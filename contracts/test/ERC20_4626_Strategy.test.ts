@@ -125,9 +125,11 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
     // Attempt withdraw from a non-gateway address
     const withdrawAmount = ethers.utils.parseEther("0.5");
     const fee = ethers.utils.parseEther("0.01");
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
+
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "bytes32", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, crossChainTxId, 200]
     );
 
     await expect(
@@ -145,10 +147,10 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
 
   it("should revert if the original sender of a deposit or withdrawal is not amanaVault", async function () {
     const depositAmount = ethers.utils.parseEther("1");
-
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "bytes32", "uint16"],
+      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, BASE_SEPOLIA_CHAIN_ID, true, crossChainTxId, 0]
     );
 
     // Attempt to call onCall from an address other than amanaVault
@@ -282,8 +284,8 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
 
   it("should emit events on failed invest confirmation", async function () {
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "uint256"],
-      ["_investConfirmFailed", 1]
+      ["string", "bytes32"],
+      ["_investConfirmFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32)]
     );
 
     const revertContext = {
@@ -295,13 +297,13 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
 
     await expect(strategy.onRevert(revertContext))
       .to.emit(strategy, "InvestConfirmFailed")
-      .withArgs(1);
+      .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
   });
 
   it("should emit event and re-invest ERC20 on _returnFundsFromStrategyFailed revert", async function () {
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "uint256"],
-      ["_returnFundsFromStrategyFailed", 1]
+      ["string", "bytes32"],
+      ["_returnFundsFromStrategyFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32)]
     );
 
     const withdrawPlusFee = ethers.utils.parseEther("1");
@@ -320,7 +322,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
 
     await expect(strategy.onRevert(revertContext))
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
-      .withArgs(1);
+      .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
 
     const finalBalance = await mockVault.balanceOf(strategy.address);
 
@@ -366,7 +368,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("6000");
     const executionNonce = 1;
-    const crossChainTxId = 12345;
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
 
     // Construct the payload (outgoingMessage)
     const payload = ethers.utils.defaultAbiCoder.encode(
@@ -381,13 +383,13 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
         "bool",    // isInvest
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
-        "uint256",  // crossChainTxId
+        "bytes32",  // crossChainTxId
         "uint16"
       ],
       [
         ethers.constants.AddressZero,
         userAddress,
-        ethers.constants.AddressZero,
+        strategy.address,
         ethers.constants.AddressZero,
         amount,
         0,
@@ -406,7 +408,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
       false,            // callOnRevert
       strategy.address, // abortAddress
       ethers.utils.defaultAbiCoder.encode(
-        ["string", "uint256"], // Revert handler function name and crossChainTxId
+        ["string", "bytes32"], // Revert handler function name and crossChainTxId
         ["_investConfirmFailed", crossChainTxId]
       ),                         // revertMessage
       ethers.BigNumber.from("1000000") // onRevertGasLimit
@@ -445,7 +447,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
     const withdrawChainId = SEPOLIA_CHAIN_ID; // Example chain ID
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
     const executionNonce = 1;
-    const crossChainTxId = 12345;
+    const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
     const slippage = 200;
 
     // Construct the payload (outgoingMessage)
@@ -461,7 +463,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
         "bool",    // isInvest (false for divestment)
         "uint256", // totalUnderlyingAssetsAfter
         "uint256", // executionNonce
-        "uint256",  // crossChainTxId
+        "bytes32",  // crossChainTxId
         "uint16" // slippage
       ],
       [
@@ -572,7 +574,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
         0, // fee
         0, // withdrawChainId
         false, // isDeposit
-        1, // crossChainTxId
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId
         0
       ]
     );

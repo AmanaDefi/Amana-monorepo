@@ -249,7 +249,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             ) {
                 break;
             }
-
             // Process the confirmation
             if (confirmation.crossChainTxId == 0) {
                 // update total assets
@@ -260,6 +259,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 confirmation.user == address(0) &&
                 confirmation.receiver == address(0)
             ) {
+                strategyAddress = confirmation.withdrawZRC20;
                 emit StrategyUpdated(strategyAddress);
             } else if (confirmation.isDeposit) {
                 _confirmDepositAndMint(
@@ -303,20 +303,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (newStrategyAddress == strategyAddress)
             revert InvalidStrategyAddress();
 
-        address oldStrategyAddress = strategyAddress;
-        strategyAddress = newStrategyAddress;
         if (totalAssets() == 1) {
+            strategyAddress = newStrategyAddress;
             emit StrategyUpdated(newStrategyAddress);
             return;
         }
         _handleGasFee(GAS_LIMIT_FOR_CALL);
 
-        bytes memory recipient = abi.encodePacked(oldStrategyAddress);
+        bytes memory recipient = abi.encodePacked(strategyAddress);
 
         // Generate a unique crossChainTxId
         bytes32 crossChainTxId = keccak256(
             abi.encodePacked(
-                oldStrategyAddress,
+                strategyAddress,
                 newStrategyAddress,
                 block.timestamp, // Current timestamp
                 block.number // Current block number

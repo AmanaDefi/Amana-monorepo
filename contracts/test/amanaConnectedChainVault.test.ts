@@ -167,6 +167,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
   async function simulateConfirmSwitch(
     transferredAmount: any,
+    newStrategyAddress: any,
     executionNonce: any,
     crossChainTxId: any
   ): Promise<any> {
@@ -174,7 +175,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     const confirmMessage = ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
-      [ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, transferredAmount, 0, 0, true, transferredAmountBN, executionNonce, crossChainTxId, 0]
+      [ethers.constants.AddressZero, ethers.constants.AddressZero, newStrategyAddress, ethers.constants.AddressZero, transferredAmount, 0, 0, true, transferredAmountBN, executionNonce, crossChainTxId, 0]
     );
 
     const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -389,6 +390,11 @@ describe("AmanaConnectedChainVault Tests", function () {
         amanaVault.connect(owner).switchStrategy(invalidStrategyAddress)
       ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
 
+      const currentStrategy = await amanaVault.strategyAddress();
+      await expect(
+        amanaVault.connect(owner).switchStrategy(currentStrategy)
+      ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
+
       // Step 3: Simulate a deposit by User1, otherwise full strategy switch won't happen (just update)
       await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1));
       await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
@@ -396,15 +402,13 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
-      const currentStrategy = await amanaVault.strategyAddress();
-      await expect(
-        amanaVault.connect(owner).switchStrategy(currentStrategy)
-      ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
       await expect(
         amanaVault.connect(owner).switchStrategy(newStrategyAddress)
       )
         .to.emit(gatewayZEVM, "Called");
       // .withArgs(newStrategyAddress);
+
+      await simulateConfirmSwitch(depositAmount1, newStrategyAddress, 2, 2);
 
       const updatedStrategy = await amanaVault.strategyAddress();
 
@@ -414,7 +418,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     it("should process a strategy switch confirmation successfully", async function () {
       const { } = await loadFixture(setup);
       const transferredAmount = ethers.utils.parseUnits("0.1", 18);
-      const receipt = await simulateConfirmSwitch(transferredAmount, 1, 1);
+      const newStrategyAddress = ethers.Wallet.createRandom().address;
+      const receipt = await simulateConfirmSwitch(transferredAmount, newStrategyAddress, 1, 1);
       expect(receipt).to.emit(amanaVault, "StrategyUpdated");
     });
 
