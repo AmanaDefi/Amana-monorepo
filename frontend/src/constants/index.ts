@@ -52,7 +52,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x564bC0142813fDb8C5567C5c8A3d5Ecea729c7Dd", // Base ETH Vault
+    id: "0xA73efAB144Cd771BEF44b2D4f5024790B0EBfD5d", // Base ETH Vault
     name: "AaveV3 POL",
     des: " This vault invests POL into a simple strategy which deposits the funds as collateral into an Aave POL pool, which earns interest every block.",
     symbol: "aAavePOL",
