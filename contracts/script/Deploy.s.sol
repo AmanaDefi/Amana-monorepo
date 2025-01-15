@@ -22,7 +22,7 @@ contract Deploy is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Define a unique salt for deterministic deployment
-        bytes32 salt = keccak256(abi.encodePacked("unique-salt"));
+        bytes32 salt = keccak256(abi.encodePacked("WithdrawalReceiver12345"));
 
         // Deploy the WithdrawalReceiver contract using CREATE2
         WithdrawalReceiver withdrawalReceiver = new WithdrawalReceiver{

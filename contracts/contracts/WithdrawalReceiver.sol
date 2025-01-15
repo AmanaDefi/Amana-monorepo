@@ -15,7 +15,7 @@ contract WithdrawalReceiver {
         address user,
         address asset,
         uint256 amount,
-        uint256 indexed crossChainTxId
+        bytes32 indexed crossChainTxId
     );
 
     modifier onlyGateway() {
@@ -37,8 +37,8 @@ contract WithdrawalReceiver {
             address user,
             address asset,
             uint256 amount,
-            uint256 crossChainTxId
-        ) = abi.decode(message, (address, address, uint256, uint256));
+            bytes32 crossChainTxId
+        ) = abi.decode(message, (address, address, uint256, bytes32));
 
         // Ensure valid inputs
         require(user != address(0), "Invalid user address");
