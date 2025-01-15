@@ -33,8 +33,6 @@ abstract contract AmanaVaultBase is
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
-    uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
-    uint256 public gasLimitForWithdrawAndCall = 700000; // this is used in two places - for investing into the strategy and returning funds to the user
 
     // Variables
     address public strategyAddress;
@@ -44,6 +42,8 @@ abstract contract AmanaVaultBase is
     uint256 internal totalPrincipal;
     mapping(address => uint256) internal userPrincipal;
     IGasTank gasTank;
+    uint32 public gasLimitForWithdrawAndCall; // this is used in two places - for investing into the strategy and returning funds to the user
+    uint32 public gasLimitForCall; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
@@ -94,7 +94,9 @@ abstract contract AmanaVaultBase is
         address treasury_,
         uint16 perfFee_,
         address gasTank_,
-        address withdrawalReceiver_
+        address withdrawalReceiver_,
+        uint32 gasLimitForWithdrawAndCall_,
+        uint32 gasLimitForCall_
     ) external initializer {
         if (treasury_ == address(0)) revert InvalidTreasuryAddress();
         __ERC20_init(name_, symbol_);
@@ -106,6 +108,8 @@ abstract contract AmanaVaultBase is
         totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
         gasTank = IGasTank(gasTank_);
         withdrawalReceiver = withdrawalReceiver_;
+        gasLimitForWithdrawAndCall = gasLimitForWithdrawAndCall_;
+        gasLimitForCall = gasLimitForCall_;
         emit VaultInitialized(decimals(), perfFee_);
     }
 
@@ -196,9 +200,19 @@ abstract contract AmanaVaultBase is
      * @param newGasLimit The new gas limit for the withdraw and call function
      */
     function setGasLimitForWithdrawAndCall(
-        uint256 newGasLimit
+        uint32 newGasLimit
     ) external onlyOwner {
         gasLimitForWithdrawAndCall = newGasLimit;
+    }
+
+    /**
+     * @dev Sets the gas limit for the call function to initiate a withdrawal from the strategy or a strategy switch. Can only be called by the owner.
+     * @dev This needs to be set as low as possible to avoid wasting gas
+     * @dev This may change depending on the complexity of the strategy's divest function (and invest function on switch)
+     * @param newGasLimit The new gas limit for the cross chain call
+     */
+    function setGasLimitForCall(uint32 newGasLimit) external onlyOwner {
+        gasLimitForCall = newGasLimit;
     }
 
     /**
@@ -240,12 +254,14 @@ abstract contract AmanaVaultBase is
     function _applyFee(
         address user,
         uint256 assets
-    ) internal view returns (uint256 feeToWithdraw) {
+    ) internal view returns (uint16 feeToWithdraw) {
         uint256 totalUserAssets = convertToAssets(balanceOf(user));
         uint256 totalUserAssetsWithFee = (balanceOf(user) * totalAssets()) /
             (totalSupply() + 1);
         uint256 totalFeeOwing = totalUserAssetsWithFee - totalUserAssets;
-        feeToWithdraw = (totalFeeOwing * assets) / totalUserAssetsWithFee;
+        feeToWithdraw = uint16(
+            (totalFeeOwing * assets) / totalUserAssetsWithFee
+        );
     }
 
     /**
@@ -411,7 +427,7 @@ abstract contract AmanaVaultBase is
     ) internal returns (uint256 outputAmount) {
         outputAmount = amount;
 
-        if (userChainId == VAULT_CHAIN_ID) {
+        if (userChainId == uint32(block.chainid)) {
             // Same-chain transfer
             SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
         } else {

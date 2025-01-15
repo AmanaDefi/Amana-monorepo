@@ -18,6 +18,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const treasury = args.treasury; // Address for the treasury
   const gasTank = args.gastank; // Address for the gas tank contract
   const receiver = args.receiver;
+  const gasLimitWithdrawAndCall = args.gasLimitWithdrawAndCall;
+  const gasLimitCall = args.gasLimitCall;
 
   // Set the default for performanceFeeRate if it's not provided
   const performanceFeeRate = args.performanceFeeRate ?? 1500; // Default to 15% (1500 basis points)
@@ -28,7 +30,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Deploy the AmanaConnectedChainVault contract using OpenZeppelin Upgrades
   const factory = await hre.ethers.getContractFactory("AmanaConnectedChainVault");
-  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gasTank, receiver], {
+  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gasTank, receiver, gasLimitWithdrawAndCall, gasLimitCall], {
     initializer: "initialize",
   });
   console.log("Contract deployed, waiting for confirmations...");
@@ -95,6 +97,8 @@ task("deploy-amana-connected-chain-vault", "Deploy the AmanaConnectedChainVault 
   .addParam("treasury", "The address of the treasury")
   .addParam("gastank", "The address of the GasTank contract")
   .addParam("receiver", "The address of the WithdrawalReceiver contract on connected chains")
+  .addParam("gasLimitWithdrawAndCall", "Gas limit for withdrawAndCall function")
+  .addParam("gasLimitCall", "Gas limit for Call function")
   .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)"); // Remove the default here
 
 // Export the task so it can be used in hardhat

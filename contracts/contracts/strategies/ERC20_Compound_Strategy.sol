@@ -78,7 +78,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.balanceOf(address(this)); // TODO use maxwithdraw?
+        uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         _withdrawFundsFromYieldSource(strategyTotalBalance);
         bool success = inputToken.approve(newStrategy, strategyTotalBalance);
         if (!success) {

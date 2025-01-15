@@ -73,7 +73,7 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this)); // TODO use maxwithdraw?
+        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
         _withdrawFundsFromYieldSource(strategyTotalBalance);
         bool success = inputToken.approve(newStrategy, strategyTotalBalance);
         if (!success) {

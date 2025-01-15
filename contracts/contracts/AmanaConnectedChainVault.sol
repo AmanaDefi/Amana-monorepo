@@ -12,7 +12,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     uint256 latestTotalAssetsUpdateFromStrategy;
     uint256 lastProcessedNonce;
-    uint256 public gasLimitForCall = 700000; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
 
     struct Confirmation {
         address user;
@@ -20,7 +19,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20;
         address withdrawERC20;
         uint256 amount;
-        uint256 fee;
+        uint16 fee;
         uint32 withdrawChainId;
         bool isDeposit;
         uint256 totalAssetsAfter;
@@ -36,16 +35,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event DivestFailed(bytes32 indexed crossChainTxId);
     event TotalAssetsUpdated(uint256 totalAssets);
     event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
-
-    /**
-     * @dev Sets the gas limit for the call function to initiate a withdrawal from the strategy or a strategy switch. Can only be called by the owner.
-     * @dev This needs to be set as low as possible to avoid wasting gas
-     * @dev This may change depending on the complexity of the strategy's divest function (and invest function on switch)
-     * @param newGasLimit The new gas limit for the cross chain call
-     */
-    function setGasLimitForCall(uint256 newGasLimit) external onlyOwner {
-        gasLimitForCall = newGasLimit;
-    }
 
     /**
      * @dev Handles cross-chain communication via the gateway.
@@ -67,7 +56,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 address withdrawZRC20,
                 address withdrawERC20,
                 uint256 withdrawAmount,
-                uint256 fee,
+                uint16 fee,
                 uint32 withdrawChainId,
                 bool isDeposit,
                 uint256 totalAssetsAfter,
@@ -82,7 +71,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                         address,
                         address,
                         uint256,
-                        uint256,
+                        uint16,
                         uint32,
                         bool,
                         uint256,
@@ -163,7 +152,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 withdrawAmount,
-        uint256 fee,
+        uint16 fee,
         uint32 withdrawChainId,
         bool isDeposit,
         uint256 totalAssetsAfter,
@@ -212,7 +201,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 withdrawAmount,
-        uint256 fee,
+        uint16 fee,
         uint32 withdrawChainId,
         bool isDeposit,
         uint256 totalAssetsAfter,
@@ -222,7 +211,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) external onlyOwner {
         // Ensure no duplicate processing
         if (
-            pendingConfirmations[executionNonce].amount != 0 && // TODO - fix here too
+            pendingConfirmations[executionNonce].amount != 0 &&
             pendingConfirmations[executionNonce].totalAssetsAfter != 0
         ) revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
@@ -425,7 +414,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             assets,
             receiver,
             asset(),
-            VAULT_CHAIN_ID,
+            uint32(block.chainid),
             crossChainTxId
         );
     }
@@ -551,7 +540,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
-        uint256 feeToWithdraw = _applyFee(user, assets);
+        uint16 feeToWithdraw = _applyFee(user, assets);
 
         // Generate a unique crossChainTxId
         bytes32 crossChainTxId = keccak256(
@@ -571,7 +560,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             asset(),
             assets,
             feeToWithdraw,
-            VAULT_CHAIN_ID,
+            uint32(block.chainid),
             0,
             crossChainTxId
         );
@@ -601,7 +590,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
         }
-        uint256 feeToWithdraw = _applyFee(user, assets);
+        uint16 feeToWithdraw = _applyFee(user, assets);
 
         _divestFromStrategy(
             user,
@@ -631,7 +620,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amount,
-        uint256 feeToWithdraw,
+        uint16 feeToWithdraw,
         uint32 withdrawChainId,
         uint16 slippage,
         bytes32 crossChainTxId
@@ -695,7 +684,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amount,
-        uint256 fee,
+        uint16 fee,
         uint32 userChainId,
         uint256 totalAssetsAfterWithdraw,
         bytes32 _crossChainTxId,
@@ -704,7 +693,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         latestTotalAssetsUpdateFromStrategy =
             totalAssetsAfterWithdraw +
             amount +
-            fee; // TODO double check this
+            fee;
         uint256 shares = previewWithdraw(amount);
         uint256 principalWithdrawn = (amount * userPrincipal[user]) /
             convertToAssets(balanceOf(user));
