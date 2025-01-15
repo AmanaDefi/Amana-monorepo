@@ -439,7 +439,7 @@ abstract contract StrategyParent is Ownable, IErrors {
             address(0),
             address(0),
             block.number,
-            block.timestamp,
+            0,
             0,
             false,
             totalUnderlyingAssets(),

@@ -52,7 +52,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x776c40F8f041D47060f5ebC411bC1A7DBc2e4A3c", // Polygon POL Vault
+    id: "0x6e205E0153512Ac766bB4e4eC78AEc39DF70083d", // Polygon POL Vault
     name: "AaveV3 POL",
     des: " This vault invests POL into a simple strategy which deposits the funds as collateral into an Aave POL pool, which earns interest every block.",
     symbol: "aAavePOL",
@@ -68,7 +68,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0x7db6F565387de8DDc76C922b13B116fF361cddBF",
+      strategyAddress: "0x1e793143788327Ec9AC8f45E4a52598Fd2f4BD55",
       network: "Polygon",
       chainId: 137,
       netdes: "Polygon is a POS side chain to Ethereum.",
