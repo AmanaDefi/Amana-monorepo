@@ -7,7 +7,7 @@ import Footer from "../../components/Footer";
 import Header from "@/components/header";
 import { useRouter } from 'next/navigation';
 
-function vaults({ }) {
+function Vaults({ }) {
 
     const account = useActiveAccount();
     const router = useRouter();
@@ -15,8 +15,7 @@ function vaults({ }) {
         if (!account) {
             router.push("/");
         }
-    }, [account]);
-
+    }, [account, router])
     return (
         <>
             {
@@ -40,4 +39,4 @@ function vaults({ }) {
     )
 }
 
-export default vaults
+export default Vaults

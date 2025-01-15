@@ -5,9 +5,9 @@ import { useActiveAccount } from "thirdweb/react";
 import Footer from "../../components/Footer";
 import Header from "@/components/header";
 import { useRouter } from 'next/navigation';
-import About from "@/components/About";
+import Aboutcomponent from "@/components/About";
 
-function about({ }) {
+function About({ }) {
 
     const account = useActiveAccount();
     const router = useRouter();
@@ -26,7 +26,7 @@ function about({ }) {
                         <Header />
                         <div className="flex-1 flex flex-col justify-between py-20 pl-6">
                             <div className="flex-1">
-                                <About />
+                                <Aboutcomponent />
                             </div>
 
                             {/* Footer aligned with the main content */}
@@ -40,4 +40,4 @@ function about({ }) {
     )
 }
 
-export default about
+export default About

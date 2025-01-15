@@ -10,11 +10,7 @@ import { useState } from 'react';
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function ({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+const MyApp = ({ children }: Readonly<{ children: React.ReactNode; }>) => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
@@ -33,3 +29,5 @@ export default function ({
     </html>
   );
 }
+
+export default MyApp;

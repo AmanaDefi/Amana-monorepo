@@ -8,15 +8,16 @@ import Header from "@/components/header";
 import { useRouter, useParams } from 'next/navigation';
 
 
-function index({ }) {
+function Index({ }) {
 
   const account = useActiveAccount();
   const router = useRouter();
+  const { id } = useParams();
   useEffect(() => {
     if (!account) {
       router.push("/");
     }
-  }, [account]);
+  }, [account, router]);
 
 
   return (
@@ -28,7 +29,7 @@ function index({ }) {
             <Header />
             <div className="flex-1 flex flex-col justify-between py-20 pl-6">
               <div className="flex-1">
-                <VaultsDetailContainer vaultID={useParams().id} />
+                <VaultsDetailContainer vaultID={id} />
               </div>
 
               {/* Footer aligned with the main content */}
@@ -42,4 +43,4 @@ function index({ }) {
   )
 }
 
-export default index
+export default Index

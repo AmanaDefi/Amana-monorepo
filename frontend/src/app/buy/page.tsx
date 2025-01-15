@@ -7,7 +7,7 @@ import Header from "@/components/header";
 import { useRouter } from 'next/navigation';
 import BuyContainer from "@/containers/BuyContainer";
 
-function buy({ }) {
+function Buy({ }) {
 
     const account = useActiveAccount();
     const router = useRouter();
@@ -40,4 +40,4 @@ function buy({ }) {
     )
 }
 
-export default buy
+export default Buy

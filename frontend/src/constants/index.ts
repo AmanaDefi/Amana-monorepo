@@ -215,6 +215,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
+      strategyAddress: "0xEDf497Ba1e81976231c440AFA484065860e5cb69",
+      chainId: 7000,
       network: "Base Sepolia",
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
       imgURL: "/aave.png",
@@ -285,6 +287,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Mock",
+      strategyAddress: "0xEDf497Ba1e81976231c440AFA484065860e5cb69",
+      chainId: 7000,
       network: "Polygon Amoy",
       netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
       imgURL: "/polygon_logo.png",
@@ -308,6 +312,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Mock",
+      strategyAddress: "0xEDf497Ba1e81976231c440AFA484065860e5cb69",
+      chainId: 7000,
       network: "BSC Testnet",
       netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
       imgURL: "/bnb_logo.png",
