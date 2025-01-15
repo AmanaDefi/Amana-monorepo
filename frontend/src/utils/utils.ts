@@ -241,7 +241,6 @@ export const selectActions = async (
           Action.withdrawconfirmed,
           Action.DivestSent,
           Action.FundsDivested,
-          Action.ReturnFundsToUserSent,
           Action.Withdrawn
         ]
       }
@@ -256,7 +255,6 @@ export const selectActions = async (
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
-            Action.ReturnFundsToUserSent,
             Action.Withdrawn
           ]
         }

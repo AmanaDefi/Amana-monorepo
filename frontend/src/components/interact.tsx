@@ -1,9 +1,8 @@
-import { useState, useEffect, CSSProperties, act } from "react"
+import { useState, useEffect } from "react"
 import { VaultData, Token, Balance } from "@/types/types";
 import mixpanel from "mixpanel-browser";
 import { executeDeposit, executeWithdrawal, Approvedeposit } from "@/actions/actions"
-import { Address, Chain, waitForReceipt, getContract, prepareEvent, readContract, defineChain } from "thirdweb";
-import { toast } from "react-toastify";
+import { Address, Chain, waitForReceipt, getContract, prepareEvent, defineChain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import { NumberFormatter } from "@/utils/helpers";
 import MainActionButton from "@/components/button/MainActionButton"
@@ -58,13 +57,13 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             mixpanel.track("Deposit Submitted", {
                 vault: vaultData.id.toString(),
             });
-          
+
             throw new Error("Transaction failed");
         }
     }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setInputBalance: Function) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setInputBalance: Function) => {
     setTransactionCompleted(false)
     let withdrawZRC20 = withdrawToken.ZRC20equivalent;
     if (activeChain.id === 7001 || activeChain.id === 7000) {
@@ -102,6 +101,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         };
 
         await waitForReceipt(receiptObject);
+        setCrosschainInvestHash(receipt.transactionHash)
         return true;
     } catch (error) {
         setTransactionCompleted(true);
@@ -112,7 +112,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         mixpanel.track("Withdraw Failed", {
             vault: vaultData.id.toString(),
         });
-        
+
         throw new Error("Transaction failed");
     }
 };
@@ -148,7 +148,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     });
 
     const FundsDivested = prepareEvent({
-        signature: "event FundsDivested(uint256 indexed crossChainTxId,address user,uint256 amount)",
+        signature: "event FundsDivested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
     });
 
 
@@ -244,7 +244,9 @@ export default function InteractionContainer({ step, setStep, action, setAction,
             for (let index = 0; index < DivestSentEvents.data.length; index++) {
                 for (let index = 0; index < DivestSentEvents.data.length; index++) {
                     const element = DivestSentEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
+                    if (element.transactionHash.toString() == crosschainInvestHash) {
+                        console.log("a-------1", element)
+                        console.log("a-------2", element.args.crossChainTxId.toString())
                         setcrossChainTxId(element.args.crossChainTxId.toString())
                         const nextStep = step + 1;
                         setAction(actions[nextStep]);
@@ -254,6 +256,8 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
         }
+        console.log("a-------0", DivestSentEvents)
+        console.log("a-------7", crosschainInvestHash)
     }, [DivestSentEvents.data, crosschainInvestHash])
 
     useEffect(() => {
@@ -262,7 +266,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 for (let index = 0; index < WithdrawnEvents.data.length; index++) {
                     for (let index = 0; index < WithdrawnEvents.data.length; index++) {
                         const element = WithdrawnEvents.data[index];
-                        if (element.args.crossChainTxId == crossChainTxId) {
+                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
                             console.log("w---------1", element)
                             console.log("w---------3", WithdrawnEvents)
                             const nextStep = step + 1;
@@ -278,6 +282,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
             }
         }
         fetchData()
+        console.log("WithdrawnEvents", WithdrawnEvents)
     }, [WithdrawnEvents.data])
     useEffect(() => {
         if (CrossChainInvestFailedEvents.data?.length && crosschainInvestHash != "") {
@@ -396,7 +401,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 setStep(nextStep)
             }
 
-        } 
+        }
     }
 
     return <div className="w-full flex flex-col mt-5">
@@ -435,7 +440,6 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setDisabled(status);
                 setDescription1(["Transaction approval required"]);
                 setDescription2([`Approving in progress`]);
-                setlabel("Approve")
                 setlabel("Approve")
                 break;
             case Action.depositApproveConfirmed:
@@ -494,10 +498,10 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setlabel("Withdraw")
                 setDisabled(status);
                 setDescription1(["Withdraw confirmation required"]);
-                setDescription2([`Withdraw in progress`]);
+                setDescription2([`Withdrawing ${val} ${inputToken.symbol}.`]);
                 break;
             case Action.withdrawconfirmed:
-                setDescription1([...description1, "Withdraw confirmed"]);
+                setDescription1([...description1, (vaultData.protocol.chainId != 7000 && vaultData.protocol.chainId != 7001) ? "Withdraw confirmed" : "Withdraw completed"]);
                 if (actions[actions.length - 1] == Action.withdrawconfirmed) {
                     setTimeout(() => {
                         setTransactionCompleted(true);
@@ -508,30 +512,26 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                     }, 3000);
                 }
                 else {
-                    setDescription2([...description2, "Waiting Divest"]);
+                    setDescription2([...description2, "Initial withdraw transaction on zetachain in progress"]);
                 }
                 break;
             case Action.DivestSent:
-                setDescription1([...description1, "DivestSent"]);
-                setDescription2([...description2, "Waiting FundsDivest"]);
+                setDescription1([...description1, "Initial withdraw transaction on zetachain completed and:"]);
+                setDescription2([...description2, "Divestment of funds from strategy in progress"]);
                 break;
             case Action.FundsDivested:
-                setDescription1([...description1, "FundsDivested"]);
-                setDescription2([...description2, "Waiting ReturnFundsToUser"]);
-                break;
-            case Action.ReturnFundsToUserSent:
-                setDescription1([...description1, "ReturnFundsToUserSent"]);
-                setDescription2([...description2, "Waiting Withdrawn"]);
+                setDescription1([...description1, "Divestment of funds from strategy completed and:"]);
+                setDescription2([...description2, "Return of funds to user in progress"]);
                 break;
             case Action.Withdrawn:
-                setDescription1([...description1, "Withdrawn"]);
+                setDescription1([...description1, "Return of funds to user completed"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
                         ...inputBalance,
                         formatted: "0",
                     })
-                }, 2000);
+                }, 3000);
                 break;
             case Action.CrossChainInvestFailed:
                 setDescription1([...description1, "CrossChainInvestFailed"]);
@@ -661,7 +661,7 @@ function handleInteraction(
             return async () => {
                 const result = await handleWithdrawTransaction(
                     vaultData, inputBalance, inputToken, EOAaccount,
-                    setTransactionCompleted, activeChain, setInputBalance);
+                    setTransactionCompleted, activeChain, setCrosschainInvestHash, setInputBalance);
                 return result;
             }
         default:
