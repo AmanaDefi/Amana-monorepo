@@ -12,6 +12,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     uint256 latestTotalAssetsUpdateFromStrategy;
     uint256 lastProcessedNonce;
+    uint256 public gasLimitForCall = 700000; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
 
     struct Confirmation {
         address user;
@@ -35,6 +36,16 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event DivestFailed(bytes32 indexed crossChainTxId);
     event TotalAssetsUpdated(uint256 totalAssets);
     event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
+
+    /**
+     * @dev Sets the gas limit for the call function to initiate a withdrawal from the strategy or a strategy switch. Can only be called by the owner.
+     * @dev This needs to be set as low as possible to avoid wasting gas
+     * @dev This may change depending on the complexity of the strategy's divest function (and invest function on switch)
+     * @param newGasLimit The new gas limit for the cross chain call
+     */
+    function setGasLimitForCall(uint256 newGasLimit) external onlyOwner {
+        gasLimitForCall = newGasLimit;
+    }
 
     /**
      * @dev Handles cross-chain communication via the gateway.
@@ -308,7 +319,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit StrategyUpdated(newStrategyAddress);
             return;
         }
-        _handleGasFee(GAS_LIMIT_FOR_CALL);
+        _handleGasFee(gasLimitForCall + gasLimitForWithdrawAndCall); // we combine these two limits as this tx involves a divest and an invest
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
@@ -349,7 +360,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
 
-        CallOptions memory callOptions = CallOptions(GAS_LIMIT_FOR_CALL, false);
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
         IGatewayZEVM(_GATEWAY_ADDRESS).call(
             recipient,
             address(asset()),
@@ -435,7 +446,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes32 crossChainTxId
     ) internal override {
         (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
-            .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_WITHDRAW_AND_CALL); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
+            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
         gasTank.getGas(gas_zrc20, gasFee);
 
@@ -476,7 +487,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         );
 
         CallOptions memory callOptions = CallOptions(
-            GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
+            gasLimitForWithdrawAndCall,
             false
         );
         IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
@@ -625,7 +636,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal {
-        _handleGasFee(GAS_LIMIT_FOR_CALL);
+        _handleGasFee(gasLimitForCall);
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
@@ -657,7 +668,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
 
-        CallOptions memory callOptions = CallOptions(GAS_LIMIT_FOR_CALL, false);
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
         IGatewayZEVM(_GATEWAY_ADDRESS).call(
             recipient,
             address(asset()),

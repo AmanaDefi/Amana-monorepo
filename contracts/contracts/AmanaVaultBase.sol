@@ -34,8 +34,7 @@ abstract contract AmanaVaultBase is
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
     uint32 constant VAULT_CHAIN_ID = 7000; // 7000 for mainnet, 7001 for testnet
-    uint256 public constant GAS_LIMIT_FOR_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
-    uint256 public constant GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 700000; // bring this down as far as possible, as it doesn't get returned
+    uint256 public gasLimitForWithdrawAndCall = 700000; // this is used in two places - for investing into the strategy and returning funds to the user
 
     // Variables
     address public strategyAddress;
@@ -188,6 +187,18 @@ abstract contract AmanaVaultBase is
     function setGasTank(address newGasTank) external onlyOwner {
         if (newGasTank == address(0)) revert CantBeZeroAddress();
         gasTank = IGasTank(newGasTank);
+    }
+
+    /**
+     * @dev Sets the gas limit for the withdraw and call function. Can only be called by the owner.
+     * @dev This needs to be set as low as possible to avoid wasting gas
+     * @dev This may change depending on the complexity of the strategy's invest function
+     * @param newGasLimit The new gas limit for the withdraw and call function
+     */
+    function setGasLimitForWithdrawAndCall(
+        uint256 newGasLimit
+    ) external onlyOwner {
+        gasLimitForWithdrawAndCall = newGasLimit;
     }
 
     /**
@@ -435,7 +446,7 @@ abstract contract AmanaVaultBase is
             }
 
             (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
-                .withdrawGasFeeWithGasLimit(GAS_LIMIT_FOR_WITHDRAW_AND_CALL); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
+                .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
 
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
 
@@ -457,7 +468,7 @@ abstract contract AmanaVaultBase is
             );
 
             CallOptions memory callOptions = CallOptions(
-                GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
+                gasLimitForWithdrawAndCall,
                 false
             );
 
