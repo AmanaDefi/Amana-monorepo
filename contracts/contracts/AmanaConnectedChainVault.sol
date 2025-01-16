@@ -723,54 +723,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     /**
-     * @dev Handles revert events based on the provided revert message hash.
-     *      This function determines the appropriate course of action depending on the type of revert and emits the corresponding event.
-     * @param revertMessage The revert message as a string.
-     * @param _crossChainTxId The unique identifier for the cross-chain transaction.
-     * @param user The address of the user associated with the transaction.
-     * @param userZRC20 The address of the ZRC20 token used in the transaction.
-     * @param userChainId The chain ID of the user's originating chain.
-     * @param amount The amount of tokens involved in the transaction.
-     */
-    function _handleRevertEvent(
-        string memory revertMessage,
-        bytes32 _crossChainTxId,
-        address user,
-        address userZRC20,
-        address userERC20,
-        uint32 userChainId,
-        uint256 amount
-    ) internal {
-        bytes32 messageHash = keccak256(bytes(revertMessage));
-        uint16 slippage = 200;
-        if (messageHash == keccak256(bytes("_crossChainInvestFailed"))) {
-            _returnFundsToUser(
-                amount,
-                userChainId,
-                user,
-                userZRC20,
-                userERC20,
-                _crossChainTxId,
-                slippage
-            );
-            emit CrossChainInvestFailed(_crossChainTxId);
-        } else if (
-            messageHash ==
-            keccak256(bytes("_divestConnectedChainStrategyFailed"))
-        ) {
-            emit DivestFailed(_crossChainTxId);
-        } else if (
-            messageHash == keccak256(bytes("_returnFundsToUserFailed"))
-        ) {
-            emit ReturnFundsToUserFailed(_crossChainTxId);
-        } else if (messageHash == keccak256(bytes("_switchStrategyFailed"))) {
-            emit SwitchStrategyFailed(_crossChainTxId);
-        } else {
-            revert("Revert not handled");
-        }
-    }
-
-    /**
      * @dev Handles gas fee calculation and approval for cross-chain operations.
      *      This function retrieves the gas fee for the given gas limit, ensures the required amount is available,
      *      and approves the gateway to use the gas fee.
