@@ -171,218 +171,93 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         address: vaultData.id,
     });
 
-    const contractEvents = useContractEvents({
-        contract,
-        events: [CrossChainInvestSent],
-    });
-
-    const contract1 = getContract({
+    const contract2 = getContract({
         client,
         chain: defineChain(strategyChainID),
         address: strategyAddress,
     });
 
-    const FundsEvents =
-        useContractEvents({
-            contract: contract1,
-            events: [FundsInvested],
-        })
-
-    const FundsDivestedEvents =
-        useContractEvents({
-            contract: contract1,
-            events: [FundsDivested],
-        })
-
-
-    const DepositedEvents = useContractEvents({
+    const { data: events1 } = useContractEvents({
         contract,
-        events: [Deposited],
+        events: [CrossChainInvestSent, Deposited, DivestSent, Withdrawn, CrossChainInvestFailed, DivestFailed],
     });
 
-    const DivestSentEvents = useContractEvents({
-        contract,
-        events: [DivestSent],
-    });
-
-
-    const WithdrawnEvents = useContractEvents({
-        contract,
-        events: [Withdrawn],
-    });
-
-    const CrossChainInvestFailedEvents = useContractEvents({
-        contract,
-        events: [CrossChainInvestFailed],
-    });
-
-    const DivestFailedEvents = useContractEvents({
-        contract,
-        events: [DivestFailed],
+    const { data: events2 } = useContractEvents({
+        contract: contract2,
+        events: [FundsInvested, FundsDivested],
     });
 
     useEffect(() => {
-        if (contractEvents.data?.length && crosschainInvestHash != "" && action == Action.depositConfirmed) {
-            for (let index = 0; index < contractEvents.data.length; index++) {
-                for (let index = 0; index < contractEvents.data.length; index++) {
-                    const element = contractEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
-                        setcrossChainTxId(element.args.crossChainTxId.toString())
-                        const nextStep = step + 1;
-                        setAction(actions[nextStep]);
-                        setStep(nextStep);
-                        return
-                    }
+        if (events1 && events1.length > 0 && crosschainInvestHash != "") {
+            console.log("event1: ", events1);
+            const last_event = events1[events1.length - 1];
+            if (last_event.eventName == "CrossChainInvestSent" && action == Action.crosschainInvest) {
+                console.log("event2: ", last_event);
+                if (last_event.transactionHash == crosschainInvestHash) {
+                    console.log("event3: ", last_event);
+                    setcrossChainTxId(last_event.args.crossChainTxId.toString())
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "Deposited" && action == Action.deposited) {
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "DivestSent" && action == Action.DivestSent) {
+                if (last_event.transactionHash == crosschainInvestHash) {
+                    setcrossChainTxId(last_event.args.crossChainTxId.toString())
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "Withdrawn" && action == Action.Withdrawn) {
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
                 }
             }
         }
-    }, [contractEvents.data, crosschainInvestHash])
-
+        console.log("event0: ", events1);
+        console.log("event5: ", crosschainInvestHash);
+    }, [events1, crosschainInvestHash]);
 
     useEffect(() => {
-        if (DivestSentEvents.data?.length && crosschainInvestHash != "" && action == Action.withdrawconfirmed) {
-            for (let index = 0; index < DivestSentEvents.data.length; index++) {
-                for (let index = 0; index < DivestSentEvents.data.length; index++) {
-                    const element = DivestSentEvents.data[index];
-                    if (element.transactionHash.toString() == crosschainInvestHash) {
-                        console.log("a-------1", element)
-                        console.log("a-------2", element.args.crossChainTxId.toString())
-                        setcrossChainTxId(element.args.crossChainTxId.toString())
-                        const nextStep = step + 1;
-                        setAction(actions[nextStep]);
-                        setStep(nextStep);
-                        return
-                    }
+        if (events2 && events2.length > 0 && crosschainInvestHash != "") {
+            console.log("event21: ", events2);
+            const last_event = events2[events2.length - 1];
+            if (last_event.eventName == "FundsInvested" && action == Action.FundsInvest) {
+                console.log("event22: ", last_event);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("event23: ", last_event);
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "FundsDivested" && action == Action.FundsDivested) {
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
                 }
             }
         }
-        console.log("a-------0", DivestSentEvents)
-        console.log("a-------7", crosschainInvestHash)
-    }, [DivestSentEvents.data, crosschainInvestHash])
-
-    useEffect(() => {
-        const fetchData = async () => {
-            if (WithdrawnEvents.data?.length && crosschainInvestHash != "" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsDivested : Action.withdrawconfirmed)) {
-                for (let index = 0; index < WithdrawnEvents.data.length; index++) {
-                    for (let index = 0; index < WithdrawnEvents.data.length; index++) {
-                        const element = WithdrawnEvents.data[index];
-                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
-                            console.log("w---------1", element)
-                            console.log("w---------3", WithdrawnEvents)
-                            const nextStep = step + 1;
-                            console.log("w---------5", nextStep)
-                            console.log("w---------6", actions)
-                            console.log("w---------7", actions[nextStep])
-                            setAction(actions[nextStep]);
-                            setStep(nextStep);
-                            return
-                        }
-                    }
-                }
-            }
-        }
-        fetchData()
-        console.log("WithdrawnEvents", WithdrawnEvents)
-    }, [WithdrawnEvents.data])
-    useEffect(() => {
-        if (CrossChainInvestFailedEvents.data?.length && crosschainInvestHash != "") {
-            for (let index = 0; index < CrossChainInvestFailedEvents.data.length; index++) {
-                for (let index = 0; index < CrossChainInvestFailedEvents.data.length; index++) {
-                    const element = CrossChainInvestFailedEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
-                        setAction(Action.CrossChainInvestFailed);
-                        setStep(0);
-                        return
-                    }
-                }
-            }
-        }
-    }, [CrossChainInvestFailedEvents.data, crosschainInvestHash])
-
-    useEffect(() => {
-        if (DivestFailedEvents.data?.length && crosschainInvestHash != "") {
-            for (let index = 0; index < DivestFailedEvents.data.length; index++) {
-                for (let index = 0; index < DivestFailedEvents.data.length; index++) {
-                    const element = DivestFailedEvents.data[index];
-                    if (element.transactionHash == crosschainInvestHash) {
-                        setAction(Action.DivestFailed);
-                        setStep(0);
-                        return
-                    }
-                }
-            }
-        }
-    }, [DivestFailedEvents.data, crosschainInvestHash])
-
-    useEffect(() => {
-
-        if (FundsEvents && typeof FundsEvents === 'object' && FundsEvents !== null && crosschainInvestHash != "" && action == Action.crosschainInvest) {
-            if (FundsEvents.data?.length) {
-                for (let index = 0; index < FundsEvents.data.length; index++) {
-                    for (let index = 0; index < FundsEvents.data.length; index++) {
-                        const element = FundsEvents.data[index];
-                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
-                            const nextStep = step + 1;
-                            setAction(actions[nextStep]);
-                            setStep(nextStep);
-                            return
-                        }
-                    }
-                }
-            }
-        }
-    }, [FundsEvents])
-
-
-    useEffect(() => {
-        if (FundsDivestedEvents && typeof FundsDivestedEvents === 'object' && FundsDivestedEvents !== null && crosschainInvestHash != "" && action == Action.DivestSent) {
-            if (FundsDivestedEvents.data?.length) {
-                for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
-                    for (let index = 0; index < FundsDivestedEvents.data.length; index++) {
-                        const element = FundsDivestedEvents.data[index];
-                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
-                            console.log("f---------1", element)
-                            console.log("f---------3", FundsDivestedEvents)
-                            const nextStep = step + 1;
-                            console.log("f---------5", nextStep)
-                            console.log("f---------6", actions)
-                            console.log("f---------7", actions[nextStep])
-                            setAction(actions[nextStep]);
-                            setStep(nextStep);
-                            return
-                        }
-                    }
-                }
-            }
-        }
-    }, [FundsDivestedEvents])
-
-    useEffect(() => {
-        const fetchData = async () => {
-            if (DepositedEvents.data?.length && crosschainInvestHash != "" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsInvest : Action.depositConfirmed)) {
-                for (let index = 0; index < DepositedEvents.data.length; index++) {
-                    for (let index = 0; index < DepositedEvents.data.length; index++) {
-                        const element = DepositedEvents.data[index];
-                        if (element.args.crossChainTxId.toString() == crossChainTxId) {
-                            console.log("d---------1", element)
-                            console.log("d---------3", DepositedEvents)
-
-                            const nextStep = step + 1;
-                            console.log("d---------5", nextStep)
-                            console.log("d---------6", actions)
-                            console.log("d---------7", actions[nextStep])
-                            setAction(actions[nextStep]);
-                            setStep(nextStep);
-                            return
-                        }
-                    }
-                }
-            }
-        }
-        console.log("DepositedEvents", DepositedEvents)
-        fetchData()
-    }, [DepositedEvents.data])
-
+        console.log("event20: ", events2);
+        console.log("event25: ", crosschainInvestHash);
+    }, [events2]);
 
     async function interactionPostHook(success: boolean) {
 
@@ -454,34 +329,29 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 setDisabled(status);
                 if (actions.includes(Action.depositApprove)) {
                     setDescription1([...description1, `Deposit`]);
-                    setDescription2([...description2, `Deposit in progress`]);
+                    setDescription2([...description2, `Initial deposit transaction on zetachain in progress`]);
                 }
                 else {
                     setDescription1([`Deposit`]);
-                    setDescription2([`Deposit in progress`]);
+                    setDescription2([`Initial deposit transaction on zetachain in progress`]);
                 }
                 break;
             case Action.depositConfirmed:
-                setDescription1([...description1, (vaultData.protocol.chainId != 7000 && vaultData.protocol.chainId != 7001) ? "Deposit confirmed" : "Deposit completed"]);
-                if (actions[actions.length - 1] == Action.depositConfirmed) {
-                    setTimeout(() => {
-                        setTransactionCompleted(true);
-                        setInputBalance({
-                            ...inputBalance,
-                            formatted: "0",
-                        })
-                    }, 2000);
-                }
-                else {
-                    setDescription2([...description2, "Initial deposit transaction on zetachain in progress"]);
-                }
+                setDescription1([...description1, "Deposit completed"]);
+                setTimeout(() => {
+                    setTransactionCompleted(true);
+                    setInputBalance({
+                        ...inputBalance,
+                        formatted: "0",
+                    })
+                }, 2000);
                 break;
             case Action.crosschainInvest:
-                setDescription1([...description1, "Initial deposit transaction on zetachain completed and:"]);
+                setDescription1([...description1, "Initial deposit transaction on zetachain completed"]);
                 setDescription2([...description2, "Cross chain transfer and investment of funds in progress"]);
                 break;
             case Action.FundsInvest:
-                setDescription1([...description1, "Cross chain transfer and investment of funds completed and:"]);
+                setDescription1([...description1, "Cross chain transfer and investment of funds completed"]);
                 setDescription2([...description2, "Final confirmation and issue of shares by vault in progress"]);
                 break;
             case Action.deposited:
@@ -492,35 +362,30 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                         ...inputBalance,
                         formatted: "0",
                     })
-                }, 2000);
+                }, 3000);
                 break;
             case Action.withdraw:
                 setlabel("Withdraw")
                 setDisabled(status);
                 setDescription1(["Withdraw confirmation required"]);
-                setDescription2([`Withdrawing ${val} ${inputToken.symbol}.`]);
+                setDescription2(["Initial withdraw transaction on zetachain in progress"]);
                 break;
             case Action.withdrawconfirmed:
-                setDescription1([...description1, (vaultData.protocol.chainId != 7000 && vaultData.protocol.chainId != 7001) ? "Withdraw confirmed" : "Withdraw completed"]);
-                if (actions[actions.length - 1] == Action.withdrawconfirmed) {
-                    setTimeout(() => {
-                        setTransactionCompleted(true);
-                        setInputBalance({
-                            ...inputBalance,
-                            formatted: "0",
-                        })
-                    }, 3000);
-                }
-                else {
-                    setDescription2([...description2, "Initial withdraw transaction on zetachain in progress"]);
-                }
+                setDescription1([...description1, "Withdraw completed"]);
+                setTimeout(() => {
+                    setTransactionCompleted(true);
+                    setInputBalance({
+                        ...inputBalance,
+                        formatted: "0",
+                    })
+                }, 3000);
                 break;
             case Action.DivestSent:
-                setDescription1([...description1, "Initial withdraw transaction on zetachain completed and:"]);
+                setDescription1([...description1, "Initial withdraw transaction on zetachain completed"]);
                 setDescription2([...description2, "Divestment of funds from strategy in progress"]);
                 break;
             case Action.FundsDivested:
-                setDescription1([...description1, "Divestment of funds from strategy completed and:"]);
+                setDescription1([...description1, "Divestment of funds from strategy completed"]);
                 setDescription2([...description2, "Return of funds to user in progress"]);
                 break;
             case Action.Withdrawn:
@@ -545,16 +410,6 @@ function Interaction({ inputToken, inputBalance, action, vaultData, EOAaccount, 
                 break;
             case Action.DivestFailed:
                 setDescription1([...description1, "DivestFailed"]);
-                setTimeout(() => {
-                    setTransactionCompleted(true);
-                    setInputBalance({
-                        ...inputBalance,
-                        formatted: "0",
-                    })
-                }, 2000);
-                break;
-            case Action.ReturnFundsToUserFailed:
-                setDescription1([...description1, "ReturnFundsToUserFailed"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({

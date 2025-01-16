@@ -158,7 +158,6 @@ export const selectActions = async (
         if (isNativeToken) {
           return [
             Action.deposit,
-            Action.depositConfirmed,
             Action.crosschainInvest,
             Action.FundsInvest,
             Action.deposited
@@ -167,7 +166,6 @@ export const selectActions = async (
         else if (allowanceResult) {
           return [
             Action.deposit,
-            Action.depositConfirmed,
             Action.crosschainInvest,
             Action.FundsInvest,
             Action.deposited
@@ -178,7 +176,6 @@ export const selectActions = async (
             Action.depositApprove,
             Action.depositApproveConfirmed,
             Action.deposit,
-            Action.depositConfirmed,
             Action.crosschainInvest,
             Action.FundsInvest,
             Action.deposited
@@ -204,7 +201,6 @@ export const selectActions = async (
               Action.depositApprove,
               Action.depositApproveConfirmed,
               Action.deposit,
-              Action.depositConfirmed
             ]
           }
         }
@@ -212,14 +208,12 @@ export const selectActions = async (
           if (isNativeToken) {
             return [
               Action.deposit,
-              Action.depositConfirmed,
               Action.deposited
             ]
           }
           else if (allowanceResult) {
             return [
               Action.deposit,
-              Action.depositConfirmed,
               Action.deposited
             ]
           }
@@ -228,7 +222,6 @@ export const selectActions = async (
               Action.depositApprove,
               Action.depositApproveConfirmed,
               Action.deposit,
-              Action.depositConfirmed,
               Action.deposited
             ]
           }
@@ -238,7 +231,6 @@ export const selectActions = async (
       if (chainID != 7001 && chainID != 7000) {
         return [
           Action.withdraw,
-          Action.withdrawconfirmed,
           Action.DivestSent,
           Action.FundsDivested,
           Action.Withdrawn
@@ -254,7 +246,6 @@ export const selectActions = async (
         else {
           return [
             Action.withdraw,
-            Action.withdrawconfirmed,
             Action.Withdrawn
           ]
         }
