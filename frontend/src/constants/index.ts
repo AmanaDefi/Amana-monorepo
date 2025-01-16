@@ -97,7 +97,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/euler.png",
+      imgURL: "/usdc.png",
       des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
