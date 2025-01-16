@@ -97,15 +97,17 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         } else {
             if (context.sender == address(0)) revert CantBeZeroAddress();
             if (amount > 0) {
-                (uint16 slippage, bytes32 crossChainTxId) = abi.decode(
-                    message,
-                    (uint16, bytes32)
-                );
+                (
+                    address erc20source,
+                    uint16 slippage,
+                    bytes32 crossChainTxId
+                ) = abi.decode(message, (address, uint16, bytes32));
                 _depositComingFromConnectedChain(
                     context.sender,
                     context.chainID,
                     amount,
                     zrc20,
+                    erc20source,
                     slippage,
                     crossChainTxId
                 );
@@ -414,6 +416,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             assets,
             receiver,
             asset(),
+            asset(),
             uint32(block.chainid),
             crossChainTxId
         );
@@ -431,6 +434,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amount,
         address receiver,
         address userZRC20,
+        address userERC20,
         uint32 userChainId,
         bytes32 crossChainTxId
     ) internal override {
@@ -470,6 +474,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 crossChainTxId,
                 receiver,
                 userZRC20,
+                userERC20,
                 userChainId
             ),
             uint256(0) // onRevertGasLimit

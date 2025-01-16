@@ -349,6 +349,7 @@ abstract contract AmanaVaultBase is
         uint256 userChainId,
         uint256 assets,
         address zrc20source,
+        address erc20source,
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal {
@@ -376,6 +377,7 @@ abstract contract AmanaVaultBase is
             outputAmount,
             receiver,
             zrc20source,
+            erc20source,
             uint32(IZRC20(zrc20source).CHAIN_ID()),
             crossChainTxId
         );
@@ -385,6 +387,7 @@ abstract contract AmanaVaultBase is
         uint256 amount,
         address receiver,
         address zrc20source,
+        address erc20source,
         uint32 userChainId,
         bytes32 crossChainTxId
     ) internal virtual;

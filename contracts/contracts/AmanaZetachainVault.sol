@@ -25,15 +25,14 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (amount > 0) {
-            (uint16 slippage, bytes32 crossChainTxId) = abi.decode(
-                message,
-                (uint16, bytes32)
-            );
+            (address erc20source, uint16 slippage, bytes32 crossChainTxId) = abi
+                .decode(message, (address, uint16, bytes32));
             _depositComingFromConnectedChain(
                 context.sender,
                 context.chainID,
                 amount,
                 zrc20,
+                erc20source,
                 slippage,
                 crossChainTxId
             );
@@ -146,6 +145,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
     function _investAssets(
         uint256 amount,
         address receiver,
+        address,
         address,
         uint32,
         bytes32 crossChainTxId
