@@ -86,6 +86,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             EOAaccount,
             activeChain,
             scaledAmount,
+            withdrawToken.address as Address,
             withdrawZRC20
         );
         mixpanel.track("Withdraw Succeeded", {
