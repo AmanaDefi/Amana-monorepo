@@ -95,6 +95,7 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @notice Gets the total assets held in the strategy.
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
-        return receiptToken.balanceOf(address(this));
+        uint256 shares = receiptToken.balanceOf(address(this));
+        return receiptToken.convertToAssets(shares);
     }
 }
