@@ -77,7 +77,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x2D845FfC6f3691882431651763C07C88D21098cE", // Euler USDC vault on Base
+    id: "0xD1dDA17156c212c77dEd4c30dC18B5Fd6453B369", // Euler USDC vault on Base
     name: "Euler USDC",
     des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
     symbol: "aEulerUSDC",
@@ -93,7 +93,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Euler",
-      strategyAddress: "0x037a5c510d6fAB479Dad736FDACD827a08d9FfD0",
+      strategyAddress: "0xbB2965540047EC0d5eE2afc4059bc1A2dA7Db9B5",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
