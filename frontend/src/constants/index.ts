@@ -77,6 +77,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
+    id: "0x1fc60b5049ABC68fb7adD26b3941e4e597CABcfb", // Euler USDC vault on Base
+    name: "Euler USDC",
+    des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into an Euler USDC pool, which earns interest every block.",
+    symbol: "aEulerUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/usdc.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Euler",
+      strategyAddress: "0xB9259949146f7971e6C21bE2f59e4e680833152A",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/euler.png",
+      des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
+    },
+  },
+  {
     id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
     name: "Moonwell Flagship USDC",
     des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
