@@ -79,7 +79,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   {
     id: "0x2D845FfC6f3691882431651763C07C88D21098cE", // Euler USDC vault on Base
     name: "Euler USDC",
-    des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into an Euler USDC pool, which earns interest every block.",
+    des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
     symbol: "aEulerUSDC",
     imgURL: "/base.png",
     inputToken: {
