@@ -254,14 +254,12 @@ abstract contract AmanaVaultBase is
     function _applyFee(
         address user,
         uint256 assets
-    ) internal view returns (uint16 feeToWithdraw) {
+    ) internal view returns (uint256 feeToWithdraw) {
         uint256 totalUserAssets = convertToAssets(balanceOf(user));
         uint256 totalUserAssetsWithFee = (balanceOf(user) * totalAssets()) /
             (totalSupply() + 1);
         uint256 totalFeeOwing = totalUserAssetsWithFee - totalUserAssets;
-        feeToWithdraw = uint16(
-            (totalFeeOwing * assets) / totalUserAssetsWithFee
-        );
+        feeToWithdraw = (totalFeeOwing * assets) / totalUserAssetsWithFee;
     }
 
     /**

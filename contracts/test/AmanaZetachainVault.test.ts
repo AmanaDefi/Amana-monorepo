@@ -19,6 +19,9 @@ const ORIGIN_CHAIN_ID = 8453;
 const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
 const ERROR_MARGIN = ethers.utils.parseUnits("0.00015", 18);
 const WITHDRAWAL_RECEIVER = "0x4463868180D2831e61101F6dC2E814197A9b750a";
+const GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 300000;
+const GAS_LIMIT_FOR_CALL = 300000;
+const INPUT_TOKEN = ZC_ETH_ETH_ADDRESS;
 
 async function setupGatewaySigner() {
   await network.provider.request({
@@ -66,7 +69,9 @@ async function setup() {
       await owner.getAddress(),
       FEE_RATE,
       gasTank.address,
-      WITHDRAWAL_RECEIVER
+      WITHDRAWAL_RECEIVER,
+      GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
+      GAS_LIMIT_FOR_CALL
     ],
     { initializer: "initialize" }
   );
@@ -111,8 +116,8 @@ async function setup() {
     const slippage = 200;
     const transactionId = generateTransactionId(await user.getAddress(), 8453)
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["uint16", "bytes32"],
-      [slippage, transactionId]
+      ["address", "uint16", "bytes32"],
+      [INPUT_TOKEN, slippage, transactionId]
     );
     // Execute the onCall function to simulate a deposit
     await amanaVault.connect(gatewaySigner).onCall(

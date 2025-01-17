@@ -38,9 +38,12 @@ describe("AmanaConnectedChainVault Tests", function () {
   const FEE_RATE = 1000;
   const ORIGIN_CHAIN_ID = 8453; // where the deposit/withdrawal originated from
   const WITHDRAWAL_RECEIVER = "0x4463868180D2831e61101F6dC2E814197A9b750a";
+  const INPUT_TOKEN = ethers.constants.AddressZero;
 
   const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
   const STRATEGY_CHAIN_ID = 1;
+  const GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 300000;
+  const GAS_LIMIT_FOR_CALL = 300000;
 
   const SECOND_STRATEGY_ADDRESS = "0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f";
 
@@ -117,8 +120,8 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     // Encode the deposit message
     const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["uint16", "bytes32"],
-      [slippage, transactionId]
+      ["address", "uint16", "bytes32"],
+      [INPUT_TOKEN, slippage, transactionId]
     );
 
     // Execute the onCall function to simulate a deposit
@@ -288,7 +291,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         {
           forking: {
             jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 6366501,
+            blockNumber: 6634069,
           },
         },
       ]
@@ -324,7 +327,9 @@ describe("AmanaConnectedChainVault Tests", function () {
         await owner.getAddress(),
         FEE_RATE,
         gasTank.address,
-        WITHDRAWAL_RECEIVER
+        WITHDRAWAL_RECEIVER,
+        GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
+        GAS_LIMIT_FOR_CALL
       ],
       { initializer: "initialize" }
     );
@@ -455,7 +460,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1));
       await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
       await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
-
       const initialTotalAssets = depositAmount1;
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 

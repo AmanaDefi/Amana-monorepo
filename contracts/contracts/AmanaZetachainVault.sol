@@ -182,7 +182,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
-        uint16 feeToWithdraw = _applyFee(user, assets);
+        uint256 feeToWithdraw = _applyFee(user, assets);
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
             assets,
@@ -230,7 +230,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (assets > maxAssets)
             revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
 
-        uint16 feeToWithdraw = _applyFee(user, assets);
+        uint256 feeToWithdraw = _applyFee(user, assets);
         uint256 shares = previewWithdraw(assets);
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
@@ -265,7 +265,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
      */
     function _divestZetachainStrategy(
         uint256 assets,
-        uint16 feeToWithdraw
+        uint256 feeToWithdraw
     ) internal returns (uint256 withdrawnAmt) {
         withdrawnAmt = IStrategy(strategyAddress).withdraw(
             assets + feeToWithdraw,
