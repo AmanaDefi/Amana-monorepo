@@ -187,13 +187,13 @@ export const selectActions = async (
           if (isNativeToken) {
             return [
               Action.deposit,
-              Action.depositConfirmed
+              Action.deposited
             ]
           }
           else if (allowanceResult) {
             return [
               Action.deposit,
-              Action.depositConfirmed
+              Action.deposited
             ]
           }
           else {
@@ -201,6 +201,7 @@ export const selectActions = async (
               Action.depositApprove,
               Action.depositApproveConfirmed,
               Action.deposit,
+              Action.deposited
             ]
           }
         }
@@ -240,7 +241,7 @@ export const selectActions = async (
         if (activeChain.id == 7001 || activeChain.id == 7000) {
           return [
             Action.withdraw,
-            Action.withdrawconfirmed
+            Action.Withdrawn
           ]
         }
         else {
