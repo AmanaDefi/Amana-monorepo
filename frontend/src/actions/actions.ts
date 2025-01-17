@@ -340,7 +340,7 @@ export const executeWithdrawal = async (vaultId: Address, activeAccount: Account
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, withdrawERC20, activeAccount, activeChain, withdrawAmount, withdrawZRC20);
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20);
   }
 };
 
