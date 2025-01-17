@@ -211,6 +211,25 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     return
                 }
             }
+            else if (last_event.eventName == "DivestSent" && action == Action.withdraw) {
+                console.log("event2: ", last_event);
+                if (last_event.transactionHash == crosschainInvestHash) {
+                    console.log("event3: ", last_event);
+                    setcrossChainTxId(last_event.args.crossChainTxId.toString())
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "Withdrawn" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsDivested : Action.withdraw)) {
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
         }
         console.log("event0: ", events1);
         console.log("event5: ", crosschainInvestHash);
@@ -308,6 +327,15 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
                 initialDesc.push((vaultData.protocol.chainId == 7000 || vaultData.protocol.chainId == 7001) ? "Deposit completed" :
                     "Final confirmation completed, shares issued by vault");
             }
+            else if (currentAction === Action.withdraw) {
+                initialDesc.push("Withdraw confirmation required");
+            }
+            else if (currentAction === Action.DivestSent) {
+                initialDesc.push("Initial withdraw transaction on zetachain completed");
+            }
+            else if (currentAction === Action.Withdrawn) {
+                initialDesc.push("Return of funds to user completed");
+            }
         }
         return initialDesc;
     });
@@ -327,7 +355,12 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
             } else if (currentAction === Action.FundsInvest) {
                 initialDesc.push("Final confirmation and issue of shares by vault in progress");
             }
-
+            else if (currentAction === Action.withdraw) {
+                initialDesc.push(`Withdraw inp progress`);
+            }
+            else if (currentAction === Action.DivestSent) {
+                initialDesc.push("Divestment of funds from strategy in progress");
+            }
         }
         return initialDesc;
     });
@@ -383,29 +416,14 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
                 setlabel("Withdraw")
                 setDisabled(status);
                 setDescription1(["Withdraw confirmation required"]);
-                setDescription2([`Withdrawing ${val} ${inputToken.symbol}.`]);
-                break;
-            case Action.withdrawconfirmed:
-                setDescription1([...description1, (vaultData.protocol.chainId != 7000 && vaultData.protocol.chainId != 7001) ? "Withdraw confirmed" : "Withdraw completed"]);
-                if (actions[actions.length - 1] == Action.withdrawconfirmed) {
-                    setTimeout(() => {
-                        setTransactionCompleted(true);
-                        setInputBalance({
-                            ...inputBalance,
-                            formatted: "0",
-                        })
-                    }, 3000);
-                }
-                else {
-                    setDescription2([...description2, "Initial withdraw transaction on zetachain in progress"]);
-                }
+                setDescription2([`Withdraw inp progress`]);
                 break;
             case Action.DivestSent:
-                setDescription1([...description1, "Initial withdraw transaction on zetachain completed and:"]);
+                setDescription1([...description1, "Initial withdraw transaction on zetachain completed"]);
                 setDescription2([...description2, "Divestment of funds from strategy in progress"]);
                 break;
             case Action.FundsDivested:
-                setDescription1([...description1, "Divestment of funds from strategy completed and:"]);
+                setDescription1([...description1, "Divestment of funds from strategy completed"]);
                 setDescription2([...description2, "Return of funds to user in progress"]);
                 break;
             case Action.Withdrawn:
@@ -438,20 +456,7 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
                     })
                 }, 2000);
                 break;
-            case Action.ReturnFundsToUserFailed:
-                setDescription1([...description1, "ReturnFundsToUserFailed"]);
-                setTimeout(() => {
-                    setTransactionCompleted(true);
-                    setInputBalance({
-                        ...inputBalance,
-                        formatted: "0",
-                    })
-                }, 2000);
-                break;
         }
-        console.log("00000000000000000001", action)
-        console.log("00000000000000000002", status)
-        console.log("00000000000000000003", actions)
     }, [action, status, actions])
 
     async function handleMainAction() {
