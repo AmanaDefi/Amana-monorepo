@@ -226,8 +226,8 @@ const executeCrossChainDeposit = async (
   const slippage = 200; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
-    ["uint16", "bytes32"],
-    [slippage, transactionId]
+    ["address", "uint16", "bytes32"],
+    [inputToken, slippage, transactionId]
   ) as `0x${string}`;
 
   // Prepare revertOptions
@@ -336,11 +336,11 @@ const executeCrossChainDeposit = async (
   }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawZRC20: Address) => {
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawZRC20);
+    return executeCrossChainWithdrawal(vaultId, withdrawERC20, activeAccount, activeChain, withdrawAmount, withdrawZRC20);
   }
 };
 
@@ -368,6 +368,7 @@ const executeCrossChainWithdrawal = async (
   activeAccount: Account,
   activeChain: Chain,
   withdrawAmount: bigint,
+  withdrawERC20: Address,
   withdrawZRC20: Address // TODO add this higher up in the calling functions
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
@@ -375,7 +376,6 @@ const executeCrossChainWithdrawal = async (
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-  const withdrawERC20 = ethers.ZeroAddress; // TODO this should be a user input / system input
   const slippage = 200; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(

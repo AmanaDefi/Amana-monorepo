@@ -512,9 +512,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         userPrincipal[receiver] += depositAmount;
         totalPrincipal += depositAmount;
 
-        latestTotalAssetsUpdateFromStrategy =
-            totalAssetsAfterDeposit -
-            depositAmount;
+        if (totalAssetsAfterDeposit >= depositAmount) {
+            latestTotalAssetsUpdateFromStrategy =
+                totalAssetsAfterDeposit -
+                depositAmount;
+        } else {
+            latestTotalAssetsUpdateFromStrategy = 0;
+        }
 
         uint256 shares = previewDeposit(depositAmount);
         _mint(receiver, shares);
