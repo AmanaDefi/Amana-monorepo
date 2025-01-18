@@ -1,64 +1,46 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ConnectButton, useActiveAccount } from "thirdweb/react";
-import { client } from "../utils/client";
+import React, { useEffect } from "react";
+import { ConnectButton, useActiveAccount, useConnectModal } from "thirdweb/react";
 import VaultsContainer from "../containers/VaultsContainer";
-import VaultsDetailContainer from "../containers/VaultsDetailContainer";
-import BuyContainer from "../containers/BuyContainer";
-import About from "../components/About";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
-import { ZC_USDC_ETH_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../../constants";
-import mixpanel from "mixpanel-browser";
 import Footer from "../components/Footer";
-import { Account } from "thirdweb/wallets";
-import { ACCOUNT_ABSTRACTION_CONFIG } from "../constants/chainConfig";
-import { useRouter } from 'next/navigation';
-import Image from "next/image";
+import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
+import mixpanel from "mixpanel-browser";
+import { client } from "../utils/client"; // Import the client instance
 
-const wallets = [
-  inAppWallet({
-    auth: {
-      options: ["google", "email", "passkey"],
-    },
-    // smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
-  }),
-  createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet"),
-  createWallet("me.rainbow"),
-  createWallet("io.rabby"),
-  createWallet("com.trustwallet.app"),
-  createWallet("com.ledger"),
-  createWallet("global.safe"),
-];
-
-interface FeatureCardProps {
-  title: React.ReactNode; // Change from string to React.ReactNode to allow JSX
-  description: string;
-}
-
-interface AuthenticatedAppProps {
-  account: Account;
-  activeSection: string;
-  setActiveSection: (value: string) => void;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) => (
-  <div className="p-6 bg-white shadow-lg rounded-lg">
-    <h3 className="text-xl font-bold text-gray-800">{title}</h3> {/* Changed to text-gray-800 */}
-    <p className="mt-2 text-gray-600">{description}</p>
-  </div>
-);
-
+// Explicitly type the shared configuration for ConnectButton and connect
+const connectModalConfig: {
+  client: typeof client;
+  chains: typeof SUPPORTED_CHAINS;
+  wallets: ReturnType<typeof inAppWallet | typeof createWallet>[];
+  connectModal: { size: "compact" };
+} = {
+  client,
+  chains: [SUPPORTED_CHAINS[0]],
+  wallets: [
+    inAppWallet({
+      auth: {
+        options: ["google", "email", "passkey"],
+      },
+    }),
+    createWallet("io.metamask"),
+    createWallet("com.coinbase.wallet"),
+    createWallet("me.rainbow"),
+    createWallet("io.rabby"),
+    createWallet("com.trustwallet.app"),
+    createWallet("com.ledger"),
+    createWallet("global.safe"),
+  ],
+  connectModal: { size: "compact" }, // Explicitly set the type to "compact"
+};
 
 export default function Page() {
-
   const account = useActiveAccount();
-  const router = useRouter();
-  const [activeSection, setActiveSection] = useState("vaults");
+  const { connect, isConnecting } = useConnectModal(); // Access the connect function
 
   useEffect(() => {
+    // Initialize Mixpanel
     mixpanel.init("1f01d05893463c7ba9d4ac7280821010", {
       debug: true,
       track_pageview: true,
@@ -66,200 +48,40 @@ export default function Page() {
     });
 
     mixpanel.track("Page Viewed", {
-      page: "Landing Page",
-      section: activeSection,
+      page: "Vaults List",
     });
-  }, []);
 
-  useEffect(() => {
-    if (account) {
+    // Automatically show the connect modal if no account is connected
+    if (!account && !isConnecting) {
+      connect({
+        ...connectModalConfig, // Use shared configuration
+        locale: "en_US", // Additional options if needed
+      }).catch(() => {
+        console.log("Connect modal closed without connecting.");
+      });
+    } else if (account) {
       mixpanel.identify(account.address);
       mixpanel.people.set({
         wallet_address: account.address,
       });
-      router.push("/vaults")
     }
-  }, [account]);
+  }, [account, connect, isConnecting]);
 
   return (
     <main className="p-4 pb-10 min-h-screen flex flex-col container mx-auto relative overflow-hidden">
-      {
-        !account &&
-        <UnauthenticatedLandingPage />
-      }
-    </main>
-  );
-}
-
-function AuthenticatedApp({ account, activeSection, setActiveSection }: AuthenticatedAppProps) {
-  return (
-    <div className="flex flex-col h-screen">
-      {/* Header with navigation */}
       <header className="w-5/6 text-white p-4 flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tighter text-zinc-100">Amana</h1>
-        <nav className="flex space-x-8">
-          <span
-            className={`cursor-pointer ${activeSection === "vaults" ? "font-bold" : ""}`}
-            onClick={() => setActiveSection("vaults")}
-          >
-            Vaults
-          </span>
-          <span
-            className={`cursor-pointer ${activeSection === "buy" ? "font-bold" : ""}`}
-            onClick={() => setActiveSection("buy")}
-          >
-            Fund Wallet
-          </span>
-          <span
-            className={`cursor-pointer ${activeSection === "about" ? "font-bold" : ""}`}
-            onClick={() => setActiveSection("about")}
-          >
-            About
-          </span>
-        </nav>
-
-        {/* Connect Button */}
         <div className="absolute top-5 right-5">
           <ConnectButton
-            client={client}
-            chains={SUPPORTED_CHAINS}
-            wallets={wallets}
-            connectModal={{ size: "compact" }}
-            detailsButton={{
-              displayBalanceToken: {
-                [7001]: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-              },
-            }}
+            {...connectModalConfig} // Use the same shared configuration
           />
         </div>
       </header>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col justify-between py-20 px-6">
-        <div className="flex-1">
-          {/* {activeSection === "vaults" && <VaultsContainer />} */}
-          {/* {activeSection === "vaultsDetail" && <VaultsDetailContainer /> */}
-          {activeSection === "buy" && <BuyContainer />}
-          {activeSection === "about" && <About />}
-        </div>
-
-        {/* Footer aligned with the main content */}
+        <VaultsContainer activeChain={SUPPORTED_CHAINS[0]} />
         <Footer />
       </div>
-    </div>
-  );
-}
-
-// Component for unauthenticated users - full landing page
-function UnauthenticatedLandingPage() {
-  return (
-    <>
-      <header className="flex justify-between items-center py-6">
-        <div className="text-2xl font-bold">Amana</div>
-        <nav className="flex space-x-4">
-          <ConnectButton
-            client={client}
-            chains={SUPPORTED_CHAINS}
-            wallets={wallets}
-            connectButton={{ label: "Launch App" }}
-            connectModal={{ size: "compact" }}
-          // accountAbstraction={ACCOUNT_ABSTRACTION_CONFIG}
-          />
-        </nav>
-      </header>
-
-      <section className="py-20 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold">Earn Yield Effortlessly Across Any Chain</h1>
-        <p className="mt-4 text-lg text-zinc-400">
-        Put your crypto assets to work with Amana, the most powerful, omnichain platform for on-chain yield. Earn passive income on your crypto, with easy, 1-click transactions—regardless of the blockchain you&apos;re on.
-        </p>
-      </section>
-
-      <section className="py-20 text-center bg-zinc-100">
-        <h2 className="text-xl md:text-3xl font-bold tracking-tight text-zinc-800">Amana by the Numbers</h2>
-        <div className="flex justify-around mt-8">
-          <div>
-            <h3 className="text-2xl font-italic text-zinc-800">Coming soon</h3>
-            <p className="text-lg text-zinc-600">Total Volume Locked</p>
-          </div>
-          <div>
-            <h3 className="text-2xl font-italic text-zinc-800">Coming soon</h3>
-            <p className="text-lg text-zinc-600">Total Yield Generated</p>
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-zinc-800">Base</h3>
-            <p className="text-lg text-zinc-600">Chains Connected</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20">
-        <h2 className="text-3xl font-bold text-center">Omnichain Yield, Made Simple</h2>
-        <p className="text-lg text-center mt-4 text-zinc-400">
-        With Amana, it doesn&apos;t matter which chain you start from or where you want to invest. Using Zetachain&apos;s Universal EVM, we make yield opportunities accessible across all major blockchains, including Ethereum, Base, Polygon, BNB, Solana, Ton, and many more. One click is all it takes.        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mt-8">
-          <FeatureCard title="Earn Across Any Chain" description="Access high APY yield opportunities across a range of chains without worrying about bridging, swapping, or complex steps." />
-          <FeatureCard title="Gasless Transactions" description="Benefit from gasless, 1-click transactions made possible through smart accounts. No fees, no hassle—just simple, effective yield." />
-          <FeatureCard title="Security & Transparency" description="Our platform is non-custodial and fully transparent, ensuring your assets remain under your control." />
-          <FeatureCard title="Multiple sign-in options" description="Sign in with your email, SSO, or passkey - have non-custodial control without the hassle factor" />
-        </div>
-      </section>
-
-      <section className="py-20">
-        <h2 className="text-3xl font-bold text-center">Supported Chains and Protocols</h2>
-        <p className="text-lg text-center mt-4 text-zinc-400">
-          Amana integrates with the best yield-generating protocols across all major blockchains, making it the most versatile and powerful tool for putting your crypto to work.
-        </p>
-        <div className="flex justify-center mt-8">
-          <Image
-            src="/Amana_chains.jpg"
-            alt="Supported Chains and Protocols"
-            width={1200} // Adjust to your desired width
-            height={800} // Adjust to your desired height          
-            className="w-full max-w-3xl"
-          />
-        </div>
-      </section>
-
-
-      <section className="py-20">
-        <h2 className="text-3xl font-bold text-center">Sign In, Your Way</h2>
-        <p className="text-lg text-center mt-4 text-zinc-400">
-        Multiple sign-in options—use email, SSO, or passkey. Gain non-custodial control without the hassle of crypto wallet management.
-        </p>
-        <div className="flex justify-center mt-8">
-          <Image
-            src="/signin_options.jpg"
-            alt="Sign-in options"
-            width={1200} // Adjust to your desired width
-            height={800} // Adjust to your desired height          
-            className="w-full max-w-3xl"
-          />
-        </div>
-      </section>
-
-      <section className="py-20">
-        <h2 className="text-3xl font-bold text-center">Backed by</h2>
-        <div className="flex justify-center items-center gap-8 mt-8">
-          <Image
-            src="/thirdweb_logo.jpg"
-            alt="Thirdweb"
-            width={1200} // Adjust to your desired width
-            height={800} // Adjust to your desired height          
-            className="w-1/3 max-w-xs"
-          />
-          <Image
-            src="/ZetaChain.webp"
-            alt="Zetachain"
-            width={1200} // Adjust to your desired width
-            height={800} // Adjust to your desired height          
-            className="w-1/3 max-w-xs"
-          />
-        </div>
-      </section>
-
-
-      <Footer />
-    </>
+    </main>
   );
 }
