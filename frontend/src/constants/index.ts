@@ -97,35 +97,35 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/usdc.png",
+      imgURL: "/euler.svg",
       des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
-  {
-    id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
-    name: "Moonwell Flagship USDC",
-    des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
-    symbol: "aMoonwellUSDC",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Moonwell",
-      strategyAddress: "0x804615ef2d82eDCbc3794C880a4e3EFDb0b526e3",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/Moonwell.jpg",
-      des: "Moonwell is a relatively new protocol."
-    },
-  },
+  // {
+  //   id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
+  //   name: "Moonwell Flagship USDC",
+  //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
+  //   symbol: "aMoonwellUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Moonwell",
+  //     strategyAddress: "0x804615ef2d82eDCbc3794C880a4e3EFDb0b526e3",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+  //     imgURL: "/Moonwell.jpg",
+  //     des: "Moonwell is a relatively new protocol."
+  //   },
+  // },
   {
     id: "0xBF1A6cfD6edF6E6B944ea4b55aa77B5B21356014",
     name: "Moonwell Eth",
@@ -181,7 +181,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
-    imgURL: "/ZetaChain.png",
+    imgURL: "/ZetaChain.jpeg",
     inputToken: {
       symbol: "USDC.ETH",
       decimals: 6,
