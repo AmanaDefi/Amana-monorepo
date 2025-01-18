@@ -30,7 +30,7 @@ contract WithdrawalReceiver {
      * @param message Encoded details of the funds to be returned.
      */
     function onCall(
-        MessageContext calldata,
+        MessageContext calldata context,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory) {
         (
@@ -52,6 +52,12 @@ contract WithdrawalReceiver {
                 "Insufficient native balance"
             );
             payable(user).transfer(amount);
+            _sendFundsReturnedConfirmation(
+                context.sender,
+                user,
+                shares,
+                crossChainTxId
+            );
         } else {
             // ERC20 token
             require(
@@ -59,10 +65,43 @@ contract WithdrawalReceiver {
                 "Insufficient token balance"
             );
             IERC20(asset).safeTransfer(user, amount);
+            _sendFundsReturnedConfirmation(
+                context.sender,
+                user,
+                shares,
+                crossChainTxId
+            );
         }
 
         emit FundsReturned(user, asset, amount, crossChainTxId);
         return abi.encode(true);
+    }
+
+    function _sendFundsReturnedConfirmation(
+        address vault,
+        address owner,
+        uint256 shares,
+        bytes32 _crossChainTxId
+    ) internal {
+        bytes memory outgoingMessage = abi.encode(
+            owner,
+            shares,
+            _crossChainTxId
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this),
+            false,
+            address(this),
+            abi.encode("_investConfirmFailed", _crossChainTxId),
+            uint256(1000000)
+        );
+
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            vault,
+            outgoingMessage,
+            revertOptions
+        );
     }
 
     /**

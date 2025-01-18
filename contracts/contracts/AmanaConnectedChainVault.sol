@@ -724,7 +724,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         uint256 outputAmount = _returnFundsToUser(
             amount,
+            shares,
             userChainId,
+            user,
             receiver,
             withdrawZRC20,
             withdrawERC20,
