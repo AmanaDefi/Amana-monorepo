@@ -35,7 +35,8 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
 
   const vaults: VaultData[] = VAULT_DATA;
   const EOAaccount = useActiveAccount() || defaultAccount;
-  const resolvedActiveChain = activeChain || useActiveWalletChain() || SUPPORTED_CHAINS[0]; // Resolve active chain
+  const hookActiveChain = useActiveWalletChain(); // Always call the hook unconditionally
+  const resolvedActiveChain = activeChain || hookActiveChain || SUPPORTED_CHAINS[0]; // Compute resolved chain
 
   if (!resolvedActiveChain) {
     throw new Error("No active chain found");
