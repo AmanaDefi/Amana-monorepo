@@ -356,7 +356,7 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
                 initialDesc.push("Final confirmation and issue of shares by vault in progress");
             }
             else if (currentAction === Action.withdraw) {
-                initialDesc.push(`Withdraw inp progress`);
+                initialDesc.push(`Withdraw in progress`);
             }
             else if (currentAction === Action.DivestSent) {
                 initialDesc.push("Divestment of funds from strategy in progress");
@@ -416,7 +416,7 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
                 setlabel("Withdraw")
                 setDisabled(status);
                 setDescription1(["Withdraw confirmation required"]);
-                setDescription2([`Withdraw inp progress`]);
+                setDescription2([`Withdraw in progress`]);
                 break;
             case Action.DivestSent:
                 setDescription1([...description1, "Initial withdraw transaction on zetachain completed"]);
