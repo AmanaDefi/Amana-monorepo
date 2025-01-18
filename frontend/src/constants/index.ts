@@ -27,7 +27,7 @@ export const tokens: Token[] = [
 
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0x4922b9e67C09CFa4Fb85aA000411dd5116A9A2b5", // Base ETH Vault
+    id: "0x23F2b3e3210EE357eDaBF477ABACd543d1BB12d6", // Base ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -43,7 +43,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0x37c154D2c277a87abbBA3B67c8311D0d0bF96594",
+      strategyAddress: "0x776c40F8f041D47060f5ebC411bC1A7DBc2e4A3c",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -52,7 +52,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x6e205E0153512Ac766bB4e4eC78AEc39DF70083d", // Polygon POL Vault
+    id: "0x2B0FD687c0EBF26D4e4F67f9b9Ab96cC5Fe69193", // Polygon POL Vault
     name: "AaveV3 POL",
     des: " This vault invests POL into a simple strategy which deposits the funds as collateral into an Aave POL pool, which earns interest every block.",
     symbol: "aAavePOL",
@@ -68,7 +68,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0x1e793143788327Ec9AC8f45E4a52598Fd2f4BD55",
+      strategyAddress: "0xC1F7903C20C4Da3cf4699950218069b56E52CFE6",
       network: "Polygon",
       chainId: 137,
       netdes: "Polygon is a POS side chain to Ethereum.",
@@ -86,7 +86,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       symbol: "USDC.BASE",
       decimals: 6,
       address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/usdc.png",
+      imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false
@@ -102,7 +102,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   // {
-  //   id: "0x3319F4Cc386E4C2317a3ED9B460Edad6fBDf3a55",
+  //   id: "0x8FeFA57Ee5c1cd81fA78fc4C192D3cDcB08097D2",
   //   name: "Moonwell Flagship USDC",
   //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
   //   symbol: "aMoonwellUSDC",
@@ -118,7 +118,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   //   protocol: {
   //     name: "Moonwell",
-  //     strategyAddress: "0x804615ef2d82eDCbc3794C880a4e3EFDb0b526e3",
+  //     strategyAddress: "0x62A80e460A0D7f5126F029997e6AaF7484A7Adb5",
   //     network: "Base",
   //     chainId: 8453,
   //     netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -127,7 +127,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xBF1A6cfD6edF6E6B944ea4b55aa77B5B21356014",
+    id: "0x9494f96f3Ea5D9430bcD51F1a732e73B5E87FE6D",
     name: "Moonwell Eth",
     des: " This vault invests ETH into a strategy which deposits the funds into the Moonwell Eth vault.",
     symbol: "aMoonwellEth",
@@ -143,7 +143,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Moonwell",
-      strategyAddress: "0xB4490Fc6D83A7A87bf8B83E310147089C6a96E1F",
+      strategyAddress: "0x3710aa8BaCE60205EF1aCe36d87BDc17e7e66382",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -152,7 +152,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x5Feb6E013A6f1fd2135ccA330D875Fd0b4e6F2F5",
+    id: "0xCf867eF209d76f3C66ed5eDCe8391f4A5660C3a5",
     name: "Compound USDC",
     des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Compound USDC pool, which earns interest every block.",
     symbol: "aCompoundUSDC",
@@ -168,7 +168,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Compound",
-      strategyAddress: "0x74fCAd57C966cAB6fa02a0A5425b1c76DcaFe9A0",
+      strategyAddress: "0x30C850bB5b0e115990b13Bd750b8CAC2E39aA88e",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -177,7 +177,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x48326BdEa7CAF701cEee64f08faE899e90c110A1", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+    id: "0x7CA437BfeAB2dAce82CFA6c48Da44B04D4cb6Bd4", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
@@ -193,7 +193,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Mock",
-      strategyAddress: "0xEDf497Ba1e81976231c440AFA484065860e5cb69",
+      strategyAddress: "0xC25efA995D7F274684A3D1Eedd4592D231145a0D",
       network: "Zetachain",
       chainId: 7000,
       netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
