@@ -30,18 +30,18 @@ contract WithdrawalReceiver {
      * @param message Encoded details of the funds to be returned.
      */
     function onCall(
-        MessageContext calldata context,
+        MessageContext calldata,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory) {
         (
-            address user,
+            address receiver,
             address asset,
             uint256 amount,
             bytes32 crossChainTxId
         ) = abi.decode(message, (address, address, uint256, bytes32));
 
         // Ensure valid inputs
-        require(user != address(0), "Invalid user address");
+        require(receiver != address(0), "Invalid receiver address");
         require(amount > 0, "Amount must be greater than zero");
 
         // Handle native or ERC20 funds
@@ -51,57 +51,18 @@ contract WithdrawalReceiver {
                 address(this).balance >= amount,
                 "Insufficient native balance"
             );
-            payable(user).transfer(amount);
-            _sendFundsReturnedConfirmation(
-                context.sender,
-                user,
-                shares,
-                crossChainTxId
-            );
+            payable(receiver).transfer(amount);
         } else {
             // ERC20 token
             require(
                 IERC20(asset).balanceOf(address(this)) >= amount,
                 "Insufficient token balance"
             );
-            IERC20(asset).safeTransfer(user, amount);
-            _sendFundsReturnedConfirmation(
-                context.sender,
-                user,
-                shares,
-                crossChainTxId
-            );
+            IERC20(asset).safeTransfer(receiver, amount);
         }
 
-        emit FundsReturned(user, asset, amount, crossChainTxId);
+        emit FundsReturned(receiver, asset, amount, crossChainTxId);
         return abi.encode(true);
-    }
-
-    function _sendFundsReturnedConfirmation(
-        address vault,
-        address owner,
-        uint256 shares,
-        bytes32 _crossChainTxId
-    ) internal {
-        bytes memory outgoingMessage = abi.encode(
-            owner,
-            shares,
-            _crossChainTxId
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this),
-            false,
-            address(this),
-            abi.encode("_investConfirmFailed", _crossChainTxId),
-            uint256(1000000)
-        );
-
-        IGatewayEVM(_GATEWAY_ADDRESS).call(
-            vault,
-            outgoingMessage,
-            revertOptions
-        );
     }
 
     /**

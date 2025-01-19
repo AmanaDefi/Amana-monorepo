@@ -453,7 +453,7 @@ abstract contract StrategyParent is Ownable, IErrors {
             address(this), // Address to send revert message to
             false, // Flag to indicate whether to revert on failure
             address(this), // Address to handle revert logic
-            abi.encode("_handleRevertOnSendTotalUnderlyingAssets"), // Revert handling logic
+            abi.encode("_handleRevertOnSendTotalUnderlyingAssets", bytes32(0)), // Revert handling logic
             uint256(1000000) // Gas for revert call
         );
 
