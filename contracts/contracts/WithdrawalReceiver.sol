@@ -34,14 +34,14 @@ contract WithdrawalReceiver {
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory) {
         (
-            address user,
+            address receiver,
             address asset,
             uint256 amount,
             bytes32 crossChainTxId
         ) = abi.decode(message, (address, address, uint256, bytes32));
 
         // Ensure valid inputs
-        require(user != address(0), "Invalid user address");
+        require(receiver != address(0), "Invalid receiver address");
         require(amount > 0, "Amount must be greater than zero");
 
         // Handle native or ERC20 funds
@@ -51,17 +51,17 @@ contract WithdrawalReceiver {
                 address(this).balance >= amount,
                 "Insufficient native balance"
             );
-            payable(user).transfer(amount);
+            payable(receiver).transfer(amount);
         } else {
             // ERC20 token
             require(
                 IERC20(asset).balanceOf(address(this)) >= amount,
                 "Insufficient token balance"
             );
-            IERC20(asset).safeTransfer(user, amount);
+            IERC20(asset).safeTransfer(receiver, amount);
         }
 
-        emit FundsReturned(user, asset, amount, crossChainTxId);
+        emit FundsReturned(receiver, asset, amount, crossChainTxId);
         return abi.encode(true);
     }
 

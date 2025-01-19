@@ -346,6 +346,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 crossChainTxId,
                 address(0),
                 newStrategyAddress,
+                address(0),
                 0
             ),
             uint256(0) // onRevertGasLimit - NA on ZEVM
@@ -766,7 +767,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         (
             string memory revertMessage,
             bytes32 _crossChainTxId,
-            address user,
+            address receiver,
             address userZRC20,
             address userERC20,
             uint32 userChainId
@@ -783,7 +784,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             _returnFundsToUser(
                 context.amount,
                 userChainId,
-                user,
+                receiver,
                 userZRC20,
                 userERC20,
                 _crossChainTxId,
