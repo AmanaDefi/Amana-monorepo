@@ -1,6 +1,7 @@
 import React from "react";
 import { PayEmbed, useActiveWalletChain } from "thirdweb/react";
 import { client } from "../utils/client";
+import { ZC_ETH_BASE_ADDRESS } from "../../../constants";
 
 const BuyView: React.FC = ({}) => {
   const activeChain = useActiveWalletChain();
@@ -15,16 +16,16 @@ const BuyView: React.FC = ({}) => {
       payOptions={{
         mode: "fund_wallet",
         prefillBuy: {
-          // token: {
-          //   address: ZC_USDC_ETH_ADDRESS,
-          //   name: "Base Sepolia USDC",
-          //   symbol: "USDC",
-          //   icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png",
-          // },
+          token: {
+            address: ZC_ETH_BASE_ADDRESS,
+            name: "Base Sepolia ETH",
+            symbol: "ETH.BASE",
+            icon: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+          },
           chain: activeChain,
           allowEdits: {
             amount: true, // allow editing buy amount
-            token: false, // disable selecting buy token
+            token: true, // disable selecting buy token
             chain: false, // disable selecting buy chain
           },
         },
