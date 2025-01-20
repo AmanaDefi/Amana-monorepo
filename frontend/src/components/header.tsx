@@ -2,7 +2,6 @@ import { ConnectButton } from "thirdweb/react";
 import { client } from "../utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { ZC_TEST_ETH_BASESEPOLIA_ADDRESS } from "../../../constants";
 import { usePathname } from 'next/navigation';
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
@@ -35,9 +34,9 @@ const Header = () => {
                 <h1 className="text-3xl font-bold tracking-tighter text-zinc-100">Amana</h1>
                 <nav className="flex space-x-8">
                     <span
-                        className={`cursor-pointer ${path === "/vaults" ? "font-bold text-primaryYellow" : ""
+                        className={`cursor-pointer ${path === "/" ? "font-bold text-primaryYellow" : ""
                             }`}
-                        onClick={() => router.push("/vaults")}
+                        onClick={() => router.push("/")}
                     >
                         Vaults
                     </span>

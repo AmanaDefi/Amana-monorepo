@@ -3,10 +3,11 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
-import { ToastContainer } from "react-toastify"; 
-import 'react-toastify/dist/ReactToastify.css'; 
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import AccountProvider from "@/providers/AccountProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,8 +22,10 @@ const MyApp = ({ children }: Readonly<{ children: React.ReactNode; }>) => {
       <body className={inter.className}>
         <QueryClientProvider client={queryClient}>
           <ThirdwebProvider>
-            {children}
-            <ToastContainer /> 
+              <AccountProvider>
+                  {children}
+              </AccountProvider>
+            <ToastContainer />
           </ThirdwebProvider>
         </QueryClientProvider>
       </body>
