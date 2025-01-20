@@ -61,7 +61,7 @@ const Header = () => {
                 <div className="absolute top-5 right-5">
                     <ConnectButton
                         client={client}
-                        chains={SUPPORTED_CHAINS}
+                        chains={[SUPPORTED_CHAINS[0]]}
                         wallets={wallets}
                         connectModal={{ size: "compact" }}
                     />
