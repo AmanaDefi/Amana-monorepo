@@ -5,7 +5,6 @@ import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
 import { getContract, readContract, defineChain } from "thirdweb";
 import { client } from "../utils/client";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -95,17 +94,17 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             vault.id as Address
           );
 
-          console.log("88888888888888",balance)
+          console.log("88888888888888", balance)
 
           const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
             vault.inputToken.decimals,
             activeAccount?.address as Address,
             vault?.id as Address
           );
-          console.log("888888888888881",newTotalAssetsinToken)
+          console.log("888888888888881", newTotalAssetsinToken)
 
           setUserVaultBalance(balance);
-          
+
           const newTotalAssets = await fetchTotalAssets(vault.id as Address);
           setVaultTotalAsset(newTotalAssets);
 
@@ -114,7 +113,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         }
 
       } catch (error) {
-        console.log("888888888888882",error)
+        console.log("888888888888882", error)
 
         console.error("Error updating vault balances and total assets:", error);
       }
