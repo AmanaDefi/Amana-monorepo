@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -274,28 +274,30 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
 
-  // {
-  //   id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
-  //   name: "Mock USDC",
-  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
-  //   symbol: "aMockUSDC",
-  //   inputToken: {
-  //     symbol: "USDC.SEPOLIA",
-  //     decimals: 6,
-  //     address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Mock",
-  //     network: "Zetachain Athens",
-  //     netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
-  //     imgURL: "/aave.png",
-  //     des: "This is a mock strategy for testing purposes."
-  //   },
-  // },
+  {
+    id: "0x71B51A2e70ed5584A2038BBcEB611dc5814A2A2B", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+    name: "Mock USDC",
+    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+    symbol: "aMockUSDC",
+    inputToken: {
+      symbol: "USDC.SEPOLIA",
+      decimals: 6,
+      address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Mock",
+      strategyAddress: "0x1d0dBa968A26c1D8834B600EDAF9182E0A71FFe4",
+      network: "Zetachain Athens",
+      chainId: 7001,
+      netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+      imgURL: "/aave.png",
+      des: "This is a mock strategy for testing purposes."
+    },
+  },
 
   {
     id: "0xbEd4F3ccC116A20BA7697555F5eFFe03592c85cA", // Polygon Amoy POL Vault (POL is new name for MATIC)
