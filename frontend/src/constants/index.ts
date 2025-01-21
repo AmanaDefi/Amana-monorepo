@@ -279,6 +279,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
+    imgURL: "/ZetaChain.jpeg",
     inputToken: {
       symbol: "USDC.SEPOLIA",
       decimals: 6,
