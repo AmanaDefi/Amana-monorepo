@@ -9,8 +9,8 @@ import {useActiveAccount} from "thirdweb/react";
 export default function Page() {
   const account = useActiveAccount();
   return (
-      <main className="p-4 pb-10 min-h-screen flex flex-col container mx-auto relative overflow-hidden">
-          <div className="flex flex-col h-screen">
+      <main className="min-h-screen flex flex-col container mx-auto relative overflow-hidden">
+          <div className="flex flex-col p-4 pb-10 flex-1">
               <Header/>
               {
                   account &&
