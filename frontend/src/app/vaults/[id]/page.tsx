@@ -14,8 +14,8 @@ function Index({ }) {
   const { id } = useParams();
 
   return (
-      <main className="p-4 pb-10 min-h-screen flex flex-col container mx-auto relative">
-        <div className="flex flex-col">
+      <main className="min-h-screen flex flex-col container mx-auto relative">
+        <div className="flex flex-col p-4 pb-10 flex-1">
           <Header/>
           {
               account &&

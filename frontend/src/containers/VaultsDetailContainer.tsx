@@ -59,7 +59,7 @@ const VaultsDetailContainer: React.FC<{
           <button
             className="border border-customGray500 rounded-lg flex flex-row items-center px-4 py-2 ml-4 md:ml-0"
             type="button"
-            onClick={() => router.push("/vaults")}
+            onClick={() => router.push("/")}
           >
             <div className="w-5 h-5">
               <LeftArrowIcon color="white" />
