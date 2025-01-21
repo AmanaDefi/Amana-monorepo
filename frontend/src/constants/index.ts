@@ -248,29 +248,31 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
-  // {
-  //   id: "0x15851cebC80a383d957f81E91bd51799C0b8736D", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
-  //   name: "AaveV3 ETH",
-  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-  //   symbol: "aAaveETH",
-  //   imgURL: "/Ethsepolia.png",
-  //   inputToken: {
-  //     symbol: "sETH",
-  //     decimals: 18,
-  //     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-  //     imgURL: "/ETH.png",
-  //     price: 3040,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Aave",
-  //     network: "Eth Sepolia",
-  //     netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
-  //     imgURL: "/aave.png",
-  //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-  //   },
-  // },
+  {
+    id: "0xA4f9fe0E0d357E9B2Fd436F257046b0df6D88f4f", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
+    name: "AaveV3 ETH",
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+    symbol: "aAaveETH",
+    imgURL: "/Ethsepolia.png",
+    inputToken: {
+      symbol: "sETH",
+      decimals: 18,
+      address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 3040,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x564bC0142813fDb8C5567C5c8A3d5Ecea729c7Dd",
+      chainId: 11155111,
+      network: "Eth Sepolia",
+      netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/aave.png",
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+    },
+  },
 
   // {
   //   id: "0x75e2224CA5E8f404eC82AC8a104449e6B22d338C", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
@@ -313,7 +315,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     protocol: {
       name: "Mock",
       strategyAddress: "0xEDf497Ba1e81976231c440AFA484065860e5cb69",
-      chainId: 7000,
+      chainId: 7001,
       network: "Polygon Amoy",
       netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
       imgURL: "/polygon_logo.png",
@@ -338,7 +340,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     protocol: {
       name: "Mock",
       strategyAddress: "0xEDf497Ba1e81976231c440AFA484065860e5cb69",
-      chainId: 7000,
+      chainId: 97,
       network: "BSC Testnet",
       netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
       imgURL: "/bnb_logo.png",
