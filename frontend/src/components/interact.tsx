@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { VaultData, Token, Balance } from "@/types/types";
+import { VaultData, Token, Balance, Action } from "@/types/types";
 import mixpanel from "mixpanel-browser";
 import { executeDeposit, executeWithdrawal, Approvedeposit } from "@/actions/actions"
 import { Address, Chain, waitForReceipt, getContract, prepareEvent, defineChain } from "thirdweb";
@@ -8,11 +8,11 @@ import { NumberFormatter } from "@/utils/helpers";
 import MainActionButton from "@/components/button/MainActionButton"
 import { client } from "@/utils/client";
 import { useContractEvents } from "thirdweb/react";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 
-const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setInputBalance: Function) => {
+const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function) => {
     setTransactionCompleted(false)
     try {
         const value = Number(inputBalance.value)
@@ -26,7 +26,8 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             inputToken.address as Address,
             EOAaccount,
             activeChain,
-            scaledAmount
+            scaledAmount,
+            setcrossChainTxId
         );
 
         mixpanel.track("Deposit Submitted", {
@@ -63,7 +64,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setInputBalance: Function) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function) => {
     setTransactionCompleted(false)
     let withdrawZRC20 = withdrawToken.ZRC20equivalent;
     if (activeChain.id === 7001 || activeChain.id === 7000) {
@@ -87,7 +88,8 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             activeChain,
             scaledAmount,
             withdrawToken.address as Address,
-            withdrawZRC20
+            withdrawZRC20,
+            setcrossChainTxId
         );
         mixpanel.track("Withdraw Succeeded", {
             vault: vaultData.id.toString(),
@@ -118,6 +120,8 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
     }
 };
 
+const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
+
 export default function InteractionContainer({ step, setStep, action, setAction, _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, activeChain, actions, setShowModal, setInputBalance }:
     { step: number, setStep: Function, action: Action, setAction: Function, _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, actions: Action[], setShowModal: Function, setInputBalance: Function }): JSX.Element {
 
@@ -132,6 +136,9 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     const [crosschainInvestHash, setCrosschainInvestHash] = useState("")
     const [crossChainTxId, setcrossChainTxId] = useState<string>("");
 
+    const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === 'testnet';
+    const contractWithdrawalReceiverAddress = (isTestnet ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS) as `0x${string}`
+
     const CrossChainInvestSent = prepareEvent({
         signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId)",
     });
@@ -144,6 +151,10 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         signature: "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
     });
 
+    const Deposit = prepareEvent({
+        signature: "event Deposit(address indexed sender,address indexed owner,uint256 assets,uint256 shares)",
+    });
+
     const DivestSent = prepareEvent({
         signature: "event DivestSent(bytes32 indexed crossChainTxId)",
     });
@@ -152,6 +163,9 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         signature: "event FundsDivested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
     });
 
+    const Withdraw = prepareEvent({
+        signature: "event Withdraw(address indexed sender,address indexed receiver,address indexed owner,uint256 assets,uint256 shares)",
+    });
 
     const Withdrawn = prepareEvent({
         signature: "event Withdrawn(address indexed user,address indexed receiver,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
@@ -163,6 +177,10 @@ export default function InteractionContainer({ step, setStep, action, setAction,
 
     const DivestFailed = prepareEvent({
         signature: "event DivestFailed(bytes32 indexed crossChainTxId)",
+    });
+
+    const FundsReturned = prepareEvent({
+        signature: "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)"
     });
 
 
@@ -178,24 +196,44 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         address: strategyAddress,
     });
 
+    const contractWithdrawalReceiver = getContract({
+        client,
+        chain: defineChain(strategyChainID),
+        address: contractWithdrawalReceiverAddress
+    });
+
     const { data: events1 } = useContractEvents({
         contract,
-        events: [CrossChainInvestSent, Deposited, DivestSent, Withdrawn, CrossChainInvestFailed, DivestFailed],
+        events: [CrossChainInvestSent, Deposited, Deposit, DivestSent, Withdraw, Withdrawn, CrossChainInvestFailed, DivestFailed]
     });
 
     const { data: events2 } = useContractEvents({
         contract: contract2,
-        events: [FundsInvested, FundsDivested],
+        events: [FundsInvested, FundsDivested]
+    });
+
+    const { data: withdrawalReceiverEvents } = useContractEvents({
+        contract: contractWithdrawalReceiver,
+        enabled: !isZetachain(strategyChainID)
     });
 
     useEffect(() => {
+        console.log("NEW EVENTS!!!", withdrawalReceiverEvents)
+    }, [withdrawalReceiverEvents]);
+
+    useEffect(() => {
+        console.log("event1: ", events1);
+        console.log("crosschainInvestHash: ", crosschainInvestHash);
+        console.log("crossChainTxId: ", crossChainTxId);
         if (events1 && events1.length > 0 && crosschainInvestHash != "") {
-            console.log("event1: ", events1);
             const last_event = events1[events1.length - 1];
             if (last_event.eventName == "CrossChainInvestSent" && action == Action.deposit) {
-                console.log("event2: ", last_event);
-                if (last_event.transactionHash == crosschainInvestHash) {
-                    console.log("event3: ", last_event);
+                console.log("EVENT CrossChainInvestSent: ", last_event, action, step);
+                if (
+                    (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
+                    (last_event.transactionHash == crosschainInvestHash && isZetachain(activeChain.id))
+                ) {
+                    console.log("PASSED EVENT CrossChainInvestSent: ", last_event, action, step);
                     setcrossChainTxId(last_event.args.crossChainTxId.toString())
                     const nextStep = step + 1;
                     setAction(actions[nextStep]);
@@ -203,8 +241,30 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     return
                 }
             }
+            else if (last_event.eventName == "Deposit" && action === Action.deposit && isZetachain(strategyChainID)) {
+                console.log("EVENT Deposit: ", last_event, action, step);
+                if (last_event.transactionHash == crosschainInvestHash) {
+                    console.log("PASSED EVENT Deposit: ", last_event, action, step);
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "Withdraw" && action === Action.withdraw && isZetachain(strategyChainID)) {
+                console.log("EVENT Withdraw: ", last_event, action, step);
+                if (last_event.transactionHash == crosschainInvestHash) {
+                    console.log("PASSED EVENT Withdraw: ", last_event, action, step);
+                    const nextStep = step + 1;
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
             else if (last_event.eventName == "Deposited" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsInvest : Action.deposit)) {
+                console.log("EVENT Deposited: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT Deposited: ", last_event, action, step);
                     const nextStep = step + 1;
                     setAction(actions[nextStep]);
                     setStep(nextStep);
@@ -212,9 +272,12 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
             else if (last_event.eventName == "DivestSent" && action == Action.withdraw) {
-                console.log("event2: ", last_event);
-                if (last_event.transactionHash == crosschainInvestHash) {
-                    console.log("event3: ", last_event);
+                console.log("EVENT DivestSent: ", last_event, action, step);
+                if (
+                    (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
+                    (last_event.transactionHash == crosschainInvestHash && isZetachain(activeChain.id))
+                ) {
+                    console.log("PASSED EVENT DivestSent: ", last_event, action, step);
                     setcrossChainTxId(last_event.args.crossChainTxId.toString())
                     const nextStep = step + 1;
                     setAction(actions[nextStep]);
@@ -223,7 +286,9 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
             else if (last_event.eventName == "Withdrawn" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsDivested : Action.withdraw)) {
+                console.log("EVENT Withdrawn: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT Withdrawn: ", last_event, action, step);
                     const nextStep = step + 1;
                     setAction(actions[nextStep]);
                     setStep(nextStep);
@@ -231,18 +296,16 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
         }
-        console.log("event0: ", events1);
-        console.log("event5: ", crosschainInvestHash);
     }, [events1, crosschainInvestHash]);
 
     useEffect(() => {
         if (events2 && events2.length > 0 && crosschainInvestHash != "") {
-            console.log("event21: ", events1);
+            console.log("event21: ", events2);
             const last_event = events2[events2.length - 1];
             if (last_event.eventName == "FundsInvested" && action == Action.crosschainInvest) {
-                console.log("event22: ", last_event);
+                console.log("EVENT FundsInvested: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("event23: ", last_event);
+                    console.log("PASSED EVENT FundsInvested: ", last_event, action, step);
                     const nextStep = step + 1;
                     setAction(actions[nextStep]);
                     setStep(nextStep);
@@ -250,7 +313,9 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 }
             }
             else if (last_event.eventName == "FundsDivested" && action == Action.DivestSent) {
+                console.log("EVENT FundsDivested: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT FundsDivested: ", last_event, action, step);
                     const nextStep = step + 1;
                     setAction(actions[nextStep]);
                     setStep(nextStep);
@@ -294,6 +359,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
             setShowModal={setShowModal}
             actions={actions}
             setCrosschainInvestHash={setCrosschainInvestHash}
+            setcrossChainTxId={setcrossChainTxId}
             setInputBalance={setInputBalance}
             step={step}
 
@@ -302,8 +368,8 @@ export default function InteractionContainer({ step, setStep, action, setAction,
 }
 
 
-function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, interactionPostHook, setShowModal, actions, setCrosschainInvestHash, setInputBalance, step }:
-    { setStep: Function, inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[], setCrosschainInvestHash: Function, setInputBalance: Function, step: number }): JSX.Element {
+function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, interactionPostHook, setShowModal, actions, setCrosschainInvestHash, setcrossChainTxId, setInputBalance, step }:
+    { setStep: Function, inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[], setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, step: number }): JSX.Element {
 
 
     const [label, setlabel] = useState('')
@@ -345,7 +411,7 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
         for (let i = 0; i <= step; i++) {
             const currentAction = actions[i];
             if (currentAction === Action.depositApprove) {
-                initialDesc.push("Approving in progress");
+                initialDesc.push("Approval in progress");
             } else if (currentAction === Action.deposit) {
                 initialDesc.push((vaultData.protocol.chainId == 7000 || vaultData.protocol.chainId == 7001)
                     ? "Deposit in progress"
@@ -372,7 +438,7 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
             case Action.depositApprove:
                 setDisabled(status);
                 setDescription1(["Transaction approval required"])
-                setDescription2(["Approving in progress"])
+                setDescription2(["Approval in progress"])
                 setlabel("Approve")
                 break;
             case Action.depositApproveConfirmed:
@@ -403,14 +469,14 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
                 setDescription2([...description2, "Final confirmation and issue of shares by vault in progress"]);
                 break;
             case Action.deposited:
-                setDescription1([...description1, "Final confirmation completed, shares issued by vault"]);
+                setDescription1([...description1, isZetachain(vaultData.protocol.chainId) ? "Deposit completed" : "Final confirmation completed, shares issued by vault"]);
                 setTimeout(() => {
                     setTransactionCompleted(true);
                     setInputBalance({
                         ...inputBalance,
                         formatted: "0",
                     })
-                }, 2000);
+                }, 3000);
                 break;
             case Action.withdraw:
                 setlabel("Withdraw")
@@ -470,6 +536,7 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
             activeChain,
             action,
             setCrosschainInvestHash,
+            setcrossChainTxId,
             setInputBalance
         )()
         action == Action.depositApprove && setStatus(false)
@@ -491,31 +558,31 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
                     {
                         actions.map((item, index) => (
                             index <= step &&
-                            <>
+                            <div key={index} className='mb-2'>
                                 {
                                     ((item != Action.deposit && item != Action.withdraw && item != Action.depositApprove) ||
                                         (item == Action.depositApprove && !status && action == Action.depositApprove)
                                         || (item == Action.deposit && !status && action == Action.deposit) || (item == Action.withdraw && !status && action == Action.withdraw)) &&
-                                    <div className="flex items-center">
+                                    <div className="flex items-center gap-1">
                                         {
                                             (item == Action.deposit || item === Action.withdraw || item == Action.depositApprove) ?
-                                                <AiOutlineExclamation color="Green" size={20} />
+                                                <AiOutlineExclamation color="red" size={20} />
                                                 :
                                                 <AiOutlineCheck color="Green" size={20} />
                                         }
-                                        <p className="text-white text-start mb-2">{description1[(item == Action.deposit) || item == Action.withdraw || item == Action.depositApprove ||
+                                        <p className="text-white text-start">{description1[(item == Action.deposit) || item == Action.withdraw || item == Action.depositApprove ||
                                             item == Action.depositApproveConfirmed || !actions.includes(Action.depositApprove) ? index : index + 1]}</p>
                                     </div>
                                 }
                                 {
                                     index == step &&
                                     ((item !== Action.deposit && item !== Action.withdraw && item !== Action.depositApprove && item != Action.depositApproveConfirmed) || (item === Action.depositApprove && status) || (item === Action.deposit && status) || (item === Action.withdraw && status)) &&
-                                    <div className="flex items-center">
-                                        <MoonLoader color="red" size={30} speedMultiplier={0.3} />
-                                        <p className="text-white text-start mb-2">{description2[index]}</p>
+                                    <div className="flex items-center gap-1">
+                                        <MoonLoader color="yellow" size={20} speedMultiplier={0.3} />
+                                        <p className="text-white text-start">{description2[index]}</p>
                                     </div>
                                 }
-                            </>
+                            </div>
                         ))
                     }
                 </>
@@ -535,6 +602,7 @@ function handleInteraction(
     activeChain: any,
     action: Action,
     setCrosschainInvestHash: Function,
+    setcrossChainTxId: Function,
     setInputBalance: Function
 ) {
     switch (action) {
@@ -556,14 +624,14 @@ function handleInteraction(
                 const result = await handleDepositTransaction(
                     vaultData, inputBalance, inputToken, EOAaccount,
                     setTransactionCompleted, activeChain,
-                    setCrosschainInvestHash, setInputBalance);
+                    setCrosschainInvestHash, setcrossChainTxId, setInputBalance);
                 return result;
             }
         case Action.withdraw:
             return async () => {
                 const result = await handleWithdrawTransaction(
                     vaultData, inputBalance, inputToken, EOAaccount,
-                    setTransactionCompleted, activeChain, setCrosschainInvestHash, setInputBalance);
+                    setTransactionCompleted, activeChain, setCrosschainInvestHash, setcrossChainTxId, setInputBalance);
                 return result;
             }
         default:
@@ -571,24 +639,4 @@ function handleInteraction(
                 return false;
             }
     }
-}
-
-
-enum Action {
-    depositApprove,
-    depositApproveConfirmed,
-    deposit,
-    depositConfirmed,
-    crosschainInvest,
-    deposited,
-    FundsInvest,
-    withdraw,
-    withdrawconfirmed,
-    DivestSent,
-    FundsDivested,
-    ReturnFundsToUserSent,
-    Withdrawn,
-    CrossChainInvestFailed,
-    DivestFailed,
-    ReturnFundsToUserFailed
 }

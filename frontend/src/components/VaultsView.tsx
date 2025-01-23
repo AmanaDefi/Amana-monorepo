@@ -52,9 +52,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                 <th className="px-9 py-3 text-center text-xs font-medium text-zinc-300 tracking-wider">
                   User Balance
                 </th>
-                {/* <th className="px-4 py-3 text-left text-xs font-medium text-zinc-300 tracking-wider">
-                  Actions
-                </th> */}
+                <th className="px-4 py-3 text-center text-xs font-medium text-zinc-300 tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="bg-gray-900">
@@ -62,6 +60,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                 <tr key={vault.id}
                   onClick={() => { router.push("/vaults/" + vault.id) }}
                   role="button"
+                    className='hover:bg-gray-800 transition-colors'
                 >
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -91,8 +90,14 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   <td className="px-9 py-4 whitespace-nowrap text-center">
                     {formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
                   </td>
+                  <td className='flex items-center justify-center'>
+                    <button className="bg-blue-500 hover:bg-blue-600 transition-colors text-white font-bold py-1 px-3 rounded">
+                      <span className='text-sm'>Visit vault</span>
+                    </button>
+                  </td>
                 </tr>
               ))}
+
             </tbody>
           </table>
         </div>

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { VaultData, VaultTotalAssets, VaultAPY, Token } from "../types/types";
+import { VaultData, VaultTotalAssets, VaultAPY, Token } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from 'next/image';
-import { formatBalance, formatCurrency } from '@/utils/utils';
+import {determineVaultTokenFromApprovedTokens, formatBalance, formatCurrency} from '@/utils/utils';
 import { client } from "@/utils/client";
 import { ethers } from "ethers";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { Address, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { APPROVED_TOKENS } from "../constants/chainConfig";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 export default function VaultHeader({
     vaultData,
@@ -49,19 +49,18 @@ export default function VaultHeader({
         if (activeChain.id === 7001) {
             setInputToken(vaultData.inputToken);
         } else {
-            const approvedTokens = APPROVED_TOKENS[activeChain.id];
-            setInputToken(approvedTokens ? approvedTokens[0] : vaultData.inputToken);
+            setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken));
         }
     }, [activeChain, vaultData]);
 
-    
+
 
     useEffect(() => {
         setdata1(formatBalance(
             Number(userVaultBalance)
         ))
     }, [userVaultBalance])
-    
+
 
     // Step 2: Fetch wallet data when inputToken is set
     useEffect(() => {

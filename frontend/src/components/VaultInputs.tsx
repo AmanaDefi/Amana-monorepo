@@ -1,21 +1,20 @@
 import TabSelector from "@/components/common/TabSelector";
 import InputTokenWithError from "@/components/input/InputTokenWithError";
-import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToken } from "@/types/types";
+import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToken, Action } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect } from "react";
 import { parseUnits } from "viem";
-import { Address, getContract, defineChain, readContract } from "thirdweb";
+import { Address, getContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
-import { APPROVED_TOKENS } from "../constants/chainConfig";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { getVaultErrorMessage, selectActions } from "@/utils/utils";
+import {determineVaultTokenFromApprovedTokens, getVaultErrorMessage, selectActions} from "@/utils/utils";
 import { ethers } from "ethers";
 import InteractionContainer from "./interact";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
-  tokenOptions: Token[];
   setTransactionCompleted: (value: boolean) => void;
   userVaultBalance?: string;
   vaultTotalAssetinToken?: VaultTotalAssetsinToken,
@@ -63,7 +62,6 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
 
 export default function VaultInputs({
   vaultData,
-  tokenOptions,
   setTransactionCompleted,
   userVaultBalance,
   vaultTotalAssetinToken,
@@ -92,9 +90,9 @@ export default function VaultInputs({
     throw new Error("No active chain found");
   }
 
-
   const userAddress = EOAaccount.address;
 
+  // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
     if (activeChain.id === 7001 || activeChain.id === 7000) {
       // If on ZetaChain testnet, set inputToken to the vault token
@@ -102,8 +100,7 @@ export default function VaultInputs({
 
     } else {
       // On other chains, use APPROVED_TOKENS to set available tokens
-      const approvedTokens = APPROVED_TOKENS[activeChain.id];
-      setInputToken(approvedTokens ? approvedTokens[0] : undefined); // Set to the first approved token as a default
+      setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken)); // Set to the first approved token as a default
     }
 
     setAllowInput(true);
@@ -112,6 +109,7 @@ export default function VaultInputs({
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, transactionCompleted);
 
+  // Watch action type change
   useEffect(() => {
     if (inputToken) {
       setShowModal(false)
@@ -126,7 +124,7 @@ export default function VaultInputs({
     }
   }, [tokenBalance, isDeposit]);
 
-
+  // Trigger error message handling
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {
       if (isDeposit) {
@@ -137,11 +135,14 @@ export default function VaultInputs({
     }
   }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, vaultData.id, action, vaultTotalAssetinToken, steps]);
 
+  // Watch input balance and trigger steps config selection
   useEffect(() => {
     const fetchData = async () => {
       if (Number(inputBalance.value) != 0 && inputToken) {
-        isDeposit ? setSteps(await selectActions(SmartVaultActionType.Deposit, vaultData, activeChain, EOAaccount, inputBalance, inputToken))
-          : setSteps(await selectActions(SmartVaultActionType.Withdrawal, vaultData, activeChain, EOAaccount, inputBalance, inputToken))
+        const actionType = isDeposit ? SmartVaultActionType.Deposit : SmartVaultActionType.Withdrawal;
+        const newStepsConfig = await selectActions(actionType, vaultData, activeChain, EOAaccount, inputBalance, inputToken);
+        setSteps(newStepsConfig)
+        console.log("SETTING ACTION STEPS: ", newStepsConfig, newStepsConfig.map(e => Action[e]))
       }
     };
     // Call the async function
@@ -201,9 +202,6 @@ export default function VaultInputs({
       handleChangeInput({ currentTarget: { value: userVaultBalance } } as React.ChangeEvent<HTMLInputElement>);
     }
   }
-
-
-
 
   return (
     <>
@@ -267,23 +265,4 @@ export default function VaultInputs({
       )}
     </>
   );
-}
-
-enum Action {
-  depositApprove,
-  depositApproveConfirmed,
-  deposit,
-  depositConfirmed,
-  crosschainInvest,
-  deposited,
-  FundsInvest,
-  withdraw,
-  withdrawconfirmed,
-  DivestSent,
-  FundsDivested,
-  ReturnFundsToUserSent,
-  Withdrawn,
-  CrossChainInvestFailed,
-  DivestFailed,
-  ReturnFundsToUserFailed
 }
