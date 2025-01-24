@@ -1,8 +1,10 @@
 import { VaultData, Token } from "../types/types";
 import { ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
+import { fetchEthPrice } from "@/utils/utils";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
+const ethPrice = 3400 // await fetchEthPrice();
 
 export const tokens: Token[] = [
   {
@@ -10,7 +12,7 @@ export const tokens: Token[] = [
     decimals: 18,
     address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
-    price: 3040,
+    price: ethPrice,
     balance: EMPTY_BALANCE,
     isNative: false
   },
@@ -19,7 +21,7 @@ export const tokens: Token[] = [
     decimals: 18,
     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
     imgURL: "/ETH.png",
-    price: 3040,
+    price: ethPrice,
     balance: EMPTY_BALANCE,
     isNative: false
   },
@@ -37,7 +39,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       decimals: 18,
       address: ZC_ETH_BASE_ADDRESS,
       imgURL: "/ETH.png",
-      price: 3040,
+      price: ethPrice,
       balance: EMPTY_BALANCE,
       isNative: false
     },
@@ -234,7 +236,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       decimals: 18,
       address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
       imgURL: "/ETH.png",
-      price: 3040,
+      price: ethPrice,
       balance: EMPTY_BALANCE,
       isNative: false
     },
@@ -259,7 +261,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       decimals: 18,
       address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
       imgURL: "/ETH.png",
-      price: 3040,
+      price: ethPrice,
       balance: EMPTY_BALANCE,
       isNative: false
     },
