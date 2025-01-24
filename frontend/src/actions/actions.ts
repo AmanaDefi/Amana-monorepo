@@ -211,26 +211,34 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address, strateg
   return currentAPY;
 }
 
-export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
   } else {
-    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount);
+    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
   }
 };
 
 export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing DepositApprove");
+  console.log("transactionAmount", transactionAmount);
+
   try {
     let contract = getContract({
       client,
       chain: activeChain,
       address: inputToken
     });
+    let spender;
+    if (activeChain.id === 7000 || activeChain.id === 7001) {
+      spender = vaultId
+    } else {
+      spender = EVMGatewayAddress
+    }
     const approveTx = prepareContractCall({
       contract,
       method: "function approve(address to, uint256 value)",
-      params: [vaultId, transactionAmount]
+      params: [spender, transactionAmount]
     });
     await sendAndConfirmTransaction({
       account: activeAccount,
@@ -279,7 +287,8 @@ const executeCrossChainDeposit = async (
   inputToken: Address,
   activeAccount: Account,
   activeChain: Chain,
-  transactionAmount: bigint
+  transactionAmount: bigint,
+  setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
 
@@ -338,6 +347,7 @@ const executeCrossChainDeposit = async (
 
 
     console.log("Deposit executed");
+    setcrossChainTxId(transactionId)
     return receipt;
 
   } else {
@@ -373,7 +383,7 @@ const executeCrossChainDeposit = async (
       address: EVMGatewayAddress,
     });
     console.log("contract", contract);
-
+    console.log("transaction amount:", transactionAmount)
     const depositTx = prepareContractCall({
       contract,
       method:
@@ -395,6 +405,7 @@ const executeCrossChainDeposit = async (
       });
 
       console.log("Deposit executed");
+      setcrossChainTxId(transactionId)
       return receipt;
 
     } catch (error) {
@@ -404,11 +415,11 @@ const executeCrossChainDeposit = async (
   }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address) => {
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20);
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   }
 };
 
@@ -437,14 +448,15 @@ const executeCrossChainWithdrawal = async (
   activeChain: Chain,
   withdrawAmount: bigint,
   withdrawERC20: Address,
-  withdrawZRC20: Address // TODO add this higher up in the calling functions
+  withdrawZRC20: Address, // TODO add this higher up in the calling functions,
+  setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-  const slippage = 200; // TODO change this to be an input from user on FE
+  const slippage = 10000; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint16", "bytes32"],
@@ -487,6 +499,7 @@ const executeCrossChainWithdrawal = async (
     });
 
     console.log("Withdrawal executed successfully");
+    setcrossChainTxId(transactionId);
     return receipt;
 
   } catch (error) {
@@ -510,6 +523,7 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [shares]
   });
+  console.log("BALANCE HERE", balance)
   const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }

@@ -203,7 +203,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
+      ZRC20equivalent: "0xcC683A782f4B30c138787CB5576a86AF66fdc31d",
     },
   ],
   8453: [

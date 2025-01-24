@@ -1,9 +1,10 @@
 import { ParseEventLogsResult, Address } from "thirdweb";
-import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token } from "../types/types"
+import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token, Action } from "@/types/types"
 import { Account } from "thirdweb/wallets";
 import { handleAllowance } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
 import { HermesClient } from "@pythnetwork/hermes-client";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 const HERMES_URL = "https://hermes.pyth.network";
 const ETH_USD_PRICE_ID = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";
@@ -133,25 +134,6 @@ export function getVaultErrorMessage(
   }
 }
 
-enum Action {
-  depositApprove,
-  depositApproveConfirmed,
-  deposit,
-  depositConfirmed,
-  crosschainInvest,
-  deposited,
-  FundsInvest,
-  withdraw,
-  withdrawconfirmed,
-  DivestSent,
-  FundsDivested,
-  ReturnFundsToUserSent,
-  Withdrawn,
-  CrossChainInvestFailed,
-  DivestFailed,
-  ReturnFundsToUserFailed
-}
-
 
 export function formatCurrency(amount: number): string {
   if (Number.isNaN(amount)) {
@@ -202,6 +184,7 @@ export const selectActions = async (
     spender: vaultData.id as Address,
     amount: value
   });
+  console.log("allowanceResult", allowanceResult)
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 7001 && chainID != 7000) {
@@ -302,4 +285,13 @@ export const selectActions = async (
         }
       }
   }
+}
+
+export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
+  const approvedTokens = APPROVED_TOKENS[chainId];
+  if (!approvedTokens?.length) return undefined;
+  return approvedTokens.find(el => {
+    const approvedTokenSymbol = el.symbol.split('.')[0];
+    return approvedTokenSymbol.toLowerCase() === vaultToken.symbol.toLowerCase()
+  }) ?? approvedTokens[0];
 }

@@ -37,19 +37,18 @@ export default function InputTokenWithError({
   isDeposit: Boolean;
   userVaultBalance?: string;
 } & HTMLProps<HTMLInputElement>): JSX.Element {
-  console.log(selectedToken);
 
   const [data1, setdata1] = useState('')
 
   useEffect(() => {
     setdata1(formatBalance(Number(userVaultBalance)))
-  }, [userVaultBalance])
+  }, [userVaultBalance, selectedToken, vaultData.inputToken.price])
 
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
-        <p className="text-white text-start">
+        <p className="text-white text-start mb-2">
           {captionText}
           {inputMoreThanBalance && (
             <span className="text-red-500 ml-2">Input More than Balance</span>

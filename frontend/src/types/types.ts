@@ -101,3 +101,22 @@ export enum SmartVaultActionType {
   Deposit,
   Withdrawal
 }
+
+export enum Action {
+  depositApprove,
+  depositApproveConfirmed,
+  deposit,
+  depositConfirmed,
+  crosschainInvest,
+  deposited,
+  FundsInvest,
+  withdraw,
+  withdrawconfirmed,
+  DivestSent,
+  FundsDivested,
+  ReturnFundsToUserSent,
+  Withdrawn,
+  CrossChainInvestFailed,
+  DivestFailed,
+  ReturnFundsToUserFailed
+}
