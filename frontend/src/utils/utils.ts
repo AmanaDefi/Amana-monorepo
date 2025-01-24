@@ -22,7 +22,7 @@ export async function fetchEthPrice(): Promise<number> { // tokenAddress: string
 
     const ethPrice = parseFloat(parsed[0]?.ema_price?.price ?? "0") // Default to 0 if missing
     const decimals = parsed[0]?.ema_price?.expo // Default to 0 if missing
-    const ethPriceAdjusted = ethPrice / Math.pow(10, decimals);
+    const ethPriceAdjusted = ethPrice * Math.pow(10, decimals);
     console.log("ETH Price:", ethPriceAdjusted);
     return ethPriceAdjusted;
   } catch (error) {
