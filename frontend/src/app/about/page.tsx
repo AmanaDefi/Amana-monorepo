@@ -12,7 +12,7 @@ function About({ }) {
 
     return (
         <main className="p-4 pb-10 min-h-screen flex flex-col container mx-auto relative overflow-hidden">
-            <div className="flex flex-col h-screen">
+            <div className="flex flex-col flex-1">
                 <Header/>
                 {
                     account &&

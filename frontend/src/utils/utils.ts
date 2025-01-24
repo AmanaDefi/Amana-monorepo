@@ -1,8 +1,59 @@
 import { ParseEventLogsResult, Address } from "thirdweb";
-import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token } from "../types/types"
+import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token, Action } from "@/types/types"
 import { Account } from "thirdweb/wallets";
 import { handleAllowance } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
+import { HermesClient } from "@pythnetwork/hermes-client";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
+
+const HERMES_URL = "https://hermes.pyth.network";
+const ETH_USD_PRICE_ID = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";
+const BTC_USD_PRICE_ID = "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43";
+
+export async function fetchEthPrice(): Promise<number> { // tokenAddress: string, chainId: number
+  const connection = new HermesClient(HERMES_URL, {}); // See Hermes endpoints section below for other endpoints
+
+  try {
+    const priceUpdates = await connection.getLatestPriceUpdates([ETH_USD_PRICE_ID]);
+    const parsed = priceUpdates?.parsed;
+    if (!parsed || parsed.length === 0) {
+      console.error("No price updates found");
+      return 0; // Default value
+    }
+
+    const ethPrice = parseFloat(parsed[0]?.ema_price?.price ?? "0") // Default to 0 if missing
+    const decimals = parsed[0]?.ema_price?.expo // Default to 0 if missing
+    const ethPriceAdjusted = ethPrice * Math.pow(10, decimals);
+    console.log("ETH Price:", ethPriceAdjusted);
+    return ethPriceAdjusted;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error fetching ETH price:", error.message);
+    } else {
+      console.error("An unknown error occurred:", error);
+    }
+    return 0; // Default value in case of an error
+  }
+}
+
+export async function fetchBtcPrice() { // tokenAddress: string, chainId: number
+  const connection = new HermesClient(HERMES_URL, {}); // See Hermes endpoints section below for other endpoints
+
+  try {
+    const priceUpdates = await connection.getLatestPriceUpdates([BTC_USD_PRICE_ID]);
+    if (priceUpdates && priceUpdates.parsed && priceUpdates.parsed.length === 0) {
+      console.error("No price updates found");
+    } else if (priceUpdates && priceUpdates.parsed) {
+      console.log("Price Updates:", priceUpdates.parsed[0].ema_price.price);
+      return priceUpdates.parsed[0].ema_price.price;
+    } else {
+      console.error("Price updates or parsed data is null or undefined");
+    }
+  } catch (error) {
+    console.error("Error fetching prices:", error);
+    throw error; // Re-throw the error for upstream handling
+  }
+}
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -83,25 +134,6 @@ export function getVaultErrorMessage(
   }
 }
 
-enum Action {
-  depositApprove,
-  depositApproveConfirmed,
-  deposit,
-  depositConfirmed,
-  crosschainInvest,
-  deposited,
-  FundsInvest,
-  withdraw,
-  withdrawconfirmed,
-  DivestSent,
-  FundsDivested,
-  ReturnFundsToUserSent,
-  Withdrawn,
-  CrossChainInvestFailed,
-  DivestFailed,
-  ReturnFundsToUserFailed
-}
-
 
 export function formatCurrency(amount: number): string {
   if (Number.isNaN(amount)) {
@@ -152,6 +184,7 @@ export const selectActions = async (
     spender: vaultData.id as Address,
     amount: value
   });
+  console.log("allowanceResult", allowanceResult)
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 7001 && chainID != 7000) {
@@ -252,4 +285,13 @@ export const selectActions = async (
         }
       }
   }
+}
+
+export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
+  const approvedTokens = APPROVED_TOKENS[chainId];
+  if (!approvedTokens?.length) return undefined;
+  return approvedTokens.find(el => {
+    const approvedTokenSymbol = el.symbol.split('.')[0];
+    return approvedTokenSymbol.toLowerCase() === vaultToken.symbol.toLowerCase()
+  }) ?? approvedTokens[0];
 }

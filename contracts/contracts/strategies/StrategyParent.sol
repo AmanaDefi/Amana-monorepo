@@ -151,9 +151,9 @@ abstract contract StrategyParent is Ownable, IErrors {
      */
     function totalUnderlyingAssets() public view virtual returns (uint256);
 
-    /// @notice Invests ETH into the Aave pool.
+    /// @notice Invests assets into the yield source
     /// @param receiver Address of the receiver whose funds are being invested.
-    /// @param amount Amount of ETH to invest.
+    /// @param amount Amount of asset to invest.
     /// @param _executionNonce Current execution nonce for the transaction.
     /// @param _crossChainTxId Cross-chain transaction ID.
     function _invest(
@@ -256,7 +256,7 @@ abstract contract StrategyParent is Ownable, IErrors {
         bytes32 _crossChainTxId
     ) internal virtual;
 
-    /// @notice Withdraws funds from the Aave pool.
+    /// @notice Withdraws funds from the yield source.
     /// @param user Address of the user whose funds are being withdrawn.
     /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
     /// @param amount Amount to withdraw.

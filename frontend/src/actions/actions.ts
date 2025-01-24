@@ -12,6 +12,7 @@ import fourPoolABI from "../../abis/fourPoolABI.json";
 import { Chain, defineChain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
+import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
 import { VAULT_DATA } from "@/constants";
@@ -29,7 +30,16 @@ if (!EVMGatewayAddress) {
   throw new Error(`EVM Gateway address is not defined for the ${deployEnv} environment.`);
 }
 
-export async function calculateEddyAPY(poolAddress: Address, inputTokenAddress: Address) {
+export async function calculateEddyAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  const receiptTokenContract = getContract({
+    client,
+    chain: strategyChain,
+    address: receiptTokenAddress,
+  });
+  const poolAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function minter() view returns (address)",
+  });
   const eddyFinancePool = new ethers.Contract(poolAddress, fourPoolABI, provider);
 
   try {
@@ -65,8 +75,20 @@ export async function calculateEddyAPY(poolAddress: Address, inputTokenAddress: 
 }
 
 
-export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address, strategyChain: Chain) {
-  // Get the Aave lending pool contract
+export async function calculateAaveAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  const receiptTokenContract = getContract({
+    client,
+    chain: strategyChain,
+    address: receiptTokenAddress,
+  });
+  const poolAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function POOL() view returns (address)",
+  });
+  const underlyingAssetAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
+  });
   const aaveLendingPool = getContract({
     client,
     chain: strategyChain,
@@ -76,7 +98,7 @@ export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: 
   const reserveData = await readContract({
     contract: aaveLendingPool,
     method: "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
-    params: [inputTokenAddress as Address]
+    params: [underlyingAssetAddress as Address]
   });
 
   const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
@@ -84,22 +106,70 @@ export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: 
   // Get the liquidity rate (in Ray) and normalize it
   const liquidityRate = reserveData[2]; // Assuming this is the correct index for liquidity rate in reserveData
   const depositAPR = Number(liquidityRate) / 1e27;
-
   // Calculate APY using compounding
   const depositAPY = (Math.pow(1 + (depositAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
-  console.log("depositAPY", depositAPY);
 
   return depositAPY;
 }
 
+export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  // Fetch rewards data
+  console.log("Fetching rewards data");
+  // const receiptTokenContract = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: receiptTokenAddress,
+  // });
+  // const incentivesControllerAddress = await readContract({
+  //   contract: receiptTokenContract,
+  //   method: "function getIncentivesController() view returns (address)",
+  // });
+  // const incentivesControllerContract = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: incentivesControllerAddress,
+  // });
+  // const underlyingAssetAddress = await readContract({
+  //   contract: receiptTokenContract,
+  //   method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
+  // });
+  // const rewardsRate = await readContract({
+  //   contract: incentivesControllerContract,
+  //   method: "function getRewardsRate(address) view returns (uint256)",
+  //   params: [underlyingAssetAddress as Address],
+  // });
+
+  // const rewardsTokenAddress = await readContract({
+  //   contract: incentivesControllerContract,
+  //   method: "function getRewardsToken() view returns (address)",
+  // });
+
+  const rewardsTokenPrice = await fetchEthPrice();
+  const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
+  // const annualRewardsValue = Number(rewardsRate) * 10 * SECONDS_IN_YEAR;
+  // const poolAddress = await readContract({
+  //   contract: receiptTokenContract,
+  //   method: "function POOL() view returns (address)",
+  // });
+  // const aaveLendingPool = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: poolAddress
+  // });
+  // const totalLiquidity = await readContract({
+  //   contract: aaveLendingPool,
+  //   method: "function getTotalLiquidity() view returns (uint256)",
+  //   params: [underlyingAssetAddress as Address],
+  // });
+
+  // const rewardsAPY = annualRewardsValue / Number(totalLiquidity);
+  const rewardsAPY = 5
+  return rewardsAPY;
+}
 
 export async function calculateMoonwellAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   const moonwellVault = new ethers.Contract(receiptTokenAddress, moonwellVaultABI, provider);
-  // const moonwellVault = getContract({
-  //   client,
-  //   chain: strategyChain,
-  //   address: receiptTokenAddress
-  // });
+
   const averageBlockTimeInSeconds = 2;
   const secondsInADay = 24 * 60 * 60;
   const secondsIn7Days = 7 * secondsInADay;
@@ -108,34 +178,32 @@ export async function calculateMoonwellAPY(receiptTokenAddress: Address, strateg
   const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
   const pastBlockNumber = BigInt(currentBlockNumber - blocksIn7Days);
 
-  // const currentPrice = await readContract({
-  //   contract: moonwellVault,
-  //   method: "function convertToAssets(uint256) view returns (uint256)",
-  //   params: [BigInt(1e18)]
-  // });
-
   const currentPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18)));
-
   const pastPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18), { blockTag: pastBlockNumber }));
-  // const pastPrice = await readContract({
-  //   contract: moonwellVault,
-  //   method: "function convertToAssets(uint256) view returns (uint256)",
-  //   params: [BigInt(1e18)]
-  // });
+
   const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
   const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
 
   return Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
 }
 
-export async function calculateCompoundAPY(receiptTokenAddress: Address) {
-  const compoundVault = new ethers.Contract(receiptTokenAddress, compoundVaultABI, provider);
+export async function calculateCompoundAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  const compoundVault = getContract({
+    client,
+    chain: strategyChain,
+    address: receiptTokenAddress
+  });
 
   const secondsInAYear = 365 * 24 * 60 * 60;
-
-  const currentUtilization = ethers.toBigInt(await compoundVault.getUtilization());
-
-  const currentSupplyRate = ethers.toBigInt(await compoundVault.getSupplyRate(currentUtilization));
+  const currentUtilization = await readContract({
+    contract: compoundVault,
+    method: "function getUtilization() view returns (uint256)"
+  });
+  const currentSupplyRate = await readContract({
+    contract: compoundVault,
+    method: "function getSupplyRate(uint256) view returns (uint256)",
+    params: [currentUtilization]
+  });
 
   const currentSupplyRateScaled = Number(currentSupplyRate) / Number(1e18);
 
@@ -143,26 +211,34 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
   return currentAPY;
 }
 
-export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
   } else {
-    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount);
+    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
   }
 };
 
 export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing DepositApprove");
+  console.log("transactionAmount", transactionAmount);
+
   try {
     let contract = getContract({
       client,
       chain: activeChain,
       address: inputToken
     });
+    let spender;
+    if (activeChain.id === 7000 || activeChain.id === 7001) {
+      spender = vaultId
+    } else {
+      spender = EVMGatewayAddress
+    }
     const approveTx = prepareContractCall({
       contract,
       method: "function approve(address to, uint256 value)",
-      params: [vaultId, transactionAmount]
+      params: [spender, transactionAmount]
     });
     await sendAndConfirmTransaction({
       account: activeAccount,
@@ -211,7 +287,8 @@ const executeCrossChainDeposit = async (
   inputToken: Address,
   activeAccount: Account,
   activeChain: Chain,
-  transactionAmount: bigint
+  transactionAmount: bigint,
+  setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
 
@@ -270,6 +347,7 @@ const executeCrossChainDeposit = async (
 
 
     console.log("Deposit executed");
+    setcrossChainTxId(transactionId)
     return receipt;
 
   } else {
@@ -305,7 +383,7 @@ const executeCrossChainDeposit = async (
       address: EVMGatewayAddress,
     });
     console.log("contract", contract);
-
+    console.log("transaction amount:", transactionAmount)
     const depositTx = prepareContractCall({
       contract,
       method:
@@ -327,6 +405,7 @@ const executeCrossChainDeposit = async (
       });
 
       console.log("Deposit executed");
+      setcrossChainTxId(transactionId)
       return receipt;
 
     } catch (error) {
@@ -336,11 +415,11 @@ const executeCrossChainDeposit = async (
   }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address) => {
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20);
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   }
 };
 
@@ -369,14 +448,15 @@ const executeCrossChainWithdrawal = async (
   activeChain: Chain,
   withdrawAmount: bigint,
   withdrawERC20: Address,
-  withdrawZRC20: Address // TODO add this higher up in the calling functions
+  withdrawZRC20: Address, // TODO add this higher up in the calling functions,
+  setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-  const slippage = 200; // TODO change this to be an input from user on FE
+  const slippage = 10000; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint16", "bytes32"],
@@ -419,6 +499,7 @@ const executeCrossChainWithdrawal = async (
     });
 
     console.log("Withdrawal executed successfully");
+    setcrossChainTxId(transactionId);
     return receipt;
 
   } catch (error) {
@@ -442,6 +523,7 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [shares]
   });
+  console.log("BALANCE HERE", balance)
   const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
@@ -481,56 +563,60 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   return formattedBalance.toString();
 }
 
-export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> => {
-  const updatedVaults = await Promise.all(
-    vaultData.map(async (vault) => {
-      try {
-        const strategyChain = defineChain(vault.protocol.chainId); // ToDo rather grab this from supported chains?
+// export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> => {
+//   const updatedVaults = await Promise.all(
+//     vaultData.map(async (vault) => {
+//       try {
+//         const strategyChain = defineChain(vault.protocol.chainId); // ToDo rather grab this from supported chains?
 
-        const strategyContract = getContract({
-          client,
-          chain: strategyChain,
-          address: vault.protocol.strategyAddress,
-        });
-        let APY7d = 0;
-        if (vault.protocol.name === "Aave") {
-          const receiptTokenAddress = await readContract({
-            contract: strategyContract,
-            method: "function aaveReceiptToken() view returns (address)",
-          });
+//         const strategyContract = getContract({
+//           client,
+//           chain: strategyChain,
+//           address: vault.protocol.strategyAddress,
+//         });
+//         let APY7d = 0;
+//         if (vault.protocol.name === "Aave") {
+//           const receiptTokenAddress = await readContract({
+//             contract: strategyContract,
+//             method: "function aaveReceiptToken() view returns (address)",
+//           });
 
-          const receiptTokenContract = getContract({
-            client,
-            chain: strategyChain,
-            address: receiptTokenAddress,
-          });
+//           const receiptTokenContract = getContract({
+//             client,
+//             chain: strategyChain,
+//             address: receiptTokenAddress,
+//           });
 
-          const poolAddress = await readContract({
-            contract: receiptTokenContract,
-            method: "function POOL() view returns (address)",
-          });
+//           const poolAddress = await readContract({
+//             contract: receiptTokenContract,
+//             method: "function POOL() view returns (address)",
+//           });
+//           const underlyingAssetAddress = await readContract({
+//             contract: receiptTokenContract,
+//             method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
+//           });
+//           console.log("underlyingAssetAddress-1", underlyingAssetAddress);
+//           APY7d = await calculateAaveAPY(poolAddress as Address, underlyingAssetAddress as Address, strategyChain);
+//         } else {
+//           // Generic logic for other vaults (e.g., Moonwell)
+//           const receiptTokenAddress = await readContract({
+//             contract: strategyContract,
+//             method: "function receiptToken() view returns (address)",
+//           });
+//           APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
+//         }
 
-          APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address, strategyChain);
-        } else {
-          // Generic logic for other vaults (e.g., Moonwell)
-          const receiptTokenAddress = await readContract({
-            contract: strategyContract,
-            method: "function receiptToken() view returns (address)",
-          });
-          APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
-        }
+//         return {
+//           ...vault,
+//           APY7d,
+//         };
+//       } catch (error) {
+//         console.error(`Error fetching data for vault ${vault.id}:`, error);
+//         return { ...vault, totalAssets: "Error", APY7d: 0 };
+//       }
+//     })
+//   );
 
-        return {
-          ...vault,
-          APY7d,
-        };
-      } catch (error) {
-        console.error(`Error fetching data for vault ${vault.id}:`, error);
-        return { ...vault, totalAssets: "Error", APY7d: 0 };
-      }
-    })
-  );
-
-  return updatedVaults;
-};
+//   return updatedVaults;
+// };
 

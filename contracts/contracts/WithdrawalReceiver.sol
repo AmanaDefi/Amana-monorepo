@@ -4,12 +4,13 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
+import "./interfaces/IErrors.sol";
 
 contract WithdrawalReceiver {
     using SafeERC20 for IERC20;
 
     address public constant _GATEWAY_ADDRESS =
-        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
+        0x0c487a766110c85d301D96E33579C5B317Fa4995; // mainnet: 0x48B9AACC350b20147001f88821d31731Ba4C30ed
 
     event FundsReturned(
         address user,
@@ -54,11 +55,14 @@ contract WithdrawalReceiver {
             payable(receiver).transfer(amount);
         } else {
             // ERC20 token
-            require(
-                IERC20(asset).balanceOf(address(this)) >= amount,
-                "Insufficient token balance"
+            bool success = IERC20(asset).transferFrom(
+                msg.sender,
+                receiver,
+                amount
             );
-            IERC20(asset).safeTransfer(receiver, amount);
+            if (!success) {
+                revert IErrors.TransferFailed();
+            }
         }
 
         emit FundsReturned(receiver, asset, amount, crossChainTxId);

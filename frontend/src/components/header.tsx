@@ -5,6 +5,7 @@ import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { usePathname } from 'next/navigation';
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
+import Link from "next/link";
 
 const wallets = [
     inAppWallet({
@@ -31,7 +32,9 @@ const Header = () => {
     return (
         <div>
             <header className="w-5/6 text-white p-4 flex justify-between items-center">
-                <h1 className="text-3xl font-bold tracking-tighter text-zinc-100">Amana</h1>
+                <Link href='/'>
+                    <h1 className="text-3xl font-bold tracking-tighter text-zinc-100">Amana</h1>
+                </Link>
                 <nav className="flex space-x-8">
                     <span
                         className={`cursor-pointer ${path === "/" ? "font-bold text-primaryYellow" : ""
