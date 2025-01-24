@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
-import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "../types/types";
-import { VAULT_DATA } from "../constants/index";
+import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "@/types/types";
+import { VAULT_DATA } from "@/constants";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
-import { tokens } from "../constants/index";
 import { useRouter } from 'next/navigation';
 
 const VaultsDetailContainer: React.FC<{
@@ -17,7 +16,6 @@ const VaultsDetailContainer: React.FC<{
 }) => {
 
     const [vaultData, setVaultData] = useState<VaultData>();
-    const [tokenOptions, setTokenOptions] = useState<Token[]>(tokens);
     const router = useRouter();
 
     const [loading, setLoading] = useState<boolean>(true);
@@ -57,14 +55,14 @@ const VaultsDetailContainer: React.FC<{
       vaultData ? (
         <div className="overflow-x-auto">
           <button
-            className="border border-customGray500 rounded-lg flex flex-row items-center px-4 py-2 ml-4 md:ml-0"
+            className="border border-customGray500 hover:bg-gray-800 rounded-lg transition-colors flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0"
             type="button"
             onClick={() => router.push("/")}
           >
             <div className="w-5 h-5">
               <LeftArrowIcon color="white" />
             </div>
-            <p className="text-white leading-0 mt-1 ml-2">Back to Vaults</p>
+            <p className="text-white leading-0">Back to Vaults</p>
           </button>
 
           <VaultHeader
@@ -81,7 +79,6 @@ const VaultsDetailContainer: React.FC<{
                 <div className="bg-customNeutral300 px-6 py-6 rounded-lg">
                   <VaultInputs
                     vaultData={vaultData}
-                    tokenOptions={tokenOptions}
                     setTransactionCompleted={setTransactionCompleted}
                     userVaultBalance={userVaultBalance}
                     vaultTotalAssetinToken={vaultTotalAssetinToken}
