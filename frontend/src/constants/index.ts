@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { fetchEthPrice } from "@/utils/utils";
 
@@ -201,6 +201,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
       imgURL: "/aave.png",
       des: "This is a mock strategy for testing purposes."
+    },
+  },
+  {
+    id: "0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c", // Aave USDT on BNB
+    name: "Aave USDT",
+    des: " This vault invests USDT into Aave on BNB.",
+    symbol: "aAaveUSDT",
+    imgURL: "/bnb_logo.png",
+    inputToken: {
+      symbol: "USDT.BNB",
+      decimals: 6,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave USDT",
+      strategyAddress: "0x1fD901103F37d076c096F1F0dF03f078FBc59241",
+      network: "BNB",
+      chainId: 56,
+      netdes: "Binance Smart Chain has been around for a while.",
+      imgURL: "/aave.png",
+      des: "This is an Aave USDT strategy."
     },
   },
   // {

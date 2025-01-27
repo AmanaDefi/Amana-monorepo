@@ -50,6 +50,10 @@ const config: HardhatUserConfig = {
       url: `https://polygon-amoy.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
+    bsc: {
+      url: "https://56.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c",
+      accounts: [process.env.PRIVATE_KEY],
+    },
     bsc_testnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       accounts: [process.env.PRIVATE_KEY],
@@ -107,6 +111,7 @@ const config: HardhatUserConfig = {
       sepolia_testnet: "abc",
       polygon: process.env.POLYGONSCAN_API_KEY || "",
       polygon_amoy: process.env.POLYGONSCAN_API_KEY || "",
+      bsc: process.env.BSCSCAN_API_KEY || "",
       bsc_testnet: process.env.BSCSCAN_API_KEY || "",
     },
     customChains: [
@@ -164,6 +169,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-amoy.polygonscan.com/api",
           browserURL: "https://amoy.polygonscan.com",
+        },
+      },
+      {
+        network: "bsc",
+        chainId: 56,
+        urls: {
+          apiURL: "https://api.bscscan.com/api",
+          browserURL: "https://bscscan.com",
         },
       },
       {
