@@ -34,6 +34,9 @@
   body {
     @apply bg-zinc-950 text-neutral-200;
   }
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
 }
 
 input::-webkit-outer-spin-button,

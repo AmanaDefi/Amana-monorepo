@@ -1,16 +1,23 @@
-import { useState, useEffect } from "react"
-import { VaultData, Token, Balance, Action } from "@/types/types";
+import {useEffect, useState} from "react"
+import {
+    Action,
+    Balance,
+    Token,
+    TransactionStepFeedback,
+    TransactionStepMessages,
+    TransactionStepStatus,
+    VaultData
+} from "@/types/types";
 import mixpanel from "mixpanel-browser";
-import { executeDeposit, executeWithdrawal, Approvedeposit } from "@/actions/actions"
-import { Address, Chain, waitForReceipt, getContract, prepareEvent, defineChain } from "thirdweb";
-import { Account } from "thirdweb/wallets";
-import { NumberFormatter } from "@/utils/helpers";
+import {Approvedeposit, executeDeposit, executeWithdrawal} from "@/actions/actions"
+import {Address, Chain, waitForReceipt} from "thirdweb";
+import {Account} from "thirdweb/wallets";
 import MainActionButton from "@/components/button/MainActionButton"
-import { client } from "@/utils/client";
-import { useContractEvents } from "thirdweb/react";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
-import { MoonLoader } from "react-spinners";
-import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
+import {client} from "@/utils/client";
+import {MoonLoader} from "react-spinners";
+import {AiOutlineCheck, AiOutlineExclamation} from "react-icons/ai";
+import {isZetachain} from "@/utils/utils";
+import {useInteractionEvents} from "@/hooks/hooks";
 
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function) => {
     setTransactionCompleted(false)
@@ -50,16 +57,9 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     } catch (error: any) {
         console.log("0-0-0-0-0", error)
         if (!error.message.includes("User denied transaction")) {
-            setTransactionCompleted(true);
-            setInputBalance({
-                ...inputBalance,
-                formatted: "0",
-            })
-            mixpanel.track("Deposit Submitted", {
+            mixpanel.track("Deposit Failed", {
                 vault: vaultData.id.toString(),
             });
-
-            throw new Error("Transaction failed");
         }
     }
 };
@@ -107,23 +107,17 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         setCrosschainInvestHash(receipt.transactionHash)
         return true;
     } catch (error) {
-        setTransactionCompleted(true);
-        setInputBalance({
-            ...inputBalance,
-            formatted: "0",
-        })
         mixpanel.track("Withdraw Failed", {
             vault: vaultData.id.toString(),
         });
-
-        throw new Error("Transaction failed");
     }
 };
 
-const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
+export default function InteractionContainer({ step, setStep, action, setAction, _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, activeChain, actions, setInputBalance, errorMessage, isDeposit }:
+    { step: number, setStep: Function, action: Action, setAction: Function, _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, actions: Action[], setInputBalance: Function, errorMessage: string, isDeposit: boolean }): JSX.Element {
 
-export default function InteractionContainer({ step, setStep, action, setAction, _inputToken, _inputBalance, _action, vaultData, EOAaccount, setTransactionCompleted, activeChain, actions, setShowModal, setInputBalance }:
-    { step: number, setStep: Function, action: Action, setAction: Function, _inputToken: Token, _inputBalance: Balance, _action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, actions: Action[], setShowModal: Function, setInputBalance: Function }): JSX.Element {
+    const [label, setLabel] = useState('')
+    const [disabled, setDisabled] = useState(true)
 
     useEffect(() => {
         setAction(_action)
@@ -139,95 +133,41 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === 'testnet';
     const contractWithdrawalReceiverAddress = (isTestnet ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS) as `0x${string}`
 
-    const CrossChainInvestSent = prepareEvent({
-        signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId)",
-    });
+    const [transactionStepFeedback, setTransactionStepFeedback] = useState<TransactionStepMessages>({});
+    const [lastTransactionStepFeedback, setLastTransactionStepFeedback] = useState<TransactionStepMessages>({});
+    const [isTransactionStarted, setIsTransactionStarted] = useState(false);
+    const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
+    const [finishedTransaction, setFinishedTransaction] = useState(false);
 
-    const FundsInvested = prepareEvent({
-        signature: "event FundsInvested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
-    });
+    const {
+        vaultEvents,
+        strategyEvents,
+        withdrawalReceiverEvents
+    } = useInteractionEvents({vaultData, activeChainId: activeChain.id, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted});
 
-    const Deposited = prepareEvent({
-        signature: "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
-    });
+    function completeTransactionProcess(feedbackSnapshot: TransactionStepMessages) {
+        setIsTransactionStarted(false);
+        if (finishedTransaction) return;
+        setIsTransactionProcessing(false);
+        setLastTransactionStepFeedback(feedbackSnapshot);
+        setFinishedTransaction(true);
+        setTransactionStepFeedback({});
 
-    const Deposit = prepareEvent({
-        signature: "event Deposit(address indexed sender,address indexed owner,uint256 assets,uint256 shares)",
-    });
-
-    const DivestSent = prepareEvent({
-        signature: "event DivestSent(bytes32 indexed crossChainTxId)",
-    });
-
-    const FundsDivested = prepareEvent({
-        signature: "event FundsDivested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
-    });
-
-    const Withdraw = prepareEvent({
-        signature: "event Withdraw(address indexed sender,address indexed receiver,address indexed owner,uint256 assets,uint256 shares)",
-    });
-
-    const Withdrawn = prepareEvent({
-        signature: "event Withdrawn(address indexed user,address indexed receiver,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
-    });
-
-    const CrossChainInvestFailed = prepareEvent({
-        signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId)",
-    });
-
-    const DivestFailed = prepareEvent({
-        signature: "event DivestFailed(bytes32 indexed crossChainTxId)",
-    });
-
-    const FundsReturned = prepareEvent({
-        signature: "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)"
-    });
-
-
-    const contract = getContract({
-        client,
-        chain: SUPPORTED_CHAINS[0],
-        address: vaultData.id,
-    });
-
-    const contract2 = getContract({
-        client,
-        chain: defineChain(strategyChainID),
-        address: strategyAddress,
-    });
-
-    const contractWithdrawalReceiver = getContract({
-        client,
-        chain: defineChain(strategyChainID),
-        address: contractWithdrawalReceiverAddress
-    });
-
-    const { data: events1 } = useContractEvents({
-        contract,
-        events: [CrossChainInvestSent, Deposited, Deposit, DivestSent, Withdraw, Withdrawn, CrossChainInvestFailed, DivestFailed]
-    });
-
-    const { data: events2 } = useContractEvents({
-        contract: contract2,
-        events: [FundsInvested, FundsDivested]
-    });
-
-    const { data: withdrawalReceiverEvents } = useContractEvents({
-        contract: contractWithdrawalReceiver,
-        enabled: !isZetachain(strategyChainID)
-    });
+        setTransactionCompleted(true);
+        setInputBalance({
+            value: 0,
+            formatted: "0",
+            formattedUSD: "0",
+        })
+    }
 
     useEffect(() => {
-        console.log("NEW EVENTS!!!", withdrawalReceiverEvents)
-    }, [withdrawalReceiverEvents]);
-
-    useEffect(() => {
-        console.log("event1: ", events1);
+        console.log("event1: ", vaultEvents);
         console.log("crosschainInvestHash: ", crosschainInvestHash);
         console.log("crossChainTxId: ", crossChainTxId);
-        if (events1 && events1.length > 0 && crosschainInvestHash != "") {
-            const last_event = events1[events1.length - 1];
-            if (last_event.eventName == "CrossChainInvestSent" && action == Action.deposit) {
+        if (vaultEvents && vaultEvents.length > 0 && crosschainInvestHash != "") {
+            const last_event = vaultEvents[vaultEvents.length - 1];
+            if (last_event.eventName == "CrossChainInvestSent" && action == (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed)) {
                 console.log("EVENT CrossChainInvestSent: ", last_event, action, step);
                 if (
                     (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
@@ -241,7 +181,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     return
                 }
             }
-            else if (last_event.eventName == "Deposit" && action === Action.deposit && isZetachain(strategyChainID)) {
+            else if (last_event.eventName == "Deposit" && isZetachain(strategyChainID) && action === (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed)) {
                 console.log("EVENT Deposit: ", last_event, action, step);
                 if (last_event.transactionHash == crosschainInvestHash) {
                     console.log("PASSED EVENT Deposit: ", last_event, action, step);
@@ -265,13 +205,13 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 console.log("EVENT Deposited: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT Deposited: ", last_event, action, step);
-                    const nextStep = step + 1;
+                    const nextStep = actions.findIndex(el => el == Action.deposited);
                     setAction(actions[nextStep]);
                     setStep(nextStep);
                     return
                 }
             }
-            else if (last_event.eventName == "DivestSent" && action == Action.withdraw) {
+            else if (last_event.eventName == "DivestSent" && action == (isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed)) {
                 console.log("EVENT DivestSent: ", last_event, action, step);
                 if (
                     (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
@@ -279,7 +219,17 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 ) {
                     console.log("PASSED EVENT DivestSent: ", last_event, action, step);
                     setcrossChainTxId(last_event.args.crossChainTxId.toString())
-                    const nextStep = step + 1;
+                    const nextStep = actions.findIndex(el => el == Action.DivestSent);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "ReturnFundsToUserSent" && action == Action.FundsWithdrawn) {
+                console.log("EVENT ReturnFundsToUserSent: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT ReturnFundsToUserSent: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.ReturnFundsToUserSent);
                     setAction(actions[nextStep]);
                     setStep(nextStep);
                     return
@@ -289,24 +239,64 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 console.log("EVENT Withdrawn: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT Withdrawn: ", last_event, action, step);
-                    const nextStep = step + 1;
+                    const nextStep = actions.findIndex(el => el == (isZetachain(strategyChainID) ? Action.withdrew : Action.Withdrawn));
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "CrossChainInvestFailed" && action == Action.crosschainInvest) {
+                console.log("EVENT CrossChainInvestFailed: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT CrossChainInvestFailed: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.CrossChainInvestFailed);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "DivestFailed" && action == Action.DivestSent) {
+                console.log("EVENT DivestFailed: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT DivestFailed: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.DivestFailed);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "ReturnFundsToUserFailed" && action == (isZetachain(vaultData.protocol.chainId) ? Action.ReturnFundsToUserSent : Action.Withdrawn)) {
+                console.log("EVENT ReturnFundsToUserFailed: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT ReturnFundsToUserFailed: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.ReturnFundsToUserFailed);
                     setAction(actions[nextStep]);
                     setStep(nextStep);
                     return
                 }
             }
         }
-    }, [events1, crosschainInvestHash]);
+    }, [vaultEvents, crosschainInvestHash]);
 
     useEffect(() => {
-        if (events2 && events2.length > 0 && crosschainInvestHash != "") {
-            console.log("event21: ", events2);
-            const last_event = events2[events2.length - 1];
+        if (strategyEvents && strategyEvents.length > 0 && crosschainInvestHash != "") {
+            console.log("event21: ", strategyEvents);
+            const last_event = strategyEvents[strategyEvents.length - 1];
             if (last_event.eventName == "FundsInvested" && action == Action.crosschainInvest) {
                 console.log("EVENT FundsInvested: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT FundsInvested: ", last_event, action, step);
-                    const nextStep = step + 1;
+                    const nextStep = actions.findIndex(el => el == Action.FundsInvest);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "FundsWithdrawn" && action == (isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed)) {
+                console.log("EVENT FundsWithdrawn: ", last_event, action, step);
+                if (last_event.transactionHash == crosschainInvestHash) {
+                    console.log("PASSED EVENT FundsWithdrawn: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.FundsWithdrawn);
                     setAction(actions[nextStep]);
                     setStep(nextStep);
                     return
@@ -316,19 +306,510 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 console.log("EVENT FundsDivested: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT FundsDivested: ", last_event, action, step);
-                    const nextStep = step + 1;
+                    const nextStep = actions.findIndex(el => el == Action.FundsDivested);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "InvestConfirmFailed" && action == Action.FundsInvest) {
+                console.log("EVENT InvestConfirmFailed: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT InvestConfirmFailed: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.InvestConfirmFailed);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (last_event.eventName == "ReturnFundsFromStrategyFailed" && action == Action.FundsDivested) {
+                console.log("EVENT ReturnFundsFromStrategyFailed: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT ReturnFundsFromStrategyFailed: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.ReturnFundsFromStrategyFailed);
                     setAction(actions[nextStep]);
                     setStep(nextStep);
                     return
                 }
             }
         }
-        console.log("event20: ", events2);
+        console.log("event20: ", strategyEvents);
         console.log("event25: ", crosschainInvestHash);
-    }, [events2]);
+    }, [strategyEvents]);
+
+    useEffect(() => {
+        if (withdrawalReceiverEvents && withdrawalReceiverEvents.length > 0 && crosschainInvestHash != "") {
+            console.log("event3: ", withdrawalReceiverEvents);
+            const last_event = withdrawalReceiverEvents[withdrawalReceiverEvents.length - 1];
+            if (last_event.eventName == "FundsReturned" && action == Action.CrossChainInvestFailed) {
+                console.log("EVENT FundsReturned on deposit: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT FundsReturned on deposit: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.FundsReturnedError);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+            else if (
+                last_event.eventName == "FundsReturned" && action == Action.Withdrawn ||
+                last_event.eventName == "FundsReturned" && action == Action.ReturnFundsToUserSent
+            ) {
+                console.log("EVENT FundsReturned on withdraw: ", last_event, action, step);
+                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                    console.log("PASSED EVENT FundsReturned on withdraw: ", last_event, action, step);
+                    const nextStep = actions.findIndex(el => el == Action.withdrew);
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                    return
+                }
+            }
+        }
+        console.log("event30: ", withdrawalReceiverEvents);
+        console.log("event35: ", crosschainInvestHash);
+    }, [withdrawalReceiverEvents]);
+
+    function updateTransactionStepFeedback(actionIndex: Action, data: Partial<TransactionStepFeedback>) {
+        setTransactionStepFeedback(prev => ({
+            ...prev,
+            [actionIndex]: {
+                ...prev[actionIndex],
+                ...data
+            }
+        }));
+    }
+
+    useEffect(() => {
+        setTransactionStepFeedback({});
+    }, [actions]);
+
+    // Track user interaction to release last transaction logs
+    // START
+    useEffect(() => {
+        if (Number(_inputBalance.value) > 0) {
+            setFinishedTransaction(false)
+            setIsTransactionProcessing(false)
+            setIsTransactionStarted(false)
+        }
+    }, [_inputBalance.value]);
+
+    useEffect(() => {
+        setFinishedTransaction(false)
+        setIsTransactionProcessing(false)
+        setIsTransactionStarted(false)
+    }, [_inputToken]);
+
+    useEffect(() => {
+        setFinishedTransaction(false)
+        setIsTransactionProcessing(false)
+        setIsTransactionStarted(false)
+    }, [isDeposit]);
+
+    // END
+
+    return <div className="w-full flex flex-col mt-5">
+        <Interaction
+            setStep={setStep}
+            setAction={setAction}
+            inputToken={_inputToken}
+            vaultData={vaultData}
+            action={action}
+            inputBalance={_inputBalance}
+            EOAaccount={EOAaccount}
+            setTransactionCompleted={setTransactionCompleted}
+            activeChain={activeChain}
+            actions={actions}
+            setCrosschainInvestHash={setCrosschainInvestHash}
+            setcrossChainTxId={setcrossChainTxId}
+            setInputBalance={setInputBalance}
+            step={step}
+            transactionStepFeedback={transactionStepFeedback}
+            setTransactionStepFeedback={setTransactionStepFeedback}
+            updateTransactionStepFeedback={updateTransactionStepFeedback}
+            label={label}
+            setLabel={setLabel}
+            errorMessage={errorMessage}
+
+            lastTransactionStepFeedback={lastTransactionStepFeedback}
+            setLastTransactionStepFeedback={setLastTransactionStepFeedback}
+            isTransactionStarted={isTransactionStarted}
+            setIsTransactionStarted={setIsTransactionStarted}
+            isTransactionProcessing={isTransactionProcessing}
+            setIsTransactionProcessing={setIsTransactionProcessing}
+            finishedTransaction={finishedTransaction}
+            setFinishedTransaction={setFinishedTransaction}
+            completeTransactionProcess={completeTransactionProcess}
+        />
+    </div>
+}
+
+
+function Interaction(
+    {
+        setStep, setAction, inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain,
+        actions, setCrosschainInvestHash, setcrossChainTxId, setInputBalance, step,
+        transactionStepFeedback, setTransactionStepFeedback, updateTransactionStepFeedback, label, setLabel, errorMessage,
+        lastTransactionStepFeedback,
+        setLastTransactionStepFeedback,
+        isTransactionStarted,
+        setIsTransactionStarted,
+        isTransactionProcessing,
+        setIsTransactionProcessing,
+        finishedTransaction,
+        setFinishedTransaction,
+        completeTransactionProcess
+    }:
+    {
+        setStep: Function, setAction: Function, inputToken: Token, inputBalance: Balance, action: Action,
+        vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void,
+        activeChain: Chain, actions: Action[], setCrosschainInvestHash: Function,
+        setcrossChainTxId: Function, setInputBalance: Function, step: number,
+        transactionStepFeedback: TransactionStepMessages,
+        setTransactionStepFeedback: (newData: TransactionStepMessages | ((prev: TransactionStepMessages) => TransactionStepMessages)) => void,
+        updateTransactionStepFeedback: (actionIndex: Action, data: Partial<TransactionStepFeedback>) => void,
+        label: string,
+        setLabel: (label: string) => void,
+        errorMessage: string,
+        lastTransactionStepFeedback: TransactionStepMessages,
+        setLastTransactionStepFeedback: (feedback: TransactionStepMessages) => void,
+        isTransactionStarted: boolean,
+        setIsTransactionStarted: (started: boolean) => void,
+        isTransactionProcessing: boolean,
+        setIsTransactionProcessing: (processing: boolean) => void,
+        finishedTransaction: boolean,
+        setFinishedTransaction: (finished: boolean) => void,
+        completeTransactionProcess: (snapshot: TransactionStepMessages) => void
+    }):
+    JSX.Element {
+
+    useEffect(() => {
+        console.log("%c Called SWITCH!!", 'color: blue')
+        let newTransactionStepFeedback;
+        let targetAction: Action;
+        let description: string;
+        switch (action) {
+            case Action.depositApprove:
+                setTransactionStepFeedback({
+                    [Action.depositApprove]: {
+                        label: 'Approve',
+                        description: 'Transaction approval required',
+                        status: TransactionStepStatus.pending
+                    }
+                })
+                setLabel("Approve")
+                break;
+            case Action.depositApproveConfirmed:
+                setTransactionStepFeedback({
+                    [Action.depositApprove]: {
+                        label: 'Approve',
+                        description: 'Approval completed',
+                        status: TransactionStepStatus.completed
+                    }
+                })
+                setIsTransactionProcessing(false);
+                break;
+            case Action.deposit:
+                setLabel("Deposit")
+                break;
+            case Action.depositConfirmed:
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [Action.deposit]: {
+                        label: 'Deposit',
+                        description: 'Initial deposit transaction on local chain completed',
+                        status: TransactionStepStatus.completed
+                    },
+                    [Action.depositConfirmed]: {
+                        label: 'Deposit',
+                        description: 'Cross chain transfer to vault in progress',
+                        status: TransactionStepStatus.processing
+                    },
+                }))
+                break;
+            case Action.withdrawconfirmed:
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [Action.withdraw]: {
+                        label: 'Withdraw',
+                        description: 'Initial withdraw transaction on local chain completed',
+                        status: TransactionStepStatus.completed
+                    },
+                    [Action.withdrawconfirmed]: {
+                        label: 'Withdraw',
+                        description: 'Cross chain request to vault in progress',
+                        status: TransactionStepStatus.processing
+                    },
+                }))
+                break;
+            case Action.crosschainInvest:
+                if (isZetachain(activeChain.id)) {
+                    setTransactionStepFeedback(prev => ({
+                        ...prev,
+                        [Action.deposit]: {
+                            label: 'Deposit',
+                            description: `Initial deposit transaction on ${activeChain.name} completed`,
+                            status: TransactionStepStatus.completed
+                        },
+                        [Action.crosschainInvest]: {
+                            label: 'Deposit',
+                            description: 'Cross chain transfer and investment of funds in progress',
+                            status: TransactionStepStatus.processing
+                        },
+                    }))
+                } else {
+                    setTransactionStepFeedback(prev => ({
+                        ...prev,
+                        [Action.depositConfirmed]: {
+                            label: 'Deposit',
+                            description: 'Cross chain transfer to vault completed',
+                            status: TransactionStepStatus.completed
+                        },
+                        [Action.crosschainInvest]: {
+                            label: 'Deposit',
+                            description: 'Cross chain transfer and investment of funds in progress',
+                            status: TransactionStepStatus.processing
+                        },
+                    }))
+                }
+                break;
+            case Action.FundsInvest:
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [Action.crosschainInvest]: {
+                        label: 'Deposit',
+                        description: 'Cross chain transfer and investment of funds completed',
+                        status: TransactionStepStatus.completed
+                    },
+                    [Action.FundsInvest]: {
+                        label: 'Deposit',
+                        description: 'Final confirmation and issue of shares by vault in progress',
+                        status: TransactionStepStatus.processing
+                    },
+                }))
+                break;
+            case Action.deposited:
+                if (isZetachain(vaultData.protocol.chainId)) {
+                    if (isZetachain(activeChain.id)) {
+                        newTransactionStepFeedback = {
+                            ...transactionStepFeedback,
+                            [Action.deposit]: {
+                                label: 'Deposit',
+                                description: "Deposit completed",
+                                status: TransactionStepStatus.completed
+                            }
+                        };
+                    } else {
+                        newTransactionStepFeedback = {
+                            ...transactionStepFeedback,
+                            [Action.depositConfirmed]: {
+                                label: 'Deposit',
+                                description: "Cross chain transfer to vault completed",
+                                status: TransactionStepStatus.completed
+                            },
+                            [Action.deposited]: {
+                                label: 'Deposit',
+                                description: "Funds invested and shares issued",
+                                status: TransactionStepStatus.completed
+                            }
+                        };
+                    }
+                } else {
+                    newTransactionStepFeedback = {
+                        ...transactionStepFeedback,
+                        [Action.FundsInvest]: {
+                            label: 'Deposit',
+                            description: "Final confirmation completed, shares issued by vault",
+                            status: TransactionStepStatus.completed
+                        }
+                    };
+                }
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.InvestConfirmFailed:
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [Action.FundsInvest]: {
+                        label: 'Deposit',
+                        description: 'Final confirmation failed',
+                        status: TransactionStepStatus.error
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.withdraw:
+                setLabel("Withdraw")
+                break;
+            case Action.DivestSent:
+                if (isZetachain(activeChain.id)) {
+                    targetAction = Action.withdraw;
+                    description = `Initial withdraw transaction on ${activeChain.name} completed`
+                } else {
+                    targetAction = Action.withdrawconfirmed;
+                    description = 'Cross chain request to vault completed'
+                }
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [targetAction]: {
+                        label: 'Withdraw',
+                        description: description,
+                        status: TransactionStepStatus.completed
+                    },
+                    [Action.DivestSent]: {
+                        label: 'Withdraw',
+                        description: 'Divestment of funds from strategy in progress',
+                        status: TransactionStepStatus.processing
+                    },
+                }))
+                break;
+            case Action.FundsWithdrawn:
+                targetAction = isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed;
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [targetAction]: {
+                        label: 'Withdraw',
+                        description: 'Cross chain request to vault completed',
+                        status: TransactionStepStatus.completed
+                    }
+                }))
+                break;
+            case Action.ReturnFundsToUserSent:
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [Action.ReturnFundsToUserSent]: {
+                        label: 'Withdraw',
+                        description: 'Return of funds in progress',
+                        status: TransactionStepStatus.processing
+                    }
+                }))
+                break;
+            case Action.FundsDivested:
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [Action.DivestSent]: {
+                        label: 'Withdraw',
+                        description: 'Divestment of funds from strategy completed',
+                        status: TransactionStepStatus.completed
+                    },
+                    [Action.FundsDivested]: {
+                        label: 'Withdraw',
+                        description: 'Withdrawal confirmation in progress',
+                        status: TransactionStepStatus.processing
+                    },
+                }))
+                break;
+            case Action.Withdrawn:
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [Action.FundsDivested]: {
+                        label: 'Withdraw',
+                        description: 'Withdrawal confirmation completed',
+                        status: TransactionStepStatus.completed
+                    },
+                    [Action.Withdrawn]: {
+                        label: 'Withdraw',
+                        description: 'Return of funds in progress',
+                        status: TransactionStepStatus.processing
+                    },
+                }))
+                break;
+            case Action.withdrew:
+                if (isZetachain(vaultData.protocol.chainId)) {
+                    if (isZetachain(activeChain.id)) {
+                        targetAction = Action.withdraw;
+                        description = 'Withdraw completed';
+                    } else {
+                        targetAction = Action.ReturnFundsToUserSent;
+                        description = 'Return of funds completed';
+                    }
+                } else {
+                    targetAction = Action.Withdrawn;
+                    description = 'Return of funds completed';
+                }
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [targetAction]: {
+                        label: 'Withdraw',
+                        description: description,
+                        status: TransactionStepStatus.completed
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.CrossChainInvestFailed:
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [Action.crosschainInvest]: {
+                        label: 'Deposit',
+                        description: 'Cross chain transfer and investment of funds failed',
+                        status: TransactionStepStatus.error
+                    },
+                    [Action.FundsReturnedError]: {
+                        label: 'Deposit',
+                        description: 'Return of funds in progress',
+                        status: TransactionStepStatus.processing
+                    },
+                }))
+                break;
+            case Action.FundsReturnedError:
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [Action.FundsReturnedError]: {
+                        label: 'Deposit',
+                        description: 'Return of funds completed',
+                        status: TransactionStepStatus.completed
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.DivestFailed:
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [Action.DivestSent]: {
+                        label: 'Withdraw',
+                        description: 'Divestment of funds from strategy failed, please try again later',
+                        status: TransactionStepStatus.error
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.ReturnFundsFromStrategyFailed:
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [Action.FundsDivested]: {
+                        label: 'Withdraw',
+                        description: 'Withdrawal confirmation failed, please try again later',
+                        status: TransactionStepStatus.error
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.ReturnFundsToUserFailed:
+                if (isZetachain(vaultData.protocol.chainId)) {
+                    targetAction = Action.ReturnFundsToUserSent;
+                } else {
+                    targetAction = Action.Withdrawn;
+                }
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [targetAction]: {
+                        label: 'Withdraw',
+                        description: 'Return of funds failed, please try again later',
+                        status: TransactionStepStatus.error
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+        }
+    }, [action, actions])
 
     async function interactionPostHook(success: boolean) {
-
         if (success) {
             if (actions[step + 1] == Action.depositApproveConfirmed) {
                 const nextStep = step + 1
@@ -337,196 +818,86 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 setTimeout(() => {
                     setAction(actions[nextStep + 1])
                     setStep(nextStep + 1)
-                }, 3000);
+                }, 100);
             }
+            if (action == Action.deposit && actions[step + 1] == Action.depositConfirmed) {
+                const nextStep = step + 1
+                setAction(actions[nextStep])
+                setStep(nextStep)
+            }
+            if (action == Action.withdraw && actions[step + 1] == Action.withdrawconfirmed) {
+                const nextStep = step + 1
+                setAction(actions[nextStep])
+                setStep(nextStep)
+            }
+        } else {
+            if (action == Action.depositApprove) {
+                updateTransactionStepFeedback(action, { status: TransactionStepStatus.pending, description: 'Transaction approval required' });
+            }
+            if (action == Action.deposit) {
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [action]: null
+                }))
+            }
+            if (action == Action.withdraw) {
+                setTransactionStepFeedback(prev => ({
+                    ...prev,
+                    [action]: null
+                }))
+            }
+            setIsTransactionProcessing(false);
         }
     }
 
-
-
-
-    return <div className="w-full flex flex-col mt-5">
-        <Interaction
-            setStep={setStep}
-            inputToken={_inputToken}
-            vaultData={vaultData}
-            action={action}
-            inputBalance={_inputBalance}
-            EOAaccount={EOAaccount}
-            setTransactionCompleted={setTransactionCompleted}
-            activeChain={activeChain}
-            interactionPostHook={interactionPostHook}
-            setShowModal={setShowModal}
-            actions={actions}
-            setCrosschainInvestHash={setCrosschainInvestHash}
-            setcrossChainTxId={setcrossChainTxId}
-            setInputBalance={setInputBalance}
-            step={step}
-
-        />
-    </div>
-}
-
-
-function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain, interactionPostHook, setShowModal, actions, setCrosschainInvestHash, setcrossChainTxId, setInputBalance, step }:
-    { setStep: Function, inputToken: Token, inputBalance: Balance, action: Action, vaultData: VaultData, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: Chain, interactionPostHook: (e?: any) => Promise<any>, setShowModal: Function, actions: Action[], setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, step: number }): JSX.Element {
-
-
-    const [label, setlabel] = useState('')
-    const [status, setStatus] = useState(false)
-    const [disabled, setDisabled] = useState(true)
-
-    const [description1, setDescription1] = useState<string[]>(() => {
-        const initialDesc: string[] = [];
-        for (let i = 0; i <= step; i++) {
-            const currentAction = actions[i];
-            if (currentAction === Action.depositApprove) {
-                initialDesc.push("Transaction approval required");
-            }
-            else if (currentAction === Action.depositApproveConfirmed) {
-                initialDesc.push("Approval completed");
-            } else if (currentAction === Action.crosschainInvest) {
-                initialDesc.push("Initial deposit transaction on zetachain completed");
-            } else if (currentAction === Action.FundsInvest) {
-                initialDesc.push("Cross chain transfer and investment of funds completed");
-            } else if (currentAction === Action.deposited) {
-                initialDesc.push((vaultData.protocol.chainId == 7000 || vaultData.protocol.chainId == 7001) ? "Deposit completed" :
-                    "Final confirmation completed, shares issued by vault");
-            }
-            else if (currentAction === Action.withdraw) {
-                initialDesc.push("Withdraw confirmation required");
-            }
-            else if (currentAction === Action.DivestSent) {
-                initialDesc.push("Initial withdraw transaction on zetachain completed");
-            }
-            else if (currentAction === Action.Withdrawn) {
-                initialDesc.push("Return of funds to user completed");
-            }
-        }
-        return initialDesc;
-    });
-
-    const [description2, setDescription2] = useState<string[]>(() => {
-        const initialDesc: string[] = [];
-        for (let i = 0; i <= step; i++) {
-            const currentAction = actions[i];
-            if (currentAction === Action.depositApprove) {
-                initialDesc.push("Approval in progress");
-            } else if (currentAction === Action.deposit) {
-                initialDesc.push((vaultData.protocol.chainId == 7000 || vaultData.protocol.chainId == 7001)
-                    ? "Deposit in progress"
-                    : "Initial deposit transaction on zetachain in progress");
-            } else if (currentAction === Action.crosschainInvest) {
-                initialDesc.push("Cross chain transfer and investment of funds in progress");
-            } else if (currentAction === Action.FundsInvest) {
-                initialDesc.push("Final confirmation and issue of shares by vault in progress");
-            }
-            else if (currentAction === Action.withdraw) {
-                initialDesc.push(`Initial withdraw transaction on zetachain in progress`);
-            }
-            else if (currentAction === Action.DivestSent) {
-                initialDesc.push("Divestment of funds from strategy in progress");
-            }
-        }
-        return initialDesc;
-    });
-
-
-    useEffect(() => {
-        const val = NumberFormatter.format(Number(inputBalance.formatted))
-        switch (action) {
-            case Action.depositApprove:
-                setDisabled(status);
-                setDescription1(["Transaction approval required"])
-                setDescription2(["Approval in progress"])
-                setlabel("Approve")
-                break;
-            case Action.depositApproveConfirmed:
-                setDescription1([...description1, "Approval completed"]);
-                setlabel("Deposit")
-                setTimeout(() => {
-                    setDisabled(false);
-                }, 3000);
-                break;
-            case Action.deposit:
-                setlabel("Deposit")
-                setDisabled(status);
-                if (actions.includes(Action.depositApprove)) {
-                    setDescription1([...description1, `Deposit`]);
-                    setDescription2([...description2, (vaultData.protocol.chainId == 7000 || vaultData.protocol.chainId == 7001) ? "Deposit in progress" : "Initial deposit transaction on zetachain in progress"]);
-                }
-                else {
-                    setDescription1([`Deposit`]);
-                    setDescription2([(vaultData.protocol.chainId == 7000 || vaultData.protocol.chainId == 7001) ? "Deposit in progress" : "Initial deposit transaction on zetachain in progress"]);
-                }
-                break;
-            case Action.crosschainInvest:
-                setDescription1([...description1, "Initial deposit transaction on zetachain completed"]);
-                setDescription2([...description2, "Cross chain transfer and investment of funds in progress"]);
-                break;
-            case Action.FundsInvest:
-                setDescription1([...description1, "Cross chain transfer and investment of funds completed"]);
-                setDescription2([...description2, "Final confirmation and issue of shares by vault in progress"]);
-                break;
-            case Action.deposited:
-                setDescription1([...description1, isZetachain(vaultData.protocol.chainId) ? "Deposit completed" : "Final confirmation completed, shares issued by vault"]);
-                setTimeout(() => {
-                    setTransactionCompleted(true);
-                    setInputBalance({
-                        ...inputBalance,
-                        formatted: "0",
-                    })
-                }, 3000);
-                break;
-            case Action.withdraw:
-                setlabel("Withdraw")
-                setDisabled(status);
-                setDescription1(["Withdraw confirmation required"]);
-                setDescription2([`Initial withdraw transaction on zetachain in progress`]);
-                break;
-            case Action.DivestSent:
-                setDescription1([...description1, "Initial withdraw transaction on zetachain completed"]);
-                setDescription2([...description2, "Divestment of funds from strategy in progress"]);
-                break;
-            case Action.FundsDivested:
-                setDescription1([...description1, "Divestment of funds from strategy completed"]);
-                setDescription2([...description2, "Return of funds to user in progress"]);
-                break;
-            case Action.Withdrawn:
-                setDescription1([...description1, "Return of funds to user completed"]);
-                setTimeout(() => {
-                    setTransactionCompleted(true);
-                    setInputBalance({
-                        ...inputBalance,
-                        formatted: "0",
-                    })
-                }, 3000);
-                break;
-            case Action.CrossChainInvestFailed:
-                setDescription1([...description1, "CrossChainInvestFailed"]);
-                setTimeout(() => {
-                    setTransactionCompleted(true);
-                    setInputBalance({
-                        ...inputBalance,
-                        formatted: "0",
-                    })
-                }, 2000);
-                break;
-            case Action.DivestFailed:
-                setDescription1([...description1, "DivestFailed"]);
-                setTimeout(() => {
-                    setTransactionCompleted(true);
-                    setInputBalance({
-                        ...inputBalance,
-                        formatted: "0",
-                    })
-                }, 2000);
-                break;
-        }
-    }, [action, status, actions])
-
     async function handleMainAction() {
-        setStatus(true);
+        if (isTransactionProcessing) return;
+        setIsTransactionProcessing(true);
+        if (action == Action.depositApprove) {
+            updateTransactionStepFeedback(action, { status: TransactionStepStatus.processing, description: 'Approval in progress' });
+        } else {
+            // Is either deposit or withdrawal action
+            // This marks event listeners as enabled
+            setIsTransactionStarted(true);
+        }
+        if (action == Action.deposit) {
+            let description;
+            if (isZetachain(activeChain.id)) {
+                if (isZetachain(vaultData.protocol.chainId)) {
+                    description =  'Deposit in progress';
+                } else {
+                    description =  `Initial deposit transaction on ${activeChain.name?.toLowerCase()} in progress`;
+                }
+            } else {
+                description =  'Initial deposit transaction on local chain in progress';
+            }
+            updateTransactionStepFeedback(action, {
+                label: 'Deposit',
+                description,
+                status: TransactionStepStatus.processing
+            });
+        }
+        if (action == Action.withdraw) {
+            let description;
+            if (isZetachain(activeChain.id)) {
+                if (isZetachain(vaultData.protocol.chainId)) {
+                    description =  `Withdrawing ${inputBalance.formatted} ${vaultData.inputToken.symbol}`;
+                } else {
+                    description =  `Initial withdraw transaction on ${activeChain.name} in progress`;
+                }
+            } else {
+                if (isZetachain(vaultData.protocol.chainId)) {
+                    description =  `Initial withdraw transaction on local chain in progress`;
+                } else {
+                    description =  `Initial withdraw transaction on ${activeChain.name} in progress`;
+                }
+            }
+            updateTransactionStepFeedback(action, {
+                label: 'Withdraw',
+                description: description,
+                status: TransactionStepStatus.processing
+            });
+        }
         const success = await handleInteraction(
             vaultData,
             inputBalance,
@@ -539,56 +910,75 @@ function Interaction({ setStep, inputToken, inputBalance, action, vaultData, EOA
             setcrossChainTxId,
             setInputBalance
         )()
-        action == Action.depositApprove && setStatus(false)
-        await interactionPostHook(success)
-    } const val = NumberFormatter.format(Number(inputBalance.formatted))
-
+        await interactionPostHook(!!success)
+    }
 
     useEffect(() => {
-        console.log("indexdata", step)
-    }, [step])
+        console.log("processActionsFeedback", transactionStepFeedback)
+        console.log("lastProcessActionsFeedback", lastTransactionStepFeedback)
+    }, [lastTransactionStepFeedback, transactionStepFeedback]);
 
-
+    function handleDone() {
+        setLastTransactionStepFeedback({});
+        setFinishedTransaction(false);
+    }
 
     return (
         <>
-            <p className="text-white text-start text-2xl font-bold leading-none mb-1">{label}</p>
             {
+                ((Number(inputBalance.formatted) > 0 && actions.length) || finishedTransaction) && !errorMessage &&
                 <>
+                    <p className="text-white text-start text-2xl font-bold leading-none mb-3">{label}</p>
                     {
-                        actions.map((item, index) => (
-                            index <= step &&
-                            <div key={index} className='mb-2'>
-                                {
-                                    ((item != Action.deposit && item != Action.withdraw && item != Action.depositApprove) ||
-                                        (item == Action.depositApprove && !status && action == Action.depositApprove)
-                                        || (item == Action.deposit && !status && action == Action.deposit) || (item == Action.withdraw && !status && action == Action.withdraw)) &&
-                                    <div className="flex items-center gap-1">
-                                        {
-                                            (item == Action.deposit || item === Action.withdraw || item == Action.depositApprove) ?
-                                                <AiOutlineExclamation color="red" size={20} />
-                                                :
-                                                <AiOutlineCheck color="Green" size={20} />
-                                        }
-                                        <p className="text-white text-start">{description1[(item == Action.deposit) || item == Action.withdraw || item == Action.depositApprove ||
-                                            item == Action.depositApproveConfirmed || !actions.includes(Action.depositApprove) ? index : index + 1]}</p>
-                                    </div>
-                                }
-                                {
-                                    index == step &&
-                                    ((item !== Action.deposit && item !== Action.withdraw && item !== Action.depositApprove && item != Action.depositApproveConfirmed) || (item === Action.depositApprove && status) || (item === Action.deposit && status) || (item === Action.withdraw && status)) &&
-                                    <div className="flex items-center gap-1">
-                                        <MoonLoader color="yellow" size={20} speedMultiplier={0.3} />
-                                        <p className="text-white text-start">{description2[index]}</p>
-                                    </div>
-                                }
-                            </div>
-                        ))
+                        <>
+                            {
+                                (Object.keys(Action) as Array<keyof typeof Action>).map(key => key as unknown as Action).map((item, index) => {
+                                    const feedbackData = finishedTransaction ? lastTransactionStepFeedback : transactionStepFeedback;
+                                    if (feedbackData[item]) {
+                                        const actionFeedback = feedbackData[item];
+                                        return (
+                                            <div className='flex flex-col gap-2 mb-2 last:mb-4' key={index}>
+                                                <div className='flex gap-2 items-center'>
+                                                    <div
+                                                        className="w-6 h-6 rounded-full bg-gray-800 flex-center [&:has(.pending-state)]:bg-[transparent] [&:has(.pending-state)]:border-none">
+                                                        {
+                                                            ((actionStatus) => {
+                                                                switch (actionStatus) {
+                                                                    case TransactionStepStatus.pending:
+                                                                        return <div
+                                                                            className="w-4 h-4 bg-blue-500 rounded-full animate-[ping_1.5s_ease-in-out_infinite]"
+                                                                        />
+                                                                    case TransactionStepStatus.error:
+                                                                        return <AiOutlineExclamation className='text-red-600' size={16}/>
+                                                                    case TransactionStepStatus.processing:
+                                                                        return <MoonLoader color="yellow" size={18}
+                                                                                           speedMultiplier={0.3}
+                                                                                           className='pending-state'/>
+                                                                    case TransactionStepStatus.completed:
+                                                                        return <AiOutlineCheck className='text-green-400' size={16}/>
+                                                                    default:
+                                                                        return null;
+                                                                }
+                                                            })(actionFeedback.status)
+                                                        }
+                                                    </div>
+                                                    <p className="text-white text-start">{actionFeedback.description}</p>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
+                                    return null;
+                                })
+                            }
+                        </>
+                    }
+                    {
+                        finishedTransaction ?
+                            <MainActionButton label='Done' handleClick={handleDone}/> :
+                            <MainActionButton disabled={isTransactionProcessing} label={label} handleClick={handleMainAction}/>
                     }
                 </>
             }
-
-            <MainActionButton disabled={disabled} label={label} handleClick={handleMainAction} />
         </>
     )
 }

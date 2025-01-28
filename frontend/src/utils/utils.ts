@@ -63,23 +63,13 @@ export const NumberFormatter = Intl.NumberFormat("en", {
 export function getVaultErrorMessage(
   value: string,
   inputValue: string | undefined,
-  setShowModal: Function,
   steps: Action[]
 ): string {
 
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
-    setShowModal(false)
     return "Insufficient balance"
-  }
-
-  else {
-    if (Number(value) == 0) {
-      setShowModal(false)
-    }
-    else {
-      steps.length > 0 && setShowModal(true)
-    }
+  } else {
     return ""
   }
 }
@@ -138,31 +128,81 @@ export const selectActions = async (
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 7001 && chainID != 7000) {
-        if (isNativeToken) {
-          return [
-            Action.deposit,
-            Action.crosschainInvest,
-            Action.FundsInvest,
-            Action.deposited
-          ]
-        }
-        else if (allowanceResult) {
-          return [
-            Action.deposit,
-            Action.crosschainInvest,
-            Action.FundsInvest,
-            Action.deposited
-          ]
-        }
-        else {
-          return [
-            Action.depositApprove,
-            Action.depositApproveConfirmed,
-            Action.deposit,
-            Action.crosschainInvest,
-            Action.FundsInvest,
-            Action.deposited
-          ]
+        if (activeChain.id == 7001 || activeChain.id == 7000) {
+          if (isNativeToken) {
+            return [
+              Action.deposit,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else if (allowanceResult) {
+            return [
+              Action.deposit,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.deposit,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+        } else {
+          if (isNativeToken) {
+            return [
+              Action.deposit,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else if (allowanceResult) {
+            return [
+              Action.deposit,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.deposit,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
         }
       }
       else {
@@ -192,12 +232,14 @@ export const selectActions = async (
           if (isNativeToken) {
             return [
               Action.deposit,
+              Action.depositConfirmed,
               Action.deposited
             ]
           }
           else if (allowanceResult) {
             return [
               Action.deposit,
+              Action.depositConfirmed,
               Action.deposited
             ]
           }
@@ -206,6 +248,7 @@ export const selectActions = async (
               Action.depositApprove,
               Action.depositApproveConfirmed,
               Action.deposit,
+              Action.depositConfirmed,
               Action.deposited
             ]
           }
@@ -213,24 +256,46 @@ export const selectActions = async (
       }
     case SmartVaultActionType.Withdrawal:
       if (chainID != 7001 && chainID != 7000) {
-        return [
-          Action.withdraw,
-          Action.DivestSent,
-          Action.FundsDivested,
-          Action.Withdrawn
-        ]
+        if (activeChain.id == 7001 || activeChain.id == 7000) {
+          return [
+            Action.withdraw,
+            Action.DivestSent,
+            Action.DivestFailed,
+            Action.FundsDivested,
+            Action.ReturnFundsFromStrategyFailed,
+            Action.Withdrawn,
+            Action.ReturnFundsToUserFailed,
+            Action.withdrew
+          ]
+        } else {
+          return [
+            Action.withdraw,
+            Action.withdrawconfirmed,
+            Action.DivestSent,
+            Action.DivestFailed,
+            Action.FundsDivested,
+            Action.ReturnFundsFromStrategyFailed,
+            Action.Withdrawn,
+            Action.ReturnFundsToUserFailed,
+            Action.withdrew
+          ]
+        }
       }
       else {
         if (activeChain.id == 7001 || activeChain.id == 7000) {
           return [
             Action.withdraw,
-            Action.Withdrawn
+            Action.withdrew
           ]
         }
         else {
           return [
             Action.withdraw,
-            Action.Withdrawn
+            Action.withdrawconfirmed,
+            Action.FundsWithdrawn,
+            Action.ReturnFundsToUserSent,
+            Action.ReturnFundsToUserFailed,
+            Action.withdrew
           ]
         }
       }
@@ -245,3 +310,5 @@ export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToke
     return approvedTokenSymbol.toLowerCase() === vaultToken.symbol.toLowerCase()
   }) ?? approvedTokens[0];
 }
+
+export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
