@@ -9,20 +9,28 @@ import "../interfaces/IZRC20.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IPriceOracle.sol";
 
-address constant UNISWAP_V2_FACTORY = 0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c;
-address constant UNISWAP_V2_ROUTER = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
-address constant PRICE_ORACLE_ADDRESS = 0xF780e1fd3406F3b25004324108fc4B891c36C1Ae;
+address constant UNISWAP_V2_FACTORY = 0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
+address constant UNISWAP_V2_ROUTER = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
 
-address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
-address constant USDC_ETH_ADDRESS = 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a;
-address constant USDT_ETH_ADDRESS = 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7;
-address constant ETH_BASE_ADDRESS = 0x1de70f3e971B62A0707dA18100392af14f7fB677;
-address constant ETH_ETH_ADDRESS = 0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891;
-address constant USDC_BSC_ADDRESS = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0;
-address constant USDC_BASE_ADDRESS = 0x96152E6180E085FA57c7708e18AF8F05e37B479D;
-address constant USDT_BSC_ADDRESS = 0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F;
-address constant USDT_POL_ADDRESS = 0xdbfF6471a79E5374d771922F2194eccc42210B9F;
-address constant USDC_POL_ADDRESS = 0xfC9201f4116aE6b054722E10b98D904829b469c3;
+// address constant PRICE_ORACLE_ADDRESS = 0xF780e1fd3406F3b25004324108fc4B891c36C1Ae; // mainnet only
+address constant PRICE_ORACLE_ADDRESS = 0x308c2C5DcE2876d9CDd2d5e5A636577989Ce399a; //testnet only
+
+// address constant USDC_ETH_ADDRESS = 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a; // mainnet only
+// address constant USDT_ETH_ADDRESS = 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; // mainnet only
+// address constant ETH_BASE_ADDRESS = 0x1de70f3e971B62A0707dA18100392af14f7fB677; // mainnet only
+// address constant ETH_ETH_ADDRESS = 0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
+// address constant USDC_BSC_ADDRESS = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // mainnet only
+// address constant USDC_BASE_ADDRESS = 0x96152E6180E085FA57c7708e18AF8F05e37B479D; // mainnet only
+// address constant USDT_BSC_ADDRESS = 0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F; // mainnet only
+// address constant USDT_POL_ADDRESS = 0xdbfF6471a79E5374d771922F2194eccc42210B9F; // mainnet only
+// address constant USDC_POL_ADDRESS = 0xfC9201f4116aE6b054722E10b98D904829b469c3; // mainnet only
+
+address constant USDC_SEP_ADDRESS = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d; //testnet only
+address constant ETH_BASE_ADDRESS = 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; //testnet only
+address constant ETH_SEP_ADDRESS = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; //testnet only
+address constant USDC_BSC_ADDRESS = 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; //testnet only
+address constant USDC_POL_ADDRESS = 0xe573a6e11f8506620F123DBF930222163D46BCB6; //testnet only
 
 library SwapHelperLibEddy {
     /**
@@ -32,7 +40,7 @@ library SwapHelperLibEddy {
      * @return True if the token is an ETH token, false otherwise.
      */
     function isEthToken(address token) internal pure returns (bool) {
-        return token == ETH_ETH_ADDRESS || token == ETH_BASE_ADDRESS;
+        return token == ETH_SEP_ADDRESS || token == ETH_BASE_ADDRESS;
     }
 
     /**
@@ -43,13 +51,9 @@ library SwapHelperLibEddy {
      */
     function isUsdStablecoin(address token) internal pure returns (bool) {
         return
-            token == USDC_ETH_ADDRESS ||
-            token == USDT_ETH_ADDRESS ||
             token == USDC_BSC_ADDRESS ||
-            token == USDT_BSC_ADDRESS ||
-            token == USDC_BASE_ADDRESS ||
-            token == USDC_POL_ADDRESS ||
-            token == USDT_POL_ADDRESS;
+            token == USDC_SEP_ADDRESS ||
+            token == USDC_POL_ADDRESS;
     }
 
     /**

@@ -6,7 +6,7 @@ import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 
 contract PriceOracle {
     address constant PYTH_CONTRACT_ADDRESS =
-        0x2880aB155794e7179c9eE2e38200202908C17B43;
+        0x0708325268dF9F66270F1401206434524814508b; // mainnet: 0x2880aB155794e7179c9eE2e38200202908C17B43;
     uint256 public maxStaleness = 60; // Require price to be updated within the last 60 seconds
 
     IPyth public pyth = IPyth(PYTH_CONTRACT_ADDRESS);
