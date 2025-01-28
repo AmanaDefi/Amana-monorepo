@@ -72,7 +72,6 @@ export default function VaultInputs({
   const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
   const [isDeposit, setIsDeposit] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [showModal, setShowModal] = useState<boolean>(false);
   const [allowInput, setAllowInput] = useState<boolean>(false);
 
   const [steps, setSteps] = useState<Action[]>([]);
@@ -112,7 +111,6 @@ export default function VaultInputs({
   // Watch action type change
   useEffect(() => {
     if (inputToken) {
-      setShowModal(false)
 
       // Set the inputTokenBalance separately to track balance as a string
       setInputTokenBalance(tokenBalance);
@@ -120,7 +118,6 @@ export default function VaultInputs({
         ...inputBalance,
         formatted: "0",
       })
-      steps.length > 0 && setShowModal(true)
     }
   }, [tokenBalance, isDeposit]);
 
@@ -128,9 +125,9 @@ export default function VaultInputs({
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {
       if (isDeposit) {
-        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, setShowModal, steps));
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, steps));
       } else {
-        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, vaultTotalAssetinToken.toString(), setShowModal, steps));
+        setErrorMessage(getVaultErrorMessage(inputBalance.formatted, vaultTotalAssetinToken.toString(), steps));
       }
     }
   }, [inputToken, inputBalance.formatted, isDeposit, inputTokenBalance, vaultData.id, action, vaultTotalAssetinToken, steps]);
@@ -143,11 +140,13 @@ export default function VaultInputs({
         const newStepsConfig = await selectActions(actionType, vaultData, activeChain, EOAaccount, inputBalance, inputToken);
         setSteps(newStepsConfig)
         console.log("SETTING ACTION STEPS: ", newStepsConfig, newStepsConfig.map(e => Action[e]))
+      } else {
+        setSteps([]);
       }
     };
     // Call the async function
     fetchData();
-  }, [inputBalance.value, inputToken?.address, activeChain.id])
+  }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, EOAaccount])
 
   function handleTokenSelect(selectedToken: Token): void {
     setInputToken(selectedToken);
@@ -245,7 +244,7 @@ export default function VaultInputs({
         </div>
       </div>
 
-      {inputToken && showModal && (
+      {inputToken && (
         <InteractionContainer
           step={step}
           setStep={setStep}
@@ -259,8 +258,9 @@ export default function VaultInputs({
           activeChain={activeChain}
           _action={steps[0]}
           actions={steps}
-          setShowModal={setShowModal}
           setInputBalance={setInputBalance}
+          errorMessage={errorMessage}
+          isDeposit={isDeposit}
         />
       )}
     </>

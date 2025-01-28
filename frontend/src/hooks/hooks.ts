@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { fetchUserVaultBalance, fetchUserVaultMaxWithdraw, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY, calculateEddyAPY } from "../actions/actions";
-import { Address } from "thirdweb";
+import {Address, prepareEvent} from "thirdweb";
 import { VaultData } from "../types/types";
 import { Account } from "thirdweb/wallets";
 import { getContract, readContract, defineChain } from "thirdweb";
 import { client } from "../utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import {useContractEvents} from "thirdweb/react";
+import {isZetachain} from "@/utils/utils";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -105,7 +107,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           console.log("888888888888881",newTotalAssetsinToken)
 
           setUserVaultBalance(balance);
-          
+
           const newTotalAssets = await fetchTotalAssets(vault.id as Address);
           setVaultTotalAsset(newTotalAssets);
 
@@ -200,3 +202,95 @@ export const useUpdateAPYs = (
     }
   }, []);
 };
+
+export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }: { vaultData: VaultData, activeChainId: number, strategyChainID: number, strategyAddress: string, contractWithdrawalReceiverAddress: string, isTransactionStarted: boolean }) => {
+  // events
+  const CrossChainInvestSent = prepareEvent({
+    signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId)",
+  });
+  const FundsInvested = prepareEvent({
+    signature: "event FundsInvested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
+  });
+  const InvestConfirmFailed = prepareEvent({
+    signature: "event InvestConfirmFailed(bytes32 indexed crossChainTxId)",
+  });
+  const Deposited = prepareEvent({
+    signature: "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
+  });
+  const Deposit = prepareEvent({
+    signature: "event Deposit(address indexed sender,address indexed owner,uint256 assets,uint256 shares)",
+  });
+  const DivestSent = prepareEvent({
+    signature: "event DivestSent(bytes32 indexed crossChainTxId)",
+  });
+  const FundsDivested = prepareEvent({
+    signature: "event FundsDivested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
+  });
+  const Withdraw = prepareEvent({
+    signature: "event Withdraw(address indexed sender,address indexed receiver,address indexed owner,uint256 assets,uint256 shares)",
+  });
+  const Withdrawn = prepareEvent({
+    signature: "event Withdrawn(address indexed user,address indexed receiver,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
+  });
+  const CrossChainInvestFailed = prepareEvent({
+    signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId)",
+  });
+  const DivestFailed = prepareEvent({
+    signature: "event DivestFailed(bytes32 indexed crossChainTxId)",
+  });
+  const ReturnFundsFromStrategyFailed = prepareEvent({
+    signature: "event ReturnFundsFromStrategyFailed(bytes32 indexed crossChainTxId)",
+  });
+  const ReturnFundsToUserSent = prepareEvent({
+    signature: "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId)",
+  });
+  const ReturnFundsToUserFailed = prepareEvent({
+    signature: "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId)",
+  });
+  const FundsReturned = prepareEvent({
+    signature: "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)"
+  });
+  const FundsWithdrawn = prepareEvent({
+    signature: "event FundsWithdrawn(address vaultAddress, uint256 amount)"
+  });
+
+  // contracts
+  const contractVault = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0],
+    address: vaultData.id,
+  });
+  const contractStrategy = getContract({
+    client,
+    chain: defineChain(strategyChainID),
+    address: strategyAddress,
+  });
+  const contractWithdrawalReceiver = getContract({
+    client,
+    chain: isZetachain(strategyChainID) ? defineChain(strategyChainID) : defineChain(activeChainId),
+    address: contractWithdrawalReceiverAddress
+  });
+
+  // event listeners
+  const { data: vaultEvents } = useContractEvents({
+    contract: contractVault,
+    events: [CrossChainInvestSent, Deposited, Deposit, DivestSent, Withdraw, Withdrawn, CrossChainInvestFailed, DivestFailed, ReturnFundsToUserSent, ReturnFundsToUserFailed],
+    enabled: isTransactionStarted
+  });
+  const { data: strategyEvents } = useContractEvents({
+    contract: contractStrategy,
+    events: [FundsInvested, FundsDivested, InvestConfirmFailed, ReturnFundsFromStrategyFailed, FundsWithdrawn],
+    enabled: isTransactionStarted
+  });
+  const { data: withdrawalReceiverEvents } = useContractEvents({
+    contract: contractWithdrawalReceiver,
+    events: [FundsReturned],
+    enabled: isTransactionStarted && !(isZetachain(strategyChainID) && isZetachain(activeChainId))
+  });
+
+  return {
+    vaultEvents,
+    strategyEvents,
+    withdrawalReceiverEvents
+  }
+}
