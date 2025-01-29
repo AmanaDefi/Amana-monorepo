@@ -446,7 +446,10 @@ export default function InteractionContainer({ step, setStep, action, setAction,
 
 function Interaction(
     {
-        setStep, setAction, inputToken, inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain,
+        setStep,
+        setAction,
+        inputToken,
+        inputBalance, action, vaultData, EOAaccount, setTransactionCompleted, activeChain,
         actions, setCrosschainInvestHash, setcrossChainTxId, setInputBalance, step,
         transactionStepFeedback, setTransactionStepFeedback, updateTransactionStepFeedback, label, setLabel, errorMessage,
         lastTransactionStepFeedback,
