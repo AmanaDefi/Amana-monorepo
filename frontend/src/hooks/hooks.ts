@@ -124,7 +124,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
     if (activeAccount) {
       updateVaultBalanceAndTotal();
     }
-  }, [vault, activeAccount, setUserVaultBalance, setVaultTotalAsset, transactionCompleted]);
+  }, [vault, activeAccount, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
 };
 
 export const useUpdateAPYs = (

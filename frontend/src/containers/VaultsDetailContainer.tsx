@@ -49,7 +49,6 @@ const VaultsDetailContainer: React.FC<{
 
     useUpdateVaultBalanceAndTotalPerVault(vaultData, EOAaccount, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     useUpdateAPYs(vaults, setVaultAPYs, setLoading);
-
     return (
 
       vaultData ? (
@@ -71,6 +70,7 @@ const VaultsDetailContainer: React.FC<{
             selectedVaultId={vaultID.toString()}
             vaultTotalAsset={vaultTotalAsset}
             vaultAPYs={vaultAPYs}
+            transactionCompleted={transactionCompleted}
           />
 
           <section className="w-full md:flex md:flex-row md:justify-between md:space-x-8 py-10 px-4 md:px-0">
