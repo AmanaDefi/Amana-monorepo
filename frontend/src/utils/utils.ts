@@ -305,9 +305,10 @@ export const selectActions = async (
 export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
   const approvedTokens = APPROVED_TOKENS[chainId];
   if (!approvedTokens?.length) return undefined;
+  const vaultTokenSymbol = vaultToken.symbol.split('.')[0];
   return approvedTokens.find(el => {
     const approvedTokenSymbol = el.symbol.split('.')[0];
-    return approvedTokenSymbol.toLowerCase() === vaultToken.symbol.toLowerCase()
+    return approvedTokenSymbol.toLowerCase() === vaultTokenSymbol.toLowerCase()
   }) ?? approvedTokens[0];
 }
 
