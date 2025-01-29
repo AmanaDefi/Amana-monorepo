@@ -3,7 +3,8 @@ import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token, Act
 import { Account } from "thirdweb/wallets";
 import { handleAllowance } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
-import {APPROVED_TOKENS} from "@/constants/chainConfig";
+import {APPROVED_TOKENS, HERMES_URL} from "@/constants/chainConfig";
+import {HermesClient} from "@pythnetwork/hermes-client";
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -313,3 +314,37 @@ export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToke
 }
 
 export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
+
+export async function fetchTokenPrices(priceIds: string[]): Promise<{
+  [priceId: string]: number;
+}> {
+  const connection = new HermesClient(HERMES_URL, {});
+
+  try {
+    const priceUpdates = await connection.getLatestPriceUpdates(priceIds);
+    const parsed = priceUpdates?.parsed;
+
+    if (!parsed || parsed.length === 0) {
+      console.error("No price updates found");
+      return priceIds.reduce((acc, id) => ({ ...acc, [id]: 0 }), {});
+    }
+
+    const prices: {
+      [priceId: string]: number;
+    } = {};
+
+    parsed.forEach((update, index) => {
+      const price = parseFloat(update?.ema_price?.price ?? "0");
+      const decimals = update?.ema_price?.expo ?? 0;
+      const adjustedPrice = price * Math.pow(10, decimals);
+
+      prices[priceIds[index]] = adjustedPrice;
+      console.log(`Price for ${priceIds[index]}:`, adjustedPrice);
+    });
+
+    return prices;
+  } catch (error) {
+    console.error("Error fetching prices:", error);
+    return priceIds.reduce((acc, id) => ({ ...acc, [id]: 0 }), {});
+  }
+}

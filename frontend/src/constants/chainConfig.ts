@@ -316,3 +316,11 @@ export const ACCOUNT_ABSTRACTION_CONFIG = {
   sponsorGas: false,
   factoryAddress: "0x021A47c1F745cEaC5CD19DC92C5d117e84b1cD46", // Replace with the correct factory address
 };
+
+export const HERMES_URL = "https://hermes.pyth.network/";
+export const PRICE_IDS: { [key: string]: string } = {
+  "ETH": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  "BNB": "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
+  "POL": "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
+  "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"
+};

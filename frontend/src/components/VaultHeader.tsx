@@ -8,6 +8,7 @@ import { ethers } from "ethers";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { Address, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
+import {useTokenPriceBySymbol} from "@/hooks/hooks";
 
 export default function VaultHeader({
     vaultData,
@@ -103,13 +104,14 @@ export default function VaultHeader({
         fetchData();
     }, [inputToken, userAddress, activeChain, isLoading, isError, walletBalance, transactionCompleted]);
 
+    const symbol = inputToken?.symbol || "";
+    const price = useTokenPriceBySymbol(inputToken?.symbol)
+
     // Handle undefined states gracefully
     if (!inputToken) {
         return <p>Loading...</p>;
     }
 
-    const price = inputToken.price || 0;
-    const symbol = inputToken.symbol || "";
 
     return (
         <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">

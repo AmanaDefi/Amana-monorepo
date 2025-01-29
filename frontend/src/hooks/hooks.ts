@@ -1,13 +1,20 @@
-import { useEffect } from "react";
-import { fetchUserVaultBalance, fetchUserVaultMaxWithdraw, fetchTotalAssets, calculateAaveAPY, calculateMoonwellAPY, calculateCompoundAPY, calculateEddyAPY } from "../actions/actions";
-import {Address, prepareEvent} from "thirdweb";
-import { VaultData } from "../types/types";
-import { Account } from "thirdweb/wallets";
-import { getContract, readContract, defineChain } from "thirdweb";
-import { client } from "../utils/client";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import {useEffect, useMemo} from "react";
+import {
+  calculateAaveAPY,
+  calculateCompoundAPY,
+  calculateEddyAPY,
+  fetchTotalAssets,
+  fetchUserVaultBalance,
+  fetchUserVaultMaxWithdraw
+} from "../actions/actions";
+import {Address, defineChain, getContract, prepareEvent, readContract} from "thirdweb";
+import {VaultData} from "../types/types";
+import {Account} from "thirdweb/wallets";
+import {client} from "../utils/client";
+import {SUPPORTED_CHAINS} from "../constants/chainConfig";
 import {useContractEvents} from "thirdweb/react";
 import {isZetachain} from "@/utils/utils";
+import {useTokenPrices} from "@/providers/TokenPriceProvider";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -293,4 +300,17 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     strategyEvents,
     withdrawalReceiverEvents
   }
+}
+
+export function useTokenPriceBySymbol(symbol: string|undefined) {
+  const priceContext = useTokenPrices();
+
+  return useMemo(() => {
+    if (!priceContext || !symbol) {
+      return 0;
+    }
+
+    const tokenSymbol = symbol.split('.')[0].toUpperCase();
+    return priceContext.prices?.[tokenSymbol] ?? 0;
+  }, [priceContext, symbol]);
 }

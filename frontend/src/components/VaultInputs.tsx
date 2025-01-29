@@ -12,6 +12,7 @@ import { getBalance } from "thirdweb/extensions/erc20";
 import {determineVaultTokenFromApprovedTokens, getVaultErrorMessage, selectActions} from "@/utils/utils";
 import { ethers } from "ethers";
 import InteractionContainer from "./interact";
+import {useTokenPriceBySymbol} from "@/hooks/hooks";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -90,6 +91,7 @@ export default function VaultInputs({
   }
 
   const userAddress = EOAaccount.address;
+  const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol)
 
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
@@ -190,7 +192,7 @@ export default function VaultInputs({
     // convert string amt to bigint
     const newAmt = parseUnits(inputAmt, inputToken.decimals);
 
-    setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * (inputToken.price || 0)) });
+    setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
   }
 
   function handleMaxClick() {

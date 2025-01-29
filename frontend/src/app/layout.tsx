@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import AccountProvider from "@/providers/AccountProvider";
+import TokenPriceProvider from "@/providers/TokenPriceProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +24,9 @@ const MyApp = ({ children }: Readonly<{ children: React.ReactNode; }>) => {
         <QueryClientProvider client={queryClient}>
           <ThirdwebProvider>
               <AccountProvider>
-                  {children}
+                  <TokenPriceProvider>
+                      {children}
+                  </TokenPriceProvider>
               </AccountProvider>
             <ToastContainer />
           </ThirdwebProvider>
