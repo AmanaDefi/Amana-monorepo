@@ -181,7 +181,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     return
                 }
             }
-            else if (last_event.eventName == "Deposit" && isZetachain(strategyChainID) && action === (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed)) {
+            else if (last_event.eventName == "Deposit" && isZetachain(strategyChainID) && isZetachain(activeChain.id) && action === Action.deposit) {
                 console.log("EVENT Deposit: ", last_event, action, step);
                 if (last_event.transactionHash == crosschainInvestHash) {
                     console.log("PASSED EVENT Deposit: ", last_event, action, step);
@@ -201,7 +201,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     return
                 }
             }
-            else if (last_event.eventName == "Deposited" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsInvest : Action.deposit)) {
+            else if (last_event.eventName == "Deposited" && action == (!isZetachain(strategyChainID) ? Action.FundsInvest : (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed))) {
                 console.log("EVENT Deposited: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT Deposited: ", last_event, action, step);
