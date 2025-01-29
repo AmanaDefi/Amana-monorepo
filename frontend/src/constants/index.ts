@@ -224,7 +224,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0xF1bF99FB21f1381b73d7F610E3054d14cC38Aae2", // Base Sepolia ETH Vault
+    id: "0xE054cD48ACd0F1433BE0293F9488AF1924Bb15EA", // Base Sepolia ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -240,7 +240,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0xEc8461Aa545CAa0e784b395a2569Ca46641ab151",
+      strategyAddress: "0x53147cF30a9b1F5fDd1b5D6454Ad7182148DA173",
       chainId: 84532,
       network: "Base Sepolia",
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
