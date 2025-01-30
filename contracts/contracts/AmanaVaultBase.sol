@@ -263,6 +263,26 @@ abstract contract AmanaVaultBase is
     }
 
     /**
+     * @notice Gets the expected output amount for a given input amount and swap path,
+     *         then converts it into shares.
+     * @param amountIn The input amount.
+     * @param inputToken The address of the token being deposited.
+     * @return shares The final amount in vault shares.
+     */
+    function getAmountOut(
+        uint amountIn,
+        address inputToken,
+        address outputToken
+    ) external view returns (uint shares) {
+        uint[] memory amounts = SwapHelperLibEddy.getAmountsOut(
+            amountIn,
+            inputToken,
+            outputToken
+        );
+        return amounts[amounts.length - 1]; // Final swap output amount
+    }
+
+    /**
      * @dev Internal conversion function (from assets to shares) with support for rounding direction.
      *
      * Will revert if assets > 0, totalSupply > 0 and totalAssets = 0. That corresponds to a case where any asset
