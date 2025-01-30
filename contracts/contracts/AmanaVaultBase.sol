@@ -269,7 +269,7 @@ abstract contract AmanaVaultBase is
      * @param inputToken The address of the token being deposited.
      * @return shares The final amount in vault shares.
      */
-    function getAmountOut(
+    function getAmountOutFromSwap(
         uint amountIn,
         address inputToken,
         address outputToken
