@@ -235,11 +235,11 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     return
                 }
             }
-            else if (last_event.eventName == "Withdrawn" && action == ((strategyChainID != 7001 && strategyChainID != 7000) ? Action.FundsDivested : Action.withdraw)) {
+            else if (last_event.eventName == "Withdrawn" && action == (!isZetachain(strategyChainID) ? Action.FundsDivested : Action.withdraw)) {
                 console.log("EVENT Withdrawn: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT Withdrawn: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == (isZetachain(strategyChainID) ? Action.withdrew : Action.Withdrawn));
+                    const nextStep = actions.findIndex(el => el == (isZetachain(strategyChainID) ? Action.withdrew : (isZetachain(activeChain.id) ? Action.withdrew : Action.Withdrawn)));
                     setAction(actions[nextStep]);
                     setStep(nextStep);
                     return
@@ -672,6 +672,11 @@ function Interaction(
                 }))
                 break;
             case Action.FundsDivested:
+                if (isZetachain(activeChain.id)) {
+                    description = 'Withdrawal confirmation and return of funds in progress'
+                } else {
+                    description = 'Withdrawal confirmation in progress'
+                }
                 setTransactionStepFeedback(prev => ({
                     ...prev,
                     [Action.DivestSent]: {
@@ -681,7 +686,7 @@ function Interaction(
                     },
                     [Action.FundsDivested]: {
                         label: 'Withdraw',
-                        description: 'Withdrawal confirmation in progress',
+                        description: description,
                         status: TransactionStepStatus.processing
                     },
                 }))
@@ -711,8 +716,13 @@ function Interaction(
                         description = 'Return of funds completed';
                     }
                 } else {
-                    targetAction = Action.Withdrawn;
-                    description = 'Return of funds completed';
+                    if (isZetachain(activeChain.id)) {
+                        targetAction = Action.FundsDivested;
+                        description = 'Withdrawal confirmation completed, funds returned';
+                    } else {
+                        targetAction = Action.Withdrawn;
+                        description = 'Return of funds completed';
+                    }
                 }
                 newTransactionStepFeedback = {
                     ...transactionStepFeedback,
@@ -819,18 +829,26 @@ function Interaction(
             }
         } else {
             if (action == Action.depositApprove) {
-                updateTransactionStepFeedback(action, { status: TransactionStepStatus.pending, description: 'Transaction approval required' });
+                updateTransactionStepFeedback(action, { status: TransactionStepStatus.error, description: 'Approval transaction failed, please try again' });
             }
             if (action == Action.deposit) {
                 setTransactionStepFeedback(prev => ({
                     ...prev,
-                    [action]: null
+                    [action]: {
+                        label: 'Deposit',
+                        description: 'Local transaction failed, please try again',
+                        status: TransactionStepStatus.error
+                    }
                 }))
             }
             if (action == Action.withdraw) {
                 setTransactionStepFeedback(prev => ({
                     ...prev,
-                    [action]: null
+                    [action]: {
+                        label: 'Withdraw',
+                        description: 'Local transaction failed, please try again',
+                        status: TransactionStepStatus.error
+                    }
                 }))
             }
             setIsTransactionProcessing(false);
