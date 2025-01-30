@@ -54,9 +54,9 @@ abstract contract AmanaVaultBase is
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event ContextDataRevert(RevertContext context);
+    // event ContextDataRevert(RevertContext context);
 
-    event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
+    // event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
     event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
 
     event Deposited(
@@ -498,7 +498,7 @@ abstract contract AmanaVaultBase is
                 revertOptions
             );
 
-            emit ReturnFundsToUserSent(_crossChainTxId);
+            // emit ReturnFundsToUserSent(_crossChainTxId);
         }
     }
 
