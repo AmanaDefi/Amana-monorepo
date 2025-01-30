@@ -235,7 +235,7 @@ library SwapHelperLibEddy {
         uint amountIn,
         address inputZrc20,
         address outputZrc20
-    ) public view returns (uint[] memory amounts) {
+    ) internal view returns (uint[] memory amounts) {
         address[] memory path = _getPath(inputZrc20, outputZrc20);
 
         if (path.length < 2) {
