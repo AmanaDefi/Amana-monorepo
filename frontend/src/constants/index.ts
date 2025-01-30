@@ -249,7 +249,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xA4f9fe0E0d357E9B2Fd436F257046b0df6D88f4f", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
+    id: "0xd90CE51E5CeB8F92D9E30DDaD33DC3e49A863277", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -265,7 +265,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0x564bC0142813fDb8C5567C5c8A3d5Ecea729c7Dd",
+      strategyAddress: "0xD015f304E60349A8Dce964C24610A85FC1cE1613",
       chainId: 11155111,
       network: "Eth Sepolia",
       netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
