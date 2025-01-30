@@ -225,7 +225,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     return
                 }
             }
-            else if (last_event.eventName == "ReturnFundsToUserSent" && action == Action.FundsWithdrawn) {
+            else if (last_event.eventName == "ReturnFundsToUserSent" && action == Action.withdrawconfirmed) {
                 console.log("EVENT ReturnFundsToUserSent: ", last_event, action, step);
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT ReturnFundsToUserSent: ", last_event, action, step);
@@ -287,16 +287,6 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                 if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                     console.log("PASSED EVENT FundsInvested: ", last_event, action, step);
                     const nextStep = actions.findIndex(el => el == Action.FundsInvest);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
-                }
-            }
-            else if (last_event.eventName == "FundsWithdrawn" && action == (isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed)) {
-                console.log("EVENT FundsWithdrawn: ", last_event, action, step);
-                if (last_event.transactionHash == crosschainInvestHash) {
-                    console.log("PASSED EVENT FundsWithdrawn: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.FundsWithdrawn);
                     setAction(actions[nextStep]);
                     setStep(nextStep);
                     return
@@ -666,20 +656,14 @@ function Interaction(
                     },
                 }))
                 break;
-            case Action.FundsWithdrawn:
-                targetAction = isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed;
-                setTransactionStepFeedback(prev => ({
-                    ...prev,
-                    [targetAction]: {
-                        label: 'Withdraw',
-                        description: 'Cross chain request to vault completed',
-                        status: TransactionStepStatus.completed
-                    }
-                }))
-                break;
             case Action.ReturnFundsToUserSent:
                 setTransactionStepFeedback(prev => ({
                     ...prev,
+                    [Action.withdrawconfirmed]: {
+                        label: 'Withdraw',
+                        description: 'Cross chain request to vault completed',
+                        status: TransactionStepStatus.completed
+                    },
                     [Action.ReturnFundsToUserSent]: {
                         label: 'Withdraw',
                         description: 'Return of funds in progress',

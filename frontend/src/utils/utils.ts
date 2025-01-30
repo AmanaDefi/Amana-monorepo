@@ -293,7 +293,6 @@ export const selectActions = async (
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
-            Action.FundsWithdrawn,
             Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
             Action.withdrew
