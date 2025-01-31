@@ -48,7 +48,7 @@ export default function VaultHeader({
 
     // Step 1: Determine inputToken based on activeChain
     useEffect(() => {
-        if (activeChain.id === 7001) {
+        if (activeChain.id === 7000 || activeChain.id === 7001) {
             setInputToken(vaultData.inputToken);
         } else {
             setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken));
