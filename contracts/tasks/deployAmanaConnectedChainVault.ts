@@ -29,9 +29,14 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 
   // Deploy the AmanaConnectedChainVault contract using OpenZeppelin Upgrades
-  const factory = await hre.ethers.getContractFactory("AmanaConnectedChainVault");
+  const factory = await hre.ethers.getContractFactory("AmanaConnectedChainVault", {
+    libraries: {
+      SwapHelperLibEddyTestnet: "0xB6b4668dD1774E67a90D717a332e11A822442f06",
+    },
+  });
   const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gasTank, receiver, gasLimitWithdrawAndCall, gasLimitCall], {
     initializer: "initialize",
+    unsafeAllowLinkedLibraries: true,
   });
   console.log("Contract deployed, waiting for confirmations...");
 
