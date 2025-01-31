@@ -15,11 +15,11 @@ const connectModalConfig: {
     client,
     chains: [SUPPORTED_CHAINS[0]],
     wallets: [
-        inAppWallet({
-            auth: {
-                options: ["google", "email", "passkey"],
-            },
-        }),
+        // inAppWallet({
+        //     auth: {
+        //         options: ["google", "email", "passkey"],
+        //     },
+        // }),
         createWallet("io.metamask"),
         createWallet("com.coinbase.wallet"),
         createWallet("me.rainbow"),
