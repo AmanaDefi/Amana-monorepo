@@ -183,6 +183,16 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       isNative: false,
       ZRC20equivalent: "0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a",
     },
+    {
+      symbol: "USDT",
+      address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      decimals: 6,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7",
+    },
   ],
   11155111: [
     {
@@ -251,6 +261,26 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       isNative: true,
       ZRC20equivalent: "0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501",
     },
+    {
+      symbol: "USDC",
+      address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0xfC9201f4116aE6b054722E10b98D904829b469c3",
+    },
+    {
+      symbol: "USDT",
+      address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+      decimals: 6,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0xdbfF6471a79E5374d771922F2194eccc42210B9F",
+    },
   ],
   80002: [
     {
@@ -278,12 +308,22 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
     {
       symbol: "USDC",
       address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
-      decimals: 18,
+      decimals: 6,
       imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
       ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
+    },
+    {
+      symbol: "USDT",
+      address: "0x55d398326f99059fF775485246999027B3197955",
+      decimals: 6,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F",
     },
   ],
   97: [
