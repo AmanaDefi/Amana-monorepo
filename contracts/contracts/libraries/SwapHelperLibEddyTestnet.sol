@@ -5,9 +5,6 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
-// import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
-// import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
-
 import "../interfaces/IZRC20.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IPriceOracle.sol";
@@ -71,7 +68,7 @@ library SwapHelperLibEddyTestnet {
         address outputToken,
         uint256 amount,
         uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         if (isUsdStablecoin(inputToken) && isUsdStablecoin(outputToken)) {
             // USD -> USD
             return amount - ((amount * slippageBps) / 10000);
@@ -113,48 +110,6 @@ library SwapHelperLibEddyTestnet {
         if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
     }
 
-    /**
-     * @notice Swaps a specific amount of tokens for another token.
-     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
-     * @param zrc20 The address of the input token.
-     * @param amount The amount of input tokens to swap.
-     * @param targetZRC20 The address of the output token.
-     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
-     * @param vault The address where the swapped tokens will be sent.
-     * @param maxDeadline The maximum deadline for the swap to complete.
-     * @return The amount of output tokens received.
-     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
-     */
-    function swapExactTokensForTokens(
-        address zrc20,
-        uint256 amount,
-        address targetZRC20,
-        uint16 slippageBps,
-        address vault,
-        uint16 maxDeadline
-    ) internal returns (uint256) {
-        address[] memory path = _getPath(zrc20, targetZRC20);
-        uint256 minAmountOut = calculateMinAmountOut(
-            zrc20,
-            targetZRC20,
-            amount,
-            slippageBps
-        );
-
-        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
-        // Perform the swap
-        uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-            .swapExactTokensForTokens(
-                amount,
-                minAmountOut,
-                path,
-                vault,
-                block.timestamp + maxDeadline
-            );
-
-        return amounts[amounts.length - 1];
-    }
-
     function _existsPairPool(
         address tokenA,
         address tokenB
@@ -166,10 +121,10 @@ library SwapHelperLibEddyTestnet {
         return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
     }
 
-    function _getPath(
+    function getPath(
         address zrc20,
         address targetZRC20
-    ) internal view returns (address[] memory path) {
+    ) public view returns (address[] memory path) {
         if (zrc20 == targetZRC20) {
             revert IErrors.CantBeIdenticalAddresses();
         }
@@ -232,8 +187,8 @@ library SwapHelperLibEddyTestnet {
         uint amountIn,
         address inputZrc20,
         address outputZrc20
-    ) internal view returns (uint finalAmountOut) {
-        address[] memory path = _getPath(inputZrc20, outputZrc20);
+    ) public view returns (uint finalAmountOut) {
+        address[] memory path = getPath(inputZrc20, outputZrc20);
 
         if (path.length < 2) {
             revert IErrors.InvalidPath();

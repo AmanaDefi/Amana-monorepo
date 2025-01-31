@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "./interfaces/ISystem.sol";
 import "./interfaces/IGasTank.sol";
@@ -33,6 +34,8 @@ abstract contract AmanaVaultBase is
         0x6c533f7fE93fAE114d0954697069Df33C9B74fD7; // 0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address constant _SYSTEM_ADDRESS =
         0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B; // 0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
+    address constant UNISWAP_V2_ROUTER =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
 
     // Variables
     address public strategyAddress;
@@ -374,7 +377,7 @@ abstract contract AmanaVaultBase is
         }
         uint256 outputAmount = assets;
         if (zrc20source != address(asset())) {
-            outputAmount = SwapHelperLibEddyTestnet.swapExactTokensForTokens(
+            outputAmount = swapExactTokensForTokens(
                 zrc20source,
                 assets,
                 address(asset()),
@@ -463,15 +466,14 @@ abstract contract AmanaVaultBase is
 
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
-                outputAmount = SwapHelperLibEddyTestnet
-                    .swapExactTokensForTokens(
-                        address(asset()),
-                        amount,
-                        withdrawZRC20,
-                        slippage,
-                        address(this),
-                        200
-                    );
+                outputAmount = swapExactTokensForTokens(
+                    address(asset()),
+                    amount,
+                    withdrawZRC20,
+                    slippage,
+                    address(this),
+                    200
+                );
             }
 
             (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
@@ -511,6 +513,51 @@ abstract contract AmanaVaultBase is
             );
         }
         emit ReturnFundsToUserSent(_crossChainTxId);
+    }
+
+    /**
+     * @notice Swaps a specific amount of tokens for another token.
+     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
+     * @param zrc20 The address of the input token.
+     * @param amount The amount of input tokens to swap.
+     * @param targetZRC20 The address of the output token.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @param vault The address where the swapped tokens will be sent.
+     * @param maxDeadline The maximum deadline for the swap to complete.
+     * @return The amount of output tokens received.
+     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     */
+    function swapExactTokensForTokens(
+        address zrc20,
+        uint256 amount,
+        address targetZRC20,
+        uint16 slippageBps,
+        address vault,
+        uint16 maxDeadline
+    ) internal returns (uint256) {
+        address[] memory path = SwapHelperLibEddyTestnet.getPath(
+            zrc20,
+            targetZRC20
+        );
+        uint256 minAmountOut = SwapHelperLibEddyTestnet.calculateMinAmountOut(
+            zrc20,
+            targetZRC20,
+            amount,
+            slippageBps
+        );
+
+        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+        // Perform the swap
+        uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+            .swapExactTokensForTokens(
+                amount,
+                minAmountOut,
+                path,
+                vault,
+                block.timestamp + maxDeadline
+            );
+
+        return amounts[amounts.length - 1];
     }
 
     /**
