@@ -2,6 +2,9 @@
 pragma solidity 0.8.26;
 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+
 // import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 // import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 
@@ -133,26 +136,7 @@ library SwapHelperLibEddy {
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {
-        address[] memory path;
-        bool existsDirectPool = _existsPairPool(zrc20, targetZRC20);
-
-        if (existsDirectPool) {
-            path = new address[](2);
-            path[0] = zrc20;
-            path[1] = targetZRC20;
-        } else if (
-            // Check for intermediate liquidity via WZeta
-            !_existsPairPool(zrc20, WZETA_TOKEN) ||
-            !_existsPairPool(WZETA_TOKEN, targetZRC20)
-        ) {
-            revert IErrors.InsufficientLiquidity();
-        } else {
-            path = new address[](3);
-            path[0] = zrc20;
-            path[1] = WZETA_TOKEN;
-            path[2] = targetZRC20;
-        }
-
+        address[] memory path = _getPath(zrc20, targetZRC20);
         uint256 minAmountOut = calculateMinAmountOut(
             zrc20,
             targetZRC20,
@@ -178,23 +162,93 @@ library SwapHelperLibEddy {
         address tokenA,
         address tokenB
     ) internal view returns (bool) {
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
-        address pair = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            hex"ff",
-                            UNISWAP_V2_FACTORY,
-                            keccak256(abi.encodePacked(token0, token1)),
-                            hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-                        )
-                    )
-                )
-            )
+        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+            tokenA,
+            tokenB
         );
-        return
-            IZRC20(tokenA).balanceOf(pair) > 0 &&
-            IZRC20(tokenB).balanceOf(pair) > 0;
+        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
+    }
+
+    function _getPath(
+        address zrc20,
+        address targetZRC20
+    ) internal view returns (address[] memory path) {
+        if (zrc20 == targetZRC20) {
+            revert IErrors.CantBeIdenticalAddresses();
+        }
+        bool existsDirectPool = _existsPairPool(zrc20, targetZRC20);
+
+        if (existsDirectPool) {
+            path = new address[](2);
+            path[0] = zrc20;
+            path[1] = targetZRC20;
+        } else if (
+            // Check for intermediate liquidity via WZeta
+            !_existsPairPool(zrc20, WZETA_TOKEN) ||
+            !_existsPairPool(WZETA_TOKEN, targetZRC20)
+        ) {
+            revert IErrors.InsufficientLiquidity();
+        } else {
+            path = new address[](3);
+            path[0] = zrc20;
+            path[1] = WZETA_TOKEN;
+            path[2] = targetZRC20;
+        }
+        return path;
+    }
+
+    function getAmountOut(
+        uint amountIn,
+        uint reserveIn,
+        uint reserveOut
+    ) internal pure returns (uint amountOut) {
+        if (amountIn == 0) {
+            revert IErrors.InsufficientInputAmount();
+        }
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert IErrors.InsufficientLiquidity();
+        }
+        uint amountInWithFee = amountIn * 997;
+        uint numerator = amountInWithFee * reserveOut;
+        uint denominator = (reserveIn * 1000) + amountInWithFee;
+        amountOut = numerator / denominator;
+    }
+
+    function getReserves(
+        address tokenA,
+        address tokenB
+    ) internal view returns (uint reserveA, uint reserveB) {
+        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+            tokenA,
+            tokenB
+        );
+        if (pair == address(0)) revert IErrors.InsufficientLiquidity();
+        (uint112 reserve0, uint112 reserve1, ) = IUniswapV2Pair(pair)
+            .getReserves();
+        (address token0, ) = sortTokens(tokenA, tokenB);
+        (reserveA, reserveB) = tokenA == token0
+            ? (reserve0, reserve1)
+            : (reserve1, reserve0);
+    }
+
+    function getAmountsOut(
+        uint amountIn,
+        address inputZrc20,
+        address outputZrc20
+    ) internal view returns (uint[] memory amounts) {
+        address[] memory path = _getPath(inputZrc20, outputZrc20);
+
+        if (path.length < 2) {
+            revert IErrors.InvalidPath();
+        }
+        amounts = new uint[](path.length);
+        amounts[0] = amountIn;
+        for (uint i = 0; i < path.length - 1; i++) {
+            (uint reserveIn, uint reserveOut) = getReserves(
+                path[i],
+                path[i + 1]
+            );
+            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+        }
     }
 }
