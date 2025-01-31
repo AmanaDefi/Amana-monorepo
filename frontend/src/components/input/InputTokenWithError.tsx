@@ -4,6 +4,7 @@ import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency, formatBalance } from "@/utils/utils";
 import { useState, useEffect } from "react";
+import {useTokenPriceBySymbol} from "@/hooks/hooks";
 
 export default function InputTokenWithError({
   tokenList,
@@ -40,9 +41,11 @@ export default function InputTokenWithError({
 
   const [data1, setdata1] = useState('')
 
+  const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol)
+
   useEffect(() => {
     setdata1(formatBalance(Number(userVaultBalance)))
-  }, [userVaultBalance, selectedToken, vaultData.inputToken.price])
+  }, [userVaultBalance, selectedToken, selectedTokenPrice])
 
 
   return (
@@ -76,7 +79,7 @@ export default function InputTokenWithError({
             <p className="group-hover/max:text-white">
               {selectedToken
                 ? "$ " +
-                formatCurrency((Number(props.value) * (selectedToken.price || 0)))
+                formatCurrency((Number(props.value) * selectedTokenPrice))
                   .toString()
                 : "$ 0.00"}
             </p>

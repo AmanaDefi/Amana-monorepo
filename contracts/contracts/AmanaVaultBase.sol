@@ -8,12 +8,13 @@ import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "./interfaces/ISystem.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 
-import "./libraries/SwapHelperLibEddy.sol";
+import "./libraries/SwapHelperLibEddyTestnet.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -32,7 +33,9 @@ abstract contract AmanaVaultBase is
     address constant _GATEWAY_ADDRESS =
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E; // testnet: 0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
     address constant _SYSTEM_ADDRESS =
-        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
+        0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B; // 0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
+    address constant UNISWAP_V2_ROUTER =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
 
     // Variables
     address public strategyAddress;
@@ -54,20 +57,13 @@ abstract contract AmanaVaultBase is
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event ContextDataRevert(RevertContext context);
+    // event ContextDataRevert(RevertContext context);
 
     event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
     event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
 
     event Deposited(
         address indexed user,
-        uint256 amount,
-        uint256 shares,
-        bytes32 indexed crossChainTxId
-    );
-    event Withdrawn(
-        address indexed user,
-        address indexed receiver,
         uint256 amount,
         uint256 shares,
         bytes32 indexed crossChainTxId
@@ -263,6 +259,25 @@ abstract contract AmanaVaultBase is
     }
 
     /**
+     * @notice Gets the expected output amount for a given input amount and swap path
+     * @param amountIn The input amount.
+     * @param inputToken The address of the token being deposited.
+     * @return amount The final amount of output tokens received.
+     */
+    function getAmountOutFromSwap(
+        uint amountIn,
+        address inputToken,
+        address outputToken
+    ) external view returns (uint amount) {
+        return
+            SwapHelperLibEddyTestnet.getFinalAmountOut(
+                amountIn,
+                inputToken,
+                outputToken
+            );
+    }
+
+    /**
      * @dev Internal conversion function (from assets to shares) with support for rounding direction.
      *
      * Will revert if assets > 0, totalSupply > 0 and totalAssets = 0. That corresponds to a case where any asset
@@ -362,7 +377,7 @@ abstract contract AmanaVaultBase is
         }
         uint256 outputAmount = assets;
         if (zrc20source != address(asset())) {
-            outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
+            outputAmount = swapExactTokensForTokens(
                 zrc20source,
                 assets,
                 address(asset()),
@@ -414,7 +429,6 @@ abstract contract AmanaVaultBase is
      * @param userChainId The chain ID of the user's chain.
      * @param receiver The address of the user receiving the funds.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @return outputAmount The actual amount of assets returned to the user after potential swaps.
      * @notice Handles cross-chain transfers or same-chain asset transfers. Manages gas fees and token approvals.
      */
     function _returnFundsToUser(
@@ -425,8 +439,8 @@ abstract contract AmanaVaultBase is
         address withdrawERC20,
         bytes32 _crossChainTxId,
         uint16 slippage
-    ) internal returns (uint256 outputAmount) {
-        outputAmount = amount;
+    ) internal {
+        uint256 outputAmount = amount;
 
         if (userChainId == uint32(block.chainid)) {
             // Same-chain transfer
@@ -452,7 +466,7 @@ abstract contract AmanaVaultBase is
 
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
-                outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
+                outputAmount = swapExactTokensForTokens(
                     address(asset()),
                     amount,
                     withdrawZRC20,
@@ -497,9 +511,53 @@ abstract contract AmanaVaultBase is
                 callOptions,
                 revertOptions
             );
-
-            emit ReturnFundsToUserSent(_crossChainTxId);
         }
+        emit ReturnFundsToUserSent(_crossChainTxId);
+    }
+
+    /**
+     * @notice Swaps a specific amount of tokens for another token.
+     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
+     * @param zrc20 The address of the input token.
+     * @param amount The amount of input tokens to swap.
+     * @param targetZRC20 The address of the output token.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @param vault The address where the swapped tokens will be sent.
+     * @param maxDeadline The maximum deadline for the swap to complete.
+     * @return The amount of output tokens received.
+     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     */
+    function swapExactTokensForTokens(
+        address zrc20,
+        uint256 amount,
+        address targetZRC20,
+        uint16 slippageBps,
+        address vault,
+        uint16 maxDeadline
+    ) internal returns (uint256) {
+        address[] memory path = SwapHelperLibEddyTestnet.getPath(
+            zrc20,
+            targetZRC20
+        );
+        uint256 minAmountOut = SwapHelperLibEddyTestnet.calculateMinAmountOut(
+            zrc20,
+            targetZRC20,
+            amount,
+            slippageBps
+        );
+
+        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+        // Perform the swap
+        uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+            .swapExactTokensForTokens(
+                amount,
+                minAmountOut,
+                path,
+                vault,
+                block.timestamp + maxDeadline
+            );
+
+        return amounts[amounts.length - 1];
     }
 
     /**

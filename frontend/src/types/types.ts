@@ -108,15 +108,39 @@ export enum Action {
   deposit,
   depositConfirmed,
   crosschainInvest,
-  deposited,
+  CrossChainInvestFailed,
   FundsInvest,
+  InvestConfirmFailed,
+  deposited,
   withdraw,
   withdrawconfirmed,
   DivestSent,
+  FundsWithdrawn,
+  DivestFailed,
   FundsDivested,
   ReturnFundsToUserSent,
+  ReturnFundsFromStrategyFailed,
   Withdrawn,
-  CrossChainInvestFailed,
-  DivestFailed,
-  ReturnFundsToUserFailed
+  ReturnFundsToUserFailed,
+  FundsReturnedError,
+  FundsReturned,
+  withdrew,
+  failed
+}
+
+export enum TransactionStepStatus {
+  pending = 'PENDING',
+  processing = 'PROCESSING',
+  completed = 'COMPLETED',
+  error = 'ERROR'
+}
+
+export type TransactionStepFeedback = {
+  label: string
+  description: string
+  status: TransactionStepStatus
+}
+
+export type TransactionStepMessages = {
+  [K in Action]?: TransactionStepFeedback | null
 }

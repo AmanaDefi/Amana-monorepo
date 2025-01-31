@@ -8,7 +8,7 @@ import { ethers } from "ethers";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { Address, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { APPROVED_TOKENS } from "@/constants/chainConfig";
+import {useTokenPriceBySymbol} from "@/hooks/hooks";
 
 export default function VaultHeader({
     vaultData,
@@ -16,12 +16,14 @@ export default function VaultHeader({
     selectedVaultId,
     vaultTotalAsset,
     vaultAPYs,
+    transactionCompleted
 }: {
     vaultData: VaultData;
     userVaultBalance?: string;
     selectedVaultId: string;
     vaultTotalAsset?: VaultTotalAssets;
     vaultAPYs: VaultAPY[];
+    transactionCompleted: boolean
 }): JSX.Element {
     const activeChain = useActiveWalletChain();
     const EOAaccount = useActiveAccount();
@@ -52,6 +54,11 @@ export default function VaultHeader({
             setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken));
         }
     }, [activeChain, vaultData]);
+
+    useEffect(() => {
+        console.log("walletData", walletData)
+        console.log("walletBalance", walletBalance)
+    }, [walletData,walletBalance]);
 
 
 
@@ -95,7 +102,10 @@ export default function VaultHeader({
         };
 
         fetchData();
-    }, [inputToken, userAddress, activeChain, data1]);
+    }, [inputToken, userAddress, activeChain, isLoading, isError, walletBalance, transactionCompleted]);
+
+    const symbol = inputToken?.symbol || "";
+    const price = useTokenPriceBySymbol(inputToken?.symbol)
 
     // Handle undefined states gracefully
     if (!inputToken) {
@@ -103,34 +113,46 @@ export default function VaultHeader({
     }
 
 
-
-    const price = inputToken.price || 0;
-    const symbol = inputToken.symbol || "";
-
     return (
         <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
             <div className="w-full mb-12 flex flex-row items-center">
                 <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
-                    <div className="relative">
-                        <Image
-                            src={inputToken.imgURL}
-                            alt={symbol}
-                            width={1200}
-                            height={800}
-                            className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                        />
+                    <div className='flex items-center gap-2'>
+                        <div className="relative">
+                            <Image
+                                src={vaultData.imgURL ?? ''}
+                                alt={vaultData.protocol.network}
+                                width={1200}
+                                height={800}
+                                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                            />
+                        </div>
+                        <h2 className="font-bold text-white">{vaultData.protocol.network}</h2>
                     </div>
-                    <h2 className="font-bold text-white">{symbol}</h2>
-                    <div className="relative">
-                        <Image
-                            src={vaultData.protocol.imgURL}
-                            alt={vaultData.protocol.name}
-                            width={1200}
-                            height={800}
-                            className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                        />
+                    <div className='flex items-center gap-2'>
+                        <div className="relative">
+                            <Image
+                                src={vaultData.protocol.imgURL}
+                                alt={vaultData.protocol.name}
+                                width={1200}
+                                height={800}
+                                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                            />
+                        </div>
+                        <h2 className="font-bold text-white">{vaultData.protocol.name}</h2>
                     </div>
-                    <h2 className="font-bold text-white">{vaultData.protocol.name}</h2>
+                    <div className='flex items-center gap-2'>
+                        <div className="relative">
+                            <Image
+                                src={vaultData.inputToken.imgURL}
+                                alt={vaultData.name}
+                                width={1200}
+                                height={800}
+                                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                            />
+                        </div>
+                        <h2 className="font-bold text-white">{vaultData.name}</h2>
+                    </div>
                 </div>
             </div>
             <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">

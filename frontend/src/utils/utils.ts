@@ -3,57 +3,8 @@ import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token, Act
 import { Account } from "thirdweb/wallets";
 import { handleAllowance } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
+import { APPROVED_TOKENS, HERMES_URL } from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
-import { APPROVED_TOKENS } from "@/constants/chainConfig";
-
-const HERMES_URL = "https://hermes.pyth.network";
-const ETH_USD_PRICE_ID = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace";
-const BTC_USD_PRICE_ID = "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43";
-
-export async function fetchEthPrice(): Promise<number> { // tokenAddress: string, chainId: number
-  const connection = new HermesClient(HERMES_URL, {}); // See Hermes endpoints section below for other endpoints
-
-  try {
-    const priceUpdates = await connection.getLatestPriceUpdates([ETH_USD_PRICE_ID]);
-    const parsed = priceUpdates?.parsed;
-    if (!parsed || parsed.length === 0) {
-      console.error("No price updates found");
-      return 0; // Default value
-    }
-
-    const ethPrice = parseFloat(parsed[0]?.ema_price?.price ?? "0") // Default to 0 if missing
-    const decimals = parsed[0]?.ema_price?.expo // Default to 0 if missing
-    const ethPriceAdjusted = ethPrice * Math.pow(10, decimals);
-    console.log("ETH Price:", ethPriceAdjusted);
-    return ethPriceAdjusted;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error fetching ETH price:", error.message);
-    } else {
-      console.error("An unknown error occurred:", error);
-    }
-    return 0; // Default value in case of an error
-  }
-}
-
-export async function fetchBtcPrice() { // tokenAddress: string, chainId: number
-  const connection = new HermesClient(HERMES_URL, {}); // See Hermes endpoints section below for other endpoints
-
-  try {
-    const priceUpdates = await connection.getLatestPriceUpdates([BTC_USD_PRICE_ID]);
-    if (priceUpdates && priceUpdates.parsed && priceUpdates.parsed.length === 0) {
-      console.error("No price updates found");
-    } else if (priceUpdates && priceUpdates.parsed) {
-      console.log("Price Updates:", priceUpdates.parsed[0].ema_price.price);
-      return priceUpdates.parsed[0].ema_price.price;
-    } else {
-      console.error("Price updates or parsed data is null or undefined");
-    }
-  } catch (error) {
-    console.error("Error fetching prices:", error);
-    throw error; // Re-throw the error for upstream handling
-  }
-}
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -113,23 +64,13 @@ export const NumberFormatter = Intl.NumberFormat("en", {
 export function getVaultErrorMessage(
   value: string,
   inputValue: string | undefined,
-  setShowModal: Function,
   steps: Action[]
 ): string {
 
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
-    setShowModal(false)
     return "Insufficient balance"
-  }
-
-  else {
-    if (Number(value) == 0) {
-      setShowModal(false)
-    }
-    else {
-      steps.length > 0 && setShowModal(true)
-    }
+  } else {
     return ""
   }
 }
@@ -188,31 +129,81 @@ export const selectActions = async (
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 7001 && chainID != 7000) {
-        if (isNativeToken) {
-          return [
-            Action.deposit,
-            Action.crosschainInvest,
-            Action.FundsInvest,
-            Action.deposited
-          ]
-        }
-        else if (allowanceResult) {
-          return [
-            Action.deposit,
-            Action.crosschainInvest,
-            Action.FundsInvest,
-            Action.deposited
-          ]
-        }
-        else {
-          return [
-            Action.depositApprove,
-            Action.depositApproveConfirmed,
-            Action.deposit,
-            Action.crosschainInvest,
-            Action.FundsInvest,
-            Action.deposited
-          ]
+        if (activeChain.id == 7001 || activeChain.id == 7000) {
+          if (isNativeToken) {
+            return [
+              Action.deposit,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else if (allowanceResult) {
+            return [
+              Action.deposit,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.deposit,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+        } else {
+          if (isNativeToken) {
+            return [
+              Action.deposit,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else if (allowanceResult) {
+            return [
+              Action.deposit,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
+          else {
+            return [
+              Action.depositApprove,
+              Action.depositApproveConfirmed,
+              Action.deposit,
+              Action.depositConfirmed,
+              Action.crosschainInvest,
+              Action.CrossChainInvestFailed,
+              Action.FundsReturnedError,
+              Action.FundsInvest,
+              Action.InvestConfirmFailed,
+              Action.deposited
+            ]
+          }
         }
       }
       else {
@@ -242,12 +233,14 @@ export const selectActions = async (
           if (isNativeToken) {
             return [
               Action.deposit,
+              Action.depositConfirmed,
               Action.deposited
             ]
           }
           else if (allowanceResult) {
             return [
               Action.deposit,
+              Action.depositConfirmed,
               Action.deposited
             ]
           }
@@ -256,6 +249,7 @@ export const selectActions = async (
               Action.depositApprove,
               Action.depositApproveConfirmed,
               Action.deposit,
+              Action.depositConfirmed,
               Action.deposited
             ]
           }
@@ -263,24 +257,45 @@ export const selectActions = async (
       }
     case SmartVaultActionType.Withdrawal:
       if (chainID != 7001 && chainID != 7000) {
-        return [
-          Action.withdraw,
-          Action.DivestSent,
-          Action.FundsDivested,
-          Action.Withdrawn
-        ]
+        if (activeChain.id == 7001 || activeChain.id == 7000) {
+          return [
+            Action.withdraw,
+            Action.DivestSent,
+            Action.DivestFailed,
+            Action.FundsDivested,
+            Action.ReturnFundsFromStrategyFailed,
+            Action.ReturnFundsToUserSent,
+            Action.ReturnFundsToUserFailed,
+            Action.withdrew
+          ]
+        } else {
+          return [
+            Action.withdraw,
+            Action.withdrawconfirmed,
+            Action.DivestSent,
+            Action.DivestFailed,
+            Action.FundsDivested,
+            Action.ReturnFundsFromStrategyFailed,
+            Action.ReturnFundsToUserSent,
+            Action.ReturnFundsToUserFailed,
+            Action.withdrew
+          ]
+        }
       }
       else {
         if (activeChain.id == 7001 || activeChain.id == 7000) {
           return [
             Action.withdraw,
-            Action.Withdrawn
+            Action.withdrew
           ]
         }
         else {
           return [
             Action.withdraw,
-            Action.Withdrawn
+            Action.withdrawconfirmed,
+            Action.ReturnFundsToUserSent,
+            Action.ReturnFundsToUserFailed,
+            Action.withdrew
           ]
         }
       }
@@ -290,8 +305,45 @@ export const selectActions = async (
 export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
   const approvedTokens = APPROVED_TOKENS[chainId];
   if (!approvedTokens?.length) return undefined;
+  const vaultTokenSymbol = vaultToken.symbol.split('.')[0];
   return approvedTokens.find(el => {
     const approvedTokenSymbol = el.symbol.split('.')[0];
-    return approvedTokenSymbol.toLowerCase() === vaultToken.symbol.toLowerCase()
+    return approvedTokenSymbol.toLowerCase() === vaultTokenSymbol.toLowerCase()
   }) ?? approvedTokens[0];
+}
+
+export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
+
+export async function fetchTokenPrices(priceIds: string[]): Promise<{
+  [priceId: string]: number;
+}> {
+  const connection = new HermesClient(HERMES_URL, {});
+
+  try {
+    const priceUpdates = await connection.getLatestPriceUpdates(priceIds);
+    const parsed = priceUpdates?.parsed;
+
+    if (!parsed || parsed.length === 0) {
+      console.error("No price updates found");
+      return priceIds.reduce((acc, id) => ({ ...acc, [id]: 0 }), {});
+    }
+
+    const prices: {
+      [priceId: string]: number;
+    } = {};
+
+    parsed.forEach((update, index) => {
+      const price = parseFloat(update?.ema_price?.price ?? "0");
+      const decimals = update?.ema_price?.expo ?? 0;
+      const adjustedPrice = price * Math.pow(10, decimals);
+
+      prices[priceIds[index]] = adjustedPrice;
+      console.log(`Price for ${priceIds[index]}:`, adjustedPrice);
+    });
+
+    return prices;
+  } catch (error) {
+    console.error("Error fetching prices:", error);
+    return priceIds.reduce((acc, id) => ({ ...acc, [id]: 0 }), {});
+  }
 }

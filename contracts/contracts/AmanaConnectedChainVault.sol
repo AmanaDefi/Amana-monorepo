@@ -586,7 +586,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
      * @param user The address of the user receiving the withdrawn assets.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param assets The amount of assets being withdrawn.
+     * @param shares The amount of shares being withdrawn.
      * @param userChainId The chain ID of the user's connected chain.
      * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
      */
@@ -594,18 +594,20 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 assets,
+        uint256 shares,
         uint32 userChainId,
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal override {
-        if (assets == 0) {
+        if (shares == 0) {
             revert WithdrawCantBeZero();
         }
-        uint256 maxAssets = maxWithdraw(user) - pendingWithdrawals[user];
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
+        uint256 maxShares = maxRedeem(user);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
         }
+
+        uint256 assets = previewRedeem(shares);
         pendingWithdrawals[user] += assets;
 
         uint256 feeToWithdraw = _applyFee(user, assets);
@@ -723,7 +725,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _burn(user, shares);
         pendingWithdrawals[user] -= amount;
 
-        uint256 outputAmount = _returnFundsToUser(
+        _returnFundsToUser(
             amount,
             userChainId,
             receiver,
@@ -737,8 +739,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit PerformanceFeePaid(user, fee);
             SafeERC20.safeTransfer(IERC20(address(asset())), treasury, fee);
         }
-
-        emit Withdrawn(user, receiver, outputAmount, shares, _crossChainTxId);
     }
 
     /**
