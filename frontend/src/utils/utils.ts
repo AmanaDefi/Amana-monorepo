@@ -264,7 +264,7 @@ export const selectActions = async (
             Action.DivestFailed,
             Action.FundsDivested,
             Action.ReturnFundsFromStrategyFailed,
-            Action.Withdrawn,
+            Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
             Action.withdrew
           ]
@@ -276,7 +276,7 @@ export const selectActions = async (
             Action.DivestFailed,
             Action.FundsDivested,
             Action.ReturnFundsFromStrategyFailed,
-            Action.Withdrawn,
+            Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
             Action.withdrew
           ]

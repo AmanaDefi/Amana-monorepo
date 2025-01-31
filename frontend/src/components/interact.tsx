@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react"
+import {useEffect, useRef, useState} from "react"
 import {
     Action,
     Balance,
@@ -119,6 +119,12 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     const [label, setLabel] = useState('')
     const [disabled, setDisabled] = useState(true)
 
+    const processedTxHashesRef = useRef({
+        vault: new Set(),
+        strategy: new Set(),
+        withdrawal: new Set(),
+    });
+
     useEffect(() => {
         setAction(_action)
         setStep(0)
@@ -166,113 +172,116 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         console.log("crosschainInvestHash: ", crosschainInvestHash);
         console.log("crossChainTxId: ", crossChainTxId);
         if (vaultEvents && vaultEvents.length > 0 && crosschainInvestHash != "") {
-            const last_event = vaultEvents[vaultEvents.length - 1];
-            if (last_event.eventName == "CrossChainInvestSent" && action == (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed)) {
-                console.log("EVENT CrossChainInvestSent: ", last_event, action, step);
-                if (
-                    (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
-                    (last_event.transactionHash == crosschainInvestHash && isZetachain(activeChain.id))
-                ) {
-                    console.log("PASSED EVENT CrossChainInvestSent: ", last_event, action, step);
-                    setcrossChainTxId(last_event.args.crossChainTxId.toString())
-                    const nextStep = step + 1;
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+            const newEvents = vaultEvents.filter(event => {
+                const eventKey = `${event.transactionHash}-${event.logIndex}`;
+                if (processedTxHashesRef.current.vault.has(eventKey)) {
+                    return false;
                 }
-            }
-            else if (last_event.eventName == "Deposit" && isZetachain(strategyChainID) && isZetachain(activeChain.id) && action === Action.deposit) {
-                console.log("EVENT Deposit: ", last_event, action, step);
-                if (last_event.transactionHash == crosschainInvestHash) {
-                    console.log("PASSED EVENT Deposit: ", last_event, action, step);
-                    const nextStep = step + 1;
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                processedTxHashesRef.current.vault.add(eventKey);
+                return true;
+            });
+
+            console.log("New vault events: ", newEvents);
+
+            for (let i = 0; i < newEvents.length; i++) {
+                const last_event = newEvents[i];
+                if (last_event.eventName == "CrossChainInvestSent" && action == (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed)) {
+                    console.log("EVENT CrossChainInvestSent: ", last_event, action, step);
+                    if (
+                        (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
+                        (last_event.transactionHash == crosschainInvestHash && isZetachain(activeChain.id))
+                    ) {
+                        console.log("PASSED EVENT CrossChainInvestSent: ", last_event, action, step);
+                        setcrossChainTxId(last_event.args.crossChainTxId.toString())
+                        const nextStep = step + 1;
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "Withdraw" && action === Action.withdraw && isZetachain(strategyChainID)) {
-                console.log("EVENT Withdraw: ", last_event, action, step);
-                if (last_event.transactionHash == crosschainInvestHash) {
-                    console.log("PASSED EVENT Withdraw: ", last_event, action, step);
-                    const nextStep = step + 1;
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "Deposit" && isZetachain(strategyChainID) && isZetachain(activeChain.id) && action === Action.deposit) {
+                    console.log("EVENT Deposit: ", last_event, action, step);
+                    if (last_event.transactionHash == crosschainInvestHash) {
+                        console.log("PASSED EVENT Deposit: ", last_event, action, step);
+                        const nextStep = step + 1;
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "Deposited" && action == (!isZetachain(strategyChainID) ? Action.FundsInvest : (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed))) {
-                console.log("EVENT Deposited: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT Deposited: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.deposited);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "Withdraw" && action === Action.withdraw && isZetachain(strategyChainID)) {
+                    console.log("EVENT Withdraw: ", last_event, action, step);
+                    if (last_event.transactionHash == crosschainInvestHash) {
+                        console.log("PASSED EVENT Withdraw: ", last_event, action, step);
+                        const nextStep = step + 1;
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "DivestSent" && action == (isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed)) {
-                console.log("EVENT DivestSent: ", last_event, action, step);
-                if (
-                    (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
-                    (last_event.transactionHash == crosschainInvestHash && isZetachain(activeChain.id))
-                ) {
-                    console.log("PASSED EVENT DivestSent: ", last_event, action, step);
-                    setcrossChainTxId(last_event.args.crossChainTxId.toString())
-                    const nextStep = actions.findIndex(el => el == Action.DivestSent);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "Deposited" && action == (!isZetachain(strategyChainID) ? Action.FundsInvest : (isZetachain(activeChain.id) ? Action.deposit : Action.depositConfirmed))) {
+                    console.log("EVENT Deposited: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT Deposited: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.deposited);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "ReturnFundsToUserSent" && action == Action.withdrawconfirmed) {
-                console.log("EVENT ReturnFundsToUserSent: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT ReturnFundsToUserSent: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.ReturnFundsToUserSent);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "DivestSent" && action == (isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed)) {
+                    console.log("EVENT DivestSent: ", last_event, action, step);
+                    if (
+                        (last_event.args.crossChainTxId.toString() == crossChainTxId && !isZetachain(activeChain.id)) ||
+                        (last_event.transactionHash == crosschainInvestHash && isZetachain(activeChain.id))
+                    ) {
+                        console.log("PASSED EVENT DivestSent: ", last_event, action, step);
+                        setcrossChainTxId(last_event.args.crossChainTxId.toString())
+                        const nextStep = actions.findIndex(el => el == Action.DivestSent);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "Withdrawn" && action == (!isZetachain(strategyChainID) ? Action.FundsDivested : Action.withdraw)) {
-                console.log("EVENT Withdrawn: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT Withdrawn: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == (isZetachain(strategyChainID) ? Action.withdrew : (isZetachain(activeChain.id) ? Action.withdrew : Action.Withdrawn)));
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "ReturnFundsToUserSent" && action == (!isZetachain(strategyChainID) ? Action.FundsDivested : (isZetachain(activeChain.id) ? Action.withdraw : Action.withdrawconfirmed))) {
+                    console.log("EVENT ReturnFundsToUserSent: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT ReturnFundsToUserSent: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == (isZetachain(activeChain.id) ? Action.withdrew : Action.ReturnFundsToUserSent));
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "CrossChainInvestFailed" && action == Action.crosschainInvest) {
-                console.log("EVENT CrossChainInvestFailed: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT CrossChainInvestFailed: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.CrossChainInvestFailed);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "CrossChainInvestFailed" && action == Action.crosschainInvest) {
+                    console.log("EVENT CrossChainInvestFailed: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT CrossChainInvestFailed: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.CrossChainInvestFailed);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "DivestFailed" && action == Action.DivestSent) {
-                console.log("EVENT DivestFailed: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT DivestFailed: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.DivestFailed);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "DivestFailed" && action == Action.DivestSent) {
+                    console.log("EVENT DivestFailed: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT DivestFailed: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.DivestFailed);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "ReturnFundsToUserFailed" && action == (isZetachain(vaultData.protocol.chainId) ? Action.ReturnFundsToUserSent : Action.Withdrawn)) {
-                console.log("EVENT ReturnFundsToUserFailed: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT ReturnFundsToUserFailed: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.ReturnFundsToUserFailed);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "ReturnFundsToUserFailed" && action == Action.ReturnFundsToUserSent) {
+                    console.log("EVENT ReturnFundsToUserFailed: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT ReturnFundsToUserFailed: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.ReturnFundsToUserFailed);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
             }
         }
@@ -281,82 +290,99 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     useEffect(() => {
         if (strategyEvents && strategyEvents.length > 0 && crosschainInvestHash != "") {
             console.log("event21: ", strategyEvents);
-            const last_event = strategyEvents[strategyEvents.length - 1];
-            if (last_event.eventName == "FundsInvested" && action == Action.crosschainInvest) {
-                console.log("EVENT FundsInvested: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT FundsInvested: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.FundsInvest);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+            const newEvents = strategyEvents.filter(event => {
+                const eventKey = `${event.transactionHash}-${event.logIndex}`;
+                if (processedTxHashesRef.current.strategy.has(eventKey)) {
+                    return false;
                 }
-            }
-            else if (last_event.eventName == "FundsDivested" && action == Action.DivestSent) {
-                console.log("EVENT FundsDivested: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT FundsDivested: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.FundsDivested);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                processedTxHashesRef.current.strategy.add(eventKey);
+                return true;
+            });
+            console.log("New strategy events: ", newEvents);
+            for (let i = 0; i < newEvents.length; i++) {
+                const last_event = newEvents[i];
+                if (last_event.eventName == "FundsInvested" && action == Action.crosschainInvest) {
+                    console.log("EVENT FundsInvested: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT FundsInvested: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.FundsInvest);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "InvestConfirmFailed" && action == Action.FundsInvest) {
-                console.log("EVENT InvestConfirmFailed: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT InvestConfirmFailed: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.InvestConfirmFailed);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "FundsDivested" && action == Action.DivestSent) {
+                    console.log("EVENT FundsDivested: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT FundsDivested: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.FundsDivested);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
-            }
-            else if (last_event.eventName == "ReturnFundsFromStrategyFailed" && action == Action.FundsDivested) {
-                console.log("EVENT ReturnFundsFromStrategyFailed: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT ReturnFundsFromStrategyFailed: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.ReturnFundsFromStrategyFailed);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                else if (last_event.eventName == "InvestConfirmFailed" && action == Action.FundsInvest) {
+                    console.log("EVENT InvestConfirmFailed: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT InvestConfirmFailed: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.InvestConfirmFailed);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
+                }
+                else if (last_event.eventName == "ReturnFundsFromStrategyFailed" && action == Action.FundsDivested) {
+                    console.log("EVENT ReturnFundsFromStrategyFailed: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT ReturnFundsFromStrategyFailed: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.ReturnFundsFromStrategyFailed);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
             }
         }
-        console.log("event20: ", strategyEvents);
-        console.log("event25: ", crosschainInvestHash);
     }, [strategyEvents]);
 
     useEffect(() => {
         if (withdrawalReceiverEvents && withdrawalReceiverEvents.length > 0 && crosschainInvestHash != "") {
-            console.log("event3: ", withdrawalReceiverEvents);
-            const last_event = withdrawalReceiverEvents[withdrawalReceiverEvents.length - 1];
-            if (last_event.eventName == "FundsReturned" && action == Action.CrossChainInvestFailed) {
-                console.log("EVENT FundsReturned on deposit: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT FundsReturned on deposit: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.FundsReturnedError);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+            console.log("event31: ", withdrawalReceiverEvents);
+            const newEvents = withdrawalReceiverEvents.filter(event => {
+                const eventKey = `${event.transactionHash}-${event.logIndex}`;
+                if (processedTxHashesRef.current.withdrawal.has(eventKey)) {
+                    return false;
                 }
-            }
-            else if (
-                last_event.eventName == "FundsReturned" && action == Action.Withdrawn ||
-                last_event.eventName == "FundsReturned" && action == Action.ReturnFundsToUserSent
-            ) {
-                console.log("EVENT FundsReturned on withdraw: ", last_event, action, step);
-                if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
-                    console.log("PASSED EVENT FundsReturned on withdraw: ", last_event, action, step);
-                    const nextStep = actions.findIndex(el => el == Action.withdrew);
-                    setAction(actions[nextStep]);
-                    setStep(nextStep);
-                    return
+                processedTxHashesRef.current.withdrawal.add(eventKey);
+                return true;
+            });
+            console.log("New withdrawalReceiver events: ", newEvents);
+            for (let i = 0; i < newEvents.length; i++) {
+                const last_event = newEvents[i];
+                if (last_event.eventName == "FundsReturned" && action == Action.CrossChainInvestFailed) {
+                    console.log("EVENT FundsReturned on deposit: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT FundsReturned on deposit: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.FundsReturnedError);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
+                }
+                else if (
+                    last_event.eventName == "FundsReturned" && action == Action.ReturnFundsToUserSent
+                ) {
+                    console.log("EVENT FundsReturned on withdraw: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT FundsReturned on withdraw: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.withdrew);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
                 }
             }
         }
-        console.log("event30: ", withdrawalReceiverEvents);
-        console.log("event35: ", crosschainInvestHash);
     }, [withdrawalReceiverEvents]);
 
     function updateTransactionStepFeedback(actionIndex: Action, data: Partial<TransactionStepFeedback>) {
@@ -657,18 +683,25 @@ function Interaction(
                 }))
                 break;
             case Action.ReturnFundsToUserSent:
+                if (isZetachain(vaultData.protocol.chainId)) {
+                    targetAction = Action.withdrawconfirmed
+                    description = 'Cross chain request to vault completed'
+                } else {
+                    targetAction = Action.FundsDivested
+                    description = 'Withdrawal confirmation completed'
+                }
                 setTransactionStepFeedback(prev => ({
                     ...prev,
-                    [Action.withdrawconfirmed]: {
+                    [targetAction]: {
                         label: 'Withdraw',
-                        description: 'Cross chain request to vault completed',
+                        description: description,
                         status: TransactionStepStatus.completed
                     },
                     [Action.ReturnFundsToUserSent]: {
                         label: 'Withdraw',
                         description: 'Return of funds in progress',
                         status: TransactionStepStatus.processing
-                    }
+                    },
                 }))
                 break;
             case Action.FundsDivested:
@@ -691,38 +724,18 @@ function Interaction(
                     },
                 }))
                 break;
-            case Action.Withdrawn:
-                setTransactionStepFeedback(prev => ({
-                    ...prev,
-                    [Action.FundsDivested]: {
-                        label: 'Withdraw',
-                        description: 'Withdrawal confirmation completed',
-                        status: TransactionStepStatus.completed
-                    },
-                    [Action.Withdrawn]: {
-                        label: 'Withdraw',
-                        description: 'Return of funds in progress',
-                        status: TransactionStepStatus.processing
-                    },
-                }))
-                break;
             case Action.withdrew:
-                if (isZetachain(vaultData.protocol.chainId)) {
-                    if (isZetachain(activeChain.id)) {
+                if (isZetachain(activeChain.id)) {
+                    if (isZetachain(vaultData.protocol.chainId)) {
                         targetAction = Action.withdraw;
                         description = 'Withdraw completed';
                     } else {
-                        targetAction = Action.ReturnFundsToUserSent;
-                        description = 'Return of funds completed';
-                    }
-                } else {
-                    if (isZetachain(activeChain.id)) {
                         targetAction = Action.FundsDivested;
                         description = 'Withdrawal confirmation completed, funds returned';
-                    } else {
-                        targetAction = Action.Withdrawn;
-                        description = 'Return of funds completed';
                     }
+                } else {
+                    targetAction = Action.ReturnFundsToUserSent;
+                    description = 'Return of funds completed';
                 }
                 newTransactionStepFeedback = {
                     ...transactionStepFeedback,
@@ -787,14 +800,9 @@ function Interaction(
                 completeTransactionProcess(newTransactionStepFeedback);
                 break;
             case Action.ReturnFundsToUserFailed:
-                if (isZetachain(vaultData.protocol.chainId)) {
-                    targetAction = Action.ReturnFundsToUserSent;
-                } else {
-                    targetAction = Action.Withdrawn;
-                }
                 newTransactionStepFeedback = {
                     ...transactionStepFeedback,
-                    [targetAction]: {
+                    [Action.ReturnFundsToUserSent]: {
                         label: 'Withdraw',
                         description: 'Return of funds failed, please try again later',
                         status: TransactionStepStatus.error
@@ -884,18 +892,14 @@ function Interaction(
         }
         if (action == Action.withdraw) {
             let description;
-            if (isZetachain(activeChain.id)) {
-                if (isZetachain(vaultData.protocol.chainId)) {
+            if (isZetachain(vaultData.protocol.chainId)) {
+                if (isZetachain(activeChain.id)) {
                     description =  `Withdrawing ${inputBalance.formatted} ${vaultData.inputToken.symbol}`;
                 } else {
-                    description =  `Initial withdraw transaction on ${activeChain.name} in progress`;
+                    description =  `Initial withdraw transaction on local chain in progress`;
                 }
             } else {
-                if (isZetachain(vaultData.protocol.chainId)) {
-                    description =  `Initial withdraw transaction on local chain in progress`;
-                } else {
-                    description =  `Initial withdraw transaction on ${activeChain.name} in progress`;
-                }
+                description =  `Initial withdraw transaction on ${activeChain.name} in progress`;
             }
             updateTransactionStepFeedback(action, {
                 label: 'Withdraw',
