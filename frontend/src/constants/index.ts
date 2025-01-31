@@ -219,7 +219,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       isNative: false
     },
     protocol: {
-      name: "Aave USDT",
+      name: "Aave",
       strategyAddress: "0x1fD901103F37d076c096F1F0dF03f078FBc59241",
       network: "BNB",
       chainId: 56,
