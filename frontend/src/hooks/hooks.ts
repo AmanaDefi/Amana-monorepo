@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import {
   calculateAaveAPY,
   calculateCompoundAPY,
-  calculateEddyAPY,
+  calculateMoonwellAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxWithdraw
@@ -164,8 +164,8 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
               }
-              else if (vault.protocol.name === "Moonwell") {
-                // APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address);
+              else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler") {
+                APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
               }
               // else if (vault.protocol.name === "Eddy") {
               //   const receiptTokenContract = getContract({
