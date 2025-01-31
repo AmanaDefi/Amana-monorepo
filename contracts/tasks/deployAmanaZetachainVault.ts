@@ -32,7 +32,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const factory = await hre.ethers.getContractFactory("AmanaZetachainVault",
     {
       libraries: {
-        SwapHelperLibEddyTestnet: "0xB6b4668dD1774E67a90D717a332e11A822442f06",
+        SwapHelperLibEddy: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
       },
     }
   );
