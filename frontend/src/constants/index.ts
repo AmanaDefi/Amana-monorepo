@@ -224,7 +224,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0xf959694C3b9E71Bd04D8c69675A3EA0Ec26C6dA0", // Base Sepolia ETH Vault
+    id: "0x237B655eB18823C78042Da4CB366BA8093efDe04", // Base Sepolia ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -240,7 +240,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0x53AaB7a5d85dCA230F93180084B1606CE7a0d149",
+      strategyAddress: "0x48326BdEa7CAF701cEee64f08faE899e90c110A1",
       chainId: 84532,
       network: "Base Sepolia",
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -249,7 +249,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x28a7556AA913023BDf31dB80D5E378aBb0536A82", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
+    id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Aave strategy on Eth Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -265,7 +265,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0xc2b9E9a04E1DB3051D09AD7F9EeE29293397f0e4",
+      strategyAddress: "0x1aea20C27c3b0f34172aC416419994d39512887A",
       chainId: 11155111,
       network: "Eth Sepolia",
       netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -275,7 +275,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   },
 
   {
-    id: "0xa4F185F2AD0050F6fc3D2afD48C0b61C9A83800d", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+    id: "0xf18635c0e127Ac010dd484ba2EA123D8bc58a7E7", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
