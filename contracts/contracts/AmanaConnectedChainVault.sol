@@ -723,7 +723,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _burn(user, shares);
         pendingWithdrawals[user] -= amount;
 
-        uint256 outputAmount = _returnFundsToUser(
+        _returnFundsToUser(
             amount,
             userChainId,
             receiver,
@@ -737,8 +737,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit PerformanceFeePaid(user, fee);
             SafeERC20.safeTransfer(IERC20(address(asset())), treasury, fee);
         }
-
-        emit Withdrawn(user, receiver, outputAmount, shares, _crossChainTxId);
     }
 
     /**

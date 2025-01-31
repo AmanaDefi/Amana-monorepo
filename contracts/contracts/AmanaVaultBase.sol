@@ -56,18 +56,11 @@ abstract contract AmanaVaultBase is
     event VaultInitialized(uint8 decimals, uint256 perfFee);
     // event ContextDataRevert(RevertContext context);
 
-    // event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
+    event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
     event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
 
     event Deposited(
         address indexed user,
-        uint256 amount,
-        uint256 shares,
-        bytes32 indexed crossChainTxId
-    );
-    event Withdrawn(
-        address indexed user,
-        address indexed receiver,
         uint256 amount,
         uint256 shares,
         bytes32 indexed crossChainTxId
@@ -414,7 +407,6 @@ abstract contract AmanaVaultBase is
      * @param userChainId The chain ID of the user's chain.
      * @param receiver The address of the user receiving the funds.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @return outputAmount The actual amount of assets returned to the user after potential swaps.
      * @notice Handles cross-chain transfers or same-chain asset transfers. Manages gas fees and token approvals.
      */
     function _returnFundsToUser(
@@ -425,8 +417,8 @@ abstract contract AmanaVaultBase is
         address withdrawERC20,
         bytes32 _crossChainTxId,
         uint16 slippage
-    ) internal returns (uint256 outputAmount) {
-        outputAmount = amount;
+    ) internal {
+        uint256 outputAmount = amount;
 
         if (userChainId == uint32(block.chainid)) {
             // Same-chain transfer
@@ -498,7 +490,7 @@ abstract contract AmanaVaultBase is
                 revertOptions
             );
 
-            // emit ReturnFundsToUserSent(_crossChainTxId);
+            emit ReturnFundsToUserSent(_crossChainTxId);
         }
     }
 

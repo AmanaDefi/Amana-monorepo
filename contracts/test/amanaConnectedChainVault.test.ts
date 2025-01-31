@@ -603,7 +603,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // User1 withdraws part of their deposit
       const withdrawAmount1 = depositAmount1.div(2);
-      await amanaVault.connect(user1).withdraw
+      await amanaVault.connect(user1).redeem
         (withdrawAmount1, await user1.getAddress(), await user1.getAddress());
 
       await simulateConfirmWithdraw(user1, withdrawAmount1, BigNumber.from("0"), totalDeposits, 3, 3);
@@ -640,7 +640,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       let crossChainTxId = 2;
       for (const withdrawAmount of withdrawAmounts) {
         // Perform withdrawal
-        await amanaVault.connect(user1).withdraw(
+        await amanaVault.connect(user1).redeem(
           withdrawAmount,
           await user1.getAddress(),
           await user1.getAddress()
@@ -662,7 +662,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Step 4: Ensure further withdrawals fail
       await expect(
-        amanaVault.connect(user1).withdraw(1, await user1.getAddress(), await user1.getAddress())
+        amanaVault.connect(user1).redeem(1, await user1.getAddress(), await user1.getAddress())
       ).to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
     });
 
@@ -671,7 +671,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Simulate a withdrawal for a user with zero balance
       const zeroAmount = BigNumber.from(0);
-      await expect(amanaVault.connect(user1).withdraw(zeroAmount, await user1.getAddress(), await user1.getAddress())).to.be
+      await expect(amanaVault.connect(user1).redeem(zeroAmount, await user1.getAddress(), await user1.getAddress())).to.be
         .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
 
       // Deposit and then withdraw entire balance
