@@ -12,7 +12,7 @@ import fourPoolABI from "../../abis/fourPoolABI.json";
 import { Chain, defineChain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
-import { fetchEthPrice } from "@/utils/utils";
+// import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
 import { VAULT_DATA } from "@/constants";
@@ -76,6 +76,9 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
 
 
 export async function calculateAaveAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  console.log("Fetching Aave APY");
+  console.log("receiptTokenAddress", receiptTokenAddress);
+  console.log("strategyChain", strategyChain);
   const receiptTokenContract = getContract({
     client,
     chain: strategyChain,

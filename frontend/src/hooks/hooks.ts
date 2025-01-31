@@ -160,33 +160,25 @@ export const useUpdateAPYs = (
               let APY7d = 0;
 
               if (vault.protocol.name === "Aave") {
-                const receiptTokenContract = getContract({
-                  client,
-                  chain: strategyChain,
-                  address: receiptTokenAddress,
-                });
-                const poolAddress = await readContract({
-                  contract: receiptTokenContract,
-                  method: "function POOL() view returns (address)",
-                });
-                APY7d = await calculateAaveAPY(poolAddress as Address, vault.inputToken.address as Address, strategyChain);
+                APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
-                APY7d = await calculateCompoundAPY(receiptTokenAddress as Address);
+                APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
               }
               else if (vault.protocol.name === "Moonwell") {
                 // APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address);
-              } else if (vault.protocol.name === "Eddy") {
-                const receiptTokenContract = getContract({
-                  client,
-                  chain: strategyChain,
-                  address: receiptTokenAddress,
-                });
-                const poolAddress = await readContract({
-                  contract: receiptTokenContract,
-                  method: "function minter() view returns (address)",
-                });
-                APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address)
               }
+              // else if (vault.protocol.name === "Eddy") {
+              //   const receiptTokenContract = getContract({
+              //     client,
+              //     chain: strategyChain,
+              //     address: receiptTokenAddress,
+              //   });
+              //   const poolAddress = await readContract({
+              //     contract: receiptTokenContract,
+              //     method: "function minter() view returns (address)",
+              //   });
+              //   APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address)
+              // }
 
               return { vaultId: vault.id, APY7d };
             } catch (error) {
