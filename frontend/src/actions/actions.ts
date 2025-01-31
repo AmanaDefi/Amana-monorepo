@@ -70,7 +70,6 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
   }
 }
 
-
 export async function calculateAaveAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   console.log("Fetching Aave APY");
   console.log("receiptTokenAddress", receiptTokenAddress);
@@ -114,36 +113,38 @@ export async function calculateAaveAPY(receiptTokenAddress: Address, strategyCha
 export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   // Fetch rewards data
   console.log("Fetching rewards data");
-  // const receiptTokenContract = getContract({
-  //   client,
-  //   chain: strategyChain,
-  //   address: receiptTokenAddress,
-  // });
-  // const incentivesControllerAddress = await readContract({
-  //   contract: receiptTokenContract,
-  //   method: "function getIncentivesController() view returns (address)",
-  // });
-  // const incentivesControllerContract = getContract({
-  //   client,
-  //   chain: strategyChain,
-  //   address: incentivesControllerAddress,
-  // });
-  // const underlyingAssetAddress = await readContract({
-  //   contract: receiptTokenContract,
-  //   method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
-  // });
-  // const rewardsRate = await readContract({
-  //   contract: incentivesControllerContract,
-  //   method: "function getRewardsRate(address) view returns (uint256)",
-  //   params: [underlyingAssetAddress as Address],
-  // });
+  const receiptTokenContract = getContract({
+    client,
+    chain: strategyChain,
+    address: receiptTokenAddress,
+  });
+  const incentivesControllerAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function getIncentivesController() view returns (address)",
+  });
+  const incentivesControllerContract = getContract({
+    client,
+    chain: strategyChain,
+    address: incentivesControllerAddress,
+  });
+  const underlyingAssetAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
+  });
+  const rewardsToken = await readContract({
+    contract: incentivesControllerContract,
+    method: "function getRewardsByAsset(address) view returns (address)",
+    params: [underlyingAssetAddress as Address],
+  });
+  const rewardsData = await readContract({
+    contract: incentivesControllerContract,
+    method: "function getRewardsData(address,address) view returns (uint256, uint256, uint256, uint256)",
+    params: [underlyingAssetAddress as Address, rewardsToken as Address],
+  });
+  const rewardsRate = rewardsData[1]; // emission per second
+  console.log("rewardsRate", rewardsRate);
 
-  // const rewardsTokenAddress = await readContract({
-  //   contract: incentivesControllerContract,
-  //   method: "function getRewardsToken() view returns (address)",
-  // });
-
-  // const rewardsTokenPrice = await fetchEthPrice();
+  const rewardsTokenPrice = await fetchEthPrice();
   const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
   // const annualRewardsValue = Number(rewardsRate) * 10 * SECONDS_IN_YEAR;
   // const poolAddress = await readContract({
@@ -163,6 +164,65 @@ export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, stra
 
   // const rewardsAPY = annualRewardsValue / Number(totalLiquidity);
   const rewardsAPY = 5
+  return rewardsAPY;
+}
+
+export async function calculateCompoundRewardsAPY(cometAddress: Address, rewardsContractAddress: Address, strategyChain: Chain) {
+  console.log("Fetching Compound III rewards data");
+
+  // Get the Comet contract (Lending Pool)
+  const cometContract = getContract({
+    client,
+    chain: strategyChain,
+    address: cometAddress,
+  });
+
+  // Get the CometRewards contract (External rewards contract)
+  const rewardsContract = getContract({
+    client,
+    chain: strategyChain,
+    address: rewardsContractAddress,
+  });
+
+  // Fetch emission rate per second
+  const baseTrackingSupplySpeed = await readContract({
+    contract: cometContract,
+    method: "function baseTrackingSupplySpeed() view returns (uint256)",
+  });
+
+  console.log("Rewards Emission Rate:", baseTrackingSupplySpeed.toString());
+
+  // Fetch the total supply of the base asset in Comet
+  const totalSupply = await readContract({
+    contract: cometContract,
+    method: "function totalSupply() view returns (uint256)",
+  });
+
+  console.log("Total Liquidity:", totalSupply.toString());
+
+  // Fetch rewards token address & amount owed (using a dummy account)
+  const dummyAccount = "0x0000000000000000000000000000000000000001"; // Replace with an actual account if needed
+  const rewardData = await readContract({
+    contract: rewardsContract,
+    method: "function getRewardOwed(address, address) view returns (address token, uint owed)",
+    params: [cometAddress, dummyAccount],
+  });
+
+  const rewardsToken = rewardData[0]; // Address of the reward token
+  console.log("Rewards Token Address:", rewardsToken);
+
+  // Get the price of the rewards token (assumed COMP, or fetch from an oracle)
+  const rewardsTokenPrice = await fetchEthPrice(); // Replace with a real price fetcher
+
+  const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
+
+  // Calculate annual rewards value
+  const annualRewardsValue = Number(baseTrackingSupplySpeed) * SECONDS_IN_YEAR * rewardsTokenPrice;
+
+  // Calculate APY
+  const rewardsAPY = annualRewardsValue / Number(totalSupply);
+  console.log("Compound III Rewards APY:", rewardsAPY);
+
   return rewardsAPY;
 }
 
