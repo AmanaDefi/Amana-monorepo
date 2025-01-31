@@ -13,7 +13,7 @@ import "./interfaces/ISystem.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 
-import "./libraries/SwapHelperLibEddy.sol";
+import "./libraries/SwapHelperLibEddyTestnet.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -256,23 +256,22 @@ abstract contract AmanaVaultBase is
     }
 
     /**
-     * @notice Gets the expected output amount for a given input amount and swap path,
-     *         then converts it into shares.
+     * @notice Gets the expected output amount for a given input amount and swap path
      * @param amountIn The input amount.
      * @param inputToken The address of the token being deposited.
-     * @return shares The final amount in vault shares.
+     * @return amount The final amount of output tokens received.
      */
     function getAmountOutFromSwap(
         uint amountIn,
         address inputToken,
         address outputToken
-    ) external view returns (uint shares) {
-        uint[] memory amounts = SwapHelperLibEddy.getAmountsOut(
-            amountIn,
-            inputToken,
-            outputToken
-        );
-        return amounts[amounts.length - 1]; // Final swap output amount
+    ) external view returns (uint amount) {
+        return
+            SwapHelperLibEddyTestnet.getFinalAmountOut(
+                amountIn,
+                inputToken,
+                outputToken
+            );
     }
 
     /**
@@ -375,7 +374,7 @@ abstract contract AmanaVaultBase is
         }
         uint256 outputAmount = assets;
         if (zrc20source != address(asset())) {
-            outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
+            outputAmount = SwapHelperLibEddyTestnet.swapExactTokensForTokens(
                 zrc20source,
                 assets,
                 address(asset()),
@@ -464,14 +463,15 @@ abstract contract AmanaVaultBase is
 
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
-                outputAmount = SwapHelperLibEddy.swapExactTokensForTokens(
-                    address(asset()),
-                    amount,
-                    withdrawZRC20,
-                    slippage,
-                    address(this),
-                    200
-                );
+                outputAmount = SwapHelperLibEddyTestnet
+                    .swapExactTokensForTokens(
+                        address(asset()),
+                        amount,
+                        withdrawZRC20,
+                        slippage,
+                        address(this),
+                        200
+                    );
             }
 
             (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
@@ -509,9 +509,8 @@ abstract contract AmanaVaultBase is
                 callOptions,
                 revertOptions
             );
-
-            emit ReturnFundsToUserSent(_crossChainTxId);
         }
+        emit ReturnFundsToUserSent(_crossChainTxId);
     }
 
     /**

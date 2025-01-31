@@ -1,0 +1,252 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.26;
+
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+
+// import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+// import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+
+import "../interfaces/IZRC20.sol";
+import "../interfaces/IErrors.sol";
+import "../interfaces/IPriceOracle.sol";
+
+library SwapHelperLibEddyTestnet {
+    address constant UNISWAP_V2_FACTORY =
+        0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
+    address constant UNISWAP_V2_ROUTER =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+    address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
+
+    address constant PRICE_ORACLE_ADDRESS =
+        0x308c2C5DcE2876d9CDd2d5e5A636577989Ce399a; //testnet only
+
+    address constant USDC_SEP_ADDRESS =
+        0xcC683A782f4B30c138787CB5576a86AF66fdc31d; //testnet only
+    address constant ETH_BASE_ADDRESS =
+        0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD; //testnet only
+    address constant ETH_SEP_ADDRESS =
+        0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; //testnet only
+    address constant USDC_BSC_ADDRESS =
+        0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; //testnet only
+    address constant USDC_POL_ADDRESS =
+        0xe573a6e11f8506620F123DBF930222163D46BCB6; //testnet only
+
+    /**
+     * @notice Determines if a token address corresponds to an ETH token.
+     * @dev Compares the token address against predefined ETH token addresses.
+     * @param token The address of the token to check.
+     * @return True if the token is an ETH token, false otherwise.
+     */
+    function isEthToken(address token) internal pure returns (bool) {
+        return token == ETH_SEP_ADDRESS || token == ETH_BASE_ADDRESS;
+    }
+
+    /**
+     * @notice Determines if a token address corresponds to a USD stablecoin.
+     * @dev Compares the token address against predefined USD stablecoin addresses.
+     * @param token The address of the token to check.
+     * @return True if the token is a USD stablecoin, false otherwise.
+     */
+    function isUsdStablecoin(address token) internal pure returns (bool) {
+        return
+            token == USDC_BSC_ADDRESS ||
+            token == USDC_SEP_ADDRESS ||
+            token == USDC_POL_ADDRESS;
+    }
+
+    /**
+     * @notice Calculates the minimum output amount based on the input token, output token, and slippage tolerance.
+     * @dev Adjusts the output based on slippage and the price from a price oracle for cross-category token swaps.
+     * @param inputToken The address of the input token.
+     * @param outputToken The address of the output token.
+     * @param amount The input amount in token units.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @return The minimum acceptable output amount.
+     * @custom:reverts InvalidTokenPair if the token pair is not supported.
+     */
+    function calculateMinAmountOut(
+        address inputToken,
+        address outputToken,
+        uint256 amount,
+        uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
+    ) internal view returns (uint256) {
+        if (isUsdStablecoin(inputToken) && isUsdStablecoin(outputToken)) {
+            // USD -> USD
+            return amount - ((amount * slippageBps) / 10000);
+        } else if (isEthToken(inputToken) && isUsdStablecoin(outputToken)) {
+            // ETH -> USD
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchEthUsdPrice();
+            uint256 usdAmount = (amount * ethUsdPrice) / 10 ** 8; // Adjust for Chainlink decimals
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isUsdStablecoin(inputToken) && isEthToken(outputToken)) {
+            // USD -> ETH
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchEthUsdPrice();
+            uint256 ethAmount = (amount * 10 ** 8) / ethUsdPrice; // Adjust for Chainlink decimals
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else {
+            return amount - ((amount * slippageBps) / 10000);
+        }
+    }
+
+    /**
+     * @notice Sorts two token addresses in ascending order.
+     * @dev Ensures consistent order for token pairs in Uniswap and other protocols.
+     * @param tokenA The first token address.
+     * @param tokenB The second token address.
+     * @return token0 The address of the token that comes first.
+     * @return token1 The address of the token that comes second.
+     * @custom:reverts CantBeIdenticalAddresses if the two token addresses are identical.
+     * @custom:reverts CantBeZeroAddress if one of the token addresses is the zero address.
+     */
+    function sortTokens(
+        address tokenA,
+        address tokenB
+    ) internal pure returns (address token0, address token1) {
+        if (tokenA == tokenB) revert IErrors.CantBeIdenticalAddresses();
+        (token0, token1) = tokenA < tokenB
+            ? (tokenA, tokenB)
+            : (tokenB, tokenA);
+        if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
+    }
+
+    /**
+     * @notice Swaps a specific amount of tokens for another token.
+     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
+     * @param zrc20 The address of the input token.
+     * @param amount The amount of input tokens to swap.
+     * @param targetZRC20 The address of the output token.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @param vault The address where the swapped tokens will be sent.
+     * @param maxDeadline The maximum deadline for the swap to complete.
+     * @return The amount of output tokens received.
+     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     */
+    function swapExactTokensForTokens(
+        address zrc20,
+        uint256 amount,
+        address targetZRC20,
+        uint16 slippageBps,
+        address vault,
+        uint16 maxDeadline
+    ) internal returns (uint256) {
+        address[] memory path = _getPath(zrc20, targetZRC20);
+        uint256 minAmountOut = calculateMinAmountOut(
+            zrc20,
+            targetZRC20,
+            amount,
+            slippageBps
+        );
+
+        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+        // Perform the swap
+        uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+            .swapExactTokensForTokens(
+                amount,
+                minAmountOut,
+                path,
+                vault,
+                block.timestamp + maxDeadline
+            );
+
+        return amounts[amounts.length - 1];
+    }
+
+    function _existsPairPool(
+        address tokenA,
+        address tokenB
+    ) internal view returns (bool) {
+        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+            tokenA,
+            tokenB
+        );
+        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
+    }
+
+    function _getPath(
+        address zrc20,
+        address targetZRC20
+    ) internal view returns (address[] memory path) {
+        if (zrc20 == targetZRC20) {
+            revert IErrors.CantBeIdenticalAddresses();
+        }
+        bool existsDirectPool = _existsPairPool(zrc20, targetZRC20);
+
+        if (existsDirectPool) {
+            path = new address[](2);
+            path[0] = zrc20;
+            path[1] = targetZRC20;
+        } else if (
+            // Check for intermediate liquidity via WZeta
+            !_existsPairPool(zrc20, WZETA_TOKEN) ||
+            !_existsPairPool(WZETA_TOKEN, targetZRC20)
+        ) {
+            revert IErrors.InsufficientLiquidity();
+        } else {
+            path = new address[](3);
+            path[0] = zrc20;
+            path[1] = WZETA_TOKEN;
+            path[2] = targetZRC20;
+        }
+        return path;
+    }
+
+    function getAmountOut(
+        uint amountIn,
+        uint reserveIn,
+        uint reserveOut
+    ) internal pure returns (uint amountOut) {
+        if (amountIn == 0) {
+            revert IErrors.InsufficientInputAmount();
+        }
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert IErrors.InsufficientLiquidity();
+        }
+        uint amountInWithFee = amountIn * 997;
+        uint numerator = amountInWithFee * reserveOut;
+        uint denominator = (reserveIn * 1000) + amountInWithFee;
+        amountOut = numerator / denominator;
+    }
+
+    function getReserves(
+        address tokenA,
+        address tokenB
+    ) internal view returns (uint reserveA, uint reserveB) {
+        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+            tokenA,
+            tokenB
+        );
+        if (pair == address(0)) revert IErrors.InsufficientLiquidity();
+        (uint112 reserve0, uint112 reserve1, ) = IUniswapV2Pair(pair)
+            .getReserves();
+        (address token0, ) = sortTokens(tokenA, tokenB);
+        (reserveA, reserveB) = tokenA == token0
+            ? (reserve0, reserve1)
+            : (reserve1, reserve0);
+    }
+
+    function getFinalAmountOut(
+        uint amountIn,
+        address inputZrc20,
+        address outputZrc20
+    ) internal view returns (uint finalAmountOut) {
+        address[] memory path = _getPath(inputZrc20, outputZrc20);
+
+        if (path.length < 2) {
+            revert IErrors.InvalidPath();
+        }
+        uint[] memory amounts = new uint[](path.length);
+        amounts[0] = amountIn;
+        for (uint i = 0; i < path.length - 1; i++) {
+            (uint reserveIn, uint reserveOut) = getReserves(
+                path[i],
+                path[i + 1]
+            );
+            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+        }
+        finalAmountOut = amounts[amounts.length - 1];
+    }
+}
