@@ -224,7 +224,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 
 const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0xE054cD48ACd0F1433BE0293F9488AF1924Bb15EA", // Base Sepolia ETH Vault
+    id: "0xf959694C3b9E71Bd04D8c69675A3EA0Ec26C6dA0", // Base Sepolia ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -240,7 +240,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0x53147cF30a9b1F5fDd1b5D6454Ad7182148DA173",
+      strategyAddress: "0x53AaB7a5d85dCA230F93180084B1606CE7a0d149",
       chainId: 84532,
       network: "Base Sepolia",
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -249,7 +249,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xd90CE51E5CeB8F92D9E30DDaD33DC3e49A863277", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
+    id: "0x28a7556AA913023BDf31dB80D5E378aBb0536A82", // Amana ETH Vault on Zetachain testnet, linked to Aave strategy on Eth Sepolia
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -265,7 +265,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0xD015f304E60349A8Dce964C24610A85FC1cE1613",
+      strategyAddress: "0xc2b9E9a04E1DB3051D09AD7F9EeE29293397f0e4",
       chainId: 11155111,
       network: "Eth Sepolia",
       netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -275,7 +275,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   },
 
   {
-    id: "0x71B51A2e70ed5584A2038BBcEB611dc5814A2A2B", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+    id: "0xa4F185F2AD0050F6fc3D2afD48C0b61C9A83800d", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
@@ -299,56 +299,56 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       des: "This is a mock strategy for testing purposes."
     },
   },
-  {
-    id: "0x7a351114F9C2637da09f177b62A3f8736dfAa130", // Polygon Amoy POL Vault (POL is new name for MATIC)
-    name: "Mock POL",
-    des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
-    symbol: "aMockPOL",
-    imgURL: "/polygon_logo.png",
-    inputToken: {
-      symbol: "MATIC.AMOY",
-      decimals: 18,
-      address: ZC_TEST_MATIC_AMOY_ADDRESS,
-      imgURL: "/polygon_logo.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Mock",
-      strategyAddress: "0x8AD0bD606B1820bb2a4e569EFC48501c5e0735E6",
-      chainId: 80002,
-      network: "Polygon Amoy",
-      netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
-      imgURL: "/polygon_logo.png",
-      des: "This is a mock strategy for testing purposes."
-    },
-  },
-  {
-    id: "0xc01f344A7eAd2D06A196D1b2aC93be78A16bD876", // BSC USDC Vault
-    name: "Mock USDC",
-    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
-    symbol: "aMockUSDC",
-    imgURL: "/bscnet.jpg",
-    inputToken: {
-      symbol: "USDC",
-      decimals: 6,
-      address: ZC_TEST_USDC_BSC_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Mock",
-      strategyAddress: "0x99aDf091C5d6ad042F763018C3e43D622a22Cc24",
-      chainId: 97,
-      network: "BSC Testnet",
-      netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
-      imgURL: "/bnb_logo.png",
-      des: "This is a mock strategy for testing purposes."
-    },
-  },
+  // {
+  //   id: "0x7a351114F9C2637da09f177b62A3f8736dfAa130", // Polygon Amoy POL Vault (POL is new name for MATIC)
+  //   name: "Mock POL",
+  //   des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+  //   symbol: "aMockPOL",
+  //   imgURL: "/polygon_logo.png",
+  //   inputToken: {
+  //     symbol: "MATIC.AMOY",
+  //     decimals: 18,
+  //     address: ZC_TEST_MATIC_AMOY_ADDRESS,
+  //     imgURL: "/polygon_logo.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     strategyAddress: "0x8AD0bD606B1820bb2a4e569EFC48501c5e0735E6",
+  //     chainId: 80002,
+  //     network: "Polygon Amoy",
+  //     netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
+  //     imgURL: "/polygon_logo.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
+  // {
+  //   id: "0xc01f344A7eAd2D06A196D1b2aC93be78A16bD876", // BSC USDC Vault
+  //   name: "Mock USDC",
+  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+  //   symbol: "aMockUSDC",
+  //   imgURL: "/bscnet.jpg",
+  //   inputToken: {
+  //     symbol: "USDC",
+  //     decimals: 6,
+  //     address: ZC_TEST_USDC_BSC_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     strategyAddress: "0x99aDf091C5d6ad042F763018C3e43D622a22Cc24",
+  //     chainId: 97,
+  //     network: "BSC Testnet",
+  //     netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
+  //     imgURL: "/bnb_logo.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
 ];
 
 // Export the appropriate vault data based on DEPLOY_ENV
