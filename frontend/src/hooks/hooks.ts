@@ -250,13 +250,13 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     }),
     withdrawalReceiver: getContract({
       client,
-      chain: isZetachain(strategyChainID) ? defineChain(strategyChainID) : defineChain(activeChainId),
+      chain: defineChain(activeChainId),
       address: contractWithdrawalReceiverAddress
     })
   }), [vaultData.id, strategyChainID, strategyAddress, activeChainId, contractWithdrawalReceiverAddress]);
 
   // event listeners
-  const { data: vaultEvents } = useContractEvents({
+  const { data: vaultEvents} = useContractEvents({
     contract: contracts.vault,
     events: events.vault,
     enabled: isTransactionStarted
