@@ -303,7 +303,7 @@ const executeCrossChainDeposit = async (
   const isNativeToken = inputToken === ZeroAddress;
 
   let contract, approveTx, payload, revertOptions;
-  const slippage = 500; // TODO change this to be an input from user on FE
+  const slippage = 1500; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
     ["address", "uint16", "bytes32"],
@@ -459,7 +459,7 @@ const executeCrossChainWithdrawal = async (
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-  const slippage = 500; // TODO change this to be an input from user on FE
+  const slippage = 1500; // TODO change this to be an input from user on FE
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint16", "bytes32"],
