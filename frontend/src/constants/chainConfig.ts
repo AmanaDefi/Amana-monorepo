@@ -308,7 +308,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
     {
       symbol: "USDC",
       address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
-      decimals: 6,
+      decimals: 18,
       imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
@@ -318,7 +318,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
     {
       symbol: "USDT",
       address: "0x55d398326f99059fF775485246999027B3197955",
-      decimals: 6,
+      decimals: 18,
       imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,

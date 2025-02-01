@@ -210,7 +210,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   imgURL: "/bnb_logo.png",
   //   inputToken: {
   //     symbol: "USDT.BNB",
-  //     decimals: 6,
+  //     decimals: 18,
   //     address: ZC_USDT_BSC_ADDRESS,
   //     imgURL: "/usdt.png",
   //     price: 1,
@@ -358,7 +358,7 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   //   imgURL: "/bscnet.jpg",
   //   inputToken: {
   //     symbol: "USDC",
-  //     decimals: 6,
+  //     decimals: 18,
   //     address: ZC_TEST_USDC_BSC_ADDRESS,
   //     imgURL: "/USDC.png",
   //     price: 1,
