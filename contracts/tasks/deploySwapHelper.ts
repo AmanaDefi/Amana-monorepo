@@ -12,16 +12,16 @@ const deployLibrary = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 
   console.log(`🔑 Deploying using account: ${deployer.address}`);
-  console.log(`🚀 Deploying SwapHelperLibEddyTestnet on ${network}...`);
+  console.log(`🚀 Deploying SwapHelperLibEddy on ${network}...`);
 
   // Deploy the library
-  const factory = await hre.ethers.getContractFactory("SwapHelperLibEddyTestnet");
+  const factory = await hre.ethers.getContractFactory("SwapHelperLibEddy");
   const swapHelperLib = await factory.deploy();
 
   console.log("📜 Contract deployed, waiting for confirmations...");
   await swapHelperLib.deployed();
 
-  console.log(`✅ Successfully deployed SwapHelperLibEddyTestnet on ${network}.`);
+  console.log(`✅ Successfully deployed SwapHelperLibEddy on ${network}.`);
   console.log(`📍 Library address: ${swapHelperLib.address}`);
 
   // Verify contract on Etherscan if API key is set
@@ -48,7 +48,7 @@ const deployLibrary = async (args: any, hre: HardhatRuntimeEnvironment) => {
 };
 
 // Register the Hardhat task
-task("deploy-swap-helper", "Deploy SwapHelperLibEddyTestnet library", deployLibrary)
+task("deploy-swap-helper", "Deploy SwapHelperLibEddy library", deployLibrary)
   .addFlag("json", "Output in JSON format");
 
 // Export for Hardhat

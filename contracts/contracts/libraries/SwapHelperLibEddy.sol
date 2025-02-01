@@ -17,26 +17,40 @@ library SwapHelperLibEddy {
     address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
 
     address constant PRICE_ORACLE_ADDRESS =
-        0xF780e1fd3406F3b25004324108fc4B891c36C1Ae; // mainnet only
+        0xD52b6aB593caB9D55dB083D8a6Fe9A3F8d91ad8d; // mainnet only
 
+    address constant ETH_ETH_ADDRESS =
+        0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
     address constant USDC_ETH_ADDRESS =
         0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a; // mainnet only
     address constant USDT_ETH_ADDRESS =
         0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; // mainnet only
+
     address constant ETH_BASE_ADDRESS =
         0x1de70f3e971B62A0707dA18100392af14f7fB677; // mainnet only
-    address constant ETH_ETH_ADDRESS =
-        0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
-    address constant USDC_BSC_ADDRESS =
-        0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // mainnet only
     address constant USDC_BASE_ADDRESS =
         0x96152E6180E085FA57c7708e18AF8F05e37B479D; // mainnet only
+
+    address constant BNB_BSC_ADDRESS =
+        0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb; // mainnet only
     address constant USDT_BSC_ADDRESS =
         0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F; // mainnet only
+    address constant USDC_BSC_ADDRESS =
+        0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // mainnet only
+
+    address constant POL_POLYGON_ADDRESS =
+        0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501; // mainnet only
     address constant USDT_POL_ADDRESS =
         0xdbfF6471a79E5374d771922F2194eccc42210B9F; // mainnet only
     address constant USDC_POL_ADDRESS =
         0xfC9201f4116aE6b054722E10b98D904829b469c3; // mainnet only
+
+    bytes32 constant ethUsdPriceFeedId =
+        0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
+    bytes32 constant polUsdPriceFeedId =
+        0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472;
+    bytes32 constant bnbUsdPriceFeedId =
+        0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
 
     /**
      * @notice Determines if a token address corresponds to an ETH token.
@@ -65,6 +79,14 @@ library SwapHelperLibEddy {
             token == USDT_POL_ADDRESS;
     }
 
+    function isPolToken(address token) internal pure returns (bool) {
+        return token == POL_POLYGON_ADDRESS;
+    }
+
+    function isBnbToken(address token) internal pure returns (bool) {
+        return token == BNB_BSC_ADDRESS;
+    }
+
     /**
      * @notice Calculates the minimum output amount based on the input token, output token, and slippage tolerance.
      * @dev Adjusts the output based on slippage and the price from a price oracle for cross-category token swaps.
@@ -81,20 +103,91 @@ library SwapHelperLibEddy {
         uint256 amount,
         uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
     ) public view returns (uint256) {
-        if (isUsdStablecoin(inputToken) && isUsdStablecoin(outputToken)) {
-            // USD -> USD
-            return amount - ((amount * slippageBps) / 10000);
-        } else if (isEthToken(inputToken) && isUsdStablecoin(outputToken)) {
+        if (isEthToken(inputToken) && isUsdStablecoin(outputToken)) {
             // ETH -> USD
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchEthUsdPrice();
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
             uint256 usdAmount = (amount * ethUsdPrice) / 10 ** 8; // Adjust for Chainlink decimals
             return usdAmount - ((usdAmount * slippageBps) / 10000);
         } else if (isUsdStablecoin(inputToken) && isEthToken(outputToken)) {
             // USD -> ETH
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchEthUsdPrice();
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
             uint256 ethAmount = (amount * 10 ** 8) / ethUsdPrice; // Adjust for Chainlink decimals
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isUsdStablecoin(inputToken) && isPolToken(outputToken)) {
+            // USD -> POL
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 polAmount = (amount * 10 ** 8) / polUsdPrice; // Adjust for Chainlink decimals
+            return polAmount - ((polAmount * slippageBps) / 10000);
+        } else if (isPolToken(inputToken) && isUsdStablecoin(outputToken)) {
+            // POL -> USD
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * polUsdPrice) / 10 ** 8; // Adjust for Chainlink decimals
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isUsdStablecoin(inputToken) && isBnbToken(outputToken)) {
+            // USD -> BNB
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 bnbAmount = (amount * 10 ** 8) / bnbUsdPrice; // Adjust for Chainlink decimals
+            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
+        } else if (isBnbToken(inputToken) && isUsdStablecoin(outputToken)) {
+            // BNB -> USD
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * bnbUsdPrice) / 10 ** 8; // Adjust for Chainlink decimals
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isEthToken(inputToken) && isPolToken(outputToken)) {
+            // ETH -> POL (Calculate ethPolPrice using ethUsdPrice & polUsdPrice)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice; // Derived ETH->POL rate
+            uint256 polAmount = (amount * ethPolPrice) / 10 ** 8; // Adjust for Chainlink decimals
+            return polAmount - ((polAmount * slippageBps) / 10000);
+        } else if (isPolToken(inputToken) && isEthToken(outputToken)) {
+            // POL -> ETH (Calculate ethPolPrice using ethUsdPrice & polUsdPrice)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice; // Derived ETH->POL rate
+            uint256 ethAmount = (amount * 10 ** 8) / ethPolPrice; // Adjust for Chainlink decimals
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isEthToken(inputToken) && isBnbToken(outputToken)) {
+            // ETH -> BNB (Calculate ethBnbPrice using ethUsdPrice & bnbUsdPrice)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice; // Derived ETH->BNB rate
+            uint256 bnbAmount = (amount * ethBnbPrice) / 10 ** 8; // Adjust for Chainlink decimals
+            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
+        } else if (isBnbToken(inputToken) && isEthToken(outputToken)) {
+            // BNB -> ETH (Calculate ethBnbPrice using ethUsdPrice & bnbUsdPrice)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice; // Derived ETH->BNB rate
+            uint256 ethAmount = (amount * 10 ** 8) / ethBnbPrice; // Adjust for Chainlink decimals
             return ethAmount - ((ethAmount * slippageBps) / 10000);
         } else {
             return amount - ((amount * slippageBps) / 10000);
