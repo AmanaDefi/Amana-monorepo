@@ -147,7 +147,7 @@ export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, stra
   //   method: "function getRewardsToken() view returns (address)",
   // });
 
-  const rewardsTokenPrice = await fetchEthPrice();
+  // const rewardsTokenPrice = await fetchEthPrice();
   const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
   // const annualRewardsValue = Number(rewardsRate) * 10 * SECONDS_IN_YEAR;
   // const poolAddress = await readContract({
