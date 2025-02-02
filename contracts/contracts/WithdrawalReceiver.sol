@@ -10,7 +10,7 @@ contract WithdrawalReceiver {
     using SafeERC20 for IERC20;
 
     address public constant _GATEWAY_ADDRESS =
-        0x48B9AACC350b20147001f88821d31731Ba4C30ed; // testnet: 0x0c487a766110c85d301D96E33579C5B317Fa4995;
+        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
 
     event FundsReturned(
         address user,
