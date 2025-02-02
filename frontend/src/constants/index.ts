@@ -28,7 +28,7 @@ export const tokens: Token[] = [
 
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0xAa925DBe45d2B375d30DdD5934172bB889970d2C", // Base ETH Vault
+    id: "0xa54fb1a57b53971114Ae1E5F7dfeFd55fB033678", // Base ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -44,7 +44,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0xA1C648558FAB87971b5B3148650bacDDc45fb435",
+      strategyAddress: "0xe4540Ab01D47A9c0c4aD4D7F7f2301cc259e67af",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -78,7 +78,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xA817Fae6DA371848F7B24F60082e528cC98D78d7", // Euler USDC vault on Base
+    id: "0xdf4B4D9127eb034448B5147b9790E9DAa13D8958", // Euler USDC vault on Base
     name: "Euler USDC",
     des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
     symbol: "aEulerUSDC",
@@ -94,7 +94,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Euler",
-      strategyAddress: "0x78F6a1165c381078FA348497EA99f7C92A96A136",
+      strategyAddress: "0x47D85aEE441BfA3fcf3924A2CB7F4ef3eDE54324",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
