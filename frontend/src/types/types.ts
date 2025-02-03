@@ -144,3 +144,10 @@ export type TransactionStepFeedback = {
 export type TransactionStepMessages = {
   [K in Action]?: TransactionStepFeedback | null
 }
+
+export interface UserSettings {
+  slippage: {
+    isAuto: boolean;
+    value: number;
+  };
+}

@@ -17,9 +17,9 @@ import {client} from "@/utils/client";
 import {MoonLoader} from "react-spinners";
 import {AiOutlineCheck, AiOutlineExclamation} from "react-icons/ai";
 import {isZetachain} from "@/utils/utils";
-import {useInteractionEvents} from "@/hooks/hooks";
+import {useInteractionEvents, useSlippage} from "@/hooks/hooks";
 
-const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function) => {
+const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, slippage: number) => {
     setTransactionCompleted(false)
     try {
         const value = Number(inputBalance.value)
@@ -34,7 +34,8 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             EOAaccount,
             activeChain,
             scaledAmount,
-            setcrossChainTxId
+            setcrossChainTxId,
+            slippage
         );
 
         mixpanel.track("Deposit Submitted", {
@@ -64,7 +65,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, slippage: number) => {
     setTransactionCompleted(false)
     let withdrawZRC20 = withdrawToken.ZRC20equivalent;
     if (activeChain.id === 7001 || activeChain.id === 7000) {
@@ -89,7 +90,8 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             scaledAmount,
             withdrawToken.address as Address,
             withdrawZRC20,
-            setcrossChainTxId
+            setcrossChainTxId,
+            slippage
         );
         mixpanel.track("Withdraw Succeeded", {
             vault: vaultData.id.toString(),
@@ -863,6 +865,8 @@ function Interaction(
         }
     }
 
+    const { slippageValue: slippage } = useSlippage();
+
     async function handleMainAction() {
         if (isTransactionProcessing) return;
         setIsTransactionProcessing(true);
@@ -917,7 +921,8 @@ function Interaction(
             action,
             setCrosschainInvestHash,
             setcrossChainTxId,
-            setInputBalance
+            setInputBalance,
+            slippage
         )()
         await interactionPostHook(!!success)
     }
@@ -1002,7 +1007,8 @@ function handleInteraction(
     action: Action,
     setCrosschainInvestHash: Function,
     setcrossChainTxId: Function,
-    setInputBalance: Function
+    setInputBalance: Function,
+    slippage: number
 ) {
     switch (action) {
         case Action.depositApprove:
@@ -1023,14 +1029,14 @@ function handleInteraction(
                 const result = await handleDepositTransaction(
                     vaultData, inputBalance, inputToken, EOAaccount,
                     setTransactionCompleted, activeChain,
-                    setCrosschainInvestHash, setcrossChainTxId, setInputBalance);
+                    setCrosschainInvestHash, setcrossChainTxId, setInputBalance, slippage);
                 return result;
             }
         case Action.withdraw:
             return async () => {
                 const result = await handleWithdrawTransaction(
                     vaultData, inputBalance, inputToken, EOAaccount,
-                    setTransactionCompleted, activeChain, setCrosschainInvestHash, setcrossChainTxId, setInputBalance);
+                    setTransactionCompleted, activeChain, setCrosschainInvestHash, setcrossChainTxId, setInputBalance, slippage);
                 return result;
             }
         default:

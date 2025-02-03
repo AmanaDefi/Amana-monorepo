@@ -14,7 +14,6 @@ import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
 
 import * as dotenv from "dotenv";
-import { VAULT_DATA } from "@/constants";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -143,11 +142,11 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
   return currentAPY;
 }
 
-export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
+export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function, slippage: number) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
   } else {
-    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
+    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId, slippage);
   }
 };
 
@@ -220,7 +219,8 @@ const executeCrossChainDeposit = async (
   activeAccount: Account,
   activeChain: Chain,
   transactionAmount: bigint,
-  setcrossChainTxId: Function
+  setcrossChainTxId: Function,
+  slippage: number
 ) => {
   console.log("Executing Cross-Chain Deposit");
 
@@ -232,11 +232,11 @@ const executeCrossChainDeposit = async (
   const isNativeToken = inputToken === ZeroAddress;
 
   let contract, approveTx, payload, revertOptions;
-  const slippage = 200; // TODO change this to be an input from user on FE
+  const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
     ["address", "uint16", "bytes32"],
-    [inputToken, slippage, transactionId]
+    [inputToken, slippageValue, transactionId]
   ) as `0x${string}`;
 
   // Prepare revertOptions
@@ -347,11 +347,11 @@ const executeCrossChainDeposit = async (
   }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function, slippage: number) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId, slippage);
   }
 };
 
@@ -381,18 +381,19 @@ const executeCrossChainWithdrawal = async (
   withdrawAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Address, // TODO add this higher up in the calling functions,
-  setcrossChainTxId: Function
+  setcrossChainTxId: Function,
+  slippage: number
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-  const slippage = 10000; // TODO change this to be an input from user on FE
+  const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint16", "bytes32"],
-    [withdrawZRC20, withdrawERC20, withdrawAmount, slippage, transactionId]
+    [withdrawZRC20, withdrawERC20, withdrawAmount, slippageValue, transactionId]
   ) as `0x${string}`;
 
   // Prepare revertOptions to match the Solidity struct

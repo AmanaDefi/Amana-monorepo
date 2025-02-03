@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {
   calculateAaveAPY,
   calculateCompoundAPY,
@@ -8,13 +8,14 @@ import {
   fetchUserVaultMaxWithdraw
 } from "@/actions/actions";
 import {Address, defineChain, getContract, prepareEvent, readContract} from "thirdweb";
-import {VaultData} from "@/types/types";
+import {UserSettings, VaultData} from "@/types/types";
 import {Account} from "thirdweb/wallets";
 import {client} from "@/utils/client";
 import {SUPPORTED_CHAINS} from "@/constants/chainConfig";
 import {useContractEvents} from "thirdweb/react";
 import {isZetachain} from "@/utils/utils";
 import {useTokenPrices} from "@/providers/TokenPriceProvider";
+import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -289,4 +290,50 @@ export function useTokenPriceBySymbol(symbol: string|undefined) {
     const tokenSymbol = symbol.split('.')[0].toUpperCase();
     return priceContext.prices?.[tokenSymbol] ?? 0;
   }, [priceContext, symbol]);
+}
+
+export function useUserSettings() {
+    const [userSettings, setUserSettings] = useState<UserSettings>({
+        slippage: { isAuto: true, value: 5 },
+    });
+
+  useEffect(() => {
+    const saved = localStorage.getItem(USER_SETTINGS_LOCAL_STORAGE_KEY);
+    if (saved) {
+      setUserSettings(JSON.parse(saved));
+    }
+  }, []);
+
+  const updateSettings = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
+    const newSettings = { ...userSettings, [key]: value };
+    setUserSettings(newSettings);
+    localStorage.setItem(USER_SETTINGS_LOCAL_STORAGE_KEY, JSON.stringify(newSettings));
+  };
+
+  return { userSettings, updateSettings }
+}
+
+export function useSlippage() {
+  const { userSettings, updateSettings } = useUserSettings();
+
+  const setSlippage = (value: number) => {
+    updateSettings('slippage', {
+      isAuto: false,
+      value
+    });
+  };
+
+  const toggleAuto = () => {
+    updateSettings('slippage', {
+      isAuto: !userSettings.slippage?.isAuto,
+      value: 5
+    });
+  };
+
+  return {
+    slippageValue: userSettings.slippage?.value,
+    isAuto: userSettings.slippage?.isAuto,
+    setSlippage,
+    toggleAuto
+  };
 }
