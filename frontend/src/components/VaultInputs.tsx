@@ -7,7 +7,7 @@ import { parseUnits } from "viem";
 import { Address, getContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
-import { APPROVED_TOKENS } from "@/constants/chainConfig";
+import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
 import {determineVaultTokenFromApprovedTokens, getVaultErrorMessage, selectActions} from "@/utils/utils";
 import { ethers } from "ethers";
@@ -23,7 +23,13 @@ export interface VaultInputsProps {
 }
 
 // Custom hook to fetch token balance, including native tokens
-function useTokenBalance(token: Token | undefined, userAddress: string | undefined, activeChain: any, transactionCompleted: Boolean) {
+function useTokenBalance(
+  token: Token | undefined,
+  userAddress: string | undefined,
+  activeChain: any,
+  transactionCompleted: boolean,
+  isDeposit: boolean // ✅ Accept isDeposit as a parameter
+) {
   const [balance, setBalance] = useState<string>("0");
   const { data: walletBalance, isLoading, isError } = useWalletBalance({
     chain: activeChain,
@@ -34,21 +40,30 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
   useEffect(() => {
     const fetchTokenBalance = async () => {
       try {
-        if (!token || !userAddress || !activeChain) return;
+        if (!token || !userAddress) return;
+
+        // ✅ Always use ZetaChain for Withdrawals
+        const chainToUse = isDeposit ? activeChain : SUPPORTED_CHAINS[0]; // TODO add 7001 for testnet
+
         if (token.isNative) {
           if (!isLoading && !isError && walletBalance) {
-            // Fetch native token balance (ETH, BNB, MATIC, etc.)
             setBalance(walletBalance.displayValue || "0");
-          }
-          else {
+          } else {
             setBalance("0");
           }
         } else {
-          // Fetch ERC-20 token balance
-          const contract = getContract({ client, chain: activeChain, address: token.address as Address });
-          const { value, decimals } = await getBalance({ contract, address: userAddress as Address });
-          const formattedBalance = ethers.formatUnits(value, decimals);
-          setBalance(formattedBalance || "0");
+          const contract = getContract({
+            client,
+            chain: chainToUse, // ✅ Ensure ZetaChain is used for withdraws
+            address: token.address as Address,
+          });
+
+          const { value, decimals } = await getBalance({
+            contract,
+            address: userAddress as Address,
+          });
+
+          setBalance(ethers.formatUnits(value, decimals) || "0");
         }
       } catch (error) {
         console.error("Error fetching wallet data: ", error);
@@ -56,10 +71,11 @@ function useTokenBalance(token: Token | undefined, userAddress: string | undefin
     };
 
     fetchTokenBalance();
-  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError, transactionCompleted]);
+  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError, transactionCompleted, isDeposit]); // ✅ Add isDeposit as a dependency
 
   return balance;
 }
+
 
 export default function VaultInputs({
   vaultData,
@@ -95,20 +111,22 @@ export default function VaultInputs({
 
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
-    if (activeChain.id === 7001 || activeChain.id === 7000) {
-      // If on ZetaChain testnet, set inputToken to the vault token
-      setInputToken(vaultData.inputToken);
+    if (!inputToken) {
+      if (activeChain.id === 7001 || activeChain.id === 7000) {
+        // If on ZetaChain testnet, set inputToken to the vault token
+        setInputToken(vaultData.inputToken);
 
-    } else {
-      // On other chains, use APPROVED_TOKENS to set available tokens
-      setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken)); // Set to the first approved token as a default
+      } else {
+        // On other chains, use APPROVED_TOKENS to set available tokens
+        setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken)); // Set to the first approved token as a default
+      }
+
+      setAllowInput(true);
     }
-
-    setAllowInput(true);
-  }, [activeChain.id, vaultData.inputToken, isDeposit]);
+  }, [activeChain.id, vaultData.inputToken]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, transactionCompleted);
+  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, transactionCompleted, isDeposit);
 
   // Watch action type change
   useEffect(() => {
@@ -160,11 +178,22 @@ export default function VaultInputs({
       throw new Error("No active account found");
     }
     setInputBalance(EMPTY_BALANCE);
-    if (inputToken) {
+    if (inputToken && activeChain) {
       if (isDeposit) {
         // Switch to Withdraw
-
         setIsDeposit(false);
+        // Construct a Token object for vaultData.id
+        console.log("setting token for withdraw: ", vaultData.symbol)
+        const withdrawToken: Token = {
+          symbol: vaultData.symbol,
+          decimals: vaultData.inputToken.decimals,
+          address: vaultData.id as Address,
+          imgURL: "",
+          price: 1,
+          balance: EMPTY_BALANCE,
+          isNative: false
+        };
+        setInputToken(withdrawToken);
         const newAction = SmartVaultActionType.Withdrawal;
         setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount, inputBalance, inputToken));
 
@@ -172,6 +201,7 @@ export default function VaultInputs({
         // Switch to Deposit
         setIsDeposit(true);
         const newAction = SmartVaultActionType.Deposit;
+        activeChain.id === 7001 || activeChain.id === 7000 ? setInputToken(vaultData.inputToken) : setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken));
         setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount, inputBalance, inputToken));
       }
     }
@@ -191,7 +221,6 @@ export default function VaultInputs({
 
     // convert string amt to bigint
     const newAmt = parseUnits(inputAmt, inputToken.decimals);
-
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
   }
 
@@ -223,7 +252,11 @@ export default function VaultInputs({
         selectedToken={inputToken}
         inputTokenbalance={inputTokenBalance}
         errorMessage={errorMessage}
-        tokenList={activeChain.id === 7001 || activeChain.id === 7000 ? [vaultData.inputToken] : APPROVED_TOKENS[activeChain.id]}
+        tokenList={isDeposit ? (activeChain.id === 7001 || activeChain.id === 7000
+          ? vaultData.inputToken ? [vaultData.inputToken] : []  // Ensure vault token is defined
+          : (APPROVED_TOKENS[activeChain.id] ?? []).filter((token): token is Token => token !== undefined) // Ensure array is valid
+        ) : inputToken ? [inputToken] : []}  // Ensure inputToken is defined
+        
         disabled={false}
         isDeposit={isDeposit}
         userVaultBalance={userVaultBalance}

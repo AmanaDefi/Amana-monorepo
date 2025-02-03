@@ -67,14 +67,22 @@ export default function InputTokenWithError({
             <div className="xs:w-full xs:border-r xs:border-customGray500 xs:pr-4 smmd:p-0 smmd:border-none smmd:w-1/2">
               <InputNumber {...props} disabled={disabled} />
             </div>
-            <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
-              <SelectToken
-                selectedToken={selectedToken!}
-                options={tokenList}
-                selectToken={onSelectToken}
-              />
+              <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
+                {isDeposit ? (
+                  <SelectToken
+                    selectedToken={selectedToken!}
+                    options={tokenList}
+                    selectToken={onSelectToken}
+                  />
+                ) : (
+                  <div className="flex items-center">
+                    <p className="font-medium text-lg text-white">
+                      {selectedToken?.symbol}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
           <div className="flex justify-between items-center mt-4 w-full text-customGray500">
             <p className="group-hover/max:text-white">
               {selectedToken
