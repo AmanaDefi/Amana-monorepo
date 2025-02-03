@@ -18,6 +18,8 @@ import {MoonLoader} from "react-spinners";
 import {AiOutlineCheck, AiOutlineExclamation} from "react-icons/ai";
 import {isZetachain} from "@/utils/utils";
 import {useInteractionEvents} from "@/hooks/hooks";
+import { determineVaultTokenFromApprovedTokens } from "@/utils/utils";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function) => {
     setTransactionCompleted(false)
@@ -66,22 +68,24 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
 const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function) => {
     setTransactionCompleted(false)
-    let withdrawZRC20 = withdrawToken.ZRC20equivalent;
+    let withdrawZRC20;
     if (activeChain.id === 7001 || activeChain.id === 7000) {
+        withdrawToken = vaultData.inputToken;
         withdrawZRC20 = withdrawToken.address;
+    } else {
+        withdrawToken = determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken) ?? APPROVED_TOKENS[activeChain.id][0];
+        withdrawZRC20 = withdrawToken.ZRC20equivalent
     }
-    if (!withdrawZRC20) {
+    if (!withdrawToken || !withdrawZRC20) {
         throw new Error("Withdraw token not found");
     }
     try {
         const value = Number(inputBalance.value)
         const scaledAmount = BigInt(value)
-
         mixpanel.track("Withdraw Submitted", {
             vault: vaultData.id.toString(),
             amount: scaledAmount.toString(),
         });
-
         const receipt = await executeWithdrawal(
             vaultData.id as Address,
             EOAaccount,
