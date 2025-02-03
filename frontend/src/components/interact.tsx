@@ -403,24 +403,26 @@ export default function InteractionContainer({ step, setStep, action, setAction,
 
     // Track user interaction to release last transaction logs
     // START
+
+    function resetTransactionState() {
+        setFinishedTransaction(false)
+        setIsTransactionProcessing(false)
+        setIsTransactionStarted(false)
+        setCrosschainInvestHash('');
+        setcrossChainTxId('');
+    }
     useEffect(() => {
         if (Number(_inputBalance.value) > 0) {
-            setFinishedTransaction(false)
-            setIsTransactionProcessing(false)
-            setIsTransactionStarted(false)
+            resetTransactionState()
         }
     }, [_inputBalance.value]);
 
     useEffect(() => {
-        setFinishedTransaction(false)
-        setIsTransactionProcessing(false)
-        setIsTransactionStarted(false)
+        resetTransactionState()
     }, [_inputToken]);
 
     useEffect(() => {
-        setFinishedTransaction(false)
-        setIsTransactionProcessing(false)
-        setIsTransactionStarted(false)
+        resetTransactionState()
     }, [isDeposit]);
 
     // END

@@ -25,10 +25,15 @@ export default function SlippageSettingsModal() {
         if ((value.match(/\./g) || []).length > 1) return;
 
         const numValue = parseFloat(value);
+
+        if (value[value.length - 1] === '.' || numValue === 0) {
+            setInputValue(value);
+            return;
+        }
         if (numValue <= 100) {
-            if (numValue < 1) {
-                setInputValue('1');
-                setSlippage(1);
+            if (numValue < 0.1) {
+                setInputValue('0.1');
+                setSlippage(0.1);
             } else {
                 if (value.includes('.') && value.split('.')[1].length > 2) {
                     const fixedValue = numValue.toFixed(2);
@@ -63,7 +68,7 @@ export default function SlippageSettingsModal() {
                         </button>
                         <ResponsiveTooltip
                             id={'max-slipage-info-button'}
-                            content={<p className="w-28">{'Lorem ipsum'}</p>}
+                            content={<p className="w-28">{'Your transaction will revert if the price changes by more than the slippage percentage'}</p>}
                         />
                     </div>
                     <div className='rounded-5xl border border-customGray600 px-3 py-1.5 flex md:items-center justify-between'>
