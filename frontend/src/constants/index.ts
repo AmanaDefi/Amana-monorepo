@@ -28,7 +28,7 @@ export const tokens: Token[] = [
 
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0xa54fb1a57b53971114Ae1E5F7dfeFd55fB033678", // Base ETH Vault
+    id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
     name: "AaveV3 ETH",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
     symbol: "aAaveETH",
@@ -44,7 +44,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0xe4540Ab01D47A9c0c4aD4D7F7f2301cc259e67af",
+      strategyAddress: "0x3D85ef74f5FA2c56b53CcC8c9a2a140363dE014E",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
