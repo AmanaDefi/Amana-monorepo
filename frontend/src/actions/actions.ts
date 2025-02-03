@@ -3,19 +3,15 @@ import { client } from "../utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { VaultData } from "../types/types";
 import { ethers, JsonRpcProvider } from "ethers";
-import lendingPoolABI from "../../abis/lendingPoolABI.json";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
-import compoundVaultABI from "../../abis/compoundVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
-import { Chain, defineChain } from "thirdweb";
+import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
 // import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
-import { VAULT_DATA } from "@/constants";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -451,7 +447,7 @@ const executeCrossChainWithdrawal = async (
   activeChain: Chain,
   withdrawAmount: bigint,
   withdrawERC20: Address,
-  withdrawZRC20: Address, // TODO add this higher up in the calling functions,
+  withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
