@@ -23,21 +23,21 @@ export default function MobileMenuModal() {
                 className={`z-[1] lg:!hidden fixed top-[var(--header-height)] bottom-0 left-0 right-0 bg-black ${openedMobileMenu ? 'flex' : 'hidden'}`}>
                 <nav className="flex flex-col h-fit divide-y divide-tuatara-900 border-b border-tuatara-900 w-full text-center">
                         <span
-                            className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-primaryYellow" : ""
+                            className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
                             }`}
                             onClick={() => router.push("/")}
                         >
                             Vaults
                         </span>
                     <span
-                        className={`cursor-pointer py-6 ${path === "/buy" ? "font-bold text-primaryYellow" : ""
+                        className={`cursor-pointer py-6 ${path === "/buy" ? "font-bold text-themeColor" : ""
                         }`}
                         onClick={() => router.push("/buy")}
                     >
                             Fund Wallet
                         </span>
                     <span
-                        className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-primaryYellow" : ""
+                        className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-themeColor" : ""
                         }`}
                         onClick={() => router.push("/about")}
                     >

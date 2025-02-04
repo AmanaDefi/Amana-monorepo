@@ -18,6 +18,7 @@ export const colors = {
     secondaryFuchsia: "#F289E6",
     secondaryPurple: "#9B55FF",
     secondaryViolet: "#C391FF",
+    themeColor: '#9a5dfd',
     'tuatara': {
         '50': '#f6f6f6',
         '100': '#e7e7e7',
@@ -43,5 +44,18 @@ export const colors = {
         '800': '#272f65',
         '900': '#252a55',
         '950': '#0a0b17',
+    },
+    'medium-purple': {
+        '50': '#f6f2ff',
+        '100': '#eee8ff',
+        '200': '#dfd4ff',
+        '300': '#c8b2ff',
+        '400': '#ae86ff',
+        '500': '#9a5dfd',
+        '600': '#8932f5',
+        '700': '#7a20e1',
+        '800': '#661abd',
+        '900': '#55189a',
+        '950': '#340c69',
     },
 }

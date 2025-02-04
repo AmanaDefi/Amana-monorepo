@@ -957,7 +957,7 @@ function Interaction(
                                                                 switch (actionStatus) {
                                                                     case TransactionStepStatus.pending:
                                                                         return <div
-                                                                            className="w-4 h-4 bg-blue-500 rounded-full animate-[ping_1.5s_ease-in-out_infinite]"
+                                                                            className="w-4 h-4 bg-medium-purple-600 rounded-full animate-[ping_1.5s_ease-in-out_infinite]"
                                                                         />
                                                                     case TransactionStepStatus.error:
                                                                         return <AiOutlineExclamation className='text-red-600' size={16}/>
