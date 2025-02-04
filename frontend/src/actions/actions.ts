@@ -14,6 +14,7 @@ import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
 
 import * as dotenv from "dotenv";
+import {getCurrentSlippage} from "@/utils/utils";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -142,11 +143,11 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address) {
   return currentAPY;
 }
 
-export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function, slippage: number) => {
+export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
   } else {
-    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId, slippage);
+    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
   }
 };
 
@@ -219,8 +220,7 @@ const executeCrossChainDeposit = async (
   activeAccount: Account,
   activeChain: Chain,
   transactionAmount: bigint,
-  setcrossChainTxId: Function,
-  slippage: number
+  setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
 
@@ -232,7 +232,9 @@ const executeCrossChainDeposit = async (
   const isNativeToken = inputToken === ZeroAddress;
 
   let contract, approveTx, payload, revertOptions;
+  const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
+  console.log("slippage", slippageValue)
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
     ["address", "uint16", "bytes32"],
@@ -347,11 +349,11 @@ const executeCrossChainDeposit = async (
   }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function, slippage: number) => {
+export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId, slippage);
+    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   }
 };
 
@@ -381,15 +383,16 @@ const executeCrossChainWithdrawal = async (
   withdrawAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Address, // TODO add this higher up in the calling functions,
-  setcrossChainTxId: Function,
-  slippage: number
+  setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
+  const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
+  console.log("slippage", slippageValue)
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint16", "bytes32"],

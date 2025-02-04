@@ -302,12 +302,13 @@ export function useUserSettings() {
     if (saved) {
       setUserSettings(JSON.parse(saved));
     }
+    window.addEventListener('storage', () => console.log("EXECUTED UPDATE STORAGEEEEE!!!"));
   }, []);
 
   const updateSettings = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
     const newSettings = { ...userSettings, [key]: value };
-    setUserSettings(newSettings);
     localStorage.setItem(USER_SETTINGS_LOCAL_STORAGE_KEY, JSON.stringify(newSettings));
+    setUserSettings(newSettings);
   };
 
   return { userSettings, updateSettings }
@@ -331,8 +332,8 @@ export function useSlippage() {
   };
 
   return {
-    slippageValue: userSettings.slippage?.value,
-    isAuto: userSettings.slippage?.isAuto,
+    slippageValue: useMemo(() => userSettings.slippage?.value, [userSettings.slippage?.value]),
+    isAuto: useMemo(() => userSettings.slippage?.isAuto, [userSettings.slippage?.isAuto]),
     setSlippage,
     toggleAuto
   };
