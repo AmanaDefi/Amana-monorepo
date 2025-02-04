@@ -12,6 +12,7 @@ import { keccak256 } from "thirdweb";
 // import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
+import { getCurrentSlippage } from "@/utils/utils";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -300,11 +301,13 @@ const executeCrossChainDeposit = async (
   const isNativeToken = inputToken === ZeroAddress;
 
   let contract, approveTx, payload, revertOptions;
-  const slippage = 10000; // TODO change this to be an input from user on FE
+  const slippage = getCurrentSlippage();
+  const slippageValue = (slippage * 100).toFixed(0);
+  console.log("slippage", slippageValue)
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
     ["address", "uint16", "bytes32"],
-    [inputToken, slippage, transactionId]
+    [inputToken, slippageValue, transactionId]
   ) as `0x${string}`;
 
   // Prepare revertOptions
@@ -456,11 +459,13 @@ const executeCrossChainWithdrawal = async (
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-  const slippage = 10000; // TODO change this to be an input from user on FE
+  const slippage = getCurrentSlippage();
+  const slippageValue = (slippage * 100).toFixed(0);
+  console.log("slippage", slippageValue)
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint16", "bytes32"],
-    [withdrawZRC20, withdrawERC20, withdrawAmount, slippage, transactionId]
+    [withdrawZRC20, withdrawERC20, withdrawAmount, slippageValue, transactionId]
   ) as `0x${string}`;
 
   // Prepare revertOptions to match the Solidity struct

@@ -16,12 +16,12 @@ export default function FAQ() {
 
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center">
-      <p>Active Account: {account ? account.address : 'No active account'}</p>
-      <p className="text-2xl text-zinc-600 mt-4">Coming Soon</p>
-      <Link href="/" className="mt-4 text-blue-500 hover:underline">
-        Take me back to Amana
-      </Link>
-    </main>
+      <>
+          <p>Active Account: {account ? account.address : 'No active account'}</p>
+          <p className="text-2xl text-zinc-600 mt-4">Coming Soon</p>
+          <Link href="/" className="mt-4 text-blue-500 hover:underline">
+              Take me back to Amana
+          </Link>
+      </>
   );
 }

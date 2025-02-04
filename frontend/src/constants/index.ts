@@ -379,3 +379,5 @@ const TESTNET_VAULT_DATA: VaultData[] = [
 
 // Export the appropriate vault data based on DEPLOY_ENV
 export const VAULT_DATA = deployEnv === "testnet" ? TESTNET_VAULT_DATA : MAINNET_VAULT_DATA;
+
+export const USER_SETTINGS_LOCAL_STORAGE_KEY = 'user_settings';

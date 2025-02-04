@@ -3,8 +3,6 @@
 import React from "react";
 import { useActiveAccount } from "thirdweb/react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
-import Footer from "../../../components/Footer";
-import Header from "@/components/header";
 import { useParams } from 'next/navigation';
 
 
@@ -14,22 +12,16 @@ function Index({ }) {
   const { id } = useParams();
 
   return (
-      <main className="min-h-screen flex flex-col container mx-auto relative">
-        <div className="flex flex-col p-4 pb-10 flex-1">
-          <Header/>
+      <>
           {
               account &&
-              <div className="flex-1 flex flex-col justify-between py-20 pl-6">
-                <div className="flex-1">
-                  <VaultsDetailContainer vaultID={id}/>
-                </div>
-
-                {/* Footer aligned with the main content */}
-                <Footer/>
+              <div className="flex-1 flex flex-col w-full justify-between py-20 pl-6">
+                  <div className="flex-1">
+                      <VaultsDetailContainer vaultID={id}/>
+                  </div>
               </div>
           }
-        </div>
-      </main>
+      </>
   )
 }
 

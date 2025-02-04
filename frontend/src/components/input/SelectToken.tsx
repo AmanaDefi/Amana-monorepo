@@ -28,7 +28,6 @@ export default function SelectToken({
       <div className="">
         <Modal
           visibility={[show, setShow]}
-          classNames="md:w-fit md:min-w-fit"
           title={<h2 className="text-white text-2xl">Select a token</h2>}
         >
           <div className="mt-8">
