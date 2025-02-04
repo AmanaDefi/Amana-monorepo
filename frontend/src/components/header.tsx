@@ -1,11 +1,13 @@
 import { ConnectButton } from "thirdweb/react";
-import { client } from "../utils/client";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { client } from "@/utils/client";
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { usePathname } from 'next/navigation';
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
+import AmanaLogo from "@public/logo/amanadefi/logo.svg"
+import MobileMenuModal from "@/components/modal/MobileMenuModal";
 
 const wallets = [
     inAppWallet({
@@ -24,52 +26,50 @@ const wallets = [
 ];
 
 const Header = () => {
-
-    const pathname = usePathname();
-    const [path] = useState(pathname)
+    const path = usePathname();
     const router = useRouter();
 
     return (
-        <div>
-            <header className="w-5/6 text-white p-4 flex justify-between items-center">
-                <Link href='/'>
-                    <h1 className="text-3xl font-bold tracking-tighter text-zinc-100">Amana</h1>
-                </Link>
-                <nav className="flex space-x-8">
-                    <span
-                        className={`cursor-pointer ${path === "/" ? "font-bold text-primaryYellow" : ""
+        <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">
+            <Link href='/' className='flex items-center gap-2 lg:gap-3'>
+                <AmanaLogo height={30} className='h-[30px] w-auto md:h-[54px] text-white'/>
+                <h1 className="text-xl lg:text-3xl lg:leading-[44px] font-bold font-mono tracking-tighter text-zinc-100">AMANA</h1>
+            </Link>
+            <div className='flex items-center gap-3'>
+                <div className='flex items-center gap-3 lg:gap-16'>
+                    <nav className="hidden lg:flex gap-16">
+                        <span
+                            className={`cursor-pointer ${path === "/" ? "font-bold text-primaryYellow" : ""
                             }`}
-                        onClick={() => router.push("/")}
-                    >
-                        Vaults
-                    </span>
-                    <span
-                        className={`cursor-pointer ${path === "/buy" ? "font-bold text-primaryYellow" : ""
-                            }`}
-                        onClick={() => router.push("/buy")}
-                    >
-                        Fund Wallet
-                    </span>
-                    <span
-                        className={`cursor-pointer ${path === "/about" ? "font-bold text-primaryYellow" : ""
-                            }`}
-                        onClick={() => router.push("/about")}
-                    >
-                        About
-                    </span>
-                </nav>
-
-                {/* Connect Button */}
-                <div className="absolute top-5 right-5">
+                            onClick={() => router.push("/")}
+                        >
+                            Vaults
+                        </span>
+                            <span
+                                className={`cursor-pointer ${path === "/buy" ? "font-bold text-primaryYellow" : ""
+                                }`}
+                                onClick={() => router.push("/buy")}
+                            >
+                            Fund Wallet
+                        </span>
+                            <span
+                                className={`cursor-pointer ${path === "/about" ? "font-bold text-primaryYellow" : ""
+                                }`}
+                                onClick={() => router.push("/about")}
+                            >
+                            About
+                        </span>
+                    </nav>
                     <ConnectButton
                         client={client}
                         chains={SUPPORTED_CHAINS}
                         wallets={wallets}
-                        connectModal={{ size: "compact" }}
+                        connectModal={{size: "compact"}}
                     />
                 </div>
-            </header>
-        </div>
+                <MobileMenuModal />
+            </div>
+        </header>
     )
 }
 

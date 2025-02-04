@@ -28,6 +28,11 @@
   /* Customize the progress bar */
   --toastify-color-progress-success: #3182ce;
   /* Blue progress bar */
+
+  --header-height: 71px;
+  @media only screen and (min-width: 1024px) {
+    --header-height: 112px;
+  }
 }
 
 @layer base {

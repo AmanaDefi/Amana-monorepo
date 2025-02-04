@@ -1,37 +1,51 @@
 "use client"; // Client-side code
 
-import { Inter } from "next/font/google";
+import { Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import AccountProvider from "@/providers/AccountProvider";
 import TokenPriceProvider from "@/providers/TokenPriceProvider";
+import { fustat } from '@/styles/fonts'
+import Header from "@/components/header";
+import Footer from "@/components/Footer";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], weight: ['300', '400', '500'], variable: '--font-inter' });
+const spaceMono = Space_Mono({ subsets: ["latin"], weight: ['400', '700'], variable: '--font-space-mono' });
 
 const MyApp = ({ children }: Readonly<{ children: React.ReactNode; }>) => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <html lang="en">
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-      </head>
-      <body className={inter.className}>
-        <QueryClientProvider client={queryClient}>
-          <ThirdwebProvider>
+    <html lang="en" className={`${fustat.variable} ${inter.variable} ${spaceMono.variable}`}>
+    <head>
+        <link rel="icon" href="/logo/amanadefi/64x64.png"/>
+        <title>App AmanaDefi - Decentralized Yield Generation Platform</title>
+    </head>
+    <body className='font-sans font-light'>
+    <QueryClientProvider client={queryClient}>
+        <ThirdwebProvider>
               <AccountProvider>
                   <TokenPriceProvider>
-                      {children}
+                      <main className="min-h-screen flex flex-col relative overflow-hidden">
+                          <div className="flex flex-col flex-1">
+                              <Header/>
+                              <div className='flex flex-1 mx-auto container'>
+                                  {children}
+                              </div>
+                              {/* Footer aligned with the main content */}
+                              <Footer/>
+                          </div>
+                      </main>
                   </TokenPriceProvider>
               </AccountProvider>
-            <ToastContainer />
-          </ThirdwebProvider>
-        </QueryClientProvider>
-      </body>
+            <ToastContainer/>
+        </ThirdwebProvider>
+    </QueryClientProvider>
+    </body>
     </html>
   );
 }
