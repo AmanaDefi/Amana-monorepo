@@ -72,16 +72,29 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
 }
 
 
-export async function calculateAaveAPY(poolAddress: Address, inputTokenAddress: Address, strategyChain: Chain) {
+export async function calculateAaveAPY(inputTokenAddress: Address, strategyChain: Chain) {
   // Get the Aave lending pool contract
-  const aaveLendingPool = getContract({
+  const receiptTokenContract = getContract({
     client,
     chain: strategyChain,
-    address: poolAddress
+    address: inputTokenAddress
+  });
+  const aaveLendingPool = await readContract({
+    contract: receiptTokenContract,
+    method: "function POOL() view returns (address)"
+  });
+  const aaveLendingPoolContract = getContract({
+    client,
+    chain: strategyChain,
+    address: aaveLendingPool
+  });
+  const underlyingAssetAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)"
   });
 
   const reserveData = await readContract({
-    contract: aaveLendingPool,
+    contract: aaveLendingPoolContract,
     method: "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
     params: [underlyingAssetAddress as Address]
   });
@@ -193,6 +206,7 @@ export async function calculateCompoundRewardsAPY(cometAddress: Address, rewards
   const rewardPerSecond = baseTrackingSupplySpeed * (rewardsMultiplier) / (BigInt(1e18));
   const annualRewards = rewardPerSecond * (BigInt(60 * 60 * 24 * 365));
   const apy = annualRewards * (BigInt(1e18)) / (totalSupply);
+  console.log("Rewards APY:", apy);
   return apy * (BigInt(1e16)) / BigInt(100);
   // console.log("Rewards Emission Rate:", baseTrackingSupplySpeed.toString());
 
