@@ -290,7 +290,8 @@ const executeCrossChainDeposit = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
-
+  console.log("inputToken in executeCrossChainDeposit: ", inputToken);
+  console.log("transactionAMount in executeCrossChainDeposit: ", transactionAmount)
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
@@ -517,13 +518,13 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
     contract,
     address: userAddress
   });
-  const balance = await readContract({
-    contract,
-    method: "function convertToAssets(uint256) view returns (uint256)",
-    params: [shares]
-  });
-  console.log("BALANCE HERE", balance)
-  const formattedBalance = Number(balance) / 10 ** decimals;
+  // const balance = await readContract({
+  //   contract,
+  //   method: "function convertToAssets(uint256) view returns (uint256)",
+  //   params: [shares]
+  // });
+  console.log("BALANCE HERE", shares)
+  const formattedBalance = Number(shares) / 10 ** decimals;
   return formattedBalance.toString();
 }
 
@@ -535,7 +536,7 @@ export const fetchUserVaultMaxWithdraw = async (decimals: number, userAddress: A
   });
   const maxWithdraw = await readContract({
     contract,
-    method: "function maxWithdraw(address) view returns (uint256)",
+    method: "function maxRedeem(address) view returns (uint256)",
     params: [userAddress]
   });
   const formattedMaxWithdraw = Number(maxWithdraw) / 10 ** decimals;
