@@ -152,31 +152,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Moonwell is a relatively new protocol."
   //   },
   // },
-  // {
-  //   id: "0x6208951B0f419b09F3162B9B56881b129Dc0aCE3",
-  //   name: "Compound USDC",
-  //   des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Compound USDC pool, which earns interest every block.",
-  //   symbol: "aCompoundUSDC",
-  //   imgURL: "/base.png",
-  //   inputToken: {
-  //     symbol: "USDC.BASE",
-  //     decimals: 6,
-  //     address: ZC_USDC_BASE_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Compound",
-  //     strategyAddress: "0x6e205E0153512Ac766bB4e4eC78AEc39DF70083d",
-  //     network: "Base",
-  //     chainId: 8453,
-  //     netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-  //     imgURL: "/compound.png",
-  //     des: "Compound is one of the OG lending protocols."
-  //   },
-  // },
+  {
+    id: "0x6208951B0f419b09F3162B9B56881b129Dc0aCE3",
+    name: "Compound USDC",
+    des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Compound USDC pool, which earns interest every block.",
+    symbol: "aCompoundUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Compound",
+      strategyAddress: "0x6e205E0153512Ac766bB4e4eC78AEc39DF70083d",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/compound.png",
+      des: "Compound is one of the OG lending protocols."
+    },
+  },
   {
     id: "0xd042474ef4eAF7b8D79F0F97da06D9E22Ba79CbA", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
     name: "Mock USDC",
