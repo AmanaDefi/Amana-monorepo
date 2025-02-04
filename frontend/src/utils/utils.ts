@@ -1,10 +1,20 @@
 import { ParseEventLogsResult, Address } from "thirdweb";
-import { TransactionResult, SmartVaultActionType, VaultData, Balance, Token, Action } from "@/types/types"
+import {
+  TransactionResult,
+  SmartVaultActionType,
+  VaultData,
+  Balance,
+  Token,
+  Action,
+  UserSettings,
+  DEFAULT_SETTINGS
+} from "@/types/types"
 import { Account } from "thirdweb/wallets";
 import { handleAllowance } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
 import { APPROVED_TOKENS, HERMES_URL } from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
+import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -346,4 +356,18 @@ export async function fetchTokenPrices(priceIds: string[]): Promise<{
     console.error("Error fetching prices:", error);
     return priceIds.reduce((acc, id) => ({ ...acc, [id]: 0 }), {});
   }
+}
+
+export function getStoredSettings(): UserSettings {
+  try {
+    const saved = localStorage.getItem(USER_SETTINGS_LOCAL_STORAGE_KEY);
+    if (!saved) return DEFAULT_SETTINGS;
+    return JSON.parse(saved);
+  } catch (e) {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+export function getCurrentSlippage(): number {
+  return getStoredSettings().slippage.value;
 }

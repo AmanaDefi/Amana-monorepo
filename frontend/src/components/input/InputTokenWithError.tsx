@@ -5,6 +5,7 @@ import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency, formatBalance } from "@/utils/utils";
 import { useState, useEffect } from "react";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
+import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
 
 export default function InputTokenWithError({
   tokenList,
@@ -50,14 +51,17 @@ export default function InputTokenWithError({
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
-      {captionText && (
-        <p className="text-white text-start mb-2">
-          {captionText}
-          {inputMoreThanBalance && (
-            <span className="text-red-500 ml-2">Input More than Balance</span>
-          )}
-        </p>
-      )}
+      <div className='flex items-center justify-between mb-3'>
+        {captionText && (
+            <p className="text-white text-start">
+              {captionText}
+              {inputMoreThanBalance && (
+                  <span className="text-red-500 ml-2">Input More than Balance</span>
+              )}
+            </p>
+        )}
+        <SlippageSettingsModal />
+      </div>
       <div className="relative flex items-center w-full">
         <div
           className={`w-full px-5 pt-4 pb-2 rounded-lg border ${errorMessage ? "border-red-500" : "border-customGray100"

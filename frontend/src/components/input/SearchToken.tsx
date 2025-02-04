@@ -63,7 +63,7 @@ export default function SearchToken({
             >
               <span
                 className={`flex items-center py-3 px-3 ${selectedToken?.address === option.address
-                  ? "text-primaryYellow font-semibold"
+                  ? "text-themeColor font-semibold"
                   : "text-white font-normal  cursor-pointer"
                   }`}
               >
@@ -72,7 +72,7 @@ export default function SearchToken({
                     src={option.imgURL}
                     alt={option.symbol}
                     width={1200} // Adjust to your desired width
-                    height={800} // Adjust to your desired height                  
+                    height={800} // Adjust to your desired height
                     className="h-full w-full object-contain mr-2 rounded-full"
                   />
                 </span>
