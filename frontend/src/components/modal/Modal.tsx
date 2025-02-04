@@ -44,12 +44,12 @@ export default function Modal({
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
               <Dialog.Panel
-                className={`md:min-w-[700px] md:w-2/3 relative transform overflow-hidden rounded-lg bg-customNeutral200 border border-customNeutral100 px-8 py-9 transition-all text-white ${classNames}`}
+                className={`w-full md:min-w-[500px] md:w-fit relative transform rounded-lg bg-customNeutral200 border border-customNeutral100 px-8 py-9 transition-all text-white ${classNames}`}
               >
                 <div className="flex flex-row justify-between font-medium md:items-center mb-8">
                   <>{title || <div></div>}</>
                   <XMarkIcon
-                    className="w-10 h-10 text-white"
+                    className="w-7 h-7 text-white"
                     onClick={() => setShowModal(false)}
                     role="button"
                   />

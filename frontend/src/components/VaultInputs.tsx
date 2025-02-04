@@ -13,6 +13,7 @@ import {determineVaultTokenFromApprovedTokens, getVaultErrorMessage, selectActio
 import { ethers } from "ethers";
 import InteractionContainer from "./interact";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
+import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -207,10 +208,10 @@ export default function VaultInputs({
   return (
     <>
       <TabSelector
-        className="mb-6"
-        availableTabs={["Deposit", "Withdraw"]}
-        activeTab={isDeposit ? "Deposit" : "Withdraw"}
-        setActiveTab={switchTokens}
+          className="mb-5"
+          availableTabs={["Deposit", "Withdraw"]}
+          activeTab={isDeposit ? "Deposit" : "Withdraw"}
+          setActiveTab={switchTokens}
       />
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}

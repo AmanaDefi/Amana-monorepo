@@ -401,24 +401,26 @@ export default function InteractionContainer({ step, setStep, action, setAction,
 
     // Track user interaction to release last transaction logs
     // START
+
+    function resetTransactionState() {
+        setFinishedTransaction(false)
+        setIsTransactionProcessing(false)
+        setIsTransactionStarted(false)
+        setCrosschainInvestHash('');
+        setcrossChainTxId('');
+    }
     useEffect(() => {
         if (Number(_inputBalance.value) > 0) {
-            setFinishedTransaction(false)
-            setIsTransactionProcessing(false)
-            setIsTransactionStarted(false)
+            resetTransactionState()
         }
     }, [_inputBalance.value]);
 
     useEffect(() => {
-        setFinishedTransaction(false)
-        setIsTransactionProcessing(false)
-        setIsTransactionStarted(false)
+        resetTransactionState()
     }, [_inputToken]);
 
     useEffect(() => {
-        setFinishedTransaction(false)
-        setIsTransactionProcessing(false)
-        setIsTransactionStarted(false)
+        resetTransactionState()
     }, [isDeposit]);
 
     // END
@@ -955,7 +957,7 @@ function Interaction(
                                                                 switch (actionStatus) {
                                                                     case TransactionStepStatus.pending:
                                                                         return <div
-                                                                            className="w-4 h-4 bg-blue-500 rounded-full animate-[ping_1.5s_ease-in-out_infinite]"
+                                                                            className="w-4 h-4 bg-medium-purple-600 rounded-full animate-[ping_1.5s_ease-in-out_infinite]"
                                                                         />
                                                                     case TransactionStepStatus.error:
                                                                         return <AiOutlineExclamation className='text-red-600' size={16}/>

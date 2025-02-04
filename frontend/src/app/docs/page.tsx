@@ -2,12 +2,12 @@ import Link from "next/link";
 
 export default function Docs() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold">Docs</h1>
-      <p className="text-2xl text-zinc-600 mt-4">Coming Soon</p>
-      <Link href="/" className="mt-4 text-blue-500 hover:underline">
-        Take me back to Amana
-      </Link>
-    </main>
+      <>
+          <h1 className="text-4xl font-bold">Docs</h1>
+          <p className="text-2xl text-zinc-600 mt-4">Coming Soon</p>
+          <Link href="/" className="mt-4 text-blue-500 hover:underline">
+              Take me back to Amana
+          </Link>
+      </>
   );
 }
