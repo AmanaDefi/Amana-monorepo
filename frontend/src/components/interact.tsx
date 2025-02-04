@@ -26,6 +26,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     try {
         const value = Number(inputBalance.value)
         const scaledAmount = BigInt(value)
+        console.log("inputToken in handleDepositTransaction: ", inputToken.symbol)
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
             amount: scaledAmount.toString(),
@@ -1008,6 +1009,7 @@ function handleInteraction(
     setcrossChainTxId: Function,
     setInputBalance: Function
 ) {
+    console.log("inputToken in handleInteraction: ", inputToken.symbol);
     switch (action) {
         case Action.depositApprove:
             return async () => {

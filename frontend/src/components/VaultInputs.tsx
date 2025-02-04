@@ -169,6 +169,7 @@ export default function VaultInputs({
   }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, EOAaccount])
 
   function handleTokenSelect(selectedToken: Token): void {
+    console.log("Token selected:", selectedToken); // Debug log
     setInputToken(selectedToken);
     setAllowInput(true);
   }
