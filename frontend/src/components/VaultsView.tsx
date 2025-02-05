@@ -91,7 +91,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                     {formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
                   </td>
                   <td className='flex items-center justify-center'>
-                    <button className="bg-java-700 hover:bg-java-800 transition-colors text-white font-bold py-1 px-3 rounded">
+                    <button className="bg-cyan-600 hover:bg-cyan-700 transition-colors text-white font-bold py-1 px-3 rounded">
                       <span className='text-sm'>Visit vault</span>
                     </button>
                   </td>
