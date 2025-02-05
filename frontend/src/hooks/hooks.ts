@@ -160,7 +160,7 @@ export const useUpdateAPYs = (
 
               let APY7d = 0;
 
-              if (vault.protocol.name === "Aave") {
+              if (vault.protocol.name === "Aave" || "ZeroLend") {
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
