@@ -144,7 +144,7 @@ export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, stra
   const rewardsRate = rewardsData[1]; // emission per second
   console.log("rewardsRate", rewardsRate);
 
-  const rewardsTokenPrice = await fetchEthPrice();
+  // const rewardsTokenPrice = await fetchEthPrice();
   const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
   // const annualRewardsValue = Number(rewardsRate) * 10 * SECONDS_IN_YEAR;
   // const poolAddress = await readContract({
@@ -167,7 +167,7 @@ export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, stra
   return rewardsAPY;
 }
 
-export async function calculateCompoundRewardsAPY(cometAddress: Address, rewardsContractAddress: Address, strategyChain: Chain) {
+export async function calculateCompoundRewardsAPY(cometAddress: Address, strategyChain: Chain) {
   console.log("Fetching Compound III rewards data");
 
   // Get the Comet contract (Lending Pool)
@@ -177,20 +177,25 @@ export async function calculateCompoundRewardsAPY(cometAddress: Address, rewards
     address: cometAddress,
   });
 
+  const REWARDS_CONTRACT_ADDRESS = "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1";
+
   // Get the CometRewards contract (External rewards contract)
   const rewardsContract = getContract({
     client,
     chain: strategyChain,
-    address: rewardsContractAddress,
+    address: REWARDS_CONTRACT_ADDRESS,
   });
+
+  // Fetch reward token address and multiplier
   const rewardConfig = await readContract({
     contract: rewardsContract,
     method: "function rewardConfig(address) view returns (address,uint64,bool,uint256)",
     params: [cometAddress]
   });
+
   const rewardsToken = rewardConfig[0]; // Address of the reward token
+  const rewardsMultiplier = BigInt(rewardConfig[3]); // Multiplier for rewards
   console.log("Rewards Token Address:", rewardsToken);
-  const rewardsMultiplier = rewardConfig[3]; // Multiplier for rewards
   console.log("Rewards Multiplier:", rewardsMultiplier);
 
   // Fetch emission rate per second
@@ -198,45 +203,44 @@ export async function calculateCompoundRewardsAPY(cometAddress: Address, rewards
     contract: cometContract,
     method: "function baseTrackingSupplySpeed() view returns (uint256)",
   });
-  // Fetch the total supply of the base asset in Comet
+
+  // Fetch total supply of the base asset in Comet
   const totalSupply = await readContract({
     contract: cometContract,
     method: "function totalSupply() view returns (uint256)",
   });
-  const rewardPerSecond = baseTrackingSupplySpeed * (rewardsMultiplier) / (BigInt(1e18));
-  const annualRewards = rewardPerSecond * (BigInt(60 * 60 * 24 * 365));
-  const apy = annualRewards * (BigInt(1e18)) / (totalSupply);
-  console.log("Rewards APY:", apy);
-  return apy * (BigInt(1e16)) / BigInt(100);
-  // console.log("Rewards Emission Rate:", baseTrackingSupplySpeed.toString());
 
+  // Fetch decimals of the reward token (important for scaling)
+  const rewardsDecimals = await readContract({
+    contract: rewardsContract,
+    method: "function decimals() view returns (uint8)", // Assuming standard ERC20 function
+    params: [],
+  });
 
+  // Convert values into proper scale
+  const REWARD_DECIMALS = BigInt(10) ** BigInt(rewardsDecimals);
+  const BASE_DECIMALS = BigInt(1e18); // Assuming base asset has 18 decimals
 
-  // console.log("Total Liquidity:", totalSupply.toString());
+  // Calculate per-second reward emissions in correct scale
+  const rewardPerSecond = (baseTrackingSupplySpeed * rewardsMultiplier) / BASE_DECIMALS;
 
-  // // Fetch rewards token address & amount owed (using a dummy account)
-  // const dummyAccount = "0x0000000000000000000000000000000000000001"; // Replace with an actual account if needed
-  // const rewardData = await readContract({
-  //   contract: rewardsContract,
-  //   method: "function getRewardOwed(address, address) view returns (address token, uint owed)",
-  //   params: [cometAddress, dummyAccount],
-  // });
+  // Convert to annual rewards
+  const annualRewards = rewardPerSecond * BigInt(60 * 60 * 24 * 365);
 
-  // console.log("Rewards Token Address:", rewardsToken);
+  // Ensure total supply is not zero to avoid division by zero error
+  if (totalSupply === BigInt(0)) {
+    console.log("Total supply is zero, cannot calculate APY.");
+    return BigInt(0);
+  } else {
+    // Correct APY calculation with proper scaling
+    const apy = (annualRewards * BASE_DECIMALS) / totalSupply;
 
-  // // Get the price of the rewards token (assumed COMP, or fetch from an oracle)
-  // const rewardsTokenPrice = await fetchEthPrice(); // Replace with a real price fetcher
+    // Adjusted APY for readability (convert to percentage)
+    const adjustedApy = (apy * BigInt(100)) / BASE_DECIMALS;
 
-  // const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
-
-  // // Calculate annual rewards value
-  // const annualRewardsValue = Number(baseTrackingSupplySpeed) * SECONDS_IN_YEAR * rewardsTokenPrice;
-
-  // // Calculate APY
-  // const rewardsAPY = annualRewardsValue / Number(totalSupply);
-  // console.log("Compound III Rewards APY:", rewardsAPY);
-
-  // return rewardsAPY;
+    console.log("Rewards APY:", adjustedApy.toString(), "%");
+    return adjustedApy;
+  }
 }
 
 export async function calculateMoonwellAPY(receiptTokenAddress: Address, strategyChain: Chain) {

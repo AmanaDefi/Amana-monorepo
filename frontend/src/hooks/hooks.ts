@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   calculateAaveAPY,
+  calculateAaveRewardsAPY,
   calculateCompoundAPY,
+  calculateCompoundRewardsAPY,
   calculateMoonwellAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
@@ -146,7 +148,8 @@ export const useUpdateAPYs = (
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
-              const strategyChain = defineChain(vault.protocol.chainId); // ToDo rather grab this from supported chains?
+              const strategyChain = defineChain(vault.protocol.chainId);
+              console.log("strategyChain", strategyChain);
               const strategyContract = getContract({
                 client,
                 chain: strategyChain,
@@ -159,11 +162,13 @@ export const useUpdateAPYs = (
               });
 
               let APY7d = 0;
-
+              let rewardsAPY = 0;
               if (vault.protocol.name === "Aave") {
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
+                rewardsAPY = await calculateAaveRewardsAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
+                rewardsAPY = await calculateCompoundRewardsAPY(receiptTokenAddress as Address, strategyChain);
               }
               else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler") {
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
