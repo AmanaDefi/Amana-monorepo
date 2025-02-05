@@ -52,31 +52,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
   },
-  {
-    id: "0x136c2f7E281a3807987Fc6441B410529c3feF0f5", // Base ZeroLend USDC Vault
-    name: "ZeroLend USDC",
-    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a ZeroLend USDC pool, which earns interest every block.",
-    symbol: "aZeroLendUSDC",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 18,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "ZeroLend",
-      strategyAddress: "0x20E2dEa402722C9b09Fe35CD669A83902FA43831",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/ZeroLend.png",
-      des: "ZeroLend is a relatively new protocol on Base."
-    },
-  },
+  // {
+  //   id: "0x136c2f7E281a3807987Fc6441B410529c3feF0f5", // Base ZeroLend USDC Vault
+  //   name: "ZeroLend USDC",
+  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a ZeroLend USDC pool, which earns interest every block.",
+  //   symbol: "aZeroLendUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 18,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "ZeroLend",
+  //     strategyAddress: "0x20E2dEa402722C9b09Fe35CD669A83902FA43831",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+  //     imgURL: "/ZeroLend.png",
+  //     des: "ZeroLend is a relatively new protocol on Base."
+  //   },
+  // },
   // {
   //   id: "0x2B0FD687c0EBF26D4e4F67f9b9Ab96cC5Fe69193", // Polygon POL Vault
   //   name: "AaveV3 POL",
