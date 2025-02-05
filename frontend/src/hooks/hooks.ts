@@ -149,7 +149,6 @@ export const useUpdateAPYs = (
           vaults.map(async (vault) => {
             try {
               const strategyChain = defineChain(vault.protocol.chainId);
-              console.log("strategyChain", strategyChain);
               const strategyContract = getContract({
                 client,
                 chain: strategyChain,
@@ -160,17 +159,20 @@ export const useUpdateAPYs = (
                 contract: strategyContract,
                 method: "function receiptToken() view returns (address)",
               });
-
               let APY7d = 0;
               let rewardsAPY = 0;
-              if (vault.protocol.name === "Aave") {
+              if (vault.protocol.name === "Aave" || vault.protocol.name === "ZeroLend") {
+                console.log("Calculating APY for Aave or ZeroLend")
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
                 rewardsAPY = await calculateAaveRewardsAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
+                console.log("Calculating APY for Compound")
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
                 rewardsAPY = await calculateCompoundRewardsAPY(receiptTokenAddress as Address, strategyChain);
               }
               else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler") {
+                console.log("Calculating APY for Moonwell or Euler")
+                // TO DO This only works for Base right now - it's hardcoded
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
               }
               // else if (vault.protocol.name === "Eddy") {

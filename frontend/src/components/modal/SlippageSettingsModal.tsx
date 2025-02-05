@@ -73,7 +73,7 @@ export default function SlippageSettingsModal() {
                     </div>
                     <div className='rounded-5xl border border-customGray600 px-3 py-1.5 flex md:items-center justify-between'>
                         <button onClick={toggleAuto}
-                                className={`group rounded-5xl px-4 py-1 bg-medium-purple-400/30 flex-center border border-transparent [&.selected]:bg-medium-purple-600 [&.selected]:border-medium-purple-600 transition-colors ${isAuto ? 'selected' : ''}`}
+                                className={`group rounded-5xl px-4 py-1 bg-cyan-300/10 flex-center border border-transparent [&.selected]:bg-java-600 [&.selected]:border-java-600 transition-colors ${isAuto ? 'selected' : ''}`}
                         >
                             <span className='text-white text-sm group-[.selected]:text-white font-normal transition-colors'>Auto</span>
                         </button>

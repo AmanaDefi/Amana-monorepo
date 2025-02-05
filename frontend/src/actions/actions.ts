@@ -62,8 +62,6 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
     // Calculate the annualized APY based on the 7-day change
     const depositAPY = Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
 
-    console.log("depositAPY", depositAPY);
-
     return depositAPY;
   } catch (error) {
     console.error("Error calculating APY for Eddy Finance:", error);
@@ -72,8 +70,7 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
 }
 
 
-export async function calculateAaveAPY(inputTokenAddress: Address, strategyChain: Chain) {
-  // Get the Aave lending pool contract
+export async function calculateAaveAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   const receiptTokenContract = getContract({
     client,
     chain: strategyChain,
@@ -253,13 +250,10 @@ export async function calculateMoonwellAPY(receiptTokenAddress: Address, strateg
   const currentBlockNumber = await provider.getBlockNumber();
   const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
   const pastBlockNumber = BigInt(currentBlockNumber - blocksIn7Days);
-
   const currentPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18)));
   const pastPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18), { blockTag: pastBlockNumber }));
-
   const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
   const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
-
   return Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
 }
 
@@ -297,7 +291,6 @@ export const executeDeposit = async (vaultId: Address, inputToken: Address, acti
 
 export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing DepositApprove");
-  console.log("transactionAmount", transactionAmount);
 
   try {
     let contract = getContract({
@@ -367,8 +360,6 @@ const executeCrossChainDeposit = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
-  console.log("inputToken in executeCrossChainDeposit: ", inputToken);
-  console.log("transactionAMount in executeCrossChainDeposit: ", transactionAmount)
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
@@ -379,7 +370,6 @@ const executeCrossChainDeposit = async (
   let contract, approveTx, payload, revertOptions;
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
-  console.log("slippage", slippageValue)
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
     ["address", "uint16", "bytes32"],
@@ -461,8 +451,6 @@ const executeCrossChainDeposit = async (
       chain: activeChain,
       address: EVMGatewayAddress,
     });
-    console.log("contract", contract);
-    console.log("transaction amount:", transactionAmount)
     const depositTx = prepareContractCall({
       contract,
       method:
@@ -537,7 +525,6 @@ const executeCrossChainWithdrawal = async (
   console.log("Generated Transaction ID (bytes32):", transactionId);
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
-  console.log("slippage", slippageValue)
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint16", "bytes32"],
@@ -604,7 +591,6 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
   //   method: "function convertToAssets(uint256) view returns (uint256)",
   //   params: [shares]
   // });
-  console.log("BALANCE HERE", shares)
   const formattedBalance = Number(shares) / 10 ** decimals;
   return formattedBalance.toString();
 }
@@ -639,7 +625,6 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
     contract,
     method: "function decimals() view returns (uint8)"
   });
-  console.log("decimals", decimals);
   const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
