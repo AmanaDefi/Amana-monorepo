@@ -279,7 +279,9 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @notice Handles the revert of a transaction.
      * @param context The revert context containing details about the transaction.
      */
-    function onRevert(RevertContext calldata context) external override {
+    function onRevert(
+        RevertContext calldata context
+    ) external override onlyGateway {
         (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
             context.revertMessage,
             (string, bytes32)
