@@ -289,7 +289,7 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
 
 export function useUserSettings() {
   const [userSettings, setUserSettings] = useState<UserSettings>({
-    slippage: { isAuto: true, value: 5 },
+    slippage: { isAuto: true, value: 100 },
   });
 
   useEffect(() => {
@@ -322,7 +322,7 @@ export function useSlippage() {
   const toggleAuto = () => {
     updateSettings('slippage', {
       isAuto: !userSettings.slippage?.isAuto,
-      value: 5
+      value: 100
     });
   };
 
