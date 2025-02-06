@@ -77,6 +77,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "ZeroLend is a relatively new protocol on Base."
   //   },
   // },
+  {
+    id: "0x1Ae384B2F8807dEeB5afDa483DEF483833aBd7e2", // BSC Venus USDT Vault
+    name: "Venus USDT",
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a Venus USDT pool, which earns interest every block.",
+    symbol: "aVenusUSDT",
+    imgURL: "/bnb_logo.png",
+    inputToken: {
+      symbol: "USDT.BSC",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/USDT.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Venus",
+      strategyAddress: "0x2178a227A36a6f4281964aDdd9a39d691bB0A816",
+      network: "BSC",
+      chainId: 56,
+      netdes: "BSC is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/Venus.png",
+      des: "Venus is a relatively new protocol on BSC."
+    },
+  },
   // {
   //   id: "0x2B0FD687c0EBF26D4e4F67f9b9Ab96cC5Fe69193", // Polygon POL Vault
   //   name: "AaveV3 POL",
