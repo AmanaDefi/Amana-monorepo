@@ -106,6 +106,7 @@ export default function VaultHeader({
 
     const symbol = inputToken?.symbol || "";
     const price = useTokenPriceBySymbol(inputToken?.symbol)
+    const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol)
 
     // Handle undefined states gracefully
     if (!inputToken) {
@@ -161,7 +162,7 @@ export default function VaultHeader({
                         id="deposits"
                         label="Deposits"
                         value={`${formatBalance(Number(data1))} ${vaultData.inputToken.symbol}`}
-                        secondaryValue={`$ ${formatCurrency(Number(data1) * price)}`}
+                        secondaryValue={`$ ${formatCurrency(Number(data1) * vaultTokenPrice)}`}
                         tooltip="Value of your vault deposits"
                     />
                     <LargeCardStat
