@@ -2,29 +2,56 @@
 pragma solidity 0.8.26;
 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-// import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
-// import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
 import "../interfaces/IZRC20.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IPriceOracle.sol";
 
-address constant UNISWAP_V2_FACTORY = 0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c;
-address constant UNISWAP_V2_ROUTER = 0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
-address constant PRICE_ORACLE_ADDRESS = 0xF780e1fd3406F3b25004324108fc4B891c36C1Ae;
-
-address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
-address constant USDC_ETH_ADDRESS = 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a;
-address constant USDT_ETH_ADDRESS = 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7;
-address constant ETH_BASE_ADDRESS = 0x1de70f3e971B62A0707dA18100392af14f7fB677;
-address constant ETH_ETH_ADDRESS = 0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891;
-address constant USDC_BSC_ADDRESS = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0;
-address constant USDC_BASE_ADDRESS = 0x96152E6180E085FA57c7708e18AF8F05e37B479D;
-address constant USDT_BSC_ADDRESS = 0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F;
-address constant USDT_POL_ADDRESS = 0xdbfF6471a79E5374d771922F2194eccc42210B9F;
-address constant USDC_POL_ADDRESS = 0xfC9201f4116aE6b054722E10b98D904829b469c3;
-
 library SwapHelperLibEddy {
+    address constant UNISWAP_V2_FACTORY =
+        0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
+    address constant UNISWAP_V2_ROUTER =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+    address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
+
+    address constant PRICE_ORACLE_ADDRESS =
+        0xD52b6aB593caB9D55dB083D8a6Fe9A3F8d91ad8d; // mainnet only
+
+    address constant ETH_ETH_ADDRESS =
+        0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
+    address constant USDC_ETH_ADDRESS =
+        0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a; // mainnet only
+    address constant USDT_ETH_ADDRESS =
+        0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; // mainnet only
+
+    address constant ETH_BASE_ADDRESS =
+        0x1de70f3e971B62A0707dA18100392af14f7fB677; // mainnet only
+    address constant USDC_BASE_ADDRESS =
+        0x96152E6180E085FA57c7708e18AF8F05e37B479D; // mainnet only
+
+    address constant BNB_BSC_ADDRESS =
+        0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb; // mainnet only
+    address constant USDT_BSC_ADDRESS =
+        0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F; // mainnet only
+    address constant USDC_BSC_ADDRESS =
+        0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // mainnet only
+
+    address constant POL_POLYGON_ADDRESS =
+        0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501; // mainnet only
+    address constant USDT_POL_ADDRESS =
+        0xdbfF6471a79E5374d771922F2194eccc42210B9F; // mainnet only
+    address constant USDC_POL_ADDRESS =
+        0xfC9201f4116aE6b054722E10b98D904829b469c3; // mainnet only
+
+    bytes32 constant ethUsdPriceFeedId =
+        0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
+    bytes32 constant polUsdPriceFeedId =
+        0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472;
+    bytes32 constant bnbUsdPriceFeedId =
+        0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
+
     /**
      * @notice Determines if a token address corresponds to an ETH token.
      * @dev Compares the token address against predefined ETH token addresses.
@@ -43,13 +70,25 @@ library SwapHelperLibEddy {
      */
     function isUsdStablecoin(address token) internal pure returns (bool) {
         return
-            token == USDC_ETH_ADDRESS ||
-            token == USDT_ETH_ADDRESS ||
             token == USDC_BSC_ADDRESS ||
-            token == USDT_BSC_ADDRESS ||
-            token == USDC_BASE_ADDRESS ||
+            token == USDC_ETH_ADDRESS ||
             token == USDC_POL_ADDRESS ||
+            token == USDC_BASE_ADDRESS ||
+            token == USDT_BSC_ADDRESS ||
+            token == USDT_ETH_ADDRESS ||
             token == USDT_POL_ADDRESS;
+    }
+
+    function isPolToken(address token) internal pure returns (bool) {
+        return token == POL_POLYGON_ADDRESS;
+    }
+
+    function isBnbToken(address token) internal pure returns (bool) {
+        return token == BNB_BSC_ADDRESS;
+    }
+
+    function isBscStablecoin(address token) internal pure returns (bool) {
+        return token == USDC_BSC_ADDRESS || token == USDT_BSC_ADDRESS;
     }
 
     /**
@@ -67,21 +106,120 @@ library SwapHelperLibEddy {
         address outputToken,
         uint256 amount,
         uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
-    ) internal view returns (uint256) {
-        if (isUsdStablecoin(inputToken) && isUsdStablecoin(outputToken)) {
-            // USD -> USD
-            return amount - ((amount * slippageBps) / 10000);
-        } else if (isEthToken(inputToken) && isUsdStablecoin(outputToken)) {
-            // ETH -> USD
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchEthUsdPrice();
-            uint256 usdAmount = (amount * ethUsdPrice) / 10 ** 8; // Adjust for Chainlink decimals
+    ) public view returns (uint256) {
+        bool isInputStable = isUsdStablecoin(inputToken);
+        bool isOutputStable = isUsdStablecoin(outputToken);
+        bool isInput18Decimals = isBscStablecoin(inputToken) || !isInputStable; // BSC USDC/USDT & non-stables have 18 decimals
+        bool isOutput18Decimals = isBscStablecoin(outputToken) ||
+            !isOutputStable; // BSC USDC/USDT & non-stables have 18 decimals
+
+        if (isEthToken(inputToken) && isOutputStable) {
+            // ETH (18 decimals) -> USD Stablecoin (6 or 18 decimals)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * ethUsdPrice) / 10 ** 8;
+
+            if (!isOutput18Decimals) usdAmount /= 10 ** 12; // Convert from 18 to 6 decimals if needed
+
             return usdAmount - ((usdAmount * slippageBps) / 10000);
-        } else if (isUsdStablecoin(inputToken) && isEthToken(outputToken)) {
-            // USD -> ETH
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchEthUsdPrice();
-            uint256 ethAmount = (amount * 10 ** 8) / ethUsdPrice; // Adjust for Chainlink decimals
+        } else if (isInputStable && isEthToken(outputToken)) {
+            // USD Stablecoin (6 or 18 decimals) -> ETH (18 decimals)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+
+            if (!isInput18Decimals) amount *= 10 ** 12; // Convert from 6 to 18 decimals if needed
+            uint256 ethAmount = (amount * 10 ** 8) / ethUsdPrice;
+
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isInputStable && isPolToken(outputToken)) {
+            // USD Stablecoin (6 or 18 decimals) -> POL (18 decimals)
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+
+            if (!isInput18Decimals) amount *= 10 ** 12;
+            uint256 polAmount = (amount * 10 ** 8) / polUsdPrice;
+
+            return polAmount - ((polAmount * slippageBps) / 10000);
+        } else if (isPolToken(inputToken) && isOutputStable) {
+            // POL (18 decimals) -> USD Stablecoin (6 or 18 decimals)
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * polUsdPrice) / 10 ** 8;
+
+            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
+
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isInputStable && isBnbToken(outputToken)) {
+            // USD Stablecoin (6 or 18 decimals) -> BNB (18 decimals)
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+
+            if (!isInput18Decimals) amount *= 10 ** 12;
+            uint256 bnbAmount = (amount * 10 ** 8) / bnbUsdPrice;
+
+            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
+        } else if (isBnbToken(inputToken) && isOutputStable) {
+            // BNB (18 decimals) -> USD Stablecoin (6 or 18 decimals)
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * bnbUsdPrice) / 10 ** 8;
+
+            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
+
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isEthToken(inputToken) && isPolToken(outputToken)) {
+            // ETH -> POL (Derived using ETH->USD & POL->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 polAmount = (amount * ethPolPrice) / 10 ** 8;
+
+            return polAmount - ((polAmount * slippageBps) / 10000);
+        } else if (isPolToken(inputToken) && isEthToken(outputToken)) {
+            // POL -> ETH (Derived using ETH->USD & POL->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 ethAmount = (amount * 10 ** 8) / ethPolPrice;
+
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isEthToken(inputToken) && isBnbToken(outputToken)) {
+            // ETH -> BNB (Derived using ETH->USD & BNB->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 bnbAmount = (amount * ethBnbPrice) / 10 ** 8;
+
+            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
+        } else if (isBnbToken(inputToken) && isEthToken(outputToken)) {
+            // BNB -> ETH (Derived using ETH->USD & BNB->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 ethAmount = (amount * 10 ** 8) / ethBnbPrice;
+
             return ethAmount - ((ethAmount * slippageBps) / 10000);
         } else {
             return amount - ((amount * slippageBps) / 10000);
@@ -109,27 +247,24 @@ library SwapHelperLibEddy {
         if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
     }
 
-    /**
-     * @notice Swaps a specific amount of tokens for another token.
-     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
-     * @param zrc20 The address of the input token.
-     * @param amount The amount of input tokens to swap.
-     * @param targetZRC20 The address of the output token.
-     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
-     * @param vault The address where the swapped tokens will be sent.
-     * @param maxDeadline The maximum deadline for the swap to complete.
-     * @return The amount of output tokens received.
-     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
-     */
-    function swapExactTokensForTokens(
+    function _existsPairPool(
+        address tokenA,
+        address tokenB
+    ) internal view returns (bool) {
+        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+            tokenA,
+            tokenB
+        );
+        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
+    }
+
+    function getPath(
         address zrc20,
-        uint256 amount,
-        address targetZRC20,
-        uint16 slippageBps,
-        address vault,
-        uint16 maxDeadline
-    ) internal returns (uint256) {
-        address[] memory path;
+        address targetZRC20
+    ) public view returns (address[] memory path) {
+        if (zrc20 == targetZRC20) {
+            revert IErrors.CantBeIdenticalAddresses();
+        }
         bool existsDirectPool = _existsPairPool(zrc20, targetZRC20);
 
         if (existsDirectPool) {
@@ -148,49 +283,62 @@ library SwapHelperLibEddy {
             path[1] = WZETA_TOKEN;
             path[2] = targetZRC20;
         }
-
-        uint256 minAmountOut = calculateMinAmountOut(
-            zrc20,
-            targetZRC20,
-            amount,
-            slippageBps
-        );
-
-        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
-        // Perform the swap
-        uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-            .swapExactTokensForTokens(
-                amount,
-                minAmountOut,
-                path,
-                vault,
-                block.timestamp + maxDeadline
-            );
-
-        return amounts[amounts.length - 1];
+        return path;
     }
 
-    function _existsPairPool(
+    function getAmountOut(
+        uint amountIn,
+        uint reserveIn,
+        uint reserveOut
+    ) internal pure returns (uint amountOut) {
+        if (amountIn == 0) {
+            revert IErrors.InsufficientInputAmount();
+        }
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert IErrors.InsufficientLiquidity();
+        }
+        uint amountInWithFee = amountIn * 997;
+        uint numerator = amountInWithFee * reserveOut;
+        uint denominator = (reserveIn * 1000) + amountInWithFee;
+        amountOut = numerator / denominator;
+    }
+
+    function getReserves(
         address tokenA,
         address tokenB
-    ) internal view returns (bool) {
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
-        address pair = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            hex"ff",
-                            UNISWAP_V2_FACTORY,
-                            keccak256(abi.encodePacked(token0, token1)),
-                            hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-                        )
-                    )
-                )
-            )
+    ) internal view returns (uint reserveA, uint reserveB) {
+        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+            tokenA,
+            tokenB
         );
-        return
-            IZRC20(tokenA).balanceOf(pair) > 0 &&
-            IZRC20(tokenB).balanceOf(pair) > 0;
+        if (pair == address(0)) revert IErrors.InsufficientLiquidity();
+        (uint112 reserve0, uint112 reserve1, ) = IUniswapV2Pair(pair)
+            .getReserves();
+        (address token0, ) = sortTokens(tokenA, tokenB);
+        (reserveA, reserveB) = tokenA == token0
+            ? (reserve0, reserve1)
+            : (reserve1, reserve0);
+    }
+
+    function getFinalAmountOut(
+        uint amountIn,
+        address inputZrc20,
+        address outputZrc20
+    ) public view returns (uint finalAmountOut) {
+        address[] memory path = getPath(inputZrc20, outputZrc20);
+
+        if (path.length < 2) {
+            revert IErrors.InvalidPath();
+        }
+        uint[] memory amounts = new uint[](path.length);
+        amounts[0] = amountIn;
+        for (uint i = 0; i < path.length - 1; i++) {
+            (uint reserveIn, uint reserveOut) = getReserves(
+                path[i],
+                path[i + 1]
+            );
+            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+        }
+        finalAmountOut = amounts[amounts.length - 1];
     }
 }
