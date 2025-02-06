@@ -21,7 +21,6 @@ import InteractionContainer from "./interact";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {getAmountOutFromSwap, getAssetsFromShares, getSharesFromDeposit} from "@/actions/actions";
-import {bigint} from "zod";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -278,7 +277,7 @@ export default function VaultInputs({
 
     let tokenConversionAmount = assetsAmount;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      tokenConversionAmount = await getAmountOutFromSwap(debouncedInputBalance.value, vaultData.inputToken.address, inputTokenAddress as Address, vaultData);
+      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address, inputTokenAddress as Address, vaultData);
     }
     console.log("COMPARE THESE: ", {
       assetsAmount,
