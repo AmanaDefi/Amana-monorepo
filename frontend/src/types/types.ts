@@ -153,5 +153,5 @@ export interface UserSettings {
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
-  slippage: { isAuto: true, value: 5 }
+  slippage: { isAuto: true, value: 100 }
 };

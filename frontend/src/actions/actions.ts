@@ -13,6 +13,7 @@ import { keccak256 } from "thirdweb";
 
 import * as dotenv from "dotenv";
 import { getCurrentSlippage } from "@/utils/utils";
+import {VaultData} from "@/types/types";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -435,7 +436,7 @@ const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account,
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function withdraw(uint256 assets, address receiver, address owner)",
+        "function redeem(uint256 shares, address receiver, address owner)",
     params: [withdrawAmount, activeAccount?.address, activeAccount?.address],
   });
   const receipt = await sendTransaction({
@@ -523,13 +524,13 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
     contract,
     address: userAddress
   });
-  // const balance = await readContract({
-  //   contract,
-  //   method: "function convertToAssets(uint256) view returns (uint256)",
-  //   params: [shares]
-  // });
-  console.log("BALANCE HERE", shares)
-  const formattedBalance = Number(shares) / 10 ** decimals;
+  const balance = await readContract({
+    contract,
+    method: "function convertToAssets(uint256) view returns (uint256)",
+    params: [shares]
+  });
+  console.log("BALANCE HERE", balance)
+  const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
 
@@ -624,4 +625,62 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 
 //   return updatedVaults;
 // };
+
+export const getAmountOutFromSwap = async (amount: bigint, inputTokenAddress: Address, outputTokenAddress: Address, vaultData: VaultData) => {
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0],
+    address: vaultData.id as Address
+  });
+  console.log("contract on shares read", contract, {
+    amount, inputTokenAddress, outputTokenAddress
+  })
+  try {
+    return await readContract({
+      contract,
+      method: "function getAmountOutFromSwap(uint amountIn,address inputToken,address outputToken) view returns (uint shares)",
+      params: [amount, inputTokenAddress, outputTokenAddress]
+    });
+  } catch (e) {
+    return BigInt('0')
+  }
+}
+
+export const getSharesFromDeposit = async (amount: bigint, vaultData: VaultData) => {
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0],
+    address: vaultData.id as Address
+  });
+
+  try {
+    const shares = await readContract({
+      contract,
+      method: "function previewDeposit(uint assets) view returns (uint shares)",
+      params: [amount]
+    });
+    const formattedShares = Number(shares) / 10 ** vaultData.inputToken.decimals;
+    return formattedShares.toString();
+  } catch (e) {
+    return "0"
+  }
+}
+
+export const getAssetsFromShares = async (amount: bigint, vaultData: VaultData) => {
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0],
+    address: vaultData.id as Address
+  });
+
+  try {
+    return await readContract({
+      contract,
+      method: "function previewRedeem(uint shares) view returns (uint assets)",
+      params: [amount]
+    });
+  } catch (e) {
+    return BigInt('0')
+  }
+}
 

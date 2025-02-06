@@ -8,7 +8,7 @@ import {
   fetchUserVaultMaxWithdraw
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
-import { UserSettings, VaultData } from "@/types/types";
+import {DEFAULT_SETTINGS, UserSettings, VaultData} from "@/types/types";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -42,6 +42,13 @@ export const useUpdateVaultBalanceAndTotal = (
                 activeAccount?.address as Address,
                 vault.id as Address
               );
+
+              console.log("FETCHED BALANCE: ", {
+                vaultId: vault.id,
+                balance,
+                totalAssets: newTotalAssets.toString(),
+                totalAssetsinToken: newTotalAssetsinToken.toString(),
+              });
 
               return {
                 vaultId: vault.id,
@@ -286,7 +293,7 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
 
 export function useUserSettings() {
   const [userSettings, setUserSettings] = useState<UserSettings>({
-    slippage: { isAuto: true, value: 5 },
+    slippage: DEFAULT_SETTINGS.slippage,
   });
 
   useEffect(() => {
@@ -319,7 +326,7 @@ export function useSlippage() {
   const toggleAuto = () => {
     updateSettings('slippage', {
       isAuto: !userSettings.slippage?.isAuto,
-      value: 5
+      value: DEFAULT_SETTINGS.slippage.value
     });
   };
 
