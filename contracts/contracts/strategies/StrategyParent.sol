@@ -474,7 +474,7 @@ abstract contract StrategyParent is Ownable, IErrors {
 
     /// @notice Handles reverts from the Gateway.
     /// @param context Context of the revert.
-    function onRevert(RevertContext calldata context) external {
+    function onRevert(RevertContext calldata context) external onlyGateway {
         (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
             context.revertMessage,
             (string, bytes32)
