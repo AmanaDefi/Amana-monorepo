@@ -3,6 +3,8 @@ import {
   calculateAaveAPY,
   calculateCompoundAPY,
   calculateMoonwellAPY,
+  calculateVenusAPY,
+  calculateEddyAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxWithdraw
@@ -152,7 +154,6 @@ export const useUpdateAPYs = (
                 chain: strategyChain,
                 address: vault.protocol.strategyAddress,
               });
-
               const receiptTokenAddress = await readContract({
                 contract: strategyContract,
                 method: "function receiptToken() view returns (address)",
@@ -165,25 +166,16 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Compound") {
                 console.log("Calculating APY for Compound")
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
-              }
-              else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler") {
+              } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler") {
                 console.log("Calculating APY for Moonwell or Euler")
                 // TO DO This only works for Base right now - it's hardcoded
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "Venus") {
+                console.log("Calculating APY for Venus");
+                APY7d = await calculateVenusAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "Eddy") {
+                APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
               }
-              // else if (vault.protocol.name === "Eddy") {
-              //   const receiptTokenContract = getContract({
-              //     client,
-              //     chain: strategyChain,
-              //     address: receiptTokenAddress,
-              //   });
-              //   const poolAddress = await readContract({
-              //     contract: receiptTokenContract,
-              //     method: "function minter() view returns (address)",
-              //   });
-              //   APY7d = await calculateEddyAPY(poolAddress as Address, receiptTokenAddress as Address)
-              // }
-
               return { vaultId: vault.id, APY7d };
             } catch (error) {
               console.error(`Error fetching APY for vault ${vault.id}:`, error);

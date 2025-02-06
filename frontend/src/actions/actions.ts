@@ -203,6 +203,23 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address, strateg
   return currentAPY;
 }
 
+export async function calculateVenusAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  console.log("Calculating Venus APY in actions.ts");
+  const vToken = getContract({
+    client,
+    chain: strategyChain,
+    address: receiptTokenAddress
+  });
+  const blocksPerYear = 10512000;
+  const supplyRatePerBlock = await readContract({
+    contract: vToken,
+    method: "function supplyRatePerBlock() view returns (uint256)"
+  });
+  const ratePerBlock = Number(supplyRatePerBlock) / 1e18;
+  const currentAPY = (1 + ratePerBlock) ** blocksPerYear - 1;
+  return Number(currentAPY);
+}
+
 export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
@@ -421,7 +438,7 @@ const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account,
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function withdraw(uint256 assets, address receiver, address owner)",
+      "function redeem(uint256 shares, address receiver, address owner)",
     params: [withdrawAmount, activeAccount?.address, activeAccount?.address],
   });
   const receipt = await sendTransaction({
@@ -550,61 +567,3 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
-
-// export const updateAPYs = async (vaultData: VaultData[]): Promise<VaultData[]> => {
-//   const updatedVaults = await Promise.all(
-//     vaultData.map(async (vault) => {
-//       try {
-//         const strategyChain = defineChain(vault.protocol.chainId); // ToDo rather grab this from supported chains?
-
-//         const strategyContract = getContract({
-//           client,
-//           chain: strategyChain,
-//           address: vault.protocol.strategyAddress,
-//         });
-//         let APY7d = 0;
-//         if (vault.protocol.name === "Aave") {
-//           const receiptTokenAddress = await readContract({
-//             contract: strategyContract,
-//             method: "function aaveReceiptToken() view returns (address)",
-//           });
-
-//           const receiptTokenContract = getContract({
-//             client,
-//             chain: strategyChain,
-//             address: receiptTokenAddress,
-//           });
-
-//           const poolAddress = await readContract({
-//             contract: receiptTokenContract,
-//             method: "function POOL() view returns (address)",
-//           });
-//           const underlyingAssetAddress = await readContract({
-//             contract: receiptTokenContract,
-//             method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
-//           });
-//           console.log("underlyingAssetAddress-1", underlyingAssetAddress);
-//           APY7d = await calculateAaveAPY(poolAddress as Address, underlyingAssetAddress as Address, strategyChain);
-//         } else {
-//           // Generic logic for other vaults (e.g., Moonwell)
-//           const receiptTokenAddress = await readContract({
-//             contract: strategyContract,
-//             method: "function receiptToken() view returns (address)",
-//           });
-//           APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
-//         }
-
-//         return {
-//           ...vault,
-//           APY7d,
-//         };
-//       } catch (error) {
-//         console.error(`Error fetching data for vault ${vault.id}:`, error);
-//         return { ...vault, totalAssets: "Error", APY7d: 0 };
-//       }
-//     })
-//   );
-
-//   return updatedVaults;
-// };
-
