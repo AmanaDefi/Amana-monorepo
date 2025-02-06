@@ -29,10 +29,8 @@ abstract contract AmanaVaultBase is
     using Math for uint256;
 
     // Constants
-    address constant _GATEWAY_ADDRESS =
-        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
-    address constant _SYSTEM_ADDRESS =
-        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
+    address public gatewayAddress;
+    address public systemAddress;
 
     // Variables
     address public strategyAddress;
@@ -46,7 +44,7 @@ abstract contract AmanaVaultBase is
     uint32 public gasLimitForCall; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
 
     modifier onlyGateway() {
-        if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
+        if (msg.sender != gatewayAddress) revert OnlyGateway();
         _;
     }
 
@@ -91,6 +89,8 @@ abstract contract AmanaVaultBase is
         string memory name_,
         string memory symbol_,
         IERC20 asset_,
+        address gateway_,
+        address system_,
         address treasury_,
         uint16 perfFee_,
         address gasTank_,
@@ -103,6 +103,8 @@ abstract contract AmanaVaultBase is
         __ERC4626_init(asset_);
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
+        gatewayAddress = gateway_;
+        systemAddress = system_;
         treasury = treasury_;
         perfFee = perfFee_;
         totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
@@ -356,7 +358,7 @@ abstract contract AmanaVaultBase is
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
         }
         if (zrc20source == address(0)) {
-            zrc20source = ISystem(_SYSTEM_ADDRESS).gasCoinZRC20ByChainId(
+            zrc20source = ISystem(systemAddress).gasCoinZRC20ByChainId(
                 userChainId
             );
         }
@@ -468,11 +470,11 @@ abstract contract AmanaVaultBase is
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
 
             if (gas_zrc20 != withdrawZRC20) {
-                IZRC20(withdrawZRC20).approve(_GATEWAY_ADDRESS, outputAmount);
-                IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+                IZRC20(withdrawZRC20).approve(gatewayAddress, outputAmount);
+                IZRC20(gas_zrc20).approve(gatewayAddress, gasFee);
             } else {
                 IZRC20(withdrawZRC20).approve(
-                    _GATEWAY_ADDRESS,
+                    gatewayAddress,
                     outputAmount + gasFee
                 );
             }
@@ -489,7 +491,7 @@ abstract contract AmanaVaultBase is
                 false
             );
 
-            IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
+            IGatewayZEVM(gatewayAddress).withdrawAndCall(
                 recipient,
                 outputAmount,
                 withdrawZRC20,

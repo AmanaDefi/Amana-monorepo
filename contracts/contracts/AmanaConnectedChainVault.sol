@@ -353,7 +353,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         );
 
         CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
+        IGatewayZEVM(gatewayAddress).call(
             recipient,
             address(asset()),
             outgoingMessage,
@@ -445,10 +445,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         gasTank.getGas(gas_zrc20, gasFee);
 
         if (gas_zrc20 != address(asset())) {
-            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
-            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+            IZRC20(asset()).approve(gatewayAddress, amount);
+            IZRC20(gas_zrc20).approve(gatewayAddress, gasFee);
         } else {
-            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount + gasFee);
+            IZRC20(asset()).approve(gatewayAddress, amount + gasFee);
         }
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
@@ -485,7 +485,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             gasLimitForWithdrawAndCall,
             false
         );
-        IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
+        IGatewayZEVM(gatewayAddress).withdrawAndCall(
             recipient, // Recipient contract address (strategy address)
             amount, // Amount of ZRC20 to withdraw
             address(asset()), // ZRC20 being withdrawn (indicates the chain to target)
@@ -676,7 +676,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         );
 
         CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
+        IGatewayZEVM(gatewayAddress).call(
             recipient,
             address(asset()),
             outgoingMessage,
@@ -755,7 +755,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         (gasZRC20, gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(gasLimit);
         gasTank.getGas{gas: 200000}(gasZRC20, gasFee);
-        IZRC20(gasZRC20).approve(_GATEWAY_ADDRESS, gasFee);
+        IZRC20(gasZRC20).approve(gatewayAddress, gasFee);
     }
 
     /**
