@@ -795,6 +795,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_divestConnectedChainStrategyFailed"))
         ) {
+            pendingWithdrawals[receiver] -= context.amount;
             emit DivestFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
