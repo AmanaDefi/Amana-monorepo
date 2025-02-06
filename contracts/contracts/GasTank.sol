@@ -44,7 +44,7 @@ contract GasTank is Ownable, IErrors {
         uint256 amount
     ) external onlyAuthorized {
         uint256 balance = IERC20(zrc20Token).balanceOf(address(this));
-        if (balance < amount) revert InsufficientBalance();
+        if (balance <= amount) revert InsufficientBalance();
 
         bool success = IERC20(zrc20Token).transfer(msg.sender, amount);
         if (!success) revert TransferFailed();
@@ -58,7 +58,7 @@ contract GasTank is Ownable, IErrors {
         uint256 amount
     ) external onlyOwner {
         uint256 balance = IERC20(zrc20Token).balanceOf(address(this));
-        if (balance < amount) revert InsufficientBalance();
+        if (balance <= amount) revert InsufficientBalance();
 
         bool success = IERC20(zrc20Token).transfer(msg.sender, amount);
         if (!success) revert TransferFailed();
