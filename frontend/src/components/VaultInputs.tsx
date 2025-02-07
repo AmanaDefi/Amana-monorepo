@@ -1,5 +1,5 @@
 import TabSelector from "@/components/common/TabSelector";
-import InputTokenWithError from "@/components/input/InputTokenWithError";
+import InputTokenWithError, {InputTokenWithErrorProps} from "@/components/input/InputTokenWithError";
 import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToken, Action } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import {useState, useEffect, useMemo, useCallback, useRef} from "react";
@@ -11,7 +11,7 @@ import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { getBalance } from "thirdweb/extensions/erc20";
 import {
   determineVaultTokenFromApprovedTokens,
-  formatCurrency,
+  formatCurrency, getCurrentSlippage,
   getVaultErrorMessage,
   isZetachain,
   selectActions
@@ -85,6 +85,7 @@ function useTokenBalance(
 }
 
 export type ConversionOutput = {
+  slippageActualValue: number | null
   assetsConversionInUSDFormatted: string,
   outputAmountFormatted: string,
   outputAmountInUSDFormatted: string
@@ -102,6 +103,8 @@ export default function VaultInputs({
   const [debouncedInputBalance, setDebouncedInputBalance] = useState<Balance>(EMPTY_BALANCE);
   const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
   const [isDeposit, setIsDeposit] = useState<boolean>(true);
+  const [isSlippageExceedingLimit, setIsSlippageExceedingLimit] = useState<boolean>(true);
+  const [outputBoxErrorMessage, setOutputBoxErrorMessage] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
 
@@ -115,6 +118,7 @@ export default function VaultInputs({
   // }), [])
 
   const initialConversionOutput: ConversionOutput = useMemo(() => ({
+    slippageActualValue: null,
     assetsConversionInUSDFormatted: '0',
     outputAmountFormatted: '0',
     outputAmountInUSDFormatted: '0'
@@ -152,19 +156,16 @@ export default function VaultInputs({
 
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
-    if (!inputToken) {
-      if (activeChain.id === 7001 || activeChain.id === 7000) {
-        // If on ZetaChain testnet, set inputToken to the vault token
-        setInputToken(vaultData.inputToken);
-
-      } else {
-        // On other chains, use APPROVED_TOKENS to set available tokens
-        setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken)); // Set to the first approved token as a default
-      }
-
-      setAllowInput(true);
+    if (activeChain.id === 7001 || activeChain.id === 7000) {
+      // If on ZetaChain testnet, set inputToken to the vault token
+      setInputToken(vaultData.inputToken);
+    } else {
+      // On other chains, use APPROVED_TOKENS to set available tokens
+      setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken)); // Set to the first approved token as a default
     }
-  }, [activeChain.id, inputToken, vaultData.inputToken]);
+
+    setAllowInput(true);
+  }, [activeChain, vaultData]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, transactionCompleted, isDeposit);
@@ -231,13 +232,12 @@ export default function VaultInputs({
         // Switch to Deposit
         setIsDeposit(true);
         const newAction = SmartVaultActionType.Deposit;
-        activeChain.id === 7001 || activeChain.id === 7000 ? setInputToken(vaultData.inputToken) : setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken));
         setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount, inputBalance, inputToken));
       }
     }
   }
 
-  function handleChangeInput(e: React.ChangeEvent<HTMLInputElement>) {
+  const handleChangeInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (!inputToken) return;
     let value = e.currentTarget.value;
 
@@ -253,16 +253,16 @@ export default function VaultInputs({
     // convert string amt to bigint
     const newAmt = parseUnits(inputAmt, decimalsNumber);
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
-  }
+  }, [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals])
 
-  function handleMaxClick() {
+  const handleMaxClick = useCallback(() => {
     if (!inputToken) return;
     if (isDeposit) {
       handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
     } else {
       handleChangeInput({ currentTarget: { value: vaultTotalAssetinToken?.toString() } } as React.ChangeEvent<HTMLInputElement>);
     }
-  }
+  }, [handleChangeInput, inputToken, inputTokenBalance, isDeposit, vaultTotalAssetinToken])
 
   const tokenList = useMemo(() => {
     return activeChain.id === 7001 || activeChain.id === 7000
@@ -271,53 +271,127 @@ export default function VaultInputs({
 
   }, [activeChain.id, vaultData.inputToken])
 
-  const getWithdrawOutputAmount = useCallback(async () => {
-    const assetsAmount = await getAssetsFromShares(debouncedInputBalance.value, vaultData);
+  const getWithdrawOutputAmount = useCallback(async (inputAmountValue: bigint) => {
+    console.log('Double Box - Starting getWithdrawOutputAmount:', {
+      inputAmountValue: inputAmountValue.toString(),
+    });
+    const assetsAmount = await getAssetsFromShares(inputAmountValue, vaultData);
+    console.log('Double Box - Assets from shares:', {
+      assetsAmount: assetsAmount.toString(),
+    });
     const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
-
+    console.log('Double Box - Token addresses:', {
+      inputTokenAddress,
+      isZetachain: isZetachain(activeChain.id),
+      vaultInputToken: vaultData.inputToken.address
+    });
     let tokenConversionAmount = assetsAmount;
     if (inputTokenAddress !== vaultData.inputToken.address) {
       tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address, inputTokenAddress as Address, vaultData);
     }
-    console.log("COMPARE THESE: ", {
-      assetsAmount,
-      tokenConversionAmount,
+    console.log('Double Box - Conversion amounts:', {
+      tokenConversionAmount: tokenConversionAmount.toString(),
     });
-    setConversionOutput({
-      assetsConversionInUSDFormatted: formatCurrency(((Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice)).toString(),
-      outputAmountFormatted: (Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18)).toString(),
-      outputAmountInUSDFormatted: formatCurrency(((Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice)).toString()
-    });
+
+    const assetsConversionInUSD = (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+    const tokenConversionFromWei = Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
+    const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
+
+    const slippageActualValue = Math.max(0, 100 - ((tokenConversionInUSD * 100) / assetsConversionInUSD));
+
+    if (inputAmountValue === debouncedInputBalance.value) {
+      console.log('Double Box - Conversion Output:', {
+        slippageActualValue: Number(slippageActualValue.toFixed(2)),
+        assetsConversionInUSDFormatted: formatCurrency(assetsConversionInUSD).toString(),
+        outputAmountFormatted: (tokenConversionFromWei).toString(),
+        outputAmountInUSDFormatted: formatCurrency(tokenConversionInUSD).toString()
+      });
+      setConversionOutput({
+        slippageActualValue: Number(slippageActualValue.toFixed(2)),
+        assetsConversionInUSDFormatted: formatCurrency(assetsConversionInUSD).toString(),
+        outputAmountFormatted: (tokenConversionFromWei).toString(),
+        outputAmountInUSDFormatted: formatCurrency(tokenConversionInUSD).toString()
+      });
+    }
     setLoadingOutputToken(false);
   }, [activeChain.id, debouncedInputBalance.value, inputToken?.ZRC20equivalent, inputToken?.address, inputToken?.decimals, inputTokenPrice, vaultData, vaultTokenPrice])
 
-  const getDepositOutputAmount = useCallback(async () => {
+  const getDepositOutputAmount = useCallback(async (inputAmountValue: bigint) => {
+    console.log('Double Box - Starting getDepositOutputAmount:', {
+      inputAmountValue: inputAmountValue.toString(),
+    });
     const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
-
-    let assetsConversionAmount: bigint = debouncedInputBalance.value;
+    console.log('Double Box - 🏦 Token addresses:', {
+      inputTokenAddress,
+      isZetachain: isZetachain(activeChain.id),
+      vaultInputToken: vaultData.inputToken.address
+    });
+    let assetsConversionAmount: bigint = inputAmountValue;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      assetsConversionAmount = await getAmountOutFromSwap(debouncedInputBalance.value, inputTokenAddress as Address, vaultData.inputToken.address, vaultData);
+      assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, inputTokenAddress as Address, vaultData.inputToken.address, vaultData);
     }
+
+    console.log('Double Box - Conversion amounts:', {
+      assetsConversionAmount: assetsConversionAmount.toString(),
+    });
 
     const sharesAmountFormatted = await getSharesFromDeposit(assetsConversionAmount, vaultData);
 
-    console.log("COMPARE THESE: ", {
-      assetsAmount: assetsConversionAmount,
-      tokenConversionAmount: debouncedInputBalance.value,
+    console.log('Double Box - Shares calculation:', {
+      sharesAmountFormatted,
+      assetsConversionAmount: assetsConversionAmount.toString()
     });
-    const assetsConversionInUSDFormatted = formatCurrency(((Number(assetsConversionAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice)).toString();
-    setConversionOutput({
-      assetsConversionInUSDFormatted,
-      outputAmountFormatted: sharesAmountFormatted,
-      outputAmountInUSDFormatted: assetsConversionInUSDFormatted
-    });
+    const inputAmountValueInUSD = (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice;
+    const assetsConversionInUSD = (Number(assetsConversionAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+    const assetsConversionInUSDFormatted = formatCurrency(assetsConversionInUSD).toString();
+
+    const slippageActualValue = (Math.max(0, 100 - ((assetsConversionInUSD * 100) / inputAmountValueInUSD)));
+    if (inputAmountValue === debouncedInputBalance.value) {
+      console.log('Double Box - Conversion Output:', {
+        slippageActualValue: Number(slippageActualValue.toFixed(2)),
+        assetsConversionInUSDFormatted,
+        outputAmountFormatted: sharesAmountFormatted,
+        outputAmountInUSDFormatted: assetsConversionInUSDFormatted
+      });
+      setConversionOutput({
+        slippageActualValue: Number(slippageActualValue.toFixed(2)),
+        assetsConversionInUSDFormatted,
+        outputAmountFormatted: sharesAmountFormatted,
+        outputAmountInUSDFormatted: assetsConversionInUSDFormatted
+      });
+    }
     setLoadingOutputToken(false);
-  }, [activeChain.id, debouncedInputBalance.value, inputToken?.ZRC20equivalent, inputToken?.address, vaultData, vaultTokenPrice])
+  }, [activeChain.id, debouncedInputBalance.value, inputToken?.ZRC20equivalent, inputToken?.address, inputToken?.decimals, inputTokenPrice, vaultData, vaultTokenPrice])
 
   const timeoutRef = useRef<NodeJS.Timeout>();
 
+  const checkSlippageExceedingLimit = () => {
+    const userSlippage = getCurrentSlippage();
+    if (userSlippage && conversionOutput.slippageActualValue !== null && userSlippage < conversionOutput.slippageActualValue) {
+      setIsSlippageExceedingLimit(true);
+      setOutputBoxErrorMessage(`Slippage of ${conversionOutput.slippageActualValue}% exceeds your maximum slippage setting of ${userSlippage}%`);
+    } else {
+      setIsSlippageExceedingLimit(false);
+      setOutputBoxErrorMessage('');
+    }
+  }
+
+  // Ensure immediately change the conversion to 0 if user input is not valid
+  useEffect(() => {
+    if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
+      setConversionOutput(initialConversionOutput);
+      setDebouncedInputBalance(inputBalance);
+      setIsSlippageExceedingLimit(false);
+      setOutputBoxErrorMessage('');
+      return;
+    }
+    checkSlippageExceedingLimit();
+  }, [conversionOutput]);
+
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
+    setIsSlippageExceedingLimit(false);
+    setOutputBoxErrorMessage('');
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -345,11 +419,10 @@ export default function VaultInputs({
       setConversionOutput(initialConversionOutput);
       return;
     }
-    console.log("Last called:::=========", debouncedInputBalance.formatted)
-    console.log("EXECUTING HERE STILL!")
-    if (isDeposit) getDepositOutputAmount()
-    else getWithdrawOutputAmount()
-  }, [debouncedInputBalance]);
+    setLoadingOutputToken(true);
+    if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value)
+    else getWithdrawOutputAmount(debouncedInputBalance.value)
+  }, [debouncedInputBalance, inputToken]);
 
   return (
     <>
@@ -360,22 +433,24 @@ export default function VaultInputs({
           setActiveTab={switchTokens}
       />
       <InputTokenWithError
-        captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
-        onSelectToken={isDeposit ? handleTokenSelect : () => {}}
-        allowInput={allowInput}
-        vaultData={vaultData}
-        onMaxClick={handleMaxClick}
-        value={inputBalance.formatted}
-        onChange={handleChangeInput}
-        selectedToken={isDeposit ? inputToken : vaultToken}
-        inputTokenbalance={isDeposit ? inputTokenBalance : vaultTotalAssetinToken?.toString() ?? "0"}
-        errorMessage={errorMessage}
-        tokenList={isDeposit ? tokenList : []}
-        disabled={false}
-        isDeposit={isDeposit}
-        userVaultBalance={isDeposit ? userVaultBalance : vaultTotalAssetinToken?.toString() ?? "0"}
-        loadingOutputToken={loadingOutputToken}
-        conversionOutput={conversionOutput}
+          captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
+          onSelectToken={isDeposit ? handleTokenSelect : () => {}}
+          allowInput={allowInput}
+          vaultData={vaultData}
+          onMaxClick={handleMaxClick}
+          value={inputBalance.formatted}
+          onChange={handleChangeInput}
+          selectedToken={isDeposit ? inputToken : vaultToken}
+          inputTokenbalance={isDeposit ? inputTokenBalance : vaultTotalAssetinToken?.toString() ?? "0"}
+          errorMessage={errorMessage}
+          tokenList={isDeposit ? tokenList : []}
+          disabled={false}
+          isDeposit={isDeposit}
+          userVaultBalance={isDeposit ? userVaultBalance : vaultTotalAssetinToken?.toString() ?? "0"}
+          loadingOutputToken={loadingOutputToken}
+          conversionOutput={conversionOutput}
+          isSlippageExceedingLimit={isSlippageExceedingLimit}
+          setInputBalance={setInputBalance}
       />
       <div className='pt-4 pb-2 flex items-center gap-3'>
         <div className='w-full h-px bg-tuatara-900'></div>
@@ -394,7 +469,7 @@ export default function VaultInputs({
           onChange={() => {}}
           selectedToken={isDeposit ? vaultToken : inputToken}
           inputTokenbalance={isDeposit ? vaultTotalAssetinToken?.toString() ?? "0" : inputTokenBalance}
-          errorMessage={''}
+          errorMessage={!errorMessage ? outputBoxErrorMessage : ''}
           tokenList={isDeposit ? [] : tokenList}
 
           disabled={false}
@@ -403,8 +478,18 @@ export default function VaultInputs({
           isOutput={true}
           loadingOutputToken={loadingOutputToken}
           conversionOutput={conversionOutput}
+          setInputBalance={setInputBalance}
       />
       <div className="mt-4">
+        {
+            conversionOutput.slippageActualValue !== null &&
+            (
+                <p className='text-white font-bold mb-2 text-start'>
+                  Estimated slippage value:
+                  <span className={`${ isSlippageExceedingLimit ? 'text-red-500' : 'text-green-500' } whitespace-pre`}>{' '}{ conversionOutput.slippageActualValue }%</span>
+                </p>
+            )
+        }
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
         <div className="bg-customNeutral200 py-2 px-4 rounded-lg space-y-2">
           <span className="flex flex-row items-center justify-between text-white">
@@ -437,7 +522,7 @@ export default function VaultInputs({
           _action={steps[0]}
           actions={steps}
           setInputBalance={setInputBalance}
-          errorMessage={errorMessage}
+          errorMessage={errorMessage || outputBoxErrorMessage || ''}
           isDeposit={isDeposit}
         />
       )}

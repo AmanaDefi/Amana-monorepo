@@ -4,15 +4,17 @@ import {Cog6ToothIcon} from "@heroicons/react/24/outline";
 import {InformationCircleIcon} from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import {useSlippage} from "@/hooks/hooks";
+import {EMPTY_BALANCE} from "@/utils/helpers";
 
-export default function SlippageSettingsModal() {
+export default function SlippageSettingsModal({setInputBalance} : { setInputBalance: Function }) {
     const { slippageValue, isAuto, setSlippage, toggleAuto } = useSlippage();
     const [openSlippageModal, setOpenSlippageModal] = useState(false);
     const [inputValue, setInputValue] = useState(slippageValue?.toString());
 
     useEffect(() => {
         setInputValue(slippageValue?.toString());
-    }, [slippageValue]);
+        setInputBalance(EMPTY_BALANCE);
+    }, [setInputBalance, slippageValue]);
 
     const handleInputChange = (value: string) => {
         if (value === '') {

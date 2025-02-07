@@ -12,6 +12,26 @@ import {ConversionOutput} from "@/components/VaultInputs";
 import {InformationCircleIcon} from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 
+export type InputTokenWithErrorProps = {
+  errorMessage?: string;
+  onMaxClick: () => void;
+  onSelectToken: (token: Token) => void;
+  vaultData: VaultData;
+  tokenList: Token[];
+  selectedToken?: Token;
+  inputTokenbalance?: string;
+  captionText?: string;
+  getToken?: Function;
+  allowInput?: boolean;
+  inputMoreThanBalance?: boolean;
+  disabled?: boolean;
+  isDeposit: Boolean;
+  userVaultBalance?: string;
+  isOutput?: boolean
+  loadingOutputToken?: boolean,
+  conversionOutput: ConversionOutput
+}
+
 export default function InputTokenWithError({
   tokenList,
   selectedToken,
@@ -30,6 +50,8 @@ export default function InputTokenWithError({
   isOutput,
   loadingOutputToken,
   conversionOutput,
+  isSlippageExceedingLimit,
+  setInputBalance,
   ...props
 }: {
   errorMessage?: string;
@@ -41,6 +63,7 @@ export default function InputTokenWithError({
   inputTokenbalance?: string;
   captionText?: string;
   getToken?: Function;
+  setInputBalance: Function;
   allowInput?: boolean;
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
@@ -48,7 +71,8 @@ export default function InputTokenWithError({
   userVaultBalance?: string;
   isOutput?: boolean
   loadingOutputToken?: boolean,
-  conversionOutput: ConversionOutput
+  conversionOutput: ConversionOutput,
+  isSlippageExceedingLimit?: boolean
 } & HTMLProps<HTMLInputElement>): JSX.Element {
 
   const [data1, setdata1] = useState('')
@@ -76,7 +100,7 @@ export default function InputTokenWithError({
                     <ResponsiveTooltip
                         id={'output-amount-button'}
                         content={<p
-                            className="w-36">{'This is an estimated output amount. Actual amount may vary during transaction execution.'}</p>}
+                            className="w-48">{'This is an estimated output amount. Actual amount may vary during transaction execution.'}</p>}
                     />
                   </>
               }
@@ -85,12 +109,18 @@ export default function InputTokenWithError({
               )}
             </div>
         )}
-        {
-            !isOutput &&
-            <SlippageSettingsModal/>
-        }
+        <div className='flex items-center gap-2'>
+          {
+            !isOutput && isSlippageExceedingLimit &&
+              <p className='hidden lg:block'>Transaction settings</p>
+          }
+          {
+              !isOutput &&
+              <SlippageSettingsModal setInputBalance={setInputBalance}/>
+          }
+        </div>
       </div>
-      <div className="relative flex items-center w-full">
+      <div className="relative flex w-full flex-col">
         <div
             className={`w-full px-5 pt-4 pb-2 rounded-lg border ${errorMessage ? "border-red-500" : "border-customGray100"
             }`}
@@ -151,13 +181,13 @@ export default function InputTokenWithError({
               }
             </p>
             <div
-              className={`flex items-center ml-1 gap-2 group/max ${allowInput
+              className={`flex items-center ml-1 gap-2 group/max ${allowInput && !isOutput
                 ? "group-hover/max:text-white cursor-pointer "
                 : ""
                 }`}
               onClick={allowInput ? onMaxClick : () => { }}
             >
-              <div className={`mb-1 ${allowInput ? "group-hover/max:text-white" : ""}`}>
+              <div className={`mb-1 ${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
                 <svg
                   width="16"
                   height="16"
@@ -174,7 +204,7 @@ export default function InputTokenWithError({
                 </svg>
               </div>
               {
-                <p className={`${allowInput ? "group-hover/max:text-white" : ""}`}>
+                <p className={`${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
                   {inputTokenbalance
                       ? formatBalance(Number(inputTokenbalance)).toString()
                       : "0"}
@@ -184,7 +214,7 @@ export default function InputTokenWithError({
           </div>
         </div>
         {errorMessage && (
-            <p className="absolute bottom-0 left-0 translate-y-[calc(100%_+_2px)] lg:translate-y-[calc(100%_+_4px)] text-red-500 leading-6">{errorMessage}</p>
+            <p className={`${!isOutput && 'absolute bottom-0 left-0 translate-y-full lg:translate-y-full'} pt-0.5 lg:pt-1 text-red-500 leading-6`}>{errorMessage}</p>
         )}
       </div>
     </div>
