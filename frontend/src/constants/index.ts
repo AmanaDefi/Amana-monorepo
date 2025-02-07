@@ -52,33 +52,33 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
   //   },
   // },
+  // {
+  //   id: "0x9cB5Bd6F42c172E19921460A194260a844bf5693", // Base ZeroLend USDC Vault
+  //   name: "ZeroLend USDC",
+  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a ZeroLend USDC pool, which earns interest every block.",
+  //   symbol: "aZeroLendUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "ZeroLend",
+  //     strategyAddress: "0xe306a6745d71D0fC69A75241d2986c482746191d",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+  //     imgURL: "/ZeroLend.png",
+  //     des: "ZeroLend is a relatively new protocol on Base."
+  //   },
+  // },
   {
-    id: "0x362dAa5FCB0325ac6a03704cA8e8DC387e0Fd2Ad", // Base ZeroLend USDC Vault
-    name: "ZeroLend USDC",
-    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a ZeroLend USDC pool, which earns interest every block.",
-    symbol: "aZeroLendUSDC",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "ZeroLend",
-      strategyAddress: "0x75a9B7aC534158E1190795eFA80431832d573e39",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/ZeroLend.png",
-      des: "ZeroLend is a relatively new protocol on Base."
-    },
-  },
-  {
-    id: "0x156d6e8B2D95418A721C6ef90a8bF5da68970fD8", // BSC Venus USDT Vault
+    id: "0xE054cD48ACd0F1433BE0293F9488AF1924Bb15EA", // BSC Venus USDT Vault
     name: "Venus USDT",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a Venus USDT pool, which earns interest every block.",
     symbol: "aVenusUSDT",
@@ -94,7 +94,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Venus",
-      strategyAddress: "0x581f4dc001b276854635332740481453658e120D",
+      strategyAddress: "0xA92038e993F90F6A930074aA97af4eB288756048",
       network: "BSC",
       chainId: 56,
       netdes: "BSC is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -128,7 +128,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xb73dE3eb20B4497dd0F475f07aFBb9fb6f0A8380", // Euler USDC vault on Base
+    id: "0x9E204c8109FC388DE5eA26d16d1c6cC209f4e731", // Euler USDC vault on Base
     name: "Euler USDC",
     des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
     symbol: "aEulerUSDC",
@@ -144,7 +144,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Euler",
-      strategyAddress: "0x269c31C9c0362A1Fd3CaE913c11B66cE0cF2a657",
+      strategyAddress: "0x42d0906c80d1950E630dD70b9D710a32F81A5F76",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -228,7 +228,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0x718Ad769A03FF979f13933E7778621053C5DCa76", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+    id: "0xc8b8fc1Cc87a6d412fFd91398EE9b5C80Ecf7881", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
@@ -244,7 +244,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Mock",
-      strategyAddress: "0xaB6aA53bA70273b1f954Dfd89292285854a54B4d",
+      strategyAddress: "0xe7b322b6445C81cD6da8e87D63731fB1cF5c9eEf",
       network: "Zetachain",
       chainId: 7000,
       netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
