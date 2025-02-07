@@ -13,6 +13,7 @@ import { keccak256 } from "thirdweb";
 
 import * as dotenv from "dotenv";
 import { getCurrentSlippage } from "@/utils/utils";
+import { VaultData } from "@/types/types";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -525,12 +526,13 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
     contract,
     address: userAddress
   });
-  // const balance = await readContract({
-  //   contract,
-  //   method: "function convertToAssets(uint256) view returns (uint256)",
-  //   params: [shares]
-  // });
-  const formattedBalance = Number(shares) / 10 ** decimals;
+  const balance = await readContract({
+    contract,
+    method: "function convertToAssets(uint256) view returns (uint256)",
+    params: [shares]
+  });
+  console.log("BALANCE HERE", balance)
+  const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
 
@@ -567,3 +569,4 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   const formattedBalance = Number(balance) / 10 ** decimals;
   return formattedBalance.toString();
 }
+

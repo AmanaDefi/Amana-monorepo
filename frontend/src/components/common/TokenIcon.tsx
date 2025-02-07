@@ -19,20 +19,20 @@ export default function TokenIcon({
     } object-contain rounded-full`;
 
   if (icon) {
-    return <Image 
-    src={icon} 
-    alt="token icon" 
+    return <Image
+    src={icon}
+    alt="token icon"
     width={1200}
-    height={800} 
+    height={800}
     className="mr-2 rounded-full"
     />;
   }
   return (
     <Image
-      src={"/vcx.svg"}
+      src={"/amana-token-logo.svg"}
       alt="token icon"
       width={1200} // Adjust to your desired width
-      height={800} // Adjust to your desired height    
+      height={800} // Adjust to your desired height
       className={className}
     />
   );
