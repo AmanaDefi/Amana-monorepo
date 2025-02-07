@@ -50,6 +50,16 @@ const config: Config = {
       letterSpacing: {
         1: "1px",
       },
+      keyframes: {
+        dot1: { "0%": { opacity: "1" }, "100%": { opacity: "0" } },
+        dot2: { "33%": { opacity: "1" }, "100%": { opacity: "0" } },
+        dot3: { "66%": { opacity: "1" }, "100%": { opacity: "0" } },
+      },
+      animation: {
+        dot1: "dot1 2s steps(1, end) infinite",
+        dot2: "dot2 2s steps(1, end) infinite",
+        dot3: "dot3 2s steps(1, end) infinite",
+      }
     },
   },
   plugins: [],
