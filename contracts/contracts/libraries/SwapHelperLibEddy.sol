@@ -8,6 +8,7 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "../interfaces/IZRC20.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IPriceOracle.sol";
+import "../interfaces/ICurvePool.sol";
 
 library SwapHelperLibEddy {
     address constant UNISWAP_V2_FACTORY =
@@ -18,6 +19,8 @@ library SwapHelperLibEddy {
 
     address constant PRICE_ORACLE_ADDRESS =
         0xD52b6aB593caB9D55dB083D8a6Fe9A3F8d91ad8d; // mainnet only
+
+    address constant CURVE_POOL = 0x448028804461e8e5a8877c228F3adFd58c3Da6B6; // mainnet only
 
     address constant ETH_ETH_ADDRESS =
         0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
@@ -51,6 +54,33 @@ library SwapHelperLibEddy {
         0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472;
     bytes32 constant bnbUsdPriceFeedId =
         0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
+
+    function isInEddy4Pool(address token) external pure returns (bool) {
+        if (
+            token == 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a || // USDC_ETH_ADDRESS
+            token == 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7 || // USDT_ETH_ADDRESS
+            token == 0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F || // USDT_BSC_ADDRESS
+            token == 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0 // USDC_BSC_ADDRESS
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    // Function to get the index of a token in the Curve pool
+    function getTokenIndex(address token) public view returns (uint256) {
+        // Assume the pool has at most 8 coins; adjust if necessary
+        for (uint256 i = 0; i < 4; i++) {
+            try ICurvePool(CURVE_POOL).coins(i) returns (address poolToken) {
+                if (poolToken == token) {
+                    return i; // Convert to int128 as required by Curve's exchange function
+                }
+            } catch {
+                break; // Stop if index exceeds the number of tokens in the pool
+            }
+        }
+        revert("Token not found in Curve pool");
+    }
 
     /**
      * @notice Determines if a token address corresponds to an ETH token.
@@ -320,7 +350,7 @@ library SwapHelperLibEddy {
             : (reserve1, reserve0);
     }
 
-    function getFinalAmountOut(
+    function getUniswapAmountOut(
         uint amountIn,
         address inputZrc20,
         address outputZrc20
@@ -340,5 +370,15 @@ library SwapHelperLibEddy {
             amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
         }
         finalAmountOut = amounts[amounts.length - 1];
+    }
+
+    function getCurveAmountOut(
+        uint256 amountIn,
+        address inputToken,
+        address outputToken
+    ) public view returns (uint256) {
+        uint256 inputIndex = getTokenIndex(inputToken);
+        uint256 outputIndex = getTokenIndex(outputToken);
+        return ICurvePool(CURVE_POOL).get_dy(inputIndex, outputIndex, amountIn);
     }
 }

@@ -13,6 +13,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISystem.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
+import "./interfaces/ICurvePool.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
 
@@ -269,12 +270,24 @@ abstract contract AmanaVaultBase is
         address inputToken,
         address outputToken
     ) external view returns (uint amount) {
-        return
-            SwapHelperLibEddy.getFinalAmountOut(
-                amountIn,
-                inputToken,
-                outputToken
-            );
+        if (
+            SwapHelperLibEddy.isInEddy4Pool(inputToken) &&
+            SwapHelperLibEddy.isInEddy4Pool(outputToken)
+        ) {
+            return
+                SwapHelperLibEddy.getCurveAmountOut(
+                    amountIn,
+                    inputToken,
+                    outputToken
+                );
+        } else {
+            return
+                SwapHelperLibEddy.getUniswapAmountOut(
+                    amountIn,
+                    inputToken,
+                    outputToken
+                );
+        }
     }
 
     /**
@@ -377,7 +390,7 @@ abstract contract AmanaVaultBase is
         }
         uint256 outputAmount = assets;
         if (zrc20source != address(asset())) {
-            outputAmount = swapExactTokensForTokens(
+            outputAmount = swap(
                 zrc20source,
                 assets,
                 address(asset()),
@@ -466,7 +479,7 @@ abstract contract AmanaVaultBase is
 
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
-                outputAmount = swapExactTokensForTokens(
+                outputAmount = swap(
                     address(asset()),
                     amount,
                     withdrawZRC20,
@@ -527,7 +540,7 @@ abstract contract AmanaVaultBase is
      * @return The amount of output tokens received.
      * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
      */
-    function swapExactTokensForTokens(
+    function swap(
         address zrc20,
         uint256 amount,
         address targetZRC20,
@@ -535,26 +548,49 @@ abstract contract AmanaVaultBase is
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {
-        address[] memory path = SwapHelperLibEddy.getPath(zrc20, targetZRC20);
         uint256 minAmountOut = SwapHelperLibEddy.calculateMinAmountOut(
             zrc20,
             targetZRC20,
             amount,
             slippageBps
         );
+        if (
+            SwapHelperLibEddy.isInEddy4Pool(zrc20) &&
+            SwapHelperLibEddy.isInEddy4Pool(targetZRC20)
+        ) {
+            uint256 inputIndex = SwapHelperLibEddy.getTokenIndex(zrc20);
+            uint256 outputIndex = SwapHelperLibEddy.getTokenIndex(targetZRC20);
 
-        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
-        // Perform the swap
-        uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-            .swapExactTokensForTokens(
-                amount,
-                minAmountOut,
-                path,
-                vault,
-                block.timestamp + maxDeadline
+            // Approve Curve pool to spend your tokens
+            IZRC20(zrc20).approve(SwapHelperLibEddy.CURVE_POOL, amount);
+
+            // Perform the swap
+            return
+                ICurvePool(SwapHelperLibEddy.CURVE_POOL).exchange(
+                    inputIndex, // Index of input token
+                    outputIndex, // Index of output token
+                    amount, // Amount of input token
+                    minAmountOut // Minimum amount of output token to receive
+                );
+        } else {
+            address[] memory path = SwapHelperLibEddy.getPath(
+                zrc20,
+                targetZRC20
             );
 
-        return amounts[amounts.length - 1];
+            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+            // Perform the swap
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapExactTokensForTokens(
+                    amount,
+                    minAmountOut,
+                    path,
+                    vault,
+                    block.timestamp + maxDeadline
+                );
+
+            return amounts[amounts.length - 1];
+        }
     }
 
     /**
