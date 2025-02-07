@@ -43,7 +43,7 @@ abstract contract AmanaVaultBase is
     address public treasury;
     address public withdrawalReceiver;
     uint16 public perfFee;
-    uint256 internal totalPrincipal;
+    uint256 public totalPrincipal;
     mapping(address => uint256) internal userPrincipal;
     IGasTank gasTank;
     uint32 public gasLimitForWithdrawAndCall; // this is used in two places - for investing into the strategy and returning funds to the user
