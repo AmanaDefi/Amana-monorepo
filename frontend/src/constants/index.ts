@@ -228,7 +228,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xd042474ef4eAF7b8D79F0F97da06D9E22Ba79CbA", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+    id: "0x718Ad769A03FF979f13933E7778621053C5DCa76", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
     name: "Mock USDC",
     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
     symbol: "aMockUSDC",
@@ -244,7 +244,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Mock",
-      strategyAddress: "0xa5793546dc17e00Dde5241E3fB179247f1C11cc0",
+      strategyAddress: "0xaB6aA53bA70273b1f954Dfd89292285854a54B4d",
       network: "Zetachain",
       chainId: 7000,
       netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
