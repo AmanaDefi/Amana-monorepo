@@ -277,14 +277,24 @@ contract AmanaZetachainVault is AmanaVaultBase {
     }
 
     /**
-     * @notice Handles the revert of a transaction.
-     * @param context The revert context containing details about the transaction.
+     * @dev Handles revert scenarios during cross-chain operations.
+     * @param context The revert context containing details about the revert scenario.
+     * @notice Executes appropriate recovery steps based on the revert message.
      */
     function onRevert(RevertContext calldata context) external override {
-        (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
-            context.revertMessage,
-            (string, bytes32)
-        );
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            uint256 amount,
+            address receiver,
+            address userZRC20,
+            address userERC20,
+            uint32 userChainId
+        ) = abi.decode(
+                context.revertMessage,
+                (string, bytes32, uint256, address, address, address, uint32)
+            );
+
         if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsToUserFailed"))

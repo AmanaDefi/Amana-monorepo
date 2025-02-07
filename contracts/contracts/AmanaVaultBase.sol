@@ -469,6 +469,7 @@ abstract contract AmanaVaultBase is
                 abi.encode(
                     "_returnFundsToUserFailed",
                     _crossChainTxId,
+                    outputAmount,
                     receiver,
                     withdrawZRC20,
                     withdrawERC20,

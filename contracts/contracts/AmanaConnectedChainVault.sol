@@ -344,6 +344,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             abi.encode(
                 "_switchStrategyFailed",
                 crossChainTxId,
+                0,
                 address(0),
                 newStrategyAddress,
                 address(0),
@@ -473,6 +474,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             abi.encode(
                 "_crossChainInvestFailed",
                 crossChainTxId,
+                amount,
                 receiver,
                 userZRC20,
                 userERC20,
@@ -669,6 +671,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             abi.encode(
                 "_divestConnectedChainStrategyFailed",
                 crossChainTxId,
+                amount,
                 user,
                 withdrawZRC20,
                 withdrawERC20,
@@ -767,13 +770,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         (
             string memory revertMessage,
             bytes32 _crossChainTxId,
+            uint256 amount,
             address receiver,
             address userZRC20,
             address userERC20,
             uint32 userChainId
         ) = abi.decode(
                 context.revertMessage,
-                (string, bytes32, address, address, address, uint32)
+                (string, bytes32, uint256, address, address, address, uint32)
             );
 
         if (
@@ -795,7 +799,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_divestConnectedChainStrategyFailed"))
         ) {
-            pendingWithdrawals[receiver] -= context.amount;
+            pendingWithdrawals[receiver] -= amount;
             emit DivestFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
