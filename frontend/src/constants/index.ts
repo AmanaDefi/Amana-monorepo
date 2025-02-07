@@ -27,58 +27,58 @@ export const tokens: Token[] = [
 ]
 
 const MAINNET_VAULT_DATA: VaultData[] = [
-  {
-    id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
-    name: "AaveV3 ETH",
-    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-    symbol: "aAaveETH",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "ETH.BASE",
-      decimals: 18,
-      address: ZC_ETH_BASE_ADDRESS,
-      imgURL: "/ETH.png",
-      price: ethPrice,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x3D85ef74f5FA2c56b53CcC8c9a2a140363dE014E",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/aave.png",
-      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    },
-  },
   // {
-  //   id: "0x136c2f7E281a3807987Fc6441B410529c3feF0f5", // Base ZeroLend USDC Vault
-  //   name: "ZeroLend USDC",
-  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a ZeroLend USDC pool, which earns interest every block.",
-  //   symbol: "aZeroLendUSDC",
+  //   id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
+  //   name: "AaveV3 ETH",
+  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+  //   symbol: "aAaveETH",
   //   imgURL: "/base.png",
   //   inputToken: {
-  //     symbol: "USDC.BASE",
+  //     symbol: "ETH.BASE",
   //     decimals: 18,
-  //     address: ZC_USDC_BASE_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
+  //     address: ZC_ETH_BASE_ADDRESS,
+  //     imgURL: "/ETH.png",
+  //     price: ethPrice,
   //     balance: EMPTY_BALANCE,
   //     isNative: false
   //   },
   //   protocol: {
-  //     name: "ZeroLend",
-  //     strategyAddress: "0x20E2dEa402722C9b09Fe35CD669A83902FA43831",
+  //     name: "Aave",
+  //     strategyAddress: "0x3D85ef74f5FA2c56b53CcC8c9a2a140363dE014E",
   //     network: "Base",
   //     chainId: 8453,
   //     netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-  //     imgURL: "/ZeroLend.png",
-  //     des: "ZeroLend is a relatively new protocol on Base."
+  //     imgURL: "/aave.png",
+  //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
   //   },
   // },
   {
-    id: "0x1Ae384B2F8807dEeB5afDa483DEF483833aBd7e2", // BSC Venus USDT Vault
+    id: "0x362dAa5FCB0325ac6a03704cA8e8DC387e0Fd2Ad", // Base ZeroLend USDC Vault
+    name: "ZeroLend USDC",
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a ZeroLend USDC pool, which earns interest every block.",
+    symbol: "aZeroLendUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "ZeroLend",
+      strategyAddress: "0x75a9B7aC534158E1190795eFA80431832d573e39",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      imgURL: "/ZeroLend.png",
+      des: "ZeroLend is a relatively new protocol on Base."
+    },
+  },
+  {
+    id: "0x156d6e8B2D95418A721C6ef90a8bF5da68970fD8", // BSC Venus USDT Vault
     name: "Venus USDT",
     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a Venus USDT pool, which earns interest every block.",
     symbol: "aVenusUSDT",
@@ -94,7 +94,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Venus",
-      strategyAddress: "0x2178a227A36a6f4281964aDdd9a39d691bB0A816",
+      strategyAddress: "0x581f4dc001b276854635332740481453658e120D",
       network: "BSC",
       chainId: 56,
       netdes: "BSC is a relatively new chain, backed by Coinbase and built on the OP stack.",
@@ -128,7 +128,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xdf4B4D9127eb034448B5147b9790E9DAa13D8958", // Euler USDC vault on Base
+    id: "0xb73dE3eb20B4497dd0F475f07aFBb9fb6f0A8380", // Euler USDC vault on Base
     name: "Euler USDC",
     des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
     symbol: "aEulerUSDC",
@@ -144,7 +144,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Euler",
-      strategyAddress: "0x47D85aEE441BfA3fcf3924A2CB7F4ef3eDE54324",
+      strategyAddress: "0x269c31C9c0362A1Fd3CaE913c11B66cE0cF2a657",
       network: "Base",
       chainId: 8453,
       netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
