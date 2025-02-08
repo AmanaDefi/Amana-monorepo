@@ -262,7 +262,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     symbol: "USDT.BNB",
   //     decimals: 18,
   //     address: ZC_USDT_BSC_ADDRESS,
-  //     imgURL: "/usdt.png",
+  //     imgURL: "/USDT.png",
   //     price: 1,
   //     balance: EMPTY_BALANCE,
   //     isNative: false
