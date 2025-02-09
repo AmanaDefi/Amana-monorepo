@@ -65,12 +65,12 @@ export default function AccountProvider({ children }: PropsWithChildren) {
 
         // Automatically show the connect modal if no account is connected
         if (!account && !isConnecting && connectionStatus !== 'connecting') {
-            connect({
-                ...connectModalConfig, // Use shared configuration
-                locale: "en_US", // Additional options if needed
-            }).catch(() => {
-                console.log("Connect modal closed without connecting.");
-            });
+            // connect({
+            //     ...connectModalConfig, // Use shared configuration
+            //     locale: "en_US", // Additional options if needed
+            // }).catch(() => {
+            //     console.log("Connect modal closed without connecting.");
+            // });
         } else if (account) {
             mixpanel.identify(account.address);
             mixpanel.people.set({

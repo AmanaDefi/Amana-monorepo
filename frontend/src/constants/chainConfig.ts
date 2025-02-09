@@ -18,6 +18,7 @@ const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
 const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
+export const solanaRpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
 
 const zetaChain = defineChain({
   chainId: deployEnv === "testnet" ? 7001 : 7000, // 7001 for testnet, 7000 for mainnet
