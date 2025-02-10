@@ -9,7 +9,7 @@ import "./tasks/deployGasTank";
 import "./tasks/deploySwapHelper";
 import "./tasks/deployMockERC20";
 import "./tasks/deployMock4626";
-import "./tasks/deployERC20_4626_Strategy";
+import "./tasks/deployERC20_Strategy";
 import "./tasks/deployZetachainStrategy";
 import "./tasks/deployPriceOracle";
 import "./tasks/deployWithdrawalReceiver";
