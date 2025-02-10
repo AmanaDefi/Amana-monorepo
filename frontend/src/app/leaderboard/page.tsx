@@ -2,58 +2,73 @@
 
 import React, {useEffect, useMemo, useState} from "react";
 import {LeaderboardUserData} from "@/types/types";
-import {shortAddressForm} from "@/utils/utils";
+import {formatCurrency, shortAddressForm} from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
 import { TrophyIcon } from "@heroicons/react/24/outline";
 import {useActiveAccount} from "thirdweb/react";
 import {ZERO_ACCOUNT} from "@/containers/VaultsContainer";
+
+type PaginationParams = {
+    page: number;
+    itemsPerPage: number;
+    searchQuery?: string;
+}
+
+type PaginatedResponse = {
+    data: LeaderboardUserData[];
+    total: number;
+}
 
 export default function Page() {
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardUserData[]>([])
     const [loadingLeaderboardData, setLoadingLeaderboardData] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
-    const currentUserAccount = useActiveAccount() || ZERO_ACCOUNT;
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const itemsPerPage = 3;
 
+    const currentUserAccount = useActiveAccount() || ZERO_ACCOUNT;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
     const leaderboardMockData: LeaderboardUserData[] = useMemo(() => ([
         {
             rank: 1,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea60'
+            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea60',
+            points: 5432
         },
         {
             rank: 2,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea58'
+            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea58',
+            points: 5431
         },
         {
             rank: 3,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea59'
+            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea59',
+            points: 5430
         },
         {
             rank: 4,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea61'
+            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea61',
+            points: 5429
         },
         {
             rank: 5,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea57'
+            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea57',
+            points: 5428
         }
     ]), []);
 
-    const filteredRows = useMemo(() => {
-        if (!searchQuery || !searchQuery.trim()) return leaderboardData;
-        setLoadingLeaderboardData(true);
-        const filteredRows = leaderboardData.filter(item =>
-            item.address.toLowerCase().includes(searchQuery.trim().toLowerCase())
-        );
-        setLoadingLeaderboardData(false);
-        return filteredRows;
-    }, [leaderboardData, searchQuery]);
     const handleSearch = () => {
+        setCurrentPage(1);
         setSearchQuery(searchTerm);
     };
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSearch();
         }
+    };
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
     };
 
     const getRankColor = (rank: number) => {
@@ -69,12 +84,77 @@ export default function Page() {
         }
     };
 
-    useEffect(() => {
-        setTimeout(() => {
-            setLeaderboardData(leaderboardMockData);
+    const fetchLeaderboardData = async ({page, itemsPerPage, searchQuery}: PaginationParams): Promise<PaginatedResponse> => {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        let filteredData = leaderboardMockData;
+        if (searchQuery) {
+            filteredData = leaderboardMockData.filter(item =>
+                item.address.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+
+        return {
+            data: paginatedData,
+            total: filteredData.length
+        };
+    };
+
+    const loadData = async () => {
+        setLoadingLeaderboardData(true);
+        try {
+            const response = await fetchLeaderboardData({
+                page: currentPage,
+                itemsPerPage,
+                searchQuery: searchQuery.trim()
+            });
+
+            setLeaderboardData(response.data);
+            setTotalItems(response.total);
+        } catch (error) {
+            console.error('Error fetching leaderboard data:', error);
+        } finally {
             setLoadingLeaderboardData(false);
-        }, 5000)
-    }, [leaderboardMockData]);
+        }
+    };
+
+    const PaginationControls = () => (
+        <div className="flex items-center justify-between flex-wrap gap-4 mt-4 px-4">
+            <div className="flex items-center justify-between gap-2 flex-1 md:flex-[unset]">
+                <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border border-gray-700 rounded-lg disabled:opacity-50
+                             disabled:cursor-not-allowed hover:bg-gray-800 text-sm lg:text-base"
+                >
+                    Previous
+                </button>
+                <span className="text-gray-400  text-sm lg:text-base whitespace-nowrap">
+                    Page {currentPage} of {totalPages}
+                </span>
+                <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 border border-gray-700 rounded-lg disabled:opacity-50
+                             disabled:cursor-not-allowed hover:bg-gray-800  text-sm lg:text-base"
+                >
+                    Next
+                </button>
+            </div>
+            <div className="text-gray-400 text-sm lg:text-base text-end flex-1 whitespace-nowrap">
+                Total users: {totalItems}
+            </div>
+        </div>
+    );
+
+    useEffect(() => {
+        loadData();
+    }, [currentPage, searchQuery]);
+
     return (
         <div className='flex flex-col py-10 lg:py-20 w-full container gap-10 lg:gap-20'>
             <div className='flex-center'>
@@ -105,62 +185,74 @@ export default function Page() {
                 <div className="overflow-x-auto mt-6">
                     <table className="min-w-full text-zinc-100">
                         <thead className="bg-gray-800">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
-                                    Rank
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
-                                    User Address
-                                </th>
-                            </tr>
+                        <tr>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
+                                Rank
+                            </th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
+                                User Address
+                            </th>
+                            <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
+                                Points
+                            </th>
+                        </tr>
                         </thead>
                         <tbody className="bg-gray-900">
-                            {loadingLeaderboardData ? (
-                                    Array.from({ length: 5 }).map((_, index) => (
+                        {
+                            loadingLeaderboardData ? (
+                                Array.from({ length: 5 }).map((_, index) =>
+                                    (
                                         <LoadingRow key={index} />
-                                    ))
-                                ) : (
-                                    filteredRows.map((item, key) => {
-                                        const isCurrentUser = item.address.toLowerCase() === currentUserAccount.address.toLowerCase();
-                                        return (
-                                            <tr key={key}
-                                                role="button"
-                                                className={`
-                                                transition-colors
-                                                ${isCurrentUser ? 'bg-blue-900/30 hover:bg-blue-900/40' : 'hover:bg-gray-800'}
-                                                ${isCurrentUser ? 'relative' : ''}
-                                            `}
-                                            >
-                                                <td className="px-4 py-4 whitespace-nowrap">
-                                                    {isCurrentUser && (
-                                                        <div className="absolute left-0 top-0 w-1 h-full bg-blue-500" />
-                                                    )}
-                                                    <div className="flex items-center gap-2">
-                                                        {item.rank <= 3 || isCurrentUser ? (
-                                                            <TrophyIcon
-                                                                className={`${getRankColor(item.rank)} w-4 h-4`}
-                                                            />
-                                                        ) : null}
-                                                        <span
-                                                            className={item.rank <= 3 ? 'font-bold' : ''}>{item.rank}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap">
-                                                    <div className='flex items-center gap-2'>
-                                            <span className='line-clamp-1'>
-                                                {shortAddressForm(item.address)}
-                                            </span>
-                                                        <CopyTextButton text={item.address}/>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })
+                                    )
                                 )
-                            }
+                            ) : (
+                                leaderboardData.map((item, key) => {
+                                    const isCurrentUser = item.address.toLowerCase() === currentUserAccount.address.toLowerCase();
+                                    return (
+                                        <tr key={key}
+                                            role="button"
+                                            className={`
+                                            transition-colors
+                                            ${isCurrentUser ? 'bg-blue-900/30 hover:bg-blue-900/40' : 'hover:bg-gray-800'}
+                                            ${isCurrentUser ? 'relative' : ''}
+                                        `}
+                                        >
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                {isCurrentUser && (
+                                                    <div className="absolute left-0 top-0 w-1 h-full bg-blue-500"/>
+                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {item.rank <= 3 || isCurrentUser ? (
+                                                        <TrophyIcon
+                                                            className={`${getRankColor(item.rank)} w-4 h-4`}
+                                                        />
+                                                    ) : null}
+                                                    <span
+                                                        className={item.rank <= 3 ? 'font-bold' : ''}>{item.rank}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                <div className='flex items-center gap-2'>
+                                                    <span className='line-clamp-1'>
+                                                        {shortAddressForm(item.address)}
+                                                    </span>
+                                                    <CopyTextButton text={item.address}/>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                <span>{ formatCurrency(item.points) }</span>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            )
+                        }
                         </tbody>
                     </table>
                 </div>
+                {
+                    !loadingLeaderboardData && <PaginationControls/>
+                }
             </div>
         </div>
     )
@@ -177,6 +269,11 @@ const LoadingRow = () => (
             <div className="flex items-center gap-2 h-6">
                 <div className="h-4 w-32 bg-gray-700 rounded"></div>
                 <div className="h-4 w-4 bg-gray-700 rounded"></div>
+            </div>
+        </td>
+        <td className="px-4 py-4 whitespace-nowrap">
+            <div className='h-6'>
+                <div className="h-4 w-32 bg-gray-700 rounded"></div>
             </div>
         </td>
     </tr>
