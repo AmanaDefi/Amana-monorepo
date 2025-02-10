@@ -161,7 +161,7 @@ export default function VaultHeader({
                     <LargeCardStat
                         id="deposits"
                         label="Deposits"
-                        value={`${formatBalance(Number(data1))} ${vaultData.symbol}`}
+                        value={`${formatBalance(Number(data1))} ${vaultData.inputToken.symbol}`}
                         secondaryValue={`$ ${formatCurrency(Number(data1) * vaultTokenPrice)}`}
                         tooltip="Value of your vault deposits"
                     />
