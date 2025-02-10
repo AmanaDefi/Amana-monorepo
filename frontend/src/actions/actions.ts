@@ -319,7 +319,7 @@ const executeCrossChainDeposit = async (
     [inputToken, slippageValue, transactionId]
   ) as `0x${string}`;
 
-  const revertMessage = abiCoder.encode(["string", "bytes32"], ["_crossChainDepositFailed", transactionId]);
+  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainDepositFailed", transactionId, activeAccount.address]);
 
   // Prepare revertOptions
   revertOptions = [
@@ -476,7 +476,7 @@ const executeCrossChainWithdrawal = async (
     [withdrawZRC20, withdrawERC20, withdrawAmount, slippageValue, transactionId]
   ) as `0x${string}`;
 
-  const revertMessage = abiCoder.encode(["string", "bytes32"], ["_crossChainWithdrawFailed", transactionId]);
+  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainWithdrawFailed", transactionId, activeAccount.address]);
 
   const revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
