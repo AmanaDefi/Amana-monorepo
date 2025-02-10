@@ -536,19 +536,19 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
   return formattedBalance.toString();
 }
 
-export const fetchUserVaultMaxWithdraw = async (decimals: number, userAddress: Address, vaultAddress: Address) => {
+export const fetchUserVaultMaxRedeem = async (decimals: number, userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
     address: vaultAddress
   });
-  const maxWithdraw = await readContract({
+  const maxRedeem = await readContract({
     contract,
     method: "function maxRedeem(address) view returns (uint256)",
     params: [userAddress]
   });
-  const formattedMaxWithdraw = Number(maxWithdraw) / 10 ** decimals;
-  return formattedMaxWithdraw.toString();
+  const formattedMaxRedeem = Number(maxRedeem) / 10 ** decimals;
+  return formattedMaxRedeem.toString();
 }
 
 export const fetchTotalAssets = async (vaultAddress: Address) => {

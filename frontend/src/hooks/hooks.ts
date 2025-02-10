@@ -7,7 +7,7 @@ import {
   calculateEddyAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
-  fetchUserVaultMaxWithdraw
+  fetchUserVaultMaxRedeem
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
@@ -39,7 +39,7 @@ export const useUpdateVaultBalanceAndTotal = (
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
 
               // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
-              const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+              const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
                 vault.inputToken.decimals,
                 activeAccount?.address as Address,
                 vault.id as Address
@@ -116,7 +116,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
 
           console.log("88888888888888", balance)
 
-          const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+          const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,
             activeAccount?.address as Address,
             vault?.id as Address
