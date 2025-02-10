@@ -371,3 +371,7 @@ export function getStoredSettings(): UserSettings {
 export function getCurrentSlippage(): number {
   return getStoredSettings().slippage.value;
 }
+
+export function shortAddressForm(address: Address) {
+  return address.slice(0, 6) + '...' + address.slice(-4);
+}

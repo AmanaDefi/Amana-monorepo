@@ -155,3 +155,8 @@ export interface UserSettings {
 export const DEFAULT_SETTINGS: UserSettings = {
   slippage: { isAuto: true, value: 100 }
 };
+
+export type LeaderboardUserData = {
+  rank: number,
+  address: Address
+}

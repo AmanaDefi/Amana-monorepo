@@ -45,19 +45,26 @@ const Header = () => {
                         >
                             Vaults
                         </span>
-                            <span
-                                className={`cursor-pointer ${path === "/buy" ? "font-bold text-themeColor" : ""
-                                }`}
-                                onClick={() => router.push("/buy")}
-                            >
+                        <span
+                            className={`cursor-pointer ${path === "/buy" ? "font-bold text-themeColor" : ""
+                            }`}
+                            onClick={() => router.push("/buy")}
+                        >
                             Fund Wallet
                         </span>
-                            <span
-                                className={`cursor-pointer ${path === "/about" ? "font-bold text-themeColor" : ""
-                                }`}
-                                onClick={() => router.push("/about")}
-                            >
+                        <span
+                            className={`cursor-pointer ${path === "/about" ? "font-bold text-themeColor" : ""
+                            }`}
+                            onClick={() => router.push("/about")}
+                        >
                             About
+                        </span>
+                        <span
+                            className={`cursor-pointer ${path === "/leaderboard" ? "font-bold text-themeColor" : ""
+                            }`}
+                            onClick={() => router.push("/leaderboard")}
+                        >
+                            Leaderboard
                         </span>
                     </nav>
                     <ConnectButton
@@ -67,7 +74,7 @@ const Header = () => {
                         connectModal={{size: "compact"}}
                     />
                 </div>
-                <MobileMenuModal />
+                <MobileMenuModal/>
             </div>
         </header>
     )
