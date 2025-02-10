@@ -198,7 +198,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     ) {
                         console.log("PASSED EVENT CrossChainInvestSent: ", last_event, action, step);
                         setcrossChainTxId(last_event.args.crossChainTxId.toString())
-                        const nextStep = step + 1;
+                        const nextStep = actions.findIndex(el => el == Action.crosschainInvest);
                         setAction(actions[nextStep]);
                         setStep(nextStep);
                         return
@@ -208,7 +208,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     console.log("EVENT Deposit: ", last_event, action, step);
                     if (last_event.transactionHash == crosschainInvestHash) {
                         console.log("PASSED EVENT Deposit: ", last_event, action, step);
-                        const nextStep = step + 1;
+                        const nextStep = actions.findIndex(el => el == Action.deposited);
                         setAction(actions[nextStep]);
                         setStep(nextStep);
                         return
@@ -381,6 +381,30 @@ export default function InteractionContainer({ step, setStep, action, setAction,
                     if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
                         console.log("PASSED EVENT FundsReturned on withdraw: ", last_event, action, step);
                         const nextStep = actions.findIndex(el => el == Action.withdrew);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
+                }
+                else if (
+                    last_event.eventName == "CrossChainDepositFailed" && action == Action.depositConfirmed
+                ) {
+                    console.log("EVENT CrossChainDepositFailed on deposit: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT CrossChainDepositFailed on deposit: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.CrossChainDepositFailed);
+                        setAction(actions[nextStep]);
+                        setStep(nextStep);
+                        return
+                    }
+                }
+                else if (
+                    last_event.eventName == "CrossChainWithdrawFailed" && action == Action.withdrawconfirmed
+                ) {
+                    console.log("EVENT CrossChainWithdrawFailed on withdraw: ", last_event, action, step);
+                    if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+                        console.log("PASSED EVENT CrossChainWithdrawFailed on withdraw: ", last_event, action, step);
+                        const nextStep = actions.findIndex(el => el == Action.CrossChainWithdrawFailed);
                         setAction(actions[nextStep]);
                         setStep(nextStep);
                         return
@@ -658,6 +682,30 @@ function Interaction(
                     [Action.FundsInvest]: {
                         label: 'Deposit',
                         description: 'Final confirmation failed',
+                        status: TransactionStepStatus.error
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.CrossChainDepositFailed:
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [Action.depositConfirmed]: {
+                        label: 'Deposit',
+                        description: 'Cross chain transfer to vault failed',
+                        status: TransactionStepStatus.error
+                    }
+                };
+                setTransactionStepFeedback(newTransactionStepFeedback)
+                completeTransactionProcess(newTransactionStepFeedback);
+                break;
+            case Action.CrossChainWithdrawFailed:
+                newTransactionStepFeedback = {
+                    ...transactionStepFeedback,
+                    [Action.withdrawconfirmed]: {
+                        label: 'Withdraw',
+                        description: 'Cross chain request to vault failed',
                         status: TransactionStepStatus.error
                     }
                 };

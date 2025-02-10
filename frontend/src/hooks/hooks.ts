@@ -226,7 +226,9 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
       prepareEvent({ signature: "event ReturnFundsFromStrategyFailed(bytes32 indexed crossChainTxId)" })
     ],
     withdrawalReceiver: [
-      prepareEvent({ signature: "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)" })
+      prepareEvent({ signature: "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event CrossChainDepositFailed(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event CrossChainWithdrawFailed(bytes32 indexed crossChainTxId)" })
     ]
   }), []);
 

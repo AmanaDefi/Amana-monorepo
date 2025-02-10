@@ -180,6 +180,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.crosschainInvest,
               Action.CrossChainInvestFailed,
               Action.FundsReturnedError,
@@ -192,6 +193,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.crosschainInvest,
               Action.CrossChainInvestFailed,
               Action.FundsReturnedError,
@@ -204,6 +206,7 @@ export const selectActions = async (
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposit,
               Action.depositConfirmed,
               Action.crosschainInvest,
@@ -244,6 +247,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposited
             ]
           }
@@ -251,6 +255,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposited
             ]
           }
@@ -260,6 +265,7 @@ export const selectActions = async (
               Action.depositApproveConfirmed,
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposited
             ]
           }
@@ -282,6 +288,7 @@ export const selectActions = async (
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
+            Action.CrossChainWithdrawFailed,
             Action.DivestSent,
             Action.DivestFailed,
             Action.FundsDivested,
@@ -303,6 +310,7 @@ export const selectActions = async (
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
+            Action.CrossChainWithdrawFailed,
             Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
             Action.withdrew
