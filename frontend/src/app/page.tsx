@@ -4,6 +4,7 @@ import React from "react";
 import VaultsContainer from "../containers/VaultsContainer";
 import {useActiveAccount} from "thirdweb/react";
 import Link from "next/link";
+import {BannersCarousel} from "@/components/banners/BannersCarousel";
 
 export default function Page() {
   const account = useActiveAccount();
@@ -15,14 +16,17 @@ export default function Page() {
                     href='mailto:info@amanadefi.com' className='underline-offset-2 underline'>here</Link>
                 </span>
           </div>
-          {
-              account &&
-              <div className="flex-1 flex flex-col w-full justify-between pt-20">
-                  <div className="flex-1 p-4 container mx-auto">
-                      <VaultsContainer/>
-                  </div>
+          <div className='pb-10 pt-5 lg:pb-14 lg:pt-10'>
+              <BannersCarousel />
+          </div>
+          <div className="flex-1 flex flex-col w-full justify-between pb-10">
+              <div className="flex-1 p-4 container mx-auto gap-5">
+                  {
+                      account && <VaultsContainer/>
+
+                  }
               </div>
-          }
+          </div>
       </div>
   );
 }
