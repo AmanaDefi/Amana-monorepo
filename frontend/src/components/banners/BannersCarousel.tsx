@@ -21,16 +21,16 @@ export function BannersCarousel() {
         <div className="embla" ref={emblaRef}>
             <div className="embla__container">
                 <div className="embla__slide">
+                    <EffortlessStakingBanner/>
+                </div>
+                <div className="embla__slide">
                     <UnderAuditBanner/>
                 </div>
                 <div className="embla__slide">
                     <MaximizeEarningsBanner/>
                 </div>
                 <div className="embla__slide">
-                    <UnderAudit2Banner />
-                </div>
-                <div className="embla__slide">
-                    <EffortlessStakingBanner />
+                    <UnderAudit2Banner/>
                 </div>
             </div>
         </div>

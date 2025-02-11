@@ -4,26 +4,23 @@ import Vault from "@public/banners/vault.svg";
 export function EffortlessStakingBanner() {
     return (
         <div
-            className='pl-8 pr-6 py-2 lg:py-5 lg:pl-[80px] lg:pr-[80px] 2xl:pl-[146px] 2xl:pr-[126px] flex items-center w-full aspect-[440/176] max-h-[176px] sm:max-h-[345px] sm:aspect-[1728/345] bg-[linear-gradient(155deg,rgba(40,116,105,0.6)_0%,rgba(0,0,0,0.4)_25%,rgba(0,0,0,0.4)_50%,rgba(40,116,105,0.6)_78%,rgba(31,79,255,1)_110%)]'>
-            <div className='w-[70%] lg:w-4/5 flex flex-col gap-2 min-[440px]:gap-4'>
-                <h2 className='text-white font-fustat font-bold min-[440px]:text-xl flex flex-col md:text-3xl 2xl:text-4xl'>
+            className='pl-8 pr-6 py-2 lg:pl-[80px] lg:pr-[80px] 2xl:pl-[146px] 2xl:pr-[126px] flex items-center w-full aspect-[440/176] max-h-[176px] sm:max-h-[200px] sm:aspect-[1728/200] bg-[linear-gradient(155deg,rgba(40,116,105,0.6)_0%,rgba(0,0,0,0.4)_25%,rgba(0,0,0,0.4)_50%,rgba(40,116,105,0.6)_78%,rgba(209,107,39,1)_110%)]'>
+            <div className='w-3/5 lg:w-2/3 flex flex-col gap-2 min-[440px]:gap-4 lg:py-2'>
+                <h2 className='text-white font-fustat font-bold min-[440px]:text-xl sm:flex sm:flex-col md:text-2xl'>
                     <span className='inline'>Maximize Your Earnings with Amana DeFi{' '}</span>
-                    <span className='inline font-medium text-xs min-[440px]:text-xl md:text-3xl 2xl:text-4xl'>Effortless Staking of USDT, USDC and POL</span>
+                    <span className='inline font-medium text-xs min-[440px]:text-xl md:text-2xl'>Effortless Staking of USDT, USDC and POL</span>
                 </h2>
 
-                <div className='flex items-center md:gap-4 lg:gap-12'>
-                    <button
-                        className='cursor-pointer px-1 py-2.5 lg:px-5 lg:py-4 bg-cyan-600 hover:bg-cyan-600/80 rounded-[5px] w-fit h-fit flex-center'>
+                <button
+                    className='cursor-pointer px-1 py-2.5 lg:px-4 lg:py-2 bg-cyan-600 hover:bg-cyan-600/80 rounded-[5px] w-fit h-fit flex-center'>
                     <span
-                        className='block text-white font-fustat font-bold text-xs min-[440px]:text-base !leading-none lg:text-xl 2xl:text-3xl'>Check us out</span>
-                    </button>
-                    <LinumLabs className='hidden md:block h-7 lg:h-9 2xl:h-auto w-auto max-h-[51px]'/>
-                </div>
+                        className='block text-white font-fustat font-bold text-xs min-[440px]:text-base !leading-none lg:text-lg'>Check us out</span>
+                </button>
             </div>
             <div className='flex-center w-[30%] lg:w-1/5 h-full'>
                 <div className='relative h-full flex-center'>
-                    <Vault className='h-full translate-x-[30%] w-auto max-h-[80px] lg:max-h-[250px]'/>
-                    <Fire className='relative z-[1] -translate-x-[15%] h-full w-auto max-h-[70px] lg:max-h-[217px]'/>
+                    <Vault className='h-full translate-x-[30%] w-auto max-h-[80px] lg:max-h-[150px]'/>
+                    <Fire className='relative z-[1] -translate-x-[15%] h-full w-auto max-h-[70px] lg:max-h-[117px]'/>
                 </div>
             </div>
         </div>
