@@ -1,6 +1,3 @@
-import Polygon from "@public/banners/Polygon_3D.svg"
-import Ethereum from "@public/banners/Ethereum_3D.svg"
-import USD from "@public/banners/USD_Coin_3D.svg"
 import LinumLabs from "@public/banners/linum-labs.svg"
 export function UnderAudit2Banner() {
     return (
@@ -24,9 +21,9 @@ export function UnderAudit2Banner() {
             </div>
             <div className='flex-center w-2/5 lg:w-1/3 h-full'>
                 <div className='relative h-full w-fit flex-center'>
-                    <Ethereum className='relative z-[3] translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[180px]'/>
-                    <Polygon className='relative z-[2] h-full w-auto max-h-[63px] lg:max-h-[180px]'/>
-                    <USD className='relative z-[1] -translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[180px]'/>
+                    <img src="/banners/Ethereum_3D.png" alt="Ethereum" className='relative z-[3] translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[180px]'/>
+                    <img src="/banners/Polygon_3D.png" alt="Polygon" className='relative z-[2] h-full w-auto max-h-[63px] lg:max-h-[180px]'/>
+                    <img src="/banners/USD%20Coin_3D.png" alt="Polygon" className='relative z-[1] -translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[180px]'/>
                 </div>
             </div>
         </div>
