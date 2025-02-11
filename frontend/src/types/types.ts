@@ -83,7 +83,7 @@ export type Balance = {
 }
 
 export interface Token {
-  address: Address;
+  address: Address | string;
   symbol: string;
   decimals: number;
   imgURL: string;

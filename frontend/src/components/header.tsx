@@ -36,7 +36,7 @@ const Header = () => {
     const path = usePathname();
     const router = useRouter();
 
-    const { selectedChain, walletAddress, solanaBalance, ethBalance, connectSolana, connectEthereum, disconnectWallet, isModalOpen, setIsModalOpen } = useMultiChain();
+    const { selectedChain, walletAddress, solanaBalance, ethBalance, isModalOpen, connectSolana, connectEthereum, disconnectWallet, setIsModalOpen } = useMultiChain();
 
     return (
         <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">

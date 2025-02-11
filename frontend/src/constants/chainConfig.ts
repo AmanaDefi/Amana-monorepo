@@ -144,11 +144,35 @@ const bscChain = defineChain({
   slug: "bsc",
 });
 
+//Define Solana configuration
+const solanaChain = defineChain({
+  chainId: 101,
+  name: deployEnv === "testnet" ? "Solana Devnet" : "Solana Mainnet",
+  shortName: "sol",
+  chain: "Solana",
+  rpc: [solanaRpcUrl],
+  nativeCurrency: {
+    name: "Solana",
+    symbol: "SOL",
+    decimals: 9,
+  },
+  explorers: [
+    {
+      name: "Solana Explorer",
+      url: "https://explorer.solana.com",
+      standard: "EIP3091",
+    },
+  ],
+  testnet: deployEnv === "testnet",
+  slug: "solana",
+});
+
+
 
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"
-  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain] // always put Zetachain first
-  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain]; // always put Zetachain first
+  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, solanaChain] // always put Zetachain first
+  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, solanaChain]; // always put Zetachain first
 
 // Define approved tokens per chain
 export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
@@ -349,7 +373,50 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7",
     },
   ],
+  7565164 : [
+    {
+      symbol: "SOL",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 9,
+      imgURL: "/solana_log.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0x4bC32034caCcc9B7e02536945eDbC286bACbA073",
+    },
+    {
+      symbol: "USDC",
+      address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x8344d6f84d26f998fa070BbEA6D2E15E359e2641",
+    },
+    {
+      symbol: "USDT",
+      address: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      decimals: 6,
+      imgURL: "/USDT.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0xEe9CC614D03e7Dbe994b514079f4914a605B4719",
+    },
+    {symbol:"CBBTC",
+      address: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
+      decimals: 8,
+      imgURL: "/CBBTC.png",
+      price: 97303,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x54Bf2B1E91FCb56853097BD2545750d218E245e1"
+    }
+  ],
 };
+
+
 
 // Account abstraction configuration
 export const ACCOUNT_ABSTRACTION_CONFIG = {
