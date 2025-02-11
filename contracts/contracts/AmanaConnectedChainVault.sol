@@ -539,12 +539,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param shares The number of shares being redeemed for the withdrawal.
      * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
      */
-    function _withdraw(
+    function _withdrawToAnyToken(
         address caller, //caller
         address receiver, // receiver
         address user, // owner
         uint256 assets,
-        uint256 shares
+        uint256 shares,
+        address withdrawZRC20,
+        uint16 slippage
     ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
@@ -574,12 +576,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _divestFromStrategy(
             user,
             receiver,
-            asset(),
-            asset(),
+            withdrawZRC20,
+            withdrawZRC20,
             assets,
             feeToWithdraw,
             uint32(block.chainid),
-            0,
+            slippage,
             crossChainTxId
         );
     }

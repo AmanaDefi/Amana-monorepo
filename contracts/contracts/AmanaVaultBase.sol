@@ -350,6 +350,43 @@ abstract contract AmanaVaultBase is
     }
 
     /**
+     * @dev Handles the deposit of assets into the vault of any token, swaps into the vault asset and calls _deposit.
+     * @param assets The amount of the inputToken to deposit.
+     * @param receiver The address of the user receiving the shares.
+     * @param inputToken The address of the inputToken.
+     * @param slippage The max slippage for the swap
+     * @notice Uses SafeERC20 to transfer assets to the vault and triggers cross-chain investment.
+     */
+    function depositAnyToken(
+        uint256 assets,
+        address receiver,
+        address inputToken,
+        uint16 slippage
+    ) public returns (uint256) {
+        uint256 outputAmount = assets;
+        if (inputToken != address(asset())) {
+            outputAmount = swap(
+                inputToken,
+                assets,
+                address(asset()),
+                slippage,
+                address(this),
+                200
+            );
+        }
+
+        uint256 maxAssets = maxDeposit(receiver);
+        if (outputAmount > maxAssets) {
+            revert ERC4626ExceededMaxDeposit(receiver, outputAmount, maxAssets);
+        }
+
+        uint256 shares = previewDeposit(outputAmount);
+        _deposit(_msgSender(), receiver, outputAmount, shares);
+
+        return shares;
+    }
+
+    /**
      * @dev Handles the deposit of assets into the vault and initiates cross-chain investment.
      * @param caller The address of the user initiating the deposit.
      * @param receiver The address of the user receiving the shares.
@@ -419,6 +456,51 @@ abstract contract AmanaVaultBase is
     ) internal virtual;
 
     /**
+     * @dev Handles the withdrawal of assets from the vault and initiates cross-chain divestment.
+     * @param receiver The address of the user receiving the withdrawn assets.
+     * @param owner The address of the user who owns the shares being redeemed.
+     * @param shares The number of shares being redeemed for the withdrawal.
+     * @param withdrawZRC20 The address of the token the user wishes to receive.
+     * @param slippage The slippage tolerance for the swap from the vault asset to the outputToken.
+     * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
+     */
+    function redeemToAnyToken(
+        uint256 shares,
+        address receiver,
+        address owner,
+        address withdrawZRC20,
+        uint16 slippage
+    ) public returns (uint256) {
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
+
+        uint256 assets = previewRedeem(shares);
+        _withdrawToAnyToken(
+            _msgSender(),
+            receiver,
+            owner,
+            assets,
+            shares,
+            withdrawZRC20,
+            slippage
+        );
+
+        return assets;
+    }
+
+    function _withdrawToAnyToken(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares,
+        address withdrawZRC20,
+        uint16 slippage
+    ) internal virtual {}
+
+    /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
      * @param user The address of the user receiving the withdrawn assets.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
@@ -455,9 +537,25 @@ abstract contract AmanaVaultBase is
     ) internal {
         uint256 outputAmount = amount;
 
+        if (address(asset()) != withdrawZRC20) {
+            // Swap assets if needed
+            outputAmount = swap(
+                address(asset()),
+                amount,
+                withdrawZRC20,
+                slippage,
+                address(this),
+                200
+            );
+        }
+
         if (userChainId == uint32(block.chainid)) {
             // Same-chain transfer
-            SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
+            SafeERC20.safeTransfer(
+                IERC20(withdrawZRC20),
+                receiver,
+                outputAmount
+            );
         } else {
             // Cross-chain transfer
             bytes memory recipient = abi.encodePacked(withdrawalReceiver);
@@ -477,18 +575,6 @@ abstract contract AmanaVaultBase is
                 ),
                 uint256(0) // onRevertGasLimit
             );
-
-            if (address(asset()) != withdrawZRC20) {
-                // Swap assets if needed
-                outputAmount = swap(
-                    address(asset()),
-                    amount,
-                    withdrawZRC20,
-                    slippage,
-                    address(this),
-                    200
-                );
-            }
 
             (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
                 .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal

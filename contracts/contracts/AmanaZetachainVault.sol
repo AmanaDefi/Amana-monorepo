@@ -169,16 +169,23 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @param shares The number of shares being redeemed for the withdrawal.
      * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
      */
-    function _withdraw(
+    function _withdrawToAnyToken(
         address caller, //caller
         address receiver, // receiver
         address user, // owner
         uint256 assets,
-        uint256 shares
+        uint256 shares,
+        address withdrawZRC20,
+        uint16 slippage
     ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
         }
+        uint256 maxAssets = maxWithdraw(user);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
+        }
+
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
@@ -197,14 +204,63 @@ contract AmanaZetachainVault is AmanaVaultBase {
             SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
 
-        SafeERC20.safeTransfer(
-            IERC20(asset()),
+        _returnFundsToUser(
+            amountWithdrawn - feeToWithdraw,
+            uint32(block.chainid),
             receiver,
-            amountWithdrawn - feeToWithdraw
+            withdrawZRC20,
+            withdrawZRC20,
+            0,
+            slippage
         );
 
         emit Withdraw(caller, receiver, user, assets, shares);
     }
+
+    // /**
+    //  * @dev Withdrawn/redeem common workflow. Handles user withdrawal requests and initiates divestment from the strategy.
+    //  * @param caller The address of the entity initiating the withdrawal.
+    //  * @param user The address of the user receiving the withdrawn assets.
+    //  * @param assets The amount of assets being withdrawn.
+    //  * @param shares The number of shares being redeemed for the withdrawal.
+    //  * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
+    //  */
+    // function _withdraw(
+    //     address caller, //caller
+    //     address receiver, // receiver
+    //     address user, // owner
+    //     uint256 assets,
+    //     uint256 shares
+    // ) internal override {
+    //     if (assets == 0) {
+    //         revert WithdrawCantBeZero();
+    //     }
+    //     if (caller != user) {
+    //         _spendAllowance(user, caller, shares);
+    //     }
+    //     uint256 feeToWithdraw = _applyFee(user, assets);
+
+    //     uint256 amountWithdrawn = _divestZetachainStrategy(
+    //         assets,
+    //         feeToWithdraw
+    //     );
+
+    //     // Burn the shares after withdrawal to ensure reentrancy-safe execution.
+    //     _burn(user, shares);
+
+    //     if (feeToWithdraw > 0) {
+    //         emit PerformanceFeePaid(user, feeToWithdraw);
+    //         SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
+    //     }
+
+    //     SafeERC20.safeTransfer(
+    //         IERC20(asset()),
+    //         receiver,
+    //         amountWithdrawn - feeToWithdraw
+    //     );
+
+    //     emit Withdraw(caller, receiver, user, assets, shares);
+    // }
 
     /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
