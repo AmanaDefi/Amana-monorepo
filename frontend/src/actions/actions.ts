@@ -22,6 +22,9 @@ const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 const EVMGatewayAddress = deployEnv === "testnet"
   ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
   : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
+const ZAPDepositAddress = deployEnv === "testnet"
+    ? process.env.NEXT_PUBLIC_ZAP_DEPOSIT_ADDRESS_TESTNET
+    : process.env.NEXT_PUBLIC_ZAP_DEPOSIT_ADDRESS;
 const abiCoder = new AbiCoder();
 
 if (!EVMGatewayAddress) {
@@ -221,11 +224,11 @@ export async function calculateVenusAPY(receiptTokenAddress: Address, strategyCh
   return Number(currentAPY);
 }
 
-export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
+export const executeDeposit = async (vaultData: VaultData, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
-    return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
+    return executeDirectDeposit(vaultData, inputToken, activeAccount, activeChain, transactionAmount);
   } else {
-    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
+    return executeCrossChainDeposit(vaultData.id as Address, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
   }
 };
 
@@ -260,21 +263,36 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
   }
 };
 
-const executeDirectDeposit = async (vaultId: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+const executeDirectDeposit = async (vaultData: VaultData, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Deposit");
-  let contract = getContract({
-    client,
-    chain: activeChain,
-    address: vaultId
-  });
-  console.log("direct deposit contract!!", contract)
-  console.log("transactionAmount", transactionAmount)
-  const supplyTx = prepareContractCall({
-    contract,
-    method:
-      "function deposit(uint256 assets,  address receiver)",
-    params: [transactionAmount, activeAccount?.address],
-  });
+  let supplyTx;
+  if (inputToken === vaultData.inputToken.address) {
+    let contract = getContract({
+      client,
+      chain: activeChain,
+      address: vaultData.id as Address
+    });
+    supplyTx = prepareContractCall({
+      contract,
+      method:
+          "function deposit(uint256 assets,  address receiver)",
+      params: [transactionAmount, activeAccount?.address],
+    });
+  } else {
+    let contract = getContract({
+      client,
+      chain: activeChain,
+      address: ZAPDepositAddress as Address
+    });
+    const slippage = getCurrentSlippage();
+    const slippageValue = (slippage * 100).toFixed(0);
+    supplyTx = prepareContractCall({
+      contract,
+      method:
+          "function zapDeposit(address inputToken,address vault,address vaultAsset,uint256 amount,address receiver,uint16 slippage)",
+      params: [inputToken, vaultData.id as Address, vaultData.inputToken.address, transactionAmount, activeAccount?.address, Number(slippageValue)],
+    });
+  }
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx

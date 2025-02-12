@@ -32,7 +32,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             amount: scaledAmount.toString(),
         });
         const receipt = await executeDeposit(
-            vaultData.id as Address,
+            vaultData,
             inputToken.address as Address,
             EOAaccount,
             activeChain,
