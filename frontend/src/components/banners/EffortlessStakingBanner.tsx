@@ -10,12 +10,6 @@ export function EffortlessStakingBanner() {
                     <span className='inline'>Maximize Your Earnings with Amana DeFi{' '}</span>
                     <span className='inline font-medium text-xs min-[440px]:text-xl md:text-2xl'>Effortless Staking of USDT, USDC and POL</span>
                 </h2>
-
-                <button
-                    className='cursor-pointer px-1 py-2.5 lg:px-4 lg:py-2 bg-cyan-600 hover:bg-cyan-600/80 rounded-[5px] w-fit h-fit flex-center'>
-                    <span
-                        className='block text-white font-fustat font-bold text-xs min-[440px]:text-base !leading-none lg:text-lg'>Check us out</span>
-                </button>
             </div>
             <div className='flex-center w-[30%] lg:w-1/5 h-full'>
                 <div className='relative h-full flex-center'>

@@ -9,14 +9,7 @@ export function UnderAudit2Banner() {
                     <span className='inline font-medium'>- more details coming soon</span>
                 </h2>
                 <div className='flex items-center md:gap-4 lg:gap-10'>
-                    <button
-                        className='cursor-pointer px-1 py-2.5 lg:px-4 lg:py-2 bg-cyan-600 hover:bg-cyan-600/80 rounded-[5px] w-fit h-fit flex-center'>
-                        <span
-                            className='block text-white font-fustat font-bold text-xs min-[440px]:text-base !leading-none lg:text-lg'>
-                            Check us out
-                        </span>
-                    </button>
-                    <LinumLabs className='hidden md:block h-7 2xl:h-auto w-auto max-h-[51px]'/>
+                    <LinumLabs className='hidden md:block h-7 2xl:h-auto w-auto max-h-[31px]'/>
                 </div>
             </div>
             <div className='flex-center w-2/5 lg:w-1/3 h-full'>

@@ -8,9 +8,6 @@ export function MaximizeEarningsBanner() {
                     <span className='inline'>Maximize Your Earnings with{' '}</span>
                     <span className='inline'>Amana DeFi</span>
                 </h2>
-                <button className='cursor-pointer px-1 py-2.5 lg:px-4 lg:py-2 bg-dodger-blue-500 hover:bg-dodger-blue-500/80 rounded-[5px] w-fit h-fit flex-center'>
-                    <span className='block text-white font-fustat font-bold text-xs min-[440px]:text-base !leading-none lg:text-lg'>Check us out</span>
-                </button>
             </div>
             <div className='flex-center w-2/5 lg:w-1/3 h-full'>
                 <MaximizeEarnings className='h-full w-auto max-h-[40px] lg:max-h-[97px]'/>
