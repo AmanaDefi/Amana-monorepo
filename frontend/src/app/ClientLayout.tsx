@@ -27,7 +27,7 @@ const ClientLayout = ({ children }: Readonly<{ children: React.ReactNode; }>) =>
                       <AccountProvider>
                           <TokenPriceProvider>
                               <main className="min-h-screen flex flex-col relative overflow-hidden">
-                                  <div className="flex flex-col flex-1">
+                                  <div className="flex flex-col flex-1 page-container">
                                       <Header/>
                                       <div className='flex flex-1 mx-auto container'>
                                           {children}

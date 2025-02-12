@@ -49,3 +49,12 @@ input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+body .page-container {
+  @media only screen and (min-width: 1080px) {
+    zoom: .7;
+  }
+  @media only screen and (min-width: 1920px) {
+    zoom: unset;
+  }
+}
