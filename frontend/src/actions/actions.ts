@@ -267,6 +267,8 @@ const executeDirectDeposit = async (vaultId: Address, activeAccount: Account, ac
     chain: activeChain,
     address: vaultId
   });
+  console.log("direct deposit contract!!", contract)
+  console.log("transactionAmount", transactionAmount)
   const supplyTx = prepareContractCall({
     contract,
     method:

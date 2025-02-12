@@ -36,7 +36,7 @@ export default function TokenPriceProvider({children}: PropsWithChildren) {
             Object.entries(PRICE_IDS).forEach(([symbol, priceId]) => {
                 newPrices[symbol] = pricesByIdResult[priceId] || 0;
             });
-
+            console.log("PRICESS ALLL", newPrices)
             setPrices(newPrices);
         } catch (error) {
             setError("Failed to fetch prices");

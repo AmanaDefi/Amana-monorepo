@@ -151,17 +151,26 @@ export const SUPPORTED_CHAINS = deployEnv === "testnet"
 
 // Define approved tokens per chain
 export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
-  // 7001: [
-  //   {
-  //     symbol: "ZETA",
-  //     address: "0x0000000000000000000000000000000000000001",
-  //     decimals: 18,
-  //     imgURL: "/path/to/zeta.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //   },
-
-  // ],
+  7000: [
+    {
+      symbol: "ZETA",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      imgURL: "/ZetaChain.jpeg",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: true
+    },
+    {
+      symbol: "WZETA",
+      address: "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf",
+      decimals: 18,
+      imgURL: "/ZetaChain.jpeg",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    }
+  ],
   1: [
     {
       symbol: "ETH",
@@ -363,5 +372,6 @@ export const PRICE_IDS: { [key: string]: string } = {
   "BNB": "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
   "POL": "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
   "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
+  "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "ZETA": "0xb70656181007f487e392bf0d92e55358e9f0da5da6531c7c4ce7828aa11277fe"
 };

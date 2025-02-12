@@ -283,7 +283,8 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    const tokenSymbol = symbol.split('.')[0].toUpperCase();
+    let tokenSymbol = symbol.split('.')[0].toUpperCase();
+    if (tokenSymbol === 'WZETA') tokenSymbol = 'ZETA';
     return priceContext.prices?.[tokenSymbol] ?? 0;
   }, [priceContext, symbol]);
 }

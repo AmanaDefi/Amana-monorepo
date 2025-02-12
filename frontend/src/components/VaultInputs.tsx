@@ -4,7 +4,7 @@ import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToke
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import {useState, useEffect, useMemo, useCallback, useRef} from "react";
 import { parseUnits } from "viem";
-import { Address, getContract } from "thirdweb";
+import {Address, getContract, ZERO_ADDRESS} from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -21,6 +21,7 @@ import InteractionContainer from "./interact";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {getAmountOutFromSwap, getAssetsFromShares, getSharesFromDeposit} from "@/actions/actions";
+import {VAULT_DATA} from "@/constants";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -112,11 +113,6 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0])
 
-  // const initialOutputBalance: OutputBalance = useMemo(() => ({
-  //   amountFormatted: '0',
-  //   amountUSDFormatted: '0'
-  // }), [])
-
   const initialConversionOutput: ConversionOutput = useMemo(() => ({
     slippageActualValue: null,
     assetsConversionInUSDFormatted: '0',
@@ -181,7 +177,7 @@ export default function VaultInputs({
         formatted: "0",
       })
     }
-  }, [tokenBalance, isDeposit]);
+  }, [tokenBalance, inputToken, isDeposit]);
 
   // Trigger error message handling
   useEffect(() => {
@@ -266,10 +262,22 @@ export default function VaultInputs({
 
   const tokenList = useMemo(() => {
     return activeChain.id === 7001 || activeChain.id === 7000
-        ? vaultData.inputToken ? [vaultData.inputToken] : []  // Ensure vault token is defined
+        ? getAllZetachainTokens()
         : (APPROVED_TOKENS[activeChain.id] ?? []).filter((token): token is Token => token !== undefined) // Ensure array is valid
 
-  }, [activeChain.id, vaultData.inputToken])
+  }, [activeChain.id])
+
+  function getAllZetachainTokens() {
+    const vaultZetaTokens = VAULT_DATA.map(vault => vault.inputToken)
+    const approvedZetaTokens = (APPROVED_TOKENS[activeChain?.id ?? '-1'] ?? []).filter((token): token is Token => token !== undefined)
+    return [...approvedZetaTokens, ...vaultZetaTokens]
+      .reduce<Token[]>((unique, token) => {
+        if (!unique.some(existingToken => existingToken.address === token.address)) {
+          unique.push(token);
+        }
+        return unique;
+      }, []);
+  }
 
   const getWithdrawOutputAmount = useCallback(async (inputAmountValue: bigint) => {
     console.log('Double Box - Starting getWithdrawOutputAmount:', {
@@ -279,7 +287,17 @@ export default function VaultInputs({
     console.log('Double Box - Assets from shares:', {
       assetsAmount: assetsAmount.toString(),
     });
-    const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
+    let inputTokenAddress;
+    if (isZetachain(activeChain.id)) {
+      if (inputToken?.address === ZERO_ADDRESS) {
+        // is zeta, we will use wzeta
+        inputTokenAddress = APPROVED_TOKENS[activeChain.id].find(token => token.symbol.toLowerCase() === 'wzeta')?.address;
+      } else {
+        inputTokenAddress = inputToken?.address;
+      }
+    } else {
+      inputTokenAddress = inputToken?.ZRC20equivalent;
+    }
     console.log('Double Box - Token addresses:', {
       inputTokenAddress,
       isZetachain: isZetachain(activeChain.id),
@@ -320,7 +338,17 @@ export default function VaultInputs({
     console.log('Double Box - Starting getDepositOutputAmount:', {
       inputAmountValue: inputAmountValue.toString(),
     });
-    const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
+    let inputTokenAddress;
+    if (isZetachain(activeChain.id)) {
+      if (inputToken?.address === ZERO_ADDRESS) {
+        // is zeta, we will use wzeta
+        inputTokenAddress = APPROVED_TOKENS[activeChain.id].find(token => token.symbol.toLowerCase() === 'wzeta')?.address;
+      } else {
+        inputTokenAddress = inputToken?.address;
+      }
+    } else {
+      inputTokenAddress = inputToken?.ZRC20equivalent;
+    }
     console.log('Double Box - 🏦 Token addresses:', {
       inputTokenAddress,
       isZetachain: isZetachain(activeChain.id),
