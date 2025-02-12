@@ -8,7 +8,7 @@ export function EffortlessStakingBanner() {
             <div className='w-3/5 lg:w-2/3 flex flex-col gap-2 min-[440px]:gap-4 lg:py-2'>
                 <h2 className='text-white font-fustat font-bold min-[440px]:text-xl sm:flex sm:flex-col md:text-2xl'>
                     <span className='inline'>Maximize Your Earnings with Amana DeFi{' '}</span>
-                    <span className='inline font-medium text-xs min-[440px]:text-xl md:text-2xl'>Effortless Staking of USDT, USDC and POL</span>
+                    <span className='inline font-medium text-xs min-[440px]:text-xl md:text-2xl'>Effortless staking of USDC, USDT, ETH and more</span>
                 </h2>
             </div>
             <div className='flex-center w-[30%] lg:w-1/5 h-full'>
