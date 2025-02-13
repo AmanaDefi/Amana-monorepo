@@ -426,6 +426,51 @@ abstract contract AmanaVaultBase is
         bytes32 crossChainTxId
     ) internal virtual;
 
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) public override returns (uint256) {
+        return redeemToAnyToken(shares, receiver, owner, address(asset()), 0);
+    }
+
+    /** @dev See {IERC4626-redeem}. */
+    function redeemToAnyToken(
+        uint256 shares,
+        address receiver,
+        address owner,
+        address withdrawZRC20,
+        uint16 slippage
+    ) public virtual returns (uint256) {
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
+
+        uint256 assets = previewRedeem(shares);
+        _withdraw(
+            _msgSender(),
+            receiver,
+            owner,
+            withdrawZRC20,
+            assets,
+            shares,
+            slippage
+        );
+
+        return assets;
+    }
+
+    function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        address withdrawZRC20,
+        uint256 assets,
+        uint256 shares,
+        uint16 slippage
+    ) internal virtual {}
+
     /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
      * @param user The address of the user receiving the withdrawn assets.

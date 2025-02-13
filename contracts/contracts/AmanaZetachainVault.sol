@@ -177,7 +177,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint256 assets,
         uint256 shares,
         uint16 slippage
-    ) internal {
+    ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
         }

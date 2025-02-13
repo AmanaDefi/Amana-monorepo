@@ -545,8 +545,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user, // owner
         address withdrawZRC20,
         uint256 assets,
-        uint256 shares
-    ) internal {
+        uint256 shares,
+        uint16 slippage
+    ) internal override {
         if (assets == 0) {
             revert WithdrawCantBeZero();
         }
@@ -580,7 +581,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             assets,
             feeToWithdraw,
             uint32(block.chainid),
-            0,
+            slippage,
             crossChainTxId
         );
     }
@@ -787,7 +788,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            uint16 slippage = 1000;
+            uint16 slippage = 10000;
             _returnFundsToUser(
                 context.amount,
                 userChainId,
