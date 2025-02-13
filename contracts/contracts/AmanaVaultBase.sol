@@ -434,6 +434,31 @@ abstract contract AmanaVaultBase is
         return redeemToAnyToken(shares, receiver, owner, address(asset()), 0);
     }
 
+    /** @dev See {IERC4626-withdraw}. */
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public override returns (uint256) {
+        uint256 maxAssets = maxWithdraw(owner);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
+        }
+
+        uint256 shares = previewWithdraw(assets);
+        _withdraw(
+            _msgSender(),
+            receiver,
+            owner,
+            address(asset()),
+            assets,
+            shares,
+            0
+        );
+
+        return shares;
+    }
+
     /** @dev See {IERC4626-redeem}. */
     function redeemToAnyToken(
         uint256 shares,
