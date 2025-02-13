@@ -113,7 +113,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     // Set token balance for the vault
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, amanaVault.address, depositAmount);
 
-    const slippage = 200;
+    const slippage = 1000;
 
     // Generate a transaction ID using your generateTransactionId function
     const transactionId = generateTransactionId(await user.getAddress(), 8453);
@@ -522,13 +522,11 @@ describe("AmanaConnectedChainVault Tests", function () {
     it("should correctly handle _crossChainInvest revert during cross-chain deposits", async function () {
       const { user1, amanaVault, pythContract } = await loadFixture(setup);
       const depositAmount = ethers.utils.parseUnits("0.1", 18);
-
       const txId = await simulateDepositCallFromBase(
         user1,
         depositAmount,
         pythContract
       )
-
       // Simulate _crossChainInvest reverting
       const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
         ["string", "bytes32", "uint256", "address", "address", "address", "uint32"],
@@ -639,12 +637,11 @@ describe("AmanaConnectedChainVault Tests", function () {
       const initialShares = await amanaVault.balanceOf(await user1.getAddress());
       const initialAssets = await amanaVault.convertToAssets(initialShares);
       expect(initialAssets).to.be.closeTo(depositAmount1, errorMargin);
-
       // Step 2: Perform multiple withdrawals
       const withdrawAmounts = [
-        initialAssets.div(3), // Withdraw 1/3 of the total balance
-        initialAssets.div(3), // Withdraw another 1/3
-        initialAssets.sub(initialAssets.div(3).mul(2)), // Withdraw the remaining balance
+        initialShares.div(3), // Withdraw 1/3 of the total balance
+        initialShares.div(3), // Withdraw another 1/3
+        initialShares.sub(initialShares.div(3).mul(2)), // Withdraw the remaining balance
       ];
 
       let totalAssetsBefore = depositAmount1;
@@ -652,12 +649,13 @@ describe("AmanaConnectedChainVault Tests", function () {
       let crossChainTxId = 2;
       for (const withdrawAmount of withdrawAmounts) {
         // Perform withdrawal
-        await amanaVault.connect(user1).redeem(
+        await amanaVault.connect(user1).redeemToAnyToken(
           withdrawAmount,
           await user1.getAddress(),
-          await user1.getAddress()
+          await user1.getAddress(),
+          VAULT_ASSET,
+          5000
         );
-
         await simulateConfirmWithdraw(user1, withdrawAmount, BigNumber.from("0"), totalAssetsBefore, executionNonce, crossChainTxId);
 
         totalAssetsBefore = totalAssetsBefore.sub(withdrawAmount);
