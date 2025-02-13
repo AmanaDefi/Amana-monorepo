@@ -785,7 +785,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            uint16 slippage = 200;
+            uint16 slippage = 1000;
             _returnFundsToUser(
                 context.amount,
                 userChainId,
