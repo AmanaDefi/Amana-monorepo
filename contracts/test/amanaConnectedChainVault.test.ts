@@ -568,10 +568,10 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1)
 
       // Withdraw the maximum amount
-      const maxWithdrawAmount = await amanaVault.maxWithdraw(await user1.getAddress());
-      await simulateWithdrawCallFromBase(user1, maxWithdrawAmount, pythContract)
+      const maxRedeemAmount = await amanaVault.maxRedeem(await user1.getAddress());
+      await simulateWithdrawCallFromBase(user1, maxRedeemAmount, pythContract)
 
-      await expect(simulateConfirmWithdraw(user1, maxWithdrawAmount, BigNumber.from("0"), depositAmount1, 2, 2))
+      await expect(simulateConfirmWithdraw(user1, maxRedeemAmount, BigNumber.from("0"), depositAmount1, 2, 2))
         .to.emit(amanaVault, "ReturnFundsToUserSent")
         .to.emit(amanaVault, "Withdrawn");
     });
@@ -589,7 +589,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const excessiveWithdrawAmount = depositAmount1.mul(2); // Double the deposited amount
 
       await expect(simulateWithdrawCallFromBase(user1, excessiveWithdrawAmount, pythContract))
-        .to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
+        .to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxRedeem");
     });
 
     it("should update user shares correctly after multiple deposits and withdrawals", async function () {
@@ -611,8 +611,10 @@ describe("AmanaConnectedChainVault Tests", function () {
       const totalDeposits = depositAmount1.add(depositAmount2);
       await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 2);
 
+      const totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
       // User1 withdraws part of their deposit
-      const withdrawAmount1 = depositAmount1.div(2);
+      const withdrawAmount1 = totalShares.div(2);
       await amanaVault.connect(user1).redeem
         (withdrawAmount1, await user1.getAddress(), await user1.getAddress());
 
@@ -673,7 +675,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       // Step 4: Ensure further withdrawals fail
       await expect(
         amanaVault.connect(user1).redeem(1, await user1.getAddress(), await user1.getAddress())
-      ).to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
+      ).to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxRedeem");
     });
 
     it("should handle zero balances without errors", async function () {
