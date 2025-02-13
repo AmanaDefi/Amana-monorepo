@@ -37,7 +37,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   const VAULT_ASSET = ZC_ETH_ETH_ADDRESS;
   const FEE_RATE = 1000;
   const ORIGIN_CHAIN_ID = 8453; // where the deposit/withdrawal originated from
-  const WITHDRAWAL_RECEIVER = "0x4463868180D2831e61101F6dC2E814197A9b750a";
+  const WITHDRAWAL_RECEIVER = "0xD2f84247ac3462cD52cb380fda0d95D19501e130";
   const INPUT_TOKEN = ethers.constants.AddressZero;
 
   const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
@@ -291,7 +291,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         {
           forking: {
             jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 6634069,
+            blockNumber: 7018064,
           },
         },
       ]
