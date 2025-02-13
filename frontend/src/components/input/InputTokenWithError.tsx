@@ -2,7 +2,7 @@ import React, { HTMLProps } from "react";
 import { Token, VaultData } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
-import { formatCurrency, formatBalance } from "@/utils/utils";
+import {formatCurrency, formatBalance, getOnlyTokenSymbol} from "@/utils/utils";
 import { useState, useEffect } from "react";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
@@ -156,7 +156,7 @@ export default function InputTokenWithError({
                       />
                     </div>
                     <p className="font-medium text-lg text-white">
-                      {selectedToken?.symbol}
+                      {getOnlyTokenSymbol(selectedToken?.symbol ?? "")}
                     </p>
                   </div>
               )}

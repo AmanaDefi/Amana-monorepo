@@ -15,7 +15,7 @@ import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useContractEvents } from "thirdweb/react";
-import { isZetachain } from "@/utils/utils";
+import {getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 
@@ -283,7 +283,7 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    const tokenSymbol = symbol.split('.')[0].toUpperCase();
+    const tokenSymbol = getOnlyTokenSymbol(symbol)
     return priceContext.prices?.[tokenSymbol] ?? 0;
   }, [priceContext, symbol]);
 }
