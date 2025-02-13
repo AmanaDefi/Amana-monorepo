@@ -67,7 +67,7 @@ input::-webkit-inner-spin-button {
 
 body .page-container {
   @media only screen and (min-width: 1080px) {
-    zoom: .8;
+    zoom: .9;
   }
 
   @media only screen and (min-width: 1920px) {
