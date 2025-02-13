@@ -4,6 +4,8 @@ import { Account } from "thirdweb/wallets";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
 import { formatBalance } from "@/utils/utils";
+import {Tooltip} from "react-tooltip";
+import ResponsiveTooltip from "@/components/common/Tooltip";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -75,13 +77,40 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Image src={vault.inputToken.imgURL} width="30" height="30" alt="USD Icon" className="mr-2" />
-                      <div>{vault.name}</div>
+                    <div className="flex items-center gap-2 lg:gap-4 relative">
+                      <div className='flex items-center'>
+                        <Image src={vault.inputToken.imgURL} width="30" height="30" alt="USD Icon" className="mr-2" />
+                        <div>{vault.name}</div>
+                      </div>
+                      {
+                        vault.tags?.length && (
+                          <>
+                            {
+                              vault.tags.includes('UAS') && (
+                                <>
+                                  <div id={`info-${vault.id}`}
+                                     className='flex-center bg-themeColor/20 py-1 px-3 rounded-lg'>
+                                    <span className='text-themeColor font-bold text-sm'>UAS</span>
+                                  </div>
+                                  <ResponsiveTooltip
+                                    id={`info-${vault.id}`}
+                                    content={
+                                      <p className="max-w-[15rem] !text-sm whitespace-normal text-left">
+                                        Zetachain Universal App Season - earn extra points &#128293;
+                                      </p>
+                                    }
+                                  />
+                                </>
+                              )
+                            }
+                          </>
+                        )
+                      }
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap flex flex-col items-center justify-center text-center">
-                    <div className="font-semibold">{Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(6)} {vault.inputToken.symbol}</div>
+                    <div
+                        className="font-semibold">{Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(6)} {vault.inputToken.symbol}</div>
                     {/* <div className="text-sm font-light">$ {Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(6)}</div> */}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-center">

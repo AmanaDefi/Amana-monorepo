@@ -39,7 +39,8 @@ export interface VaultData {
     netdes?: string;
     imgURL: string;
     des?: string;
-  }
+  },
+  tags?: string[]
 }
 
 export interface UserVaultBalance {

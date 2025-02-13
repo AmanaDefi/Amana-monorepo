@@ -151,6 +151,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/euler.svg",
       des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
     },
+    tags: ['UAS']
   },
   // {
   //   id: "0xC967154127af55cecC47328B06385EFd8f8C427E",
