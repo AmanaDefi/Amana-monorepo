@@ -262,6 +262,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
             crossChainTxId,
             slippage
         );
+
+        emit Withdrawn(user, amountWithdrawn, shares, crossChainTxId);
     }
 
     /**

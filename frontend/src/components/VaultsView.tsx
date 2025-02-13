@@ -30,7 +30,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="overflow-x-auto mt-10">
+        <div className="overflow-x-auto">
           <table className="min-w-full bg-black text-zinc-100">
             <thead className="bg-gray-800">
               <tr>

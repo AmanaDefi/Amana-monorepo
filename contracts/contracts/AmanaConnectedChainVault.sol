@@ -743,6 +743,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit PerformanceFeePaid(user, fee);
             SafeERC20.safeTransfer(IERC20(address(asset())), treasury, fee);
         }
+
+        emit Withdrawn(user, amount, shares, _crossChainTxId);
     }
 
     /**

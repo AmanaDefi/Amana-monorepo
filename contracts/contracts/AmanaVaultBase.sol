@@ -71,6 +71,13 @@ abstract contract AmanaVaultBase is
         bytes32 indexed crossChainTxId
     );
 
+    event Withdrawn(
+        address indexed user,
+        uint256 amount,
+        uint256 shares,
+        bytes32 indexed crossChainTxId
+    );
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
