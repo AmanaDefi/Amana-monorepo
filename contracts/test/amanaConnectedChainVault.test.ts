@@ -317,22 +317,32 @@ describe("AmanaConnectedChainVault Tests", function () {
     const gasTank = await GasTank.deploy();
     await gasTank.deployed();
 
-    const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
+    const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", {
+      signer: owner,  // Keep the signer as 'owner'
+      libraries: {
+        SwapHelperLibEddy: "0xbE1a99f8B2c88c5eFd8bD23Fe7eCE8010DC3d191",  // Link the external library
+      },
+    });
+
     const vaultDeployTransaction = await upgrades.deployProxy(
       Vault,
       [
-        "AaveV3EthVault",
-        "AVU",
-        VAULT_ASSET,
-        await owner.getAddress(),
-        FEE_RATE,
-        gasTank.address,
-        WITHDRAWAL_RECEIVER,
-        GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
-        GAS_LIMIT_FOR_CALL
+        "AaveV3EthVault",                  // Vault name
+        "AVU",                             // Symbol
+        VAULT_ASSET,                       // Vault asset
+        await owner.getAddress(),          // Owner/Treasury
+        FEE_RATE,                          // Performance fee rate
+        gasTank.address,                   // Gas tank address
+        WITHDRAWAL_RECEIVER,               // Receiver for withdrawals
+        GAS_LIMIT_FOR_WITHDRAW_AND_CALL,   // Gas limit for withdraw and call
+        GAS_LIMIT_FOR_CALL                 // Gas limit for call
       ],
-      { initializer: "initialize" }
+      {
+        initializer: "initialize",
+        unsafeAllowLinkedLibraries: true,  // Allow linking the external library
+      }
     );
+
     amanaVault = await vaultDeployTransaction.deployed();
 
     // await network.provider.send("hardhat_setBalance", [
