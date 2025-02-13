@@ -55,6 +55,6 @@ body .page-container {
     zoom: .7;
   }
   @media only screen and (min-width: 1920px) {
-    zoom: unset;
+    /*zoom: unset;*/
   }
 }
