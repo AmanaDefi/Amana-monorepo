@@ -2,7 +2,7 @@ import React, { HTMLProps } from "react";
 import { Token, VaultData } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
-import {formatCurrency, formatBalance, getOnlyTokenSymbol} from "@/utils/utils";
+import {formatCurrency, formatBalance, getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
 import { useState, useEffect } from "react";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
@@ -11,6 +11,7 @@ import PendingDots from "@/components/PendingDots";
 import {ConversionOutput} from "@/components/VaultInputs";
 import {InformationCircleIcon} from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+import {useActiveWalletChain} from "thirdweb/react";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -78,6 +79,7 @@ export default function InputTokenWithError({
   const [data1, setdata1] = useState('')
 
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol)
+  const activeChain = useActiveWalletChain();
 
   useEffect(() => {
     setdata1(formatBalance(Number(userVaultBalance)))
@@ -156,7 +158,7 @@ export default function InputTokenWithError({
                       />
                     </div>
                     <p className="font-medium text-lg text-white">
-                      {getOnlyTokenSymbol(selectedToken?.symbol ?? "")}
+                      {isZetachain(Number(activeChain?.id)) ? selectedToken?.symbol : getOnlyTokenSymbol(selectedToken?.symbol ?? "")}
                     </p>
                   </div>
               )}
