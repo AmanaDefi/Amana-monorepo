@@ -3,7 +3,7 @@ import { Address } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
-import { formatBalance } from "@/utils/utils";
+import {formatBalance, getOnlyTokenSymbol} from "@/utils/utils";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -50,7 +50,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                   7d APY
                 </th>
                 <th className="px-9 py-3 text-center text-xs font-medium text-zinc-300 tracking-wider">
-                  User Balance
+                  User Deposits
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-zinc-300 tracking-wider"></th>
               </tr>
@@ -81,14 +81,14 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap flex flex-col items-center justify-center text-center">
-                    <div className="font-semibold">{Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(6)} {vault.inputToken.symbol}</div>
+                    <div className="font-semibold">{Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(6)} {getOnlyTokenSymbol(vault.inputToken.symbol)}</div>
                     {/* <div className="text-sm font-light">$ {Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(6)}</div> */}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-center">
                     {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d) * 100).toFixed(2)}%
                   </td>
                   <td className="px-9 py-4 whitespace-nowrap text-center">
-                    {formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
+                    {formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} {getOnlyTokenSymbol(vault.inputToken.symbol)}
                   </td>
                   <td className='flex items-center justify-center'>
                     <button className="bg-cyan-600 hover:bg-cyan-700 transition-colors text-white font-bold py-1 px-3 rounded">

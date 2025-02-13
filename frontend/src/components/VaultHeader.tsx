@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { VaultData, VaultTotalAssets, VaultAPY, Token } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from 'next/image';
-import {determineVaultTokenFromApprovedTokens, formatBalance, formatCurrency} from '@/utils/utils';
+import {determineVaultTokenFromApprovedTokens, formatBalance, formatCurrency, getOnlyTokenSymbol} from '@/utils/utils';
 import { client } from "@/utils/client";
 import { ethers } from "ethers";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
@@ -104,7 +104,7 @@ export default function VaultHeader({
         fetchData();
     }, [inputToken, userAddress, activeChain, isLoading, isError, walletBalance, transactionCompleted]);
 
-    const symbol = inputToken?.symbol || "";
+    const symbol = getOnlyTokenSymbol(inputToken?.symbol || "");
     const price = useTokenPriceBySymbol(inputToken?.symbol)
     const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol)
 
@@ -161,7 +161,7 @@ export default function VaultHeader({
                     <LargeCardStat
                         id="deposits"
                         label="Deposits"
-                        value={`${formatBalance(Number(data1))} ${vaultData.inputToken.symbol}`}
+                        value={`${formatBalance(Number(data1))} ${getOnlyTokenSymbol(vaultData.inputToken.symbol)}`}
                         secondaryValue={`$ ${formatCurrency(Number(data1) * vaultTokenPrice)}`}
                         tooltip="Value of your vault deposits"
                     />

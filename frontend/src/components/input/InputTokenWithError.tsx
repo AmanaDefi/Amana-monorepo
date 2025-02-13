@@ -2,7 +2,7 @@ import React, { HTMLProps } from "react";
 import { Token, VaultData } from "@/types/types";
 import SelectToken from "@/components/input/SelectToken";
 import InputNumber from "@/components/input/InputNumber";
-import { formatCurrency, formatBalance } from "@/utils/utils";
+import {formatCurrency, formatBalance, getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
 import { useState, useEffect } from "react";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
@@ -11,6 +11,7 @@ import PendingDots from "@/components/PendingDots";
 import {ConversionOutput} from "@/components/VaultInputs";
 import {InformationCircleIcon} from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+import {useActiveWalletChain} from "thirdweb/react";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -78,6 +79,7 @@ export default function InputTokenWithError({
   const [data1, setdata1] = useState('')
 
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol)
+  const activeChain = useActiveWalletChain();
 
   useEffect(() => {
     setdata1(formatBalance(Number(userVaultBalance)))
@@ -136,13 +138,54 @@ export default function InputTokenWithError({
                           }
                         </span>
                     ) :
-                    <InputNumber {...props} disabled={disabled}/>
-              }
+                <InputNumber {...props} disabled={disabled}/>
+            }
+          </div>
+          <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
+              {tokenList.length > 1 ? (
+                <SelectToken
+                  selectedToken={selectedToken!}
+                  options={tokenList}
+                  selectToken={onSelectToken}
+                />
+              ) : (
+                  <div className="flex items-center">
+                    <div className="md:mr-2 relative flex-none w-5 h-5">
+                      <TokenIcon
+                          token={selectedToken as Token}
+                          icon={selectedToken?.imgURL}
+                          imageSize="w-5 h-5"
+                      />
+                    </div>
+                    <p className="font-medium text-lg text-white">
+                      {isZetachain(Number(activeChain?.id)) ? selectedToken?.symbol : getOnlyTokenSymbol(selectedToken?.symbol ?? "")}
+                    </p>
+                  </div>
+              )}
             </div>
+          </div>
+          <div className="flex justify-between items-center mt-4 w-full text-customGray500">
+            <p className="group-hover/max:text-white">
+              {
+                (isDeposit && !isOutput) ?
+                    (
+                        "$ " + (selectedToken ?
+                            formatCurrency((Number(props.value) * selectedTokenPrice)).toString()
+                            : "0")
+                    ) :
+                    (
+                        loadingOutputToken ?
+                            <PendingDots /> :
+                            (
+                                "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.assetsConversionInUSDFormatted)
+                            )
+                    )
+              }
+            </p>
             <div
-                className={`flex items-center ml-1 gap-2 group/max text-customGray300 ${allowInput && !isOutput
-                    ? "group-hover/max:text-white cursor-pointer "
-                    : ""
+              className={`flex items-center ml-1 gap-2 group/max ${allowInput && !isOutput
+                ? "group-hover/max:text-white cursor-pointer "
+                : ""
                 }`}
                 onClick={allowInput ? onMaxClick : () => {
                 }}
