@@ -543,9 +543,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address caller, //caller
         address receiver, // receiver
         address user, // owner
+        address withdrawZRC20,
         uint256 assets,
         uint256 shares
-    ) internal override {
+    ) internal {
         if (assets == 0) {
             revert WithdrawCantBeZero();
         }
@@ -574,8 +575,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _divestFromStrategy(
             user,
             receiver,
-            asset(),
-            asset(),
+            withdrawZRC20,
+            withdrawZRC20,
             assets,
             feeToWithdraw,
             uint32(block.chainid),

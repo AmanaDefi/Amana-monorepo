@@ -14,6 +14,7 @@ import "./interfaces/ISystem.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ICurvePool.sol";
+import "./interfaces/IZapContract.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
 
@@ -35,8 +36,8 @@ abstract contract AmanaVaultBase is
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E; // testnet: 0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
-    address constant UNISWAP_V2_ROUTER =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+    address constant ZAP_CONTRACT_ADDRESS =
+        0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // TODO - update this once deployed
 
     // Variables
     address public strategyAddress;
@@ -457,7 +458,22 @@ abstract contract AmanaVaultBase is
 
         if (userChainId == uint32(block.chainid)) {
             // Same-chain transfer
-            SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
+            if (withdrawZRC20 == address(asset())) {
+                SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
+            } else {
+                IERC20(address(asset())).approve(
+                    ZAP_CONTRACT_ADDRESS,
+                    outputAmount
+                );
+                IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
+                    outputAmount,
+                    address(this),
+                    address(asset()),
+                    withdrawZRC20,
+                    slippage,
+                    receiver
+                );
+            }
         } else {
             // Cross-chain transfer
             bytes memory recipient = abi.encodePacked(withdrawalReceiver);
@@ -579,10 +595,11 @@ abstract contract AmanaVaultBase is
                 targetZRC20
             );
 
-            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+            IZRC20(zrc20).approve(SwapHelperLibEddy.UNISWAP_V2_ROUTER, amount);
             // Perform the swap
-            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-                .swapExactTokensForTokens(
+            uint256[] memory amounts = IUniswapV2Router02(
+                SwapHelperLibEddy.UNISWAP_V2_ROUTER
+            ).swapExactTokensForTokens(
                     amount,
                     minAmountOut,
                     path,
