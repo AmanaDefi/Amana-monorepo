@@ -45,7 +45,7 @@ async function setup() {
       {
         forking: {
           jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-          blockNumber: 6674005,
+          blockNumber: 7018064,
         },
       },
     ]
@@ -59,7 +59,13 @@ async function setup() {
   const gasTank = await GasTank.deploy();
   await gasTank.deployed();
 
-  const Vault = await ethers.getContractFactory("AmanaZetachainVault", owner);
+  const Vault = await ethers.getContractFactory("AmanaZetachainVault", {
+    signer: owner,  // Keep the signer as 'owner'
+    libraries: {
+      SwapHelperLibEddy: "0xbE1a99f8B2c88c5eFd8bD23Fe7eCE8010DC3d191",  // Link the external library
+    },
+  });
+
   const vaultDeployTransaction = await upgrades.deployProxy(
     Vault,
     [
@@ -73,7 +79,10 @@ async function setup() {
       GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
       GAS_LIMIT_FOR_CALL
     ],
-    { initializer: "initialize" }
+    {
+      initializer: "initialize", unsafeAllowLinkedLibraries: true,  // Allow linking the external library
+    },
+
   );
   const amanaVault = await vaultDeployTransaction.deployed();
 
@@ -246,11 +255,11 @@ describe("AmanaZetachainVault Tests", function () {
 
   it("should calculate and deduct the performance fee on withdrawal", async function () {
     const { user1, depositAmount1, amanaVault, ethSepolia, mockVault } = await loadFixture(setup);
-
     // Step 1: Simulate a deposit by User1
     await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1);
     await ethSepolia.connect(user1).approve(amanaVault.address, depositAmount1);
     await amanaVault.connect(user1).deposit(depositAmount1, await user1.getAddress());
+    const totalUserShares = await amanaVault.balanceOf(await user1.getAddress());
 
     const initialTotalAssets = depositAmount1;
 
@@ -264,10 +273,10 @@ describe("AmanaZetachainVault Tests", function () {
 
     // Step 3: Perform a withdrawal and calculate the fee
 
-    const withdrawAmount = depositAmount1 //.div(2); // Withdraw everything except the fee
+    const withdrawAmount = depositAmount1.div(2); // Withdraw everything except the fee
     // const adjustedFeeRate = FEE_RATE / (10000 - FEE_RATE);
     const profitWithdrawn = withdrawAmount.sub(withdrawAmount.mul(depositAmount1).div(updatedTotalAssets));
-    const expectedFee = profitWithdrawn.mul(FEE_RATE).div(10000).sub(1);
+    const expectedFee = profitWithdrawn.mul(FEE_RATE).div(10000);
 
     await expect(amanaVault.connect(user1).withdraw(withdrawAmount, await user1.getAddress(), await user1.getAddress()))
       .to.emit(amanaVault, "PerformanceFeePaid")
