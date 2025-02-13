@@ -53,7 +53,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     function _withdrawFundsFromYieldSource(
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
-        amountWithdrawn = aavePool.withdraw{gas: 200000}(
+        amountWithdrawn = aavePool.withdraw(
             address(inputToken),
             amount,
             address(this)

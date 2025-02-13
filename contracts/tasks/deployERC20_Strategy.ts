@@ -75,7 +75,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 };
 
 // Define the Hardhat task for deployment
-task("deploy-erc20-4626-strategy", "Deploy a Strategy contract", main)
+task("deploy-erc20-strategy", "Deploy a Strategy contract", main)
   .addFlag("json", "Output in JSON")
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
