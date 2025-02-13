@@ -171,8 +171,8 @@ const solanaChain = defineChain({
 
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"
-  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, solanaChain] // always put Zetachain first
-  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, solanaChain]; // always put Zetachain first
+  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain] // always put Zetachain first
+  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain]; // always put Zetachain first
 
 // Define approved tokens per chain
 export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {

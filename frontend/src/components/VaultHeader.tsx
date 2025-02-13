@@ -6,7 +6,7 @@ import {determineVaultTokenFromApprovedTokens, formatBalance, formatCurrency} fr
 import { client } from "@/utils/client";
 import { ethers } from "ethers";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
-import { Address, getContract } from "thirdweb";
+import { Address, Chain, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 
@@ -28,15 +28,7 @@ export default function VaultHeader({
     const activeChain = useActiveWalletChain();
     const EOAaccount = useActiveAccount();
 
-    if (!EOAaccount) {
-        throw new Error("No active account found");
-    }
-
-    if (!activeChain) {
-        throw new Error("No active chain found");
-    }
-
-    const userAddress = EOAaccount.address;
+    const userAddress = EOAaccount?.address;
     const { data: walletBalance, isLoading, isError } = useWalletBalance({
         chain: activeChain,
         address: userAddress,
@@ -48,10 +40,10 @@ export default function VaultHeader({
 
     // Step 1: Determine inputToken based on activeChain
     useEffect(() => {
-        if (activeChain.id === 7000 || activeChain.id === 7001) {
+        if (activeChain?.id === 7000 || activeChain?.id === 7001) {
             setInputToken(vaultData.inputToken);
         } else {
-            setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken));
+            setInputToken(determineVaultTokenFromApprovedTokens(activeChain?.id as number, vaultData.inputToken));
         }
     }, [activeChain, vaultData]);
 
@@ -86,7 +78,7 @@ export default function VaultHeader({
                 } else {
                     const contract = getContract({
                         client,
-                        chain: activeChain,
+                        chain: activeChain as Chain,
                         address: inputToken.address as Address,
                     });
                     const { value, decimals } = await getBalance({

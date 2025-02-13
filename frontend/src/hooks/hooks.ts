@@ -99,7 +99,7 @@ export const useUpdateVaultBalanceAndTotal = (
 
 export const useUpdateVaultBalanceAndTotalPerVault = (
   vault: any,
-  activeAccount: Account,
+  activeAccount: Account | undefined,
   setUserVaultBalance: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
@@ -114,14 +114,12 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             vault.id as Address
           );
 
-          console.log("88888888888888", balance)
 
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,
             activeAccount?.address as Address,
             vault?.id as Address
           );
-          console.log("888888888888881", newTotalAssetsinToken)
 
           setUserVaultBalance(balance);
 
@@ -133,12 +131,10 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         }
 
       } catch (error) {
-        console.log("888888888888882", error)
-
         console.error("Error updating vault balances and total assets:", error);
       }
     };
-    if (activeAccount) {
+    if (activeAccount != undefined) {
       updateVaultBalanceAndTotal();
     }
   }, [vault, activeAccount, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);

@@ -1,7 +1,7 @@
 import React from "react";
-import { AiTwotoneCloseCircle } from "react-icons/ai";
+import { AiTwotoneCloseCircle, AiTwotoneCloseSquare } from "react-icons/ai";
 import { ChainType } from "@/providers/MultiChainProvider";
-
+import { XMarkIcon } from "@heroicons/react/24/outline";
 interface SelectNetworkModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,7 +24,7 @@ const SelectNetworkModal: React.FC<SelectNetworkModalProps> = ({
   const connectSolanaButton = (title: string) => {
     return (
       <div
-        className="cursor-pointer w-full px-4 py-2 bg-black bg-opacity-95 text-white rounded-lg mb-2 hover:bg-opacity-85 text-center"
+        className="flex items-center justify-center h-[50px] cursor-pointer w-full text-white rounded-lg border border-borderBtn hover:border-borderBlue duration-300 transition-all"
         onClick={() => onSelectNetwork("solana")}
       >
         {title}
@@ -35,7 +35,7 @@ const SelectNetworkModal: React.FC<SelectNetworkModalProps> = ({
   const connectEVMButton = (title: string) => {
     return (
       <div
-        className="cursor-pointer w-full px-4 py-2 bg-black bg-opacity-95 text-white rounded-lg text-center hover:bg-opacity-85 mb-2"
+        className="flex items-center justify-center h-[50px] cursor-pointer w-full text-white rounded-lg border border-borderBtn hover:border-borderBlue duration-300 transition-all mb-2"
         onClick={() => {
           onSelectNetwork("evm");
         }}
@@ -46,25 +46,26 @@ const SelectNetworkModal: React.FC<SelectNetworkModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-80 gap-4 flex flex-col">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md">
+      <div className="relative bg-grayBtn border border-borderBtn p-6 rounded-lg shadow-lg w-80 gap-4 flex flex-col">
+        <button
+          className="absolute top-4 right-4 rounded-md bg-grayBtn border border-transparent hover:border-borderBtn hover:bg-grayBtnHover duration-300 transition-all"
+          onClick={onClose}
+        >
+          <XMarkIcon className="w-6 h-6" />
+        </button>
         <div className="flex justify-between items-center gap-3">
-          <h2 className="text-lg font-bold text-gray-900 text-center">
+          <h2 className="text-lg font-bold text-white text-center">
             {walletAddress ? "Manage wallet" : "Select Network"}
           </h2>
-          <div className="text-right">
-            <button className=" text-gray-500 text-right" onClick={onClose}>
-              <AiTwotoneCloseCircle size={26} />
-            </button>
-          </div>
         </div>
         {walletAddress ? (
           <div className="flex flex-col gap-3">
-            <div className="text-w-full px-4 py-2 bg-black bg-opacity-95 text-white rounded-lg text-center hover:bg-opacity-85 cursor-pointer">
+            <div className="flex items-center justify-center h-[50px] cursor-pointer w-full text-white rounded-lg border border-borderBtn hover:border-borderBlue duration-300 transition-all mb-2">
               {`${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`}{" "}
             </div>
             <div
-              className="text-w-full px-4 py-2 bg-black bg-opacity-95 text-white rounded-lg text-center hover:bg-opacity-85 cursor-pointer"
+              className="flex items-center justify-center h-[50px] cursor-pointer w-full text-white rounded-lg border border-borderBtn hover:border-borderBlue duration-300 transition-all mb-2"
               onClick={disconnectWallet}
             >
               Disconnect{" "}
@@ -75,8 +76,8 @@ const SelectNetworkModal: React.FC<SelectNetworkModalProps> = ({
           </div>
         ) : (
           <>
-            {connectSolanaButton("Connect Solana")}
-            {connectEVMButton("Connect EVM")}
+            {connectSolanaButton("Solana")}
+            {connectEVMButton("EVM")}
           </>
         )}
       </div>

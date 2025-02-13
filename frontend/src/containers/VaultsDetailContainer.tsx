@@ -43,9 +43,9 @@ const VaultsDetailContainer: React.FC<{
       }
     }, [EOAaccount]);
 
-    if (!EOAaccount) {
-      throw new Error("No active account found");
-    }
+    // if (!EOAaccount) {
+      // throw new Error("No active account found");
+    // }
 
     useUpdateVaultBalanceAndTotalPerVault(vaultData, EOAaccount, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     useUpdateAPYs(vaults, setVaultAPYs, setLoading);

@@ -19,6 +19,7 @@ import {
   useActiveWallet,
   useConnectedWallets,
   useConnectModal,
+  useConnect,
   useDisconnect,
 } from "thirdweb/react";
 import { client } from "@/utils/client";
@@ -26,7 +27,7 @@ import { wallets } from "@/components/header";
 declare global {
   interface Window {
     solana?: any;
-    ethereum?: any;
+    evm?: any;
   }
 }
 
@@ -36,7 +37,6 @@ interface MultiChainContextType {
   selectedChain: ChainType;
   walletAddress: string | null;
   solanaBalance: number | null;
-  ethBalance: number | null;
   connectSolana: () => Promise<void>;
   connectEthereum: () => Promise<void>;
   disconnectWallet: () => void;
@@ -59,30 +59,30 @@ export const useMultiChain = () => {
 export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [selectedChain, setSelectedChain] = useState<ChainType>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [solanaBalance, setSolanaBalance] = useState<number | null>(null);
-  const [ethBalance, setEthBalance] = useState<number | null>(null);
+  const [solanaBalance, setSolanaBalance] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { connect, isConnecting } = useConnectModal();
   const activeAccount = useActiveWallet();
-  const { disconnect: etherDisconnect } = useDisconnect();
+  const { disconnect: evmDisconnect } = useDisconnect();
   const { publicKey, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
   const account = useActiveAccount();
+
   // Connect Solana Wallet
   const connectSolana = async () => {
+    setIsModalOpen(false);
     try {
       if (selectedChain == "evm") {
-        if (activeAccount) etherDisconnect(activeAccount);
+        if (activeAccount) evmDisconnect(activeAccount);
       }
       setVisible(true);
-      setIsModalOpen(false);
     } catch (error) {
       console.error("Solana connection error:", error);
     }
   };
-
   // Connect Ethereum Wallet
   const connectEthereum = async () => {
+    setIsModalOpen(false);
     try {
       const wallet = await connect({
         client: client,
@@ -95,16 +95,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
         setWalletAddress(walletAccount.address);
         setSelectedChain("evm");
-
-        //Fetch ETH balance
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const balance = await provider.getBalance(walletAccount.address);
-        setEthBalance(parseFloat(ethers.formatEther(balance)));
-
         //Disconnect Solana
-        setSolanaBalance(null);
+        setSolanaBalance(0);
         await disconnect();
-        setIsModalOpen(false);
       }
     } catch (error) {
       console.error("Ethereum connection error:", error);
@@ -115,10 +108,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const disconnectWallet = async () => {
     setWalletAddress(null);
     setSelectedChain(null);
-    setSolanaBalance(null);
-    setEthBalance(null);
+    setSolanaBalance(0);
     disconnect();
-    if (activeAccount) etherDisconnect(activeAccount);
+    if (activeAccount) evmDisconnect(activeAccount);
     setIsModalOpen(false);
   };
 
@@ -126,17 +118,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (publicKey) {
       setSelectedChain("solana");
       setWalletAddress(publicKey?.toBase58());
-      console.log(publicKey.toBase58());
-      setEthBalance(null);
       const solanaConnection = new Connection(solanaRpcUrl);
       const bal = await solanaConnection.getBalance(publicKey);
       setSolanaBalance(bal / LAMPORTS_PER_SOL);
-    } else {
-      // if (selectedChain == 'solana' || selectedChain == null) {
-      //   setSelectedChain(null);
-      //   setWalletAddress(null)
-      //   setSolanaBalance(null)
-      // }
     }
   };
 
@@ -145,8 +129,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [publicKey]);
 
   useEffect(() => {
-    console.log("publicKey?.toBase58()", publicKey?.toBase58());
-  }, []);
+    if (!account) {
+      disconnectWallet();
+      setIsModalOpen(true);
+    }
+  }, [account]);
 
   return (
     <MultiChainContext.Provider
@@ -154,7 +141,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         selectedChain,
         walletAddress,
         solanaBalance,
-        ethBalance,
         connectSolana,
         connectEthereum,
         disconnectWallet,

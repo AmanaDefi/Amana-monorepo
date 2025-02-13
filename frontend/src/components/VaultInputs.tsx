@@ -3,8 +3,8 @@ import InputTokenWithError, {InputTokenWithErrorProps} from "@/components/input/
 import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToken, Action } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import {useState, useEffect, useMemo, useCallback, useRef} from "react";
-import { parseUnits } from "viem";
-import { Address, getContract } from "thirdweb";
+import { Account, parseUnits } from "viem";
+import { Address, Chain, getContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -130,15 +130,8 @@ export default function VaultInputs({
   const EOAaccount = useActiveAccount();
   const activeChain = useActiveWalletChain();
 
-  if (!EOAaccount) {
-    throw new Error("No active account found");
-  }
 
-  if (!activeChain) {
-    throw new Error("No active chain found");
-  }
-
-  const userAddress = EOAaccount.address;
+  const userAddress = EOAaccount?.address;
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol)
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol)
 
@@ -156,12 +149,12 @@ export default function VaultInputs({
 
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
-    if (activeChain.id === 7001 || activeChain.id === 7000) {
+    if (activeChain?.id === 7001 || activeChain?.id === 7000) {
       // If on ZetaChain testnet, set inputToken to the vault token
       setInputToken(vaultData.inputToken);
     } else {
       // On other chains, use APPROVED_TOKENS to set available tokens
-      setInputToken(determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken)); // Set to the first approved token as a default
+      setInputToken(determineVaultTokenFromApprovedTokens(activeChain?.id as number, vaultData.inputToken)); // Set to the first approved token as a default
     }
 
     setAllowInput(true);
@@ -199,7 +192,7 @@ export default function VaultInputs({
     const fetchData = async () => {
       if (Number(inputBalance.value) != 0 && inputToken) {
         const actionType = isDeposit ? SmartVaultActionType.Deposit : SmartVaultActionType.Withdrawal;
-        const newStepsConfig = await selectActions(actionType, vaultData, activeChain, EOAaccount, inputBalance, inputToken);
+        const newStepsConfig = await selectActions(actionType, vaultData, activeChain as Chain, EOAaccount as any, inputBalance, inputToken);
         setSteps(newStepsConfig)
         console.log("SETTING ACTION STEPS: ", newStepsConfig, newStepsConfig.map(e => Action[e]))
       } else {
@@ -217,22 +210,19 @@ export default function VaultInputs({
   }
 
   async function switchTokens() {
-    if (!EOAaccount) {
-      throw new Error("No active account found");
-    }
     setInputBalance(EMPTY_BALANCE);
     if (inputToken && activeChain) {
       if (isDeposit) {
         // Switch to Withdraw
         setIsDeposit(false);
         const newAction = SmartVaultActionType.Withdrawal;
-        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount, inputBalance, inputToken));
+        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount as any, inputBalance, inputToken));
 
       } else {
         // Switch to Deposit
         setIsDeposit(true);
         const newAction = SmartVaultActionType.Deposit;
-        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount, inputBalance, inputToken));
+        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount as any, inputBalance, inputToken));
       }
     }
   }
@@ -265,11 +255,11 @@ export default function VaultInputs({
   }, [handleChangeInput, inputToken, inputTokenBalance, isDeposit, vaultTotalAssetinToken])
 
   const tokenList = useMemo(() => {
-    return activeChain.id === 7001 || activeChain.id === 7000
+    return activeChain?.id === 7001 || activeChain?.id === 7000
         ? vaultData.inputToken ? [vaultData.inputToken] : []  // Ensure vault token is defined
-        : (APPROVED_TOKENS[activeChain.id] ?? []).filter((token): token is Token => token !== undefined) // Ensure array is valid
+        : (APPROVED_TOKENS[activeChain?.id as number] ?? []).filter((token): token is Token => token !== undefined) // Ensure array is valid
 
-  }, [activeChain.id, vaultData.inputToken])
+  }, [activeChain?.id, vaultData.inputToken])
 
   const getWithdrawOutputAmount = useCallback(async (inputAmountValue: bigint) => {
     console.log('Double Box - Starting getWithdrawOutputAmount:', {
@@ -279,15 +269,15 @@ export default function VaultInputs({
     console.log('Double Box - Assets from shares:', {
       assetsAmount: assetsAmount.toString(),
     });
-    const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
+    const inputTokenAddress = isZetachain(activeChain?.id as number) ? inputToken?.address : inputToken?.ZRC20equivalent;
     console.log('Double Box - Token addresses:', {
       inputTokenAddress,
-      isZetachain: isZetachain(activeChain.id),
+      isZetachain: isZetachain(activeChain?.id as number),
       vaultInputToken: vaultData.inputToken.address
     });
     let tokenConversionAmount = assetsAmount;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address, inputTokenAddress as Address, vaultData);
+      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address, vaultData);
     }
     console.log('Double Box - Conversion amounts:', {
       tokenConversionAmount: tokenConversionAmount.toString(),
@@ -314,21 +304,21 @@ export default function VaultInputs({
       });
     }
     setLoadingOutputToken(false);
-  }, [activeChain.id, debouncedInputBalance.value, inputToken?.ZRC20equivalent, inputToken?.address, inputToken?.decimals, inputTokenPrice, vaultData, vaultTokenPrice])
+  }, [activeChain?.id, debouncedInputBalance.value, inputToken?.ZRC20equivalent, inputToken?.address, inputToken?.decimals, inputTokenPrice, vaultData, vaultTokenPrice])
 
   const getDepositOutputAmount = useCallback(async (inputAmountValue: bigint) => {
     console.log('Double Box - Starting getDepositOutputAmount:', {
       inputAmountValue: inputAmountValue.toString(),
     });
-    const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
+    const inputTokenAddress = isZetachain(activeChain?.id as number) ? inputToken?.address : inputToken?.ZRC20equivalent;
     console.log('Double Box - 🏦 Token addresses:', {
       inputTokenAddress,
-      isZetachain: isZetachain(activeChain.id),
+      isZetachain: isZetachain(activeChain?.id as number),
       vaultInputToken: vaultData.inputToken.address
     });
     let assetsConversionAmount: bigint = inputAmountValue;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, inputTokenAddress as Address, vaultData.inputToken.address, vaultData);
+      assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, inputTokenAddress as Address, vaultData.inputToken.address as Address, vaultData);
     }
 
     console.log('Double Box - Conversion amounts:', {
@@ -361,7 +351,7 @@ export default function VaultInputs({
       });
     }
     setLoadingOutputToken(false);
-  }, [activeChain.id, debouncedInputBalance.value, inputToken?.ZRC20equivalent, inputToken?.address, inputToken?.decimals, inputTokenPrice, vaultData, vaultTokenPrice])
+  }, [activeChain?.id, debouncedInputBalance.value, inputToken?.ZRC20equivalent, inputToken?.address, inputToken?.decimals, inputTokenPrice, vaultData, vaultTokenPrice])
 
   const timeoutRef = useRef<NodeJS.Timeout>();
 
@@ -516,9 +506,9 @@ export default function VaultInputs({
           _inputToken={inputToken}
           _inputBalance={inputBalance}
           vaultData={vaultData}
-          EOAaccount={EOAaccount}
+          EOAaccount={EOAaccount as any}
           setTransactionCompleted={setTransactionCompleted}
-          activeChain={activeChain}
+          activeChain={activeChain as Chain}
           _action={steps[0]}
           actions={steps}
           setInputBalance={setInputBalance}
