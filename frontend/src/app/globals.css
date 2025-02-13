@@ -30,6 +30,7 @@
   /* Blue progress bar */
 
   --header-height: 71px;
+
   @media only screen and (min-width: 1024px) {
     --header-height: 112px;
   }
@@ -39,6 +40,7 @@
   body {
     @apply bg-zinc-950 text-neutral-200;
   }
+
   .flex-center {
     @apply flex items-center justify-center;
   }
@@ -53,10 +55,22 @@ input::-webkit-inner-spin-button {
 .embla {
   overflow: hidden;
 }
+
 .embla__container {
   display: flex;
 }
+
 .embla__slide {
   flex: 0 0 100%;
   min-width: 0;
+}
+
+body .page-container {
+  @media only screen and (min-width: 1080px) {
+    zoom: .8;
+  }
+
+  @media only screen and (min-width: 1920px) {
+    /*zoom: unset;*/
+  }
 }
