@@ -531,8 +531,8 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Simulate _crossChainInvest reverting
       const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
-        ["string", "bytes32", "address", "address", "uint32"],
-        ["_crossChainInvestFailed", txId, await user1.getAddress(), ZC_ETH_BASE_ADDRESS, 84532]
+        ["string", "bytes32", "uint256", "address", "address", "address", "uint32"],
+        ["_crossChainInvestFailed", txId, depositAmount, await user1.getAddress(), ZC_ETH_BASE_ADDRESS, ZC_ETH_BASE_ADDRESS, 84532]
       );
 
       // the revert will send back some ETH_SEPOLIA
