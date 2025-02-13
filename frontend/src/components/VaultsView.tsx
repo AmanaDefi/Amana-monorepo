@@ -1,11 +1,10 @@
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, UserVaultBalance } from "../types/types";
-import { Address } from "thirdweb";
-import { Account } from "thirdweb/wallets";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
 import { formatBalance } from "@/utils/utils";
-import {Tooltip} from "react-tooltip";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+import ZetachainLogo from "@public/zetachain.svg";
+import Link from "next/link";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -88,16 +87,19 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                             {
                               vault.tags.includes('UAS') && (
                                 <>
-                                  <div id={`info-${vault.id}`}
-                                     className='flex-center bg-themeColor/20 py-1 px-3 rounded-lg'>
-                                    <span className='text-themeColor font-bold text-sm'>UAS</span>
-                                  </div>
+                                  <Link href='https://hub.zetachain.com/xp' target='_blank' rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                    <div id={`info-${vault.id}`}
+                                         className='flex-center gap-1 bg-themeColor/10 py-1 px-3 rounded-lg'>
+                                      <ZetachainLogo width='24' height='24' alt="Zetachain Logo"/>
+                                      <span className='text-themeColor font-bold text-sm'>UAS</span>
+                                    </div>
+                                  </Link>
                                   <ResponsiveTooltip
-                                    id={`info-${vault.id}`}
-                                    content={
-                                      <p className="max-w-[15rem] !text-sm whitespace-normal text-left">
-                                        Zetachain Universal App Season - earn extra points &#128293;
-                                      </p>
+                                      id={`info-${vault.id}`}
+                                      content={
+                                        <p className="max-w-[15rem] !text-sm whitespace-normal text-left">
+                                          Zetachain Universal App Season - earn extra points &#128293;
+                                        </p>
                                     }
                                   />
                                 </>
