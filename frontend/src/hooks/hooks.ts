@@ -283,7 +283,7 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    const tokenSymbol = getOnlyTokenSymbol(symbol)
+    const tokenSymbol = getOnlyTokenSymbol(symbol).toUpperCase()
     return priceContext.prices?.[tokenSymbol] ?? 0;
   }, [priceContext, symbol]);
 }

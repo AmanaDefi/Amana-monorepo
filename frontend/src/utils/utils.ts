@@ -332,7 +332,7 @@ export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToke
 
 export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
 
-export const getOnlyTokenSymbol = (symbol: string) => symbol.split('.')[0].toUpperCase();
+export const getOnlyTokenSymbol = (symbol: string) => symbol.split('.')[0];
 
 export async function fetchTokenPrices(priceIds: string[]): Promise<{
   [priceId: string]: number;

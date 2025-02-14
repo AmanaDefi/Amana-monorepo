@@ -141,51 +141,10 @@ export default function InputTokenWithError({
                 <InputNumber {...props} disabled={disabled}/>
             }
           </div>
-          <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
-              {tokenList.length > 1 ? (
-                <SelectToken
-                  selectedToken={selectedToken!}
-                  options={tokenList}
-                  selectToken={onSelectToken}
-                />
-              ) : (
-                  <div className="flex items-center">
-                    <div className="md:mr-2 relative flex-none w-5 h-5">
-                      <TokenIcon
-                          token={selectedToken as Token}
-                          icon={selectedToken?.imgURL}
-                          imageSize="w-5 h-5"
-                      />
-                    </div>
-                    <p className="font-medium text-lg text-white">
-                      {isZetachain(Number(activeChain?.id)) ? selectedToken?.symbol : getOnlyTokenSymbol(selectedToken?.symbol ?? "")}
-                    </p>
-                  </div>
-              )}
-            </div>
-          </div>
-          <div className="flex justify-between items-center mt-4 w-full text-customGray500">
-            <p className="group-hover/max:text-white">
-              {
-                (isDeposit && !isOutput) ?
-                    (
-                        "$ " + (selectedToken ?
-                            formatCurrency((Number(props.value) * selectedTokenPrice)).toString()
-                            : "0")
-                    ) :
-                    (
-                        loadingOutputToken ?
-                            <PendingDots /> :
-                            (
-                                "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.assetsConversionInUSDFormatted)
-                            )
-                    )
-              }
-            </p>
             <div
-              className={`flex items-center ml-1 gap-2 group/max ${allowInput && !isOutput
-                ? "group-hover/max:text-white cursor-pointer "
-                : ""
+                className={`flex items-center ml-1 gap-2 group/max text-customGray300 ${allowInput && !isOutput
+                    ? "group-hover/max:text-white cursor-pointer "
+                    : ""
                 }`}
                 onClick={allowInput ? onMaxClick : () => {
                 }}
