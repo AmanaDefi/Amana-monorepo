@@ -634,3 +634,18 @@ export const getAssetsFromShares = async (amount: bigint, vaultData: VaultData) 
   }
 }
 
+export const getPerformanceFee = async (vaultId: Address) => {
+  let contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // Zetachain
+    address: vaultId
+  });
+
+  const perfFee = await readContract({
+    contract,
+    method: "function perfFee() view returns (uint16)",
+  });
+
+  return perfFee;
+};
+
