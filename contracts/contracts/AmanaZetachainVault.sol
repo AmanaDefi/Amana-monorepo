@@ -178,9 +178,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint256 shares,
         uint16 slippage
     ) internal override {
-        if (assets == 0) {
-            revert WithdrawCantBeZero();
-        }
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
@@ -229,6 +226,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal override {
+        console.log("withdrawComingFromConnectedChain");
         if (shares == 0) {
             revert WithdrawCantBeZero();
         }
