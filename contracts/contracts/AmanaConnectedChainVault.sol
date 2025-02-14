@@ -548,13 +548,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 shares,
         uint16 slippage
     ) internal override {
-        if (assets == 0) {
-            revert WithdrawCantBeZero();
-        }
-        uint256 maxAssets = maxWithdraw(user) - pendingWithdrawals[user];
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
-        }
         pendingWithdrawals[user] += assets;
 
         if (caller != user) {
