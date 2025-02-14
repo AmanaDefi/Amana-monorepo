@@ -12,10 +12,12 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     );
   }
 
+  const swapHelperLibEddy = args.swapHelperLibEddy;
+
   // Deploy the ZapContract contract
   const factory = await hre.ethers.getContractFactory("ZapContract", {
     libraries: {
-      SwapHelperLibEddy: "0xbE1a99f8B2c88c5eFd8bD23Fe7eCE8010DC3d191",
+      SwapHelperLibEddy: swapHelperLibEddy,
     },
   });
 
@@ -53,5 +55,6 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 // Define the Hardhat task
 task("deploy-zap-contract", "Deploy the ZapContract contract", main)
   .addFlag("json", "Output in JSON")
+  .addParam("swapHelperLibEddy", "SwapHelperLibEddy address")
 
 export default {};
