@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import {useState, useEffect, useMemo} from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "@/types/types";
 import { VAULT_DATA } from "@/constants";
-import { useActiveAccount } from "thirdweb/react";
+import {useActiveAccount, useActiveWalletChain} from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
 import { useRouter } from 'next/navigation';
+import {CHAINS_EXPLORER_BASE_URL_MAINNET} from "@/constants/chainConfig";
+import {ArrowTopRightOnSquareIcon} from "@heroicons/react/24/solid";
+import Link from "next/link";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -17,6 +20,7 @@ const VaultsDetailContainer: React.FC<{
 
     const [vaultData, setVaultData] = useState<VaultData>();
     const router = useRouter();
+    const activeChain = useActiveWalletChain();
 
     const [loading, setLoading] = useState<boolean>(true);
     const [activeAccount, setActiveAccount] = useState<Account | null>(null);
@@ -46,6 +50,13 @@ const VaultsDetailContainer: React.FC<{
     if (!EOAaccount) {
       throw new Error("No active account found");
     }
+
+    const strategyExplorerBaseUrl = useMemo(() => {
+        if (!vaultData?.protocol?.chainId) return "";
+        return CHAINS_EXPLORER_BASE_URL_MAINNET[vaultData.protocol.chainId] ?? "";
+    }, [vaultData?.protocol?.chainId])
+
+    const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000]
 
     useUpdateVaultBalanceAndTotalPerVault(vaultData, EOAaccount, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     useUpdateAPYs(vaults, setVaultAPYs, setLoading);
@@ -91,28 +102,40 @@ const VaultsDetailContainer: React.FC<{
               <div className="bg-customNeutral200 p-6 rounded-lg">
                 <p className="text-white text-2xl font-bold">Information</p>
                 <div className="md:flex md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4 mt-4">
-                  <div className="w-full md:w-10/12 border border-customNeutral100 rounded-lg p-4">
-                    <p className="text-white font-bold">{vaultData.name}</p>
-                    <p className="text-white font-normal mt-1">{vaultData.des}</p>
-                    <p className="text-white font-bold mt-5">{vaultData.protocol.name}</p>
-                    <p className="text-white font-normal mt-1">{vaultData.protocol.des}</p>
-                    <p className="text-white font-bold mt-5">{vaultData.protocol.network}</p>
-                    <p className="text-white font-normal mt-1">{vaultData.protocol.netdes}</p>
-                    <p className="text-white font-bold mt-5">Vault Address</p>
-                    <p className="text-white font-normal mt-1">{vaultData.id}</p>
-                    <p className="text-white font-bold mt-5">Input Token</p>
-                    <p className="text-white font-normal mt-1">{vaultData.inputToken.symbol}</p>
-                  </div>
+                    <div className="w-full md:w-10/12 border border-customNeutral100 rounded-lg p-4">
+                        <p className="text-white font-bold">{vaultData.name}</p>
+                        <p className="text-white font-normal mt-1">{vaultData.des}</p>
+                        <p className="text-white font-bold mt-5">{vaultData.protocol.name}</p>
+                        <p className="text-white font-normal mt-1">{vaultData.protocol.des}</p>
+                        <p className="text-white font-bold mt-5">{vaultData.protocol.network}</p>
+                        <p className="text-white font-normal mt-1">{vaultData.protocol.netdes}</p>
+                        <p className="text-white font-bold mt-5">Vault Address</p>
+                        <Link href={`${vaultExplorerBaseUrl}/address/${vaultData.id}`}
+                              className='flex items-center gap-1 group text-white underline-offset-2 hover:underline'
+                              target='_blank' rel="noopener noreferrer">
+                            <p className="font-normal mt-1">{vaultData.id}</p>
+                            <ArrowTopRightOnSquareIcon width='20' height='20' className='size-5'/>
+                        </Link>
+                        <p className="text-white font-bold mt-5">Strategy Address</p>
+                        <Link href={`${strategyExplorerBaseUrl}/address/${vaultData.protocol.strategyAddress}`}
+                              className='flex items-center gap-1 group text-white underline-offset-2 hover:underline'
+                              target='_blank' rel="noopener noreferrer">
+                            <p className="font-normal mt-1">{vaultData.protocol.strategyAddress}</p>
+                            <ArrowTopRightOnSquareIcon width='20' height='20' className='size-5'/>
+                        </Link>
+                        <p className="text-white font-bold mt-5">Input Token</p>
+                        <p className="text-white font-normal mt-1">{vaultData.inputToken.symbol}</p>
+                    </div>
                 </div>
               </div>
             </div>
           </section>
         </div>
 
-      )
-        : <div></div>
+          )
+          : <div></div>
 
     )
-  };
+};
 
 export default VaultsDetailContainer;

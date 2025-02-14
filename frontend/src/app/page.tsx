@@ -21,10 +21,7 @@ export default function Page() {
           </div>
           <div className="flex-1 flex flex-col w-full justify-between pb-10">
               <div className="flex-1 p-4 container mx-auto gap-5">
-                  {
-                      account && <VaultsContainer/>
-
-                  }
+                  <VaultsContainer/>
               </div>
           </div>
       </div>

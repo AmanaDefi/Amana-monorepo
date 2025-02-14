@@ -4,6 +4,7 @@ import { Account } from "thirdweb/wallets";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
 import { formatBalance } from "@/utils/utils";
+import {useActiveAccount} from "thirdweb/react";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -23,7 +24,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   vaultTotalAssetsinToken
 }) => {
   const router = useRouter();
-
+  const activeAccount = useActiveAccount();
 
   return (
     <div>
@@ -88,7 +89,11 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                     {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d) * 100).toFixed(2)}%
                   </td>
                   <td className="px-9 py-4 whitespace-nowrap text-center">
-                    {formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
+                    {
+                      activeAccount ?
+                          `${formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} ${vault.inputToken.symbol}` :
+                          ' - '
+                    }
                   </td>
                   <td className='flex items-center justify-center'>
                     <button className="bg-cyan-600 hover:bg-cyan-700 transition-colors text-white font-bold py-1 px-3 rounded">
