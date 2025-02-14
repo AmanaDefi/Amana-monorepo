@@ -1,3 +1,6 @@
+// This test simulates a vault with ETH.ETH as the vault assets
+// Cross chain deposits and withdrawals are simulated to be coming from Base
+
 import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
@@ -36,9 +39,11 @@ describe("AmanaConnectedChainVault Tests", function () {
   const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
   const VAULT_ASSET = ZC_ETH_ETH_ADDRESS;
   const FEE_RATE = 1000;
+  const ZC_CHAIN_ID = 7000;
   const ORIGIN_CHAIN_ID = 8453; // where the deposit/withdrawal originated from
   const WITHDRAWAL_RECEIVER = "0xD2f84247ac3462cD52cb380fda0d95D19501e130";
   const INPUT_TOKEN = ethers.constants.AddressZero;
+  const ZAP_CONTRACT_ADDRESS = "0x7Df5b6957fb6dc0636eb23Ecab784e72980A130B";
 
   const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
   const STRATEGY_CHAIN_ID = 1;
@@ -47,7 +52,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
   const SECOND_STRATEGY_ADDRESS = "0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f";
 
-  const errorMargin = ethers.utils.parseUnits("0.00015", 18);
+  const ERROR_MARGIN = ethers.utils.parseUnits("0.00015", 18);
 
   async function setupGatewaySigner() {
     await network.provider.request({
@@ -242,7 +247,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     )
   }
 
-  async function simulateConfirmWithdraw(
+  async function simulateConfirmWithdrawToBase(
     user: Signer,
     withdrawAmount: BigNumber,
     feeAmount: BigNumber,
@@ -284,6 +289,48 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
   }
 
+  async function simulateConfirmDirectWithdraw(
+    user: Signer,
+    withdrawAmount: BigNumber,
+    feeAmount: BigNumber,
+    totalAssetsBefore: BigNumber,
+    executionNonce: number,
+    crossChainTxId: number
+  ): Promise<any> {
+    const confirmMessage = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+      [
+        await user.getAddress(),
+        await user.getAddress(),
+        ZC_ETH_BASE_ADDRESS,
+        ZC_ETH_BASE_ADDRESS,
+        withdrawAmount,
+        feeAmount,
+        ZC_CHAIN_ID,
+        false,
+        totalAssetsBefore.sub(withdrawAmount).sub(feeAmount),
+        executionNonce,
+        crossChainTxId,
+        200
+      ]
+    );
+
+    // Mock token balance setup for the test environment
+    await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, withdrawAmount.add(feeAmount));
+
+    // Return the transaction object so it can be awaited or used in tests
+    return await amanaVault.connect(gatewaySigner).onCall(
+      {
+        origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
+        sender: STRATEGY_ADDRESS,
+        chainID: STRATEGY_CHAIN_ID,
+      },
+      ZC_ETH_ETH_ADDRESS,
+      withdrawAmount,
+      confirmMessage
+    );
+  }
+
   async function setup() {
     await network.provider.request({
       method: "hardhat_reset",
@@ -291,7 +338,7 @@ describe("AmanaConnectedChainVault Tests", function () {
         {
           forking: {
             jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-            blockNumber: 7018064,
+            blockNumber: 7033600,
           },
         },
       ]
@@ -303,6 +350,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     ethBase = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
     ethEth = await ethers.getContractAt("IERC20", ZC_ETH_ETH_ADDRESS);
     usdcBSC = await ethers.getContractAt("IERC20", ZC_USDC_BSC_ADDRESS);
+    const zapContract = await ethers.getContractAt("ZapContract", ZAP_CONTRACT_ADDRESS);
 
     await setupGatewaySigner();
 
@@ -367,7 +415,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
     await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1));
 
-    return { owner, user1, user2, pythContract, depositAmount1, depositAmount2, rewardAmount, ethBase, ethEth, usdcBSC, amanaVault, gatewayZEVM, withdrawZRC20 };
+    return { owner, user1, user2, pythContract, depositAmount1, depositAmount2, rewardAmount, ethBase, ethEth, usdcBSC, amanaVault, gatewayZEVM, withdrawZRC20, zapContract };
   }
 
   describe("Cross-Chain Deposit and Withdraw Workflow", function () {
@@ -387,6 +435,156 @@ describe("AmanaConnectedChainVault Tests", function () {
       await expect(
         amanaVault.connect(user1).setStrategy(STRATEGY_ADDRESS)
       ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
+    });
+
+    it("should execute a basic direct deposit", async function () {
+      const { user1, depositAmount1, amanaVault } = await loadFixture(setup);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1);
+
+      await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
+      await amanaVault.connect(user1).deposit(depositAmount1, await user1.getAddress());
+
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
+
+      const totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      expect(totalShares).to.be.closeTo(depositAmount1, ERROR_MARGIN);
+    });
+
+    it("should execute a ZapContract deposit with ERC20", async function () {
+      const { user1, depositAmount1, amanaVault, ethBase, zapContract } = await loadFixture(setup);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), depositAmount1);
+
+      await ethBase.connect(user1).approve(ZAP_CONTRACT_ADDRESS, depositAmount1);
+      await zapContract.connect(user1).zapDeposit(ZC_ETH_BASE_ADDRESS, amanaVault.address, ZC_ETH_ETH_ADDRESS, depositAmount1, await user1.getAddress(), 5000);
+
+      const totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      expect(totalShares).to.be.closeTo(depositAmount1, ERROR_MARGIN);
+    });
+
+    it("should execute a ZapContract deposit with ZETA", async function () {
+      const { user1, depositAmount1, amanaVault, ethBase, zapContract } = await loadFixture(setup);
+      await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), depositAmount1);
+
+      await ethBase.connect(user1).approve(ZAP_CONTRACT_ADDRESS, depositAmount1);
+      console.log("depositAmount1", depositAmount1.toString());
+      await zapContract.connect(user1).zapDeposit(ethers.constants.AddressZero, amanaVault.address, ZC_ETH_ETH_ADDRESS, depositAmount1, await user1.getAddress(), 5000, { value: depositAmount1 });
+
+      const totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      expect(totalShares).to.be.closeTo(depositAmount1, ERROR_MARGIN);
+    });
+
+    it("should execute a basic cross chain deposit", async function () {
+      const { user1, depositAmount1, amanaVault, pythContract } = await loadFixture(setup);
+      // await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
+
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
+
+      const totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      expect(totalShares).to.be.closeTo(depositAmount1, ERROR_MARGIN);
+    });
+
+    it("should execute a basic direct withdraw", async function () {
+      const { user1, depositAmount1, amanaVault, pythContract } = await loadFixture(setup);
+      // await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
+
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
+
+      await amanaVault.connect(user1).withdraw(depositAmount1, await user1.getAddress(), await user1.getAddress());
+      let userBalance = await ethBase.balanceOf(await user1.getAddress());
+      console.log(userBalance.toString());
+      await simulateConfirmDirectWithdraw(user1, depositAmount1, BigNumber.from("0"), depositAmount1, 2, 2);
+
+      const totalShares = await amanaVault.balanceOf(await user1.getAddress());
+      userBalance = await ethBase.balanceOf(await user1.getAddress());
+      console.log(userBalance.toString());
+      expect(totalShares).to.be.closeTo(0, ERROR_MARGIN);
+      expect(userBalance).to.be.closeTo(depositAmount1, ERROR_MARGIN);
+    });
+
+    it("should execute a basic cross chain withdraw", async function () {
+      const { user1, depositAmount1, amanaVault, pythContract } = await loadFixture(setup);
+      // await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
+
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
+
+      let totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      await simulateWithdrawCallFromBase(user1, totalShares, pythContract);
+
+      await simulateConfirmWithdrawToBase(user1, depositAmount1, BigNumber.from("0"), depositAmount1, 2, 2);
+
+      totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      expect(totalShares).to.be.closeTo(0, ERROR_MARGIN);
+    });
+
+    it("should execute a basic direct redeem", async function () {
+      const { user1, depositAmount1, amanaVault, pythContract } = await loadFixture(setup);
+      // await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
+
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
+
+      let totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      amanaVault.connect(user1).redeem(totalShares, await user1.getAddress(), await user1.getAddress());
+
+      await simulateConfirmDirectWithdraw(user1, depositAmount1, BigNumber.from("0"), depositAmount1, 2, 2);
+
+      totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      expect(totalShares).to.be.closeTo(0, ERROR_MARGIN);
+    });
+
+    it("should execute a basic direct redeemToAnyToken", async function () {
+      const { user1, depositAmount1, amanaVault, pythContract } = await loadFixture(setup);
+      // await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
+
+      await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
+
+      let totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      amanaVault.connect(user1).redeemToAnyToken(totalShares, await user1.getAddress(), await user1.getAddress(), withdrawZRC20, 5000);
+
+      await simulateConfirmDirectWithdraw(user1, depositAmount1, BigNumber.from("0"), depositAmount1, 2, 2);
+
+      totalShares = await amanaVault.balanceOf(await user1.getAddress());
+
+      expect(totalShares).to.be.closeTo(0, ERROR_MARGIN);
+    });
+
+    it("should execute a basic direct redeemToAnyToken to ZETA", async function () {
+      const { user1, depositAmount1, amanaVault, usdcBSC, pythContract } = await loadFixture(setup);
+      // await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0);
+
+      await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
+      let totalShares = await amanaVault.balanceOf(await user1.getAddress());
+      const userBalance1 = await ethers.provider.getBalance(await user1.getAddress());
+      await amanaVault.connect(user1).redeemToAnyToken(totalShares, await user1.getAddress(), await user1.getAddress(), ethers.constants.AddressZero, 5000);
+
+      totalShares = await amanaVault.balanceOf(await user1.getAddress());
+      const userBalance2 = await ethers.provider.getBalance(await user1.getAddress());
+      expect(totalShares).to.be.closeTo(0, ERROR_MARGIN);
+      expect(userBalance2).to.be.gt(userBalance1);
     });
 
     it("should initiate switch to a new strategy successfully", async function () {
@@ -490,7 +688,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       await simulateWithdrawCallFromBase(user1, withdrawAmount, pythContract);
 
-      await expect(simulateConfirmWithdraw(user1, withdrawAmount, expectedFee, updatedTotalAssets, 3, 3))
+      await expect(simulateConfirmWithdrawToBase(user1, withdrawAmount, expectedFee, updatedTotalAssets, 3, 3))
         .to.emit(amanaVault, "PerformanceFeePaid")
         .withArgs(await user1.getAddress(), expectedFee);
     });
@@ -569,7 +767,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       const maxRedeemAmount = await amanaVault.maxRedeem(await user1.getAddress());
       await simulateWithdrawCallFromBase(user1, maxRedeemAmount, pythContract)
 
-      await expect(simulateConfirmWithdraw(user1, maxRedeemAmount, BigNumber.from("0"), depositAmount1, 2, 2))
+      await expect(simulateConfirmWithdrawToBase(user1, maxRedeemAmount, BigNumber.from("0"), depositAmount1, 2, 2))
         .to.emit(amanaVault, "ReturnFundsToUserSent")
         .to.emit(amanaVault, "Withdrawn");
     });
@@ -616,12 +814,12 @@ describe("AmanaConnectedChainVault Tests", function () {
       await amanaVault.connect(user1).redeem
         (withdrawAmount1, await user1.getAddress(), await user1.getAddress());
 
-      await simulateConfirmWithdraw(user1, withdrawAmount1, BigNumber.from("0"), totalDeposits, 3, 3);
+      await simulateConfirmDirectWithdraw(user1, withdrawAmount1, BigNumber.from("0"), totalDeposits, 3, 3);
 
       // Validate the remaining shares for User1
       const remainingShares = await amanaVault.balanceOf(await user1.getAddress());
       const expectedShares = depositAmount1.sub(withdrawAmount1);
-      expect(remainingShares).to.be.closeTo(expectedShares, errorMargin);
+      expect(remainingShares).to.be.closeTo(expectedShares, ERROR_MARGIN);
     });
 
     it("should handle multiple withdrawals up to the total amount based on user balance", async function () {
@@ -636,7 +834,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       const initialShares = await amanaVault.balanceOf(await user1.getAddress());
       const initialAssets = await amanaVault.convertToAssets(initialShares);
-      expect(initialAssets).to.be.closeTo(depositAmount1, errorMargin);
+      expect(initialAssets).to.be.closeTo(depositAmount1, ERROR_MARGIN);
       // Step 2: Perform multiple withdrawals
       const withdrawAmounts = [
         initialShares.div(3), // Withdraw 1/3 of the total balance
@@ -656,7 +854,7 @@ describe("AmanaConnectedChainVault Tests", function () {
           VAULT_ASSET,
           5000
         );
-        await simulateConfirmWithdraw(user1, withdrawAmount, BigNumber.from("0"), totalAssetsBefore, executionNonce, crossChainTxId);
+        await simulateConfirmDirectWithdraw(user1, withdrawAmount, BigNumber.from("0"), totalAssetsBefore, executionNonce, crossChainTxId);
 
         totalAssetsBefore = totalAssetsBefore.sub(withdrawAmount);
         executionNonce++;
@@ -677,11 +875,17 @@ describe("AmanaConnectedChainVault Tests", function () {
     });
 
     it("should handle zero balances without errors", async function () {
-      const { user1, ethBase, amanaVault } = await loadFixture(setup);
+      const { user1, ethBase, amanaVault, pythContract } = await loadFixture(setup);
 
       // Simulate a withdrawal for a user with zero balance
       const zeroAmount = BigNumber.from(0);
+      await expect(amanaVault.connect(user1).withdraw(zeroAmount, await user1.getAddress(), await user1.getAddress())).to.be
+        .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
+
       await expect(amanaVault.connect(user1).redeem(zeroAmount, await user1.getAddress(), await user1.getAddress())).to.be
+        .revertedWithCustomError(amanaVault, "RedeemCantBeZero");
+
+      await expect(simulateWithdrawCallFromBase(user1, zeroAmount, pythContract)).to.be
         .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
 
       // Deposit and then withdraw entire balance
