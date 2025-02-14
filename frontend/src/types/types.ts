@@ -140,7 +140,8 @@ export enum TransactionStepStatus {
 export type TransactionStepFeedback = {
   label: string
   description: string
-  status: TransactionStepStatus
+  status: TransactionStepStatus,
+  txHash?: string
 }
 
 export type TransactionStepMessages = {
