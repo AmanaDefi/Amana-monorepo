@@ -17,7 +17,6 @@ import "./interfaces/ICurvePool.sol";
 import "./interfaces/IZapContract.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -38,7 +37,7 @@ abstract contract AmanaVaultBase is
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
     address constant ZAP_CONTRACT_ADDRESS =
-        0x7Df5b6957fb6dc0636eb23Ecab784e72980A130B; // mainnet
+        0x6C37E7104a3903Ccbc979b5316d0DD320B67aecB; // mainnet
 
     // Variables
     address public strategyAddress;
@@ -265,7 +264,9 @@ abstract contract AmanaVaultBase is
         uint256 totalUserAssetsWithFee = (balanceOf(user) * totalAssets()) /
             (totalSupply() + 1);
         uint256 totalFeeOwing = totalUserAssetsWithFee - totalUserAssets;
-        feeToWithdraw = (totalFeeOwing * assets) / totalUserAssetsWithFee;
+        feeToWithdraw = totalUserAssetsWithFee == 0
+            ? 0
+            : (totalFeeOwing * assets) / totalUserAssetsWithFee;
     }
 
     /**
@@ -432,7 +433,6 @@ abstract contract AmanaVaultBase is
         address receiver,
         address owner
     ) public override returns (uint256) {
-        console.log("In redeem");
         if (shares == 0) {
             revert RedeemCantBeZero();
         }
@@ -458,9 +458,6 @@ abstract contract AmanaVaultBase is
         }
 
         uint256 shares = previewWithdraw(assets);
-        console.log("msgSender: %s", _msgSender());
-        console.log("receiver: %s", receiver);
-        console.log("owner: %s", owner);
         _withdraw(
             _msgSender(),
             receiver,
@@ -544,19 +541,14 @@ abstract contract AmanaVaultBase is
         uint256 outputAmount = amount;
 
         if (userChainId == uint32(block.chainid)) {
-            console.log("Zetachain withdrawal");
             // Same-chain transfer
             if (withdrawZRC20 == address(asset())) {
-                console.log("Direct return of vault asset");
-                SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
+                SafeERC20.safeTransfer(IERC20(asset()), receiver, amount);
             } else {
-                console.log("Swapping asset to withdraw");
-                IERC20(address(asset())).approve(
-                    ZAP_CONTRACT_ADDRESS,
-                    outputAmount
-                );
+                IERC20(address(asset())).approve(ZAP_CONTRACT_ADDRESS, amount);
+
                 IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
-                    outputAmount,
+                    amount,
                     address(this),
                     address(asset()),
                     withdrawZRC20,
@@ -565,7 +557,6 @@ abstract contract AmanaVaultBase is
                 );
             }
         } else {
-            console.log("Cross chain withdrawal");
             // Cross-chain transfer
             bytes memory recipient = abi.encodePacked(withdrawalReceiver);
 
