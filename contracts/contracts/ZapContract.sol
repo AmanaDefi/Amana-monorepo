@@ -115,7 +115,7 @@ contract ZapContract {
                 require(msg.value == amount, "Incorrect ZETA amount sent");
                 wZeta.deposit{value: msg.value}();
                 swappedAmount = swap(
-                    inputToken,
+                    address(wZeta),
                     amount,
                     vaultAsset,
                     slippage,
