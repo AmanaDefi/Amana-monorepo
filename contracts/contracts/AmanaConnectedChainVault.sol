@@ -392,7 +392,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         // calls the vault, which is assumed not malicious.
         // Conclusion: Transfer happens before minting, ensuring reentrancy occurs in a valid state.
         // slither-disable-next-line reentrancy-no-eth
-        console.log("receiver: ", receiver);
         if (assets == 0) {
             revert DepositCantBeZero();
         }
