@@ -54,6 +54,8 @@ library SwapHelperLibEddy {
         0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472;
     bytes32 constant bnbUsdPriceFeedId =
         0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
+    bytes32 constant zetaUsdPriceFeedId =
+        0xb70656181007f487e392bf0d92e55358e9f0da5da6531c7c4ce7828aa11277fe;
 
     function isInEddy4Pool(address token) external pure returns (bool) {
         if (
@@ -119,6 +121,10 @@ library SwapHelperLibEddy {
 
     function isBscStablecoin(address token) internal pure returns (bool) {
         return token == USDC_BSC_ADDRESS || token == USDT_BSC_ADDRESS;
+    }
+
+    function isZetaToken(address token) internal pure returns (bool) {
+        return token == WZETA_TOKEN;
     }
 
     /**
@@ -251,6 +257,80 @@ library SwapHelperLibEddy {
             uint256 ethAmount = (amount * 10 ** 8) / ethBnbPrice;
 
             return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isZetaToken(inputToken) && isOutputStable) {
+            // ZETA -> USD Stablecoin
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            uint256 usdAmount = (amount * zetaUsdPrice) / 10 ** 8;
+            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isInputStable && isZetaToken(outputToken)) {
+            // USD Stablecoin -> ZETA
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            if (!isInput18Decimals) amount *= 10 ** 12;
+            uint256 zetaAmount = (amount * 10 ** 8) / zetaUsdPrice;
+            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
+        } else if (isZetaToken(inputToken) && isEthToken(outputToken)) {
+            // ZETA -> ETH via USD
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 zetaEthPrice = (zetaUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 ethAmount = (amount * zetaEthPrice) / 10 ** 8;
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isEthToken(inputToken) && isZetaToken(outputToken)) {
+            // ETH -> ZETA via USD
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 ethZetaPrice = (ethUsdPrice * 10 ** 8) / zetaUsdPrice;
+            uint256 zetaAmount = (amount * ethZetaPrice) / 10 ** 8;
+            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
+        } else if (isZetaToken(inputToken) && isPolToken(outputToken)) {
+            // ZETA -> POL via USD
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 zetaPolPrice = (zetaUsdPrice * 10 ** 8) / polUsdPrice;
+            uint256 polAmount = (amount * zetaPolPrice) / 10 ** 8;
+            return polAmount - ((polAmount * slippageBps) / 10000);
+        } else if (isPolToken(inputToken) && isZetaToken(outputToken)) {
+            // POL -> ZETA via USD
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 polZetaPrice = (polUsdPrice * 10 ** 8) / zetaUsdPrice;
+            uint256 zetaAmount = (amount * polZetaPrice) / 10 ** 8;
+            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
+        } else if (isZetaToken(inputToken) && isBnbToken(outputToken)) {
+            // ZETA -> BNB via USD
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 zetaBnbPrice = (zetaUsdPrice * 10 ** 8) / bnbUsdPrice;
+            uint256 bnbAmount = (amount * zetaBnbPrice) / 10 ** 8;
+            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
+        } else if (isBnbToken(inputToken) && isZetaToken(outputToken)) {
+            // BNB -> ZETA via USD
+            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
+                .fetchPrice(zetaUsdPriceFeedId);
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 bnbZetaPrice = (bnbUsdPrice * 10 ** 8) / zetaUsdPrice;
+            uint256 zetaAmount = (amount * bnbZetaPrice) / 10 ** 8;
+            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
         } else {
             return amount - ((amount * slippageBps) / 10000);
         }
