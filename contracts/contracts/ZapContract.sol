@@ -5,8 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol";
-
-import "./interfaces/I4626Vault.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
 
@@ -108,7 +107,7 @@ contract ZapContract {
         address receiver,
         uint16 slippage
     ) external payable {
-        uint256 swappedAmount;
+        uint256 swappedAmount = amount;
         if (inputToken != vaultAsset) {
             if (inputToken == address(0)) {
                 // Native ZETA
@@ -138,7 +137,7 @@ contract ZapContract {
             }
         }
         IERC20(vaultAsset).approve(vault, swappedAmount);
-        I4626Vault(vault).deposit(swappedAmount, receiver);
+        IERC4626(vault).deposit(swappedAmount, receiver);
 
         emit ZapDeposit(msg.sender, amount, swappedAmount);
     }
