@@ -9,10 +9,13 @@ contract PriceOracle {
         0x2880aB155794e7179c9eE2e38200202908C17B43;
     uint256 public maxStaleness = 60; // Require price to be updated within the last 60 seconds
 
+    event MaxStalenessUpdated(uint256 maxStaleness);
+
     IPyth public pyth = IPyth(PYTH_CONTRACT_ADDRESS);
 
     function setMaxStaleness(uint256 _maxStaleness) external {
         maxStaleness = _maxStaleness;
+        emit MaxStalenessUpdated(_maxStaleness);
     }
 
     /**
