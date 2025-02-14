@@ -17,6 +17,7 @@ import "./interfaces/ICurvePool.sol";
 import "./interfaces/IZapContract.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
+import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -37,7 +38,7 @@ abstract contract AmanaVaultBase is
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
     address constant ZAP_CONTRACT_ADDRESS =
-        0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // TODO - update this once deployed
+        0x7Df5b6957fb6dc0636eb23Ecab784e72980A130B; // mainnet
 
     // Variables
     address public strategyAddress;
@@ -431,6 +432,14 @@ abstract contract AmanaVaultBase is
         address receiver,
         address owner
     ) public override returns (uint256) {
+        console.log("In redeem");
+        if (shares == 0) {
+            revert RedeemCantBeZero();
+        }
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
         return redeemToAnyToken(shares, receiver, owner, address(asset()), 0);
     }
 
@@ -440,12 +449,18 @@ abstract contract AmanaVaultBase is
         address receiver,
         address owner
     ) public override returns (uint256) {
+        if (assets == 0) {
+            revert WithdrawCantBeZero();
+        }
         uint256 maxAssets = maxWithdraw(owner);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
         }
 
         uint256 shares = previewWithdraw(assets);
+        console.log("msgSender: %s", _msgSender());
+        console.log("receiver: %s", receiver);
+        console.log("owner: %s", owner);
         _withdraw(
             _msgSender(),
             receiver,
@@ -466,12 +481,7 @@ abstract contract AmanaVaultBase is
         address owner,
         address withdrawZRC20,
         uint16 slippage
-    ) public virtual returns (uint256) {
-        uint256 maxShares = maxRedeem(owner);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-        }
-
+    ) public returns (uint256) {
         uint256 assets = previewRedeem(shares);
         _withdraw(
             _msgSender(),
@@ -534,10 +544,13 @@ abstract contract AmanaVaultBase is
         uint256 outputAmount = amount;
 
         if (userChainId == uint32(block.chainid)) {
+            console.log("Zetachain withdrawal");
             // Same-chain transfer
             if (withdrawZRC20 == address(asset())) {
+                console.log("Direct return of vault asset");
                 SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
             } else {
+                console.log("Swapping asset to withdraw");
                 IERC20(address(asset())).approve(
                     ZAP_CONTRACT_ADDRESS,
                     outputAmount
@@ -552,6 +565,7 @@ abstract contract AmanaVaultBase is
                 );
             }
         } else {
+            console.log("Cross chain withdrawal");
             // Cross-chain transfer
             bytes memory recipient = abi.encodePacked(withdrawalReceiver);
 
