@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/I4626Vault.sol";
+import "../interfaces/IErrors.sol";
 
 // USDC.ETH 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a
 // Mock 4626 0xcfc479dC5371D21C52eeAd66290b21CDa2eB0C9f
@@ -115,6 +116,9 @@ contract Mock4626ZetachainStrategy is Ownable {
     function emergencyWithdrawETH() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No ETH to withdraw");
-        payable(owner()).transfer(balance);
+        (bool success, ) = owner().call{value: balance}("");
+        if (!success) {
+            revert IErrors.TransferFailed();
+        }
     }
 }
