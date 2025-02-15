@@ -4,6 +4,8 @@ pragma solidity 0.8.26;
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
 import "../interfaces/IZRC20.sol";
 import "../interfaces/IErrors.sol";
@@ -101,12 +103,28 @@ library SwapHelperLibEddy {
     function isUsdStablecoin(address token) internal pure returns (bool) {
         return
             token == USDC_BSC_ADDRESS ||
+            token == USDC_BSC_ADDRESS ||
             token == USDC_ETH_ADDRESS ||
+            token == USDC_POL_ADDRESS ||
             token == USDC_POL_ADDRESS ||
             token == USDC_BASE_ADDRESS ||
             token == USDT_BSC_ADDRESS ||
             token == USDT_ETH_ADDRESS ||
+            token == USDT_BSC_ADDRESS ||
+            token == USDT_ETH_ADDRESS ||
             token == USDT_POL_ADDRESS;
+    }
+
+    function isPolToken(address token) internal pure returns (bool) {
+        return token == POL_POLYGON_ADDRESS;
+    }
+
+    function isBnbToken(address token) internal pure returns (bool) {
+        return token == BNB_BSC_ADDRESS;
+    }
+
+    function isBscStablecoin(address token) internal pure returns (bool) {
+        return token == USDC_BSC_ADDRESS || token == USDT_BSC_ADDRESS;
     }
 
     function isPolToken(address token) internal pure returns (bool) {
@@ -136,6 +154,72 @@ library SwapHelperLibEddy {
         address outputToken,
         uint256 amount,
         uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
+    ) public view returns (uint256) {
+        bool isInputStable = isUsdStablecoin(inputToken);
+        bool isOutputStable = isUsdStablecoin(outputToken);
+        bool isInput18Decimals = isBscStablecoin(inputToken) || !isInputStable; // BSC USDC/USDT & non-stables have 18 decimals
+        bool isOutput18Decimals = isBscStablecoin(outputToken) ||
+            !isOutputStable; // BSC USDC/USDT & non-stables have 18 decimals
+
+        if (isEthToken(inputToken) && isOutputStable) {
+            // ETH (18 decimals) -> USD Stablecoin (6 or 18 decimals)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * ethUsdPrice) / 10 ** 8;
+
+            if (!isOutput18Decimals) usdAmount /= 10 ** 12; // Convert from 18 to 6 decimals if needed
+
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isInputStable && isEthToken(outputToken)) {
+            // USD Stablecoin (6 or 18 decimals) -> ETH (18 decimals)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+
+            if (!isInput18Decimals) amount *= 10 ** 12; // Convert from 6 to 18 decimals if needed
+            uint256 ethAmount = (amount * 10 ** 8) / ethUsdPrice;
+
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isInputStable && isPolToken(outputToken)) {
+            // USD Stablecoin (6 or 18 decimals) -> POL (18 decimals)
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+
+            if (!isInput18Decimals) amount *= 10 ** 12;
+            uint256 polAmount = (amount * 10 ** 8) / polUsdPrice;
+
+            return polAmount - ((polAmount * slippageBps) / 10000);
+        } else if (isPolToken(inputToken) && isOutputStable) {
+            // POL (18 decimals) -> USD Stablecoin (6 or 18 decimals)
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * polUsdPrice) / 10 ** 8;
+
+            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
+
+            return usdAmount - ((usdAmount * slippageBps) / 10000);
+        } else if (isInputStable && isBnbToken(outputToken)) {
+            // USD Stablecoin (6 or 18 decimals) -> BNB (18 decimals)
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+
+            if (!isInput18Decimals) amount *= 10 ** 12;
+            uint256 bnbAmount = (amount * 10 ** 8) / bnbUsdPrice;
+
+            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
+        } else if (isBnbToken(inputToken) && isOutputStable) {
+            // BNB (18 decimals) -> USD Stablecoin (6 or 18 decimals)
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 usdAmount = (amount * bnbUsdPrice) / 10 ** 8;
+
+            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
+
     ) public view returns (uint256) {
         bool isInputStable = isUsdStablecoin(inputToken);
         bool isOutputStable = isUsdStablecoin(outputToken);
@@ -250,6 +334,53 @@ library SwapHelperLibEddy {
             uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice;
             uint256 ethAmount = (amount * 10 ** 8) / ethBnbPrice;
 
+        } else if (isEthToken(inputToken) && isPolToken(outputToken)) {
+            // ETH -> POL (Derived using ETH->USD & POL->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 polAmount = (amount * ethPolPrice) / 10 ** 8;
+
+            return polAmount - ((polAmount * slippageBps) / 10000);
+        } else if (isPolToken(inputToken) && isEthToken(outputToken)) {
+            // POL -> ETH (Derived using ETH->USD & POL->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                polUsdPriceFeedId
+            );
+            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 ethAmount = (amount * 10 ** 8) / ethPolPrice;
+
+            return ethAmount - ((ethAmount * slippageBps) / 10000);
+        } else if (isEthToken(inputToken) && isBnbToken(outputToken)) {
+            // ETH -> BNB (Derived using ETH->USD & BNB->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 bnbAmount = (amount * ethBnbPrice) / 10 ** 8;
+
+            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
+        } else if (isBnbToken(inputToken) && isEthToken(outputToken)) {
+            // BNB -> ETH (Derived using ETH->USD & BNB->USD)
+            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                ethUsdPriceFeedId
+            );
+            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
+                bnbUsdPriceFeedId
+            );
+            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice;
+            uint256 ethAmount = (amount * 10 ** 8) / ethBnbPrice;
+
             return ethAmount - ((ethAmount * slippageBps) / 10000);
         } else {
             return amount - ((amount * slippageBps) / 10000);
@@ -289,7 +420,24 @@ library SwapHelperLibEddy {
     }
 
     function getPath(
+    function _existsPairPool(
+        address tokenA,
+        address tokenB
+    ) internal view returns (bool) {
+        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+            tokenA,
+            tokenB
+        );
+        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
+    }
+
+    function getPath(
         address zrc20,
+        address targetZRC20
+    ) public view returns (address[] memory path) {
+        if (zrc20 == targetZRC20) {
+            revert IErrors.CantBeIdenticalAddresses();
+        }
         address targetZRC20
     ) public view returns (address[] memory path) {
         if (zrc20 == targetZRC20) {
@@ -331,8 +479,27 @@ library SwapHelperLibEddy {
         uint numerator = amountInWithFee * reserveOut;
         uint denominator = (reserveIn * 1000) + amountInWithFee;
         amountOut = numerator / denominator;
+        return path;
     }
 
+    function getAmountOut(
+        uint amountIn,
+        uint reserveIn,
+        uint reserveOut
+    ) internal pure returns (uint amountOut) {
+        if (amountIn == 0) {
+            revert IErrors.InsufficientInputAmount();
+        }
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert IErrors.InsufficientLiquidity();
+        }
+        uint amountInWithFee = amountIn * 997;
+        uint numerator = amountInWithFee * reserveOut;
+        uint denominator = (reserveIn * 1000) + amountInWithFee;
+        amountOut = numerator / denominator;
+    }
+
+    function getReserves(
     function getReserves(
         address tokenA,
         address tokenB
