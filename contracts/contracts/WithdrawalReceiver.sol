@@ -75,7 +75,10 @@ contract WithdrawalReceiver is Revertable {
                 address(this).balance >= amount,
                 "Insufficient native balance"
             );
-            payable(receiver).transfer(amount);
+            (bool success, ) = receiver.call{value: amount}("");
+            if (!success) {
+                revert IErrors.TransferFailed();
+            }
         } else {
             // ERC20 token
             bool success = IERC20(asset).transferFrom(
