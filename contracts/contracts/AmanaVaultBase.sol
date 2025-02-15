@@ -32,11 +32,9 @@ abstract contract AmanaVaultBase is
 
     // Constants
     address constant _GATEWAY_ADDRESS =
-        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E; // testnet: 0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
+        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address constant _SYSTEM_ADDRESS =
-        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
-    address constant UNISWAP_V2_ROUTER =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
 
     // Variables
     address public strategyAddress;

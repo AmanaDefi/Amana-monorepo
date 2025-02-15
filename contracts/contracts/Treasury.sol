@@ -5,10 +5,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Treasury {
     address public governance;
-    event GovernanceChanged(
-        address indexed oldGovernance,
+    address public pendingGovernance;
+
+    event GovernanceTransferInitiated(
+        address indexed previousGovernance,
         address indexed newGovernance
     );
+    event GovernanceAccepted(address indexed newGovernance);
 
     constructor(address _governance) {
         require(_governance != address(0), "Governance: zero address");
@@ -20,13 +23,29 @@ contract Treasury {
         _;
     }
 
-    function setGovernance(address _governance) external onlyGovernance {
-        require(_governance != address(0), "Governance: zero address");
+    /**
+     * @notice Initiates the governance transfer by setting a pendingGovernance address.
+     * @param _pendingGovernance The address of the new governance.
+     */
+    function setPendingGovernance(
+        address _pendingGovernance
+    ) external onlyGovernance {
+        require(_pendingGovernance != address(0), "Governance: zero address");
+        pendingGovernance = _pendingGovernance;
+        emit GovernanceTransferInitiated(governance, _pendingGovernance);
+    }
 
-        address oldGovernance = governance;
-        governance = _governance;
-
-        emit GovernanceChanged(oldGovernance, _governance);
+    /**
+     * @notice The pending governance address must call this to accept governance.
+     */
+    function acceptGovernance() external {
+        require(
+            msg.sender == pendingGovernance,
+            "Only pending governance can accept"
+        );
+        governance = pendingGovernance;
+        pendingGovernance = address(0); // Clear the pending governance address
+        emit GovernanceAccepted(governance);
     }
 
     // Ether deposit function
