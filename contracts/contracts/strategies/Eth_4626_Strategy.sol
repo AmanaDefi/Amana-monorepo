@@ -40,10 +40,8 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @notice deposits funds into the yield source.
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
         weth.deposit{value: amount}();
-        bool success = weth.approve(address(receiptToken), amount);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+        approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
+
         receiptToken.deposit(amount, address(this));
     }
 

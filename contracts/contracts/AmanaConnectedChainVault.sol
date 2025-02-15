@@ -445,10 +445,22 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         gasTank.getGas(gas_zrc20, gasFee);
 
         if (gas_zrc20 != address(asset())) {
-            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
-            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+            approveOrIncreaseAllowance(
+                IERC20(asset()),
+                _GATEWAY_ADDRESS,
+                amount
+            );
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                _GATEWAY_ADDRESS,
+                gasFee
+            );
         } else {
-            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount + gasFee);
+            approveOrIncreaseAllowance(
+                IERC20(asset()),
+                _GATEWAY_ADDRESS,
+                amount + gasFee
+            );
         }
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
@@ -754,8 +766,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) private returns (address gasZRC20, uint256 gasFee) {
         (gasZRC20, gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(gasLimit);
-        gasTank.getGas{gas: 200000}(gasZRC20, gasFee);
-        IZRC20(gasZRC20).approve(_GATEWAY_ADDRESS, gasFee);
+        gasTank.getGas(gasZRC20, gasFee);
+        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
     }
 
     /**

@@ -76,11 +76,11 @@ contract AmanaZetachainVault is AmanaVaultBase {
                 10 ** 27
             );
             strategyAddress = newStrategyAddress;
-            bool success = IZRC20(asset()).approve(
+            approveOrIncreaseAllowance(
+                IERC20(asset()),
                 strategyAddress,
                 IERC20(asset()).balanceOf(address(this))
             );
-            if (!success) revert ApprovalFailed();
             IStrategy(strategyAddress).invest(
                 IERC20(asset()).balanceOf(address(this))
             );
@@ -128,9 +128,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         );
 
         _mint(receiver, shares);
-
-        bool success = IERC20(asset()).approve(strategyAddress, assets);
-        if (!success) revert ApprovalFailed();
+        approveOrIncreaseAllowance(IERC20(asset()), strategyAddress, assets);
         IStrategy(strategyAddress).invest(assets);
         emit Deposit(caller, receiver, assets, shares);
     }
@@ -155,8 +153,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         totalPrincipal += amount;
         _mint(receiver, shares);
 
-        bool success = IERC20(asset()).approve(strategyAddress, amount);
-        if (!success) revert ApprovalFailed();
+        approveOrIncreaseAllowance(IERC20(asset()), strategyAddress, amount);
+
         IStrategy(strategyAddress).invest(amount);
         emit Deposited(receiver, amount, shares, crossChainTxId);
     }
