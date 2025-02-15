@@ -12,6 +12,8 @@ import "../interfaces/IErrors.sol";
 // MOCK_4626_VAULT_ADDRESS = 0x50675d47d94724c3e9Ff80aaD9EDEb94719fC576
 
 contract Mock4626Strategy is Ownable {
+    using SafeERC20 for IERC20;
+
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
@@ -42,14 +44,17 @@ contract Mock4626Strategy is Ownable {
     }
 
     function invest(uint256 amount) external onlyGateway returns (uint256) {
-        bool success = inputToken.transferFrom(
+        SafeERC20.safeTransferFrom(
+            inputToken,
             _GATEWAY_ADDRESS,
             address(this),
             amount
         );
-        require(success, "Transfer failed");
-        success = inputToken.approve(address(receiptToken), amount);
-        require(success, "Approval failed");
+        SafeERC20.safeIncreaseAllowance(
+            inputToken,
+            address(receiptToken),
+            amount
+        );
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
         return shares;

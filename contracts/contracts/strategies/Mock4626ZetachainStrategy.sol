@@ -63,9 +63,7 @@ contract Mock4626ZetachainStrategy is Ownable {
             address(this),
             amount
         );
-
-        bool success = inputToken.approve(address(receiptToken), amount);
-        require(success, "Approval failed");
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
@@ -119,6 +117,23 @@ contract Mock4626ZetachainStrategy is Ownable {
         (bool success, ) = owner().call{value: balance}("");
         if (!success) {
             revert IErrors.TransferFailed();
+        }
+    }
+
+    function approveOrIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
         }
     }
 }

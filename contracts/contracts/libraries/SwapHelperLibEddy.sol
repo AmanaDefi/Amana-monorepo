@@ -381,4 +381,21 @@ library SwapHelperLibEddy {
         uint256 outputIndex = getTokenIndex(outputToken);
         return ICurvePool(CURVE_POOL).get_dy(inputIndex, outputIndex, amountIn);
     }
+
+    function approveOrIncreaseAllowance(
+        IZRC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
+        }
+    }
 }

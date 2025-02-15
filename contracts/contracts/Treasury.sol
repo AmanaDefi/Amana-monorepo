@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IErrors.sol";
 
 contract Treasury {
+    using SafeERC20 for IERC20;
+
     address public governance;
     address public pendingGovernance;
 
@@ -54,12 +56,12 @@ contract Treasury {
 
     // ERC-20 token deposit function (requires prior approval from sender)
     function depositERC20(address _token, uint256 _amount) external {
-        bool success = IERC20(_token).transferFrom(
+        SafeERC20.safeTransferFrom(
+            IERC20(_token),
             msg.sender,
             address(this),
             _amount
         );
-        require(success, "Token transfer failed");
     }
 
     // Ether withdrawal function
@@ -85,7 +87,6 @@ contract Treasury {
             IERC20(_token).balanceOf(address(this)) >= _amount,
             "Insufficient token balance"
         );
-        bool success = IERC20(_token).transfer(_to, _amount);
-        require(success, "Token transfer failed");
+        SafeERC20.safeTransfer(IERC20(_token), _to, _amount);
     }
 }

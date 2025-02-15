@@ -81,14 +81,7 @@ contract WithdrawalReceiver is Revertable {
             }
         } else {
             // ERC20 token
-            bool success = IERC20(asset).transferFrom(
-                msg.sender,
-                receiver,
-                amount
-            );
-            if (!success) {
-                revert IErrors.TransferFailed();
-            }
+            SafeERC20.safeTransfer(IERC20(asset), receiver, amount);
         }
 
         emit FundsReturned(receiver, asset, amount, crossChainTxId);

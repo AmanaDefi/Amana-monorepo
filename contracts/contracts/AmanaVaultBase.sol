@@ -501,10 +501,19 @@ abstract contract AmanaVaultBase is
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
 
             if (gas_zrc20 != withdrawZRC20) {
-                IZRC20(withdrawZRC20).approve(_GATEWAY_ADDRESS, outputAmount);
-                IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+                approveOrIncreaseAllowance(
+                    IERC20(withdrawZRC20),
+                    _GATEWAY_ADDRESS,
+                    outputAmount
+                );
+                approveOrIncreaseAllowance(
+                    IERC20(gas_zrc20),
+                    _GATEWAY_ADDRESS,
+                    gasFee
+                );
             } else {
-                IZRC20(withdrawZRC20).approve(
+                approveOrIncreaseAllowance(
+                    IERC20(withdrawZRC20),
                     _GATEWAY_ADDRESS,
                     outputAmount + gasFee
                 );
@@ -596,6 +605,23 @@ abstract contract AmanaVaultBase is
                 );
 
             return amounts[amounts.length - 1];
+        }
+    }
+
+    function approveOrIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
         }
     }
 

@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 interface IErrors {
     error OnlyGateway();
     error OnlyVault();
-    error ApprovalFailed();
     error InvalidAddress();
     error OldStrategyNotSet();
     error Unauthorized();
