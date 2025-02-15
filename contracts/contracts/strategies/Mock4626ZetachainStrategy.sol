@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../interfaces/I4626Vault.sol";
 import "../interfaces/IErrors.sol";
 
@@ -13,7 +13,7 @@ import "../interfaces/IErrors.sol";
 /// @title Mock4626ZetachainStrategy
 /// @notice A mock implementation of a 4626-compatible strategy for ZetaChain.
 /// @dev This contract facilitates deposits and withdrawals into a 4626 vault via the Amana Vault.
-contract Mock4626ZetachainStrategy is Ownable {
+contract Mock4626ZetachainStrategy is Ownable2Step {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
