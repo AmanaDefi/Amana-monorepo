@@ -19,6 +19,7 @@ contract Treasury {
     constructor(address _governance) {
         require(_governance != address(0), "Governance: zero address");
         governance = _governance;
+        emit GovernanceChanged(address(0), _governance);
     }
 
     modifier onlyGovernance() {

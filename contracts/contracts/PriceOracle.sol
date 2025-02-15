@@ -11,6 +11,8 @@ contract PriceOracle {
     address public immutable PYTH_CONTRACT_ADDRESS;
     uint256 public maxStaleness = 300; // Require price to be updated within the last 5 minutes
 
+    event MaxStalenessUpdated(uint256 maxStaleness);
+
     IPyth public pyth;
 
     /**
@@ -29,6 +31,7 @@ contract PriceOracle {
      */
     function setMaxStaleness(uint256 _maxStaleness) external {
         maxStaleness = _maxStaleness;
+        emit MaxStalenessUpdated(_maxStaleness);
     }
 
     /**

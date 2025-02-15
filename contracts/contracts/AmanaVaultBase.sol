@@ -56,7 +56,10 @@ abstract contract AmanaVaultBase is
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    // event ContextDataRevert(RevertContext context);
+    event ContextDataRevert(RevertContext context);
+    event TreasuryUpdated(address indexed newTreasury);
+    event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
+    event GasTankUpdated(address indexed newGasTank);
 
     event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
     event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
@@ -159,6 +162,7 @@ abstract contract AmanaVaultBase is
     function updateTreasuryAddress(address _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
         treasury = _treasury;
+        emit TreasuryUpdated(_treasury);
     }
 
     /**
@@ -171,6 +175,7 @@ abstract contract AmanaVaultBase is
     ) external onlyOwner {
         if (_withdrawalReceiver == address(0)) revert InvalidAddress();
         withdrawalReceiver = _withdrawalReceiver;
+        emit WithdrawalReceiverUpdated(_withdrawalReceiver);
     }
 
     /**
@@ -193,6 +198,7 @@ abstract contract AmanaVaultBase is
     function setGasTank(address newGasTank) external onlyOwner {
         if (newGasTank == address(0)) revert CantBeZeroAddress();
         gasTank = IGasTank(newGasTank);
+        emit GasTankUpdated(newGasTank);
     }
 
     /**

@@ -73,7 +73,6 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
   }
 }
 
-
 export async function calculateAaveAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   const receiptTokenContract = getContract({
     client,
