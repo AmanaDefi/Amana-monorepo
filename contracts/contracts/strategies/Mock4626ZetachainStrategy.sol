@@ -110,16 +110,6 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
-    /// @notice Allows the owner to withdraw ETH in case of emergency.
-    function emergencyWithdrawETH() external onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No ETH to withdraw");
-        (bool success, ) = owner().call{value: balance}("");
-        if (!success) {
-            revert IErrors.TransferFailed();
-        }
-    }
-
     function approveOrIncreaseAllowance(
         IERC20 token,
         address spender,
