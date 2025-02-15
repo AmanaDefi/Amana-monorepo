@@ -155,8 +155,7 @@ library SwapHelperLibEddy {
             amount,
             slippageBps
         );
-
-        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+        approveOrIncreaseAllowance(IZRC20(zrc20), UNISWAP_V2_ROUTER, amount);
         // Perform the swap
         uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
             .swapExactTokensForTokens(
@@ -192,5 +191,22 @@ library SwapHelperLibEddy {
         return
             IZRC20(tokenA).balanceOf(pair) > 0 &&
             IZRC20(tokenB).balanceOf(pair) > 0;
+    }
+
+    function approveOrIncreaseAllowance(
+        IZRC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
+        }
     }
 }

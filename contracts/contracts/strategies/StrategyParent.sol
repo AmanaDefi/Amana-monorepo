@@ -472,6 +472,24 @@ abstract contract StrategyParent is Ownable, IErrors {
         );
     }
 
+    /// @notice Safely approves an allowance for a spender.
+    function approveOrIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
+        }
+    }
+
     /// @notice Handles reverts from the Gateway.
     /// @param context Context of the revert.
     function onRevert(RevertContext calldata context) external {

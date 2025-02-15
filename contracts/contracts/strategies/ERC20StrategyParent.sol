@@ -26,14 +26,12 @@ abstract contract ERC20StrategyParent is StrategyParent {
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        bool success = inputToken.transferFrom(
+        SafeERC20.safeTransferFrom(
+            inputToken,
             msg.sender,
             address(this),
             amount
         );
-        if (!success) {
-            revert TransferFailed();
-        }
         _depositFundsIntoYieldSource(amount);
 
         _sendInvestConfirmation(
@@ -60,7 +58,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         bytes memory outgoingMessage,
         RevertOptions memory revertOptions
     ) internal override {
-        inputToken.approve(_GATEWAY_ADDRESS, amount);
+        approveOrIncreaseAllowance(inputToken, _GATEWAY_ADDRESS, amount);
 
         IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall(
             amanaVault,
