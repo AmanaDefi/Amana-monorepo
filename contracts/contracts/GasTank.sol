@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 import "./interfaces/IErrors.sol";
 
-contract GasTank is Ownable, IErrors {
+contract GasTank is Ownable2Step, IErrors {
     mapping(address => bool) public authorizedVaults;
 
     event VaultAuthorized(address indexed vault);
