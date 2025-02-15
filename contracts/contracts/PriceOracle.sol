@@ -3,15 +3,14 @@ pragma solidity 0.8.26;
 
 import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // PYTH_CONTRACT_ADDRESS = 0x0708325268dF9F66270F1401206434524814508b for ZetaChain testnet
 // PYTH_CONTRACT_ADDRESS = 0x2880aB155794e7179c9eE2e38200202908C17B43 for ZetaChain mainnet
 
-contract PriceOracle {
+contract PriceOracle is Ownable {
     address public immutable PYTH_CONTRACT_ADDRESS;
     uint256 public maxStaleness = 300; // Require price to be updated within the last 5 minutes
-
-    event MaxStalenessUpdated(uint256 maxStaleness);
 
     IPyth public pyth;
 
@@ -19,17 +18,19 @@ contract PriceOracle {
      * @notice Constructor to initialize the Pyth contract address.
      * @param _pythContractAddress The address of the Pyth contract.
      */
-    constructor(address _pythContractAddress) {
+    constructor(address _pythContractAddress) Ownable(msg.sender) {
         require(_pythContractAddress != address(0), "Invalid Pyth address");
         PYTH_CONTRACT_ADDRESS = _pythContractAddress;
         pyth = IPyth(_pythContractAddress);
     }
 
+    event MaxStalenessUpdated(uint256 maxStaleness);
+
     /**
      * @notice Sets the maximum staleness allowed for price updates.
      * @param _maxStaleness The new maximum staleness in seconds.
      */
-    function setMaxStaleness(uint256 _maxStaleness) external {
+    function setMaxStaleness(uint256 _maxStaleness) external onlyOwner {
         maxStaleness = _maxStaleness;
         emit MaxStalenessUpdated(_maxStaleness);
     }
