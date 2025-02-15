@@ -18,6 +18,7 @@ interface IErrors {
     error FeeExceedsLimit();
     error DepositCantBeZero();
     error WithdrawCantBeZero();
+    error RedeemCantBeZero();
     error InvalidZRC20Address();
     error CantBeZeroAddress();
     error DepositExceedsLimit();

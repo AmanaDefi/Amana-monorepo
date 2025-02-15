@@ -171,12 +171,11 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address caller, //caller
         address receiver, // receiver
         address user, // owner
+        address withdrawZRC20,
         uint256 assets,
-        uint256 shares
+        uint256 shares,
+        uint16 slippage
     ) internal override {
-        if (assets == 0) {
-            revert WithdrawCantBeZero();
-        }
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
@@ -195,10 +194,14 @@ contract AmanaZetachainVault is AmanaVaultBase {
             SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
 
-        SafeERC20.safeTransfer(
-            IERC20(asset()),
+        _returnFundsToUser(
+            amountWithdrawn - feeToWithdraw,
+            uint32(block.chainid),
             receiver,
-            amountWithdrawn - feeToWithdraw
+            withdrawZRC20,
+            withdrawZRC20,
+            0,
+            slippage
         );
 
         emit Withdraw(caller, receiver, user, assets, shares);
@@ -221,6 +224,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal override {
+        console.log("withdrawComingFromConnectedChain");
         if (shares == 0) {
             revert WithdrawCantBeZero();
         }

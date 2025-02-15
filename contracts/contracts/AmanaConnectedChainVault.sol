@@ -555,16 +555,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address caller, //caller
         address receiver, // receiver
         address user, // owner
+        address withdrawZRC20,
         uint256 assets,
-        uint256 shares
+        uint256 shares,
+        uint16 slippage
     ) internal override {
-        if (assets == 0) {
-            revert WithdrawCantBeZero();
-        }
-        uint256 maxAssets = maxWithdraw(user) - pendingWithdrawals[user];
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
-        }
         pendingWithdrawals[user] += assets;
 
         if (caller != user) {
@@ -586,12 +581,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _divestFromStrategy(
             user,
             receiver,
-            asset(),
-            asset(),
+            withdrawZRC20,
+            withdrawZRC20,
             assets,
             feeToWithdraw,
             uint32(block.chainid),
-            0,
+            slippage,
             crossChainTxId
         );
     }
@@ -800,7 +795,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            uint16 slippage = 200;
+            uint16 slippage = 10000;
             _returnFundsToUser(
                 context.amount,
                 userChainId,

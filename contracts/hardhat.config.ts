@@ -13,6 +13,7 @@ import "./tasks/deployERC20_Strategy";
 import "./tasks/deployZetachainStrategy";
 import "./tasks/deployPriceOracle";
 import "./tasks/deployWithdrawalReceiver";
+import "./tasks/deployZapContract";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
