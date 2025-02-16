@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 interface IStrategy {
-    function invest(uint256 amount) external;
+    function invest(uint256 amount, uint256 minimumOut) external;
 
     function withdraw(
         uint256 _amount,
@@ -11,7 +11,7 @@ interface IStrategy {
 
     function depositFromOldStrategy(
         uint256 amount,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) external payable;

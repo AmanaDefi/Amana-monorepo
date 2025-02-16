@@ -56,7 +56,10 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
     /// @notice Invests funds into the 4626 vault.
     /// @param amount The amount of funds to invest.
     /// @return shares The number of shares received in exchange for the deposit.
-    function invest(uint256 amount) external onlyVault returns (uint256) {
+    function invest(
+        uint256 amount,
+        uint256 minimumOut
+    ) external onlyVault returns (uint256) {
         SafeERC20.safeTransferFrom(
             inputToken,
             msg.sender,
@@ -66,8 +69,9 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        require(shares > 0, "Deposit failed");
-
+        if (shares < minimumOut) {
+            revert IErrors.InsufficientOut();
+        }
         emit FundsDeposited(msg.sender, amount);
         return shares;
     }

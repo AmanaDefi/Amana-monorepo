@@ -17,13 +17,13 @@ abstract contract EthStrategyParent is StrategyParent {
     function _invest(
         address receiverAddress,
         uint256 amount,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         if (msg.value == 0) revert NoFundsReceived();
 
-        _depositFundsIntoYieldSource(msg.value, minSharesOut);
+        _depositFundsIntoYieldSource(msg.value, minimumOut);
 
         _sendInvestConfirmation(
             receiverAddress,
@@ -64,7 +64,7 @@ abstract contract EthStrategyParent is StrategyParent {
      */
     function depositFromOldStrategy(
         uint256,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) external payable {
@@ -75,7 +75,7 @@ abstract contract EthStrategyParent is StrategyParent {
         _invest(
             address(0),
             msg.value,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );

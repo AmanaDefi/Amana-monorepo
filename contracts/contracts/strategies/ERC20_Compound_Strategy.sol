@@ -40,12 +40,12 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minSharesOut
+        uint256
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         receiptToken.supply(address(inputToken), amount);
-        // shares out = amount deposited, so no need to check minSharesOut
+        // shares out = amount deposited, so no need to check minimumOut
     }
 
     /**
@@ -54,7 +54,8 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 amount,
+        uint256
     ) internal override returns (uint256 amountWithdrawn) {
         receiptToken.withdrawFrom(
             address(this),
@@ -73,13 +74,13 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumOut);
         approveOrIncreaseAllowance(
             inputToken,
             newStrategy,
@@ -88,7 +89,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );

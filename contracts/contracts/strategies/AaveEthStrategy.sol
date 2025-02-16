@@ -55,13 +55,13 @@ contract AaveEthStrategy is EthStrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minSharesOut
+        uint256
     ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(aavePool), amount);
 
         aavePool.supply(address(weth), amount, address(this), 0);
-        // shares out = amount deposited, so no need to check minSharesOut
+        // shares out = amount deposited, so no need to check minimumOut
     }
 
     /**
@@ -70,13 +70,17 @@ contract AaveEthStrategy is EthStrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 amount,
+        uint256 minimumOut
     ) internal override returns (uint256 amountWithdrawn) {
         amountWithdrawn = aavePool.withdraw{gas: 200000}(
             address(weth),
             amount,
             address(this)
         );
+        if (amountWithdrawn < minimumOut) {
+            revert InsufficientOut();
+        }
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
@@ -88,19 +92,22 @@ contract AaveEthStrategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            type(uint256).max
+            type(uint256).max,
+            minimumOut
         );
-
+        if (amountWithdrawn < minimumOut) {
+            revert InsufficientOut();
+        }
         IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
             amountWithdrawn,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );

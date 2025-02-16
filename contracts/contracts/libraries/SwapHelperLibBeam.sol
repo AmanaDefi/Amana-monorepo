@@ -40,7 +40,7 @@ library SwapHelperLibBeam {
         address zrc20,
         uint256 amount,
         address targetZRC20,
-        uint256 minAmountOut,
+        uint256 minimumOut,
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {
@@ -58,7 +58,7 @@ library SwapHelperLibBeam {
                     recipient: vault,
                     deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
-                    amountOutMinimum: minAmountOut,
+                    amountOutMinimum: minimumOut,
                     limitSqrtPrice: 0
                 });
             console.log(
@@ -98,7 +98,7 @@ library SwapHelperLibBeam {
                 recipient: vault,
                 deadline: block.timestamp + maxDeadline,
                 amountIn: amount,
-                amountOutMinimum: minAmountOut
+                amountOutMinimum: minimumOut
             });
             console.log("Approving ZRC20");
             IZRC20(zrc20).approve(router, amount);

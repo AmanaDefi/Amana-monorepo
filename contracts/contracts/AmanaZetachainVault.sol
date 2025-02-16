@@ -25,12 +25,17 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (amount > 0) {
-            (address erc20source, uint16 slippage, bytes32 crossChainTxId) = abi
-                .decode(message, (address, uint16, bytes32));
+            (
+                address erc20source,
+                uint256 minimumOut,
+                uint16 slippage,
+                bytes32 crossChainTxId
+            ) = abi.decode(message, (address, uint256, uint16, bytes32));
             _depositComingFromConnectedChain(
                 context.sender,
                 context.chainID,
                 amount,
+                minimumOut,
                 zrc20,
                 erc20source,
                 slippage,
@@ -41,17 +46,19 @@ contract AmanaZetachainVault is AmanaVaultBase {
                 address withdrawZRC20,
                 address withdrawERC20,
                 uint256 withdrawAmount,
+                uint256 minimumOut,
                 uint16 slippage,
                 bytes32 crossChainTxId
             ) = abi.decode(
                     message,
-                    (address, address, uint256, uint16, bytes32)
+                    (address, address, uint256, uint256, uint16, bytes32)
                 );
             _withdrawComingFromConnectedChain(
                 context.sender,
                 withdrawZRC20,
                 withdrawERC20,
                 withdrawAmount,
+                minimumOut,
                 uint32(context.chainID),
                 slippage,
                 crossChainTxId
@@ -64,7 +71,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @param newStrategyAddress Address of the new strategy.
      */
     function switchStrategy(
-        address newStrategyAddress
+        address newStrategyAddress,
+        uint256 minimumOut
     ) external override onlyOwner {
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
         if (newStrategyAddress == strategyAddress)
@@ -82,7 +90,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
                 IERC20(asset()).balanceOf(address(this))
             );
             IStrategy(strategyAddress).invest(
-                IERC20(asset()).balanceOf(address(this))
+                IERC20(asset()).balanceOf(address(this)),
+                minimumOut
             );
         } else {
             strategyAddress = newStrategyAddress;
@@ -112,7 +121,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address caller,
         address receiver,
         uint256 assets,
-        uint256 shares
+        uint256 shares,
+        uint256 minimumOut
     ) internal override {
         if (assets == 0) {
             revert DepositCantBeZero();
@@ -129,7 +139,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         _mint(receiver, shares);
         approveOrIncreaseAllowance(IERC20(asset()), strategyAddress, assets);
-        IStrategy(strategyAddress).invest(assets);
+        IStrategy(strategyAddress).invest(assets, minimumOut);
         emit Deposit(caller, receiver, assets, shares);
     }
 
@@ -142,6 +152,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
      **/
     function _investAssets(
         uint256 amount,
+        uint256 minimumOut,
         address receiver,
         address,
         address,
@@ -155,7 +166,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         approveOrIncreaseAllowance(IERC20(asset()), strategyAddress, amount);
 
-        IStrategy(strategyAddress).invest(amount);
+        IStrategy(strategyAddress).invest(amount, minimumOut);
         emit Deposited(receiver, amount, shares, crossChainTxId);
     }
 
@@ -173,6 +184,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address user, // owner
         address withdrawZRC20,
         uint256 assets,
+        uint256 minimumOut,
         uint256 shares,
         uint16 slippage
     ) internal override {
@@ -183,6 +195,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
             assets,
+            minimumOut,
             feeToWithdraw
         );
 
@@ -220,6 +233,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 shares,
+        uint256 minimumOut,
         uint32 userChainId,
         uint16 slippage,
         bytes32 crossChainTxId
@@ -237,6 +251,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint256 feeToWithdraw = _applyFee(user, assets);
         uint256 amountWithdrawn = _divestZetachainStrategy(
             assets,
+            minimumOut,
             feeToWithdraw
         );
 
@@ -269,13 +284,16 @@ contract AmanaZetachainVault is AmanaVaultBase {
      */
     function _divestZetachainStrategy(
         uint256 assets,
+        uint256 minimumOut,
         uint256 feeToWithdraw
     ) internal returns (uint256 withdrawnAmt) {
         withdrawnAmt = IStrategy(strategyAddress).withdraw(
             assets + feeToWithdraw,
             ((assets + feeToWithdraw) * (10 ** 27)) / totalAssets() + 1
         );
-
+        if (withdrawnAmt < minimumOut) {
+            revert IErrors.InsufficientOut();
+        }
         return withdrawnAmt;
     }
 

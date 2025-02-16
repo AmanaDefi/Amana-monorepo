@@ -37,13 +37,13 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minSharesOut
+        uint256 minimumOut
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        if (shares < minSharesOut) {
-            revert InsufficientSharesOut();
+        if (shares < minimumOut) {
+            revert InsufficientOut();
         }
     }
 
@@ -53,13 +53,17 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 amount,
+        uint256 minimumOut
     ) internal override returns (uint256 amountWithdrawn) {
         amountWithdrawn = receiptToken.withdraw(
             amount,
             address(this), // receiver
             address(this) // owner
         );
+        if (amountWithdrawn < minimumOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
@@ -70,13 +74,13 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumOut);
         approveOrIncreaseAllowance(
             inputToken,
             newStrategy,
@@ -85,7 +89,7 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -108,5 +112,11 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
         uint256 depositAmountInUnderlying
     ) public view override returns (uint256) {
         return receiptToken.convertToShares(depositAmountInUnderlying);
+    }
+
+    function AssetsOutForShares(
+        uint256 shares
+    ) public view override returns (uint256) {
+        return receiptToken.convertToAssets(shares);
     }
 }

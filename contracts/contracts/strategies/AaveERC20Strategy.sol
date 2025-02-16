@@ -40,12 +40,12 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minSharesOut
+        uint256
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(aavePool), amount);
 
         aavePool.supply(address(inputToken), amount, address(this), 0);
-        // shares out = amount deposited, so no need to check minSharesOut
+        // shares out = amount deposited, so no need to check minimumOut
     }
 
     /**
@@ -54,13 +54,17 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 amount,
+        uint256 minimumOut
     ) internal override returns (uint256 amountWithdrawn) {
         amountWithdrawn = aavePool.withdraw(
             address(inputToken),
             amount,
             address(this)
         );
+        if (amountWithdrawn < minimumOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
@@ -71,19 +75,20 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            type(uint256).max
+            type(uint256).max,
+            minimumOut
         );
         approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
             amountWithdrawn,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );

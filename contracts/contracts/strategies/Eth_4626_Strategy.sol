@@ -40,28 +40,31 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @notice deposits funds into the yield source.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minSharesOut
+        uint256 minimumOut
     ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        if (shares < minSharesOut) {
-            revert InsufficientSharesOut();
+        if (shares < minimumOut) {
+            revert InsufficientOut();
         }
     }
 
     /// @notice Withdraws funds from the Aave pool.
     /// @param amount Amount to be withdrawn.
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 amount,
+        uint256 minimumOut
     ) internal override returns (uint256 amountWithdrawn) {
         amountWithdrawn = receiptToken.withdraw(
             amount,
             address(this), // receiver
             address(this) // owner
         );
-
+        if (amountWithdrawn < minimumOut) {
+            revert InsufficientOut();
+        }
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
@@ -73,19 +76,19 @@ contract Eth_4626_Strategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumOut);
 
         IStrategy(newStrategy).depositFromOldStrategy{
             value: strategyTotalBalance
         }(
             strategyTotalBalance,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -108,5 +111,11 @@ contract Eth_4626_Strategy is EthStrategyParent {
         uint256 depositAmountInUnderlying
     ) public view override returns (uint256) {
         return receiptToken.convertToShares(depositAmountInUnderlying);
+    }
+
+    function AssetsOutForShares(
+        uint256 shares
+    ) public view override returns (uint256) {
+        return receiptToken.convertToAssets(shares);
     }
 }

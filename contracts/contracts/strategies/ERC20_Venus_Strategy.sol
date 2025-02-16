@@ -40,15 +40,15 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minSharesOut
+        uint256 minimumOut
     ) internal override {
         uint initialBalance = receiptToken.balanceOf(address(this));
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
         receiptToken.mint(amount);
         uint finalBalance = receiptToken.balanceOf(address(this));
         uint shares = finalBalance - initialBalance;
-        if (shares < minSharesOut) {
-            revert InsufficientSharesOut();
+        if (shares < minimumOut) {
+            revert InsufficientOut();
         }
     }
 
@@ -58,9 +58,16 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 amount,
+        uint256 minimumOut
     ) internal override returns (uint256 amountWithdrawn) {
+        uint initialBalance = inputToken.balanceOf(address(this));
         receiptToken.redeemUnderlying(amount);
+        uint finalBalance = inputToken.balanceOf(address(this));
+        amountWithdrawn = finalBalance - initialBalance;
+        if (amountWithdrawn < minimumOut) {
+            revert InsufficientOut();
+        }
         return amount;
     }
 
@@ -72,13 +79,13 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumOut);
         approveOrIncreaseAllowance(
             inputToken,
             newStrategy,
@@ -86,7 +93,7 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
         );
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -102,8 +109,7 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 vTokenBalance = receiptToken.balanceOf(address(this));
-        uint256 exchangeRate = receiptToken.exchangeRateStored();
-        return (vTokenBalance * exchangeRate) / (10 ** 18);
+        return AssetsOutForShares(vTokenBalance);
     }
 
     function sharesOutForUnderlying(
@@ -111,5 +117,12 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
     ) public view override returns (uint256) {
         uint256 exchangeRate = receiptToken.exchangeRateStored();
         return (depositAmountInUnderlying * (10 ** 18)) / exchangeRate;
+    }
+
+    function AssetsOutForShares(
+        uint256 shares
+    ) public view override returns (uint256) {
+        uint256 exchangeRate = receiptToken.exchangeRateStored();
+        return (shares * exchangeRate) / (10 ** 18);
     }
 }

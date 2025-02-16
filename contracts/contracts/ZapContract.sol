@@ -52,7 +52,7 @@ contract ZapContract {
         uint16 slippageBps,
         uint16 maxDeadline
     ) internal returns (uint256) {
-        uint256 minAmountOut = SwapHelperLibEddy.calculateMinAmountOut(
+        uint256 minimumOut = SwapHelperLibEddy.calculateMinAmountOut(
             zrc20,
             targetZRC20,
             amount,
@@ -74,7 +74,7 @@ contract ZapContract {
                     inputIndex, // Index of input token
                     outputIndex, // Index of output token
                     amount, // Amount of input token
-                    minAmountOut // Minimum amount of output token to receive
+                    minimumOut // Minimum amount of output token to receive
                 );
         } else {
             address[] memory path = SwapHelperLibEddy.getPath(
@@ -88,7 +88,7 @@ contract ZapContract {
                 SwapHelperLibEddy.UNISWAP_V2_ROUTER
             ).swapExactTokensForTokens(
                     amount,
-                    minAmountOut,
+                    minimumOut,
                     path,
                     address(this),
                     block.timestamp + maxDeadline

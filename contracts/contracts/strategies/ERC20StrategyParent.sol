@@ -23,7 +23,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
     function _invest(
         address receiverAddress,
         uint256 amount,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) internal override {
@@ -33,7 +33,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
             address(this),
             amount
         );
-        _depositFundsIntoYieldSource(amount, minSharesOut);
+        _depositFundsIntoYieldSource(amount, minimumOut);
 
         _sendInvestConfirmation(
             receiverAddress,
@@ -79,7 +79,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
      */
     function depositFromOldStrategy(
         uint256 amount,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) external {
@@ -90,7 +90,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         _invest(
             address(0),
             amount,
-            minSharesOut,
+            minimumOut,
             currentExecutionNonce,
             _crossChainTxId
         );

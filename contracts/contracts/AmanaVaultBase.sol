@@ -235,7 +235,7 @@ abstract contract AmanaVaultBase is
      */
     function switchStrategy(
         address newStrategyAddress,
-        uint256 minSharesOut
+        uint256 minimumOut
     ) external virtual;
 
     /**
@@ -371,7 +371,7 @@ abstract contract AmanaVaultBase is
     /** @dev See {IERC4626-deposit}. */
     function deposit(
         uint256 assets,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address receiver
     ) public virtual returns (uint256) {
         uint256 maxAssets = maxDeposit(receiver);
@@ -380,14 +380,14 @@ abstract contract AmanaVaultBase is
         }
 
         uint256 shares = previewDeposit(assets);
-        _deposit(_msgSender(), receiver, assets, shares, minSharesOut);
+        _deposit(_msgSender(), receiver, assets, shares, minimumOut);
 
         return shares;
     }
 
     function mint(
         uint256 shares,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address receiver
     ) public virtual returns (uint256) {
         uint256 maxShares = maxMint(receiver);
@@ -396,7 +396,7 @@ abstract contract AmanaVaultBase is
         }
 
         uint256 assets = previewMint(shares);
-        _deposit(_msgSender(), receiver, assets, shares, minSharesOut);
+        _deposit(_msgSender(), receiver, assets, shares, minimumOut);
 
         return assets;
     }
@@ -413,7 +413,7 @@ abstract contract AmanaVaultBase is
         address receiver,
         uint256 assets,
         uint256 shares,
-        uint256 minSharesOut
+        uint256 minimumOut
     ) internal virtual {}
 
     /**
@@ -427,7 +427,7 @@ abstract contract AmanaVaultBase is
         address receiver,
         uint256 userChainId,
         uint256 assets,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address zrc20source,
         address erc20source,
         uint16 slippage,
@@ -455,7 +455,7 @@ abstract contract AmanaVaultBase is
         }
         _investAssets(
             outputAmount,
-            minSharesOut,
+            minimumOut,
             receiver,
             zrc20source,
             erc20source,
@@ -466,7 +466,7 @@ abstract contract AmanaVaultBase is
 
     function _investAssets(
         uint256 amount,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address receiver,
         address zrc20source,
         address erc20source,
@@ -476,7 +476,7 @@ abstract contract AmanaVaultBase is
 
     function redeem(
         uint256 shares,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address receiver,
         address owner
     ) public returns (uint256) {
@@ -490,7 +490,7 @@ abstract contract AmanaVaultBase is
         return
             redeemToAnyToken(
                 shares,
-                minSharesOut,
+                minimumOut,
                 receiver,
                 owner,
                 address(asset()),
@@ -501,7 +501,7 @@ abstract contract AmanaVaultBase is
     /** @dev See {IERC4626-withdraw}. */
     function withdraw(
         uint256 assets,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address receiver,
         address owner
     ) public returns (uint256) {
@@ -520,7 +520,7 @@ abstract contract AmanaVaultBase is
             owner,
             address(asset()),
             assets,
-            minSharesOut,
+            minimumOut,
             shares,
             0
         );
@@ -531,7 +531,7 @@ abstract contract AmanaVaultBase is
     /** @dev See {IERC4626-redeem}. */
     function redeemToAnyToken(
         uint256 shares,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         address receiver,
         address owner,
         address withdrawZRC20,
@@ -544,7 +544,7 @@ abstract contract AmanaVaultBase is
             owner,
             withdrawZRC20,
             assets,
-            minSharesOut,
+            minimumOut,
             shares,
             slippage
         );
@@ -558,7 +558,7 @@ abstract contract AmanaVaultBase is
         address owner,
         address withdrawZRC20,
         uint256 assets,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         uint256 shares,
         uint16 slippage
     ) internal virtual {}
@@ -576,7 +576,7 @@ abstract contract AmanaVaultBase is
         address withdrawZRC20,
         address withdrawERC20,
         uint256 assets,
-        uint256 minSharesOut,
+        uint256 minimumOut,
         uint32 userChainId,
         uint16 slippage,
         bytes32 crossChainTxId
@@ -717,7 +717,7 @@ abstract contract AmanaVaultBase is
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {
-        uint256 minAmountOut = SwapHelperLibEddy.calculateMinAmountOut(
+        uint256 minimumOut = SwapHelperLibEddy.calculateMinAmountOut(
             zrc20,
             targetZRC20,
             amount,
@@ -739,7 +739,7 @@ abstract contract AmanaVaultBase is
                     inputIndex, // Index of input token
                     outputIndex, // Index of output token
                     amount, // Amount of input token
-                    minAmountOut // Minimum amount of output token to receive
+                    minimumOut // Minimum amount of output token to receive
                 );
         } else {
             address[] memory path = SwapHelperLibEddy.getPath(
@@ -753,7 +753,7 @@ abstract contract AmanaVaultBase is
                 SwapHelperLibEddy.UNISWAP_V2_ROUTER
             ).swapExactTokensForTokens(
                     amount,
-                    minAmountOut,
+                    minimumOut,
                     path,
                     vault,
                     block.timestamp + maxDeadline

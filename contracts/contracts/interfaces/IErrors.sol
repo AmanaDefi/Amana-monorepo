@@ -9,7 +9,7 @@ interface IErrors {
     error Unauthorized();
     error NoFundsReceived();
     error NothingToWithdraw();
-    error InsufficientSharesOut();
+    error InsufficientOut();
     error TransferFailed();
 
     error InvalidStrategyAddress();
