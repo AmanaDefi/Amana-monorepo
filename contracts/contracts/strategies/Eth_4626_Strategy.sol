@@ -38,11 +38,17 @@ contract Eth_4626_Strategy is EthStrategyParent {
     }
 
     /// @notice deposits funds into the yield source.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
 
-        receiptToken.deposit(amount, address(this));
+        uint256 shares = receiptToken.deposit(amount, address(this));
+        if (shares < minSharesOut) {
+            revert InsufficientSharesOut();
+        }
     }
 
     /// @notice Withdraws funds from the Aave pool.
@@ -67,6 +73,7 @@ contract Eth_4626_Strategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -76,7 +83,12 @@ contract Eth_4626_Strategy is EthStrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy{
             value: strategyTotalBalance
-        }(strategyTotalBalance, currentExecutionNonce, _crossChainTxId);
+        }(
+            strategyTotalBalance,
+            minSharesOut,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
             strategyTotalBalance,
@@ -90,5 +102,11 @@ contract Eth_4626_Strategy is EthStrategyParent {
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
         return receiptToken.convertToAssets(shares);
+    }
+
+    function sharesOutForUnderlying(
+        uint256 depositAmountInUnderlying
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(depositAmountInUnderlying);
     }
 }

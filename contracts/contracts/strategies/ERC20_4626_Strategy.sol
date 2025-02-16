@@ -35,12 +35,15 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        if (shares == 0) {
-            revert DepositFailed();
+        if (shares < minSharesOut) {
+            revert InsufficientSharesOut();
         }
     }
 
@@ -67,6 +70,7 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -81,6 +85,7 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
+            minSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -97,5 +102,11 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
         return receiptToken.convertToAssets(shares);
+    }
+
+    function sharesOutForUnderlying(
+        uint256 depositAmountInUnderlying
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(depositAmountInUnderlying);
     }
 }

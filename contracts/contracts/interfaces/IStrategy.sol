@@ -11,6 +11,7 @@ interface IStrategy {
 
     function depositFromOldStrategy(
         uint256 amount,
+        uint256 minSharesOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) external payable;

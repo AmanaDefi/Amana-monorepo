@@ -38,12 +38,18 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal override {
+        uint initialBalance = receiptToken.balanceOf(address(this));
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
         receiptToken.mint(amount);
-        // if (shares == 0) {
-        //     revert DepositFailed();
-        // }
+        uint finalBalance = receiptToken.balanceOf(address(this));
+        uint shares = finalBalance - initialBalance;
+        if (shares < minSharesOut) {
+            revert InsufficientSharesOut();
+        }
     }
 
     /**
@@ -66,6 +72,7 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -79,6 +86,7 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
         );
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
+            minSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -96,5 +104,12 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
         uint256 vTokenBalance = receiptToken.balanceOf(address(this));
         uint256 exchangeRate = receiptToken.exchangeRateStored();
         return (vTokenBalance * exchangeRate) / (10 ** 18);
+    }
+
+    function sharesOutForUnderlying(
+        uint256 depositAmountInUnderlying
+    ) public view override returns (uint256) {
+        uint256 exchangeRate = receiptToken.exchangeRateStored();
+        return (depositAmountInUnderlying * (10 ** 18)) / exchangeRate;
     }
 }

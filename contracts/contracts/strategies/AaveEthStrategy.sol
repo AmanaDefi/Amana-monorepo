@@ -53,11 +53,15 @@ contract AaveEthStrategy is EthStrategyParent {
 
     /// @notice Deposits funds into the Aave pool.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(aavePool), amount);
 
         aavePool.supply(address(weth), amount, address(this), 0);
+        // shares out = amount deposited, so no need to check minSharesOut
     }
 
     /**
@@ -84,6 +88,7 @@ contract AaveEthStrategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -95,6 +100,7 @@ contract AaveEthStrategy is EthStrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
             amountWithdrawn,
+            minSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -110,5 +116,11 @@ contract AaveEthStrategy is EthStrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         return receiptToken.balanceOf(address(this));
+    }
+
+    function sharesOutForUnderlying(
+        uint256 underlyingAmount
+    ) public pure override returns (uint256) {
+        return underlyingAmount;
     }
 }

@@ -233,7 +233,10 @@ abstract contract AmanaVaultBase is
      * @notice Reverts if the new strategy address is invalid or unchanged.
      * @notice Emits a `StrategyUpdated` event upon success.
      */
-    function switchStrategy(address newStrategyAddress) external virtual;
+    function switchStrategy(
+        address newStrategyAddress,
+        uint256 minSharesOut
+    ) external virtual;
 
     /**
      * @dev Allows the owner to withdraw all of a specified token from the vault in case of an emergency.
@@ -390,6 +393,7 @@ abstract contract AmanaVaultBase is
         address receiver,
         uint256 userChainId,
         uint256 assets,
+        uint256 minSharesOut,
         address zrc20source,
         address erc20source,
         uint16 slippage,
@@ -417,6 +421,7 @@ abstract contract AmanaVaultBase is
         }
         _investAssets(
             outputAmount,
+            minSharesOut,
             receiver,
             zrc20source,
             erc20source,
@@ -427,6 +432,7 @@ abstract contract AmanaVaultBase is
 
     function _investAssets(
         uint256 amount,
+        uint256 minSharesOut,
         address receiver,
         address zrc20source,
         address erc20source,
@@ -436,9 +442,10 @@ abstract contract AmanaVaultBase is
 
     function redeem(
         uint256 shares,
+        uint256 minSharesOut,
         address receiver,
         address owner
-    ) public override returns (uint256) {
+    ) public returns (uint256) {
         if (shares == 0) {
             revert RedeemCantBeZero();
         }
@@ -446,15 +453,24 @@ abstract contract AmanaVaultBase is
         if (shares > maxShares) {
             revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
         }
-        return redeemToAnyToken(shares, receiver, owner, address(asset()), 0);
+        return
+            redeemToAnyToken(
+                shares,
+                minSharesOut,
+                receiver,
+                owner,
+                address(asset()),
+                0
+            );
     }
 
     /** @dev See {IERC4626-withdraw}. */
     function withdraw(
         uint256 assets,
+        uint256 minSharesOut,
         address receiver,
         address owner
-    ) public override returns (uint256) {
+    ) public returns (uint256) {
         if (assets == 0) {
             revert WithdrawCantBeZero();
         }
@@ -470,6 +486,7 @@ abstract contract AmanaVaultBase is
             owner,
             address(asset()),
             assets,
+            minSharesOut,
             shares,
             0
         );
@@ -480,6 +497,7 @@ abstract contract AmanaVaultBase is
     /** @dev See {IERC4626-redeem}. */
     function redeemToAnyToken(
         uint256 shares,
+        uint256 minSharesOut,
         address receiver,
         address owner,
         address withdrawZRC20,
@@ -492,6 +510,7 @@ abstract contract AmanaVaultBase is
             owner,
             withdrawZRC20,
             assets,
+            minSharesOut,
             shares,
             slippage
         );
@@ -505,6 +524,7 @@ abstract contract AmanaVaultBase is
         address owner,
         address withdrawZRC20,
         uint256 assets,
+        uint256 minSharesOut,
         uint256 shares,
         uint16 slippage
     ) internal virtual {}
@@ -522,6 +542,7 @@ abstract contract AmanaVaultBase is
         address withdrawZRC20,
         address withdrawERC20,
         uint256 assets,
+        uint256 minSharesOut,
         uint32 userChainId,
         uint16 slippage,
         bytes32 crossChainTxId

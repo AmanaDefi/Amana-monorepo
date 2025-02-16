@@ -84,6 +84,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address ZRC20AddressOrNewStrategy,
             address withdrawERC20,
             uint256 amount,
+            uint256 minSharesOut,
             uint256 fee,
             uint32 withdrawChainId,
             bool isDeposit,
@@ -98,6 +99,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                     address,
                     uint256,
                     uint256,
+                    uint256,
                     uint32,
                     bool,
                     bytes32,
@@ -110,13 +112,20 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
         if (user == address(0) && receiver == address(0)) {
             _transferAssetsToNewStrategy(
+                minSharesOut,
                 ZRC20AddressOrNewStrategy,
                 currentExecutionNonce,
                 crossChainTxId
             );
             return abi.encode(true);
         } else if (isDeposit) {
-            _invest(receiver, amount, currentExecutionNonce, crossChainTxId);
+            _invest(
+                receiver,
+                amount,
+                minSharesOut,
+                currentExecutionNonce,
+                crossChainTxId
+            );
             return abi.encode(true);
         } else {
             _divest(
@@ -151,6 +160,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      */
     function totalUnderlyingAssets() public view virtual returns (uint256);
 
+    function sharesOutForUnderlying(
+        uint256 depositAmountInUnderlying
+    ) public view virtual returns (uint256);
+
     /// @notice Invests assets into the yield source
     /// @param receiver Address of the receiver whose funds are being invested.
     /// @param amount Amount of asset to invest.
@@ -159,6 +172,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     function _invest(
         address receiver,
         uint256 amount,
+        uint256 minSharesOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) internal virtual;
@@ -168,7 +182,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @dev This function is intended to be overridden in derived contracts to define specific deposit logic.
      * @param amount The amount of funds to deposit into the yield source.
      */
-    function _depositFundsIntoYieldSource(uint256 amount) internal virtual;
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal virtual;
 
     /**
      * @notice Allows the owner to manually resend an investment confirmation message.
@@ -251,6 +268,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -507,7 +525,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount);
+            _depositFundsIntoYieldSource(context.amount, 0);
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==

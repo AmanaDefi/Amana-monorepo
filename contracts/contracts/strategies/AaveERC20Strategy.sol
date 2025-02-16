@@ -38,10 +38,14 @@ contract AaveERC20Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the Aave pool.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(aavePool), amount);
 
         aavePool.supply(address(inputToken), amount, address(this), 0);
+        // shares out = amount deposited, so no need to check minSharesOut
     }
 
     /**
@@ -67,6 +71,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -78,6 +83,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
             amountWithdrawn,
+            minSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -93,5 +99,11 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         return receiptToken.balanceOf(address(this));
+    }
+
+    function sharesOutForUnderlying(
+        uint256 depositAmountInUnderlying
+    ) public pure override returns (uint256) {
+        return depositAmountInUnderlying;
     }
 }

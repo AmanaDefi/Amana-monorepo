@@ -38,13 +38,14 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         receiptToken.supply(address(inputToken), amount);
-        // if (shares == 0) {
-        //     revert DepositFailed();
-        // }
+        // shares out = amount deposited, so no need to check minSharesOut
     }
 
     /**
@@ -72,6 +73,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -86,6 +88,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
+            minSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -101,5 +104,11 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         return receiptToken.balanceOf(address(this));
+    }
+
+    function sharesOutForUnderlying(
+        uint256 depositAmountInUnderlying
+    ) public pure override returns (uint256) {
+        return depositAmountInUnderlying;
     }
 }

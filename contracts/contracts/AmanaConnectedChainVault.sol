@@ -100,13 +100,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             if (amount > 0) {
                 (
                     address erc20source,
+                    uint256 minSharesOut,
                     uint16 slippage,
                     bytes32 crossChainTxId
-                ) = abi.decode(message, (address, uint16, bytes32));
+                ) = abi.decode(message, (address, uint256, uint16, bytes32));
                 _depositComingFromConnectedChain(
                     context.sender,
                     context.chainID,
                     amount,
+                    minSharesOut,
                     zrc20,
                     erc20source,
                     slippage,
@@ -117,17 +119,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     address withdrawZRC20,
                     address withdrawERC20,
                     uint256 withdrawAmount,
+                    uint256 minSharesOut,
                     uint16 slippage,
                     bytes32 crossChainTxId
                 ) = abi.decode(
                         message,
-                        (address, address, uint256, uint16, bytes32)
+                        (address, address, uint256, uint256, uint16, bytes32)
                     );
                 _withdrawComingFromConnectedChain(
                     context.sender,
                     withdrawZRC20,
                     withdrawERC20,
                     withdrawAmount,
+                    minSharesOut,
                     uint32(context.chainID),
                     slippage,
                     crossChainTxId
@@ -299,7 +303,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function switchStrategy(
-        address newStrategyAddress
+        address newStrategyAddress,
+        uint256 minSharesOut
     ) external override onlyOwner {
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
         if (newStrategyAddress == strategyAddress)
@@ -330,7 +335,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             newStrategyAddress,
             address(0),
             0,
-            0,
+            0, // amount
+            minSharesOut,
             0,
             false,
             crossChainTxId,
@@ -385,7 +391,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address caller,
         address receiver,
         uint256 assets,
-        uint256
+        uint256 minSharesOut
     ) internal override {
         // If _asset is ERC777, `transferFrom` can trigger a reentrancy BEFORE the transfer happens through the
         // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, triggered after the transfer,
@@ -416,6 +422,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         _investAssets(
             assets,
+            minSharesOut,
             receiver,
             asset(),
             asset(),
@@ -434,6 +441,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      */
     function _investAssets(
         uint256 amount,
+        uint256 minSharesOut,
         address receiver,
         address userZRC20,
         address userERC20,
@@ -472,6 +480,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             address(0),
             address(0),
             amount,
+            minSharesOut,
             0,
             0,
             true,
@@ -557,6 +566,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address user, // owner
         address withdrawZRC20,
         uint256 assets,
+        uint256 minSharesOut,
         uint256 shares,
         uint16 slippage
     ) internal override {
@@ -584,6 +594,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             withdrawZRC20,
             withdrawZRC20,
             assets,
+            minSharesOut,
             feeToWithdraw,
             uint32(block.chainid),
             slippage,
@@ -604,6 +615,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 shares,
+        uint256 minSharesOut,
         uint32 userChainId,
         uint16 slippage,
         bytes32 crossChainTxId
@@ -627,6 +639,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             withdrawZRC20,
             withdrawERC20,
             assets,
+            minSharesOut,
             feeToWithdraw,
             userChainId,
             slippage,
@@ -649,6 +662,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amount,
+        uint256 minSharesOut,
         uint256 feeToWithdraw,
         uint32 withdrawChainId,
         uint16 slippage,
@@ -664,6 +678,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             withdrawZRC20,
             withdrawERC20,
             amount,
+            minSharesOut,
             feeToWithdraw,
             withdrawChainId,
             false,
