@@ -368,6 +368,39 @@ abstract contract AmanaVaultBase is
             );
     }
 
+    /** @dev See {IERC4626-deposit}. */
+    function deposit(
+        uint256 assets,
+        uint256 minSharesOut,
+        address receiver
+    ) public virtual returns (uint256) {
+        uint256 maxAssets = maxDeposit(receiver);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
+        }
+
+        uint256 shares = previewDeposit(assets);
+        _deposit(_msgSender(), receiver, assets, shares, minSharesOut);
+
+        return shares;
+    }
+
+    function mint(
+        uint256 shares,
+        uint256 minSharesOut,
+        address receiver
+    ) public virtual returns (uint256) {
+        uint256 maxShares = maxMint(receiver);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
+        }
+
+        uint256 assets = previewMint(shares);
+        _deposit(_msgSender(), receiver, assets, shares, minSharesOut);
+
+        return assets;
+    }
+
     /**
      * @dev Handles the deposit of assets into the vault and initiates cross-chain investment.
      * @param caller The address of the user initiating the deposit.
@@ -379,8 +412,9 @@ abstract contract AmanaVaultBase is
         address caller,
         address receiver,
         uint256 assets,
-        uint256
-    ) internal virtual override {}
+        uint256 shares,
+        uint256 minSharesOut
+    ) internal virtual {}
 
     /**
      * @dev Handles deposits from a connected chain, processes swaps if necessary, and initiates cross-chain investment.

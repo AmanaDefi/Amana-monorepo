@@ -391,6 +391,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address caller,
         address receiver,
         uint256 assets,
+        uint256,
         uint256 minSharesOut
     ) internal override {
         // If _asset is ERC777, `transferFrom` can trigger a reentrancy BEFORE the transfer happens through the
