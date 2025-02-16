@@ -129,11 +129,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [publicKey]);
 
   useEffect(() => {
-    if (!account) {
+    if (!account && !publicKey) {
       disconnectWallet();
       setIsModalOpen(true);
+    } else {
+      setIsModalOpen(false);
     }
-  }, [account]);
+  }, [account, publicKey]);
 
   return (
     <MultiChainContext.Provider
