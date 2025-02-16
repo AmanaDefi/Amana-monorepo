@@ -129,17 +129,6 @@ library SwapHelperLibEddy {
         return token == USDC_BSC_ADDRESS || token == USDT_BSC_ADDRESS;
     }
 
-    function isPolToken(address token) internal pure returns (bool) {
-        return token == POL_POLYGON_ADDRESS;
-    }
-
-    function isBnbToken(address token) internal pure returns (bool) {
-        return token == BNB_BSC_ADDRESS;
-    }
-
-    function isBscStablecoin(address token) internal pure returns (bool) {
-        return token == USDC_BSC_ADDRESS || token == USDT_BSC_ADDRESS;
-    }
     function isZetaToken(address token) internal pure returns (bool) {
         return token == WZETA_TOKEN;
     }
@@ -384,17 +373,6 @@ library SwapHelperLibEddy {
         return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
     }
 
-    function _existsPairPool(
-        address tokenA,
-        address tokenB
-    ) internal view returns (bool) {
-        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
-            tokenA,
-            tokenB
-        );
-        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
-    }
-
     function getPath(
         address zrc20,
         address targetZRC20
@@ -402,8 +380,6 @@ library SwapHelperLibEddy {
         if (zrc20 == targetZRC20) {
             revert IErrors.CantBeIdenticalAddresses();
         }
-        address targetZRC20
-    ) public view returns (address[] memory path) {
         if (zrc20 == targetZRC20) {
             revert IErrors.CantBeIdenticalAddresses();
         }

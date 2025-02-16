@@ -10,6 +10,10 @@ contract Treasury {
     address public governance;
     address public pendingGovernance;
 
+    event GovernanceInitialized(
+        address indexed previousGovernance,
+        address indexed newGovernance
+    );
     event GovernanceTransferInitiated(
         address indexed previousGovernance,
         address indexed newGovernance
@@ -19,7 +23,7 @@ contract Treasury {
     constructor(address _governance) {
         require(_governance != address(0), "Governance: zero address");
         governance = _governance;
-        emit GovernanceChanged(address(0), _governance);
+        emit GovernanceInitialized(address(0), _governance);
     }
 
     modifier onlyGovernance() {

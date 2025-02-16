@@ -39,8 +39,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     /// @notice Deposits funds into the Aave pool.
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
-        bool success = inputToken.approve(address(aavePool), amount);
-        if (!success) revert ApprovalFailed();
+        approveOrIncreaseAllowance(inputToken, address(aavePool), amount);
 
         aavePool.supply(address(inputToken), amount, address(this), 0);
     }
@@ -76,10 +75,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             type(uint256).max
         );
-        bool success = inputToken.approve(newStrategy, amountWithdrawn);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
             amountWithdrawn,
             currentExecutionNonce,
