@@ -224,7 +224,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal override {
-        console.log("withdrawComingFromConnectedChain");
         if (shares == 0) {
             revert WithdrawCantBeZero();
         }
