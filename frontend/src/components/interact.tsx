@@ -35,6 +35,8 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
         });
         const receipt = await executeDeposit(
             vaultData.id as Address,
+            vaultData.protocol.strategyAddress as Address,
+            vaultData.protocol.chainId,
             inputToken.address as Address,
             EOAaccount,
             activeChain,
@@ -92,6 +94,8 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         });
         const receipt = await executeWithdrawal(
             vaultData.id as Address,
+            vaultData.protocol.strategyAddress as Address,
+            vaultData.protocol.chainId as number,
             EOAaccount,
             activeChain,
             scaledAmount,
