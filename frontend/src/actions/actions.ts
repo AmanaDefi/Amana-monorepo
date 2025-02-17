@@ -224,7 +224,9 @@ export async function calculateVenusAPY(receiptTokenAddress: Address, strategyCh
 }
 
 export async function calculateVenusRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
-  return Number(6.7);
+  // It looks like this is an XVS reward, but you have to stake >1000 XVS in order to qualify for it
+  // It also looks like there's a 90 day lockup period for the rewards
+  return Number(0.067);
 }
 
 export const executeDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
