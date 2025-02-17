@@ -37,7 +37,7 @@ abstract contract AmanaVaultBase is
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
     address constant ZAP_CONTRACT_ADDRESS =
-        0x6C37E7104a3903Ccbc979b5316d0DD320B67aecB; // mainnet
+        0xDdf577F172DffDea94C1F2a227a5E87Fd82bf42C; // mainnet
 
     // Variables
     address public strategyAddress;
@@ -373,7 +373,7 @@ abstract contract AmanaVaultBase is
         uint256 assets,
         uint256 minimumOut,
         address receiver
-    ) public virtual returns (uint256) {
+    ) public returns (uint256) {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
