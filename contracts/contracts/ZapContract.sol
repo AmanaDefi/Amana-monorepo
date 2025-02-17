@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
+import "./interfaces/IAmanaVault.sol";
 
 contract ZapContract {
     using SwapHelperLibEddy for address;
@@ -21,6 +21,7 @@ contract ZapContract {
     event ZapDeposit(
         address indexed user,
         uint256 amountIn,
+        uint256 minSharesOut,
         uint256 vaultShares
     );
     event ZapWithdraw(address indexed user, uint256 amount, address receiver);
@@ -104,6 +105,7 @@ contract ZapContract {
         address vault,
         address vaultAsset,
         uint256 amount,
+        uint256 minSharesOut,
         address receiver,
         uint16 slippage
     ) external payable {
@@ -137,9 +139,9 @@ contract ZapContract {
             }
         }
         IERC20(vaultAsset).approve(vault, swappedAmount);
-        IERC4626(vault).deposit(swappedAmount, receiver);
+        IAmanaVault(vault).deposit(swappedAmount, minSharesOut, receiver);
 
-        emit ZapDeposit(msg.sender, amount, swappedAmount);
+        emit ZapDeposit(msg.sender, amount, minSharesOut, swappedAmount);
     }
 
     // Function to zap vault assets back to the user in the desired token
