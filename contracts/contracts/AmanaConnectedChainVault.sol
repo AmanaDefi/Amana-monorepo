@@ -304,7 +304,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      */
     function switchStrategy(
         address newStrategyAddress,
-        uint256 minimumOut
+        uint256 minAmountOut,
+        uint256 minSharesOut
     ) external override onlyOwner {
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
         if (newStrategyAddress == strategyAddress)
@@ -335,8 +336,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             newStrategyAddress,
             address(0),
             0,
-            0, // amount
-            minimumOut,
+            minAmountOut,
+            minSharesOut,
             0,
             false,
             crossChainTxId,

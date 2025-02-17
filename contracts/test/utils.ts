@@ -109,8 +109,8 @@ export async function simulateSwitchCallFromVaultToStrategy(
       ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
       newStrategyAddress,
       ethers.constants.AddressZero,
-      0, // amount
-      0, // minAmountOut
+      0, // minAmountOut (is usually just amount)
+      0, // minSharesOut
       0, // fee
       0, // withdrawChainId
       false, // isDeposit

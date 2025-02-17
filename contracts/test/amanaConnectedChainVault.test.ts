@@ -651,17 +651,17 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Step 1: Verify ownership restriction
       await expect(
-        amanaVault.connect(user1).switchStrategy(newStrategyAddress, minAmountOut)
+        amanaVault.connect(user1).switchStrategy(newStrategyAddress, 0, 0)
       ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount");
 
       // Step 2: Validate invalid inputs
       await expect(
-        amanaVault.connect(owner).switchStrategy(invalidStrategyAddress, minAmountOut)
+        amanaVault.connect(owner).switchStrategy(invalidStrategyAddress, 0, 0)
       ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
 
       const currentStrategy = await amanaVault.strategyAddress();
       await expect(
-        amanaVault.connect(owner).switchStrategy(currentStrategy, minAmountOut)
+        amanaVault.connect(owner).switchStrategy(currentStrategy, 0, 0)
       ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
 
       // Step 3: Simulate a deposit by User1, otherwise full strategy switch won't happen (just update)
@@ -672,7 +672,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
 
       await expect(
-        amanaVault.connect(owner).switchStrategy(newStrategyAddress, minAmountOut)
+        amanaVault.connect(owner).switchStrategy(newStrategyAddress, 0, 0)
       )
         .to.emit(gatewayZEVM, "Called");
       // .withArgs(newStrategyAddress);

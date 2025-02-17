@@ -235,7 +235,8 @@ abstract contract AmanaVaultBase is
      */
     function switchStrategy(
         address newStrategyAddress,
-        uint256 minimumOut
+        uint256 minAmountOut,
+        uint256 minSharesOut
     ) external virtual;
 
     /**

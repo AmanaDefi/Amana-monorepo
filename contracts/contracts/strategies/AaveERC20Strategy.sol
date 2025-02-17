@@ -106,10 +106,4 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     function totalUnderlyingAssets() public view override returns (uint256) {
         return receiptToken.balanceOf(address(this));
     }
-
-    function sharesOutForUnderlying(
-        uint256 depositAmountInUnderlying
-    ) public pure override returns (uint256) {
-        return depositAmountInUnderlying;
-    }
 }

@@ -236,7 +236,7 @@ describe("AmanaZetachainVault Tests", function () {
     // const newChainId = STRATEGY_CHAIN_ID;
 
     // Switch the vault strategy
-    await expect(amanaVault.connect(owner).switchStrategy(newStrategyAddress, 0))
+    await expect(amanaVault.connect(owner).switchStrategy(newStrategyAddress, 0, 0))
       .to.emit(amanaVault, "StrategyUpdated")
       .withArgs(newStrategyAddress);
 

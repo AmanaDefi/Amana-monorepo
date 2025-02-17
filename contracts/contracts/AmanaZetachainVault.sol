@@ -72,7 +72,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
      */
     function switchStrategy(
         address newStrategyAddress,
-        uint256 minimumOut
+        uint256 minAmountOut,
+        uint256 minSharesOut
     ) external override onlyOwner {
         if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
         if (newStrategyAddress == strategyAddress)
@@ -81,7 +82,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (IStrategy(strategyAddress).totalUnderlyingAssets() > 0) {
             IStrategy(strategyAddress).withdraw(
                 IStrategy(strategyAddress).totalUnderlyingAssets(),
-                10 ** 27
+                10 ** 27,
+                minAmountOut
             );
             strategyAddress = newStrategyAddress;
             approveOrIncreaseAllowance(
@@ -91,7 +93,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
             );
             IStrategy(strategyAddress).invest(
                 IERC20(asset()).balanceOf(address(this)),
-                minimumOut
+                minSharesOut
             );
         } else {
             strategyAddress = newStrategyAddress;
@@ -289,7 +291,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
     ) internal returns (uint256 withdrawnAmt) {
         withdrawnAmt = IStrategy(strategyAddress).withdraw(
             assets + feeToWithdraw,
-            ((assets + feeToWithdraw) * (10 ** 27)) / totalAssets() + 1
+            ((assets + feeToWithdraw) * (10 ** 27)) / totalAssets() + 1,
+            minimumOut
         );
         if (withdrawnAmt < minimumOut) {
             revert IErrors.InsufficientOut();

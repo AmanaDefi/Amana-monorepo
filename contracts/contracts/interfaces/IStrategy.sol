@@ -6,7 +6,8 @@ interface IStrategy {
 
     function withdraw(
         uint256 _amount,
-        uint256 _fraction
+        uint256 _fraction,
+        uint256 minAmountOut
     ) external returns (uint256);
 
     function depositFromOldStrategy(

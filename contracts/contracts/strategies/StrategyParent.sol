@@ -164,7 +164,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     function sharesOutForUnderlying(
         uint256 depositAmountInUnderlying
-    ) public view virtual returns (uint256);
+    ) public view virtual returns (uint256) {
+        return depositAmountInUnderlying;
+    }
 
     function AssetsOutForShares(
         uint256 shares

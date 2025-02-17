@@ -105,8 +105,7 @@ describe("Mock4626ZetachainStrategy - Full Coverage", function () {
     await strategy.connect(amanaVaultSigner).invest(depositAmount, minSharesOut);
 
     // Withdraw tokens
-    const tx = await strategy.connect(amanaVaultSigner).withdraw(depositAmount, 0);
-    const receipt = await tx.wait();
+    const tx = await strategy.connect(amanaVaultSigner).withdraw(depositAmount, 0, 0);
 
     // Verify emitted event
     await expect(tx).to.emit(strategy, "FundsWithdrawn").withArgs(AMANA_VAULT_ADDRESS, depositAmount);
@@ -134,7 +133,7 @@ describe("Mock4626ZetachainStrategy - Full Coverage", function () {
     const withdrawAmount = ethers.utils.parseEther("50");
     const [nonVaultSigner] = await ethers.getSigners();
 
-    await expect(strategy.connect(nonVaultSigner).withdraw(withdrawAmount, 0)).to.be.revertedWith(
+    await expect(strategy.connect(nonVaultSigner).withdraw(withdrawAmount, 0, 0)).to.be.revertedWith(
       "Only Vault contract can call"
     );
   });
