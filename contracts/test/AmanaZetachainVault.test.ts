@@ -395,8 +395,6 @@ describe("AmanaZetachainVault Tests", function () {
 
     totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const userBalance2 = await ethers.provider.getBalance(await user1.getAddress());
-    console.log("userBalance1", userBalance1.toString());
-    console.log("userBalance2", userBalance2.toString());
     expect(totalShares).to.be.closeTo(0, ERROR_MARGIN);
     expect(userBalance2).to.be.gt(userBalance1);
   });
