@@ -75,7 +75,8 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minimumOut,
+        uint256 minimumAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -83,12 +84,12 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             type(uint256).max,
-            minimumOut
+            minimumAmountOut
         );
         approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
             amountWithdrawn,
-            minimumOut,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );

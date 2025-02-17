@@ -76,19 +76,20 @@ contract Eth_4626_Strategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minimumOut,
+        uint256 minimumAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumOut);
+        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumAmountOut);
 
         IStrategy(newStrategy).depositFromOldStrategy{
             value: strategyTotalBalance
         }(
             strategyTotalBalance,
-            minimumOut,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );

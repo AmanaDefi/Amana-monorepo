@@ -112,6 +112,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
         if (user == address(0) && receiver == address(0)) {
             _transferAssetsToNewStrategy(
+                amount,
                 minimumOut,
                 ZRC20AddressOrNewStrategy,
                 currentExecutionNonce,
@@ -275,7 +276,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minimumOut,
+        uint256 minimumAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
