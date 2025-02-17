@@ -18,7 +18,7 @@ import { Address, Chain, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import useActiveWalletBalance from "@/hooks/useActiveWalletBalance";
+import useSolanaBalance from "@/hooks/useSolanaBalance";
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -36,14 +36,18 @@ export default function VaultHeader({
 }): JSX.Element {
   const activeChain = useActiveWalletChain();
   const EOAaccount = useActiveAccount();
-  const {selectedChain} = useMultiChain();
+  const { selectedChain } = useMultiChain();
 
   const userAddress = EOAaccount?.address;
-  const walletBalance = selectedChain == "evm" ? useWalletBalance({
+  const {
+    data: walletBalance,
+    isLoading,
+    isError,
+  } = useWalletBalance({
     chain: activeChain,
     address: userAddress,
     client,
-  }).data : useActiveWalletBalance();
+  });
   // const {data: walletBalance, isLoading, isError} = useWalletBalance({
   //   chain: activeChain,
   //   address: userAddress,

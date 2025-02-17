@@ -18,7 +18,7 @@ const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
 const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
-export const solanaRpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
+export const solanaRpcUrl = deployEnv === "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
 
 const zetaChain = defineChain({
   chainId: deployEnv === "testnet" ? 7001 : 7000, // 7001 for testnet, 7000 for mainnet
@@ -142,29 +142,6 @@ const bscChain = defineChain({
   ],
   testnet: deployEnv === "testnet",
   slug: "bsc",
-});
-
-//Define Solana configuration
-const solanaChain = defineChain({
-  chainId: 101,
-  name: deployEnv === "testnet" ? "Solana Devnet" : "Solana Mainnet",
-  shortName: "sol",
-  chain: "Solana",
-  rpc: [solanaRpcUrl],
-  nativeCurrency: {
-    name: "Solana",
-    symbol: "SOL",
-    decimals: 9,
-  },
-  explorers: [
-    {
-      name: "Solana Explorer",
-      url: "https://explorer.solana.com",
-      standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: "solana",
 });
 
 

@@ -93,7 +93,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             activeChain,
             scaledAmount,
             withdrawToken.address as Address,
-            withdrawZRC20,
+            withdrawZRC20 as `0x${string}`,
             setcrossChainTxId
         );
         mixpanel.track("Withdraw Succeeded", {

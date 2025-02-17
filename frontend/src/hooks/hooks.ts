@@ -266,7 +266,7 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     strategyEvents,
     withdrawalReceiverEvents
   }
-}
+};
 
 export function useTokenPriceBySymbol(symbol: string | undefined) {
   const priceContext = useTokenPrices();

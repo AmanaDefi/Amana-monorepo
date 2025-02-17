@@ -5,6 +5,7 @@ import { wallets } from "./header";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 export default function ConnectButton() {
   const {
     selectedChain,
@@ -27,9 +28,14 @@ export default function ConnectButton() {
             wallets={wallets}
             connectModal={{ size: "compact" }}
           />
+          <WalletMultiButton />
+
           <div className="tooltip-container">
             <div>
-              <ArrowsRightLeftIcon className="w-6 h-6 text-white" onClick={connectSolana}/>
+              <ArrowsRightLeftIcon
+                className="w-6 h-6 text-white"
+                onClick={connectSolana}
+              />
               <span className="tooltip">Switch to Solana</span>
             </div>
           </div>
