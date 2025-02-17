@@ -18,6 +18,7 @@ import { useContractEvents } from "thirdweb/react";
 import { isZetachain } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -105,15 +106,15 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   transactionCompleted: boolean,
 ) => {
+  const {selectedChain} = useMultiChain()
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
       try {
-        if (vault?.id) {
+        if (vault.id) {
           const balance = await fetchUserVaultBalance(
             activeAccount?.address as Address,
             vault.id as Address
           );
-
 
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,
@@ -127,9 +128,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           setVaultTotalAsset(newTotalAssets);
 
           setVaultTotalAssetinToken(newTotalAssetsinToken);
-
         }
-
       } catch (error) {
         console.error("Error updating vault balances and total assets:", error);
       }
@@ -235,12 +234,12 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     }),
     strategy: getContract({
       client,
-      chain: defineChain(strategyChainID),
+      chain: defineChain(strategyChainID ?? 1),
       address: strategyAddress,
     }),
     withdrawalReceiver: getContract({
       client,
-      chain: defineChain(activeChainId),
+      chain: defineChain(activeChainId ?? 1),
       address: contractWithdrawalReceiverAddress
     })
   }), [vaultData.id, strategyChainID, strategyAddress, activeChainId, contractWithdrawalReceiverAddress]);

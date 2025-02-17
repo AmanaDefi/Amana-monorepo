@@ -7,14 +7,12 @@ import { VAULT_DATA } from "@/constants";
 import { useActiveAccount } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
-import { useRouter } from 'next/navigation';
-
+import { useRouter } from "next/navigation";
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
 }> = ({
   vaultID
 }) => {
-
     const [vaultData, setVaultData] = useState<VaultData>();
     const router = useRouter();
 

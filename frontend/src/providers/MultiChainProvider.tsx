@@ -10,7 +10,6 @@ import {
 } from "react";
 import { ethers } from "ethers";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { solanaRpcUrl, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -64,7 +63,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { connect, isConnecting } = useConnectModal();
   const activeAccount = useActiveWallet();
   const { disconnect: evmDisconnect } = useDisconnect();
-  const { publicKey, disconnect } = useWallet();
+  const { publicKey, disconnect, select } = useWallet();
   const { setVisible } = useWalletModal();
   const account = useActiveAccount();
 
@@ -76,6 +75,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         if (activeAccount) evmDisconnect(activeAccount);
       }
       setVisible(true);
+      // select("Phantom");
+
     } catch (error) {
       console.error("Solana connection error:", error);
     }

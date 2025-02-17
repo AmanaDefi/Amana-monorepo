@@ -154,7 +154,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
         vaultEvents,
         strategyEvents,
         withdrawalReceiverEvents
-    } = useInteractionEvents({vaultData, activeChainId: activeChain.id, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted});
+    } = useInteractionEvents({vaultData, activeChainId: activeChain?.id, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted});
 
     function completeTransactionProcess(feedbackSnapshot: TransactionStepMessages) {
         setIsTransactionStarted(false);
