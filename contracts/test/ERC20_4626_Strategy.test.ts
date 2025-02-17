@@ -122,7 +122,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
 
     // Attempt withdraw from a non-gateway address
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const minAmountOut = ethers.utils.parseEther("0.51");
 
     const fee = ethers.utils.parseEther("0.01");
     const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
@@ -166,7 +166,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
 
     // Attempt a withdrawal from a non-vault sender
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const minAmountOut = ethers.utils.parseEther("0.51");
 
     const fee = ethers.utils.parseEther("0.01");
 
@@ -227,7 +227,7 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
     )
 
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const minAmountOut = ethers.utils.parseEther("0.51");
 
     const fee = ethers.utils.parseEther("0.01");
 

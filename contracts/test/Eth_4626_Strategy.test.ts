@@ -103,7 +103,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
     // Attempt withdraw from a non-gateway address
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
 
     const fee = ethers.utils.parseEther("0.01");
 
@@ -114,7 +114,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       strategy,
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
-      minAmountOut,
+      maxStrategySharesBurnt,
       fee,
       slippage,
       SEPOLIA_CHAIN_ID
@@ -141,7 +141,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
     // Attempt a withdrawal from a non-vault sender
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
 
     const fee = ethers.utils.parseEther("0.01");
 
@@ -152,7 +152,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       strategy,
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
-      minAmountOut,
+      maxStrategySharesBurnt,
       fee,
       slippage,
       SEPOLIA_CHAIN_ID
@@ -196,7 +196,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     )
 
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
 
     const fee = ethers.utils.parseEther("0.01");
 
@@ -207,7 +207,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       strategy,
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
-      minAmountOut,
+      maxStrategySharesBurnt,
       fee,
       slippage,
       SEPOLIA_CHAIN_ID

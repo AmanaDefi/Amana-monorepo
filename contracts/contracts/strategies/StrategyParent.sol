@@ -162,13 +162,13 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      */
     function totalUnderlyingAssets() public view virtual returns (uint256);
 
-    function sharesOutForUnderlying(
-        uint256 depositAmountInUnderlying
+    function convertToShares(
+        uint256 assetAmount
     ) public view virtual returns (uint256) {
-        return depositAmountInUnderlying;
+        return assetAmount;
     }
 
-    function AssetsOutForShares(
+    function convertToAssets(
         uint256 shares
     ) public view virtual returns (uint256) {
         return shares;
@@ -299,14 +299,18 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amount,
-        uint256 minimumOut,
+        uint256 maxStrategySharesBurnt,
         uint256 fee,
         uint32 withdrawChainId,
         uint256 _executionNonce,
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
-        _withdrawFundsFromYieldSource(amount + fee, minimumOut);
+        uint256 sharesToBeBurnt = convertToShares(amount);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
+        _withdrawFundsFromYieldSource(amount + fee);
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
 
@@ -448,8 +452,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @return The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount,
-        uint256 minimumOut
+        uint256 amount
     ) internal virtual returns (uint256);
 
     /**

@@ -54,8 +54,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount,
-        uint256
+        uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
         receiptToken.withdrawFrom(
             address(this),
@@ -74,14 +73,18 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minimumAmountOut,
+        uint256 maxStrategySharesBurnt,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumAmountOut);
+        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
         approveOrIncreaseAllowance(
             inputToken,
             newStrategy,

@@ -11,7 +11,7 @@ interface IErrors {
     error NothingToWithdraw();
     error InsufficientOut();
     error TransferFailed();
-
+    error ExceedsMaxSharesOut();
     error InvalidStrategyAddress();
     error InvalidStrategyChainId();
     error InvalidTreasuryAddress();

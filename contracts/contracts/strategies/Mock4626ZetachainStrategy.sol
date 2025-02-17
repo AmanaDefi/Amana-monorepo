@@ -130,13 +130,13 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
         }
     }
 
-    function sharesOutForUnderlying(
-        uint256 depositAmountInUnderlying
+    function convertToShares(
+        uint256 assetAmount
     ) public view virtual returns (uint256) {
-        return receiptToken.convertToShares(depositAmountInUnderlying);
+        return receiptToken.convertToShares(assetAmount);
     }
 
-    function AssetsOutForShares(
+    function convertToAssets(
         uint256 shares
     ) public view virtual returns (uint256) {
         return receiptToken.convertToAssets(shares);

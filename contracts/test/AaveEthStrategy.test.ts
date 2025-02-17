@@ -100,7 +100,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
 
     // Attempt withdraw from a non-gateway address
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
     const fee = ethers.utils.parseEther("0.01");
 
     await expect(simulateWithdrawCallFromVaultToStrategy(
@@ -110,7 +110,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       strategy,
       ethers.constants.AddressZero,
       withdrawAmount,
-      minAmountOut,
+      maxStrategySharesBurnt,
       fee,
       slippage,
       BASE_SEPOLIA_CHAIN_ID
@@ -135,7 +135,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
 
     // Attempt a withdrawal from a non-vault sender
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
     const fee = ethers.utils.parseEther("0.01");
 
     await expect(simulateWithdrawCallFromVaultToStrategy(
@@ -145,7 +145,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       strategy,
       ethers.constants.AddressZero,
       withdrawAmount,
-      minAmountOut,
+      maxStrategySharesBurnt,
       fee,
       slippage,
       BASE_SEPOLIA_CHAIN_ID
@@ -189,7 +189,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
     )
 
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const minAmountOut = ethers.utils.parseEther("0.49");
+    const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
     const fee = ethers.utils.parseEther("0.01");
 
     await simulateWithdrawCallFromVaultToStrategy(
@@ -199,7 +199,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       strategy,
       ethers.constants.AddressZero,
       withdrawAmount,
-      minAmountOut,
+      maxStrategySharesBurnt,
       fee,
       slippage,
       BASE_SEPOLIA_CHAIN_ID

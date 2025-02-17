@@ -45,7 +45,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         approveOrIncreaseAllowance(inputToken, address(aavePool), amount);
 
         aavePool.supply(address(inputToken), amount, address(this), 0);
-        // shares out = amount deposited, so no need to check minimumOut
+        // shares out = amount deposited, so no need to check maxStrategySharesBurnt
     }
 
     /**
@@ -54,17 +54,13 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount,
-        uint256 minimumOut
+        uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
         amountWithdrawn = aavePool.withdraw(
             address(inputToken),
             amount,
             address(this)
         );
-        if (amountWithdrawn < minimumOut) {
-            revert InsufficientOut();
-        }
     }
 
     /**
@@ -75,7 +71,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minimumAmountOut,
+        uint256 maxStrategySharesBurnt,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
@@ -83,9 +79,12 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     ) internal override {
         // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            type(uint256).max,
-            minimumAmountOut
+            type(uint256).max
         );
+        uint256 sharesToBeBurnt = convertToShares(amountWithdrawn);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
         approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
             amountWithdrawn,

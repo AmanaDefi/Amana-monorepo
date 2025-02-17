@@ -58,16 +58,9 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount,
-        uint256 minimumOut
+        uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
-        uint initialBalance = inputToken.balanceOf(address(this));
         receiptToken.redeemUnderlying(amount);
-        uint finalBalance = inputToken.balanceOf(address(this));
-        amountWithdrawn = finalBalance - initialBalance;
-        if (amountWithdrawn < minimumOut) {
-            revert InsufficientOut();
-        }
         return amount;
     }
 
@@ -79,14 +72,18 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 minimumAmountOut,
+        uint256 maxStrategySharesBurnt,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance, minimumAmountOut);
+        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
         approveOrIncreaseAllowance(
             inputToken,
             newStrategy,
@@ -110,17 +107,18 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 vTokenBalance = receiptToken.balanceOf(address(this));
-        return AssetsOutForShares(vTokenBalance);
+        uint256 exchangeRate = receiptToken.exchangeRateStored();
+        return (vTokenBalance * exchangeRate) / (10 ** 18);
     }
 
-    function sharesOutForUnderlying(
-        uint256 depositAmountInUnderlying
+    function convertToShares(
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 exchangeRate = receiptToken.exchangeRateStored();
-        return (depositAmountInUnderlying * (10 ** 18)) / exchangeRate;
+        return (assetAmount * (10 ** 18)) / exchangeRate;
     }
 
-    function AssetsOutForShares(
+    function convertToAssets(
         uint256 shares
     ) public view override returns (uint256) {
         uint256 exchangeRate = receiptToken.exchangeRateStored();
