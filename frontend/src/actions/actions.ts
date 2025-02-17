@@ -223,6 +223,10 @@ export async function calculateVenusAPY(receiptTokenAddress: Address, strategyCh
   return Number(currentAPY);
 }
 
+export async function calculateVenusRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  return Number(6.7);
+}
+
 export const executeDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectDeposit(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, transactionAmount);
@@ -279,6 +283,7 @@ const getSharesOutForUnderlying = async (transactionAmount: bigint, strategyAddr
 
 const getAmountOutForShares = async (transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
   const strategyChain = defineChain(strategyChainId);
+  console.log("strategyChain", strategyChain);
   const contract = getContract({
     client,
     chain: strategyChain,
@@ -286,30 +291,34 @@ const getAmountOutForShares = async (transactionAmount: bigint, strategyAddress:
   });
   const amountOutForShares = await readContract({
     contract,
-    method: "function AssetsOutForShares(uint256) view returns (uint256)",
+    method: "function convertToShares(uint256) view returns (uint256)",
     params: [transactionAmount]
   });
+  console.log("amountOutForShares", amountOutForShares);
   return amountOutForShares;
 }
 
 const executeDirectDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Deposit");
   const sharesOutForUnderlying = await getSharesOutForUnderlying(transactionAmount, strategyAddress, strategyChainId);
-
+  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   const slippage = getCurrentSlippage();
-
+  console.log("slippage", slippage);
   const minSharesOut = sharesOutForUnderlying * BigInt(10000 - slippage * 100) / BigInt(10000);
+  console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
     address: vaultId
   });
+  console.log("About to prepare contract call");
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
     params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
+  console.log("About to send transaction");
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx
@@ -488,11 +497,13 @@ const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Addres
     method: "function previewWithdraw(uint256) view returns (uint256)",
     params: [withdrawShareAmount]
   });
-
+  console.log("withdrawAssetAmount", withdrawAssetAmount);
+  console.log("strategyAddress", strategyAddress);
+  console.log("strategyChainId", strategyChainId);
   const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
-
+  console.log("strategyShareAmount", strategyShareAmount);
   const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
-
+  console.log("maxStrategySharesBurnt", maxStrategySharesBurnt);
   const withdrawTx = prepareContractCall({
     contract,
     method:
