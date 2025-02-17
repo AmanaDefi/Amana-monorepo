@@ -78,7 +78,6 @@ const Header = () => {
           <ConnectButton/>
         </div>
         <MobileMenuModal />
-        <WalletMultiButton/>
       </div>
     </header>
   );

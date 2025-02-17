@@ -28,8 +28,6 @@ export default function ConnectButton() {
             wallets={wallets}
             connectModal={{ size: "compact" }}
           />
-          <WalletMultiButton />
-
           <div className="tooltip-container">
             <div>
               <ArrowsRightLeftIcon
