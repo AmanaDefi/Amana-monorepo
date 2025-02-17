@@ -72,6 +72,7 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   owner: string,
   gatewaySigner: Signer,
   strategy: any,
+  withdrawZRC20: any,
   withdrawAmount: BigNumber,
   minAmountOut: BigNumber,
   fee: BigNumber,
@@ -80,7 +81,7 @@ export async function simulateWithdrawCallFromVaultToStrategy(
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, withdrawAmount, minAmountOut, fee, ORIGIN_CHAIN_ID, false, 1, slippage]
+    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, withdrawAmount, minAmountOut, fee, ORIGIN_CHAIN_ID, false, 1, slippage]
   );
 
   await
@@ -99,26 +100,25 @@ export async function simulateSwitchCallFromVaultToStrategy(
   vaultAddress: string,
   gatewaySigner: Signer,
   strategy: any,
-  newStrategy: any
+  newStrategyAddress: any
 ) {
   const switchMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "bytes32", "uint16"],
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
     [
       ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
       ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
-      newStrategy.address,
+      newStrategyAddress,
       ethers.constants.AddressZero,
       0, // amount
       0, // minAmountOut
       0, // fee
       0, // withdrawChainId
       false, // isDeposit
-      ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId
+      0, //ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId
       0
     ]
   );
-
-  await strategy.connect(gatewaySigner).onCall(
+  return await strategy.connect(gatewaySigner).onCall(
     {
       sender: vaultAddress,
     },

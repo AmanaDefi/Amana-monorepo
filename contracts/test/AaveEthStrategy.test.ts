@@ -108,6 +108,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       OWNER_ADDRESS,
       user1,
       strategy,
+      ethers.constants.AddressZero,
       withdrawAmount,
       minAmountOut,
       fee,
@@ -142,6 +143,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       OWNER_ADDRESS,
       gatewaySigner,
       strategy,
+      ethers.constants.AddressZero,
       withdrawAmount,
       minAmountOut,
       fee,
@@ -155,8 +157,6 @@ describe("AaveEthStrategy - Full Coverage", function () {
     const depositAmount = ethers.utils.parseEther("1");
     const minSharesOut = ethers.utils.parseEther("0.99");
     const slippage = 500;
-    let strategyBalance = await receiptToken.balanceOf(strategy.address);
-    console.log("strategyBalance", strategyBalance.toString());
     await simulateDepositCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
       OWNER_ADDRESS,
@@ -168,9 +168,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       BASE_SEPOLIA_CHAIN_ID,
     );
 
-    strategyBalance = await receiptToken.balanceOf(strategy.address);
-    console.log("strategyBalance", strategyBalance.toString());
-    console.log("depositAmount", depositAmount.toString());
+    const strategyBalance = await receiptToken.balanceOf(strategy.address);
     expect(strategyBalance).to.be.gte(depositAmount);
   });
 
@@ -199,6 +197,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       OWNER_ADDRESS,
       gatewaySigner,
       strategy,
+      ethers.constants.AddressZero,
       withdrawAmount,
       minAmountOut,
       fee,
@@ -532,7 +531,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
       AMANA_VAULT_ADDRESS,
       gatewaySigner,
       strategy,
-      newStrategy
+      newStrategy.address
     )).to.emit(strategy, "AssetsTransferredToNewStrategy")
       .to.emit(newStrategy, "FundsInvested");
 

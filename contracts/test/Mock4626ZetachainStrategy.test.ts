@@ -77,12 +77,12 @@ describe("Mock4626ZetachainStrategy - Full Coverage", function () {
 
   it("should allow Amana Vault to deposit tokens", async function () {
     const depositAmount = ethers.utils.parseEther("100");
-
+    const minSharesOut = 0;
     // Approve tokens for strategy
     await mockERC20.connect(amanaVaultSigner).approve(strategy.address, depositAmount);
 
     // Deposit tokens into strategy
-    const tx = await strategy.connect(amanaVaultSigner).invest(depositAmount);
+    const tx = await strategy.connect(amanaVaultSigner).invest(depositAmount, minSharesOut);
     const receipt = await tx.wait();
 
     // Verify emitted event
@@ -99,10 +99,10 @@ describe("Mock4626ZetachainStrategy - Full Coverage", function () {
 
   it("should allow Amana Vault to withdraw tokens", async function () {
     const depositAmount = ethers.utils.parseEther("100");
-
+    const minSharesOut = 0;
     // Approve and deposit tokens
     await mockERC20.connect(amanaVaultSigner).approve(strategy.address, depositAmount);
-    await strategy.connect(amanaVaultSigner).invest(depositAmount);
+    await strategy.connect(amanaVaultSigner).invest(depositAmount, minSharesOut);
 
     // Withdraw tokens
     const tx = await strategy.connect(amanaVaultSigner).withdraw(depositAmount, 0);
@@ -122,9 +122,10 @@ describe("Mock4626ZetachainStrategy - Full Coverage", function () {
 
   it("should revert if a non-vault address tries to call invest", async function () {
     const depositAmount = ethers.utils.parseEther("100");
+    const minSharesOut = 0;
     const [nonVaultSigner] = await ethers.getSigners();
 
-    await expect(strategy.connect(nonVaultSigner).invest(depositAmount)).to.be.revertedWith(
+    await expect(strategy.connect(nonVaultSigner).invest(depositAmount, minSharesOut)).to.be.revertedWith(
       "Only Vault contract can call"
     );
   });

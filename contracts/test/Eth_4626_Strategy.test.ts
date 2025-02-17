@@ -4,6 +4,8 @@ import { Signer } from "ethers";
 import { Eth_4626_Strategy, IERC20, Mock4626 } from "../typechain";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../constants";
+import { simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy } from "./utils";
+
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -15,6 +17,9 @@ const AMANA_VAULT_ADDRESS = "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B";
 const OWNER_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 
+let owner: Signer;
+let user1: Signer;
+let user2: Signer;
 let gatewaySigner: Signer;
 let strategy: Eth_4626_Strategy;
 let receiptToken: IERC20;
@@ -82,114 +87,93 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
   it("should revert if a non-gateway address tries to call onCall", async function () {
     const depositAmount = ethers.utils.parseEther("1");
+    const slippage = 500;
+    const minSharesOut = ethers.utils.parseEther("0.99");
 
-    // Attempt deposit from a non-gateway address
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
-    );
-
-    await expect(
-      strategy.onCall(
-        {
-          sender: AMANA_VAULT_ADDRESS,
-        },
-        depositMessage,
-        {
-          value: depositAmount,
-          gasPrice: ethers.utils.parseUnits("150", "gwei"),
-        }
-      )
-    ).to.be.revertedWithCustomError(strategy, "OnlyGateway");
+    await expect(simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      owner, // put in non gateway signer
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_SEPOLIA_CHAIN_ID,
+    )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
 
     // Attempt withdraw from a non-gateway address
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const fee = ethers.utils.parseEther("0.01");
-    const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
-    );
+    const minAmountOut = ethers.utils.parseEther("0.49");
 
-    await expect(
-      strategy.onCall(
-        {
-          sender: AMANA_VAULT_ADDRESS,
-        },
-        withdrawMessage,
-        {
-          gasPrice: ethers.utils.parseUnits("150", "gwei"),
-        }
-      )
-    ).to.be.revertedWithCustomError(strategy, "OnlyGateway");
+    const fee = ethers.utils.parseEther("0.01");
+
+    await expect(simulateWithdrawCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      owner,
+      strategy,
+      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      withdrawAmount,
+      minAmountOut,
+      fee,
+      slippage,
+      SEPOLIA_CHAIN_ID
+    )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
   });
 
   it("should revert if the original sender of a deposit or withdrawal is not amanaVault", async function () {
     const depositAmount = ethers.utils.parseEther("1");
+    const minSharesOut = ethers.utils.parseEther("0.99");
+    const slippage = 500;
 
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
-    );
-
-    // Attempt to call onCall from an address other than amanaVault
     const invalidSenderAddress = OWNER_ADDRESS;
 
-    await expect(
-      strategy.connect(gatewaySigner).onCall(
-        {
-          sender: invalidSenderAddress, // Invalid sender, not amanaVault
-        },
-        depositMessage,
-        {
-          value: depositAmount,
-          gasPrice: ethers.utils.parseUnits("150", "gwei"),
-        }
-      )
-    ).to.be.revertedWithCustomError(strategy, "OnlyVault");
+    await expect(simulateDepositCallFromVaultToStrategy(
+      invalidSenderAddress,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_SEPOLIA_CHAIN_ID,
+    )).to.be.revertedWithCustomError(strategy, "OnlyVault");
 
     // Attempt a withdrawal from a non-vault sender
     const withdrawAmount = ethers.utils.parseEther("0.5");
+    const minAmountOut = ethers.utils.parseEther("0.49");
+
     const fee = ethers.utils.parseEther("0.01");
 
-    const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
-    );
-
-    await expect(
-      strategy.connect(gatewaySigner).onCall(
-        {
-          sender: invalidSenderAddress, // Invalid sender, not amanaVault
-        },
-        withdrawMessage,
-        {
-          gasPrice: ethers.utils.parseUnits("150", "gwei"),
-        }
-      )
-    ).to.be.revertedWithCustomError(strategy, "OnlyVault");
+    await expect(simulateWithdrawCallFromVaultToStrategy(
+      OWNER_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      withdrawAmount,
+      minAmountOut,
+      fee,
+      slippage,
+      SEPOLIA_CHAIN_ID
+    )).to.be.revertedWithCustomError(strategy, "OnlyVault");
   });
 
   it("should allow Gateway to invest ETH", async function () {
     const depositAmount = ethers.utils.parseEther("1");
+    const minSharesOut = ethers.utils.parseEther("0.99");
+    const slippage = 500;
 
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_SEPOLIA_CHAIN_ID,
     );
-
-    const tx = await strategy.connect(gatewaySigner).onCall(
-      {
-        sender: AMANA_VAULT_ADDRESS,
-      },
-      depositMessage,
-      {
-        value: depositAmount,
-        gasPrice: ethers.utils.parseUnits("150", "gwei"),
-      }
-    );
-
-    const receipt = await tx.wait();
-    console.log("Gas used for invest:", receipt.gasUsed.toString());
 
     const strategyBalance = await receiptToken.balanceOf(strategy.address);
     expect(strategyBalance).to.be.gte(depositAmount);
@@ -197,43 +181,37 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
   it("should allow Gateway to withdraw ETH", async function () {
     const depositAmount = ethers.utils.parseEther("1");
+    const minSharesOut = ethers.utils.parseEther("0.99");
+    const slippage = 500;
 
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
-    );
-
-    await strategy.connect(gatewaySigner).onCall(
-      {
-        sender: AMANA_VAULT_ADDRESS,
-      },
-      depositMessage,
-      {
-        value: depositAmount,
-        gasPrice: ethers.utils.parseUnits("150", "gwei"),
-      }
-    );
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_SEPOLIA_CHAIN_ID,
+    )
 
     const withdrawAmount = ethers.utils.parseEther("0.5");
+    const minAmountOut = ethers.utils.parseEther("0.49");
+
     const fee = ethers.utils.parseEther("0.01");
 
-    const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ethers.constants.AddressZero, withdrawAmount, fee, SEPOLIA_CHAIN_ID, false, 1, 200]
+    await simulateWithdrawCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      withdrawAmount,
+      minAmountOut,
+      fee,
+      slippage,
+      SEPOLIA_CHAIN_ID
     );
-
-    const tx = await strategy.connect(gatewaySigner).onCall(
-      {
-        sender: AMANA_VAULT_ADDRESS,
-      },
-      withdrawMessage,
-      {
-        gasPrice: ethers.utils.parseUnits("150", "gwei"),
-      }
-    );
-
-    const receipt = await tx.wait();
-    console.log("Gas used for withdraw:", receipt.gasUsed.toString());
 
     const strategyBalance = await receiptToken.balanceOf(strategy.address);
     const tolerance = ethers.utils.parseUnits("0.0000001", 18); // some interest dust
@@ -271,7 +249,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       amount: 0,
     };
 
-    await expect(strategy.onRevert(revertContext))
+    await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
       .to.emit(strategy, "InvestConfirmFailed")
       .withArgs(crossChainTxId);
   });
@@ -279,7 +257,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
   it("should emit event and re-invest ETH on _returnFundsFromStrategyFailed revert", async function () {
     const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32)
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "uint256"],
+      ["string", "bytes32"],
       ["_returnFundsFromStrategyFailed", crossChainTxId]
     );
 
@@ -300,7 +278,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       amount: withdrawPlusFee,
     };
 
-    await expect(strategy.onRevert(revertContext))
+    await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
       .withArgs(crossChainTxId);
 
@@ -312,21 +290,18 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
   it("should emit the TotalUnderlyingAssetsSent event", async function () {
     const depositAmount = ethers.utils.parseEther("1");
+    const minSharesOut = ethers.utils.parseEther("0.99");
+    const slippage = 500;
 
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
-    );
-
-    await strategy.connect(gatewaySigner).onCall(
-      {
-        sender: AMANA_VAULT_ADDRESS,
-      },
-      depositMessage,
-      {
-        value: depositAmount,
-        gasPrice: ethers.utils.parseUnits("150", "gwei"),
-      }
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_SEPOLIA_CHAIN_ID,
     );
 
     // Call the function
@@ -386,13 +361,11 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       false,            // callOnRevert
       strategy.address, // abortAddress
       ethers.utils.defaultAbiCoder.encode(
-        ["string", "uint256"], // Revert handler function name and crossChainTxId
+        ["string", "bytes32"], // Revert handler function name and crossChainTxId
         ["_investConfirmFailed", crossChainTxId]
       ),                         // revertMessage
       ethers.BigNumber.from("1000000") // onRevertGasLimit
     ];
-
-
 
     const gatewayEVM = await ethers.getContractAt(
       GatewayEVMABI.abi,
@@ -468,7 +441,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       true,             // callOnRevert
       strategy.address, // abortAddress
       ethers.utils.defaultAbiCoder.encode(
-        ["string", "uint256"], // Revert handler function name and crossChainTxId
+        ["string", "bytes32"], // Revert handler function name and crossChainTxId
         ["_returnFundsFromStrategyFailed", crossChainTxId]
       ),                         // revertMessage
       ethers.BigNumber.from("1000000") // onRevertGasLimit
@@ -514,21 +487,18 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
   it("should transfer Assets to new strategy on strategy switch via onCall", async function () {
     const depositAmount = ethers.utils.parseEther("1");
+    const minSharesOut = ethers.utils.parseEther("0.99");
+    const slippage = 500;
 
-    const depositMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [OWNER_ADDRESS, OWNER_ADDRESS, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, BASE_SEPOLIA_CHAIN_ID, true, 0, 0]
-    );
-
-    await strategy.connect(gatewaySigner).onCall(
-      {
-        sender: AMANA_VAULT_ADDRESS,
-      },
-      depositMessage,
-      {
-        value: depositAmount,
-        gasPrice: ethers.utils.parseUnits("150", "gwei"),
-      }
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_SEPOLIA_CHAIN_ID,
     );
 
     const StrategyFactory = await ethers.getContractFactory("Eth_4626_Strategy");
@@ -544,30 +514,11 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
 
     await newStrategy.setOldStrategy(strategy.address);
 
-    const switchMessage = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-      [
-        ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
-        ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
-        newStrategy.address,
-        ethers.constants.AddressZero,
-        0, // amount
-        0, // fee
-        0, // withdrawChainId
-        false, // isDeposit
-        1, // crossChainTxId
-        0 // slippage
-      ]
-    );
-
-    await expect(strategy.connect(gatewaySigner).onCall(
-      {
-        sender: AMANA_VAULT_ADDRESS,
-      },
-      switchMessage,
-      {
-        gasPrice: ethers.utils.parseUnits("150", "gwei"),
-      }
+    await expect(simulateSwitchCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      gatewaySigner,
+      strategy,
+      newStrategy.address
     )).to.emit(strategy, "AssetsTransferredToNewStrategy")
       .to.emit(newStrategy, "FundsInvested");
 
