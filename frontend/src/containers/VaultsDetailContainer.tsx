@@ -46,9 +46,9 @@ const VaultsDetailContainer: React.FC<{
       }
     }, [EOAaccount]);
 
-    if (!EOAaccount) {
-      throw new Error("No active account found");
-    }
+    // if (!EOAaccount) {
+    //   throw new Error("No active account found");
+    // }
 
     const strategyExplorerBaseUrl = useMemo(() => {
         if (!vaultData?.protocol?.chainId) return "";
