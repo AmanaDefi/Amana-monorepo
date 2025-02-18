@@ -4,6 +4,7 @@ import {
   calculateCompoundAPY,
   calculateMoonwellAPY,
   calculateVenusAPY,
+  calculateVenusRewardsAPY,
   calculateEddyAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
@@ -15,7 +16,7 @@ import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useContractEvents } from "thirdweb/react";
-import {getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
+import { getOnlyTokenSymbol, isZetachain } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 
@@ -166,7 +167,7 @@ export const useUpdateAPYs = (
                 method: "function receiptToken() view returns (address)",
               });
               let APY7d = 0;
-
+              let RewardsAPY = 0;
               if (vault.protocol.name === "Aave" || vault.protocol.name === "ZeroLend") {
                 console.log("Calculating APY for Aave or ZeroLend")
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
@@ -180,6 +181,8 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Venus") {
                 console.log("Calculating APY for Venus");
                 APY7d = await calculateVenusAPY(receiptTokenAddress as Address, strategyChain);
+                RewardsAPY = await calculateVenusRewardsAPY(receiptTokenAddress as Address, strategyChain);
+                APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
               }

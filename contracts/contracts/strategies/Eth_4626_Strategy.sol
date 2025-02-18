@@ -38,11 +38,17 @@ contract Eth_4626_Strategy is EthStrategyParent {
     }
 
     /// @notice deposits funds into the yield source.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
 
-        receiptToken.deposit(amount, address(this));
+        uint256 shares = receiptToken.deposit(amount, address(this));
+        if (shares < minimumOut) {
+            revert InsufficientOut();
+        }
     }
 
     /// @notice Withdraws funds from the Aave pool.
@@ -55,7 +61,6 @@ contract Eth_4626_Strategy is EthStrategyParent {
             address(this), // receiver
             address(this) // owner
         );
-
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
@@ -67,16 +72,26 @@ contract Eth_4626_Strategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 maxStrategySharesBurnt,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
         _withdrawFundsFromYieldSource(strategyTotalBalance);
-
+        uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
         IStrategy(newStrategy).depositFromOldStrategy{
             value: strategyTotalBalance
-        }(strategyTotalBalance, currentExecutionNonce, _crossChainTxId);
+        }(
+            strategyTotalBalance,
+            minimumSharesOut,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
             strategyTotalBalance,
@@ -89,6 +104,18 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
+        return receiptToken.convertToAssets(shares);
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256) {
         return receiptToken.convertToAssets(shares);
     }
 }

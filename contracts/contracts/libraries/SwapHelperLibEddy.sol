@@ -20,7 +20,7 @@ library SwapHelperLibEddy {
     address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
 
     address constant PRICE_ORACLE_ADDRESS =
-        0xD52b6aB593caB9D55dB083D8a6Fe9A3F8d91ad8d; // mainnet only
+        0x0D313486083fe6f0A1868EAeEe07D46fed92E9f9; // mainnet only
 
     address constant CURVE_POOL = 0x448028804461e8e5a8877c228F3adFd58c3Da6B6; // mainnet only
 
