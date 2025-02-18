@@ -78,6 +78,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
+    id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Base ZeroLend USDC Vault
+    name: "Beefy Ionic USDC",
+    des: "This strategy deposits the USDC into Beefy, which in turn deposits it into Morpho and farms for more USDC. The earned USDC is then deposited back into the Morpho farm. The transaction cost required to do all this is socialized among the vault's users.",
+    symbol: "aBeefyUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Beefy",
+      strategyAddress: "0xb7F4625Ce14B9edDBb215019B288B00eC85adE97",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is a layer-2 network built on the OP stack by Coinbase, offering low-cost, scalable transactions while inheriting Ethereum’s security. It integrates with Coinbase products, providing an accessible gateway for users and developers.",
+      imgURL: "/ZeroLend.png",
+      des: "Beefy Finance is a multi-chain yield optimizer that auto-compounds rewards from liquidity pools and staking. It maximizes returns through automated strategies, reducing gas costs and manual effort."
+    },
+  },
+  {
     id: "0xf8751D39Dcf5DdAd785BC237FE3c449f718Af24a", // BSC Venus USDT Vault
     name: "Venus USDT",
     des: "This strategy deposits USDT into a Venus USDT pool as collateral to earn interest. It benefits from BSC’s low fees but carries risks such as interest rate changes, liquidation, and protocol security.",

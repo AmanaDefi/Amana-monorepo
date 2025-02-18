@@ -42,9 +42,17 @@ contract BeefyStrategy is ERC20StrategyParent {
         uint256 amount,
         uint256 minSharesOut
     ) internal override {
-        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
+        uint256 initialBalance = receiptToken.balanceOf(address(this));
 
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
         receiptToken.deposit(amount);
+
+        uint256 finalBalance = receiptToken.balanceOf(address(this));
+        uint256 shares = finalBalance - initialBalance;
+
+        if (shares < minSharesOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
@@ -56,9 +64,7 @@ contract BeefyStrategy is ERC20StrategyParent {
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
         uint256 shares = convertToShares(amount);
-        receiptToken.withdraw(
-            shares // note this is an amount in shares
-        );
+        receiptToken.withdraw(shares);
         return shares;
     }
 
