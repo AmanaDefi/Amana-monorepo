@@ -206,9 +206,9 @@ export const selectActions = async (
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
-              Action.CrossChainDepositFailed,
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.crosschainInvest,
               Action.CrossChainInvestFailed,
               Action.FundsReturnedError,
