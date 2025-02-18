@@ -410,3 +410,11 @@ export const PRICE_IDS: { [key: string]: string } = {
   "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
 };
+
+export const CHAINS_EXPLORER_BASE_URL_MAINNET: {[key: number]: string} = {
+  7000: "https://zetachain.blockscout.com",
+  8453: "https://basescan.org",
+  56: "https://bscscan.com",
+  137: "https://polygonscan.com",
+  1: "https://etherscan.io"
+}

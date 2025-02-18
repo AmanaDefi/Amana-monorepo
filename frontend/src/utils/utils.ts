@@ -180,6 +180,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.crosschainInvest,
               Action.CrossChainInvestFailed,
               Action.FundsReturnedError,
@@ -192,6 +193,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.crosschainInvest,
               Action.CrossChainInvestFailed,
               Action.FundsReturnedError,
@@ -204,6 +206,7 @@ export const selectActions = async (
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposit,
               Action.depositConfirmed,
               Action.crosschainInvest,
@@ -244,6 +247,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposited
             ]
           }
@@ -251,6 +255,7 @@ export const selectActions = async (
             return [
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposited
             ]
           }
@@ -260,6 +265,7 @@ export const selectActions = async (
               Action.depositApproveConfirmed,
               Action.deposit,
               Action.depositConfirmed,
+              Action.CrossChainDepositFailed,
               Action.deposited
             ]
           }
@@ -282,6 +288,7 @@ export const selectActions = async (
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
+            Action.CrossChainWithdrawFailed,
             Action.DivestSent,
             Action.DivestFailed,
             Action.FundsDivested,
@@ -303,6 +310,7 @@ export const selectActions = async (
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
+            Action.CrossChainWithdrawFailed,
             Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
             Action.withdrew
@@ -323,6 +331,8 @@ export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToke
 }
 
 export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
+
+export const getOnlyTokenSymbol = (symbol: string) => symbol.split('.')[0];
 
 export async function fetchTokenPrices(priceIds: string[]): Promise<{
   [priceId: string]: number;

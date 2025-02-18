@@ -39,10 +39,8 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(uint256 amount) internal override {
-        bool success = inputToken.approve(address(receiptToken), amount);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
+
         receiptToken.supply(address(inputToken), amount);
         // if (shares == 0) {
         //     revert DepositFailed();
@@ -80,10 +78,12 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         _withdrawFundsFromYieldSource(strategyTotalBalance);
-        bool success = inputToken.approve(newStrategy, strategyTotalBalance);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+        approveOrIncreaseAllowance(
+            inputToken,
+            newStrategy,
+            strategyTotalBalance
+        );
+
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
             currentExecutionNonce,

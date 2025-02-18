@@ -446,10 +446,22 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         gasTank.getGas(gas_zrc20, gasFee);
 
         if (gas_zrc20 != address(asset())) {
-            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount);
-            IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+            approveOrIncreaseAllowance(
+                IERC20(asset()),
+                _GATEWAY_ADDRESS,
+                amount
+            );
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                _GATEWAY_ADDRESS,
+                gasFee
+            );
         } else {
-            IZRC20(asset()).approve(_GATEWAY_ADDRESS, amount + gasFee);
+            approveOrIncreaseAllowance(
+                IERC20(asset()),
+                _GATEWAY_ADDRESS,
+                amount + gasFee
+            );
         }
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
@@ -543,16 +555,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address caller, //caller
         address receiver, // receiver
         address user, // owner
+        address withdrawZRC20,
         uint256 assets,
-        uint256 shares
+        uint256 shares,
+        uint16 slippage
     ) internal override {
-        if (assets == 0) {
-            revert WithdrawCantBeZero();
-        }
-        uint256 maxAssets = maxWithdraw(user) - pendingWithdrawals[user];
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(user, assets, maxAssets);
-        }
         pendingWithdrawals[user] += assets;
 
         if (caller != user) {
@@ -574,12 +581,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _divestFromStrategy(
             user,
             receiver,
-            asset(),
-            asset(),
+            withdrawZRC20,
+            withdrawZRC20,
             assets,
             feeToWithdraw,
             uint32(block.chainid),
-            0,
+            slippage,
             crossChainTxId
         );
     }
@@ -742,6 +749,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit PerformanceFeePaid(user, fee);
             SafeERC20.safeTransfer(IERC20(address(asset())), treasury, fee);
         }
+
+        emit Withdrawn(user, amount, shares, _crossChainTxId);
     }
 
     /**
@@ -757,8 +766,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) private returns (address gasZRC20, uint256 gasFee) {
         (gasZRC20, gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(gasLimit);
-        gasTank.getGas{gas: 200000}(gasZRC20, gasFee);
-        IZRC20(gasZRC20).approve(_GATEWAY_ADDRESS, gasFee);
+        gasTank.getGas(gasZRC20, gasFee);
+        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
     }
 
     /**
@@ -766,7 +775,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param context The revert context containing details about the revert scenario.
      * @notice Executes appropriate recovery steps based on the revert message.
      */
-    function onRevert(RevertContext calldata context) external override {
+    function onRevert(
+        RevertContext calldata context
+    ) external override onlyGateway {
         (
             string memory revertMessage,
             bytes32 _crossChainTxId,
@@ -784,7 +795,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            uint16 slippage = 200;
+            uint16 slippage = 10000;
             _returnFundsToUser(
                 context.amount,
                 userChainId,

@@ -5,6 +5,7 @@ import VaultsContainer from "../containers/VaultsContainer";
 import { useActiveAccount } from "thirdweb/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
+import {BannersCarousel} from "@/components/banners/BannersCarousel";
 
 export default function Page() {
   const account = useActiveAccount();

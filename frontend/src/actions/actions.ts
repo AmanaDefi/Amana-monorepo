@@ -24,6 +24,9 @@ const EVMGatewayAddress = deployEnv === "testnet"
   : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
 const abiCoder = new AbiCoder();
 
+const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === 'testnet';
+const contractWithdrawalReceiverAddress = (isTestnet ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS) as `0x${string}`
+
 if (!EVMGatewayAddress) {
   throw new Error(`EVM Gateway address is not defined for the ${deployEnv} environment.`);
 }
@@ -69,7 +72,6 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
     return 0;
   }
 }
-
 
 export async function calculateAaveAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   const receiptTokenContract = getContract({
@@ -316,12 +318,14 @@ const executeCrossChainDeposit = async (
     [inputToken, slippageValue, transactionId]
   ) as `0x${string}`;
 
+  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainDepositFailed", transactionId, activeAccount.address]);
+
   // Prepare revertOptions
   revertOptions = [
-    activeAccount.address, // revertAddress
-    false, // callOnRevert
+    contractWithdrawalReceiverAddress, // revertAddress
+    true, // callOnRevert
     activeAccount.address, // abortAddress
-    hexlify(toUtf8Bytes("Revert happened")) as `0x${string}`, // revertMessage
+    revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
   ] as const;
 
@@ -471,12 +475,13 @@ const executeCrossChainWithdrawal = async (
     [withdrawZRC20, withdrawERC20, withdrawAmount, slippageValue, transactionId]
   ) as `0x${string}`;
 
-  // Prepare revertOptions to match the Solidity struct
+  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainWithdrawFailed", transactionId, activeAccount.address]);
+
   const revertOptions = [
-    activeAccount.address, // revertAddress
-    false, // callOnRevert
+    contractWithdrawalReceiverAddress, // revertAddress
+    true, // callOnRevert
     activeAccount.address, // abortAddress
-    hexlify(toUtf8Bytes("Revert happened")) as `0x${string}`, // revertMessage
+    revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
   ] as const;
 
@@ -627,4 +632,19 @@ export const getAssetsFromShares = async (amount: bigint, vaultData: VaultData) 
     return BigInt('0')
   }
 }
+
+export const getPerformanceFee = async (vaultId: Address) => {
+  let contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // Zetachain
+    address: vaultId
+  });
+
+  const perfFee = await readContract({
+    contract,
+    method: "function perfFee() view returns (uint16)",
+  });
+
+  return perfFee;
+};
 

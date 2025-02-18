@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
-
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IErrors.sol";
 
-contract GasTank is Ownable, IErrors {
+contract GasTank is Ownable2Step, IErrors {
+    using SafeERC20 for IERC20;
     mapping(address => bool) public authorizedVaults;
-
     event VaultAuthorized(address indexed vault);
     event VaultDeauthorized(address indexed vault);
     event GasTokenProvided(
@@ -44,10 +43,9 @@ contract GasTank is Ownable, IErrors {
         uint256 amount
     ) external onlyAuthorized {
         uint256 balance = IERC20(zrc20Token).balanceOf(address(this));
-        if (balance < amount) revert InsufficientBalance();
+        if (balance <= amount) revert InsufficientBalance();
 
-        bool success = IERC20(zrc20Token).transfer(msg.sender, amount);
-        if (!success) revert TransferFailed();
+        SafeERC20.safeTransfer(IERC20(zrc20Token), msg.sender, amount);
 
         emit GasTokenProvided(msg.sender, zrc20Token, amount);
     }
@@ -58,9 +56,7 @@ contract GasTank is Ownable, IErrors {
         uint256 amount
     ) external onlyOwner {
         uint256 balance = IERC20(zrc20Token).balanceOf(address(this));
-        if (balance < amount) revert InsufficientBalance();
-
-        bool success = IERC20(zrc20Token).transfer(msg.sender, amount);
-        if (!success) revert TransferFailed();
+        if (balance <= amount) revert InsufficientBalance();
+        SafeERC20.safeTransfer(IERC20(zrc20Token), msg.sender, amount);
     }
 }

@@ -14,6 +14,7 @@ import "./interfaces/ISystem.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ICurvePool.sol";
+import "./interfaces/IZapContract.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
 
@@ -32,11 +33,11 @@ abstract contract AmanaVaultBase is
 
     // Constants
     address constant _GATEWAY_ADDRESS =
-        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E; // testnet: 0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
+        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
-    address constant UNISWAP_V2_ROUTER =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+    address constant ZAP_CONTRACT_ADDRESS =
+        0x6C37E7104a3903Ccbc979b5316d0DD320B67aecB; // mainnet
 
     // Variables
     address public strategyAddress;
@@ -58,12 +59,22 @@ abstract contract AmanaVaultBase is
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint256 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    // event ContextDataRevert(RevertContext context);
+    event ContextDataRevert(RevertContext context);
+    event TreasuryUpdated(address indexed newTreasury);
+    event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
+    event GasTankUpdated(address indexed newGasTank);
 
     event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
     event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
 
     event Deposited(
+        address indexed user,
+        uint256 amount,
+        uint256 shares,
+        bytes32 indexed crossChainTxId
+    );
+
+    event Withdrawn(
         address indexed user,
         uint256 amount,
         uint256 shares,
@@ -154,6 +165,7 @@ abstract contract AmanaVaultBase is
     function updateTreasuryAddress(address _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
         treasury = _treasury;
+        emit TreasuryUpdated(_treasury);
     }
 
     /**
@@ -166,6 +178,7 @@ abstract contract AmanaVaultBase is
     ) external onlyOwner {
         if (_withdrawalReceiver == address(0)) revert InvalidAddress();
         withdrawalReceiver = _withdrawalReceiver;
+        emit WithdrawalReceiverUpdated(_withdrawalReceiver);
     }
 
     /**
@@ -188,6 +201,7 @@ abstract contract AmanaVaultBase is
     function setGasTank(address newGasTank) external onlyOwner {
         if (newGasTank == address(0)) revert CantBeZeroAddress();
         gasTank = IGasTank(newGasTank);
+        emit GasTankUpdated(newGasTank);
     }
 
     /**
@@ -256,7 +270,9 @@ abstract contract AmanaVaultBase is
         uint256 totalUserAssetsWithFee = (balanceOf(user) * totalAssets()) /
             (totalSupply() + 1);
         uint256 totalFeeOwing = totalUserAssetsWithFee - totalUserAssets;
-        feeToWithdraw = (totalFeeOwing * assets) / totalUserAssetsWithFee;
+        feeToWithdraw = totalUserAssetsWithFee == 0
+            ? 0
+            : (totalFeeOwing * assets) / totalUserAssetsWithFee;
     }
 
     /**
@@ -418,6 +434,81 @@ abstract contract AmanaVaultBase is
         bytes32 crossChainTxId
     ) internal virtual;
 
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) public override returns (uint256) {
+        if (shares == 0) {
+            revert RedeemCantBeZero();
+        }
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
+        return redeemToAnyToken(shares, receiver, owner, address(asset()), 0);
+    }
+
+    /** @dev See {IERC4626-withdraw}. */
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public override returns (uint256) {
+        if (assets == 0) {
+            revert WithdrawCantBeZero();
+        }
+        uint256 maxAssets = maxWithdraw(owner);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
+        }
+
+        uint256 shares = previewWithdraw(assets);
+        _withdraw(
+            _msgSender(),
+            receiver,
+            owner,
+            address(asset()),
+            assets,
+            shares,
+            0
+        );
+
+        return shares;
+    }
+
+    /** @dev See {IERC4626-redeem}. */
+    function redeemToAnyToken(
+        uint256 shares,
+        address receiver,
+        address owner,
+        address withdrawZRC20,
+        uint16 slippage
+    ) public returns (uint256) {
+        uint256 assets = previewRedeem(shares);
+        _withdraw(
+            _msgSender(),
+            receiver,
+            owner,
+            withdrawZRC20,
+            assets,
+            shares,
+            slippage
+        );
+
+        return assets;
+    }
+
+    function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        address withdrawZRC20,
+        uint256 assets,
+        uint256 shares,
+        uint16 slippage
+    ) internal virtual {}
+
     /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
      * @param user The address of the user receiving the withdrawn assets.
@@ -457,7 +548,20 @@ abstract contract AmanaVaultBase is
 
         if (userChainId == uint32(block.chainid)) {
             // Same-chain transfer
-            SafeERC20.safeTransfer(IERC20(asset()), receiver, outputAmount);
+            if (withdrawZRC20 == address(asset())) {
+                SafeERC20.safeTransfer(IERC20(asset()), receiver, amount);
+            } else {
+                IERC20(address(asset())).approve(ZAP_CONTRACT_ADDRESS, amount);
+
+                IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
+                    amount,
+                    address(this),
+                    address(asset()),
+                    withdrawZRC20,
+                    slippage,
+                    receiver
+                );
+            }
         } else {
             // Cross-chain transfer
             bytes memory recipient = abi.encodePacked(withdrawalReceiver);
@@ -496,10 +600,19 @@ abstract contract AmanaVaultBase is
             gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
 
             if (gas_zrc20 != withdrawZRC20) {
-                IZRC20(withdrawZRC20).approve(_GATEWAY_ADDRESS, outputAmount);
-                IZRC20(gas_zrc20).approve(_GATEWAY_ADDRESS, gasFee);
+                approveOrIncreaseAllowance(
+                    IERC20(withdrawZRC20),
+                    _GATEWAY_ADDRESS,
+                    outputAmount
+                );
+                approveOrIncreaseAllowance(
+                    IERC20(gas_zrc20),
+                    _GATEWAY_ADDRESS,
+                    gasFee
+                );
             } else {
-                IZRC20(withdrawZRC20).approve(
+                approveOrIncreaseAllowance(
+                    IERC20(withdrawZRC20),
                     _GATEWAY_ADDRESS,
                     outputAmount + gasFee
                 );
@@ -579,10 +692,11 @@ abstract contract AmanaVaultBase is
                 targetZRC20
             );
 
-            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+            IZRC20(zrc20).approve(SwapHelperLibEddy.UNISWAP_V2_ROUTER, amount);
             // Perform the swap
-            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-                .swapExactTokensForTokens(
+            uint256[] memory amounts = IUniswapV2Router02(
+                SwapHelperLibEddy.UNISWAP_V2_ROUTER
+            ).swapExactTokensForTokens(
                     amount,
                     minAmountOut,
                     path,
@@ -591,6 +705,23 @@ abstract contract AmanaVaultBase is
                 );
 
             return amounts[amounts.length - 1];
+        }
+    }
+
+    function approveOrIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
         }
     }
 

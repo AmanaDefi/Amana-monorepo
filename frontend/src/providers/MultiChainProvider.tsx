@@ -60,7 +60,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { connect, isConnecting } = useConnectModal();
   const activeAccount = useActiveWallet();
   const { disconnect: evmDisconnect } = useDisconnect();
-  const { publicKey, disconnect, select, connect: solanaConnect } = useWallet();
+  const { publicKey, disconnect } = useWallet();
   const { setVisible, visible } = useWalletModal();
   const account = useActiveAccount();
 
@@ -73,11 +73,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       if (selectedChain == "evm") {
         if (activeAccount) evmDisconnect(activeAccount);
       }
-      console.log("visible", visible);
       setVisible(true);
-      // await solanaConnect();
-
-      // select("Phantom" as WalletName);
     } catch (error) {
       console.error("Solana connection error:", error);
     }

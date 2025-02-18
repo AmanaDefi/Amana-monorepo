@@ -1,18 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./interfaces/IErrors.sol";
 
 contract Treasury {
+    using SafeERC20 for IERC20;
+
     address public governance;
-    event GovernanceChanged(
-        address indexed oldGovernance,
+    address public pendingGovernance;
+
+    event GovernanceInitialized(
+        address indexed previousGovernance,
         address indexed newGovernance
     );
+    event GovernanceTransferInitiated(
+        address indexed previousGovernance,
+        address indexed newGovernance
+    );
+    event GovernanceAccepted(address indexed newGovernance);
 
     constructor(address _governance) {
         require(_governance != address(0), "Governance: zero address");
         governance = _governance;
+        emit GovernanceInitialized(address(0), _governance);
     }
 
     modifier onlyGovernance() {
@@ -20,13 +31,29 @@ contract Treasury {
         _;
     }
 
-    function setGovernance(address _governance) external onlyGovernance {
-        require(_governance != address(0), "Governance: zero address");
+    /**
+     * @notice Initiates the governance transfer by setting a pendingGovernance address.
+     * @param _pendingGovernance The address of the new governance.
+     */
+    function setPendingGovernance(
+        address _pendingGovernance
+    ) external onlyGovernance {
+        require(_pendingGovernance != address(0), "Governance: zero address");
+        pendingGovernance = _pendingGovernance;
+        emit GovernanceTransferInitiated(governance, _pendingGovernance);
+    }
 
-        address oldGovernance = governance;
-        governance = _governance;
-
-        emit GovernanceChanged(oldGovernance, _governance);
+    /**
+     * @notice The pending governance address must call this to accept governance.
+     */
+    function acceptGovernance() external {
+        require(
+            msg.sender == pendingGovernance,
+            "Only pending governance can accept"
+        );
+        governance = pendingGovernance;
+        pendingGovernance = address(0); // Clear the pending governance address
+        emit GovernanceAccepted(governance);
     }
 
     // Ether deposit function
@@ -34,12 +61,12 @@ contract Treasury {
 
     // ERC-20 token deposit function (requires prior approval from sender)
     function depositERC20(address _token, uint256 _amount) external {
-        bool success = IERC20(_token).transferFrom(
+        SafeERC20.safeTransferFrom(
+            IERC20(_token),
             msg.sender,
             address(this),
             _amount
         );
-        require(success, "Token transfer failed");
     }
 
     // Ether withdrawal function
@@ -49,7 +76,10 @@ contract Treasury {
     ) external onlyGovernance {
         require(_to != address(0), "Withdraw: zero address");
         require(address(this).balance >= _amount, "Insufficient Ether balance");
-        payable(_to).transfer(_amount);
+        (bool success, ) = _to.call{value: _amount}("");
+        if (!success) {
+            revert IErrors.TransferFailed();
+        }
     }
 
     // ERC-20 token withdrawal function
@@ -62,7 +92,6 @@ contract Treasury {
             IERC20(_token).balanceOf(address(this)) >= _amount,
             "Insufficient token balance"
         );
-        bool success = IERC20(_token).transfer(_to, _amount);
-        require(success, "Token transfer failed");
+        SafeERC20.safeTransfer(IERC20(_token), _to, _amount);
     }
 }

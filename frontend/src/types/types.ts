@@ -107,6 +107,7 @@ export enum Action {
   depositApproveConfirmed,
   deposit,
   depositConfirmed,
+  CrossChainDepositFailed,
   crosschainInvest,
   CrossChainInvestFailed,
   FundsInvest,
@@ -114,6 +115,7 @@ export enum Action {
   deposited,
   withdraw,
   withdrawconfirmed,
+  CrossChainWithdrawFailed,
   DivestSent,
   FundsWithdrawn,
   DivestFailed,
@@ -138,7 +140,8 @@ export enum TransactionStepStatus {
 export type TransactionStepFeedback = {
   label: string
   description: string
-  status: TransactionStepStatus
+  status: TransactionStepStatus,
+  txHash?: string
 }
 
 export type TransactionStepMessages = {

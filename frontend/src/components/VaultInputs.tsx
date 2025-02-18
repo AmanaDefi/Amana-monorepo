@@ -20,7 +20,7 @@ import { ethers } from "ethers";
 import InteractionContainer from "./interact";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
-import {getAmountOutFromSwap, getAssetsFromShares, getSharesFromDeposit} from "@/actions/actions";
+import {getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit} from "@/actions/actions";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -111,6 +111,17 @@ export default function VaultInputs({
   const [steps, setSteps] = useState<Action[]>([]);
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0])
+  const [performanceFee, setPerformanceFee] = useState<number>(0);
+
+  useEffect(() => {
+    async function handlePerformanceFee() {
+      const perfFee = await getPerformanceFee(vaultData.id as Address);
+      console.log("Performance feee!!!", perfFee);
+      const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
+      setPerformanceFee(percentagePerformanceFee);
+    }
+    handlePerformanceFee()
+  }, [vaultData]);
 
   // const initialOutputBalance: OutputBalance = useMemo(() => ({
   //   amountFormatted: '0',
@@ -481,18 +492,22 @@ export default function VaultInputs({
             )
         }
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
-        <div className="bg-customNeutral200 py-2 px-4 rounded-lg space-y-2">
-          <span className="flex flex-row items-center justify-between text-white">
+        <div className="bg-customNeutral200 py-2 px-4 rounded-lg">
+          <span className="flex flex-row items-center justify-between text-white py-1">
             <p>Deposit Fee</p>
+            <span className='font-bold'>0%</span>
           </span>
-          <span className="flex flex-row items-center justify-between text-white">
+          <span className="flex flex-row items-center justify-between text-white py-1">
             <p>Withdrawal Fee</p>
+            <span className='font-bold'>0%</span>
           </span>
-          <span className="flex flex-row items-center justify-between text-white">
+          <span className="flex flex-row items-center justify-between text-white py-1">
             <p>Management Fee</p>
+            <span className='font-bold'>0%</span>
           </span>
-          <span className="flex flex-row items-center justify-between text-white">
+          <span className="flex flex-row items-center justify-between text-white py-1">
             <p>Performance Fee</p>
+            <span className='font-bold'>{ performanceFee }%</span>
           </span>
         </div>
       </div>

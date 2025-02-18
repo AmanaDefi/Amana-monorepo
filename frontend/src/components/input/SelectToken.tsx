@@ -7,6 +7,7 @@ import Modal from "@/components/modal/Modal";
 import { Tooltip } from "react-tooltip";
 import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
+import {getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
 
 export interface SelectTokenProps {
   options: Token[];
@@ -19,6 +20,8 @@ export default function SelectToken({
   selectedToken,
   selectToken
 }: SelectTokenProps): JSX.Element {
+  const activeChain = useActiveWalletChain();
+
   const [show, setShow] = useState(false);
   const selectTokenId = selectedToken?.symbol.split(" ").join("");
 
@@ -61,7 +64,11 @@ export default function SelectToken({
             id={selectTokenId}
             className="font-medium text-lg leading-none hidden md:block text-white group-hover:text-white truncate cursor-pointer"
           >
-            {selectedToken?.symbol || "Select Token"}
+            {
+              !selectedToken?.symbol ? "Select Token" : (
+                  isZetachain(Number(activeChain?.id)) ? selectedToken?.symbol : getOnlyTokenSymbol(selectedToken?.symbol ?? "")
+              )
+            }
           </p>
           <div className="hidden md:block">
             <Tooltip

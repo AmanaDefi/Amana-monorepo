@@ -3,8 +3,9 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../interfaces/I4626Vault.sol";
+import "../interfaces/IErrors.sol";
 
 // USDC.ETH 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a
 // Mock 4626 0xcfc479dC5371D21C52eeAd66290b21CDa2eB0C9f
@@ -12,7 +13,7 @@ import "../interfaces/I4626Vault.sol";
 /// @title Mock4626ZetachainStrategy
 /// @notice A mock implementation of a 4626-compatible strategy for ZetaChain.
 /// @dev This contract facilitates deposits and withdrawals into a 4626 vault via the Amana Vault.
-contract Mock4626ZetachainStrategy is Ownable {
+contract Mock4626ZetachainStrategy is Ownable2Step {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
@@ -62,9 +63,7 @@ contract Mock4626ZetachainStrategy is Ownable {
             address(this),
             amount
         );
-
-        bool success = inputToken.approve(address(receiptToken), amount);
-        require(success, "Approval failed");
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
@@ -111,10 +110,20 @@ contract Mock4626ZetachainStrategy is Ownable {
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
-    /// @notice Allows the owner to withdraw ETH in case of emergency.
-    function emergencyWithdrawETH() external onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No ETH to withdraw");
-        payable(owner()).transfer(balance);
+    function approveOrIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
+        }
     }
 }

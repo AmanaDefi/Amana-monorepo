@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 interface IErrors {
     error OnlyGateway();
     error OnlyVault();
-    error ApprovalFailed();
     error InvalidAddress();
     error OldStrategyNotSet();
     error Unauthorized();
@@ -19,6 +18,7 @@ interface IErrors {
     error FeeExceedsLimit();
     error DepositCantBeZero();
     error WithdrawCantBeZero();
+    error RedeemCantBeZero();
     error InvalidZRC20Address();
     error CantBeZeroAddress();
     error DepositExceedsLimit();

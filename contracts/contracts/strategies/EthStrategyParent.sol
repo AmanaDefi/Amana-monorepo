@@ -79,7 +79,10 @@ abstract contract EthStrategyParent is StrategyParent {
         if (balance == 0) {
             revert NothingToWithdraw();
         }
-        payable(owner()).transfer(balance);
+        (bool success, ) = owner().call{value: balance}("");
+        if (!success) {
+            revert IErrors.TransferFailed();
+        }
     }
 
     /// @notice Allows the contract to receive ETH.

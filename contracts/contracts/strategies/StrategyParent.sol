@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
@@ -13,7 +13,7 @@ import "../interfaces/IErrors.sol";
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract StrategyParent is Ownable, IErrors {
+abstract contract StrategyParent is Ownable2Step, IErrors {
     using SafeERC20 for IERC20;
 
     string public name;
@@ -472,9 +472,27 @@ abstract contract StrategyParent is Ownable, IErrors {
         );
     }
 
+    /// @notice Safely approves an allowance for a spender.
+    function approveOrIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
+        }
+    }
+
     /// @notice Handles reverts from the Gateway.
     /// @param context Context of the revert.
-    function onRevert(RevertContext calldata context) external {
+    function onRevert(RevertContext calldata context) external onlyGateway {
         (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
             context.revertMessage,
             (string, bytes32)

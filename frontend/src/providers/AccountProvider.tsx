@@ -4,6 +4,7 @@ import { useActiveAccount, useConnectModal, useActiveWalletConnectionStatus } fr
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "../utils/client";
+import {usePathname} from "next/navigation";
 
 // Explicitly type the shared configuration for ConnectButton and connect
 const connectModalConfig: {
@@ -38,6 +39,8 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     const [initialCheckCount, setInitialCheckCount] = useState(0);
     const [isThirdwebReady, setIsThirdwebReady] = useState(false);
 
+    const route = usePathname();
+
     useEffect(() => {
         if (initialCheckCount >= 2) {
             setIsThirdwebReady(true);
@@ -63,6 +66,8 @@ export default function AccountProvider({ children }: PropsWithChildren) {
             page: "Vaults List",
         });
 
+        if (route === '/') return;
+
         // Automatically show the connect modal if no account is connected
         if (!account && !isConnecting && connectionStatus !== 'connecting') {
             // connect({
@@ -77,7 +82,7 @@ export default function AccountProvider({ children }: PropsWithChildren) {
                 wallet_address: account.address,
             });
         }
-    }, [account, connect, connectionStatus, initialCheckCount, isConnecting, isThirdwebReady]);
+    }, [route, account, connect, connectionStatus, initialCheckCount, isConnecting, isThirdwebReady]);
 
     return <>{children}</>
 }
