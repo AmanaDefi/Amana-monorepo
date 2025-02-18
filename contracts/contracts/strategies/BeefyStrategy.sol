@@ -1,0 +1,106 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.26;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../interfaces/IBeefyVault.sol";
+import "./ERC20StrategyParent.sol";
+
+// Beefy USDC receipt token 0xf779fBa773b28472749c071C5185e99014850406
+// Base USDC 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+/// @title BeefyStrategy
+/// @notice Base contract for USDC strategies using Beefy.
+/// @dev Handles USDC investments and divestments for strategies on EVM-compatible chains.
+contract BeefyStrategy is ERC20StrategyParent {
+    using SafeERC20 for IERC20;
+
+    IBeefyVault public immutable receiptToken;
+
+    /// @notice Initializes the strategy contract.
+    /// @param _name Name of the strategy.
+    /// @param _amanaVault Address of the Amana vault.
+    /// @param _inputTokenAddress Address of the input token.
+    /// @param _receiptTokenAddress Address of the Aave receipt token.
+    /// @param _gateway Address of the ZetaChain Gateway.
+    constructor(
+        string memory _name,
+        address _amanaVault,
+        address _inputTokenAddress,
+        address _receiptTokenAddress,
+        address _gateway
+    )
+        StrategyParent(_name, _amanaVault, _gateway)
+        ERC20StrategyParent(_inputTokenAddress)
+    {
+        receiptToken = IBeefyVault(_receiptTokenAddress);
+    }
+
+    /// @notice Deposits funds into the yield source.
+    /// @param amount Amount to be deposited.
+    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
+
+        receiptToken.deposit(amount);
+    }
+
+    /**
+     * @notice Withdraws funds from the configured yield source.
+     * @param amount The amount of funds to withdraw from the yield source.
+     * @return amountWithdrawn The amount of funds successfully withdrawn.
+     */
+    function _withdrawFundsFromYieldSource(
+        uint256 amount
+    ) internal override returns (uint256 amountWithdrawn) {
+        uint256 shares = convertToShares(amount);
+        receiptToken.withdraw(
+            shares // note this is an amount in shares
+        );
+        return shares;
+    }
+
+    /**
+     * @notice Transfers assets from the current strategy to a new strategy.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
+     */
+    function _transferAssetsToNewStrategy(
+        address newStrategy,
+        uint256 currentExecutionNonce,
+        bytes32 _crossChainTxId
+    ) internal override {
+        uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
+        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        approveOrIncreaseAllowance(
+            inputToken,
+            newStrategy,
+            strategyTotalBalance
+        );
+
+        IStrategy(newStrategy).depositFromOldStrategy(
+            strategyTotalBalance,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
+        emit AssetsTransferredToNewStrategy(
+            newStrategy,
+            strategyTotalBalance,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
+    }
+
+    /// @notice Gets the total assets held in the strategy.
+    /// @return Total assets as an unsigned integer.
+    function totalUnderlyingAssets() public view override returns (uint256) {
+        uint256 shares = receiptToken.balanceOf(address(this));
+
+        return (shares * receiptToken.getPricePerFullShare()) / 1e18;
+    }
+
+    function convertToShares(uint256 amount) internal view returns (uint256) {
+        return (amount * 1e18) / receiptToken.getPricePerFullShare();
+    }
+}
