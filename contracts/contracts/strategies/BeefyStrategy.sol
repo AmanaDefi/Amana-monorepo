@@ -38,7 +38,10 @@ contract BeefyStrategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minSharesOut
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         receiptToken.deposit(amount);
@@ -67,6 +70,8 @@ contract BeefyStrategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minimumAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -81,6 +86,7 @@ contract BeefyStrategy is ERC20StrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -100,7 +106,9 @@ contract BeefyStrategy is ERC20StrategyParent {
         return (shares * receiptToken.getPricePerFullShare()) / 1e18;
     }
 
-    function convertToShares(uint256 amount) internal view returns (uint256) {
+    function convertToShares(
+        uint256 amount
+    ) public view override returns (uint256) {
         return (amount * 1e18) / receiptToken.getPricePerFullShare();
     }
 }
