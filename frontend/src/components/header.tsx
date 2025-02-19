@@ -73,6 +73,14 @@ const Header = () => {
             >
               About
             </span>
+            <span
+              className={`cursor-pointer ${
+                path === "/roadmap" ? "font-bold text-themeColor" : ""
+              }`}
+              onClick={() => router.push("/roadmap")}
+            >
+              Roadmap
+            </span>
           </nav>
           {/* Select Network Modal */}
           <ConnectButton/>

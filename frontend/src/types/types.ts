@@ -102,6 +102,22 @@ export enum SmartVaultActionType {
   Withdrawal
 }
 
+export enum StepStatus {
+  upcoming,
+  undergo,
+  completed
+}
+
+export type Step = {
+    description: string,
+    status: StepStatus
+}
+
+export type Milestone = {
+  title: string,
+  steps: Step[],
+}
+
 export enum Action {
   depositApprove,
   depositApproveConfirmed,

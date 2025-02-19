@@ -23,6 +23,7 @@ export const colors = {
     borderBtn: '#262830',
     grayBtnHover: '#1b1c22',
     borderBlue: '#3385FF',
+    "card": "#0C0D16",
     'cyan': {
         '50': '#ebfffc',
         '100': '#cbfffa',
