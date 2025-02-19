@@ -98,7 +98,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       network: "Base",
       chainId: 8453,
       netdes: "Base is a layer-2 network built on the OP stack by Coinbase, offering low-cost, scalable transactions while inheriting Ethereum’s security. It integrates with Coinbase products, providing an accessible gateway for users and developers.",
-      imgURL: "/ZeroLend.png",
+      imgURL: "/beefy.png",
       des: "Beefy Finance is a multi-chain yield optimizer that auto-compounds rewards from liquidity pools and staking. It maximizes returns through automated strategies, reducing gas costs and manual effort."
     },
   },
@@ -152,31 +152,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
   //   },
   // },
-  {
-    id: "0x9E204c8109FC388DE5eA26d16d1c6cC209f4e731", // Euler USDC vault on Base
-    name: "Euler USDC",
-    des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
-    symbol: "aEulerUSDC",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Euler",
-      strategyAddress: "0x42d0906c80d1950E630dD70b9D710a32F81A5F76",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/euler.svg",
-      des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    },
-  },
+  // {
+  //   id: "0x9E204c8109FC388DE5eA26d16d1c6cC209f4e731", // Euler USDC vault on Base
+  //   name: "Euler USDC",
+  //   des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
+  //   symbol: "aEulerUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Euler",
+  //     strategyAddress: "0x42d0906c80d1950E630dD70b9D710a32F81A5F76",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is a relatively new chain, backed by Coinbase and built on the OP stack.",
+  //     imgURL: "/euler.svg",
+  //     des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //   },
+  // },
   // {
   //   id: "0xC967154127af55cecC47328B06385EFd8f8C427E",
   //   name: "Moonwell Flagship USDC",
@@ -252,31 +252,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Compound is one of the OG lending protocols."
   //   },
   // },
-  {
-    id: "0xc8b8fc1Cc87a6d412fFd91398EE9b5C80Ecf7881", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
-    name: "Mock USDC",
-    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
-    symbol: "aMockUSDC",
-    imgURL: "/ZetaChain.jpeg",
-    inputToken: {
-      symbol: "USDC.ETH",
-      decimals: 6,
-      address: ZC_USDC_ETH_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Mock",
-      strategyAddress: "0xe7b322b6445C81cD6da8e87D63731fB1cF5c9eEf",
-      network: "Zetachain",
-      chainId: 7000,
-      netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
-      imgURL: "/aave.png",
-      des: "This is a mock strategy for testing purposes."
-    },
-  },
+  // {
+  //   id: "0xc8b8fc1Cc87a6d412fFd91398EE9b5C80Ecf7881", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+  //   name: "Mock USDC",
+  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+  //   symbol: "aMockUSDC",
+  //   imgURL: "/ZetaChain.jpeg",
+  //   inputToken: {
+  //     symbol: "USDC.ETH",
+  //     decimals: 6,
+  //     address: ZC_USDC_ETH_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     strategyAddress: "0xe7b322b6445C81cD6da8e87D63731fB1cF5c9eEf",
+  //     network: "Zetachain",
+  //     chainId: 7000,
+  //     netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+  //     imgURL: "/aave.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
   // {
   //   id: "0x3BF3BB802eFc297669475aD50434Ff0905e79990", // Aave USDT on BNB
   //   name: "Aave USDT",
