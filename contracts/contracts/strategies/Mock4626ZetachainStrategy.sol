@@ -56,7 +56,10 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
     /// @notice Invests funds into the 4626 vault.
     /// @param amount The amount of funds to invest.
     /// @return shares The number of shares received in exchange for the deposit.
-    function invest(uint256 amount) external onlyVault returns (uint256) {
+    function invest(
+        uint256 amount,
+        uint256 minSharesOut
+    ) external onlyVault returns (uint256) {
         SafeERC20.safeTransferFrom(
             inputToken,
             msg.sender,
@@ -66,8 +69,9 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        require(shares > 0, "Deposit failed");
-
+        if (shares < minSharesOut) {
+            revert IErrors.InsufficientOut();
+        }
         emit FundsDeposited(msg.sender, amount);
         return shares;
     }
@@ -77,22 +81,21 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
     /// @return The amount withdrawn.
     function withdraw(
         uint256 _amountToWithdraw,
-        uint256
+        uint256,
+        uint256 minAmountOut
     ) external onlyVault returns (uint256) {
-        receiptToken.withdraw(
+        uint256 amountWithdrawn = receiptToken.withdraw(
             _amountToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
+        if (amountWithdrawn < minAmountOut) {
+            revert IErrors.InsufficientOut();
+        }
+        SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, amountWithdrawn);
 
-        SafeERC20.safeTransfer(
-            IERC20(inputToken),
-            msg.sender,
-            _amountToWithdraw
-        );
-
-        emit FundsWithdrawn(msg.sender, _amountToWithdraw);
-        return _amountToWithdraw;
+        emit FundsWithdrawn(msg.sender, amountWithdrawn);
+        return amountWithdrawn;
     }
 
     /// @notice Gets the total underlying assets held in the strategy.
@@ -125,5 +128,17 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
             token.approve(spender, 0); // Reset to zero
             token.approve(spender, amount); // Set new allowance
         }
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view virtual returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view virtual returns (uint256) {
+        return receiptToken.convertToAssets(shares);
     }
 }

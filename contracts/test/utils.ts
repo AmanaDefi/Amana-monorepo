@@ -1,5 +1,6 @@
 import { ethers, network } from "hardhat";
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
+import { Signer, BigNumber } from "ethers";
 
 export async function setTokenBalance(tokenAddress, account, amount) {
 
@@ -36,3 +37,99 @@ export const generateTransactionId = (
   const inputString = `${userAddress}-${chainId}-${timestamp}-${randomValue}`;
   return keccak256(toUtf8Bytes(inputString)) as `0x${string}`;
 };
+
+export async function simulateDepositCallFromVaultToStrategy(
+  vaultAddress: string,
+  owner: string,
+  gatewaySigner: Signer,
+  strategy: any,
+  depositAmount: BigNumber,
+  minSharesOut: BigNumber,
+  slippage: number,
+  ORIGIN_CHAIN_ID: number,
+) {
+  // Attempt deposit from a non-gateway address
+  const depositMessage = ethers.utils.defaultAbiCoder.encode(
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, minSharesOut, 0, ORIGIN_CHAIN_ID, true, 0, slippage]
+  );
+
+  await
+    strategy.connect(gatewaySigner).onCall(
+      {
+        sender: vaultAddress,
+      },
+      depositMessage,
+      {
+        value: depositAmount,
+        gasPrice: ethers.utils.parseUnits("150", "gwei"),
+      }
+    );
+}
+
+export async function simulateWithdrawCallFromVaultToStrategy(
+  vaultAddress: string,
+  owner: string,
+  gatewaySigner: Signer,
+  strategy: any,
+  withdrawZRC20: any,
+  withdrawAmount: BigNumber,
+  minAmountOut: BigNumber,
+  fee: BigNumber,
+  slippage: number,
+  ORIGIN_CHAIN_ID: number
+) {
+  const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, withdrawAmount, minAmountOut, fee, ORIGIN_CHAIN_ID, false, 1, slippage]
+  );
+
+  await
+    strategy.connect(gatewaySigner).onCall(
+      {
+        sender: vaultAddress,
+      },
+      withdrawMessage,
+      {
+        gasPrice: ethers.utils.parseUnits("150", "gwei"),
+      }
+    )
+}
+
+export async function simulateSwitchCallFromVaultToStrategy(
+  vaultAddress: string,
+  gatewaySigner: Signer,
+  strategy: any,
+  newStrategyAddress: any
+) {
+  const switchMessage = ethers.utils.defaultAbiCoder.encode(
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    [
+      ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
+      ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
+      newStrategyAddress,
+      ethers.constants.AddressZero,
+      ethers.constants.MaxUint256, // maxStrategySharesBurnt (is usually just amount)
+      0, // minSharesOut
+      0, // fee
+      0, // withdrawChainId
+      false, // isDeposit
+      0, //ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId
+      0
+    ]
+  );
+  return await strategy.connect(gatewaySigner).onCall(
+    {
+      sender: vaultAddress,
+    },
+    switchMessage,
+    {
+      gasPrice: ethers.utils.parseUnits("150", "gwei"),
+    }
+  );
+}
+
+
+
+
+

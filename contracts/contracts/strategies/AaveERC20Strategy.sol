@@ -38,10 +38,14 @@ contract AaveERC20Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the Aave pool.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(aavePool), amount);
 
         aavePool.supply(address(inputToken), amount, address(this), 0);
+        // shares out = amount deposited, so no need to check maxStrategySharesBurnt
     }
 
     /**
@@ -67,6 +71,8 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 maxStrategySharesBurnt,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -75,9 +81,14 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             type(uint256).max
         );
+        uint256 sharesToBeBurnt = convertToShares(amountWithdrawn);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
         approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
             amountWithdrawn,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );

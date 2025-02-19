@@ -53,11 +53,15 @@ contract AaveEthStrategy is EthStrategyParent {
 
     /// @notice Deposits funds into the Aave pool.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256
+    ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(aavePool), amount);
 
         aavePool.supply(address(weth), amount, address(this), 0);
+        // shares out = amount deposited, so no need to check minimumOut
     }
 
     /**
@@ -84,6 +88,8 @@ contract AaveEthStrategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 maxStrategySharesBurnt,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -92,9 +98,13 @@ contract AaveEthStrategy is EthStrategyParent {
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             type(uint256).max
         );
-
+        uint256 sharesToBeBurnt = convertToShares(amountWithdrawn);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
         IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
             amountWithdrawn,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );

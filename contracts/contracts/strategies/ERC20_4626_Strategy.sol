@@ -35,12 +35,15 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        if (shares == 0) {
-            revert DepositFailed();
+        if (shares < minimumOut) {
+            revert InsufficientOut();
         }
     }
 
@@ -67,12 +70,18 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 maxStrategySharesBurnt,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
         _withdrawFundsFromYieldSource(strategyTotalBalance);
+        uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
+        if (sharesToBeBurnt > maxStrategySharesBurnt) {
+            revert ExceedsMaxSharesOut();
+        }
         approveOrIncreaseAllowance(
             inputToken,
             newStrategy,
@@ -81,6 +90,7 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
 
         IStrategy(newStrategy).depositFromOldStrategy(
             strategyTotalBalance,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -96,6 +106,18 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
+        return receiptToken.convertToAssets(shares);
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256) {
         return receiptToken.convertToAssets(shares);
     }
 }

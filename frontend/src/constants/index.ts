@@ -78,9 +78,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xE054cD48ACd0F1433BE0293F9488AF1924Bb15EA", // BSC Venus USDT Vault
+    id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Base ZeroLend USDC Vault
+    name: "Beefy Ionic USDC",
+    des: "This strategy deposits the USDC into Beefy, which in turn deposits it into Morpho and farms for more USDC. The earned USDC is then deposited back into the Morpho farm. The transaction cost required to do all this is socialized among the vault's users.",
+    symbol: "aBeefyUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Beefy",
+      strategyAddress: "0xb7F4625Ce14B9edDBb215019B288B00eC85adE97",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is a layer-2 network built on the OP stack by Coinbase, offering low-cost, scalable transactions while inheriting Ethereum’s security. It integrates with Coinbase products, providing an accessible gateway for users and developers.",
+      imgURL: "/ZeroLend.png",
+      des: "Beefy Finance is a multi-chain yield optimizer that auto-compounds rewards from liquidity pools and staking. It maximizes returns through automated strategies, reducing gas costs and manual effort."
+    },
+  },
+  {
+    id: "0xf8751D39Dcf5DdAd785BC237FE3c449f718Af24a", // BSC Venus USDT Vault
     name: "Venus USDT",
-    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into a Venus USDT pool, which earns interest every block.",
+    des: "This strategy deposits USDT into a Venus USDT pool as collateral to earn interest. It benefits from BSC’s low fees but carries risks such as interest rate changes, liquidation, and protocol security.",
     symbol: "aVenusUSDT",
     imgURL: "/bnb_logo.png",
     inputToken: {
@@ -94,12 +119,12 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Venus",
-      strategyAddress: "0xA92038e993F90F6A930074aA97af4eB288756048",
+      strategyAddress: "0x96e356B0d43940385D37bE694FBBBcEEBbC71aeF",
       network: "BSC",
       chainId: 56,
-      netdes: "BSC is a relatively new chain, backed by Coinbase and built on the OP stack.",
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
       imgURL: "/Venus.png",
-      des: "Venus is a relatively new protocol on BSC."
+      des: "Venus is a lending protocol on BSC where users supply assets to earn interest and borrow against collateral. It features VAI, a stablecoin minted via overcollateralized loans. Risks include liquidity fluctuations, governance centralization, and smart contract vulnerabilities."
     },
   },
   // {
