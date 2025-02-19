@@ -67,7 +67,7 @@ input::-webkit-inner-spin-button {
 
 body .page-container {
   @media only screen and (min-width: 1080px) {
-    zoom: .9;
+    zoom: 0.9;
   }
 
   @media only screen and (min-width: 1920px) {
@@ -161,4 +161,16 @@ input::-webkit-inner-spin-button {
 .tooltip-container:hover .tooltip {
   visibility: visible;
   opacity: 1;
+}
+
+.roadmap-gradient {
+  background: linear-gradient(
+    155deg,
+    rgba(40, 116, 105, 0.6) 0%,
+    rgba(0, 0, 0, 0.4) 25%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(40, 116, 105, 0.6) 78%,
+    rgba(31, 79, 255, 1) 110%
+  );
+  /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */
 }
