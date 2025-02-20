@@ -103,7 +103,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xf8751D39Dcf5DdAd785BC237FE3c449f718Af24a", // BSC Venus USDT Vault
+    id: "0x85eD03044179c6b641e36F8fB1d4A62b4Cf4C975", // BSC Venus USDT Vault
     name: "Venus USDT",
     des: "This strategy deposits USDT into a Venus USDT pool as collateral to earn interest. It benefits from BSC’s low fees but carries risks such as interest rate changes, liquidation, and protocol security.",
     symbol: "aVenusUSDT",
@@ -119,7 +119,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Venus",
-      strategyAddress: "0x96e356B0d43940385D37bE694FBBBcEEBbC71aeF",
+      strategyAddress: "0x056A360Db4D8fd16e12D809D6A48F049E86Ae296",
       network: "BSC",
       chainId: 56,
       netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",

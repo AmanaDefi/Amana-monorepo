@@ -578,15 +578,20 @@ const executeCrossChainWithdrawal = async (
     address: vaultId
   });
 
+  const slippageValue = (slippage * 100).toFixed(0);
   const withdrawAssetAmount = await readContract({
     contract,
-    method: "function previewWithdraw(uint256) view returns (uint256)",
+    method: "function previewRedeem(uint256) view returns (uint256)",
     params: [withdrawShareAmount]
   });
-
+  console.log("withdrawAssetAmount", withdrawAssetAmount);
+  console.log("strategyAddress", strategyAddress);
+  console.log("strategyChainId", strategyChainId);
   const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
+  console.log("strategyShareAmount", strategyShareAmount);
+  const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
 
-  const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000); const slippageValue = (slippage * 100).toFixed(0);
+  console.log("maxStrategySharesBurnt", maxStrategySharesBurnt);
   // Prepare payload (calldata to pass to the receiver)
   console.log("withdrawShareAmount", withdrawShareAmount);
   const payload = abiCoder.encode(
