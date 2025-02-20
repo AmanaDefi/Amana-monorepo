@@ -5,9 +5,9 @@ export const milestones: Milestone[] = [
     title: "Q1",
     steps: [
       { description: "Launch Website and App", status: StepStatus.completed },
-      { description: "Launch EVM Vaults", status: StepStatus.completed },
+      { description: "Deploy EVM-Compatable Vaults", status: StepStatus.completed },
       {
-        description: "Add Solana Wallet Integration",
+        description: "Integrate Solana Wallet Support",
         status: StepStatus.completed,
       },
       {
@@ -19,13 +19,13 @@ export const milestones: Milestone[] = [
   {
     title: "Q2",
     steps: [
-      { description: "Launch Solana Wallets", status: StepStatus.upcoming },
+      { description: "Enable Solana Wallet Fnctionality", status: StepStatus.upcoming },
       {
-        description: "Add BTC Wallet Integration",
+        description: "Add Bitcoin & Sui Wallets",
         status: StepStatus.upcoming,
       },
       {
-        description: "Add Smart Account Sign0in Options",
+        description: "Introduce Smart Account Sign-in",
         status: StepStatus.upcoming,
       },
       {
@@ -41,10 +41,10 @@ export const milestones: Milestone[] = [
         description: "TGE for Amana Token $AMANA",
         status: StepStatus.upcoming,
       },
-      { description: "Launch AI Smart Vaults", status: StepStatus.upcoming },
-      { description: "Launch Solana Strategies", status: StepStatus.upcoming },
+      { description: "Launch AI-Driven Smart Vaults", status: StepStatus.upcoming },
+      { description: "Integrate TON Blockchain Wallets", status: StepStatus.upcoming },
       {
-        description: "Partnerships and Collaborations",
+        description: "Launch Sui-Based Yield Strategies",
         status: StepStatus.upcoming,
       },
     ],
@@ -52,7 +52,7 @@ export const milestones: Milestone[] = [
   {
     title: "Q4",
     steps: [
-      { description: "", status: StepStatus.upcoming },
+      { description: "Expand Yield Strategies to TON Blockchain", status: StepStatus.upcoming },
       { description: "", status: StepStatus.upcoming },
       { description: "", status: StepStatus.upcoming },
       { description: "", status: StepStatus.upcoming },
