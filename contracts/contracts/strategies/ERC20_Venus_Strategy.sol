@@ -60,7 +60,8 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
     function _withdrawFundsFromYieldSource(
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
-        receiptToken.redeemUnderlying(amount);
+        uint256 shares = convertToShares(amount);
+        receiptToken.redeem(shares);
         return amount;
     }
 
