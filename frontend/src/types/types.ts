@@ -83,7 +83,7 @@ export type Balance = {
 }
 
 export interface Token {
-  address: Address;
+  address: Address | string;
   symbol: string;
   decimals: number;
   imgURL: string;
@@ -100,6 +100,22 @@ export interface TokenByAddress {
 export enum SmartVaultActionType {
   Deposit,
   Withdrawal
+}
+
+export enum StepStatus {
+  upcoming,
+  undergo,
+  completed
+}
+
+export type Step = {
+    description: string,
+    status: StepStatus
+}
+
+export type Milestone = {
+  title: string,
+  steps: Step[],
 }
 
 export enum Action {
