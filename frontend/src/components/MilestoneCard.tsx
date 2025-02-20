@@ -9,7 +9,7 @@ interface MilestoneCardProps {
 
 export default function MilestoneCard({ milestone }: MilestoneCardProps) {
   return (
-    <div className="rounded-[50px] w-[332px] mb-8 h-[506px] bg-card p-4">
+    <div className="rounded-[50px] w-[332px] mb-8 h-[506px] bg-card p-4 milestone-gradient">
       <div className="text-[50px] p-4 font-bold">{milestone.title}</div>
       <div className="">
         <div className="">

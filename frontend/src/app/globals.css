@@ -174,3 +174,14 @@ input::-webkit-inner-spin-button {
   );
   /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */
 }
+
+.milestone-gradient {
+  background: linear-gradient(
+    125deg,
+    rgba(40, 116, 105, 1) 0%,
+    rgba(0, 0, 0, 0.2) 45%,
+    rgba(0, 0, 0, 0.2) 55%,
+    rgba(31, 79, 255, 1) 130%
+  );
+  /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */
+}
