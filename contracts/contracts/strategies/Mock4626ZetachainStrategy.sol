@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../interfaces/I4626Vault.sol";
 import "../interfaces/IErrors.sol";
+import "hardhat/console.sol";
 
 // USDC.ETH 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a
 // Mock 4626 0xcfc479dC5371D21C52eeAd66290b21CDa2eB0C9f
@@ -85,7 +86,10 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
         uint256 minAmountOut
     ) external onlyVault returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
+        console.log("Shares: %d", shares);
+        console.log("Fraction to withdraw: %d", fractionToWithdraw);
         uint256 sharesToWithdraw = (shares * fractionToWithdraw) / 1e18;
+        console.log("Shares to withdraw: %d", sharesToWithdraw);
         uint256 amountWithdrawn = receiptToken.redeem(
             sharesToWithdraw,
             address(this), // receiver

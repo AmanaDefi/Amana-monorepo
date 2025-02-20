@@ -22,7 +22,6 @@ export async function setTokenBalance(tokenAddress, account, amount, storageSlot
 
   const token = await ethers.getContractAt("IERC20", tokenAddress);
   const newBalance = await token.balanceOf(account);
-  console.log(`New balance for ${account} is ${newBalance.toString()}`);
 }
 
 // Helper function to generate a unique transaction ID (bytes32)

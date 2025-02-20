@@ -570,6 +570,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 shares,
         uint16 slippage
     ) internal override {
+        uint256 maxShares = maxRedeem(user);
+        if (shares > maxShares - pendingWithdrawals[user]) {
+            revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
+        }
         pendingWithdrawals[user] += shares;
 
         if (caller != user) {
