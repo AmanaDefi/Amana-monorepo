@@ -10,8 +10,8 @@ export default function RoadMap() {
           Roadmap for <span className="text-[#308DFF]">2025</span>
         </div>
         <div className="flex w-full flex-wrap justify-evenly">
-          {milestones.map((milestone: Milestone) => (
-            <MilestoneCard milestone={milestone} />
+          {milestones.map((milestone: Milestone, index) => (
+            <MilestoneCard milestone={milestone} key={index}/>
           ))}
         </div>
       </div>
