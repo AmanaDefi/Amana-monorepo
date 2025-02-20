@@ -80,11 +80,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
             revert InvalidStrategyAddress();
 
         if (IStrategy(strategyAddress).totalUnderlyingAssets() > 0) {
-            IStrategy(strategyAddress).withdraw(
-                IStrategy(strategyAddress).totalUnderlyingAssets(),
-                10 ** 27,
-                minAmountOut
-            );
+            IStrategy(strategyAddress).withdraw(10 ** 18, minAmountOut);
             strategyAddress = newStrategyAddress;
             approveOrIncreaseAllowance(
                 IERC20(asset()),
@@ -176,7 +172,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @dev Withdrawn/redeem common workflow. Handles user withdrawal requests and initiates divestment from the strategy.
      * @param caller The address of the entity initiating the withdrawal.
      * @param user The address of the user receiving the withdrawn assets.
-     * @param assets The amount of assets being withdrawn.
      * @param shares The number of shares being redeemed for the withdrawal.
      * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
      */
@@ -185,7 +180,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address receiver, // receiver
         address user, // owner
         address withdrawZRC20,
-        uint256 assets,
         uint256 minimumOut,
         uint256 shares,
         uint16 slippage
@@ -193,21 +187,28 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
-        uint256 feeToWithdraw = _applyFee(user, assets);
+
+        uint256 fractionToWithdraw = (shares * 1e18) / totalSupply();
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
-            assets,
-            minimumOut,
-            feeToWithdraw
+            fractionToWithdraw,
+            minimumOut
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
         _burn(user, shares);
 
-        if (feeToWithdraw > 0) {
+        uint256 fractionUserPrincipal = (fractionToWithdraw *
+            userPrincipal[user]) / 1e18;
+        uint256 feeToWithdraw;
+        if (amountWithdrawn > fractionUserPrincipal) {
+            feeToWithdraw =
+                ((amountWithdrawn - fractionUserPrincipal) * perfFee) /
+                10000;
             emit PerformanceFeePaid(user, feeToWithdraw);
             SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
+        userPrincipal[user] -= fractionUserPrincipal;
 
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
@@ -219,7 +220,13 @@ contract AmanaZetachainVault is AmanaVaultBase {
             slippage
         );
 
-        emit Withdraw(caller, receiver, user, assets, shares);
+        emit Withdraw(
+            caller,
+            receiver,
+            user,
+            amountWithdrawn - feeToWithdraw,
+            shares
+        );
     }
 
     /**
@@ -247,23 +254,27 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (shares > maxShares) {
             revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
         }
+        uint256 fractionToWithdraw = (shares * 1e18) / totalSupply();
 
-        uint256 assets = previewRedeem(shares);
-
-        uint256 feeToWithdraw = _applyFee(user, assets);
         uint256 amountWithdrawn = _divestZetachainStrategy(
-            assets,
-            minimumOut,
-            feeToWithdraw
+            fractionToWithdraw,
+            minimumOut
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
         _burn(user, shares);
 
-        if (feeToWithdraw > 0) {
+        uint256 fractionUserPrincipal = (fractionToWithdraw *
+            userPrincipal[user]) / 1e18;
+        uint256 feeToWithdraw;
+        if (amountWithdrawn > fractionUserPrincipal) {
+            feeToWithdraw =
+                ((amountWithdrawn - fractionUserPrincipal) * perfFee) /
+                10000;
             emit PerformanceFeePaid(user, feeToWithdraw);
             SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
+        userPrincipal[user] -= fractionUserPrincipal;
 
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
@@ -280,18 +291,16 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
     /**
      * @notice Divests assets from the connected Zetachain strategy and burns shares.
-     * @param assets The amount of assets to withdraw.
-     * @param feeToWithdraw The fee to be applied for the withdrawal.
+     * @param shares The amount of assets to withdraw.
      * @return withdrawnAmt The total amount withdrawn from the strategy.
      */
     function _divestZetachainStrategy(
-        uint256 assets,
-        uint256 minimumOut,
-        uint256 feeToWithdraw
+        uint256 shares,
+        uint256 minimumOut
     ) internal returns (uint256 withdrawnAmt) {
+        uint256 fractionToWithdraw = (shares * 1e18) / totalSupply();
         withdrawnAmt = IStrategy(strategyAddress).withdraw(
-            assets + feeToWithdraw,
-            ((assets + feeToWithdraw) * (10 ** 27)) / totalAssets() + 1,
+            fractionToWithdraw,
             minimumOut
         );
         if (withdrawnAmt < minimumOut) {

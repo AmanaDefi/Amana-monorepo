@@ -77,15 +77,17 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
     }
 
     /// @notice Withdraws funds from the 4626 vault.
-    /// @param _amountToWithdraw The amount to withdraw.
+    /// @param fractionToWithdraw The fraction of shares to withdraw.
+    /// @param minAmountOut The minimum amount of funds to withdraw.
     /// @return The amount withdrawn.
     function withdraw(
-        uint256 _amountToWithdraw,
-        uint256,
+        uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) external onlyVault returns (uint256) {
-        uint256 amountWithdrawn = receiptToken.withdraw(
-            _amountToWithdraw,
+        uint256 shares = receiptToken.balanceOf(address(this));
+        uint256 sharesToWithdraw = (shares * fractionToWithdraw) / 1e18;
+        uint256 amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
             address(this), // receiver
             address(this) // owner
         );

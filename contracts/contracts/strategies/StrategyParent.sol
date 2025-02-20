@@ -9,6 +9,7 @@ import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
+import "hardhat/console.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -306,11 +307,13 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
+        console.log("amount", amount);
         uint256 sharesToBeBurnt = convertToShares(amount);
+        console.log("sharesToBeBurnt", sharesToBeBurnt);
         if (sharesToBeBurnt > maxStrategySharesBurnt) {
             revert ExceedsMaxSharesOut();
         }
-        _withdrawFundsFromYieldSource(amount + fee);
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(amount + fee);
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
 
@@ -319,7 +322,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             receiver,
             withdrawZRC20,
             withdrawERC20,
-            amount,
+            amountWithdrawn - fee,
             fee,
             withdrawChainId,
             totalUnderlyingAssetsAfter,

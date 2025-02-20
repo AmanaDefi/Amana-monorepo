@@ -480,7 +480,7 @@ abstract contract AmanaVaultBase is
         uint256 minimumOut,
         address receiver,
         address owner
-    ) public returns (uint256) {
+    ) public {
         if (shares == 0) {
             revert RedeemCantBeZero();
         }
@@ -488,15 +488,14 @@ abstract contract AmanaVaultBase is
         if (shares > maxShares) {
             revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
         }
-        return
-            redeemToAnyToken(
-                shares,
-                minimumOut,
-                receiver,
-                owner,
-                address(asset()),
-                0
-            );
+        redeemToAnyToken(
+            shares,
+            minimumOut,
+            receiver,
+            owner,
+            address(asset()),
+            0
+        );
     }
 
     /** @dev See {IERC4626-withdraw}. */
@@ -520,7 +519,6 @@ abstract contract AmanaVaultBase is
             receiver,
             owner,
             address(asset()),
-            assets,
             minimumOut,
             shares,
             0
@@ -537,20 +535,16 @@ abstract contract AmanaVaultBase is
         address owner,
         address withdrawZRC20,
         uint16 slippage
-    ) public returns (uint256) {
-        uint256 assets = previewRedeem(shares);
+    ) public {
         _withdraw(
             _msgSender(),
             receiver,
             owner,
             withdrawZRC20,
-            assets,
             minimumOut,
             shares,
             slippage
         );
-
-        return assets;
     }
 
     function _withdraw(
@@ -558,7 +552,6 @@ abstract contract AmanaVaultBase is
         address receiver,
         address owner,
         address withdrawZRC20,
-        uint256 assets,
         uint256 minimumOut,
         uint256 shares,
         uint16 slippage

@@ -2,12 +2,9 @@ import { ethers, network } from "hardhat";
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import { Signer, BigNumber } from "ethers";
 
-export async function setTokenBalance(tokenAddress, account, amount) {
+export async function setTokenBalance(tokenAddress, account, amount, storageSlot) {
 
   const balanceAmount = ethers.BigNumber.from(amount);
-
-  // Compute the storage slot for balances (slot 0 for most ERC20 tokens)
-  const storageSlot = 3;
 
   // Normalize and log the account address
   const normalizedAccount = ethers.utils.getAddress(account);
@@ -25,6 +22,7 @@ export async function setTokenBalance(tokenAddress, account, amount) {
 
   const token = await ethers.getContractAt("IERC20", tokenAddress);
   const newBalance = await token.balanceOf(account);
+  console.log(`New balance for ${account} is ${newBalance.toString()}`);
 }
 
 // Helper function to generate a unique transaction ID (bytes32)

@@ -4,32 +4,37 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ERC20StrategyParent.sol";
+import "../interfaces/ICurvePool.sol";
+import "hardhat/console.sol";
+
+// input token USDC 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+// curve pool 0x169A5f124A3663a25313Ee0F7f3Bff028728867f
 
 /// @title ERC20_Curve_Strategy
 /// @notice Strategy contract for depositing USDC into a Curve pool on Ethereum.
-contract ERC20_Curve_Strategy is ERC20StrategyParent {
+contract CurveERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    address public immutable curvePool;
+    ICurvePool public immutable receiptToken;
     uint256 public constant USDC_INDEX = 1; // USDC's index in the Curve pool
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
     /// @param _amanaVault Address of the Amana vault.
     /// @param _inputTokenAddress Address of the input token (USDC).
-    /// @param _curvePool Address of the Curve pool.
+    /// @param _receiptTokenAddress Address of the Curve pool.
     /// @param _gateway Address of the ZetaChain Gateway.
     constructor(
         string memory _name,
         address _amanaVault,
         address _inputTokenAddress,
-        address _curvePool,
+        address _receiptTokenAddress,
         address _gateway
     )
         StrategyParent(_name, _amanaVault, _gateway)
         ERC20StrategyParent(_inputTokenAddress)
     {
-        curvePool = _curvePool;
+        receiptToken = ICurvePool(_receiptTokenAddress);
     }
 
     /// @notice Deposits USDC into the Curve pool.
@@ -39,22 +44,11 @@ contract ERC20_Curve_Strategy is ERC20StrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        uint256;
+        uint256[] memory amounts = new uint256[](2);
         amounts[USDC_INDEX] = amount; // Only deposit USDC
 
-        // Approve Curve pool to spend USDC
-        approveOrIncreaseAllowance(inputToken, curvePool, amount);
-
-        // Deposit into Curve pool
-        (bool success, ) = curvePool.call(
-            abi.encodeWithSignature(
-                "add_liquidity(uint256[],uint256)",
-                amounts,
-                minimumOut
-            )
-        );
-
-        require(success, "Curve deposit failed");
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
+        uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
     }
 
     /// @notice Withdraws USDC from the Curve pool.
@@ -64,20 +58,11 @@ contract ERC20_Curve_Strategy is ERC20StrategyParent {
         uint256 amount
     ) internal override returns (uint256 amountWithdrawn) {
         uint256 shares = convertToShares(amount);
-
-        // Withdraw USDC from Curve pool
-        (bool success, ) = curvePool.call(
-            abi.encodeWithSignature(
-                "remove_liquidity_one_coin(uint256,int128,uint256)",
-                shares,
-                int128(int256(USDC_INDEX)),
-                amount
-            )
+        amountWithdrawn = receiptToken.remove_liquidity_one_coin(
+            shares,
+            int128(int256(USDC_INDEX)),
+            0 // minAmountOut
         );
-
-        require(success, "Curve withdrawal failed");
-
-        return amount;
     }
 
     /// @notice Transfers assets to a new strategy.
@@ -89,7 +74,9 @@ contract ERC20_Curve_Strategy is ERC20StrategyParent {
         bytes32 _crossChainTxId
     ) internal override {
         uint256 strategyTotalBalance = totalUnderlyingAssets();
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
+            strategyTotalBalance
+        );
 
         uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
         require(
@@ -97,14 +84,10 @@ contract ERC20_Curve_Strategy is ERC20StrategyParent {
             "Exceeds max shares out"
         );
 
-        approveOrIncreaseAllowance(
-            inputToken,
-            newStrategy,
-            strategyTotalBalance
-        );
+        approveOrIncreaseAllowance(inputToken, newStrategy, withdrawnAmount);
 
         IStrategy(newStrategy).depositFromOldStrategy(
-            strategyTotalBalance,
+            withdrawnAmount,
             minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
@@ -112,7 +95,7 @@ contract ERC20_Curve_Strategy is ERC20StrategyParent {
 
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            withdrawnAmount,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -120,24 +103,28 @@ contract ERC20_Curve_Strategy is ERC20StrategyParent {
 
     /// @notice Returns the total underlying assets held in Curve.
     function totalUnderlyingAssets() public view override returns (uint256) {
-        return IERC20(curvePool).balanceOf(address(this));
+        uint256 shares = receiptToken.balanceOf(address(this));
+        return convertToAssets(shares);
     }
 
-    /// @notice Converts an asset amount to Curve LP token shares.
+    /// @notice Converts an asset amount (USDC) to Curve LP token shares.
     function convertToShares(
         uint256 assetAmount
     ) public view override returns (uint256) {
-        uint256 totalSupply = IERC20(curvePool).totalSupply();
-        uint256 totalAssets = totalUnderlyingAssets();
-        return (assetAmount * totalSupply) / totalAssets;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[USDC_INDEX] = assetAmount; // Only withdraw USDC
+        uint256 shares = receiptToken.calc_token_amount(amounts, false);
+        return shares;
     }
 
-    /// @notice Converts Curve LP token shares to an asset amount.
+    /// @notice Converts Curve LP token shares to an asset amount (USDC).
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256) {
-        uint256 totalSupply = IERC20(curvePool).totalSupply();
-        uint256 totalAssets = totalUnderlyingAssets();
-        return (shares * totalAssets) / totalSupply;
+        uint256 assets = receiptToken.calc_withdraw_one_coin(
+            shares,
+            int128(int256(USDC_INDEX))
+        );
+        return assets;
     }
 }

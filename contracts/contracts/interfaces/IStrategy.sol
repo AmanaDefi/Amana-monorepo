@@ -5,7 +5,6 @@ interface IStrategy {
     function invest(uint256 amount, uint256 minimumOut) external;
 
     function withdraw(
-        uint256 _amount,
         uint256 _fraction,
         uint256 minAmountOut
     ) external returns (uint256);
