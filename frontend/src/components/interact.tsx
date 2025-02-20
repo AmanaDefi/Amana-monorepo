@@ -187,7 +187,7 @@ export default function InteractionContainer({ step, setStep, action, setAction,
     const activeChainExplorerBaseUrl = useMemo(() => {
         if (!activeChain?.id) return "";
         return CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
-    }, [activeChain.id])
+    }, [activeChain?.id])
 
 
     useEffect(() => {

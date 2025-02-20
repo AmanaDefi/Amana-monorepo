@@ -113,7 +113,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (!account && !publicKey) {
       disconnectWallet();
       setIsModalOpen(true);
-    } else {
+    } else if(publicKey){
+      setWalletAddress(publicKey.toBase58());
       setIsModalOpen(false);
     }
   }, [account, publicKey]);

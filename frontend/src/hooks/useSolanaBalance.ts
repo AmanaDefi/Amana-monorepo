@@ -5,7 +5,7 @@ import { solanaRpcUrl } from "@/constants/chainConfig";
 import { useState, useEffect } from "react";
 
 export default function useActiveWalletBalance() {
-  const [balance, setBalance] = useState<number | null>(null)
+  const [balance, setBalance] = useState<number>(0)
   const {publicKey} = useWallet()
 
   useEffect(() => {
