@@ -6,6 +6,7 @@ import {
   calculateVenusAPY,
   calculateVenusRewardsAPY,
   calculateEddyAPY,
+  calculateBeefyAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem
@@ -180,6 +181,8 @@ export const useUpdateAPYs = (
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
+              } else if (vault.protocol.name === "Beefy") {
+                APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               }
               return { vaultId: vault.id, APY7d };
             } catch (error) {

@@ -6,6 +6,7 @@ import { getBalance } from "thirdweb/extensions/erc20";
 import { ethers, JsonRpcProvider } from "ethers";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
+import beefyVaultABI from "../../abis/beefyVaultABI.json";
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
@@ -57,6 +58,39 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
     // Fetch the virtual price from 7 days ago
     const pastPrice = ethers.toBigInt(
       await eddyFinancePool.get_virtual_price({ blockTag: pastBlockNumber })
+    );
+
+    // Calculate the rate of change in the virtual price over 7 days
+    const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+    const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
+
+    // Calculate the annualized APY based on the 7-day change
+    const depositAPY = Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
+
+    return depositAPY;
+  } catch (error) {
+    console.error("Error calculating APY for Eddy Finance:", error);
+    return 0;
+  }
+}
+
+export async function calculateBeefyAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  const beefyVault = new ethers.Contract(receiptTokenAddress, beefyVaultABI, provider);
+
+  try {
+    // Fetch the current virtual price
+    const currentPrice = ethers.toBigInt(await beefyVault.getPricePerFullShare());
+
+    // Fetch the block number and determine the number of seconds in the past (e.g., 7 days)
+    const currentBlockNumber = await provider.getBlockNumber();
+    const averageBlockTimeInSeconds = 2; // Adjust this based on the average block time for Eddy Finance
+    const secondsIn7Days = 7 * 24 * 60 * 60;
+    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const pastBlockNumber = currentBlockNumber - blocksIn7Days;
+
+    // Fetch the virtual price from 7 days ago
+    const pastPrice = ethers.toBigInt(
+      await beefyVault.getPricePerFullShare({ blockTag: pastBlockNumber })
     );
 
     // Calculate the rate of change in the virtual price over 7 days
@@ -394,7 +428,6 @@ const executeCrossChainDeposit = async (
       chain: activeChain,
       address: EVMGatewayAddress,
     });
-
     const depositTx = prepareContractCall({
       contract,
       method:
@@ -458,7 +491,7 @@ const executeCrossChainDeposit = async (
         revertOptions,
       ],
     });
-
+    console.log("depositTx", depositTx);
     try {
       const receipt = await sendAndConfirmTransaction({
         account: activeAccount,
@@ -481,6 +514,7 @@ export const executeWithdrawal = async (vaultId: Address, strategyAddress: Addre
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount);
   } else {
+    console.log("withdrawShareAmount", withdrawShareAmount);
     return executeCrossChainWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   }
 };
@@ -554,6 +588,7 @@ const executeCrossChainWithdrawal = async (
 
   const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000); const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
+  console.log("withdrawShareAmount", withdrawShareAmount);
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
     [withdrawZRC20, withdrawERC20, withdrawShareAmount, maxStrategySharesBurnt, slippageValue, transactionId]
@@ -563,7 +598,7 @@ const executeCrossChainWithdrawal = async (
 
   const revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
-    true, // callOnRevert
+    false, // callOnRevert
     activeAccount.address, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
