@@ -583,13 +583,13 @@ const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Addres
   console.log("strategyChainId", strategyChainId);
   const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
   console.log("strategyShareAmount", strategyShareAmount);
-  const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
-  console.log("maxStrategySharesBurnt", maxStrategySharesBurnt);
+  const minAmountOut = BigInt(0); strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
+  console.log("minAmountOut", minAmountOut);
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function redeem(uint256 shares, uint256 maxStrategySharesBurnt, address receiver, address owner)",
-    params: [withdrawShareAmount, maxStrategySharesBurnt, activeAccount?.address, activeAccount?.address],
+      "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
+    params: [withdrawShareAmount, minAmountOut, activeAccount?.address, activeAccount?.address],
   });
   const receipt = await sendTransaction({
     account: activeAccount,
@@ -634,14 +634,14 @@ const executeCrossChainWithdrawal = async (
   console.log("strategyChainId", strategyChainId);
   const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
   console.log("strategyShareAmount", strategyShareAmount);
-  const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
+  const minAmountOut = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
 
-  console.log("maxStrategySharesBurnt", maxStrategySharesBurnt);
+  console.log("minAmountOut", minAmountOut);
   // Prepare payload (calldata to pass to the receiver)
   console.log("withdrawShareAmount", withdrawShareAmount);
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    [withdrawZRC20, withdrawERC20, withdrawShareAmount, maxStrategySharesBurnt, slippageValue, transactionId]
+    [withdrawZRC20, withdrawERC20, withdrawShareAmount, minAmountOut, slippageValue, transactionId]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainWithdrawFailed", transactionId, activeAccount.address]);
@@ -721,7 +721,9 @@ export const fetchUserVaultMaxRedeem = async (decimals: number, userAddress: Add
     method: "function maxRedeem(address) view returns (uint256)",
     params: [userAddress]
   });
+  console.log("maxRedeem", maxRedeem)
   const formattedMaxRedeem = Number(maxRedeem) / 10 ** decimals;
+  console.log("formattedMaxRedeem", formattedMaxRedeem)
   return formattedMaxRedeem.toString();
 }
 
