@@ -16,6 +16,7 @@ const OWNER_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const ERC20_CUSTODY_ADDRESS = "0xD80BE3710F08D280F51115e072e5d2a778946cd7";
 const INPUT_TOKEN_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const RECEIPT_TOKEN_ADDRESS = "0x169A5f124A3663a25313Ee0F7f3Bff028728867f";
+const GAUGE_ADDRESS = "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185";
 
 let owner: Signer;
 let user1: Signer;
@@ -44,6 +45,8 @@ describe("CurveERC20Strategy - Full Coverage", function () {
   let inputToken: IERC20;
   let gatewaySigner: Signer;
   let curvePool: ICurvePool;
+  let gaugePool: IERC20;
+  let stakingEnabled: boolean;
 
   before(async () => {
     await network.provider.request({
@@ -66,6 +69,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
 
     inputToken = await ethers.getContractAt("IERC20", INPUT_TOKEN_ADDRESS, gatewaySigner);
     curvePool = await ethers.getContractAt("ICurvePool", RECEIPT_TOKEN_ADDRESS, gatewaySigner);
+    gaugePool = await ethers.getContractAt("IERC20", GAUGE_ADDRESS, gatewaySigner);
 
     const StrategyFactory = await ethers.getContractFactory("CurveERC20Strategy");
     strategy = await StrategyFactory.deploy(
@@ -73,9 +77,11 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       AMANA_VAULT_ADDRESS,
       INPUT_TOKEN_ADDRESS,
       RECEIPT_TOKEN_ADDRESS,
+      GAUGE_ADDRESS,
       GATEWAY_ADDRESS
     );
     await strategy.deployed();
+    stakingEnabled = await strategy.stakingEnabled();
 
   });
 
@@ -183,7 +189,12 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       BASE_CHAIN_ID,
     );
 
-    const strategyBalance = await curvePool.balanceOf(strategy.address);
+    let strategyBalance;
+    if (stakingEnabled) {
+      strategyBalance = await gaugePool.balanceOf(strategy.address);
+    } else {
+      strategyBalance = await curvePool.balanceOf(strategy.address);
+    }
     expect(strategyBalance).to.be.gte(depositAmount);
   });
 
@@ -220,11 +231,85 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       slippage,
       ETHEREUM_CHAIN_ID
     );
-
-    const strategyBalance = await curvePool.balanceOf(strategy.address);
-    const tolerance = ethers.utils.parseUnits("0.0000001", 18); // some interest dust
+    let strategyBalance;
+    if (stakingEnabled) {
+      strategyBalance = await gaugePool.balanceOf(strategy.address);
+    } else {
+      strategyBalance = await curvePool.balanceOf(strategy.address);
+    }
     expect(strategyBalance).to.equal(0);
 
+  });
+
+  it("should succesfully harvest when withdrawing after accumulating rewards", async function () {
+    if (!stakingEnabled) {
+      console.log("Skipping test: Staking is not enabled");
+      return;
+    }
+    const depositAmount = ethers.BigNumber.from("1000000");
+    const minSharesOut = ethers.BigNumber.from("0");
+    const slippage = 10000;
+
+    // Step 1: Set Token Balance and Approve Strategy
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
+
+    // Step 2: Simulate Deposit
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_CHAIN_ID,
+    );
+
+    // Step 3: Check Initial Shares in Curve Pool
+    const initialShares = await gaugePool.balanceOf(strategy.address);
+    expect(initialShares).to.be.gt(0); // Ensure shares were received
+
+    // Step 4: Simulate Time Passing for Rewards Accumulation
+    const timeToSimulate = 7 * 24 * 60 * 60; // Simulate 7 days of staking rewards
+    await ethers.provider.send("evm_increaseTime", [timeToSimulate]); // Fast-forward time
+    await ethers.provider.send("evm_mine", []); // Mine a new block
+
+    // Step 5: Check Claimable Rewards
+    const claimableRewards = await strategy.checkRewards();
+    console.log(`Claimable Rewards: ${ethers.utils.formatUnits(claimableRewards, 18)} CRV`);
+    expect(claimableRewards).to.be.gt(0); // Ensure some rewards have accrued
+
+    // Step 6: Simulate Withdrawal
+    const withdrawAmount = ethers.utils.parseEther("1"); // Represents full amount
+    const minAmountOut = ethers.BigNumber.from("0");
+
+    await simulateWithdrawCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      ZC_TEST_ETH_SEPOLIA_ADDRESS,
+      withdrawAmount,
+      minAmountOut,
+      slippage,
+      ETHEREUM_CHAIN_ID
+    );
+
+    // Step 7: Check Strategy Balance After Withdrawal
+    let strategyBalance;
+    if (stakingEnabled) {
+      strategyBalance = await gaugePool.balanceOf(strategy.address);
+    } else {
+      strategyBalance = await curvePool.balanceOf(strategy.address);
+    }
+    const tolerance = ethers.utils.parseUnits("0.0000001", 18); // Allow minor interest dust
+    expect(strategyBalance).to.be.closeTo(ethers.BigNumber.from("0"), tolerance);
+
+    // Step 8: Check that Rewards Were Claimed (Optional)
+    const finalClaimableRewards = await strategy.checkRewards();
+    console.log(`Final Claimable Rewards: ${ethers.utils.formatUnits(finalClaimableRewards, 18)} CRV`);
+    expect(finalClaimableRewards).to.be.lte(claimableRewards); // Rewards should have been claimed
   });
 
   it("should allow owner to perform emergencyWithdraw", async function () {
@@ -269,8 +354,12 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     // Fund the strategy contract with the required ERC20
     await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, withdrawPlusFee, 9);
 
-    const initialBalance = await curvePool.balanceOf(strategy.address);
-
+    let initialBalance;
+    if (stakingEnabled) {
+      initialBalance = await gaugePool.balanceOf(strategy.address);
+    } else {
+      initialBalance = await curvePool.balanceOf(strategy.address);
+    }
     const revertContext = {
       sender: strategy.address,
       asset: INPUT_TOKEN_ADDRESS, // the ERC20 that we were trying to do depositAndCall with
@@ -282,8 +371,12 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
       .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
 
-    const finalBalance = await curvePool.balanceOf(strategy.address);
-
+    let finalBalance;
+    if (stakingEnabled) {
+      finalBalance = await gaugePool.balanceOf(strategy.address);
+    } else {
+      finalBalance = await curvePool.balanceOf(strategy.address);
+    }
     // Check if the funds were successfully re-invested
     expect(finalBalance).to.be.gt(initialBalance);
   });
@@ -523,6 +616,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       AMANA_VAULT_ADDRESS,
       INPUT_TOKEN_ADDRESS,
       RECEIPT_TOKEN_ADDRESS,
+      GAUGE_ADDRESS,
       GATEWAY_ADDRESS
     );
     await newStrategy.deployed();

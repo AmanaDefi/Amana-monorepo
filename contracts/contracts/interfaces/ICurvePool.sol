@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-interface ICurvePool {
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+interface ICurvePool is IERC20 {
     function exchange(
         uint256 i,
         uint256 j,
