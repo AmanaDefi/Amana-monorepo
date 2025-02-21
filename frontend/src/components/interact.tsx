@@ -26,25 +26,26 @@ import Link from "next/link";
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
     setTransactionCompleted(false)
     try {
-        const value = Number(inputBalance.value)
-        const scaledAmount = BigInt(value)
+        const depositAmount = inputBalance.value
         console.log("inputToken in handleDepositTransaction: ", inputToken.symbol)
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
-            amount: scaledAmount.toString(),
+            amount: depositAmount.toString(),
         });
         const receipt = await executeDeposit(
             vaultData.id as Address,
+            vaultData.protocol.strategyAddress as Address,
+            vaultData.protocol.chainId,
             inputToken.address as Address,
             EOAaccount,
             activeChain,
-            scaledAmount,
+            depositAmount,
             setcrossChainTxId
         );
 
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
-            amount: scaledAmount.toString(),
+            amount: depositAmount.toString(),
         });
 
         // Create an object to pass to waitForReceipt with the required fields
@@ -84,24 +85,26 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         throw new Error("Withdraw token not found");
     }
     try {
-        const value = Number(inputBalance.value)
-        const scaledAmount = BigInt(value)
+
+        const withdrawAmount = inputBalance.value
         mixpanel.track("Withdraw Submitted", {
             vault: vaultData.id.toString(),
-            amount: scaledAmount.toString(),
+            amount: withdrawAmount.toString(),
         });
         const receipt = await executeWithdrawal(
             vaultData.id as Address,
+            vaultData.protocol.strategyAddress as Address,
+            vaultData.protocol.chainId as number,
             EOAaccount,
             activeChain,
-            scaledAmount,
+            withdrawAmount,
             withdrawToken.address as Address,
             withdrawZRC20,
             setcrossChainTxId
         );
         mixpanel.track("Withdraw Succeeded", {
             vault: vaultData.id.toString(),
-            amount: scaledAmount.toString(),
+            amount: withdrawAmount.toString(),
         });
 
         // Create an object to pass to waitForReceipt with the required fields
@@ -1136,14 +1139,13 @@ function handleInteraction(
     switch (action) {
         case Action.depositApprove:
             return async () => {
-                const value = Number(inputBalance.value)
-                const scaledAmount = BigInt(value)
+                const depositAmount = inputBalance.value
                 const result = await Approvedeposit(
                     vaultData.id as Address,
                     inputToken.address as Address,
                     EOAaccount,
                     activeChain,
-                    scaledAmount
+                    depositAmount
                 )
                 return result;
             }

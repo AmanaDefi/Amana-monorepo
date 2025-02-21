@@ -9,9 +9,9 @@ interface IErrors {
     error Unauthorized();
     error NoFundsReceived();
     error NothingToWithdraw();
-    error DepositFailed();
+    error InsufficientOut();
     error TransferFailed();
-
+    error ExceedsMaxSharesOut();
     error InvalidStrategyAddress();
     error InvalidStrategyChainId();
     error InvalidTreasuryAddress();

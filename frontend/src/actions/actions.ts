@@ -1,4 +1,4 @@
-import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction, readContract } from "thirdweb";
+import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction, readContract, defineChain } from "thirdweb";
 import { client } from "../utils/client";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
@@ -6,6 +6,7 @@ import { getBalance } from "thirdweb/extensions/erc20";
 import { ethers, JsonRpcProvider } from "ethers";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
+import beefyVaultABI from "../../abis/beefyVaultABI.json";
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
@@ -57,6 +58,39 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
     // Fetch the virtual price from 7 days ago
     const pastPrice = ethers.toBigInt(
       await eddyFinancePool.get_virtual_price({ blockTag: pastBlockNumber })
+    );
+
+    // Calculate the rate of change in the virtual price over 7 days
+    const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+    const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
+
+    // Calculate the annualized APY based on the 7-day change
+    const depositAPY = Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
+
+    return depositAPY;
+  } catch (error) {
+    console.error("Error calculating APY for Eddy Finance:", error);
+    return 0;
+  }
+}
+
+export async function calculateBeefyAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  const beefyVault = new ethers.Contract(receiptTokenAddress, beefyVaultABI, provider);
+
+  try {
+    // Fetch the current virtual price
+    const currentPrice = ethers.toBigInt(await beefyVault.getPricePerFullShare());
+
+    // Fetch the block number and determine the number of seconds in the past (e.g., 7 days)
+    const currentBlockNumber = await provider.getBlockNumber();
+    const averageBlockTimeInSeconds = 2; // Adjust this based on the average block time for Eddy Finance
+    const secondsIn7Days = 7 * 24 * 60 * 60;
+    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const pastBlockNumber = currentBlockNumber - blocksIn7Days;
+
+    // Fetch the virtual price from 7 days ago
+    const pastPrice = ethers.toBigInt(
+      await beefyVault.getPricePerFullShare({ blockTag: pastBlockNumber })
     );
 
     // Calculate the rate of change in the virtual price over 7 days
@@ -223,11 +257,17 @@ export async function calculateVenusAPY(receiptTokenAddress: Address, strategyCh
   return Number(currentAPY);
 }
 
-export const executeDeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
+export async function calculateVenusRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  // It looks like this is an XVS reward, but you have to stake >1000 XVS in order to qualify for it
+  // It also looks like there's a 90 day lockup period for the rewards
+  return Number(0.067);
+}
+
+export const executeDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
-    return executeDirectDeposit(vaultId, activeAccount, activeChain, transactionAmount);
+    return executeDirectDeposit(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, transactionAmount);
   } else {
-    return executeCrossChainDeposit(vaultId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
+    return executeCrossChainDeposit(vaultId, strategyAddress, strategyChainId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
   }
 };
 
@@ -262,19 +302,59 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
   }
 };
 
-const executeDirectDeposit = async (vaultId: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+const getSharesOutForUnderlying = async (transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
+  const strategyChain = defineChain(strategyChainId);
+  const contract = getContract({
+    client,
+    chain: strategyChain,
+    address: strategyAddress
+  });
+  const sharesOutForUnderlying = await readContract({
+    contract,
+    method: "function convertToShares(uint256) view returns (uint256)",
+    params: [transactionAmount]
+  });
+  return sharesOutForUnderlying;
+}
+
+const getAmountOutForShares = async (transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
+  const strategyChain = defineChain(strategyChainId);
+  console.log("strategyChain", strategyChain);
+  const contract = getContract({
+    client,
+    chain: strategyChain,
+    address: strategyAddress
+  });
+  const amountOutForShares = await readContract({
+    contract,
+    method: "function convertToShares(uint256) view returns (uint256)",
+    params: [transactionAmount]
+  });
+  console.log("amountOutForShares", amountOutForShares);
+  return amountOutForShares;
+}
+
+const executeDirectDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Deposit");
+  const sharesOutForUnderlying = await getSharesOutForUnderlying(transactionAmount, strategyAddress, strategyChainId);
+  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
+  const slippage = getCurrentSlippage();
+  console.log("slippage", slippage);
+  const minSharesOut = sharesOutForUnderlying * BigInt(10000 - slippage * 100) / BigInt(10000);
+  console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
     address: vaultId
   });
+  console.log("About to prepare contract call");
   const supplyTx = prepareContractCall({
     contract,
     method:
-      "function deposit(uint256 assets,  address receiver)",
-    params: [transactionAmount, activeAccount?.address],
+      "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
+    params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
+  console.log("About to send transaction");
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx
@@ -295,6 +375,8 @@ const generateTransactionId = (
 
 const executeCrossChainDeposit = async (
   vaultId: Address,
+  strategyAddress: Address,
+  strategyChainId: number,
   inputToken: Address,
   activeAccount: Account,
   activeChain: Chain,
@@ -312,10 +394,13 @@ const executeCrossChainDeposit = async (
   let contract, approveTx, payload, revertOptions;
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
+
+  const sharesOutForUnderlying = await getSharesOutForUnderlying(transactionAmount, strategyAddress, strategyChainId);
+  const minSharesOut = sharesOutForUnderlying * BigInt(10000 - slippage * 100) / BigInt(10000);
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
-    ["address", "uint16", "bytes32"],
-    [inputToken, slippageValue, transactionId]
+    ["address", "uint256", "uint16", "bytes32"],
+    [inputToken, minSharesOut, slippageValue, transactionId]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainDepositFailed", transactionId, activeAccount.address]);
@@ -343,7 +428,6 @@ const executeCrossChainDeposit = async (
       chain: activeChain,
       address: EVMGatewayAddress,
     });
-
     const depositTx = prepareContractCall({
       contract,
       method:
@@ -407,7 +491,7 @@ const executeCrossChainDeposit = async (
         revertOptions,
       ],
     });
-
+    console.log("depositTx", depositTx);
     try {
       const receipt = await sendAndConfirmTransaction({
         account: activeAccount,
@@ -426,25 +510,41 @@ const executeCrossChainDeposit = async (
   }
 };
 
-export const executeWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
+export const executeWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
-    return executeDirectWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount);
+    return executeDirectWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount);
   } else {
-    return executeCrossChainWithdrawal(vaultId, activeAccount, activeChain, withdrawAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
+    console.log("withdrawShareAmount", withdrawShareAmount);
+    return executeCrossChainWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   }
 };
 
-const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account, activeChain: Chain, withdrawAmount: bigint) => { //vaultId: string
+const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint) => { //vaultId: string
+  const slippage = getCurrentSlippage();
+
   let contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
     address: vaultId
   });
+
+  const withdrawAssetAmount = await readContract({
+    contract,
+    method: "function previewWithdraw(uint256) view returns (uint256)",
+    params: [withdrawShareAmount]
+  });
+  console.log("withdrawAssetAmount", withdrawAssetAmount);
+  console.log("strategyAddress", strategyAddress);
+  console.log("strategyChainId", strategyChainId);
+  const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
+  console.log("strategyShareAmount", strategyShareAmount);
+  const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
+  console.log("maxStrategySharesBurnt", maxStrategySharesBurnt);
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function redeem(uint256 shares, address receiver, address owner)",
-    params: [withdrawAmount, activeAccount?.address, activeAccount?.address],
+      "function redeem(uint256 shares, uint256 maxStrategySharesBurnt, address receiver, address owner)",
+    params: [withdrawShareAmount, maxStrategySharesBurnt, activeAccount?.address, activeAccount?.address],
   });
   const receipt = await sendTransaction({
     account: activeAccount,
@@ -455,9 +555,11 @@ const executeDirectWithdrawal = async (vaultId: Address, activeAccount: Account,
 
 const executeCrossChainWithdrawal = async (
   vaultId: Address,
+  strategyAddress: Address,
+  strategyChainId: number,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawAmount: bigint,
+  withdrawShareAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Address,
   setcrossChainTxId: Function
@@ -467,19 +569,41 @@ const executeCrossChainWithdrawal = async (
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
+  const amountOutForShares = await getAmountOutForShares(withdrawShareAmount, strategyAddress, strategyChainId);
+
   const slippage = getCurrentSlippage();
+  let contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
+    address: vaultId
+  });
+
   const slippageValue = (slippage * 100).toFixed(0);
+  const withdrawAssetAmount = await readContract({
+    contract,
+    method: "function previewRedeem(uint256) view returns (uint256)",
+    params: [withdrawShareAmount]
+  });
+  console.log("withdrawAssetAmount", withdrawAssetAmount);
+  console.log("strategyAddress", strategyAddress);
+  console.log("strategyChainId", strategyChainId);
+  const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
+  console.log("strategyShareAmount", strategyShareAmount);
+  const maxStrategySharesBurnt = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
+
+  console.log("maxStrategySharesBurnt", maxStrategySharesBurnt);
   // Prepare payload (calldata to pass to the receiver)
+  console.log("withdrawShareAmount", withdrawShareAmount);
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint16", "bytes32"],
-    [withdrawZRC20, withdrawERC20, withdrawAmount, slippageValue, transactionId]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
+    [withdrawZRC20, withdrawERC20, withdrawShareAmount, maxStrategySharesBurnt, slippageValue, transactionId]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainWithdrawFailed", transactionId, activeAccount.address]);
 
   const revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
-    true, // callOnRevert
+    false, // callOnRevert
     activeAccount.address, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
@@ -491,7 +615,7 @@ const executeCrossChainWithdrawal = async (
   // };
 
   // Get the Gateway contract to initiate the withdrawal
-  const contract = getContract({
+  contract = getContract({
     client,
     chain: activeChain,
     address: EVMGatewayAddress,

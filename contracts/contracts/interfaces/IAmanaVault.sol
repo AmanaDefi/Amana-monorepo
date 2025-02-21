@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-interface I4626Vault {
+interface IAmanaVault {
     function deposit(
         uint256 assets,
+        uint256 minSharesOut,
         address receiver
     ) external returns (uint256);
 
     function withdraw(
         uint256 assets,
-        address receiver,
-        address owner
-    ) external returns (uint256);
-
-    function redeem(
-        uint256 shares,
+        uint256 minAssetsOut,
         address receiver,
         address owner
     ) external returns (uint256);
