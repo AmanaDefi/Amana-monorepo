@@ -238,13 +238,14 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         bytes32 _crossChainTxId
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            address(0),
+            address(0), // user
             receiver,
-            address(this),
-            address(0),
+            address(this), // withdrawZRC20
+            address(0), // withdrawERC20
             amount,
-            0,
-            true,
+            0, // fractionOfTotalShares
+            0, // withdrawChainId
+            true, // isDeposit
             totalUnderlyingAssetsAfter,
             _executionNonce,
             _crossChainTxId,
@@ -284,7 +285,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     /// @notice Withdraws funds from the yield source.
     /// @param user Address of the user whose funds are being withdrawn.
     /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
-    /// @param fractionToWithdraw Amount to withdraw.
+    /// @param fractionOfTotalShares Amount to withdraw.
     /// @param withdrawChainId Chain ID for the withdrawal.
     /// @param _executionNonce Current execution nonce for the transaction.
     /// @param _crossChainTxId Cross-chain transaction ID.
@@ -293,7 +294,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 fractionToWithdraw,
+        uint256 fractionOfTotalShares,
         uint256 maxStrategySharesBurnt,
         uint32 withdrawChainId,
         uint256 _executionNonce,
@@ -301,7 +302,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         uint16 slippage
     ) internal {
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            fractionToWithdraw,
+            fractionOfTotalShares,
             maxStrategySharesBurnt
         );
 
@@ -313,6 +314,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
+            fractionOfTotalShares,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -341,6 +343,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amountWithdrawn,
+        uint256 fractionOfTotalShares,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -353,6 +356,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
+            fractionOfTotalShares,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -382,6 +386,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amountWithdrawn,
+        uint256 fractionOfTotalShares,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -394,6 +399,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
+            fractionOfTotalShares,
             withdrawChainId,
             false,
             totalUnderlyingAssetsAfter,
@@ -434,12 +440,12 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     /**
      * @notice Withdraws funds from the configured yield source.
      * @dev This function is intended to be overridden in derived contracts to define specific withdrawal logic.
-     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param fractionOfTotalShares The fraction of shares to withdraw from the yield source.
      * @param minAmountOut The minimum amount of funds to withdraw.
      * @return The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 fractionOfTotalShares,
         uint256 minAmountOut
     ) internal virtual returns (uint256);
 
@@ -461,6 +467,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(0),
             address(0),
             block.number,
+            0,
             0,
             false,
             totalUnderlyingAssets(),

@@ -127,6 +127,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Venus is a lending protocol on BSC where users supply assets to earn interest and borrow against collateral. It features VAI, a stablecoin minted via overcollateralized loans. Risks include liquidity fluctuations, governance centralization, and smart contract vulnerabilities."
     },
   },
+  {
+    id: "0x00939fA0bdFd04b52b209e35135e53E47dD993d8",
+    name: "Curve yUSD/USDC",
+    des: "This strategy deposits USDC into the Curve yUSD/USDC pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+    symbol: "aCurveUSDC",
+    imgURL: "/ETH.png",
+    inputToken: {
+      symbol: "USDC.ETH",
+      decimals: 18,
+      address: ZC_USDC_ETH_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve",
+      strategyAddress: "0x199C08dA32C49FeEbdC9A752Cef16726065Fe861",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/curve.png",
+      des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+    },
+  },
   // {
   //   id: "0x2B0FD687c0EBF26D4e4F67f9b9Ab96cC5Fe69193", // Polygon POL Vault
   //   name: "AaveV3 POL",

@@ -337,6 +337,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         "address", // address(0) (ZRC20 token address)
         "address", // address(0) (ERC2- token for withdraw)
         "uint256", // amount
+        "uint256",  // fractionOfTotalShares
         "uint32",  // withdrawChainId
         "bool",    // isInvest
         "uint256", // totalUnderlyingAssetsAfter
@@ -350,6 +351,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         strategy.address,
         ethers.constants.AddressZero,
         amount,
+        0,
         0,
         true,
         totalUnderlyingAssetsAfter,
@@ -400,6 +402,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
     const userAddress = OWNER_ADDRESS;
     const withdrawZRC20 = ZC_TEST_ETH_SEPOLIA_ADDRESS; // ETH or replace with actual ZRC20 token address
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
+    const fractionOfTotalShares = ethers.utils.parseEther("0.2");
     const withdrawChainId = SEPOLIA_CHAIN_ID; // Example chain ID
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
     const executionNonce = 1;
@@ -414,6 +417,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         "address", // withdrawZRC20
         "address", // withdrawERC20
         "uint256", // amount
+        "uint256",  // fractionOfTotalShares
         "uint32",  // withdrawChainId
         "bool",    // isInvest (false for divestment)
         "uint256", // totalUnderlyingAssetsAfter
@@ -427,6 +431,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         withdrawZRC20,
         ethers.constants.AddressZero,
         amount,
+        fractionOfTotalShares,
         withdrawChainId,
         false,
         totalUnderlyingAssetsAfter,
@@ -467,6 +472,7 @@ describe("AaveEthStrategy - Full Coverage", function () {
         withdrawZRC20,
         ethers.constants.AddressZero,
         amount,
+        fractionOfTotalShares,
         withdrawChainId,
         totalUnderlyingAssetsAfter,
         executionNonce,

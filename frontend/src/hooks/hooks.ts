@@ -7,6 +7,7 @@ import {
   calculateVenusRewardsAPY,
   calculateEddyAPY,
   calculateBeefyAPY,
+  calculateCurveAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem
@@ -188,7 +189,10 @@ export const useUpdateAPYs = (
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "Curve") {
+                APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
               }
+
               return { vaultId: vault.id, APY7d };
             } catch (error) {
               console.error(`Error fetching APY for vault ${vault.id}:`, error);

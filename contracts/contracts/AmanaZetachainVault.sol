@@ -188,26 +188,27 @@ contract AmanaZetachainVault is AmanaVaultBase {
             _spendAllowance(user, caller, shares);
         }
 
-        uint256 fractionToWithdraw = (shares * 1e18) / totalSupply();
+        uint256 fractionOfTotalShares = (shares * 1e18) / totalSupply();
         uint256 amountWithdrawn = _divestZetachainStrategy(
-            fractionToWithdraw,
+            fractionOfTotalShares,
             minimumOut
         );
-
-        // Burn the shares after withdrawal to ensure reentrancy-safe execution.
-        _burn(user, shares);
-
-        uint256 fractionUserPrincipal = (fractionToWithdraw *
+        uint256 fractionOfUserShares = (shares * 1e18) / balanceOf(user);
+        uint256 userPrincipalWithdrawn = (fractionOfUserShares *
             userPrincipal[user]) / 1e18;
+
         uint256 feeToWithdraw;
-        if (amountWithdrawn > fractionUserPrincipal) {
+        if (amountWithdrawn > userPrincipalWithdrawn) {
             feeToWithdraw =
-                ((amountWithdrawn - fractionUserPrincipal) * perfFee) /
+                ((amountWithdrawn - userPrincipalWithdrawn) * perfFee) /
                 10000;
             emit PerformanceFeePaid(user, feeToWithdraw);
             SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
-        userPrincipal[user] -= fractionUserPrincipal;
+        userPrincipal[user] -= userPrincipalWithdrawn;
+        totalPrincipal -= userPrincipalWithdrawn;
+        // Burn the shares after withdrawal to ensure reentrancy-safe execution.
+        _burn(user, shares);
 
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
@@ -253,17 +254,17 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (shares > maxShares) {
             revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
         }
-        uint256 fractionToWithdraw = (shares * 1e18) / totalSupply();
+        uint256 fractionOfTotalShares = (shares * 1e18) / totalSupply();
 
         uint256 amountWithdrawn = _divestZetachainStrategy(
-            fractionToWithdraw,
+            fractionOfTotalShares,
             minimumOut
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
         _burn(user, shares);
 
-        uint256 fractionUserPrincipal = (fractionToWithdraw *
+        uint256 fractionUserPrincipal = (fractionOfTotalShares *
             userPrincipal[user]) / 1e18;
         uint256 feeToWithdraw;
         if (amountWithdrawn > fractionUserPrincipal) {
@@ -290,15 +291,15 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
     /**
      * @notice Divests assets from the connected Zetachain strategy and burns shares.
-     * @param fractionToWithdraw The amount of assets to withdraw.
+     * @param fractionOfTotalShares The amount of assets to withdraw.
      * @return withdrawnAmt The total amount withdrawn from the strategy.
      */
     function _divestZetachainStrategy(
-        uint256 fractionToWithdraw,
+        uint256 fractionOfTotalShares,
         uint256 minimumOut
     ) internal returns (uint256 withdrawnAmt) {
         withdrawnAmt = IStrategy(strategyAddress).withdraw(
-            fractionToWithdraw,
+            fractionOfTotalShares,
             minimumOut
         );
         if (withdrawnAmt < minimumOut) {

@@ -142,10 +142,8 @@ contract CurveERC20Strategy is ERC20StrategyParent {
         uint256 totalShares = stakingEnabled
             ? gauge.balanceOf(address(this))
             : receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw * totalShares) / 1e18;
-        // uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
-        // uint256 sharesToWithdraw = (fractionToWithdraw *
-        //     totalSharesInStrategy) / 1e18;
+        uint256 sharesToWithdraw = (fractionToWithdraw * totalShares + 5e17) /
+            1e18;
         if (stakingEnabled) {
             harvest(0);
             gauge.withdraw(sharesToWithdraw);

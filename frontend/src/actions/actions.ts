@@ -7,6 +7,7 @@ import { ethers, JsonRpcProvider } from "ethers";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
+import curvePoolABI from "../../abis/curvePoolABI.json";
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder, hexlify } from "ethers";
 import { keccak256 } from "thirdweb";
@@ -18,6 +19,7 @@ import { VaultData } from "@/types/types";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
+const provider_ethereum = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH);
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 const EVMGatewayAddress = deployEnv === "testnet"
@@ -142,6 +144,43 @@ export async function calculateAaveAPY(receiptTokenAddress: Address, strategyCha
   const depositAPY = (Math.pow(1 + (depositAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
 
   return depositAPY;
+}
+
+export async function calculateCurveAPY(poolAddress: Address, strategyChain: Chain) {
+  let relevant_provider = provider;
+  if (strategyChain.id === 1) {
+    relevant_provider = provider_ethereum;
+  }
+  const curvePool = new ethers.Contract(poolAddress, curvePoolABI, relevant_provider);
+
+  try {
+    // Fetch the current virtual price
+    const currentPrice = ethers.toBigInt(await curvePool.get_virtual_price());
+    console.log("currentPrice", currentPrice);
+    // Fetch the current block number and determine the number of blocks for 7 days
+    const currentBlockNumber = await relevant_provider.getBlockNumber();
+    const averageBlockTimeInSeconds = 12; // Adjust based on the Curve pool's chain
+    const secondsIn7Days = 7 * 24 * 60 * 60;
+    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const pastBlockNumber = currentBlockNumber - blocksIn7Days;
+
+    // Fetch the virtual price from 7 days ago
+    const pastPrice = ethers.toBigInt(
+      await curvePool.get_virtual_price({ blockTag: pastBlockNumber })
+    );
+    console.log("pastPrice", pastPrice);
+    // Calculate the rate of change in the virtual price over 7 days
+    const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+    const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
+
+    // Calculate the annualized APY based on the 7-day change
+    const depositAPY = Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
+
+    return depositAPY;
+  } catch (error) {
+    console.error("Error calculating APY for Curve:", error);
+    return 0;
+  }
 }
 
 export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
@@ -303,17 +342,21 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
 };
 
 const getSharesOutForUnderlying = async (transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
+  console.log("Getting shares out for underlying");
   const strategyChain = defineChain(strategyChainId);
+  console.log("strategyChain", strategyChain);
   const contract = getContract({
     client,
     chain: strategyChain,
     address: strategyAddress
   });
+  console.log("contract", contract);
   const sharesOutForUnderlying = await readContract({
     contract,
     method: "function convertToShares(uint256) view returns (uint256)",
     params: [transactionAmount]
   });
+  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   return sharesOutForUnderlying;
 }
 
@@ -335,13 +378,13 @@ const getAmountOutForShares = async (transactionAmount: bigint, strategyAddress:
 }
 
 const executeDirectDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-  console.log("Executing Deposit");
-  const sharesOutForUnderlying = await getSharesOutForUnderlying(transactionAmount, strategyAddress, strategyChainId);
-  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
+  console.log("Executing Deposit here");
+  // const sharesOutForUnderlying = await getSharesOutForUnderlying(transactionAmount, strategyAddress, strategyChainId);
+  // console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   const slippage = getCurrentSlippage();
   console.log("slippage", slippage);
-  const minSharesOut = sharesOutForUnderlying * BigInt(10000 - slippage * 100) / BigInt(10000);
-  console.log("minSharesOut", minSharesOut);
+  // const minSharesOut = sharesOutForUnderlying * BigInt(10000 - slippage * 100) / BigInt(10000);
+  // console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
@@ -352,9 +395,11 @@ const executeDirectDeposit = async (vaultId: Address, strategyAddress: Address, 
     contract,
     method:
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
-    params: [transactionAmount, minSharesOut, activeAccount?.address],
+    params: [transactionAmount, ethers.toBigInt("0"), activeAccount?.address],
   });
   console.log("About to send transaction");
+  console.log("transactionAmount", transactionAmount);
+  console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx

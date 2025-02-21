@@ -14,6 +14,7 @@ import "./tasks/deployZetachainStrategy";
 import "./tasks/deployPriceOracle";
 import "./tasks/deployWithdrawalReceiver";
 import "./tasks/deployZapContract";
+import "./tasks/deployCurveERC20_Strategy";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -25,12 +26,17 @@ import "@nomiclabs/hardhat-ethers";
 import { getHardhatConfigNetworks } from "@zetachain/networks";
 import { HardhatUserConfig } from "hardhat/config";
 import * as dotenv from "dotenv";
+import { mainnet } from "@zetachain/protocol-contracts";
 
 dotenv.config();
 
 const config: HardhatUserConfig = {
   networks: {
     ...getHardhatConfigNetworks(),
+    ethereum: {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+    },
     arbitrumOne: {
       url: "https://arb1.arbitrum.io/rpc",
       accounts: [process.env.PRIVATE_KEY],
@@ -106,6 +112,8 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
+      ethereum: process.env.ETHERSCAN_API_KEY || "",
+      mainnet: process.env.ETHERSCAN_API_KEY || "",
       arbitrumOne: process.env.ARBISCAN_API_KEY || "",
       base: process.env.BASESCAN_API_KEY || "",
       base_sepolia: process.env.BASESCAN_API_KEY || "",

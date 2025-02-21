@@ -70,14 +70,14 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   gatewaySigner: Signer,
   strategy: any,
   withdrawZRC20: any,
-  withdrawAmount: BigNumber,
+  fractionOfTotalShares: BigNumber,
   minAmountOut: BigNumber,
   slippage: number,
   ORIGIN_CHAIN_ID: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, withdrawAmount, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
+    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, fractionOfTotalShares, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
   );
 
   await
