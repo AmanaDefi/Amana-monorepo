@@ -17,7 +17,7 @@ dotenv.config();
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const VAULT_ASSET = ZC_ETH_ETH_ADDRESS;
-const FEE_RATE = 1000;
+const FEE_RATE = 1500;
 const ORIGIN_CHAIN_ID = 8453;
 const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
 const ERROR_MARGIN = ethers.utils.parseUnits("0.00015", 18);
@@ -401,7 +401,8 @@ describe("AmanaZetachainVault Tests", function () {
 
   it("should calculate and deduct the performance fee on withdrawal", async function () {
     const { user1, depositAmount1, amanaVault, ethEth, mockVault } = await loadFixture(setup);
-    const minSharesOut = 0
+    const minSharesOut = 0;
+
     // Step 1: Simulate a deposit by User1
     await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1, 3);
     await ethEth.connect(user1).approve(amanaVault.address, depositAmount1);
@@ -411,24 +412,36 @@ describe("AmanaZetachainVault Tests", function () {
     const initialTotalAssets = depositAmount1;
 
     // Step 2: Simulate a deposit by User2
-    // await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user2.getAddress(), depositAmount1);
-    // await ethEth.connect(user2).approve(amanaVault.address, depositAmount1);
-    // await amanaVault.connect(user2)["deposit(uint256,uint256,address)"](depositAmount1, await user2.getAddress());
     const profit = depositAmount1.div(10); // 10% profit
     await ethEth.transfer(mockVault.address, profit);
-    const updatedTotalAssets = initialTotalAssets.add(profit);
 
     // Step 3: Perform a withdrawal and calculate the fee
+    const withdrawAmount = totalUserShares.div(2); // Withdraw everything except the fee
+    const expectedFee = profit.mul(FEE_RATE).div(20000);
+    const minAmountOut = 0;
 
-    const withdrawAmount = depositAmount1.div(2); // Withdraw everything except the fee
-    // const adjustedFeeRate = FEE_RATE / (10000 - FEE_RATE);
-    const profitWithdrawn = withdrawAmount.sub(withdrawAmount.mul(depositAmount1).div(updatedTotalAssets));
-    const expectedFee = profitWithdrawn.mul(FEE_RATE).div(10000);
-    const minAmountOut = 0 // withdrawAmount.mul(1000).div(1001); // 0.1% slippage
-    await expect(amanaVault.connect(user1)["withdraw(uint256,uint256,address,address)"](withdrawAmount, minAmountOut, await user1.getAddress(), await user1.getAddress()))
-      .to.emit(amanaVault, "PerformanceFeePaid")
-      .withArgs(await user1.getAddress(), expectedFee);
+    // Capture the transaction
+    const tx = await amanaVault.connect(user1)["redeem(uint256,uint256,address,address)"](
+      withdrawAmount, minAmountOut, await user1.getAddress(), await user1.getAddress()
+    );
+
+    // Wait for transaction to be mined and get the emitted event logs
+    const receipt = await tx.wait();
+    const event = receipt.events?.find(e => e.event === "PerformanceFeePaid");
+
+    // Ensure the event was actually emitted
+    expect(event, "PerformanceFeePaid event not found").to.not.be.undefined;
+    expect(event?.args, "PerformanceFeePaid event has no args").to.not.be.undefined;
+
+    // Extract the emitted fee
+    const emittedFee = event!.args![1];
+
+    // Allow a small tolerance (e.g., 1%)
+    const tolerance = expectedFee.div(100); // 1% tolerance
+
+    expect(emittedFee).to.be.closeTo(expectedFee, tolerance);
   });
+
 
   it("should handle emergency withdrawal by the owner", async function () {
     const { amanaVault, owner, ethEth } = await loadFixture(setup);

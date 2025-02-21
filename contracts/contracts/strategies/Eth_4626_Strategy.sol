@@ -52,15 +52,24 @@ contract Eth_4626_Strategy is EthStrategyParent {
     }
 
     /// @notice Withdraws funds from the Aave pool.
-    /// @param amount Amount to be withdrawn.
+    /// @param fractionToWithdraw Fraction of shares to be withdrawn.
+    /// @param minAmountOut Minimum amount of ETH to be withdrawn.
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        amountWithdrawn = receiptToken.withdraw(
-            amount,
+        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
+        uint256 sharesToWithdraw = (fractionToWithdraw *
+            totalSharesInStrategy) / 1e18;
+
+        amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
@@ -72,29 +81,26 @@ contract Eth_4626_Strategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 maxStrategySharesBurnt,
+        uint256 minAmountOut,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
-        uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
-        if (sharesToBeBurnt > maxStrategySharesBurnt) {
-            revert ExceedsMaxSharesOut();
-        }
-        IStrategy(newStrategy).depositFromOldStrategy{
-            value: strategyTotalBalance
-        }(
-            strategyTotalBalance,
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            1e18,
+            minAmountOut
+        );
+
+        IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
+            amountWithdrawn,
             minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            amountWithdrawn,
             currentExecutionNonce,
             _crossChainTxId
         );

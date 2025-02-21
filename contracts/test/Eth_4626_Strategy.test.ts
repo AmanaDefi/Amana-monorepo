@@ -105,8 +105,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const withdrawAmount = ethers.utils.parseEther("0.5");
     const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
 
-    const fee = ethers.utils.parseEther("0.01");
-
     await expect(simulateWithdrawCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
       OWNER_ADDRESS,
@@ -115,7 +113,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
       maxStrategySharesBurnt,
-      fee,
       slippage,
       SEPOLIA_CHAIN_ID
     )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
@@ -143,8 +140,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const withdrawAmount = ethers.utils.parseEther("0.5");
     const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
 
-    const fee = ethers.utils.parseEther("0.01");
-
     await expect(simulateWithdrawCallFromVaultToStrategy(
       OWNER_ADDRESS,
       OWNER_ADDRESS,
@@ -153,7 +148,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
       maxStrategySharesBurnt,
-      fee,
       slippage,
       SEPOLIA_CHAIN_ID
     )).to.be.revertedWithCustomError(strategy, "OnlyVault");
@@ -196,9 +190,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     )
 
     const withdrawAmount = ethers.utils.parseEther("0.5");
-    const maxStrategySharesBurnt = ethers.utils.parseEther("0.51");
-
-    const fee = ethers.utils.parseEther("0.01");
+    const maxStrategySharesBurnt = ethers.utils.parseEther("0");
 
     await simulateWithdrawCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
@@ -208,14 +200,13 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
       maxStrategySharesBurnt,
-      fee,
       slippage,
       SEPOLIA_CHAIN_ID
     );
 
     const strategyBalance = await receiptToken.balanceOf(strategy.address);
     const tolerance = ethers.utils.parseUnits("0.0000001", 18); // some interest dust
-    expect(strategyBalance).to.be.lte(depositAmount.sub(withdrawAmount).sub(fee).add(tolerance));
+    expect(strategyBalance).to.be.lte(depositAmount.sub(withdrawAmount).add(tolerance));
 
   });
 
@@ -331,7 +322,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         "address", // address(0) (ZRC20 token address)
         "address", // withdrawERC20
         "uint256", // amount
-        "uint256", // fee
         "uint32",  // withdrawChainId
         "bool",    // isInvest
         "uint256", // totalUnderlyingAssetsAfter
@@ -345,7 +335,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         strategy.address,
         ethers.constants.AddressZero,
         amount,
-        0,
         0,
         true,
         totalUnderlyingAssetsAfter,
@@ -396,7 +385,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     const userAddress = OWNER_ADDRESS;
     const withdrawZRC20 = ZC_TEST_ETH_SEPOLIA_ADDRESS; // ETH or replace with actual ZRC20 token address
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
-    const fee = ethers.utils.parseEther("10"); // 10 tokens as fee
     const withdrawChainId = SEPOLIA_CHAIN_ID; // Example chain ID
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
     const executionNonce = 1;
@@ -411,7 +399,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         "address", // withdrawZRC20
         "address", // withdrawERC20
         "uint256", // amount
-        "uint256", // fee
         "uint32",  // withdrawChainId
         "bool",    // isInvest (false for divestment)
         "uint256", // totalUnderlyingAssetsAfter
@@ -425,7 +412,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         withdrawZRC20,
         ethers.constants.AddressZero,
         amount,
-        fee,
         withdrawChainId,
         false,
         totalUnderlyingAssetsAfter,
@@ -466,7 +452,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
         withdrawZRC20,
         ethers.constants.AddressZero,
         amount,
-        fee,
         withdrawChainId,
         totalUnderlyingAssetsAfter,
         executionNonce,
@@ -478,7 +463,7 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       .withArgs(
         strategy.address,       // From address
         AMANA_VAULT_ADDRESS,    // Destination vault address
-        amount.add(fee),             // Amount to be deposited
+        amount,             // Amount to be deposited
         ethers.constants.AddressZero, // ZRC20 token address
         payload,                // The encoded outgoingMessage
         revertOptions           // The array-formatted revertOptions

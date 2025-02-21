@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
 import "./interfaces/IStrategy.sol";
-import "hardhat/console.sol";
 
 /// @title AmanaZetachainVault
 /// @notice An ERC4626-compliant vault for managing cross-chain assets on ZetaChain.
@@ -188,11 +187,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
-        console.log("Shares: %d", shares);
-        console.log("Total supply: %d", totalSupply());
 
         uint256 fractionToWithdraw = (shares * 1e18) / totalSupply();
-        console.log("Fraction to withdraw: %d", fractionToWithdraw);
         uint256 amountWithdrawn = _divestZetachainStrategy(
             fractionToWithdraw,
             minimumOut

@@ -66,15 +66,19 @@ contract AaveEthStrategy is EthStrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256
     ) internal override returns (uint256 amountWithdrawn) {
+        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
+        uint256 sharesToWithdraw = (fractionToWithdraw *
+            totalSharesInStrategy) / 1e18;
         amountWithdrawn = aavePool.withdraw{gas: 200000}(
             address(weth),
-            amount,
+            sharesToWithdraw,
             address(this)
         );
         weth.withdraw{gas: 50000}(amountWithdrawn);
@@ -88,20 +92,17 @@ contract AaveEthStrategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 maxStrategySharesBurnt,
+        uint256 minAmountOut,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            type(uint256).max
+            1e18,
+            minAmountOut
         );
-        uint256 sharesToBeBurnt = convertToShares(amountWithdrawn);
-        if (sharesToBeBurnt > maxStrategySharesBurnt) {
-            revert ExceedsMaxSharesOut();
-        }
+
         IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
             amountWithdrawn,
             minimumSharesOut,

@@ -57,14 +57,18 @@ contract BeefyETHStrategy is EthStrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param minAmountOut The minimum amount of funds to withdraw
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 shares = convertToShares(amount);
-        receiptToken.withdraw(shares);
+        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
+        uint256 sharesToWithdraw = (fractionToWithdraw *
+            totalSharesInStrategy) / 1e18;
+        receiptToken.withdraw(sharesToWithdraw);
         weth.withdraw{gas: 50000}(amountWithdrawn);
 
         return shares;

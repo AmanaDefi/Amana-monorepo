@@ -49,17 +49,25 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param minAmountOut The minimum amount of USDC to withdraw.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        amountWithdrawn = receiptToken.withdraw(
-            amount,
+        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
+        uint256 sharesToWithdraw = (fractionToWithdraw *
+            totalSharesInStrategy) / 1e18;
+        amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
@@ -70,33 +78,28 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 maxStrategySharesBurnt,
+        uint256 minAmountOut,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
-        uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
-        if (sharesToBeBurnt > maxStrategySharesBurnt) {
-            revert ExceedsMaxSharesOut();
-        }
-        approveOrIncreaseAllowance(
-            inputToken,
-            newStrategy,
-            strategyTotalBalance
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            1e18,
+            minAmountOut
         );
 
+        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
+
         IStrategy(newStrategy).depositFromOldStrategy(
-            strategyTotalBalance,
+            amountWithdrawn,
             minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            amountWithdrawn,
             currentExecutionNonce,
             _crossChainTxId
         );

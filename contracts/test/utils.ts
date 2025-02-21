@@ -47,8 +47,8 @@ export async function simulateDepositCallFromVaultToStrategy(
 ) {
   // Attempt deposit from a non-gateway address
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, minSharesOut, 0, ORIGIN_CHAIN_ID, true, 0, slippage]
+    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage]
   );
 
   await
@@ -72,13 +72,12 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   withdrawZRC20: any,
   withdrawAmount: BigNumber,
   minAmountOut: BigNumber,
-  fee: BigNumber,
   slippage: number,
   ORIGIN_CHAIN_ID: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, withdrawAmount, minAmountOut, fee, ORIGIN_CHAIN_ID, false, 1, slippage]
+    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, withdrawAmount, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
   );
 
   await
@@ -100,15 +99,14 @@ export async function simulateSwitchCallFromVaultToStrategy(
   newStrategyAddress: any
 ) {
   const switchMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
     [
       ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
       ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
       newStrategyAddress,
       ethers.constants.AddressZero,
-      ethers.constants.MaxUint256, // maxStrategySharesBurnt (is usually just amount)
+      0, // minAmountOut (is usually just amount)
       0, // minSharesOut
-      0, // fee
       0, // withdrawChainId
       false, // isDeposit
       0, //ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId

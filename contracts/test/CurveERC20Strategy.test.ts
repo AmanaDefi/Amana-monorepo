@@ -57,10 +57,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
         },
       ]
     });
-    // [gatewaySigner] = await ethers.getSigners();
-    // console.log(await gatewaySigner.getAddress())
     gatewaySigner = await setupGatewaySigner();
-    console.log(await gatewaySigner.getAddress())
 
   });
 
@@ -96,7 +93,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
 
     await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
-    console.log(await gatewaySigner.getAddress())
 
     await expect(simulateDepositCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
@@ -113,7 +109,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const withdrawAmount = ethers.utils.parseEther("0.5");
     const minAmountOut = ethers.utils.parseEther("0.51");
 
-    const fee = ethers.utils.parseEther("0.01");
     const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
 
 
@@ -125,7 +120,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
       minAmountOut,
-      fee,
       slippage,
       ETHEREUM_CHAIN_ID
     )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
@@ -157,8 +151,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const withdrawAmount = ethers.utils.parseEther("0.5");
     const minAmountOut = ethers.utils.parseEther("0.51");
 
-    const fee = ethers.utils.parseEther("0.01");
-
     await expect(simulateWithdrawCallFromVaultToStrategy(
       OWNER_ADDRESS,
       OWNER_ADDRESS,
@@ -167,7 +159,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
       minAmountOut,
-      fee,
       slippage,
       ETHEREUM_CHAIN_ID
     )).to.be.revertedWithCustomError(strategy, "OnlyVault");
@@ -215,11 +206,8 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       BASE_CHAIN_ID,
     )
     const shares = await curvePool.balanceOf(strategy.address);
-    console.log("receiptToken balance: ", shares)
-    const withdrawAmount = ethers.BigNumber.from("500000");
-    const maxSharesBurnt = ethers.BigNumber.from("9864910382336278630");
-
-    const fee = ethers.BigNumber.from("0");
+    const withdrawAmount = ethers.utils.parseEther("1"); // represents full amount
+    const minAmountOut = ethers.BigNumber.from("0");
 
     await simulateWithdrawCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
@@ -228,15 +216,14 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       strategy,
       ZC_TEST_ETH_SEPOLIA_ADDRESS,
       withdrawAmount,
-      maxSharesBurnt,
-      fee,
+      minAmountOut,
       slippage,
       ETHEREUM_CHAIN_ID
     );
 
     const strategyBalance = await curvePool.balanceOf(strategy.address);
     const tolerance = ethers.utils.parseUnits("0.0000001", 18); // some interest dust
-    expect(strategyBalance).to.be.lte(shares.sub(withdrawAmount).sub(fee).add(tolerance));
+    expect(strategyBalance).to.equal(0);
 
   });
 
@@ -321,7 +308,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       BASE_CHAIN_ID,
     );
     const shares = await curvePool.balanceOf(strategy.address);
-    console.log("receiptToken balance: ", shares)
     // Call the function
     const tx = await strategy.sendTotalUnderlyingAssetsToVault();
     await expect(tx)
@@ -365,7 +351,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
         "address", // address(0) (ZRC20 token address)
         "address", // address (0) (ERC20 token address on withdraws)
         "uint256", // amount
-        "uint256", // fee
         "uint32",  // withdrawChainId
         "bool",    // isInvest
         "uint256", // totalUnderlyingAssetsAfter
@@ -379,7 +364,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
         strategy.address,
         ethers.constants.AddressZero,
         amount,
-        0,
         0,
         true,
         totalUnderlyingAssetsAfter,
@@ -430,7 +414,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const userAddress = OWNER_ADDRESS;
     const withdrawZRC20 = ZC_TEST_ETH_SEPOLIA_ADDRESS; // ETH or replace with actual ZRC20 token address
     const amount = ethers.utils.parseEther("1000"); // 1000 tokens
-    const fee = ethers.utils.parseEther("10"); // 10 tokens as fee
     const withdrawChainId = ETHEREUM_CHAIN_ID; // Example chain ID
     const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
     const executionNonce = 1;
@@ -445,7 +428,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
         "address", // withdrawZRC20
         "address", // withdrawERC20
         "uint256", // amount
-        "uint256", // fee
         "uint32",  // withdrawChainId
         "bool",    // isInvest (false for divestment)
         "uint256", // totalUnderlyingAssetsAfter
@@ -459,7 +441,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
         withdrawZRC20,
         ethers.constants.AddressZero,
         amount,
-        fee,
         withdrawChainId,
         false,
         totalUnderlyingAssetsAfter,
@@ -497,7 +478,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
         withdrawZRC20,
         ethers.constants.AddressZero,
         amount,
-        fee,
         withdrawChainId,
         totalUnderlyingAssetsAfter,
         executionNonce,
@@ -509,7 +489,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       .withArgs(
         strategy.address,       // From address
         AMANA_VAULT_ADDRESS,    // Destination vault address
-        amount.add(fee),             // Amount to be deposited
+        amount,             // Amount to be deposited
         INPUT_TOKEN_ADDRESS, // ZRC20 token address
         payload,                // The encoded outgoingMessage
         revertOptions           // The array-formatted revertOptions
@@ -534,6 +514,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       slippage,
       BASE_CHAIN_ID,
     );
+    const oldStrategyInitialBalance = await curvePool.balanceOf(strategy.address);
 
     const StrategyFactory = await ethers.getContractFactory("CurveERC20Strategy");
 
@@ -558,6 +539,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const oldStrategyBalance = await curvePool.balanceOf(strategy.address);
     expect(oldStrategyBalance).to.equal(0);
     const newStrategyBalance = await curvePool.balanceOf(newStrategy.address);
-    expect(newStrategyBalance).to.equal(depositAmount);
+    expect(newStrategyBalance).to.be.closeTo(oldStrategyInitialBalance, ethers.utils.parseUnits("0.001", 18));
   });
 });

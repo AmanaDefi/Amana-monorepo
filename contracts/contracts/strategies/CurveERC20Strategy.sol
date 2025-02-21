@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ERC20StrategyParent.sol";
 import "../interfaces/ICurvePool.sol";
-import "hardhat/console.sol";
 
 // input token USDC 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 // curve pool 0x169A5f124A3663a25313Ee0F7f3Bff028728867f
@@ -52,36 +51,34 @@ contract CurveERC20Strategy is ERC20StrategyParent {
     }
 
     /// @notice Withdraws USDC from the Curve pool.
-    /// @param amount The amount of USDC to withdraw.
+    /// @param fractionToWithdraw The fraction of shares to withdraw.
+    /// @param minAmountOut The minimum amount of USDC to withdraw.
     /// @return amountWithdrawn The amount of USDC successfully withdrawn.
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 shares = convertToShares(amount);
+        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
+        uint256 sharesToWithdraw = (fractionToWithdraw *
+            totalSharesInStrategy) / 1e18;
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
-            shares,
+            sharesToWithdraw,
             int128(int256(USDC_INDEX)),
-            0 // minAmountOut
+            minAmountOut
         );
     }
 
     /// @notice Transfers assets to a new strategy.
     function _transferAssetsToNewStrategy(
-        uint256 maxStrategySharesBurnt,
+        uint256 minAmountOut,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = totalUnderlyingAssets();
         uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
-            strategyTotalBalance
-        );
-
-        uint256 sharesToBeBurnt = convertToShares(strategyTotalBalance);
-        require(
-            sharesToBeBurnt <= maxStrategySharesBurnt,
-            "Exceeds max shares out"
+            1e18, // Withdraw all
+            minAmountOut
         );
 
         approveOrIncreaseAllowance(inputToken, newStrategy, withdrawnAmount);
