@@ -1,6 +1,6 @@
 import "./tasks/deployGeneric";
 import "./tasks/deployAaveEthStrategy";
-import "./tasks/deployEth_4626_Strategy";
+import "./tasks/deployCurveEthStrategy";
 import "./tasks/deployAmanaConnectedChainVault";
 import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";
@@ -15,6 +15,7 @@ import "./tasks/deployPriceOracle";
 import "./tasks/deployWithdrawalReceiver";
 import "./tasks/deployZapContract";
 import "./tasks/deployCurveERC20_Strategy";
+import "./tasks/deployCurveEthStrategy";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";

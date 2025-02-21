@@ -295,7 +295,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 fractionOfTotalShares,
-        uint256 maxStrategySharesBurnt,
+        uint256 minAmountOut,
         uint32 withdrawChainId,
         uint256 _executionNonce,
         bytes32 _crossChainTxId,
@@ -303,7 +303,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     ) internal {
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             fractionOfTotalShares,
-            maxStrategySharesBurnt
+            minAmountOut
         );
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
