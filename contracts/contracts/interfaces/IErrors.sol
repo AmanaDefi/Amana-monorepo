@@ -28,6 +28,7 @@ interface IErrors {
     error ConfirmationAlreadyProcessed();
     error StrategyAlreadySet();
     error NoAssetsToSwitch();
+    error DepositsPaused();
 
     error InsufficientBalance();
     error NotAuthorized();
