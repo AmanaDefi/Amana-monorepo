@@ -7,6 +7,7 @@ import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
 const ZERO_ACCOUNT: Account = {
   address: "0x0000000000000000000000000000000000000000",
@@ -43,7 +44,10 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
   }
 
   useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken);
-  useUpdateAPYs(vaults, setVaultAPYs, setLoading);
+  const crvTokenPrice = useTokenPriceBySymbol("CRV");
+  console.log("crvTokenPrice", crvTokenPrice);
+  const ethTokenPrice = useTokenPriceBySymbol("ETH");
+  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice);
 
   return (
     <VaultsView
