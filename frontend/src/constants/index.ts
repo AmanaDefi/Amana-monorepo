@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_ETH_ETH_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -77,59 +77,59 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "ZeroLend is a relatively new protocol on Base."
   //   },
   // },
-  {
-    id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Base ZeroLend USDC Vault
-    name: "Beefy Ionic USDC",
-    des: "This strategy deposits the USDC into Beefy, which in turn deposits it into Morpho and farms for more USDC. The earned USDC is then deposited back into the Morpho farm. The transaction cost required to do all this is socialized among the vault's users.",
-    symbol: "aBeefyUSDC",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Beefy",
-      strategyAddress: "0xb7F4625Ce14B9edDBb215019B288B00eC85adE97",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is a layer-2 network built on the OP stack by Coinbase, offering low-cost, scalable transactions while inheriting Ethereum’s security. It integrates with Coinbase products, providing an accessible gateway for users and developers.",
-      imgURL: "/beefy.png",
-      des: "Beefy Finance is a multi-chain yield optimizer that auto-compounds rewards from liquidity pools and staking. It maximizes returns through automated strategies, reducing gas costs and manual effort."
-    },
-  },
-  {
-    id: "0x85eD03044179c6b641e36F8fB1d4A62b4Cf4C975", // BSC Venus USDT Vault
-    name: "Venus USDT",
-    des: "This strategy deposits USDT into a Venus USDT pool as collateral to earn interest. It benefits from BSC’s low fees but carries risks such as interest rate changes, liquidation, and protocol security.",
-    symbol: "aVenusUSDT",
-    imgURL: "/bnb_logo.png",
-    inputToken: {
-      symbol: "USDT.BSC",
-      decimals: 18,
-      address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/USDT.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Venus",
-      strategyAddress: "0x056A360Db4D8fd16e12D809D6A48F049E86Ae296",
-      network: "BSC",
-      chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-      imgURL: "/Venus.png",
-      des: "Venus is a lending protocol on BSC where users supply assets to earn interest and borrow against collateral. It features VAI, a stablecoin minted via overcollateralized loans. Risks include liquidity fluctuations, governance centralization, and smart contract vulnerabilities."
-    },
-  },
+  // {
+  //   id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Base ZeroLend USDC Vault
+  //   name: "Beefy Ionic USDC",
+  //   des: "This strategy deposits the USDC into Beefy, which in turn deposits it into Morpho and farms for more USDC. The earned USDC is then deposited back into the Morpho farm. The transaction cost required to do all this is socialized among the vault's users.",
+  //   symbol: "aBeefyUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Beefy",
+  //     strategyAddress: "0xb7F4625Ce14B9edDBb215019B288B00eC85adE97",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is a layer-2 network built on the OP stack by Coinbase, offering low-cost, scalable transactions while inheriting Ethereum’s security. It integrates with Coinbase products, providing an accessible gateway for users and developers.",
+  //     imgURL: "/beefy.png",
+  //     des: "Beefy Finance is a multi-chain yield optimizer that auto-compounds rewards from liquidity pools and staking. It maximizes returns through automated strategies, reducing gas costs and manual effort."
+  //   },
+  // },
+  // {
+  //   id: "0x85eD03044179c6b641e36F8fB1d4A62b4Cf4C975", // BSC Venus USDT Vault
+  //   name: "Venus USDT",
+  //   des: "This strategy deposits USDT into a Venus USDT pool as collateral to earn interest. It benefits from BSC’s low fees but carries risks such as interest rate changes, liquidation, and protocol security.",
+  //   symbol: "aVenusUSDT",
+  //   imgURL: "/bnb_logo.png",
+  //   inputToken: {
+  //     symbol: "USDT.BSC",
+  //     decimals: 18,
+  //     address: ZC_USDT_BSC_ADDRESS,
+  //     imgURL: "/USDT.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Venus",
+  //     strategyAddress: "0x056A360Db4D8fd16e12D809D6A48F049E86Ae296",
+  //     network: "BSC",
+  //     chainId: 56,
+  //     netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+  //     imgURL: "/Venus.png",
+  //     des: "Venus is a lending protocol on BSC where users supply assets to earn interest and borrow against collateral. It features VAI, a stablecoin minted via overcollateralized loans. Risks include liquidity fluctuations, governance centralization, and smart contract vulnerabilities."
+  //   },
+  // },
   {
     id: "0x55B79A7A1F67074864D70fB138E2db8C702c3FA3",
-    name: "Curve yUSD/USDC",
+    name: "yUSD/USDC Pool",
     des: "This strategy deposits USDC into the Curve yUSD/USDC pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
     symbol: "aCurveUSDC",
     imgURL: "/ETH.png",
@@ -145,11 +145,89 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     protocol: {
       name: "Curve",
       strategyAddress: "0x2951CeE73b27c2b1Ffd66A03b77eEdD79012d2BF",
+      gaugeAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
       network: "Ethereum",
       chainId: 1,
       netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       imgURL: "/curve.png",
       des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+    },
+  },
+  {
+    id: "0x224CB039AFf5380AB531F3f92F1062e8FB964Ecc",
+    name: "rswEth/ETH Pool",
+    des: "This strategy deposits ETH into the Curve uniETH/ETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+    symbol: "aCurveETH",
+    imgURL: "/ETH.png",
+    inputToken: {
+      symbol: "ETH.ETH",
+      decimals: 18,
+      address: ZC_ETH_ETH_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve",
+      strategyAddress: "0xF613eb823267352704e78d9c3110dAA50aA75069",
+      gaugeAddress: "0x55e5adb2cb00bfdb085440ca6a5ec628705b2e7f",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/curve.png",
+      des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+    },
+  },
+  // {
+  //   id: "0x022F47Baf18990EF8C1A6fe7e9e9078B2F5D6015",
+  //   name: "uniEth/ETH Pool",
+  //   des: "This strategy deposits ETH into the Curve uniETH/ETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+  //   symbol: "aCurveETH",
+  //   imgURL: "/ETH.png",
+  //   inputToken: {
+  //     symbol: "ETH.ETH",
+  //     decimals: 18,
+  //     address: ZC_ETH_ETH_ADDRESS,
+  //     imgURL: "/ETH.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Curve",
+  //     strategyAddress: "0xe7cE888ae7e0e427a935caC1b616A77ac84EEAE6",
+  //     gaugeAddress: "0x8B859fb47b6377a84B61D3891774De462560742C",
+  //     network: "Ethereum",
+  //     chainId: 1,
+  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+  //     imgURL: "/curve.png",
+  //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+  //   },
+  // },
+  {
+    id: "0xf2cf70053355A5C95cFE33fa45f8c00510547A2c",
+    name: "USDC Lend Pool",
+    des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
+    symbol: "aFluidUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Fluid",
+      strategyAddress: "0x16c80449712a82d026Cf12da6aAD406A8Df7B703",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/fluid.png",
+      des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
     },
   },
   // {

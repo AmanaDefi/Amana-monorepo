@@ -29,7 +29,7 @@ contract CurveERC20Strategy is ERC20StrategyParent {
     address public constant UNISWAP_ROUTER =
         0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router
     bytes32 constant crvUsdPriceFeedId =
-        0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
+        0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
     address constant PRICE_ORACLE_ADDRESS =
         0x4305FB66699C3B2702D4d05CF36551390A4c69C6; // TODO - deploy and add
 

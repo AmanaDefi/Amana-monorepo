@@ -24,7 +24,7 @@ contract CurveEthStrategy is EthStrategyParent {
     IUniswapV3Router public immutable uniswapRouter;
     IWETH public immutable weth;
 
-    uint256 public constant WETH_INDEX = 1; // USDC's index in the Curve pool
+    uint256 public constant WETH_INDEX = 0; // USDC's index in the Curve pool
     address public constant REWARD_TOKEN =
         0xD533a949740bb3306d119CC777fa900bA034cd52; // CRV token
     address public constant UNISWAP_ROUTER =
@@ -36,7 +36,7 @@ contract CurveEthStrategy is EthStrategyParent {
     address constant PRICE_ORACLE_ADDRESS =
         0x4305FB66699C3B2702D4d05CF36551390A4c69C6; // mainnet only
 
-    bool public stakingEnabled = true;
+    bool public stakingEnabled = false;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
