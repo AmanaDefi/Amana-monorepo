@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
   calculateCompoundAPY,
@@ -10,7 +10,8 @@ import {
   calculateCurveAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
-  fetchUserVaultMaxRedeem
+  fetchUserVaultMaxRedeem,
+  calculateCurveRewardsAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
@@ -150,7 +151,9 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
 export const useUpdateAPYs = (
   vaults: VaultData[],
   setVaultAPYs: (vaultAPYs: { vaultId: string, APY7d: number }[]) => void,
-  setLoading: (loading: boolean) => void
+  setLoading: (loading: boolean) => void,
+  crvTokenPrice: number,
+  ethTokenPrice: number
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
@@ -164,10 +167,12 @@ export const useUpdateAPYs = (
                 chain: strategyChain,
                 address: vault.protocol.strategyAddress,
               });
+              console.log("strategyContract", strategyContract)
               const receiptTokenAddress = await readContract({
                 contract: strategyContract,
                 method: "function receiptToken() view returns (address)",
               });
+              console.log("receiptTokenAddress", receiptTokenAddress)
               let APY7d = 0;
               let RewardsAPY = 0;
               if (vault.protocol.name === "Aave" || vault.protocol.name === "ZeroLend") {
@@ -176,10 +181,12 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Compound") {
                 console.log("Calculating APY for Compound")
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
-              } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler") {
+              } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
                 console.log("Calculating APY for Moonwell or Euler")
                 // TO DO This only works for Base right now - it's hardcoded
+
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
+
               } else if (vault.protocol.name === "Venus") {
                 console.log("Calculating APY for Venus");
                 APY7d = await calculateVenusAPY(receiptTokenAddress as Address, strategyChain);
@@ -191,6 +198,8 @@ export const useUpdateAPYs = (
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve") {
                 APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
+                console.log("Calculating APY for Curve", crvTokenPrice)
+                RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
               }
 
               return { vaultId: vault.id, APY7d };
