@@ -49,9 +49,15 @@ abstract contract AmanaVaultBase is
     IGasTank gasTank;
     uint32 public gasLimitForWithdrawAndCall; // this is used in two places - for investing into the strategy and returning funds to the user
     uint32 public gasLimitForCall; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
+    bool public depositsPaused;
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
+        _;
+    }
+
+    modifier whenNotPaused() {
+        if (depositsPaused) revert DepositsPaused();
         _;
     }
 
@@ -142,6 +148,10 @@ abstract contract AmanaVaultBase is
         uint256 amount,
         bytes calldata message
     ) external virtual override;
+
+    function toggleDepositsPaused() external onlyOwner {
+        depositsPaused = !depositsPaused;
+    }
 
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
@@ -415,7 +425,7 @@ abstract contract AmanaVaultBase is
         uint256 assets,
         uint256 shares,
         uint256 minimumOut
-    ) internal virtual {}
+    ) internal virtual whenNotPaused {}
 
     /**
      * @dev Handles deposits from a connected chain, processes swaps if necessary, and initiates cross-chain investment.
@@ -433,7 +443,7 @@ abstract contract AmanaVaultBase is
         address erc20source,
         uint16 slippage,
         bytes32 crossChainTxId
-    ) internal {
+    ) internal whenNotPaused {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
@@ -667,26 +677,36 @@ abstract contract AmanaVaultBase is
                 );
             }
 
-            bytes memory outgoingMessage = abi.encode(
-                receiver, // the user the funds have to go to
-                withdrawERC20, // the token on the target chain that the user receives (can be native)
-                outputAmount, // amount to be sent
-                _crossChainTxId
-            );
+            if (userChainId == 900) {
+                // Solana
+                IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
+                    recipient,
+                    outputAmount,
+                    withdrawZRC20,
+                    revertOptions
+                );
+            } else {
+                // Ethereum
+                bytes memory outgoingMessage = abi.encode(
+                    receiver, // the user the funds have to go to
+                    withdrawERC20, // the token on the target chain that the user receives (can be native)
+                    outputAmount, // amount to be sent
+                    _crossChainTxId
+                );
 
-            CallOptions memory callOptions = CallOptions(
-                gasLimitForWithdrawAndCall,
-                false
-            );
-
-            IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-                recipient,
-                outputAmount,
-                withdrawZRC20,
-                outgoingMessage,
-                callOptions,
-                revertOptions
-            );
+                CallOptions memory callOptions = CallOptions(
+                    gasLimitForWithdrawAndCall,
+                    false
+                );
+                IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
+                    recipient,
+                    outputAmount,
+                    withdrawZRC20,
+                    outgoingMessage,
+                    callOptions,
+                    revertOptions
+                );
+            }
         }
         emit ReturnFundsToUserSent(_crossChainTxId);
     }

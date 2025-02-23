@@ -392,7 +392,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 assets,
         uint256,
         uint256 minimumOut
-    ) internal override {
+    ) internal override whenNotPaused {
         // If _asset is ERC777, `transferFrom` can trigger a reentrancy BEFORE the transfer happens through the
         // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, triggered after the transfer,
         // calls the vault, which is assumed not malicious.
