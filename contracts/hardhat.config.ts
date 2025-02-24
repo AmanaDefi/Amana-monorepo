@@ -16,6 +16,7 @@ import "./tasks/deployWithdrawalReceiver";
 import "./tasks/deployZapContract";
 import "./tasks/deployCurveERC20_Strategy";
 import "./tasks/deployCurveEthStrategy";
+import "./tasks/updatePythPrices";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";

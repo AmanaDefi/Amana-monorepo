@@ -63,8 +63,42 @@ contract CurveERC20Strategy is ERC20StrategyParent {
         stakingEnabled = _enabled;
     }
 
+    /**
+     * @notice Sets the slippage tolerance for harvesting rewards.
+     * @dev This function allows the owner to update the slippage buffer applied when swapping harvested rewards.
+     * @param _slippage The new slippage tolerance in basis points (e.g., 500 for 5%).
+     */
     function setHarvestSlippage(uint32 _slippage) external onlyOwner {
         harvestSlippage = _slippage;
+    }
+
+    /**
+     * @notice Stakes all LP tokens held by the contract into the gauge.
+     * @dev This function approves the gauge to spend the contract’s LP tokens and deposits them into the gauge for staking.
+     * Only callable by the contract owner.
+     */
+    function stakeAll() external onlyOwner {
+        uint256 lpTokensHeld = receiptToken.balanceOf(address(this)); // Unstaked LP tokens
+        if (lpTokensHeld > 0) {
+            approveOrIncreaseAllowance(
+                IERC20(receiptToken),
+                address(gauge),
+                lpTokensHeld
+            );
+            gauge.deposit(lpTokensHeld);
+        }
+    }
+
+    /**
+     * @notice Unstakes all LP tokens from the gauge and returns them to the contract.
+     * @dev This function withdraws all staked LP tokens from the gauge.
+     * Only callable by the contract owner.
+     */
+    function unStakeAll() external onlyOwner {
+        uint256 lpTokensStaked = gauge.balanceOf(address(this)); // Staked LP tokens
+        if (lpTokensStaked > 0) {
+            gauge.withdraw(lpTokensStaked);
+        }
     }
 
     /// @notice Deposits USDC into the Curve pool.
