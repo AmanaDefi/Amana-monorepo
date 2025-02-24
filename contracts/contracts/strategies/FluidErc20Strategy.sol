@@ -60,13 +60,9 @@ contract FluidErc20Strategy is ERC20StrategyParent {
         uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw *
-            totalSharesInStrategy +
-            5e17) / 1e18;
-        if (sharesToWithdraw > totalSharesInStrategy) {
-            sharesToWithdraw = totalSharesInStrategy;
-        }
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
         amountWithdrawn = receiptToken.redeem(
             sharesToWithdraw,
             address(this), // receiver
@@ -75,6 +71,19 @@ contract FluidErc20Strategy is ERC20StrategyParent {
         if (amountWithdrawn < minAmountOut) {
             revert InsufficientOut();
         }
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /**
