@@ -144,14 +144,9 @@ contract CurveERC20Strategy is ERC20StrategyParent {
         uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 totalShares = stakingEnabled
-            ? gauge.balanceOf(address(this))
-            : receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw * totalShares + 5e17) /
-            1e18;
-        if (sharesToWithdraw > totalShares) {
-            sharesToWithdraw = totalShares;
-        }
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
         if (stakingEnabled) {
             // uint256 crvPrice = fetchCrvUsdPrice(); // Fetch CRV price in USD (assumed to be 1e18 precision)
             // uint256 crvBalance = IERC20(REWARD_TOKEN).balanceOf(address(this));
@@ -211,6 +206,21 @@ contract CurveERC20Strategy is ERC20StrategyParent {
             return 0;
         }
         return convertToAssets(totalLPTokens);
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = stakingEnabled
+            ? gauge.balanceOf(address(this))
+            : receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /// @notice Converts an asset amount (USDC) to Curve LP token shares.

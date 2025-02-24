@@ -84,8 +84,9 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
         uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) external onlyVault returns (uint256) {
-        uint256 shares = receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (shares * fractionToWithdraw) / 1e18;
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
         uint256 amountWithdrawn = receiptToken.redeem(
             sharesToWithdraw,
             address(this), // receiver
@@ -98,6 +99,19 @@ contract Mock4626ZetachainStrategy is Ownable2Step {
 
         emit FundsWithdrawn(msg.sender, amountWithdrawn);
         return amountWithdrawn;
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /// @notice Gets the total underlying assets held in the strategy.

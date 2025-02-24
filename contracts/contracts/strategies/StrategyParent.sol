@@ -171,6 +171,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         return shares;
     }
 
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view virtual returns (uint256 withdrawShareAmount);
+
     /// @notice Invests assets into the yield source
     /// @param receiver Address of the receiver whose funds are being invested.
     /// @param amount Amount of asset to invest.

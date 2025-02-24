@@ -73,9 +73,9 @@ contract AaveEthStrategy is EthStrategyParent {
         uint256 fractionToWithdraw,
         uint256
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw *
-            totalSharesInStrategy) / 1e18;
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
         amountWithdrawn = aavePool.withdraw{gas: 200000}(
             address(weth),
             sharesToWithdraw,
@@ -115,6 +115,19 @@ contract AaveEthStrategy is EthStrategyParent {
             currentExecutionNonce,
             _crossChainTxId
         );
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /// @notice Gets the total assets held in the strategy.

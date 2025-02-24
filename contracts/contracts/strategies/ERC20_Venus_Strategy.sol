@@ -62,9 +62,9 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
         uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw *
-            totalSharesInStrategy) / 1e18;
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
         uint256 initialBalance = IERC20(inputToken).balanceOf(address(this));
 
         receiptToken.redeem(sharesToWithdraw);
@@ -74,6 +74,19 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
             revert InsufficientOut();
         }
         return amountWithdrawn;
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /**
