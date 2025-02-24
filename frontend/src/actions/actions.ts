@@ -393,7 +393,7 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
   }
 };
 
-const getSharesOutForUnderlying = async (transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
+const getMinSharesOut = async (transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
   console.log("Getting shares out for underlying");
   const strategyChain = defineChain(strategyChainId);
   const contract = getContract({
@@ -406,32 +406,48 @@ const getSharesOutForUnderlying = async (transactionAmount: bigint, strategyAddr
     method: "function convertToShares(uint256) view returns (uint256)",
     params: [transactionAmount]
   });
-  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
-  return sharesOutForUnderlying;
+  const minSharesOut = sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
+  return minSharesOut;
 }
 
-const getAmountOutForShares = async (transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
+const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
+  const vaultContract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // Zetachain
+    address: vaultId
+  });
+  const vaultTotalSupply = await readContract({
+    contract: vaultContract,
+    method: "function totalSupply() view returns (uint256)"
+  });
+  const fractionOfTotalShares = transactionAmount * ethers.parseEther("1e18") / vaultTotalSupply;
+
   const strategyChain = defineChain(strategyChainId);
   const contract = getContract({
     client,
     chain: strategyChain,
     address: strategyAddress
   });
+  const strategyWithdrawShareAmount = await readContract({
+    contract,
+    method: "function getStrategyWithdrawShareAmount() view returns (uint256)"
+  });
+
   const amountOutForShares = await readContract({
     contract,
-    method: "function convertToShares(uint256) view returns (uint256)",
-    params: [transactionAmount]
+    method: "function convertToAssets(uint256) view returns (uint256)",
+    params: [strategyWithdrawShareAmount]
   });
-  return amountOutForShares;
+  const minAmountOut = amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
+  return minAmountOut;
 }
 
 const executeDirectDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Deposit here");
-  const sharesOutForUnderlying = await getSharesOutForUnderlying(transactionAmount, strategyAddress, strategyChainId);
-  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
-  const slippage = getCurrentSlippage();
-  const minSharesOut = sharesOutForUnderlying * BigInt(10000 - slippage * 100) / BigInt(10000);
+
+  const minSharesOut = await getMinSharesOut(transactionAmount, strategyAddress, strategyChainId);
   console.log("minSharesOut", minSharesOut);
+
   let contract = getContract({
     client,
     chain: activeChain,
@@ -473,6 +489,9 @@ const executeCrossChainDeposit = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
+  const minSharesOut = await getMinSharesOut(transactionAmount, strategyAddress, strategyChainId);
+  console.log("minSharesOut", minSharesOut);
+
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
@@ -484,8 +503,6 @@ const executeCrossChainDeposit = async (
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
 
-  const sharesOutForUnderlying = await getSharesOutForUnderlying(transactionAmount, strategyAddress, strategyChainId);
-  const minSharesOut = sharesOutForUnderlying * BigInt(10000 - slippage * 100) / BigInt(10000);
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
     ["address", "uint256", "uint16", "bytes32"],
@@ -609,7 +626,7 @@ export const executeWithdrawal = async (vaultId: Address, strategyAddress: Addre
 };
 
 const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint) => { //vaultId: string
-  const slippage = getCurrentSlippage();
+  const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
 
   let contract = getContract({
     client,
@@ -617,14 +634,6 @@ const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Addres
     address: vaultId
   });
 
-  const withdrawAssetAmount = await readContract({
-    contract,
-    method: "function previewWithdraw(uint256) view returns (uint256)",
-    params: [withdrawShareAmount]
-  });
-
-  const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
-  const minAmountOut = BigInt(0); strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
   const withdrawTx = prepareContractCall({
     contract,
     method:
@@ -650,11 +659,11 @@ const executeCrossChainWithdrawal = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
+  const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
-  const amountOutForShares = await getAmountOutForShares(withdrawShareAmount, strategyAddress, strategyChainId);
 
   const slippage = getCurrentSlippage();
   let contract = getContract({
@@ -664,18 +673,9 @@ const executeCrossChainWithdrawal = async (
   });
 
   const slippageValue = (slippage * 100).toFixed(0);
-  const withdrawAssetAmount = await readContract({
-    contract,
-    method: "function previewRedeem(uint256) view returns (uint256)",
-    params: [withdrawShareAmount]
-  });
-  const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
-  console.log("strategyShareAmount", strategyShareAmount);
-  const minAmountOut = 0; // strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
 
   console.log("minAmountOut", minAmountOut);
   // Prepare payload (calldata to pass to the receiver)
-  console.log("withdrawShareAmount", withdrawShareAmount);
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
     [withdrawZRC20, withdrawERC20, withdrawShareAmount, minAmountOut, slippageValue, transactionId]
