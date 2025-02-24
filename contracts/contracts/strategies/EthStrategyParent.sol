@@ -87,7 +87,7 @@ abstract contract EthStrategyParent is StrategyParent {
         if (balance == 0) {
             revert NothingToWithdraw();
         }
-        (bool success, ) = payable(owner).call{value: balance}("");
+        (bool success, ) = payable(owner()).call{value: balance}("");
         if (!success) {
             revert IErrors.TransferFailed();
         }

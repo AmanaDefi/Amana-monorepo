@@ -114,7 +114,7 @@ contract Mock4626Strategy is Ownable {
     function emergencyWithdrawETH() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No ETH to withdraw");
-        (bool success, ) = payable(owner).call{value: balance}("");
+        (bool success, ) = payable(owner()).call{value: balance}("");
         if (!success) {
             revert IErrors.TransferFailed();
         }
