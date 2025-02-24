@@ -104,7 +104,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
     function totalAssets() public view virtual override returns (uint256) {
         uint256 assetBalanceInStrategy = IStrategy(strategyAddress)
             .totalUnderlyingAssets();
-        return assetBalanceInStrategy + 1;
+        return assetBalanceInStrategy;
     }
 
     /**

@@ -245,7 +245,7 @@ describe("AmanaZetachainVault Tests", function () {
     expect(strategyAddress).to.equal(newStrategyAddress);
 
     const totalAssetsNewStrategy = await amanaVault.totalAssets();
-    expect(totalAssetsNewStrategy).to.equal(depositAmount.add(1)); // add 1 for virtual share / asset
+    expect(totalAssetsNewStrategy).to.equal(depositAmount); // add 1 for virtual share / asset
   });
 
   it("should reject unauthorized access to setPerformanceFee", async function () {
@@ -269,6 +269,8 @@ describe("AmanaZetachainVault Tests", function () {
   it("should execute a basic direct deposit", async function () {
     const { user1, depositAmount1, amanaVault, ethEth } = await loadFixture(setup);
     const minSharesOut = 0
+    const previewDeposit = await amanaVault.previewDeposit(depositAmount1);
+
     await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0, 3);
 
     await setTokenBalance(ZC_ETH_ETH_ADDRESS, await user1.getAddress(), depositAmount1, 3);
@@ -278,7 +280,7 @@ describe("AmanaZetachainVault Tests", function () {
 
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
 
-    expect(totalShares).to.be.closeTo(depositAmount1, ERROR_MARGIN);
+    expect(totalShares).to.be.equal(previewDeposit);
   });
 
   it("should execute a ZapContract deposit with ERC20", async function () {
@@ -583,7 +585,7 @@ describe("AmanaZetachainVault Tests", function () {
     const finalAssets = await amanaVault.totalAssets();
 
     expect(finalShares).to.equal(0); // User should have no shares left
-    expect(finalAssets).to.equal(1); // Vault should only have 1 virtual share left
+    expect(finalAssets).to.equal(0); // Vault should only have 1 virtual share left
 
     // Step 4: Ensure further withdrawals fail
     await expect(
@@ -597,12 +599,12 @@ describe("AmanaZetachainVault Tests", function () {
     // Simulate a withdrawal for a user with zero balance
     const zeroAmount = BigNumber.from(0);
     await expect(amanaVault.connect(user1)["withdraw(uint256,uint256,address,address)"](zeroAmount, 0, await user1.getAddress(), await user1.getAddress())).to.be
-      .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
+      .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
     // Deposit and then withdraw entire balance
     await ethBase.connect(user1).approve(amanaVault.address, zeroAmount);
     await expect(amanaVault.connect(user1)["deposit(uint256,uint256,address)"](zeroAmount, 0, await user1.getAddress()))
-      .to.be.revertedWithCustomError(amanaVault, "DepositCantBeZero");
+      .to.be.revertedWithCustomError(amanaVault, "AmountCantBeZero");
   });
 
   it("should distribute and claim rewards (time-based)", async function () {

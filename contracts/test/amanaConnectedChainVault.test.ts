@@ -657,12 +657,12 @@ describe("AmanaConnectedChainVault Tests", function () {
       // Step 2: Validate invalid inputs
       await expect(
         amanaVault.connect(owner).switchStrategy(invalidStrategyAddress, 0, 0)
-      ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
+      ).to.be.revertedWithCustomError(amanaVault, "InvalidAddress");
 
       const currentStrategy = await amanaVault.strategyAddress();
       await expect(
         amanaVault.connect(owner).switchStrategy(currentStrategy, 0, 0)
-      ).to.be.revertedWithCustomError(amanaVault, "InvalidStrategyAddress");
+      ).to.be.revertedWithCustomError(amanaVault, "InvalidAddress");
 
       // Step 3: Simulate a deposit by User1, otherwise full strategy switch won't happen (just update)
       await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), depositAmount1.mul(20).div(1), 3);
@@ -871,10 +871,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateConfirmDeposit(user2, depositAmount2, depositAmount1, 2, 2);
 
       const totalShares = await amanaVault.balanceOf(await user1.getAddress());
-      console.log("Total shares: ", totalShares.toString());
       // User1 withdraws part of their deposit
       const sharesToWithdraw1 = totalShares.div(2);
-      console.log("Shares to withdraw: ", sharesToWithdraw1.toString());
       const minAmountOut = sharesToWithdraw1.mul(1000).div(1001);
       await amanaVault.connect(user1)["redeem(uint256,uint256,address,address)"]
         (sharesToWithdraw1, minAmountOut, await user1.getAddress(), await user1.getAddress());
@@ -916,7 +914,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       let fractionWithdrawn;
       for (const withdrawShareAmount of withdrawShareAmounts) {
         fractionWithdrawn = withdrawShareAmount.mul(ethers.utils.parseEther("1")).div(await amanaVault.totalSupply());
-        console.log("Fraction withdrawn: ", fractionWithdrawn.toString());
         // Perform withdrawal
         await amanaVault.connect(user1).redeemToAnyToken(
           withdrawShareAmount,
@@ -952,18 +949,18 @@ describe("AmanaConnectedChainVault Tests", function () {
       // Simulate a withdrawal for a user with zero balance
       const zeroAmount = BigNumber.from(0);
       await expect(amanaVault.connect(user1)["withdraw(uint256,uint256,address,address)"](zeroAmount, 0, await user1.getAddress(), await user1.getAddress())).to.be
-        .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
+        .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
       await expect(amanaVault.connect(user1)["redeem(uint256,uint256,address,address)"](zeroAmount, 0, await user1.getAddress(), await user1.getAddress())).to.be
-        .revertedWithCustomError(amanaVault, "RedeemCantBeZero");
+        .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
       await expect(simulateWithdrawCallFromBase(user1, zeroAmount, pythContract)).to.be
-        .revertedWithCustomError(amanaVault, "WithdrawCantBeZero");
+        .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
       // Deposit and then withdraw entire balance
       await ethBase.connect(user1).approve(amanaVault.address, zeroAmount);
       await expect(amanaVault.connect(user1)["deposit(uint256,uint256,address)"](zeroAmount, 0, await user1.getAddress()))
-        .to.be.revertedWithCustomError(amanaVault, "DepositCantBeZero");
+        .to.be.revertedWithCustomError(amanaVault, "AmountCantBeZero");
     });
 
     it("should distribute and claim rewards (time-based)", async function () {

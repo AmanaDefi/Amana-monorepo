@@ -269,27 +269,6 @@ abstract contract AmanaVaultBase is
     function totalAssets() public view virtual override returns (uint256) {}
 
     /**
-     * @dev Calculates the performance fee to be applied for withdrawing a specified amount of assets.
-     *      The fee is calculated on the user's profit and deducted from the withdrawal amount.
-     * @param user The address of the user making the withdrawal.
-     * @param assets The amount of assets the user intends to withdraw.
-     * @return feeToWithdraw The calculated performance fee to be deducted from the withdrawal.
-     * @notice Reverts if the total user assets are zero, as it implies no shares exist.
-     */
-    function _applyFee(
-        address user,
-        uint256 assets
-    ) internal view returns (uint256 feeToWithdraw) {
-        uint256 totalUserAssets = convertToAssets(balanceOf(user));
-        uint256 totalUserAssetsWithFee = (balanceOf(user) * totalAssets()) /
-            (totalSupply() + 1);
-        uint256 totalFeeOwing = totalUserAssetsWithFee - totalUserAssets;
-        feeToWithdraw = totalUserAssetsWithFee == 0
-            ? 0
-            : (totalFeeOwing * assets) / totalUserAssetsWithFee;
-    }
-
-    /**
      * @notice Gets the expected output amount for a given input amount and swap path
      * @param amountIn The input amount.
      * @param inputToken The address of the token being deposited.
@@ -318,65 +297,6 @@ abstract contract AmanaVaultBase is
                     outputToken
                 );
         }
-    }
-
-    /**
-     * @dev Internal conversion function (from assets to shares) with support for rounding direction.
-     *
-     * Will revert if assets > 0, totalSupply > 0 and totalAssets = 0. That corresponds to a case where any asset
-     * would represent an infinite amount of shares.
-     */
-    function _convertToShares(
-        uint256 assets,
-        Math.Rounding rounding
-    ) internal view override returns (uint256 shares) {
-        if (totalSupply() == 0) {
-            return assets;
-        }
-        uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
-        uint256 totalAssetsMinusFeePortion = totalAssets();
-
-        // Incorporate fee logic only if totalAssets exceeds totalPrincipal
-        if (totalAssets() > totalPrincipal) {
-            totalAssetsMinusFeePortion -=
-                ((totalAssets() - totalPrincipal) * perfFee) /
-                10000;
-        }
-
-        return
-            assets.mulDiv(
-                totalSupplyWithOffset,
-                totalAssetsMinusFeePortion,
-                rounding
-            );
-    }
-
-    /**
-     * @dev Internal conversion function (from shares to assets) with support for rounding direction.
-     */
-    function _convertToAssets(
-        uint256 shares,
-        Math.Rounding rounding
-    ) internal view override returns (uint256 assets) {
-        if (totalSupply() == 0) {
-            return shares;
-        }
-        uint256 totalSupplyWithOffset = totalSupply() + 10 ** _decimalsOffset();
-        uint256 totalAssetsMinusFeePortion = totalAssets();
-
-        // Incorporate fee logic only if totalAssets exceeds totalPrincipal
-        if (totalAssets() > totalPrincipal) {
-            totalAssetsMinusFeePortion -=
-                ((totalAssets() - totalPrincipal) * perfFee) /
-                10000;
-        }
-
-        return
-            shares.mulDiv(
-                totalAssetsMinusFeePortion,
-                totalSupplyWithOffset,
-                rounding
-            );
     }
 
     /** @dev See {IERC4626-deposit}. */

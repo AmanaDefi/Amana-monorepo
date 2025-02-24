@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -375,7 +374,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @notice Overrides the {IERC4626-totalAssets} function.
      */
     function totalAssets() public view virtual override returns (uint256) {
-        return latestTotalAssetsUpdateFromStrategy + 1;
+        return latestTotalAssetsUpdateFromStrategy;
     }
 
     /**
@@ -749,8 +748,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(user, shares);
-        console.log("pendingWithdrawals[user]: %s", pendingWithdrawals[user]);
-        console.log("shares: %s", shares);
         pendingWithdrawals[user] -= shares;
 
         _returnFundsToUser(
