@@ -76,7 +76,7 @@ contract Treasury {
     ) external onlyGovernance {
         require(_to != address(0), "Withdraw: zero address");
         require(address(this).balance >= _amount, "Insufficient Ether balance");
-        (bool success, ) = _to.call{value: _amount}("");
+        (bool success, ) = payable(_to).call{value: _amount}("");
         if (!success) {
             revert IErrors.TransferFailed();
         }

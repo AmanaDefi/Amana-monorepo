@@ -75,7 +75,7 @@ contract WithdrawalReceiver is Revertable {
                 address(this).balance >= amount,
                 "Insufficient native balance"
             );
-            (bool success, ) = receiver.call{value: amount}("");
+            (bool success, ) = payable(receiver).call{value: amount}("");
             if (!success) {
                 revert IErrors.TransferFailed();
             }
