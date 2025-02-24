@@ -34,9 +34,10 @@ contract CurveEthStrategy is EthStrategyParent {
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
     address constant PRICE_ORACLE_ADDRESS =
-        0x4305FB66699C3B2702D4d05CF36551390A4c69C6; // mainnet only
+        0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f; // on ethereum mainnet
 
     bool public stakingEnabled = false;
+    uint32 public harvestSlippage = 500; // 5% slippage
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -179,7 +180,16 @@ contract CurveEthStrategy is EthStrategyParent {
             fractionToWithdraw
         );
         if (stakingEnabled) {
-            harvest(0);
+            uint256 crvPrice = fetchCrvUsdPrice(); // CRV/USD price (1e18 precision)
+            uint256 ethPrice = fetchEthUsdPrice(); // ETH/USD price (1e18 precision)
+            uint256 crvBalance = IERC20(REWARD_TOKEN).balanceOf(address(this));
+
+            // Convert CRV to ETH
+            uint256 minWethOut = (crvBalance *
+                crvPrice *
+                (10000 - harvestSlippage)) / (10000 * ethPrice * 1e18); // Apply 5% slippage buffer
+
+            harvest(minWethOut);
             gauge.withdraw(sharesToWithdraw);
         }
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
@@ -198,24 +208,15 @@ contract CurveEthStrategy is EthStrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 totalShares = stakingEnabled
-            ? gauge.balanceOf(address(this))
-            : receiptToken.balanceOf(address(this));
-
-        if (stakingEnabled) {
-            harvest(0);
-            gauge.withdraw(totalShares);
-        }
-        uint256 amountWithdrawn = receiptToken.remove_liquidity_one_coin(
-            totalShares,
-            int128(int256(WETH_INDEX)),
+        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
+            1e18, // Withdraw all
             minAmountOut
         );
 
-        approveOrIncreaseAllowance(weth, newStrategy, amountWithdrawn);
+        approveOrIncreaseAllowance(weth, newStrategy, withdrawnAmount);
 
         IStrategy(newStrategy).depositFromOldStrategy(
-            amountWithdrawn,
+            withdrawnAmount,
             minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
@@ -223,10 +224,18 @@ contract CurveEthStrategy is EthStrategyParent {
 
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            amountWithdrawn,
+            withdrawnAmount,
             currentExecutionNonce,
             _crossChainTxId
         );
+    }
+
+    function fetchCrvUsdPrice() public view returns (uint256) {
+        return IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(crvUsdPriceFeedId);
+    }
+
+    function fetchEthUsdPrice() public view returns (uint256) {
+        return IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(ethUsdPriceFeedId);
     }
 
     /// @notice Returns the total underlying assets held in the Curve pool, including staked LP tokens.

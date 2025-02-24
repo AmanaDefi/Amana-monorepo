@@ -31,9 +31,10 @@ contract CurveERC20Strategy is ERC20StrategyParent {
     bytes32 constant crvUsdPriceFeedId =
         0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
     address constant PRICE_ORACLE_ADDRESS =
-        0x4305FB66699C3B2702D4d05CF36551390A4c69C6; // TODO - deploy and add
+        0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f; // on ethereum mainnet
 
     bool public stakingEnabled = false;
+    uint32 public harvestSlippage = 500; // 5% slippage
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -60,6 +61,10 @@ contract CurveERC20Strategy is ERC20StrategyParent {
     /// @notice Allows the owner to enable or disable staking.
     function setStakingEnabled(bool _enabled) external onlyOwner {
         stakingEnabled = _enabled;
+    }
+
+    function setHarvestSlippage(uint32 _slippage) external onlyOwner {
+        harvestSlippage = _slippage;
     }
 
     /// @notice Deposits USDC into the Curve pool.
@@ -148,11 +153,13 @@ contract CurveERC20Strategy is ERC20StrategyParent {
             fractionToWithdraw
         );
         if (stakingEnabled) {
-            // uint256 crvPrice = fetchCrvUsdPrice(); // Fetch CRV price in USD (assumed to be 1e18 precision)
-            // uint256 crvBalance = IERC20(REWARD_TOKEN).balanceOf(address(this));
+            uint256 crvPrice = fetchCrvUsdPrice(); // Fetch CRV price in USD (assumed to be 1e18 precision)
+            uint256 crvBalance = IERC20(REWARD_TOKEN).balanceOf(address(this));
 
-            // uint256 minUsdcOut = (crvBalance * crvPrice * 1000) / (1050 * 1e18); // Apply 5% slippage buffer
-            harvest(0);
+            uint256 minUsdcOut = (crvBalance *
+                crvPrice *
+                (10000 - harvestSlippage)) / (10000 * 1e18); // Apply 5% slippage buffer
+            harvest(minUsdcOut);
             gauge.withdraw(sharesToWithdraw);
         }
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
