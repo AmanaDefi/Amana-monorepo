@@ -5,13 +5,13 @@ export const milestones: Milestone[] = [
     title: "Q1",
     steps: [
       { description: "Launch Website and App", status: StepStatus.completed },
-      { description: "Deploy EVM-Compatable Vaults", status: StepStatus.completed },
+      { description: "Deploy EVM-Compatible vaults", status: StepStatus.completed },
       {
-        description: "Integrate Solana Wallet Support",
+        description: "Integrate Solana wallet support",
         status: StepStatus.completed,
       },
       {
-        description: "Onboard Users and increase TVL",
+        description: "Onboard users and increase TVL",
         status: StepStatus.upcoming,
       },
     ],
@@ -19,7 +19,7 @@ export const milestones: Milestone[] = [
   {
     title: "Q2",
     steps: [
-      { description: "Enable Solana Wallet Fnctionality", status: StepStatus.upcoming },
+      { description: "Enable Solana Wallet Functionality", status: StepStatus.upcoming },
       {
         description: "Add Bitcoin & Sui Wallets",
         status: StepStatus.upcoming,
