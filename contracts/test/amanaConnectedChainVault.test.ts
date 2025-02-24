@@ -44,7 +44,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   const WITHDRAWAL_RECEIVER = "0xD2f84247ac3462cD52cb380fda0d95D19501e130";
   const INPUT_TOKEN = ethers.constants.AddressZero;
   const ZAP_CONTRACT_ADDRESS = "0x5659BbBf8633Eb85203aEc5cBde4c0b64abc0F27";
-  const FORK_BLOCK_NUMBER = 7180224;
+  const FORK_BLOCK_NUMBER = 7180230;
   const SWAP_HELPER_ADDRESS = "0x1968643f36ad81a2756Dba0C4Dfe948bBa957A72";
 
   const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
@@ -71,7 +71,6 @@ describe("AmanaConnectedChainVault Tests", function () {
   }
 
   before(async () => {
-    // Use this function if you need global setup before tests
   });
 
   async function updatePythPrices(pythContract: any, signer: Signer): Promise<void> {
@@ -86,6 +85,10 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     const priceIds = [
       "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD price id
+      "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472", // POL/USD price id
+      "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f", // BNB/USD price id
+      "0xb70656181007f487e392bf0d92e55358e9f0da5da6531c7c4ce7828aa11277fe", // ZETA/USD price id
+      "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", // SOL/USD price id
     ];
 
     // Fetch price updates
@@ -101,12 +104,13 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
 
     const updateFee = await pythContract.getUpdateFee(priceUpdateData);
-
+    console.log("Update fee: ", updateFee.toString());
     const tx = await pythContract
       .connect(signer)
       .updatePriceFeeds(priceUpdateData, { value: updateFee });
 
-    await tx.wait();
+    const receipt = await tx.wait();
+    console.log(receipt)
   }
 
   async function simulateDepositCallFromBase(
@@ -228,7 +232,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     sharesToWithdraw: BigNumber,
     pythContract: any
   ): Promise<void> {
-    await updatePythPrices(pythContract, user);
+    // await updatePythPrices(pythContract, user);
     const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
     const slippage = 500;
     const transactionId = generateTransactionId(await user.getAddress(), 8453)
@@ -392,6 +396,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     [owner, user1, user2] = await ethers.getSigners();
     const pythContract = await ethers.getContractAt("contracts/interfaces/IPyth.sol:IPyth", PYTH_CONTRACT_ADDRESS, owner);
+    // await updatePythPrices(pythContract, owner);
 
     ethBase = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
     ethEth = await ethers.getContractAt("IERC20", ZC_ETH_ETH_ADDRESS);

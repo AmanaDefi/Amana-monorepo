@@ -652,6 +652,7 @@ abstract contract AmanaVaultBase is
             amount,
             slippageBps
         );
+
         (address curvePool, uint256 i, uint256 j) = SwapHelperLibEddy
             .getCurvePool(zrc20, targetZRC20);
         if (curvePool != address(0)) {
