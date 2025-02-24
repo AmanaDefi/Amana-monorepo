@@ -104,12 +104,34 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 300,
+            runs: 10000,
           },
           viaIR: true,
         },
       },
     ],
+    overrides: {
+      "contracts/AmanaConnectedChainVault.sol": {
+        version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 300,
+          },
+          viaIR: true,
+        },
+      },
+      "contracts/AmanaZetachainVault.sol": {
+        version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,
+          },
+          viaIR: true,
+        },
+      },
+    }
   },
   etherscan: {
     apiKey: {
