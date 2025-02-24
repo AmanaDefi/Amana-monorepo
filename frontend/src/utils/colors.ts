@@ -19,6 +19,11 @@ export const colors = {
     secondaryPurple: "#9B55FF",
     secondaryViolet: "#C391FF",
     themeColor: '#1efefe',
+    grayBtn: '#131418',
+    borderBtn: '#262830',
+    grayBtnHover: '#1b1c22',
+    borderBlue: '#3385FF',
+    "card": "#0C0D16",
     'cyan': {
         '50': '#ebfffc',
         '100': '#cbfffa',

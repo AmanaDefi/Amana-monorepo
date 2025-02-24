@@ -67,10 +67,121 @@ input::-webkit-inner-spin-button {
 
 body .page-container {
   @media only screen and (min-width: 1080px) {
-    zoom: .9;
+    zoom: 0.9;
   }
 
   @media only screen and (min-width: 1920px) {
     /*zoom: unset;*/
   }
+}
+
+:root {
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-variation-settings: "slnt" 0;
+  /* Customize the background and text colors */
+  --toastify-color-light: #ffffff;
+  /* White background */
+  --toastify-text-color-light: #4a5568;
+  /* Dark grey text (like your modal headers) */
+
+  /* Customize the success toast colors */
+  --toastify-color-success: #4a5568;
+  /* Dark grey background for success toast */
+  --toastify-icon-color-success: #3182ce;
+  /* Dark grey tick icon */
+
+  /* Customize the progress bar */
+  --toastify-color-progress-success: #3182ce;
+  /* Blue progress bar */
+
+  --header-height: 71px;
+  @media only screen and (min-width: 1024px) {
+    --header-height: 112px;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-zinc-950 text-neutral-200;
+  }
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip-container .tooltip {
+  visibility: hidden;
+  width: auto;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 10px;
+  position: absolute;
+  z-index: 1;
+  top: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.tooltip-container .tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.roadmap-gradient {
+  background: linear-gradient(
+    155deg,
+    rgba(40, 116, 105, 0.6) 0%,
+    rgba(0, 0, 0, 0.4) 25%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(40, 116, 105, 0.6) 78%,
+    rgba(31, 79, 255, 1) 110%
+  );
+  /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */
+}
+
+.milestone-gradient {
+  background: linear-gradient(
+    125deg,
+    rgba(40, 116, 105, 1) 0%,
+    rgba(0, 0, 0, 0.2) 45%,
+    rgba(0, 0, 0, 0.2) 55%,
+    rgba(31, 79, 255, 1) 130%
+  );
+  /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */
 }
