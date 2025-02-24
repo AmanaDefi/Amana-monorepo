@@ -671,7 +671,7 @@ const executeCrossChainWithdrawal = async (
   });
   const strategyShareAmount = await getAmountOutForShares(withdrawAssetAmount, strategyAddress, strategyChainId);
   console.log("strategyShareAmount", strategyShareAmount);
-  const minAmountOut = strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
+  const minAmountOut = 0; // strategyShareAmount * BigInt(10000 + slippage * 100) / BigInt(10000);
 
   console.log("minAmountOut", minAmountOut);
   // Prepare payload (calldata to pass to the receiver)

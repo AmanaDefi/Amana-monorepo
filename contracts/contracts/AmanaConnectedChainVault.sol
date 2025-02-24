@@ -97,7 +97,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 slippage
             );
         } else {
-            if (context.sender == address(0)) revert CantBeZeroAddress();
+            if (context.sender == address(0)) revert InvalidAddress();
             if (amount > 0) {
                 (
                     address erc20source,
@@ -306,9 +306,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 minAmountOut,
         uint256 minSharesOut
     ) external override onlyOwner {
-        if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (newStrategyAddress == strategyAddress)
-            revert InvalidStrategyAddress();
+        if (newStrategyAddress == address(0)) revert InvalidAddress();
+        if (newStrategyAddress == strategyAddress) revert InvalidAddress();
 
         if (totalAssets() == 1) {
             strategyAddress = newStrategyAddress;
@@ -399,7 +398,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         // Conclusion: Transfer happens before minting, ensuring reentrancy occurs in a valid state.
         // slither-disable-next-line reentrancy-no-eth
         if (assets == 0) {
-            revert DepositCantBeZero();
+            revert AmountCantBeZero();
         }
 
         // Generate a unique crossChainTxId
@@ -620,7 +619,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes32 crossChainTxId
     ) internal override {
         if (shares == 0) {
-            revert WithdrawCantBeZero();
+            revert AmountCantBeZero();
         }
         uint256 maxShares = maxRedeem(user);
         if (shares > maxShares - pendingWithdrawals[user]) {

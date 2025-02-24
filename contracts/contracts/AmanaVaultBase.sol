@@ -112,7 +112,7 @@ abstract contract AmanaVaultBase is
         uint32 gasLimitForWithdrawAndCall_,
         uint32 gasLimitForCall_
     ) external initializer {
-        if (treasury_ == address(0)) revert InvalidTreasuryAddress();
+        if (treasury_ == address(0)) revert InvalidAddress();
         __ERC20_init(name_, symbol_);
         __ERC4626_init(asset_);
         __Ownable_init(msg.sender);
@@ -162,7 +162,7 @@ abstract contract AmanaVaultBase is
         if (
             strategyAddress != address(0) || _strategyAddress == strategyAddress
         ) revert StrategyAlreadySet();
-        if (_strategyAddress == address(0)) revert InvalidStrategyAddress();
+        if (_strategyAddress == address(0)) revert InvalidAddress();
         strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
     }
@@ -173,7 +173,7 @@ abstract contract AmanaVaultBase is
      * @notice Reverts if the treasury address is zero.
      */
     function updateTreasuryAddress(address _treasury) external onlyOwner {
-        if (_treasury == address(0)) revert InvalidTreasuryAddress();
+        if (_treasury == address(0)) revert InvalidAddress();
         treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }
@@ -209,7 +209,7 @@ abstract contract AmanaVaultBase is
      * @notice Reverts if the gas tank address is zero.
      */
     function setGasTank(address newGasTank) external onlyOwner {
-        if (newGasTank == address(0)) revert CantBeZeroAddress();
+        if (newGasTank == address(0)) revert InvalidAddress();
         gasTank = IGasTank(newGasTank);
         emit GasTankUpdated(newGasTank);
     }
@@ -492,7 +492,7 @@ abstract contract AmanaVaultBase is
         address owner
     ) public {
         if (shares == 0) {
-            revert RedeemCantBeZero();
+            revert AmountCantBeZero();
         }
         uint256 maxShares = maxRedeem(owner);
         if (shares > maxShares) {
@@ -516,7 +516,7 @@ abstract contract AmanaVaultBase is
         address owner
     ) public returns (uint256) {
         if (assets == 0) {
-            revert WithdrawCantBeZero();
+            revert AmountCantBeZero();
         }
         uint256 maxAssets = maxWithdraw(owner);
         if (assets > maxAssets) {

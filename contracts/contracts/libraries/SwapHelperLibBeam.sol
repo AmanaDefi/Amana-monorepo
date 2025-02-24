@@ -16,11 +16,11 @@ library SwapHelperLibBeam {
         address tokenA,
         address tokenB
     ) internal pure returns (address token0, address token1) {
-        if (tokenA == tokenB) revert IErrors.CantBeIdenticalAddresses();
+        if (tokenA == tokenB) revert IErrors.InvalidAddress();
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
-        if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
+        if (token0 == address(0)) revert IErrors.InvalidAddress();
     }
 
     function algebraPairFor(

@@ -69,7 +69,7 @@ abstract contract EthStrategyParent is StrategyParent {
         bytes32 _crossChainTxId
     ) external payable {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
-        if (msg.sender != oldStrategy) revert Unauthorized();
+        if (msg.sender != oldStrategy) revert NotAuthorized();
         if (msg.value == 0) revert NoFundsReceived();
         executionNonce = currentExecutionNonce + 1;
         _invest(

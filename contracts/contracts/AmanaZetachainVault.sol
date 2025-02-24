@@ -75,9 +75,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint256 minAmountOut,
         uint256 minSharesOut
     ) external override onlyOwner {
-        if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (newStrategyAddress == strategyAddress)
-            revert InvalidStrategyAddress();
+        if (newStrategyAddress == address(0)) revert InvalidAddress();
+        if (newStrategyAddress == strategyAddress) revert InvalidAddress();
 
         if (IStrategy(strategyAddress).totalUnderlyingAssets() > 0) {
             IStrategy(strategyAddress).withdraw(10 ** 18, minAmountOut);
@@ -123,7 +122,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         uint256 minimumOut
     ) internal override whenNotPaused {
         if (assets == 0) {
-            revert DepositCantBeZero();
+            revert AmountCantBeZero();
         }
         userPrincipal[receiver] += assets;
         totalPrincipal += assets;
@@ -248,7 +247,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes32 crossChainTxId
     ) internal override {
         if (shares == 0) {
-            revert WithdrawCantBeZero();
+            revert AmountCantBeZero();
         }
         uint256 maxShares = maxRedeem(user);
         if (shares > maxShares) {

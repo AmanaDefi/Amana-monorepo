@@ -32,7 +32,7 @@ contract GasTank is Ownable2Step, IErrors {
 
     // Deauthorize a vault
     function deauthorizeVault(address vault) external onlyOwner {
-        if (!authorizedVaults[vault]) revert VaultNotAuthorized();
+        if (!authorizedVaults[vault]) revert NotAuthorized();
         authorizedVaults[vault] = false;
         emit VaultDeauthorized(vault);
     }
