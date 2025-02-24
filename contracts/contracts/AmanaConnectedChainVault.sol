@@ -446,32 +446,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 userChainId,
         bytes32 crossChainTxId
     ) internal override {
-        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
-            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
-
-        gasTank.getGas(gas_zrc20, gasFee);
-
-        if (gas_zrc20 != address(asset())) {
-            approveOrIncreaseAllowance(
-                IERC20(asset()),
-                _GATEWAY_ADDRESS,
-                amount
-            );
-            approveOrIncreaseAllowance(
-                IERC20(gas_zrc20),
-                _GATEWAY_ADDRESS,
-                gasFee
-            );
-        } else {
-            approveOrIncreaseAllowance(
-                IERC20(asset()),
-                _GATEWAY_ADDRESS,
-                amount + gasFee
-            );
-        }
-
-        bytes memory recipient = abi.encodePacked(strategyAddress);
-
         bytes memory outgoingMessage = abi.encode(
             address(0),
             receiver,
@@ -485,35 +459,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             0 // slippage
         );
 
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                "_crossChainInvestFailed",
-                crossChainTxId,
-                amount,
-                receiver,
-                userZRC20,
-                userERC20,
-                userChainId
-            ),
-            uint256(0) // onRevertGasLimit
+        _handleWithdrawAndCall(
+            strategyAddress,
+            receiver,
+            userZRC20,
+            userERC20,
+            address(asset()),
+            amount,
+            userChainId,
+            crossChainTxId,
+            "_crossChainInvestFailed",
+            outgoingMessage
         );
-
-        CallOptions memory callOptions = CallOptions(
-            gasLimitForWithdrawAndCall,
-            false
-        );
-        IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-            recipient, // Recipient contract address (strategy address)
-            amount, // Amount of ZRC20 to withdraw
-            address(asset()), // ZRC20 being withdrawn (indicates the chain to target)
-            outgoingMessage, // Encoded function call for the strategy's invest function
-            callOptions,
-            revertOptions
-        );
-
         emit CrossChainInvestSent(crossChainTxId);
     }
 

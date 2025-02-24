@@ -35,9 +35,9 @@ abstract contract AmanaVaultBase is
     address constant _GATEWAY_ADDRESS =
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address constant _SYSTEM_ADDRESS =
-        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921; // testnet: 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B;
+        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
     address constant ZAP_CONTRACT_ADDRESS =
-        0xDdf577F172DffDea94C1F2a227a5E87Fd82bf42C; // mainnet
+        0x5659BbBf8633Eb85203aEc5cBde4c0b64abc0F27;
 
     // Variables
     address public strategyAddress;
@@ -153,6 +153,12 @@ abstract contract AmanaVaultBase is
         depositsPaused = !depositsPaused;
     }
 
+    // function getFractionOfTotalShares(
+    //     uint256 shares
+    // ) public view returns (uint256) {
+    //     return (shares * 1e18 + totalSupply() / 2) / totalSupply(); // we add totalSupply() / 2 to prevent truncation errors
+    // }
+
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
      * @param _strategyAddress The address of the new strategy.
@@ -218,22 +224,15 @@ abstract contract AmanaVaultBase is
      * @dev Sets the gas limit for the withdraw and call function. Can only be called by the owner.
      * @dev This needs to be set as low as possible to avoid wasting gas
      * @dev This may change depending on the complexity of the strategy's invest function
-     * @param newGasLimit The new gas limit for the withdraw and call function
+     * @param _GasLimitWithdrawAndCall The new gas limit for the withdraw and call function
+     * @param _gasLimitCall The new gas limit for the call function
      */
-    function setGasLimitForWithdrawAndCall(
-        uint32 newGasLimit
+    function setGasLimits(
+        uint32 _GasLimitWithdrawAndCall,
+        uint32 _gasLimitCall
     ) external onlyOwner {
-        gasLimitForWithdrawAndCall = newGasLimit;
-    }
-
-    /**
-     * @dev Sets the gas limit for the call function to initiate a withdrawal from the strategy or a strategy switch. Can only be called by the owner.
-     * @dev This needs to be set as low as possible to avoid wasting gas
-     * @dev This may change depending on the complexity of the strategy's divest function (and invest function on switch)
-     * @param newGasLimit The new gas limit for the cross chain call
-     */
-    function setGasLimitForCall(uint32 newGasLimit) external onlyOwner {
-        gasLimitForCall = newGasLimit;
+        gasLimitForWithdrawAndCall = _GasLimitWithdrawAndCall;
+        gasLimitForCall = _gasLimitCall;
     }
 
     /**
@@ -267,37 +266,6 @@ abstract contract AmanaVaultBase is
      * @notice Overrides the {IERC4626-totalAssets} function.
      */
     function totalAssets() public view virtual override returns (uint256) {}
-
-    /**
-     * @notice Gets the expected output amount for a given input amount and swap path
-     * @param amountIn The input amount.
-     * @param inputToken The address of the token being deposited.
-     * @return amount The final amount of output tokens received.
-     */
-    function getAmountOutFromSwap(
-        uint amountIn,
-        address inputToken,
-        address outputToken
-    ) external view returns (uint amount) {
-        if (
-            SwapHelperLibEddy.isInEddy4Pool(inputToken) &&
-            SwapHelperLibEddy.isInEddy4Pool(outputToken)
-        ) {
-            return
-                SwapHelperLibEddy.getCurveAmountOut(
-                    amountIn,
-                    inputToken,
-                    outputToken
-                );
-        } else {
-            return
-                SwapHelperLibEddy.getUniswapAmountOut(
-                    amountIn,
-                    inputToken,
-                    outputToken
-                );
-        }
-    }
 
     /** @dev See {IERC4626-deposit}. */
     function deposit(
@@ -542,25 +510,6 @@ abstract contract AmanaVaultBase is
                 );
             }
         } else {
-            // Cross-chain transfer
-            bytes memory recipient = abi.encodePacked(withdrawalReceiver);
-
-            RevertOptions memory revertOptions = RevertOptions(
-                address(this), // revert address
-                true, // callOnRevert
-                address(this), // abortAddress
-                abi.encode(
-                    "_returnFundsToUserFailed",
-                    _crossChainTxId,
-                    outputAmount,
-                    receiver,
-                    withdrawZRC20,
-                    withdrawERC20,
-                    userChainId
-                ),
-                uint256(0) // onRevertGasLimit
-            );
-
             if (address(asset()) != withdrawZRC20) {
                 // Swap assets if needed
                 outputAmount = swap(
@@ -573,62 +522,108 @@ abstract contract AmanaVaultBase is
                 );
             }
 
-            (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
-                .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
+            bytes memory outgoingMessage = abi.encode(
+                receiver, // the user the funds have to go to
+                withdrawERC20, // the token on the target chain that the user receives (can be native)
+                outputAmount, // amount to be sent
+                _crossChainTxId
+            );
 
-            gasTank.getGas{gas: 200000}(gas_zrc20, gasFee);
-
-            if (gas_zrc20 != withdrawZRC20) {
-                approveOrIncreaseAllowance(
-                    IERC20(withdrawZRC20),
-                    _GATEWAY_ADDRESS,
-                    outputAmount
-                );
-                approveOrIncreaseAllowance(
-                    IERC20(gas_zrc20),
-                    _GATEWAY_ADDRESS,
-                    gasFee
-                );
-            } else {
-                approveOrIncreaseAllowance(
-                    IERC20(withdrawZRC20),
-                    _GATEWAY_ADDRESS,
-                    outputAmount + gasFee
-                );
-            }
-
-            if (userChainId == 900) {
-                // Solana
-                IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
-                    recipient,
-                    outputAmount,
-                    withdrawZRC20,
-                    revertOptions
-                );
-            } else {
-                // Ethereum
-                bytes memory outgoingMessage = abi.encode(
-                    receiver, // the user the funds have to go to
-                    withdrawERC20, // the token on the target chain that the user receives (can be native)
-                    outputAmount, // amount to be sent
-                    _crossChainTxId
-                );
-
-                CallOptions memory callOptions = CallOptions(
-                    gasLimitForWithdrawAndCall,
-                    false
-                );
-                IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-                    recipient,
-                    outputAmount,
-                    withdrawZRC20,
-                    outgoingMessage,
-                    callOptions,
-                    revertOptions
-                );
-            }
+            _handleWithdrawAndCall(
+                withdrawalReceiver,
+                receiver,
+                withdrawZRC20,
+                withdrawERC20,
+                withdrawZRC20,
+                outputAmount,
+                userChainId,
+                _crossChainTxId,
+                "_returnFundsToUserFailed",
+                outgoingMessage
+            );
         }
         emit ReturnFundsToUserSent(_crossChainTxId);
+    }
+
+    function _handleWithdrawAndCall(
+        address targetAddress,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        address tokenToTransfer,
+        uint256 amount,
+        uint32 userChainId,
+        bytes32 _crossChainTxId,
+        string memory revertMessage,
+        bytes memory outgoingMessage
+    ) internal {
+        // Cross-chain transfer
+        bytes memory recipient = abi.encodePacked(targetAddress);
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this), // revert address
+            true, // callOnRevert
+            address(this), // abortAddress
+            abi.encode(
+                revertMessage,
+                _crossChainTxId,
+                amount,
+                receiver,
+                withdrawZRC20,
+                withdrawERC20,
+                userChainId
+            ),
+            uint256(0) // onRevertGasLimit
+        );
+
+        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
+            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
+
+        gasTank.getGas(gas_zrc20, gasFee);
+
+        if (gas_zrc20 != tokenToTransfer) {
+            approveOrIncreaseAllowance(
+                IERC20(tokenToTransfer),
+                _GATEWAY_ADDRESS,
+                amount
+            );
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                _GATEWAY_ADDRESS,
+                gasFee
+            );
+        } else {
+            approveOrIncreaseAllowance(
+                IERC20(tokenToTransfer),
+                _GATEWAY_ADDRESS,
+                amount + gasFee
+            );
+        }
+
+        if (userChainId == 900 && targetAddress == withdrawalReceiver) {
+            // Solana
+            IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
+                recipient,
+                amount,
+                withdrawZRC20,
+                revertOptions
+            );
+        } else {
+            // Ethereum
+
+            CallOptions memory callOptions = CallOptions(
+                gasLimitForWithdrawAndCall,
+                false
+            );
+            IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
+                recipient,
+                amount,
+                tokenToTransfer,
+                outgoingMessage,
+                callOptions,
+                revertOptions
+            );
+        }
     }
 
     /**
@@ -657,21 +652,17 @@ abstract contract AmanaVaultBase is
             amount,
             slippageBps
         );
-        if (
-            SwapHelperLibEddy.isInEddy4Pool(zrc20) &&
-            SwapHelperLibEddy.isInEddy4Pool(targetZRC20)
-        ) {
-            uint256 inputIndex = SwapHelperLibEddy.getTokenIndex(zrc20);
-            uint256 outputIndex = SwapHelperLibEddy.getTokenIndex(targetZRC20);
-
+        (address curvePool, uint256 i, uint256 j) = SwapHelperLibEddy
+            .getCurvePool(zrc20, targetZRC20);
+        if (curvePool != address(0)) {
             // Approve Curve pool to spend your tokens
-            IZRC20(zrc20).approve(SwapHelperLibEddy.CURVE_POOL, amount);
+            IZRC20(zrc20).approve(curvePool, amount);
 
             // Perform the swap
             return
-                ICurvePool(SwapHelperLibEddy.CURVE_POOL).exchange(
-                    inputIndex, // Index of input token
-                    outputIndex, // Index of output token
+                ICurvePool(curvePool).exchange(
+                    i, // Index of input token
+                    j, // Index of output token
                     amount, // Amount of input token
                     minimumOut // Minimum amount of output token to receive
                 );

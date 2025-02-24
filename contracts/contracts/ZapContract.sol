@@ -59,21 +59,18 @@ contract ZapContract {
             amount,
             slippageBps
         );
-        if (
-            SwapHelperLibEddy.isInEddy4Pool(zrc20) &&
-            SwapHelperLibEddy.isInEddy4Pool(targetZRC20)
-        ) {
-            uint256 inputIndex = SwapHelperLibEddy.getTokenIndex(zrc20);
-            uint256 outputIndex = SwapHelperLibEddy.getTokenIndex(targetZRC20);
+        (address curvePool, uint256 i, uint256 j) = SwapHelperLibEddy
+            .getCurvePool(zrc20, targetZRC20);
 
+        if (curvePool != address(0)) {
             // Approve Curve pool to spend your tokens
-            IZRC20(zrc20).approve(SwapHelperLibEddy.CURVE_POOL, amount);
+            IZRC20(zrc20).approve(curvePool, amount);
 
             // Perform the swap
             return
-                ICurvePool(SwapHelperLibEddy.CURVE_POOL).exchange(
-                    inputIndex, // Index of input token
-                    outputIndex, // Index of output token
+                ICurvePool(curvePool).exchange(
+                    i, // Index of input token
+                    j, // Index of output token
                     amount, // Amount of input token
                     minimumOut // Minimum amount of output token to receive
                 );
