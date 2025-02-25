@@ -4,7 +4,7 @@ import { getAddress, ParamChainName } from "@zetachain/protocol-contracts";
 import SystemContract from "@zetachain/protocol-contracts/abi/SystemContract.sol/SystemContract.json";
 import { ethers } from "ethers";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 import MULTICALL3_ABI from "./multicall3.json";
 
 type Pair = {

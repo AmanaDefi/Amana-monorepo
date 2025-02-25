@@ -1,4 +1,4 @@
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 /**
  * Get chain ID from a chain label.

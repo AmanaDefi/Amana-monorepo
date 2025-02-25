@@ -5,15 +5,14 @@ import { getEndpoints } from "@zetachain/networks";
 import Gateway_IDL from "@zetachain/protocol-contracts-solana/idl/gateway.json";
 import { ethers } from "ethers";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 const SEED = "meta";
 
-export const solanaDepositAndCall = async function (
+export const solanaDeposit = async function (
   this: ZetaChainClient,
   args: {
     amount: number;
-    params: any[];
     recipient: string;
   }
 ) {
@@ -80,22 +79,9 @@ export const solanaDepositAndCall = async function (
 
   try {
     const tx = new anchor.web3.Transaction();
-    const recipient = Buffer.from(ethers.getBytes(args.recipient));
-
-    if (!Array.isArray(args.params[0]) || !Array.isArray(args.params[1])) {
-      throw new Error(
-        "Invalid 'params' format. Expected arrays of types and values."
-      );
-    }
-
-    const message = Buffer.from(
-      ethers.getBytes(
-        new ethers.AbiCoder().encode(args.params[0], args.params[1])
-      )
-    );
-
+    const recipient = Buffer.from(ethers.utils.arrayify(args.recipient));
     const depositInstruction = await gatewayProgram.methods
-      .depositAndCall(depositAmount, recipient, message)
+      .deposit(depositAmount, recipient)
       .accounts({
         pda: pdaAccount,
         signer: this.solanaAdapter

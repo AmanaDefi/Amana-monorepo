@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 import fetch from "isomorphic-fetch";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 export interface TokenBalance {
   balance: string;

@@ -189,9 +189,12 @@ export class ZetaChainClient {
       let gateway;
       if (this.wallet) {
         try {
-          const chainId = await this.wallet!.getChainId();
+          if (!this.wallet?.provider) {
+            throw new Error("Wallet is not connected to a provider");
+          }
+          const chainId = (await this.wallet.provider.getNetwork()).chainId;
           gateway = (this.contracts as MainnetTestnetAddress[]).find(
-            (item) => chainId === item.chain_id && item.type === "gateway"
+            (item) => Number(chainId) === item.chain_id && item.type === "gateway"
           );
         } catch (error) {
           throw new Error("Failed to get gateway address: " + error);

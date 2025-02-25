@@ -1,4 +1,4 @@
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 export const getEndpoint = function (
   this: ZetaChainClient,

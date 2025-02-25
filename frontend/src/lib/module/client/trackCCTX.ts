@@ -2,7 +2,7 @@ import networks from "@zetachain/networks/dist/src/networks";
 import { ethers } from "ethers";
 import fetch from "isomorphic-fetch";
 
-import type { ZetaChainClient } from "./client";
+import type { ZetaChainClient } from ".";
 
 const apiFetch = async (url: string) => {
   const response = await fetch(url);

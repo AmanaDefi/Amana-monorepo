@@ -3,7 +3,7 @@ import ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, utils } from "ethers";
 import fetch from "isomorphic-fetch";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 const fetchZEVMFees = async function (
   zrc20: any,

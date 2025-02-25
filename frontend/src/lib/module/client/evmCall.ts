@@ -1,7 +1,7 @@
 import GatewayABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { ethers } from "ethers";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 import type { revertOptions, txOptions } from "./types";
 
 /**

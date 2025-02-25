@@ -2,7 +2,7 @@ import GatewayABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/Gatewa
 import ZRC20ABI from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 import type { revertOptions, txOptions } from "./types";
 
 /**

@@ -6,11 +6,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import MobileMenuModal from "@/components/modal/MobileMenuModal";
-import { useMultiChain } from "@/providers/MultiChainProvider";
-import SelectNetworkModal from "./modal/SelectNetworkModal";
 import ConnectButton from "./ConnectButton";
 import { useState } from "react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 export const wallets = [
   inAppWallet({
@@ -33,7 +30,6 @@ const Header = () => {
   const path = usePathname();
   const router = useRouter();
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
-
 
   return (
     <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">

@@ -4,7 +4,7 @@ import ZetaConnectorEth from "@zetachain/protocol-contracts/abi/ZetaConnectorNat
 import ZetaConnectorZEVM from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import { ethers } from "ethers";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 /**
  *

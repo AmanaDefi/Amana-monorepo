@@ -4,7 +4,7 @@ import { getAddress } from "@zetachain/protocol-contracts";
 import ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 /**
  * Retrieves the ZRC20 contract address for a given ERC20 token.

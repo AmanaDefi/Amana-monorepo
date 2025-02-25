@@ -1,4 +1,4 @@
-import { ZetaChainClient } from "./client";
+import { ZetaChainClient } from ".";
 
 export const getForeignCoins = async function (this: ZetaChainClient) {
   const api = await this.getEndpoint("cosmos-http", `zeta_${this.network}`);
