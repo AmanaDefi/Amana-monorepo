@@ -25,12 +25,17 @@ contract AmanaZetachainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (amount > 0) {
-            (address erc20source, uint16 slippage, bytes32 crossChainTxId) = abi
-                .decode(message, (address, uint16, bytes32));
+            (
+                address erc20source,
+                uint256 minimumOut,
+                uint16 slippage,
+                bytes32 crossChainTxId
+            ) = abi.decode(message, (address, uint256, uint16, bytes32));
             _depositComingFromConnectedChain(
                 context.sender,
                 context.chainID,
                 amount,
+                minimumOut,
                 zrc20,
                 erc20source,
                 slippage,
@@ -41,17 +46,19 @@ contract AmanaZetachainVault is AmanaVaultBase {
                 address withdrawZRC20,
                 address withdrawERC20,
                 uint256 withdrawAmount,
+                uint256 minimumOut,
                 uint16 slippage,
                 bytes32 crossChainTxId
             ) = abi.decode(
                     message,
-                    (address, address, uint256, uint16, bytes32)
+                    (address, address, uint256, uint256, uint16, bytes32)
                 );
             _withdrawComingFromConnectedChain(
                 context.sender,
                 withdrawZRC20,
                 withdrawERC20,
                 withdrawAmount,
+                minimumOut,
                 uint32(context.chainID),
                 slippage,
                 crossChainTxId
@@ -64,17 +71,15 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @param newStrategyAddress Address of the new strategy.
      */
     function switchStrategy(
-        address newStrategyAddress
+        address newStrategyAddress,
+        uint256 minAmountOut,
+        uint256 minSharesOut
     ) external override onlyOwner {
-        if (newStrategyAddress == address(0)) revert InvalidStrategyAddress();
-        if (newStrategyAddress == strategyAddress)
-            revert InvalidStrategyAddress();
+        if (newStrategyAddress == address(0)) revert InvalidAddress();
+        if (newStrategyAddress == strategyAddress) revert InvalidAddress();
 
         if (IStrategy(strategyAddress).totalUnderlyingAssets() > 0) {
-            IStrategy(strategyAddress).withdraw(
-                IStrategy(strategyAddress).totalUnderlyingAssets(),
-                10 ** 27
-            );
+            IStrategy(strategyAddress).withdraw(10 ** 18, minAmountOut);
             strategyAddress = newStrategyAddress;
             approveOrIncreaseAllowance(
                 IERC20(asset()),
@@ -82,7 +87,8 @@ contract AmanaZetachainVault is AmanaVaultBase {
                 IERC20(asset()).balanceOf(address(this))
             );
             IStrategy(strategyAddress).invest(
-                IERC20(asset()).balanceOf(address(this))
+                IERC20(asset()).balanceOf(address(this)),
+                minSharesOut
             );
         } else {
             strategyAddress = newStrategyAddress;
@@ -98,7 +104,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
     function totalAssets() public view virtual override returns (uint256) {
         uint256 assetBalanceInStrategy = IStrategy(strategyAddress)
             .totalUnderlyingAssets();
-        return assetBalanceInStrategy + 1;
+        return assetBalanceInStrategy;
     }
 
     /**
@@ -112,10 +118,11 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address caller,
         address receiver,
         uint256 assets,
-        uint256 shares
-    ) internal override {
+        uint256 shares,
+        uint256 minimumOut
+    ) internal override whenNotPaused {
         if (assets == 0) {
-            revert DepositCantBeZero();
+            revert AmountCantBeZero();
         }
         userPrincipal[receiver] += assets;
         totalPrincipal += assets;
@@ -129,7 +136,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         _mint(receiver, shares);
         approveOrIncreaseAllowance(IERC20(asset()), strategyAddress, assets);
-        IStrategy(strategyAddress).invest(assets);
+        IStrategy(strategyAddress).invest(assets, minimumOut);
         emit Deposit(caller, receiver, assets, shares);
     }
 
@@ -142,6 +149,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
      **/
     function _investAssets(
         uint256 amount,
+        uint256 minimumOut,
         address receiver,
         address,
         address,
@@ -155,7 +163,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
         approveOrIncreaseAllowance(IERC20(asset()), strategyAddress, amount);
 
-        IStrategy(strategyAddress).invest(amount);
+        IStrategy(strategyAddress).invest(amount, minimumOut);
         emit Deposited(receiver, amount, shares, crossChainTxId);
     }
 
@@ -163,7 +171,6 @@ contract AmanaZetachainVault is AmanaVaultBase {
      * @dev Withdrawn/redeem common workflow. Handles user withdrawal requests and initiates divestment from the strategy.
      * @param caller The address of the entity initiating the withdrawal.
      * @param user The address of the user receiving the withdrawn assets.
-     * @param assets The amount of assets being withdrawn.
      * @param shares The number of shares being redeemed for the withdrawal.
      * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
      */
@@ -172,27 +179,35 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address receiver, // receiver
         address user, // owner
         address withdrawZRC20,
-        uint256 assets,
+        uint256 minimumOut,
         uint256 shares,
         uint16 slippage
     ) internal override {
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
-        uint256 feeToWithdraw = _applyFee(user, assets);
 
+        uint256 fractionOfTotalShares = (shares * 1e18) / totalSupply();
         uint256 amountWithdrawn = _divestZetachainStrategy(
-            assets,
-            feeToWithdraw
+            fractionOfTotalShares,
+            minimumOut
         );
+        uint256 fractionOfUserShares = (shares * 1e18) / balanceOf(user);
+        uint256 userPrincipalWithdrawn = (fractionOfUserShares *
+            userPrincipal[user]) / 1e18;
 
-        // Burn the shares after withdrawal to ensure reentrancy-safe execution.
-        _burn(user, shares);
-
-        if (feeToWithdraw > 0) {
+        uint256 feeToWithdraw;
+        if (amountWithdrawn > userPrincipalWithdrawn) {
+            feeToWithdraw =
+                ((amountWithdrawn - userPrincipalWithdrawn) * perfFee) /
+                10000;
             emit PerformanceFeePaid(user, feeToWithdraw);
             SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
+        userPrincipal[user] -= userPrincipalWithdrawn;
+        totalPrincipal -= userPrincipalWithdrawn;
+        // Burn the shares after withdrawal to ensure reentrancy-safe execution.
+        _burn(user, shares);
 
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
@@ -204,7 +219,13 @@ contract AmanaZetachainVault is AmanaVaultBase {
             slippage
         );
 
-        emit Withdraw(caller, receiver, user, assets, shares);
+        emit Withdraw(
+            caller,
+            receiver,
+            user,
+            amountWithdrawn - feeToWithdraw,
+            shares
+        );
     }
 
     /**
@@ -220,33 +241,39 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 shares,
+        uint256 minimumOut,
         uint32 userChainId,
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal override {
         if (shares == 0) {
-            revert WithdrawCantBeZero();
+            revert AmountCantBeZero();
         }
         uint256 maxShares = maxRedeem(user);
         if (shares > maxShares) {
             revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
         }
+        uint256 fractionOfTotalShares = (shares * 1e18) / totalSupply();
 
-        uint256 assets = previewRedeem(shares);
-
-        uint256 feeToWithdraw = _applyFee(user, assets);
         uint256 amountWithdrawn = _divestZetachainStrategy(
-            assets,
-            feeToWithdraw
+            fractionOfTotalShares,
+            minimumOut
         );
 
         // Burn the shares after withdrawal to ensure reentrancy-safe execution.
         _burn(user, shares);
 
-        if (feeToWithdraw > 0) {
+        uint256 fractionUserPrincipal = (fractionOfTotalShares *
+            userPrincipal[user]) / 1e18;
+        uint256 feeToWithdraw;
+        if (amountWithdrawn > fractionUserPrincipal) {
+            feeToWithdraw =
+                ((amountWithdrawn - fractionUserPrincipal) * perfFee) /
+                10000;
             emit PerformanceFeePaid(user, feeToWithdraw);
             SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
         }
+        userPrincipal[user] -= fractionUserPrincipal;
 
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
@@ -263,19 +290,20 @@ contract AmanaZetachainVault is AmanaVaultBase {
 
     /**
      * @notice Divests assets from the connected Zetachain strategy and burns shares.
-     * @param assets The amount of assets to withdraw.
-     * @param feeToWithdraw The fee to be applied for the withdrawal.
+     * @param fractionOfTotalShares The amount of assets to withdraw.
      * @return withdrawnAmt The total amount withdrawn from the strategy.
      */
     function _divestZetachainStrategy(
-        uint256 assets,
-        uint256 feeToWithdraw
+        uint256 fractionOfTotalShares,
+        uint256 minimumOut
     ) internal returns (uint256 withdrawnAmt) {
         withdrawnAmt = IStrategy(strategyAddress).withdraw(
-            assets + feeToWithdraw,
-            ((assets + feeToWithdraw) * (10 ** 27)) / totalAssets() + 1
+            fractionOfTotalShares,
+            minimumOut
         );
-
+        if (withdrawnAmt < minimumOut) {
+            revert IErrors.InsufficientOut();
+        }
         return withdrawnAmt;
     }
 

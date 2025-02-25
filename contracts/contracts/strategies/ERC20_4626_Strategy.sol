@@ -35,28 +35,52 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        if (shares == 0) {
-            revert DepositFailed();
+        if (shares < minimumOut) {
+            revert InsufficientOut();
         }
     }
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param minAmountOut The minimum amount of USDC to withdraw.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        amountWithdrawn = receiptToken.withdraw(
-            amount,
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
+        amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /**
@@ -67,26 +91,28 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
-        approveOrIncreaseAllowance(
-            inputToken,
-            newStrategy,
-            strategyTotalBalance
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            1e18,
+            minAmountOut
         );
 
+        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
+
         IStrategy(newStrategy).depositFromOldStrategy(
-            strategyTotalBalance,
+            amountWithdrawn,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            amountWithdrawn,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -96,6 +122,18 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
+        return receiptToken.convertToAssets(shares);
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256) {
         return receiptToken.convertToAssets(shares);
     }
 }

@@ -4,13 +4,13 @@ pragma solidity 0.8.26;
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../interfaces/IZRC20.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IPriceOracle.sol";
 import "../interfaces/ICurvePool.sol";
+import "../CurvePoolRegistry.sol";
 
 library SwapHelperLibEddy {
     address constant UNISWAP_V2_FACTORY =
@@ -20,9 +20,7 @@ library SwapHelperLibEddy {
     address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
 
     address constant PRICE_ORACLE_ADDRESS =
-        0xD52b6aB593caB9D55dB083D8a6Fe9A3F8d91ad8d; // mainnet only
-
-    address constant CURVE_POOL = 0x448028804461e8e5a8877c228F3adFd58c3Da6B6; // mainnet only
+        0x0D313486083fe6f0A1868EAeEe07D46fed92E9f9; // mainnet only
 
     address constant ETH_ETH_ADDRESS =
         0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
@@ -50,6 +48,13 @@ library SwapHelperLibEddy {
     address constant USDC_POL_ADDRESS =
         0xfC9201f4116aE6b054722E10b98D904829b469c3; // mainnet only
 
+    address constant SOL_SOL_ADDRESS =
+        0x4bC32034caCcc9B7e02536945eDbC286bACbA073;
+    address constant USDC_SOL_ADDRESS =
+        0x8344d6f84d26f998fa070BbEA6D2E15E359e2641;
+    address constant USDT_SOL_ADDRESS =
+        0xEe9CC614D03e7Dbe994b514079f4914a605B4719;
+
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
     bytes32 constant polUsdPriceFeedId =
@@ -58,287 +63,109 @@ library SwapHelperLibEddy {
         0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
     bytes32 constant zetaUsdPriceFeedId =
         0xb70656181007f487e392bf0d92e55358e9f0da5da6531c7c4ce7828aa11277fe;
+    bytes32 constant solUsdPriceFeedId =
+        0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d;
 
-    function isInEddy4Pool(address token) external pure returns (bool) {
-        if (
-            token == 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a || // USDC_ETH_ADDRESS
-            token == 0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7 || // USDT_ETH_ADDRESS
-            token == 0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F || // USDT_BSC_ADDRESS
-            token == 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0 // USDC_BSC_ADDRESS
-        ) {
-            return true;
-        }
-        return false;
-    }
+    address constant CURVE_POOL_REGISTRY =
+        0x5524124b8F36e682f3A23D069399247806e8B627; // mainnet only
 
-    // Function to get the index of a token in the Curve pool
-    function getTokenIndex(address token) public view returns (uint256) {
-        // Assume the pool has at most 8 coins; adjust if necessary
-        for (uint256 i = 0; i < 4; i++) {
-            try ICurvePool(CURVE_POOL).coins(i) returns (address poolToken) {
-                if (poolToken == token) {
-                    return i; // Convert to int128 as required by Curve's exchange function
-                }
-            } catch {
-                break; // Stop if index exceeds the number of tokens in the pool
-            }
+    /**
+     * @notice Returns the price feed ID for a given token address.
+     * @param token The address of the token.
+     * @return The price feed ID associated with the token.
+     */
+    function getPriceFeedId(address token) internal pure returns (bytes32) {
+        if (token == ETH_ETH_ADDRESS || token == ETH_BASE_ADDRESS) {
+            return ethUsdPriceFeedId;
+        } else if (token == POL_POLYGON_ADDRESS) {
+            return polUsdPriceFeedId;
+        } else if (token == BNB_BSC_ADDRESS) {
+            return bnbUsdPriceFeedId;
+        } else if (token == WZETA_TOKEN) {
+            return zetaUsdPriceFeedId;
+        } else if (token == SOL_SOL_ADDRESS) {
+            return solUsdPriceFeedId;
+        } else {
+            return bytes32(0); // Return zero bytes if no price feed exists
         }
-        revert("Token not found in Curve pool");
     }
 
     /**
-     * @notice Determines if a token address corresponds to an ETH token.
-     * @dev Compares the token address against predefined ETH token addresses.
-     * @param token The address of the token to check.
-     * @return True if the token is an ETH token, false otherwise.
+     * @notice Checks if a token is a USD stablecoin.
+     * @param token The address of the token.
+     * @return True if the token is a stablecoin, false otherwise.
      */
-    function isEthToken(address token) internal pure returns (bool) {
-        return token == ETH_ETH_ADDRESS || token == ETH_BASE_ADDRESS;
-    }
-
-    /**
-     * @notice Determines if a token address corresponds to a USD stablecoin.
-     * @dev Compares the token address against predefined USD stablecoin addresses.
-     * @param token The address of the token to check.
-     * @return True if the token is a USD stablecoin, false otherwise.
-     */
-    function isUsdStablecoin(address token) internal pure returns (bool) {
-        return
-            token == USDC_BSC_ADDRESS ||
-            token == USDC_BSC_ADDRESS ||
+    function isStablecoin(address token) internal pure returns (bool) {
+        return (token == USDC_BSC_ADDRESS ||
             token == USDC_ETH_ADDRESS ||
-            token == USDC_POL_ADDRESS ||
             token == USDC_POL_ADDRESS ||
             token == USDC_BASE_ADDRESS ||
             token == USDT_BSC_ADDRESS ||
             token == USDT_ETH_ADDRESS ||
-            token == USDT_BSC_ADDRESS ||
-            token == USDT_ETH_ADDRESS ||
-            token == USDT_POL_ADDRESS;
-    }
-
-    function isPolToken(address token) internal pure returns (bool) {
-        return token == POL_POLYGON_ADDRESS;
-    }
-
-    function isBnbToken(address token) internal pure returns (bool) {
-        return token == BNB_BSC_ADDRESS;
-    }
-
-    function isBscStablecoin(address token) internal pure returns (bool) {
-        return token == USDC_BSC_ADDRESS || token == USDT_BSC_ADDRESS;
-    }
-
-    function isZetaToken(address token) internal pure returns (bool) {
-        return token == WZETA_TOKEN;
+            token == USDT_POL_ADDRESS ||
+            token == USDC_SOL_ADDRESS ||
+            token == USDT_SOL_ADDRESS);
     }
 
     /**
-     * @notice Calculates the minimum output amount based on the input token, output token, and slippage tolerance.
-     * @dev Adjusts the output based on slippage and the price from a price oracle for cross-category token swaps.
+     * @notice Fetches the token's decimal places from its contract.
+     * @dev Assumes 18 decimals for native tokens (ETH, BNB, POL, WZETA).
+     * @param token The address of the token.
+     * @return The number of decimal places.
+     */
+    function getTokenDecimals(address token) internal view returns (uint8) {
+        return IERC20Metadata(token).decimals();
+    }
+
+    /**
+     * @notice Calculates the minimum output amount based on input token, output token, and slippage.
      * @param inputToken The address of the input token.
      * @param outputToken The address of the output token.
      * @param amount The input amount in token units.
      * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
      * @return The minimum acceptable output amount.
-     * @custom:reverts InvalidTokenPair if the token pair is not supported.
      */
     function calculateMinAmountOut(
         address inputToken,
         address outputToken,
         uint256 amount,
-        uint16 slippageBps // Slippage in basis points (e.g., 50 for 0.5%)
-    ) public view returns (uint256) {
-        bool isInputStable = isUsdStablecoin(inputToken);
-        bool isOutputStable = isUsdStablecoin(outputToken);
-        bool isInput18Decimals = isBscStablecoin(inputToken) || !isInputStable; // BSC USDC/USDT & non-stables have 18 decimals
-        bool isOutput18Decimals = isBscStablecoin(outputToken) ||
-            !isOutputStable; // BSC USDC/USDT & non-stables have 18 decimals
+        uint16 slippageBps
+    ) internal view returns (uint256) {
+        bytes32 inputPriceFeed = getPriceFeedId(inputToken);
+        bytes32 outputPriceFeed = getPriceFeedId(outputToken);
 
-        if (isEthToken(inputToken) && isOutputStable) {
-            // ETH (18 decimals) -> USD Stablecoin (6 or 18 decimals)
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
-            uint256 usdAmount = (amount * ethUsdPrice) / 10 ** 8;
+        require(
+            inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
+            "Invalid input token"
+        );
+        require(
+            outputPriceFeed != bytes32(0) || isStablecoin(outputToken),
+            "Invalid output token"
+        );
 
-            if (!isOutput18Decimals) usdAmount /= 10 ** 12; // Convert from 18 to 6 decimals if needed
+        // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
+        uint256 inputPrice = isStablecoin(inputToken)
+            ? 1e8
+            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
+        uint256 outputPrice = isStablecoin(outputToken)
+            ? 1e8
+            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
 
-            return usdAmount - ((usdAmount * slippageBps) / 10000);
-        } else if (isInputStable && isEthToken(outputToken)) {
-            // USD Stablecoin (6 or 18 decimals) -> ETH (18 decimals)
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
+        require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
-            if (!isInput18Decimals) amount *= 10 ** 12; // Convert from 6 to 18 decimals if needed
-            uint256 ethAmount = (amount * 10 ** 8) / ethUsdPrice;
+        // Get token decimals dynamically
+        uint256 inputDecimals = getTokenDecimals(inputToken);
+        uint256 outputDecimals = getTokenDecimals(outputToken);
 
-            return ethAmount - ((ethAmount * slippageBps) / 10000);
-        } else if (isInputStable && isPolToken(outputToken)) {
-            // USD Stablecoin (6 or 18 decimals) -> POL (18 decimals)
-            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                polUsdPriceFeedId
-            );
+        // Convert input amount to USD value
+        uint256 amountInUsd = (amount * inputPrice) / (10 ** inputDecimals);
 
-            if (!isInput18Decimals) amount *= 10 ** 12;
-            uint256 polAmount = (amount * 10 ** 8) / polUsdPrice;
+        // Convert USD value to output token amount
+        uint256 amountOut = (amountInUsd * (10 ** outputDecimals)) /
+            outputPrice;
 
-            return polAmount - ((polAmount * slippageBps) / 10000);
-        } else if (isPolToken(inputToken) && isOutputStable) {
-            // POL (18 decimals) -> USD Stablecoin (6 or 18 decimals)
-            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                polUsdPriceFeedId
-            );
-            uint256 usdAmount = (amount * polUsdPrice) / 10 ** 8;
-
-            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
-
-            return usdAmount - ((usdAmount * slippageBps) / 10000);
-        } else if (isInputStable && isBnbToken(outputToken)) {
-            // USD Stablecoin (6 or 18 decimals) -> BNB (18 decimals)
-            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                bnbUsdPriceFeedId
-            );
-
-            if (!isInput18Decimals) amount *= 10 ** 12;
-            uint256 bnbAmount = (amount * 10 ** 8) / bnbUsdPrice;
-
-            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
-        } else if (isBnbToken(inputToken) && isOutputStable) {
-            // BNB (18 decimals) -> USD Stablecoin (6 or 18 decimals)
-            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                bnbUsdPriceFeedId
-            );
-            uint256 usdAmount = (amount * bnbUsdPrice) / 10 ** 8;
-
-            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
-            return usdAmount - ((usdAmount * slippageBps) / 10000);
-        } else if (isEthToken(inputToken) && isPolToken(outputToken)) {
-            // ETH -> POL (Derived using ETH->USD & POL->USD)
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
-            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                polUsdPriceFeedId
-            );
-            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice;
-            uint256 polAmount = (amount * ethPolPrice) / 10 ** 8;
-
-            return polAmount - ((polAmount * slippageBps) / 10000);
-        } else if (isPolToken(inputToken) && isEthToken(outputToken)) {
-            // POL -> ETH (Derived using ETH->USD & POL->USD)
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
-            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                polUsdPriceFeedId
-            );
-            uint256 ethPolPrice = (polUsdPrice * 10 ** 8) / ethUsdPrice;
-            uint256 ethAmount = (amount * 10 ** 8) / ethPolPrice;
-
-            return ethAmount - ((ethAmount * slippageBps) / 10000);
-        } else if (isEthToken(inputToken) && isBnbToken(outputToken)) {
-            // ETH -> BNB (Derived using ETH->USD & BNB->USD)
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
-            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                bnbUsdPriceFeedId
-            );
-            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice;
-            uint256 bnbAmount = (amount * ethBnbPrice) / 10 ** 8;
-
-            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
-        } else if (isBnbToken(inputToken) && isEthToken(outputToken)) {
-            // BNB -> ETH (Derived using ETH->USD & BNB->USD)
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
-            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                bnbUsdPriceFeedId
-            );
-            uint256 ethBnbPrice = (bnbUsdPrice * 10 ** 8) / ethUsdPrice;
-            uint256 ethAmount = (amount * 10 ** 8) / ethBnbPrice;
-
-            return ethAmount - ((ethAmount * slippageBps) / 10000);
-        } else if (isZetaToken(inputToken) && isOutputStable) {
-            // ZETA -> USD Stablecoin
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            uint256 usdAmount = (amount * zetaUsdPrice) / 10 ** 8;
-            if (!isOutput18Decimals) usdAmount /= 10 ** 12;
-            return usdAmount - ((usdAmount * slippageBps) / 10000);
-        } else if (isInputStable && isZetaToken(outputToken)) {
-            // USD Stablecoin -> ZETA
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            if (!isInput18Decimals) amount *= 10 ** 12;
-            uint256 zetaAmount = (amount * 10 ** 8) / zetaUsdPrice;
-            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
-        } else if (isZetaToken(inputToken) && isEthToken(outputToken)) {
-            // ZETA -> ETH via USD
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
-            uint256 zetaEthPrice = (zetaUsdPrice * 10 ** 8) / ethUsdPrice;
-            uint256 ethAmount = (amount * zetaEthPrice) / 10 ** 8;
-            return ethAmount - ((ethAmount * slippageBps) / 10000);
-        } else if (isEthToken(inputToken) && isZetaToken(outputToken)) {
-            // ETH -> ZETA via USD
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                ethUsdPriceFeedId
-            );
-            uint256 ethZetaPrice = (ethUsdPrice * 10 ** 8) / zetaUsdPrice;
-            uint256 zetaAmount = (amount * ethZetaPrice) / 10 ** 8;
-            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
-        } else if (isZetaToken(inputToken) && isPolToken(outputToken)) {
-            // ZETA -> POL via USD
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                polUsdPriceFeedId
-            );
-            uint256 zetaPolPrice = (zetaUsdPrice * 10 ** 8) / polUsdPrice;
-            uint256 polAmount = (amount * zetaPolPrice) / 10 ** 8;
-            return polAmount - ((polAmount * slippageBps) / 10000);
-        } else if (isPolToken(inputToken) && isZetaToken(outputToken)) {
-            // POL -> ZETA via USD
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            uint256 polUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                polUsdPriceFeedId
-            );
-            uint256 polZetaPrice = (polUsdPrice * 10 ** 8) / zetaUsdPrice;
-            uint256 zetaAmount = (amount * polZetaPrice) / 10 ** 8;
-            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
-        } else if (isZetaToken(inputToken) && isBnbToken(outputToken)) {
-            // ZETA -> BNB via USD
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                bnbUsdPriceFeedId
-            );
-            uint256 zetaBnbPrice = (zetaUsdPrice * 10 ** 8) / bnbUsdPrice;
-            uint256 bnbAmount = (amount * zetaBnbPrice) / 10 ** 8;
-            return bnbAmount - ((bnbAmount * slippageBps) / 10000);
-        } else if (isBnbToken(inputToken) && isZetaToken(outputToken)) {
-            // BNB -> ZETA via USD
-            uint256 zetaUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS)
-                .fetchPrice(zetaUsdPriceFeedId);
-            uint256 bnbUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-                bnbUsdPriceFeedId
-            );
-            uint256 bnbZetaPrice = (bnbUsdPrice * 10 ** 8) / zetaUsdPrice;
-            uint256 zetaAmount = (amount * bnbZetaPrice) / 10 ** 8;
-            return zetaAmount - ((zetaAmount * slippageBps) / 10000);
-        } else {
-            return amount - ((amount * slippageBps) / 10000);
-        }
+        // Apply slippage
+        return amountOut - ((amountOut * slippageBps) / 10000);
     }
 
     /**
@@ -355,11 +182,11 @@ library SwapHelperLibEddy {
         address tokenA,
         address tokenB
     ) internal pure returns (address token0, address token1) {
-        if (tokenA == tokenB) revert IErrors.CantBeIdenticalAddresses();
+        if (tokenA == tokenB) revert IErrors.InvalidAddress();
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
-        if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
+        if (token0 == address(0)) revert IErrors.InvalidAddress();
     }
 
     function _existsPairPool(
@@ -378,10 +205,10 @@ library SwapHelperLibEddy {
         address targetZRC20
     ) public view returns (address[] memory path) {
         if (zrc20 == targetZRC20) {
-            revert IErrors.CantBeIdenticalAddresses();
+            revert IErrors.InvalidAddress();
         }
         if (zrc20 == targetZRC20) {
-            revert IErrors.CantBeIdenticalAddresses();
+            revert IErrors.InvalidAddress();
         }
         bool existsDirectPool = _existsPairPool(zrc20, targetZRC20);
 
@@ -460,14 +287,70 @@ library SwapHelperLibEddy {
         finalAmountOut = amounts[amounts.length - 1];
     }
 
-    function getCurveAmountOut(
-        uint256 amountIn,
+    /**
+     * @notice Finds the index of a token in a Curve pool.
+     * @param token The token to find in the pool.
+     * @param pool The Curve pool address.
+     * @return index The token index in the pool.
+     */
+    function getTokenIndex(
+        address token,
+        address pool
+    ) public view returns (uint256) {
+        // Assume Curve pools have at most 8 tokens
+        for (uint256 i = 0; i < 8; i++) {
+            try ICurvePool(pool).coins(i) returns (address poolToken) {
+                if (poolToken == token) {
+                    return i;
+                }
+            } catch {
+                break; // Stop if out of range
+            }
+        }
+        revert("Token not found in Curve pool");
+    }
+
+    /**
+     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+     * @param inputToken The token being swapped from.
+     * @param outputToken The token being swapped to.
+     * @return curvePool The address of the curve pool to use.
+     */
+    function getCurvePool(
         address inputToken,
         address outputToken
-    ) public view returns (uint256) {
-        uint256 inputIndex = getTokenIndex(inputToken);
-        uint256 outputIndex = getTokenIndex(outputToken);
-        return ICurvePool(CURVE_POOL).get_dy(inputIndex, outputIndex, amountIn);
+    ) public view returns (address curvePool, uint256 i, uint256 j) {
+        CurvePoolRegistry registry = CurvePoolRegistry(CURVE_POOL_REGISTRY);
+        curvePool = registry.getBestPool(inputToken, outputToken);
+        // Find token indexes in the pool using getTokenIndex()
+        if (curvePool != address(0)) {
+            i = getTokenIndex(inputToken, curvePool);
+            j = getTokenIndex(outputToken, curvePool);
+        } else {
+            i = 0;
+            j = 0;
+        }
+    }
+
+    /**
+     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+     * @param inputToken The token being swapped from.
+     * @param outputToken The token being swapped to.
+     * @param amount The input amount in token units.
+     * @return amountOut The expected amount out from the Curve pool.
+     */
+    function getCurveAmountOut(
+        address curvePool,
+        address inputToken,
+        address outputToken,
+        uint256 amount
+    ) public view returns (uint256 amountOut) {
+        // Find token indexes in the pool using getTokenIndex()
+        uint256 i = getTokenIndex(inputToken, curvePool);
+        uint256 j = getTokenIndex(outputToken, curvePool);
+
+        // Fetch amount out from Curve pool
+        amountOut = ICurvePool(curvePool).get_dy(i, j, amount);
     }
 
     function approveOrIncreaseAllowance(
@@ -484,6 +367,20 @@ library SwapHelperLibEddy {
             // Handle USDT-like tokens by forcing reset to zero first
             token.approve(spender, 0); // Reset to zero
             token.approve(spender, amount); // Set new allowance
+        }
+    }
+
+    function getAmountOutCurveOrUniswap(
+        address inputToken,
+        address outputToken,
+        uint256 amount
+    ) public view returns (uint256) {
+        (address curvePool, , ) = getCurvePool(inputToken, outputToken);
+        if (curvePool != address(0)) {
+            return
+                getCurveAmountOut(curvePool, inputToken, outputToken, amount);
+        } else {
+            return getUniswapAmountOut(amount, inputToken, outputToken);
         }
     }
 }

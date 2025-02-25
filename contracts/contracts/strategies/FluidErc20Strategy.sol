@@ -3,19 +3,19 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/ICompoundVault.sol";
+import "../interfaces/I4626Vault.sol";
 import "./ERC20StrategyParent.sol";
 
-// BASE_USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-// BASE_COMPOUND_USDC_VAULT_ADDRESS = 0xb125E6687d4313864e53df431d5425969c15Eb2F;
+// Fluid pool 0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169
+// input token USDC on Base 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
-/// @title ERC20_4626_Strategy
-/// @notice Base contract for USDC strategies using Aave and ZetaChain.
+/// @title FluidErc20Strategy
+/// @notice Base contract for USDC strategies using Fluid protocol.
 /// @dev Handles USDC investments and divestments for strategies on EVM-compatible chains.
-contract ERC20_Compound_Strategy is ERC20StrategyParent {
+contract FluidErc20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    ICompoundVault public immutable receiptToken;
+    I4626Vault public immutable receiptToken;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -33,35 +33,57 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         StrategyParent(_name, _amanaVault, _gateway)
         ERC20StrategyParent(_inputTokenAddress)
     {
-        receiptToken = ICompoundVault(_receiptTokenAddress);
+        receiptToken = I4626Vault(_receiptTokenAddress);
     }
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
-        receiptToken.supply(address(inputToken), amount);
-        // if (shares == 0) {
-        //     revert DepositFailed();
-        // }
+        uint256 shares = receiptToken.deposit(amount, address(this));
+        if (shares < minimumOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param minAmountOut The minimum amount of USDC to withdraw.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        receiptToken.withdrawFrom(
-            address(this),
-            msg.sender,
-            address(inputToken),
-            amount
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
         );
-        return amount;
+        amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
+            address(this), // receiver
+            address(this) // owner
+        );
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /**
@@ -72,26 +94,28 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
-        approveOrIncreaseAllowance(
-            inputToken,
-            newStrategy,
-            strategyTotalBalance
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            1e18,
+            minAmountOut
         );
 
+        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
+
         IStrategy(newStrategy).depositFromOldStrategy(
-            strategyTotalBalance,
+            amountWithdrawn,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            amountWithdrawn,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -100,6 +124,19 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /// @notice Gets the total assets held in the strategy.
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
-        return receiptToken.balanceOf(address(this));
+        uint256 shares = receiptToken.balanceOf(address(this));
+        return receiptToken.convertToAssets(shares);
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256) {
+        return receiptToken.convertToAssets(shares);
     }
 }

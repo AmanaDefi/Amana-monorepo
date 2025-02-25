@@ -83,8 +83,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address receiver,
             address ZRC20AddressOrNewStrategy,
             address withdrawERC20,
-            uint256 amount,
-            uint256 fee,
+            uint256 amountOrFraction,
+            uint256 minimumOut,
             uint32 withdrawChainId,
             bool isDeposit,
             bytes32 crossChainTxId,
@@ -110,13 +110,21 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
         if (user == address(0) && receiver == address(0)) {
             _transferAssetsToNewStrategy(
+                amountOrFraction,
+                minimumOut,
                 ZRC20AddressOrNewStrategy,
                 currentExecutionNonce,
                 crossChainTxId
             );
             return abi.encode(true);
         } else if (isDeposit) {
-            _invest(receiver, amount, currentExecutionNonce, crossChainTxId);
+            _invest(
+                receiver,
+                amountOrFraction,
+                minimumOut,
+                currentExecutionNonce,
+                crossChainTxId
+            );
             return abi.encode(true);
         } else {
             _divest(
@@ -124,8 +132,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 receiver,
                 ZRC20AddressOrNewStrategy,
                 withdrawERC20,
-                amount,
-                fee,
+                amountOrFraction,
+                minimumOut,
                 withdrawChainId,
                 currentExecutionNonce,
                 crossChainTxId,
@@ -151,6 +159,22 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      */
     function totalUnderlyingAssets() public view virtual returns (uint256);
 
+    function convertToShares(
+        uint256 assetAmount
+    ) public view virtual returns (uint256) {
+        return assetAmount;
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view virtual returns (uint256) {
+        return shares;
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view virtual returns (uint256 withdrawShareAmount);
+
     /// @notice Invests assets into the yield source
     /// @param receiver Address of the receiver whose funds are being invested.
     /// @param amount Amount of asset to invest.
@@ -159,6 +183,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     function _invest(
         address receiver,
         uint256 amount,
+        uint256 minimumOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) internal virtual;
@@ -168,7 +193,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @dev This function is intended to be overridden in derived contracts to define specific deposit logic.
      * @param amount The amount of funds to deposit into the yield source.
      */
-    function _depositFundsIntoYieldSource(uint256 amount) internal virtual;
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal virtual;
 
     /**
      * @notice Allows the owner to manually resend an investment confirmation message.
@@ -214,14 +242,14 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         bytes32 _crossChainTxId
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            address(0),
+            address(0), // user
             receiver,
-            address(this),
-            address(0),
+            address(this), // withdrawZRC20
+            address(0), // withdrawERC20
             amount,
-            0,
-            0,
-            true,
+            0, // fractionOfTotalShares
+            0, // withdrawChainId
+            true, // isDeposit
             totalUnderlyingAssetsAfter,
             _executionNonce,
             _crossChainTxId,
@@ -251,6 +279,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minimumAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
@@ -259,8 +289,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     /// @notice Withdraws funds from the yield source.
     /// @param user Address of the user whose funds are being withdrawn.
     /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
-    /// @param amount Amount to withdraw.
-    /// @param fee Gas fee for the transaction.
+    /// @param fractionOfTotalShares Amount to withdraw.
     /// @param withdrawChainId Chain ID for the withdrawal.
     /// @param _executionNonce Current execution nonce for the transaction.
     /// @param _crossChainTxId Cross-chain transaction ID.
@@ -269,14 +298,17 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 amount,
-        uint256 fee,
+        uint256 fractionOfTotalShares,
+        uint256 minAmountOut,
         uint32 withdrawChainId,
         uint256 _executionNonce,
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
-        _withdrawFundsFromYieldSource(amount + fee);
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            fractionOfTotalShares,
+            minAmountOut
+        );
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
 
@@ -285,8 +317,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             receiver,
             withdrawZRC20,
             withdrawERC20,
-            amount,
-            fee,
+            amountWithdrawn,
+            fractionOfTotalShares,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -294,7 +326,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             slippage
         );
 
-        emit FundsDivested(_crossChainTxId, user, amount + fee);
+        emit FundsDivested(_crossChainTxId, user, amountWithdrawn);
     }
 
     /**
@@ -303,8 +335,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @param user The address of the user whose funds are being processed.
      * @param receiver The address of the receiver of the funds.
      * @param withdrawZRC20 The ZRC20 token address for withdrawal.
-     * @param amount The amount of funds to process.
-     * @param fee The fee associated with the transaction.
+     * @param amountWithdrawn The amount of funds to process.
      * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
      * @param _executionNonce The execution nonce associated with the transaction.
@@ -315,8 +346,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 amount,
-        uint256 fee,
+        uint256 amountWithdrawn,
+        uint256 fractionOfTotalShares,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -328,8 +359,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             receiver,
             withdrawZRC20,
             withdrawERC20,
-            amount,
-            fee,
+            amountWithdrawn,
+            fractionOfTotalShares,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -343,8 +374,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * @param user The address of the user whose funds are being processed.
      * @param receiver The address of the receiver of the funds.
      * @param withdrawZRC20 The ZRC20 token address for withdrawal.
-     * @param amount The amount of funds to process.
-     * @param fee The fee associated with the transaction.
+     * @param amountWithdrawn The amount of funds to process.
      * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
      * @param _executionNonce The execution nonce associated with the transaction.
@@ -359,8 +389,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 amount,
-        uint256 fee,
+        uint256 amountWithdrawn,
+        uint256 fractionOfTotalShares,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -372,8 +402,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             receiver,
             withdrawZRC20,
             withdrawERC20,
-            amount,
-            fee,
+            amountWithdrawn,
+            fractionOfTotalShares,
             withdrawChainId,
             false,
             totalUnderlyingAssetsAfter,
@@ -390,7 +420,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             uint256(1000000)
         );
         _sendDepositAndCall(
-            amount + fee,
+            amountWithdrawn,
             amanaVault,
             outgoingMessage,
             revertOptions
@@ -399,13 +429,13 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     /**
      * @dev Sends a deposit and calls the `amanaVault` with the specified outgoing message and revert options.
-     * @param amount The amount of native tokens to send with the transaction.
+     * @param amountWithdrawn The amount of native tokens to send with the transaction.
      * @param amanaVault The address of the vault to which the deposit and call are sent.
      * @param outgoingMessage The payload to be passed to the `amanaVault`.
      * @param revertOptions Options specifying how to handle transaction reverts.
      */
     function _sendDepositAndCall(
-        uint256 amount,
+        uint256 amountWithdrawn,
         address amanaVault,
         bytes memory outgoingMessage,
         RevertOptions memory revertOptions
@@ -414,11 +444,13 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     /**
      * @notice Withdraws funds from the configured yield source.
      * @dev This function is intended to be overridden in derived contracts to define specific withdrawal logic.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionOfTotalShares The fraction of shares to withdraw from the yield source.
+     * @param minAmountOut The minimum amount of funds to withdraw.
      * @return The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionOfTotalShares,
+        uint256 minAmountOut
     ) internal virtual returns (uint256);
 
     /**
@@ -507,7 +539,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount);
+            _depositFundsIntoYieldSource(context.amount, 0);
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==

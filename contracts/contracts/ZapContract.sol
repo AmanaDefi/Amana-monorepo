@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
+import "./interfaces/IAmanaVault.sol";
 
 contract ZapContract {
     using SwapHelperLibEddy for address;
@@ -21,6 +21,7 @@ contract ZapContract {
     event ZapDeposit(
         address indexed user,
         uint256 amountIn,
+        uint256 minSharesOut,
         uint256 vaultShares
     );
     event ZapWithdraw(address indexed user, uint256 amount, address receiver);
@@ -52,29 +53,26 @@ contract ZapContract {
         uint16 slippageBps,
         uint16 maxDeadline
     ) internal returns (uint256) {
-        uint256 minAmountOut = SwapHelperLibEddy.calculateMinAmountOut(
+        uint256 minimumOut = SwapHelperLibEddy.calculateMinAmountOut(
             zrc20,
             targetZRC20,
             amount,
             slippageBps
         );
-        if (
-            SwapHelperLibEddy.isInEddy4Pool(zrc20) &&
-            SwapHelperLibEddy.isInEddy4Pool(targetZRC20)
-        ) {
-            uint256 inputIndex = SwapHelperLibEddy.getTokenIndex(zrc20);
-            uint256 outputIndex = SwapHelperLibEddy.getTokenIndex(targetZRC20);
+        (address curvePool, uint256 i, uint256 j) = SwapHelperLibEddy
+            .getCurvePool(zrc20, targetZRC20);
 
+        if (curvePool != address(0)) {
             // Approve Curve pool to spend your tokens
-            IZRC20(zrc20).approve(SwapHelperLibEddy.CURVE_POOL, amount);
+            IZRC20(zrc20).approve(curvePool, amount);
 
             // Perform the swap
             return
-                ICurvePool(SwapHelperLibEddy.CURVE_POOL).exchange(
-                    inputIndex, // Index of input token
-                    outputIndex, // Index of output token
+                ICurvePool(curvePool).exchange(
+                    i, // Index of input token
+                    j, // Index of output token
                     amount, // Amount of input token
-                    minAmountOut // Minimum amount of output token to receive
+                    minimumOut // Minimum amount of output token to receive
                 );
         } else {
             address[] memory path = SwapHelperLibEddy.getPath(
@@ -88,7 +86,7 @@ contract ZapContract {
                 SwapHelperLibEddy.UNISWAP_V2_ROUTER
             ).swapExactTokensForTokens(
                     amount,
-                    minAmountOut,
+                    minimumOut,
                     path,
                     address(this),
                     block.timestamp + maxDeadline
@@ -104,6 +102,7 @@ contract ZapContract {
         address vault,
         address vaultAsset,
         uint256 amount,
+        uint256 minSharesOut,
         address receiver,
         uint16 slippage
     ) external payable {
@@ -137,9 +136,9 @@ contract ZapContract {
             }
         }
         IERC20(vaultAsset).approve(vault, swappedAmount);
-        IERC4626(vault).deposit(swappedAmount, receiver);
+        IAmanaVault(vault).deposit(swappedAmount, minSharesOut, receiver);
 
-        emit ZapDeposit(msg.sender, amount, swappedAmount);
+        emit ZapDeposit(msg.sender, amount, minSharesOut, swappedAmount);
     }
 
     // Function to zap vault assets back to the user in the desired token

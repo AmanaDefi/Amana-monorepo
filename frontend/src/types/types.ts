@@ -34,6 +34,7 @@ export interface VaultData {
   protocol: {
     name: string;
     strategyAddress: string;
+    gaugeAddress?: string;
     network: string;
     chainId: number;
     netdes?: string;
@@ -100,6 +101,22 @@ export interface TokenByAddress {
 export enum SmartVaultActionType {
   Deposit,
   Withdrawal
+}
+
+export enum StepStatus {
+  upcoming,
+  undergo,
+  completed
+}
+
+export type Step = {
+    description: string,
+    status: StepStatus
+}
+
+export type Milestone = {
+  title: string,
+  steps: Step[],
 }
 
 export enum Action {

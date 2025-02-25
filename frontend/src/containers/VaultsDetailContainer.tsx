@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import {CHAINS_EXPLORER_BASE_URL_MAINNET} from "@/constants/chainConfig";
 import {ArrowTopRightOnSquareIcon} from "@heroicons/react/24/solid";
 import Link from "next/link";
+import {useTokenPriceBySymbol} from "@/hooks/hooks";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -58,7 +59,10 @@ const VaultsDetailContainer: React.FC<{
     const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000]
 
     useUpdateVaultBalanceAndTotalPerVault(vaultData, EOAaccount, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
-    useUpdateAPYs(vaults, setVaultAPYs, setLoading);
+    const crvTokenPrice = useTokenPriceBySymbol("CRV");
+    console.log("crvTokenPrice", crvTokenPrice);
+    const ethTokenPrice = useTokenPriceBySymbol("ETH");
+    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice);
     return (
 
       vaultData ? (
