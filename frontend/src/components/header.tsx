@@ -45,13 +45,13 @@ const Header = () => {
                         >
                             Vaults
                         </span>
-                        <span
+                        {/* <span
                             className={`cursor-pointer ${path === "/buy" ? "font-bold text-themeColor" : ""
                                 }`}
                             onClick={() => router.push("/buy")}
                         >
                             Fund Wallet
-                        </span>
+                        </span> */}
                         <span
                             className={`cursor-pointer ${path === "/about" ? "font-bold text-themeColor" : ""
                                 }`}
