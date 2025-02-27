@@ -89,7 +89,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       symbol: "USDT.POL",
       decimals: 6,
       address: ZC_USDT_POL_ADDRESS,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false
@@ -116,7 +116,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       symbol: "USDT.BNB",
       decimals: 18,
       address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false
@@ -335,7 +335,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     symbol: "USDT.BSC",
   //     decimals: 18,
   //     address: ZC_USDT_BSC_ADDRESS,
-  //     imgURL: "/USDT.png",
+  //     imgURL: "/usdt.png",
   //     price: 1,
   //     balance: EMPTY_BALANCE,
   //     isNative: false
