@@ -21,6 +21,8 @@ import InteractionContainer from "./interact";
 import {useTokenPriceBySymbol} from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit} from "@/actions/actions";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -28,60 +30,6 @@ export interface VaultInputsProps {
   userVaultBalance?: string;
   vaultTotalAssetinToken?: VaultTotalAssetsinToken,
   transactionCompleted: boolean
-}
-
-// Custom hook to fetch token balance, including native tokens
-function useTokenBalance(
-  token: Token | undefined,
-  userAddress: string | undefined,
-  activeChain: any,
-  transactionCompleted: boolean,
-  isDeposit: boolean // ✅ Accept isDeposit as a parameter
-) {
-  const [balance, setBalance] = useState<string>("0");
-  const { data: walletBalance, isLoading, isError } = useWalletBalance({
-    chain: activeChain,
-    address: userAddress,
-    client,
-  });
-
-  useEffect(() => {
-    const fetchTokenBalance = async () => {
-      try {
-        if (!token || !userAddress) return;
-
-        // ✅ Always use ZetaChain for Withdrawals
-        const chainToUse = isDeposit ? activeChain : SUPPORTED_CHAINS[0]; // TODO add 7001 for testnet
-
-        if (token.isNative) {
-          if (!isLoading && !isError && walletBalance) {
-            setBalance(walletBalance.displayValue || "0");
-          } else {
-            setBalance("0");
-          }
-        } else {
-          const contract = getContract({
-            client,
-            chain: activeChain, // ✅ Ensure ZetaChain is used for withdraws
-            address: token.address as Address,
-          });
-
-          const { value, decimals } = await getBalance({
-            contract,
-            address: userAddress as Address,
-          });
-
-          setBalance(ethers.formatUnits(value, decimals) || "0");
-        }
-      } catch (error) {
-        console.error("Error fetching wallet data: ", error);
-      }
-    };
-
-    fetchTokenBalance();
-  }, [token?.address, userAddress, token?.balance, walletBalance, isLoading, isError, transactionCompleted, isDeposit]); // ✅ Add isDeposit as a dependency
-
-  return balance;
 }
 
 export type ConversionOutput = {
@@ -139,8 +87,8 @@ export default function VaultInputs({
   const [conversionOutput, setConversionOutput] = useState<ConversionOutput>(initialConversionOutput);
 
   const EOAaccount = useActiveAccount();
-  const activeChain = useActiveWalletChain();
 
+  const {activeChain, walletAddress} = useMultiChain();
 
   const userAddress = EOAaccount?.address;
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol)
@@ -172,14 +120,14 @@ export default function VaultInputs({
   }, [activeChain, vaultData]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useTokenBalance(inputToken, userAddress, activeChain, transactionCompleted, isDeposit);
+  const tokenBalance = useMutlichainTokenBalance(inputToken);
 
   // Watch action type change
   useEffect(() => {
     if (inputToken) {
       console.log("tokenBalance", tokenBalance)
       // Set the inputTokenBalance separately to track balance as a string
-      setInputTokenBalance(tokenBalance);
+      setInputTokenBalance(tokenBalance!.formatted);
       setInputBalance({
         ...inputBalance,
         formatted: "0",
@@ -203,7 +151,7 @@ export default function VaultInputs({
     const fetchData = async () => {
       if (Number(inputBalance.value) != 0 && inputToken) {
         const actionType = isDeposit ? SmartVaultActionType.Deposit : SmartVaultActionType.Withdrawal;
-        const newStepsConfig = await selectActions(actionType, vaultData, activeChain as Chain, EOAaccount as any, inputBalance, inputToken);
+        const newStepsConfig = await selectActions(actionType, vaultData, activeChain as Chain, walletAddress as any, inputBalance, inputToken);
         setSteps(newStepsConfig)
         console.log("SETTING ACTION STEPS: ", newStepsConfig, newStepsConfig.map(e => Action[e]))
       } else {
@@ -212,7 +160,7 @@ export default function VaultInputs({
     };
     // Call the async function
     fetchData();
-  }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, EOAaccount])
+  }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
   function handleTokenSelect(selectedToken: Token): void {
     console.log("Token selected:", selectedToken); // Debug log
@@ -227,13 +175,13 @@ export default function VaultInputs({
         // Switch to Withdraw
         setIsDeposit(false);
         const newAction = SmartVaultActionType.Withdrawal;
-        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount as any, inputBalance, inputToken));
+        setSteps(await selectActions(newAction, vaultData, activeChain, walletAddress as any, inputBalance, inputToken));
 
       } else {
         // Switch to Deposit
         setIsDeposit(true);
         const newAction = SmartVaultActionType.Deposit;
-        setSteps(await selectActions(newAction, vaultData, activeChain, EOAaccount as any, inputBalance, inputToken));
+        setSteps(await selectActions(newAction, vaultData, activeChain, walletAddress as any, inputBalance, inputToken));
       }
     }
   }

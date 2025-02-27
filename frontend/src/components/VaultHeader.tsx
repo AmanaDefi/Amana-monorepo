@@ -18,7 +18,6 @@ import { Address, Chain, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import useSolanaBalance from "@/hooks/useSolanaBalance";
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -34,20 +33,10 @@ export default function VaultHeader({
   vaultAPYs: VaultAPY[];
   transactionCompleted: boolean;
 }): JSX.Element {
-  const activeChain = useActiveWalletChain();
   const EOAaccount = useActiveAccount();
-  const { selectedChain } = useMultiChain();
+  const { selectedChain, activeChain, balance } = useMultiChain();
 
   const userAddress = EOAaccount?.address;
-  const {
-    data: walletBalance,
-    isLoading,
-    isError,
-  } = useWalletBalance({
-    chain: activeChain,
-    address: userAddress,
-    client,
-  });
   // const {data: walletBalance, isLoading, isError} = useWalletBalance({
   //   chain: activeChain,
   //   address: userAddress,
@@ -58,6 +47,8 @@ export default function VaultHeader({
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [walletData, setWalletData] = useState<string>("");
   const [data1, setdata1] = useState("");
+
+  console.log({inputToken}, "");
 
   // Step 1: Determine inputToken based on activeChain
   useEffect(() => {
@@ -86,8 +77,8 @@ export default function VaultHeader({
     const fetchData = async () => {
       try {
         if (inputToken.isNative) {
-          if (walletBalance) {
-            setWalletData(walletBalance.displayValue as string);
+          if (balance) {
+            setWalletData(balance.formatted);
           } else {
             setWalletData("0");
           }
@@ -114,7 +105,7 @@ export default function VaultHeader({
     inputToken,
     userAddress,
     activeChain,
-    walletBalance,
+    balance,
     transactionCompleted,
   ]);
 

@@ -10,7 +10,7 @@ export default function ConnectButton() {
   const {
     selectedChain,
     walletAddress,
-    solanaBalance,
+    balance,
     isModalOpen,
     connectSolana,
     connectEthereum,
@@ -53,7 +53,7 @@ export default function ConnectButton() {
                       {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                     </span>
                     <span className="text-gray-500 text-[12px]">
-                      {`${solanaBalance?.toFixed(3)} SOL`}
+                      {`${balance.formatted} SOL`}
                     </span>
                   </div>
                 </div>

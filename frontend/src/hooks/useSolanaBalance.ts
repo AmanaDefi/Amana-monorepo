@@ -3,19 +3,22 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { solanaRpcUrl } from "@/constants/chainConfig";
 import { useState, useEffect } from "react";
+import { Balance } from "@/types/types";
 
-export default function useActiveWalletBalance() {
-  const [balance, setBalance] = useState<number>(0)
-  const {publicKey} = useWallet()
+export default function useSolanaBalance() {
+  const [balance, setBalance] = useState<Balance>({value: 0n, formatted: "0"})
+  const {publicKey, connected} = useWallet()
+  const connection = new Connection(solanaRpcUrl)
 
   useEffect(() => {
     if (publicKey) {
-      const connection = new Connection(solanaRpcUrl)
       connection.getBalance(publicKey).then((balance) => {
-        setBalance(balance / LAMPORTS_PER_SOL)
+        setBalance({
+          value: BigInt(balance),
+          formatted: (balance / LAMPORTS_PER_SOL).toFixed(4)})
       })
     }
-  }, [publicKey])
+  }, [publicKey, connected])
 
   return balance;
 }

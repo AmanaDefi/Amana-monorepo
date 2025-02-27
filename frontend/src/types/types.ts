@@ -80,7 +80,7 @@ export interface TransactionResult {
 export type Balance = {
   value: bigint;
   formatted: string;
-  formattedUSD: string;
+  formattedUSD?: string;
 }
 
 export interface Token {

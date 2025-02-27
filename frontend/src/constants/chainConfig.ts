@@ -1,6 +1,9 @@
 import { defineChain } from "thirdweb";
 import { Token } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
+import { PublicKey } from "@solana/web3.js";
+
+export const zeroSolAddress = PublicKey.default.toBase58();
 
 // Load environment variables
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV || "mainnet"; // Default to mainnet if not set
@@ -96,7 +99,7 @@ const baseChain = defineChain({
 
 // Define Polygon configuration
 const polygonChain = defineChain({
-  chainId: deployEnv === "testnet" ? 137 : 137, // 137 for Mumbai Testnet, 137 for Polygon Mainnet
+  chainId: deployEnv === "testnet" ? 80001 : 137, // 80001 for Mumbai Testnet, 137 for Polygon Mainnet
   name: deployEnv === "testnet" ? "Polygon Mumbai Testnet" : "Polygon Mainnet",
   shortName: "polygon",
   chain: "Polygon",
@@ -144,12 +147,59 @@ const bscChain = defineChain({
   slug: "bsc",
 });
 
+const solanaChain = defineChain({
+  chainId: deployEnv === "testnet" ? 7565163 : 7565164, // Solana uses string identifiers
+  name: deployEnv === "testnet" ? "Solana Devnet" : "Solana Mainnet",
+  shortName: "sol",
+  chain: "Solana",
+  rpc: [
+    deployEnv === "testnet"
+      ? "https://api.devnet.solana.com"
+      : "https://api.mainnet-beta.solana.com",
+  ],
+  nativeCurrency: {
+    name: "Solana",
+    symbol: "SOL",
+    decimals: 9, // Solana uses 9 decimal places
+  },
+  explorers: [
+    {
+      name: "Solana Explorer",
+      url: deployEnv === "testnet"
+        ? "https://explorer.solana.com/?cluster=devnet"
+        : "https://explorer.solana.com/",
+      standard: "none",
+    },
+  ],
+  testnet: deployEnv === "testnet",
+  slug: "solana",
+});
+
+
 
 
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"
   ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain] // always put Zetachain first
   : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain]; // always put Zetachain first
+
+  export enum CHAIN_ID {
+    zethchain = deployEnv === 'testnet' ? 7001 : 7000,
+    ethereum = deployEnv === 'testnet' ? 11155111 : 1,
+    base = deployEnv === 'testnet' ? 84532 : 8453,
+    polygon = deployEnv === 'testnet' ? 80001 : 137,
+    bsc = deployEnv === 'testnet' ? 97 : 56,
+    solana = deployEnv === 'testnet' ? 7565163 : 7565164,
+  }
+
+export const chainConfigs = {
+  [CHAIN_ID.zethchain]: zetaChain,
+  [CHAIN_ID.ethereum]: ethereumChain,
+  [CHAIN_ID.base]: baseChain,
+  [CHAIN_ID.bsc]: bscChain,
+  [CHAIN_ID.polygon]: polygonChain,
+  [CHAIN_ID.solana]: solanaChain,
+}
 
 // Define approved tokens per chain
 export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
@@ -353,9 +403,9 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   7565164 : [
     {
       symbol: "SOL",
-      address: "0x0000000000000000000000000000000000000000",
+      address: zeroSolAddress,
       decimals: 9,
-      imgURL: "/solana_log.png",
+      imgURL: "/solana_logo.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: true,
@@ -384,7 +434,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
     {symbol:"CBBTC",
       address: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
       decimals: 8,
-      imgURL: "/CBBTC.png",
+      imgURL: "/cbbtc.png",
       price: 97303,
       balance: EMPTY_BALANCE,
       isNative: false,
@@ -409,7 +459,8 @@ export const PRICE_IDS: { [key: string]: string } = {
   "POL": "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
   "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8"
+  "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
+  "SOL" : "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d"
 };
 
 export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
@@ -417,5 +468,7 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   8453: "https://basescan.org",
   56: "https://bscscan.com",
   137: "https://polygonscan.com",
-  1: "https://etherscan.io"
+  1: "https://etherscan.io",
+  7565164: "https://solscan.io"
+
 }
