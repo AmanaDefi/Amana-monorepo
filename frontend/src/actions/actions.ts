@@ -14,6 +14,8 @@ import { keccak256 } from "thirdweb";
 import * as dotenv from "dotenv";
 import { getCurrentSlippage } from "@/utils/utils";
 import { VaultData } from "@/types/types";
+import axios from "axios";
+import { API_URL } from "@/config.ts/apiConfig";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -627,4 +629,3 @@ export const getAssetsFromShares = async (amount: bigint, vaultData: VaultData) 
     return BigInt('0')
   }
 }
-

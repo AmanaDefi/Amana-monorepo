@@ -1,12 +1,13 @@
 'use client'
 
-import React, {useEffect, useMemo, useState} from "react";
-import {LeaderboardUserData} from "@/types/types";
-import {formatCurrency, shortAddressForm} from "@/utils/utils";
+import React, { useEffect, useMemo, useState } from "react";
+import { LeaderboardUserData } from "@/types/types";
+import { formatCurrency, shortAddressForm } from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
 import { TrophyIcon } from "@heroicons/react/24/outline";
-import {useActiveAccount} from "thirdweb/react";
-import {ZERO_ACCOUNT} from "@/containers/VaultsContainer";
+import { useActiveAccount } from "thirdweb/react";
+import { ZERO_ACCOUNT } from "@/containers/VaultsContainer";
+import { useLeaderboardData } from "@/hooks/useLeaderboardData";
 
 type PaginationParams = {
     page: number;
@@ -20,8 +21,6 @@ type PaginatedResponse = {
 }
 
 export default function Page() {
-    const [leaderboardData, setLeaderboardData] = useState<LeaderboardUserData[]>([])
-    const [loadingLeaderboardData, setLoadingLeaderboardData] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -30,33 +29,7 @@ export default function Page() {
 
     const currentUserAccount = useActiveAccount() || ZERO_ACCOUNT;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const leaderboardMockData: LeaderboardUserData[] = useMemo(() => ([
-        {
-            rank: 1,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea60',
-            points: 5432
-        },
-        {
-            rank: 2,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea58',
-            points: 5431
-        },
-        {
-            rank: 3,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea59',
-            points: 5430
-        },
-        {
-            rank: 4,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea61',
-            points: 5429
-        },
-        {
-            rank: 5,
-            address: '0x01067B85F311767Dd89c82cB8c5f4A75F3c0Ea57',
-            points: 5428
-        }
-    ]), []);
+    const { data: leaderboardData, isLoading, error } = useLeaderboardData(currentPage, itemsPerPage);
 
     const handleSearch = () => {
         setCurrentPage(1);
@@ -81,44 +54,6 @@ export default function Page() {
                 return 'text-amber-600';
             default:
                 return 'text-gray-500';
-        }
-    };
-
-    const fetchLeaderboardData = async ({page, itemsPerPage, searchQuery}: PaginationParams): Promise<PaginatedResponse> => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        let filteredData = leaderboardMockData;
-        if (searchQuery) {
-            filteredData = leaderboardMockData.filter(item =>
-                item.address.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
-
-        const startIndex = (page - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedData = filteredData.slice(startIndex, endIndex);
-
-        return {
-            data: paginatedData,
-            total: filteredData.length
-        };
-    };
-
-    const loadData = async () => {
-        setLoadingLeaderboardData(true);
-        try {
-            const response = await fetchLeaderboardData({
-                page: currentPage,
-                itemsPerPage,
-                searchQuery: searchQuery.trim()
-            });
-
-            setLeaderboardData(response.data);
-            setTotalItems(response.total);
-        } catch (error) {
-            console.error('Error fetching leaderboard data:', error);
-        } finally {
-            setLoadingLeaderboardData(false);
         }
     };
 
@@ -151,10 +86,6 @@ export default function Page() {
         </div>
     );
 
-    useEffect(() => {
-        loadData();
-    }, [currentPage, searchQuery]);
-
     return (
         <div className='flex flex-col py-10 lg:py-20 w-full container gap-10 lg:gap-20'>
             <div className='flex-center'>
@@ -167,10 +98,10 @@ export default function Page() {
             <div className='flex flex-col p-4 lg:p-6 border border-gray-800 bg-gray-900 rounded gap-4 lg:gap-6'>
                 <div className='flex gap-2 lg:gap-3'>
                     <input type="text" placeholder='Search user'
-                           value={searchTerm}
-                           onChange={(e) => setSearchTerm(e.target.value)}
-                           onKeyDown={handleKeyPress}
-                           className='bg-black w-full outline-0 decoration-0 rounded-lg text-white border border-customGray500 placeholder:text-white px-3 py-1'/>
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        className='bg-black w-full outline-0 decoration-0 rounded-lg text-white border border-customGray500 placeholder:text-white px-3 py-1' />
                     <button
                         onClick={handleSearch}
                         className='py-2 px-5 border border-customGray500 hover:bg-gray-800 rounded-lg bg-black'>Search
@@ -185,73 +116,73 @@ export default function Page() {
                 <div className="overflow-x-auto mt-6">
                     <table className="min-w-full text-zinc-100">
                         <thead className="bg-gray-800">
-                        <tr>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
-                                Rank
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
-                                User Address
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
-                                Points
-                            </th>
-                        </tr>
+                            <tr>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
+                                    Rank
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
+                                    User Address
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-zinc-300 tracking-wider">
+                                    Points
+                                </th>
+                            </tr>
                         </thead>
                         <tbody className="bg-gray-900">
-                        {
-                            loadingLeaderboardData ? (
-                                Array.from({ length: 5 }).map((_, index) =>
+                            {
+                                isLoading ? (
+                                    Array.from({ length: 5 }).map((_, index) =>
                                     (
                                         <LoadingRow key={index} />
                                     )
-                                )
-                            ) : (
-                                leaderboardData.map((item, key) => {
-                                    const isCurrentUser = item.address.toLowerCase() === currentUserAccount.address.toLowerCase();
-                                    return (
-                                        <tr key={key}
-                                            role="button"
-                                            className={`
+                                    )
+                                ) : (
+                                    leaderboardData.map((item:LeaderboardUserData, index:number) => {
+                                        const isCurrentUser = item.user_address.toLowerCase() === currentUserAccount.address.toLowerCase();
+                                        return (
+                                            <tr key={index}
+                                                role="button"
+                                                className={`
                                             transition-colors
                                             ${isCurrentUser ? 'bg-blue-900/30 hover:bg-blue-900/40' : 'hover:bg-gray-800'}
                                             ${isCurrentUser ? 'relative' : ''}
                                         `}
-                                        >
-                                            <td className="px-4 py-4 whitespace-nowrap">
-                                                {isCurrentUser && (
-                                                    <div className="absolute left-0 top-0 w-1 h-full bg-blue-500"/>
-                                                )}
-                                                <div className="flex items-center gap-2">
-                                                    {item.rank <= 3 || isCurrentUser ? (
-                                                        <TrophyIcon
-                                                            className={`${getRankColor(item.rank)} w-4 h-4`}
-                                                        />
-                                                    ) : null}
-                                                    <span
-                                                        className={item.rank <= 3 ? 'font-bold' : ''}>{item.rank}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap">
-                                                <div className='flex items-center gap-2'>
-                                                    <span className='line-clamp-1'>
-                                                        {shortAddressForm(item.address)}
-                                                    </span>
-                                                    <CopyTextButton text={item.address}/>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap">
-                                                <span>{ formatCurrency(item.points) }</span>
-                                            </td>
-                                        </tr>
-                                    )
-                                })
-                            )
-                        }
+                                            >
+                                                <td className="px-4 py-4 whitespace-nowrap">
+                                                    {isCurrentUser && (
+                                                        <div className="absolute left-0 top-0 w-1 h-full bg-blue-500" />
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        {index <= 2 || isCurrentUser ? (
+                                                            <TrophyIcon
+                                                                className={`${getRankColor(index + 1)} w-4 h-4`}
+                                                            />
+                                                        ) : null}
+                                                        <span
+                                                            className={index <= 2 ? 'font-bold' : ''}>{index + 1}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap">
+                                                    <div className='flex items-center gap-2'>
+                                                        <span className='line-clamp-1'>
+                                                            {shortAddressForm(item.user_address)}
+                                                        </span>
+                                                        <CopyTextButton text={item.user_address} />
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap">
+                                                    <span>{formatCurrency(item.points)}</span>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
+                                )
+                            }
                         </tbody>
                     </table>
                 </div>
                 {
-                    !loadingLeaderboardData && <PaginationControls/>
+                    !isLoading && <PaginationControls />
                 }
             </div>
         </div>

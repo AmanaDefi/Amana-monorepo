@@ -157,7 +157,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
 };
 
 export type LeaderboardUserData = {
-  rank: number,
-  address: Address,
+  user_address: Address,
   points: number
 }
