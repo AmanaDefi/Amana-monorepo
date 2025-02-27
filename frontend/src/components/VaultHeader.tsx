@@ -18,6 +18,7 @@ import { Address, Chain, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -69,6 +70,8 @@ export default function VaultHeader({
   }, [userVaultBalance]);
 
   console.log("VaultData", vaultData);
+
+  const walletTokenBalance = useMutlichainTokenBalance(inputToken);
 
   // Step 2: Fetch wallet data when inputToken is set
   useEffect(() => {
@@ -178,8 +181,8 @@ export default function VaultHeader({
           <LargeCardStat
             id="wallet"
             label="Your Wallet"
-            value={`${formatBalance(Number(walletData))} ${symbol}`}
-            secondaryValue={`$ ${formatCurrency(Number(walletData) * price)}`}
+            value={`${walletTokenBalance.formatted} ${symbol}`}
+            secondaryValue={`$ ${formatCurrency(Number(walletTokenBalance.formatted) * price)}`}
             tooltip="Value of deposit assets held in your wallet"
           />
           <LargeCardStat
