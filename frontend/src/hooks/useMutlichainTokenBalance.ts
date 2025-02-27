@@ -28,9 +28,7 @@ export const useMutlichainTokenBalance = (token: Token | undefined) => {
             }
 
             if (isSolanaAddress(token.address)) {
-                console.log(token.address, "HHHHHHHHHHH")
                 const { balance, decimals } = await getSplTokenBalance(walletAddress, token.address);
-                console.log(balance, decimals, "HHHHHHHHHH")
                 setBalance({
                     value: balance,
                     formatted: (balance / 10 ** decimals).toFixed(4)

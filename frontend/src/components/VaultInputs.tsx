@@ -86,11 +86,8 @@ export default function VaultInputs({
   const [loadingOutputToken, setLoadingOutputToken] = useState(false);
   const [conversionOutput, setConversionOutput] = useState<ConversionOutput>(initialConversionOutput);
 
-  const EOAaccount = useActiveAccount();
-
   const {activeChain, walletAddress} = useMultiChain();
 
-  const userAddress = EOAaccount?.address;
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol)
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol)
 
@@ -469,7 +466,6 @@ export default function VaultInputs({
           _inputToken={inputToken}
           _inputBalance={inputBalance}
           vaultData={vaultData}
-          EOAaccount={EOAaccount as any}
           setTransactionCompleted={setTransactionCompleted}
           activeChain={activeChain as Chain}
           _action={steps[0]}
