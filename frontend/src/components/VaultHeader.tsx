@@ -34,23 +34,9 @@ export default function VaultHeader({
   vaultAPYs: VaultAPY[];
   transactionCompleted: boolean;
 }): JSX.Element {
-  const EOAaccount = useActiveAccount();
-  const { selectedChain, activeChain, balance } = useMultiChain();
-
-  const userAddress = EOAaccount?.address;
-  // const {data: walletBalance, isLoading, isError} = useWalletBalance({
-  //   chain: activeChain,
-  //   address: userAddress,
-  //   client,
-  // });
-  // const solanaBalance = useActiveWalletBalance();
-
+  const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
-  const [walletData, setWalletData] = useState<string>("");
   const [data1, setdata1] = useState("");
-
-  console.log({inputToken}, "");
-
   // Step 1: Determine inputToken based on activeChain
   useEffect(() => {
     if (activeChain?.id === 7000 || activeChain?.id === 7001) {
@@ -69,57 +55,11 @@ export default function VaultHeader({
     setdata1(formatBalance(Number(userVaultBalance)));
   }, [userVaultBalance]);
 
-  console.log("VaultData", vaultData);
-
   const walletTokenBalance = useMutlichainTokenBalance(inputToken);
-
-  // Step 2: Fetch wallet data when inputToken is set
-  useEffect(() => {
-    if (!inputToken) return;
-
-    const fetchData = async () => {
-      try {
-        if (inputToken.isNative) {
-          if (balance) {
-            setWalletData(balance.formatted);
-          } else {
-            setWalletData("0");
-          }
-        } else {
-          const contract = getContract({
-            client,
-            chain: activeChain as Chain,
-            address: inputToken.address as Address,
-          });
-          const { value, decimals } = await getBalance({
-            contract,
-            address: userAddress as Address,
-          });
-          const formattedBalance = ethers.formatUnits(value, decimals);
-          setWalletData(formattedBalance);
-        }
-      } catch (error) {
-        console.error("Error fetching wallet data: ", error);
-      }
-    };
-
-    fetchData();
-  }, [
-    inputToken,
-    userAddress,
-    activeChain,
-    balance,
-    transactionCompleted,
-  ]);
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
-
-  // Handle undefined states gracefully
-  // if (!inputToken) {
-  //     return <p>Loading...</p>;
-  // }
 
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
