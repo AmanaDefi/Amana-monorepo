@@ -11,7 +11,8 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
-  calculateCurveRewardsAPY
+  calculateCurveRewardsAPY,
+  calculateCompoundRewardsAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
@@ -50,13 +51,6 @@ export const useUpdateVaultBalanceAndTotal = (
                 vault.id as Address
               );
 
-              console.log("FETCHED BALANCE: ", {
-                vaultId: vault.id,
-                balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
-              });
-
               return {
                 vaultId: vault.id,
                 balance,
@@ -74,7 +68,6 @@ export const useUpdateVaultBalanceAndTotal = (
             }
           })
         );
-        console.log("balancedata", balancesAndAssets)
         const balances = balancesAndAssets.map(({ vaultId, balance }) => ({
           vaultId,
           balance,
@@ -148,7 +141,8 @@ export const useUpdateAPYs = (
   setVaultAPYs: (vaultAPYs: { vaultId: string, APY7d: number }[]) => void,
   setLoading: (loading: boolean) => void,
   crvTokenPrice: number,
-  ethTokenPrice: number
+  ethTokenPrice: number,
+  compTokenPrice: number
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
@@ -162,28 +156,26 @@ export const useUpdateAPYs = (
                 chain: strategyChain,
                 address: vault.protocol.strategyAddress,
               });
-              console.log("strategyContract", strategyContract)
               const receiptTokenAddress = await readContract({
                 contract: strategyContract,
                 method: "function receiptToken() view returns (address)",
               });
-              console.log("receiptTokenAddress", receiptTokenAddress)
               let APY7d = 0;
               let RewardsAPY = 0;
               if (vault.protocol.name === "Aave" || vault.protocol.name === "ZeroLend") {
-                console.log("Calculating APY for Aave or ZeroLend")
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
-                console.log("Calculating APY for Compound")
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
+                console.log("Fetching Compound Rewards APY")
+                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.gaugeAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
+                console.log("RewardsAPY", RewardsAPY)
+                APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
-                console.log("Calculating APY for Moonwell or Euler")
                 // TO DO This only works for Base right now - it's hardcoded
 
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
 
               } else if (vault.protocol.name === "Venus") {
-                console.log("Calculating APY for Venus");
                 APY7d = await calculateVenusAPY(receiptTokenAddress as Address, strategyChain);
                 RewardsAPY = await calculateVenusRewardsAPY(receiptTokenAddress as Address, strategyChain);
                 APY7d = APY7d + RewardsAPY;
@@ -193,7 +185,6 @@ export const useUpdateAPYs = (
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve") {
                 APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
-                console.log("Calculating APY for Curve", crvTokenPrice)
                 RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
               }
 

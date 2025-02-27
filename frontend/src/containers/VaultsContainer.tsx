@@ -45,9 +45,11 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
 
   useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken);
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
-  console.log("crvTokenPrice", crvTokenPrice);
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
-  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice);
+  const compTokenPrice = useTokenPriceBySymbol("COMP");
+  console.log("compTokenPrice: ", compTokenPrice)
+
+  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
 
   return (
     <VaultsView

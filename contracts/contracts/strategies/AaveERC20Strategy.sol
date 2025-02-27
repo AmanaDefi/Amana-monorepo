@@ -40,12 +40,14 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256
+        uint256 minSharesOut
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(aavePool), amount);
-
+        uint256 initialBalance = receiptToken.balanceOf(address(this));
         aavePool.supply(address(inputToken), amount, address(this), 0);
-        // shares out = amount deposited, so no need to check maxStrategySharesBurnt
+        uint256 finalBalance = receiptToken.balanceOf(address(this));
+        if (finalBalance - initialBalance < minSharesOut)
+            revert InsufficientOut();
     }
 
     /**
@@ -58,14 +60,17 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 totalSharesInStrategy = receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw *
-            totalSharesInStrategy) / 1e18;
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
         amountWithdrawn = aavePool.withdraw(
             address(inputToken),
             sharesToWithdraw,
             address(this)
         );
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
@@ -76,7 +81,7 @@ contract AaveERC20Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
-        uint256 maxStrategySharesBurnt,
+        uint256 minAmountOut,
         uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
@@ -84,12 +89,10 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     ) internal override {
         // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            type(uint256).max
+            1e18,
+            minAmountOut
         );
-        uint256 sharesToBeBurnt = convertToShares(amountWithdrawn);
-        if (sharesToBeBurnt > maxStrategySharesBurnt) {
-            revert ExceedsMaxSharesOut();
-        }
+
         approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
             amountWithdrawn,
@@ -103,6 +106,19 @@ contract AaveERC20Strategy is ERC20StrategyParent {
             currentExecutionNonce,
             _crossChainTxId
         );
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /// @notice Gets the total assets held in the strategy.

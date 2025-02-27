@@ -362,6 +362,7 @@ export async function fetchTokenPrices(priceIds: string[]): Promise<{
 
     parsed.forEach((update, index) => {
       const price = parseFloat(update?.ema_price?.price ?? "0");
+      console.log("price: ", price)
       const decimals = update?.ema_price?.expo ?? 0;
       const adjustedPrice = price * Math.pow(10, decimals);
 

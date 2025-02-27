@@ -46,32 +46,36 @@ const Header = () => {
         <div className="flex items-center gap-3 lg:gap-16">
           <nav className="hidden lg:flex gap-16">
             <span
-              className={`cursor-pointer ${
-                path === "/" ? "font-bold text-themeColor" : ""
-              }`}
+              className={`cursor-pointer ${path === "/" ? "font-bold text-themeColor" : ""
+                }`}
               onClick={() => router.push("/")}
             >
               Vaults
             </span>
             <span
-              className={`cursor-pointer ${
-                path === "/buy" ? "font-bold text-themeColor" : ""
-              }`}
+              className={`cursor-pointer ${path === "/buy" ? "font-bold text-themeColor" : ""
+                }`}
               onClick={() => router.push("/buy")}
             >
               Fund Wallet
             </span>
             <span
-              className={`cursor-pointer ${
-                path === "/about" ? "font-bold text-themeColor" : ""
-              }`}
+              className={`cursor-pointer ${path === "/about" ? "font-bold text-themeColor" : ""
+                }`}
               onClick={() => router.push("/about")}
             >
               About
             </span>
+            <span
+              className={`cursor-pointer ${path === "/roadmap" ? "font-bold text-themeColor" : ""
+                }`}
+              onClick={() => router.push("/roadmap")}
+            >
+              Roadmap
+            </span>
           </nav>
           {/* Select Network Modal */}
-          <ConnectButton/>
+          <ConnectButton />
         </div>
         <MobileMenuModal />
       </div>

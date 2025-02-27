@@ -331,6 +331,89 @@ export async function calculateCompoundAPY(receiptTokenAddress: Address, strateg
   return currentAPY;
 }
 
+/**
+ * Calculates the APY from COMP rewards for a Compound V3 lending pool.
+ * @param cometAddress The address of the Compound V3 Comet contract.
+ * @param rewardsContractAddress The address of the CometRewards contract.
+ * @param strategyChain The chain where the contract is deployed.
+ * @returns The estimated APY from COMP rewards.
+ */
+export async function calculateCompoundRewardsAPY(
+  rewardsContractAddress: Address,
+  cometAddress: Address,
+  strategyChain: Chain,
+  compUsdPrice: number
+): Promise<number> {
+  const cometContract = getContract({
+    client,
+    chain: strategyChain,
+    address: cometAddress,
+  })
+
+  let baseTrackingSupplySpeed = await readContract({
+    contract: cometContract,
+    method: "function baseTrackingSupplySpeed() view returns (uint256)"
+  })
+
+  // Get the CometRewards contract
+  const rewardsContract = getContract({
+    client,
+    chain: strategyChain,
+    address: rewardsContractAddress,
+  });
+  const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+
+  // Fetch COMP reward emission per second
+  const rewardConfig = await readContract({
+    contract: rewardsContract,
+    method: "function rewardConfig(address) view returns (address token, uint64 rescaleFactor, bool shouldUpscale)",
+    params: [cometAddress],
+  });
+  const rescaleFactor = rewardConfig[1]
+  const shouldUpscale = rewardConfig[2]
+  // if (shouldUpscale) {
+  //   baseTrackingSupplySpeed *= rescaleFactor
+  // } else {
+  //   baseTrackingSupplySpeed /= rescaleFactor
+  // }
+
+  console.log("baseTrackingSupplySpeed:", baseTrackingSupplySpeed);
+  // Fetch COMP price (from an Oracle, hardcoded for now)
+  console.log("COMP Price (USD):", compUsdPrice);
+  // Fetch Total Supply of assets in the lending pool
+
+  const totalSupply = await readContract({
+    contract: cometContract,
+    method: "function totalSupply() view returns (uint256)",
+  });
+
+  // Calculate rewards APY:
+
+  // Ensure baseTrackingSupplySpeed is a BigInt before dividing
+  const baseTrackingSupplySpeedBN = BigInt(baseTrackingSupplySpeed);
+
+  // Apply rescale factor adjustment
+  let scaledAPR: bigint;
+  if (shouldUpscale) {
+    scaledAPR = baseTrackingSupplySpeedBN * BigInt(rescaleFactor);
+  } else {
+    scaledAPR = baseTrackingSupplySpeedBN / BigInt(rescaleFactor);
+  }
+
+  // Convert scaledAPR to a number
+  const apr = Number(scaledAPR) / 1e18;
+  if (apr <= 0) {
+    throw new Error("Invalid APR value: APR should be greater than 0.");
+  }
+
+  // Convert APR to APY using continuous compounding
+  const rewardsAPY = Math.exp(apr) - 1;
+
+  console.log("APR:", apr);
+  console.log("APY:", rewardsAPY);
+  return Number(0.02); // TODO replace with proper value
+}
+
 export async function calculateVenusAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   console.log("Calculating Venus APY in actions.ts");
   const vToken = getContract({
@@ -401,11 +484,13 @@ const getMinSharesOut = async (transactionAmount: bigint, strategyAddress: Addre
     chain: strategyChain,
     address: strategyAddress
   });
+  console.log("contract", contract);
   const sharesOutForUnderlying = await readContract({
     contract,
     method: "function convertToShares(uint256) view returns (uint256)",
     params: [transactionAmount]
   });
+  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   const minSharesOut = sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minSharesOut;
 }
@@ -420,8 +505,9 @@ const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strat
     contract: vaultContract,
     method: "function totalSupply() view returns (uint256)"
   });
-  const fractionOfTotalShares = transactionAmount * ethers.parseEther("1e18") / vaultTotalSupply;
-
+  console.log("vaultTotalSupply", vaultTotalSupply);
+  const fractionOfTotalShares = transactionAmount * ethers.parseEther("1") / vaultTotalSupply;
+  console.log("fractionOfTotalShares", fractionOfTotalShares);
   const strategyChain = defineChain(strategyChainId);
   const contract = getContract({
     client,
@@ -430,14 +516,16 @@ const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strat
   });
   const strategyWithdrawShareAmount = await readContract({
     contract,
-    method: "function getStrategyWithdrawShareAmount() view returns (uint256)"
+    method: "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
+    params: [fractionOfTotalShares]
   });
-
+  console.log("strategyWithdrawShareAmount", strategyWithdrawShareAmount);
   const amountOutForShares = await readContract({
     contract,
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [strategyWithdrawShareAmount]
   });
+  console.log("amountOutForShares", amountOutForShares);
   const minAmountOut = amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minAmountOut;
 }
@@ -626,8 +714,9 @@ export const executeWithdrawal = async (vaultId: Address, strategyAddress: Addre
 };
 
 const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint) => { //vaultId: string
+  console.log(" getting minAmountOut")
   const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
-
+  console.log("minAmountOut: ", minAmountOut)
   let contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
@@ -640,6 +729,7 @@ const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Addres
       "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
     params: [withdrawShareAmount, minAmountOut, activeAccount?.address, activeAccount?.address],
   });
+  console.log("withdrawTx: ", withdrawTx)
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: withdrawTx

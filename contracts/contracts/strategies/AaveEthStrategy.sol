@@ -71,7 +71,7 @@ contract AaveEthStrategy is EthStrategyParent {
      */
     function _withdrawFundsFromYieldSource(
         uint256 fractionToWithdraw,
-        uint256
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
             fractionToWithdraw
@@ -82,6 +82,9 @@ contract AaveEthStrategy is EthStrategyParent {
             address(this)
         );
         weth.withdraw{gas: 50000}(amountWithdrawn);
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
