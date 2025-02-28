@@ -27,13 +27,13 @@ export const useMutlichainTokenBalance = (token: Token | undefined) => {
                 return;
             }
 
-            if (isSolanaAddress(token.address)) {
+            if (isSolanaAddress(token.address) && isSolanaAddress(walletAddress)) {
                 const { balance, decimals } = await getSplTokenBalance(walletAddress, token.address);
                 setBalance({
                     value: balance,
                     formatted: (balance / 10 ** decimals).toFixed(4)
                 })
-            } else if (isEthereumAddress(token.address)) {
+            } else if (isEthereumAddress(token.address) && isEthereumAddress(walletAddress)) {
                 const { balance, decimals } = await getERC20TokenBalance(walletAddress, token.address, activeChain);
                 setBalance({
                     value: balance,

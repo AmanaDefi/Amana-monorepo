@@ -136,7 +136,7 @@ export const selectActions = async (
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value)
   const chainID = vaultData.protocol.chainId;
-  const allowanceResult = activeChain.id == CHAIN_ID.solana ? true : await isApproved({
+  const allowanceResult = activeChain?.id == CHAIN_ID.solana ? true : await isApproved({
     token: inputToken?.address as Address,
     activeChain: activeChain,
     activeAccount: walletAddress as Address,

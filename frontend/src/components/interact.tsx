@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
     Action,
     Balance,
@@ -10,7 +10,7 @@ import {
 } from "@/types/types";
 import mixpanel from "mixpanel-browser";
 import { Approvedeposit, executeDeposit, executeWithdrawal } from "@/actions/actions"
-import { Address, Chain, waitForReceipt } from "thirdweb";
+import { Address, Chain, signTransaction, waitForReceipt } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import MainActionButton from "@/components/button/MainActionButton"
 import { client } from "@/utils/client";
@@ -19,12 +19,14 @@ import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { isZetachain } from "@/utils/utils";
 import { useInteractionEvents } from "@/hooks/hooks";
 import { determineVaultTokenFromApprovedTokens } from "@/utils/utils";
-import { APPROVED_TOKENS, CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
+import { APPROVED_TOKENS, CHAINS_EXPLORER_BASE_URL_MAINNET, deployEnv } from "@/constants/chainConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useActiveAccount } from "thirdweb/react";
-import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useWallet, Wallet } from "@solana/wallet-adapter-react";
+import { useWallet, Wallet, WalletContextState } from "@solana/wallet-adapter-react";
+import { SolanaZetaClient } from "@/lib/solanaGateway.ts/cli/scripts";
+import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
+
 
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
     setTransactionCompleted(false)
@@ -74,8 +76,24 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     }
 };
 
-const handleSolanaDepositTransation = async (valutData: VaultData, inputBalance: Balance, inputToken: Token, solanaWallet: Wallet) => {
-
+const handleSolanaDepositTransation = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, walletContext: WalletContextState, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
+    setTransactionCompleted(false);
+    try {
+        const wallet = {
+            publicKey: walletContext.publicKey,
+            signTransaction: walletContext.signTransaction,
+            signAllTransactions: walletContext.signAllTransactions
+        } as AnchorWallet
+        const client = new SolanaZetaClient(wallet)
+        const tx = await client.solanaDeposit(inputBalance.value, vaultData.id );
+        const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? ''
+        setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${tx}`)
+        setCrosschainInvestHash(tx);
+        return true;
+    } catch (error) {
+        console.log(error);
+        return false
+    }
 }
 
 const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
@@ -580,6 +598,9 @@ function Interaction(
         }):
     JSX.Element {
 
+    const EVMAccount = useActiveAccount();
+    const solanaWallet = useWallet();
+
     useEffect(() => {
         console.log("%c Called SWITCH!!", 'color: blue')
         let newTransactionStepFeedback;
@@ -990,7 +1011,7 @@ function Interaction(
         }
     }
 
-    async function handleMainAction() {
+    const handleMainAction = async() => {
         if (isTransactionProcessing) return;
         setIsTransactionProcessing(true);
         if (action == Action.depositApprove) {
@@ -1034,8 +1055,7 @@ function Interaction(
                 status: TransactionStepStatus.processing
             });
         }
-        const EVMAccount = useActiveAccount();
-        const { wallet: solanaWallet } = useWallet();
+
         const success = await handleInteraction(
             vaultData,
             inputBalance,
@@ -1136,7 +1156,7 @@ function handleInteraction(
     inputBalance: Balance,
     inputToken: Token,
     EVMAccount: Account,
-    solanaWallet: Wallet,
+    solanaWallet: WalletContextState,
     setTransactionCompleted: (value: boolean) => void,
     activeChain: Chain,
     action: Action,
@@ -1145,7 +1165,7 @@ function handleInteraction(
     setInputBalance: Function,
     setLastEventTxHash: Function
 ) {
-    console.log("inputToken in handleInteraction: ", inputToken.symbol);
+    console.log("inputToken in handleInteraction: ", inputToken.symbol, {action});
     switch (action) {
         case Action.depositApprove:
             return async () => {
@@ -1161,10 +1181,16 @@ function handleInteraction(
             }
         case Action.deposit:
             return async () => {
-                const result = await handleDepositTransaction(
-                    vaultData, inputBalance, inputToken, EVMAccount,
-                    setTransactionCompleted, activeChain,
-                    setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash);
+                console.log(solanaWallet,"HHHHHH")
+                const result = solanaWallet.connected ?
+                    await handleSolanaDepositTransation(
+                        vaultData, inputBalance, inputToken, solanaWallet,
+                        setTransactionCompleted, activeChain,
+                        setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash)
+                    : await handleDepositTransaction(
+                        vaultData, inputBalance, inputToken, EVMAccount,
+                        setTransactionCompleted, activeChain,
+                        setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash);
                 return result;
             }
         case Action.withdraw:

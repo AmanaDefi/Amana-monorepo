@@ -1,12 +1,12 @@
 import { defineChain } from "thirdweb";
 import { Token } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection } from "@solana/web3.js";
 
 export const zeroSolAddress = PublicKey.default.toBase58();
 
 // Load environment variables
-const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV || "mainnet"; // Default to mainnet if not set
+export const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV || "mainnet"; // Default to mainnet if not set
 
 // Define RPC URLs
 const zetaRpcUrl = deployEnv === "testnet"
@@ -21,7 +21,7 @@ const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
 const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
-export const solanaRpcUrl = deployEnv === "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
+export const solanaRpcUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
 
 const zetaChain = defineChain({
   chainId: deployEnv === "testnet" ? 7001 : 7000, // 7001 for testnet, 7000 for mainnet
@@ -149,13 +149,11 @@ const bscChain = defineChain({
 
 const solanaChain = defineChain({
   chainId: deployEnv === "testnet" ? 7565163 : 7565164, // Solana uses string identifiers
-  name: deployEnv === "testnet" ? "Solana Devnet" : "Solana Mainnet",
+  name: deployEnv === "testnet" ? "devnet" : "mainnet",
   shortName: "sol",
   chain: "Solana",
   rpc: [
-    deployEnv === "testnet"
-      ? "https://api.devnet.solana.com"
-      : "https://api.mainnet-beta.solana.com",
+    solanaRpcUrl
   ],
   nativeCurrency: {
     name: "Solana",
