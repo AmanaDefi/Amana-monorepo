@@ -12,8 +12,6 @@ import IDL from "./lib/IDL.json";
 import {
   createSolanaDepositTx,
 } from "./lib/scripts";
-import { execute } from "./lib/excutor";
-import { SOLANA_GATEWAY_ADDRESS } from "../../../../../constants";
 import { solanaConnection } from "@/utils/utils";
 
 interface ISetConnectionParams {
