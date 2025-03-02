@@ -11,6 +11,7 @@ import curvePoolABI from "../../abis/curvePoolABI.json";
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
 import { keccak256 } from "thirdweb";
+import { swapHelperLibEddy } from "@/constants";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -870,17 +871,17 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   return formattedBalance.toString();
 }
 
-export const getAmountOutFromSwap = async (amount: bigint, inputTokenAddress: Address, outputTokenAddress: Address, vaultData: VaultData) => {
+export const getAmountOutFromSwap = async (amount: bigint, inputTokenAddress: Address, outputTokenAddress: Address) => {
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0],
-    address: vaultData.id as Address
+    address: swapHelperLibEddy as Address
   });
   try {
     return await readContract({
       contract,
-      method: "function getAmountOutFromSwap(uint amountIn,address inputToken,address outputToken) view returns (uint shares)",
-      params: [amount, inputTokenAddress, outputTokenAddress]
+      method: "function getAmountOutCurveOrUniswap(address inputToken,address outputToken, uint amountIn,) view returns (uint shares)",
+      params: [inputTokenAddress, outputTokenAddress, amount]
     });
   } catch (e) {
     return BigInt('0')

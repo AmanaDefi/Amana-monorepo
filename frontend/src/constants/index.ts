@@ -4,6 +4,7 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
 const ethPrice = 3400 // await fetchEthPrice();
+export const swapHelperLibEddy = "0x1968643f36ad81a2756Dba0C4Dfe948bBa957A72";
 
 export const tokens: Token[] = [
   {
