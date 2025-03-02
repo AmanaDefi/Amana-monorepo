@@ -10,12 +10,12 @@ import AmanaLogo from "@public/logo/amanadefi/logo.svg"
 import MobileMenuModal from "@/components/modal/MobileMenuModal";
 
 const wallets = [
-    inAppWallet({
-        auth: {
-            options: ["google", "email", "passkey"],
-        },
-        // smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
-    }),
+    // inAppWallet({
+    //     auth: {
+    //         options: ["google", "email", "passkey"],
+    //     },
+    //     // smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
+    // }),
     createWallet("io.metamask"),
     createWallet("com.coinbase.wallet"),
     createWallet("me.rainbow"),
