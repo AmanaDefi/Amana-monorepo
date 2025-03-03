@@ -1,3 +1,4 @@
+import { SearchParams } from "@/types/types";
 import BaseAPI from "./api";
 
 export class ApiService {
@@ -6,7 +7,7 @@ export class ApiService {
         this.api = new BaseAPI();
     }
 
-    async getLeaderboardData(page:number, perPage:number) {
-        return this.api.getLeaderboardData(page, perPage);
+    async getLeaderboardData(searchParams:SearchParams) {
+        return this.api.getLeaderboardData(searchParams);
     }
 }

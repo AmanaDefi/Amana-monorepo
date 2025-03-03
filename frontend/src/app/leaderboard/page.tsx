@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from "react";
-import { LeaderboardUserData } from "@/types/types";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { LeaderboardUserData, SearchParams } from "@/types/types";
 import { formatCurrency, shortAddressForm } from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
 import { TrophyIcon } from "@heroicons/react/24/outline";
@@ -19,29 +19,36 @@ type PaginatedResponse = {
     data: LeaderboardUserData[];
     total: number;
 }
+const initialSearchParams = {
+    userAddress: "",
+    page: 1,
+    perPage: 3
+}
 
 export default function Page() {
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalItems, setTotalItems] = useState(0);
-    const itemsPerPage = 3;
+    const [searchParams, setSearchParams] = useState<SearchParams>(initialSearchParams)
 
     const currentUserAccount = useActiveAccount() || ZERO_ACCOUNT;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const { data: leaderboardData, isLoading, error } = useLeaderboardData(currentPage, itemsPerPage);
+    const { data: leaderboardData, isLoading, error } = useLeaderboardData(searchParams);
 
-    const handleSearch = () => {
-        setCurrentPage(1);
-        setSearchQuery(searchTerm);
-    };
+    const totalItems = useMemo(() => {
+        if(isLoading || error) return 0
+        return leaderboardData.length
+    }, [leaderboardData, isLoading]);
+
+    const totalPages = Math.ceil(totalItems / searchParams.perPage);
+
+    const handleSearch = useCallback(() => {
+        setSearchParams((prev: SearchParams) => ({ ...prev, page: 1, userAddress: searchTerm }));
+    }, [searchTerm]);
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSearch();
         }
     };
     const handlePageChange = (newPage: number) => {
-        setCurrentPage(newPage);
+        setSearchParams({ ...searchParams, page: newPage });
     };
 
     const getRankColor = (rank: number) => {
@@ -61,19 +68,19 @@ export default function Page() {
         <div className="flex items-center justify-between flex-wrap gap-4 mt-4 px-4">
             <div className="flex items-center justify-between gap-2 flex-1 md:flex-[unset]">
                 <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
+                    onClick={() => handlePageChange(searchParams.page - 1)}
+                    disabled={searchParams.page === 1}
                     className="px-3 py-1 border border-gray-700 rounded-lg disabled:opacity-50
                              disabled:cursor-not-allowed hover:bg-gray-800 text-sm lg:text-base"
                 >
                     Previous
                 </button>
                 <span className="text-gray-400  text-sm lg:text-base whitespace-nowrap">
-                    Page {currentPage} of {totalPages}
+                    Page {searchParams.page} of {totalPages}
                 </span>
                 <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(searchParams.page + 1)}
+                    disabled={searchParams.page === totalPages}
                     className="px-3 py-1 border border-gray-700 rounded-lg disabled:opacity-50
                              disabled:cursor-not-allowed hover:bg-gray-800  text-sm lg:text-base"
                 >
@@ -131,13 +138,11 @@ export default function Page() {
                         <tbody className="bg-gray-900">
                             {
                                 isLoading ? (
-                                    Array.from({ length: 5 }).map((_, index) =>
-                                    (
-                                        <LoadingRow key={index} />
-                                    )
-                                    )
+                                    Array.from({ length: 5 }).map((_, index) => <LoadingRow key={index} />)
+                                ) : leaderboardData.length == 0 ? (
+                                    <td colSpan={3}><div className="w-full flex justify-center py-4">No Data Found</div></td>
                                 ) : (
-                                    leaderboardData.map((item:LeaderboardUserData, index:number) => {
+                                    leaderboardData.map((item: LeaderboardUserData, index: number) => {
                                         const isCurrentUser = item.user_address.toLowerCase() === currentUserAccount.address.toLowerCase();
                                         return (
                                             <tr key={index}

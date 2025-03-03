@@ -18,6 +18,7 @@ export interface Domain {
   chainId: number;
   verifyingContract: string;
 }
+
 export interface Rate {
   id: string;
   type: string;
@@ -159,4 +160,10 @@ export const DEFAULT_SETTINGS: UserSettings = {
 export type LeaderboardUserData = {
   user_address: Address,
   points: number
+}
+
+export type SearchParams = {
+  userAddress: string,
+  page: number,
+  perPage: number,
 }
