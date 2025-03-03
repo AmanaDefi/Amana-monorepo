@@ -53,28 +53,38 @@ contract AaveEthStrategy is EthStrategyParent {
 
     /// @notice Deposits funds into the Aave pool.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256
+    ) internal override {
         weth.deposit{value: amount}();
-        bool success = weth.approve(address(aavePool), amount);
-        if (!success) revert ApprovalFailed();
+        approveOrIncreaseAllowance(IERC20(weth), address(aavePool), amount);
 
         aavePool.supply(address(weth), amount, address(this), 0);
+        // shares out = amount deposited, so no need to check minimumOut
     }
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
         amountWithdrawn = aavePool.withdraw{gas: 200000}(
             address(weth),
-            amount,
+            sharesToWithdraw,
             address(this)
         );
         weth.withdraw{gas: 50000}(amountWithdrawn);
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
@@ -85,17 +95,20 @@ contract AaveEthStrategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            type(uint256).max
+            1e18,
+            minAmountOut
         );
 
         IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
             amountWithdrawn,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -105,6 +118,19 @@ contract AaveEthStrategy is EthStrategyParent {
             currentExecutionNonce,
             _crossChainTxId
         );
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /// @notice Gets the total assets held in the strategy.

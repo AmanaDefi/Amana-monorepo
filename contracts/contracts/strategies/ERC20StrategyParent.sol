@@ -23,18 +23,17 @@ abstract contract ERC20StrategyParent is StrategyParent {
     function _invest(
         address receiverAddress,
         uint256 amount,
+        uint256 minimumOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        bool success = inputToken.transferFrom(
+        SafeERC20.safeTransferFrom(
+            inputToken,
             msg.sender,
             address(this),
             amount
         );
-        if (!success) {
-            revert TransferFailed();
-        }
-        _depositFundsIntoYieldSource(amount);
+        _depositFundsIntoYieldSource(amount, minimumOut);
 
         _sendInvestConfirmation(
             receiverAddress,
@@ -60,7 +59,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         bytes memory outgoingMessage,
         RevertOptions memory revertOptions
     ) internal override {
-        inputToken.approve(_GATEWAY_ADDRESS, amount);
+        approveOrIncreaseAllowance(inputToken, _GATEWAY_ADDRESS, amount);
 
         IGatewayEVM(_GATEWAY_ADDRESS).depositAndCall(
             amanaVault,
@@ -80,14 +79,21 @@ abstract contract ERC20StrategyParent is StrategyParent {
      */
     function depositFromOldStrategy(
         uint256 amount,
+        uint256 minimumOut,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) external {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
-        if (msg.sender != oldStrategy) revert Unauthorized();
+        if (msg.sender != oldStrategy) revert NotAuthorized();
         if (amount == 0) revert NoFundsReceived();
         executionNonce = currentExecutionNonce + 1;
-        _invest(address(0), amount, currentExecutionNonce, _crossChainTxId);
+        _invest(
+            address(0),
+            amount,
+            minimumOut,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
         oldStrategy = address(0);
     }
 

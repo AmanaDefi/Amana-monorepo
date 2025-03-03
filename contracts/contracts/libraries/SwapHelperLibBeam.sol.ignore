@@ -16,11 +16,11 @@ library SwapHelperLibBeam {
         address tokenA,
         address tokenB
     ) internal pure returns (address token0, address token1) {
-        if (tokenA == tokenB) revert IErrors.CantBeIdenticalAddresses();
+        if (tokenA == tokenB) revert IErrors.InvalidAddress();
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
-        if (token0 == address(0)) revert IErrors.CantBeZeroAddress();
+        if (token0 == address(0)) revert IErrors.InvalidAddress();
     }
 
     function algebraPairFor(
@@ -40,7 +40,7 @@ library SwapHelperLibBeam {
         address zrc20,
         uint256 amount,
         address targetZRC20,
-        uint256 minAmountOut,
+        uint256 minimumOut,
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {
@@ -58,7 +58,7 @@ library SwapHelperLibBeam {
                     recipient: vault,
                     deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
-                    amountOutMinimum: minAmountOut,
+                    amountOutMinimum: minimumOut,
                     limitSqrtPrice: 0
                 });
             console.log(
@@ -98,7 +98,7 @@ library SwapHelperLibBeam {
                 recipient: vault,
                 deadline: block.timestamp + maxDeadline,
                 amountIn: amount,
-                amountOutMinimum: minAmountOut
+                amountOutMinimum: minimumOut
             });
             console.log("Approving ZRC20");
             IZRC20(zrc20).approve(router, amount);

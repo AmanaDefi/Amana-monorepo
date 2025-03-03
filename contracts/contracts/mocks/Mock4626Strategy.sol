@@ -6,11 +6,14 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/I4626Vault.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
+import "../interfaces/IErrors.sol";
 
 // ZC_TEST_USDC.SEPOLIA_ADDRESS = 0xcC683A782f4B30c138787CB5576a86AF66fdc31d;
 // MOCK_4626_VAULT_ADDRESS = 0x50675d47d94724c3e9Ff80aaD9EDEb94719fC576
 
 contract Mock4626Strategy is Ownable {
+    using SafeERC20 for IERC20;
+
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
@@ -41,14 +44,17 @@ contract Mock4626Strategy is Ownable {
     }
 
     function invest(uint256 amount) external onlyGateway returns (uint256) {
-        bool success = inputToken.transferFrom(
+        SafeERC20.safeTransferFrom(
+            inputToken,
             _GATEWAY_ADDRESS,
             address(this),
             amount
         );
-        require(success, "Transfer failed");
-        success = inputToken.approve(address(receiptToken), amount);
-        require(success, "Approval failed");
+        SafeERC20.safeIncreaseAllowance(
+            inputToken,
+            address(receiptToken),
+            amount
+        );
         uint256 shares = receiptToken.deposit(amount, address(this));
         require(shares > 0, "Deposit failed");
         return shares;
@@ -108,7 +114,10 @@ contract Mock4626Strategy is Ownable {
     function emergencyWithdrawETH() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No ETH to withdraw");
-        payable(owner()).transfer(balance);
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        if (!success) {
+            revert IErrors.TransferFailed();
+        }
     }
 
     receive() external payable {}

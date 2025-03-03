@@ -4,9 +4,11 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
+import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
+
 import "./interfaces/IErrors.sol";
 
-contract WithdrawalReceiver {
+contract WithdrawalReceiver is Revertable {
     using SafeERC20 for IERC20;
 
     address public constant _GATEWAY_ADDRESS =
@@ -18,6 +20,9 @@ contract WithdrawalReceiver {
         uint256 amount,
         bytes32 indexed crossChainTxId
     );
+
+    event CrossChainDepositFailed(bytes32 indexed crossChainTxId);
+    event CrossChainWithdrawFailed(bytes32 indexed crossChainTxId);
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) {
@@ -45,28 +50,74 @@ contract WithdrawalReceiver {
         require(receiver != address(0), "Invalid receiver address");
         require(amount > 0, "Amount must be greater than zero");
 
-        // Handle native or ERC20 funds
+        _returnFundsToUser(amount, receiver, asset, crossChainTxId);
+
+        return abi.encode(true);
+    }
+
+    /**
+     * @dev Internal function to return funds to a user.
+     * @param amount The amount of funds to return.
+     * @param receiver The address of the receiver.
+     * @param asset The address of the asset to return.
+     * @param crossChainTxId The cross-chain transaction ID.
+     */
+    function _returnFundsToUser(
+        uint256 amount,
+        address receiver,
+        address asset,
+        bytes32 crossChainTxId
+    ) internal {
+        // Logic to return funds to the user
         if (asset == address(0)) {
-            // Native asset (e.g., ETH, MATIC, BNB)
+            // Native asset
             require(
                 address(this).balance >= amount,
                 "Insufficient native balance"
             );
-            payable(receiver).transfer(amount);
-        } else {
-            // ERC20 token
-            bool success = IERC20(asset).transferFrom(
-                msg.sender,
-                receiver,
-                amount
-            );
+            (bool success, ) = payable(receiver).call{value: amount}("");
             if (!success) {
                 revert IErrors.TransferFailed();
             }
+        } else {
+            // ERC20 token
+            SafeERC20.safeTransfer(IERC20(asset), receiver, amount);
         }
 
         emit FundsReturned(receiver, asset, amount, crossChainTxId);
-        return abi.encode(true);
+    }
+
+    /**
+     * @dev Handles revert scenarios during cross-chain operations.
+     * @param context The revert context containing details about the revert scenario.
+     * @notice Executes appropriate recovery steps based on the revert message.
+     */
+    function onRevert(RevertContext calldata context) external override {
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            address receiver
+        ) = abi.decode(context.revertMessage, (string, bytes32, address));
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_crossChainDepositFailed"))
+        ) {
+            _returnFundsToUser(
+                context.amount,
+                context.asset,
+                receiver,
+                _crossChainTxId
+            );
+            emit CrossChainDepositFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_crossChainWithdrawFailed"))
+        ) {
+            emit CrossChainWithdrawFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
+        }
     }
 
     /**

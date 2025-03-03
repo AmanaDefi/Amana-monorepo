@@ -35,6 +35,7 @@ export interface VaultData {
   protocol: {
     name: string;
     strategyAddress: string;
+    gaugeAddress?: string;
     network: string;
     chainId: number;
     netdes?: string;
@@ -84,7 +85,7 @@ export type Balance = {
 }
 
 export interface Token {
-  address: Address;
+  address: Address | string;
   symbol: string;
   decimals: number;
   imgURL: string;
@@ -103,11 +104,28 @@ export enum SmartVaultActionType {
   Withdrawal
 }
 
+export enum StepStatus {
+  upcoming,
+  undergo,
+  completed
+}
+
+export type Step = {
+    description: string,
+    status: StepStatus
+}
+
+export type Milestone = {
+  title: string,
+  steps: Step[],
+}
+
 export enum Action {
   depositApprove,
   depositApproveConfirmed,
   deposit,
   depositConfirmed,
+  CrossChainDepositFailed,
   crosschainInvest,
   CrossChainInvestFailed,
   FundsInvest,
@@ -115,6 +133,7 @@ export enum Action {
   deposited,
   withdraw,
   withdrawconfirmed,
+  CrossChainWithdrawFailed,
   DivestSent,
   FundsWithdrawn,
   DivestFailed,
@@ -139,7 +158,8 @@ export enum TransactionStepStatus {
 export type TransactionStepFeedback = {
   label: string
   description: string
-  status: TransactionStepStatus
+  status: TransactionStepStatus,
+  txHash?: string
 }
 
 export type TransactionStepMessages = {

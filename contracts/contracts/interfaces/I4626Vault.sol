@@ -13,11 +13,19 @@ interface I4626Vault {
         address owner
     ) external returns (uint256);
 
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) external returns (uint256);
+
     function approve(address spender, uint256 amount) external returns (bool);
 
     function balanceOf(address account) external view returns (uint256);
 
     function convertToAssets(uint256 shares) external view returns (uint256);
+
+    function convertToShares(uint256 assets) external view returns (uint256);
 
     function maxWithdraw(address account) external view returns (uint256);
 }

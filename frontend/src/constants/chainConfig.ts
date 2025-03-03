@@ -187,7 +187,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       symbol: "USDT",
       address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
       decimals: 6,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
@@ -275,7 +275,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       symbol: "USDT",
       address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
       decimals: 6,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
@@ -319,7 +319,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       symbol: "USDT",
       address: "0x55d398326f99059fF775485246999027B3197955",
       decimals: 18,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
@@ -363,5 +363,15 @@ export const PRICE_IDS: { [key: string]: string } = {
   "BNB": "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
   "POL": "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
   "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
+  "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
+  "COMP": "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
 };
+
+export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
+  7000: "https://zetachain.blockscout.com",
+  8453: "https://basescan.org",
+  56: "https://bscscan.com",
+  137: "https://polygonscan.com",
+  1: "https://etherscan.io"
+}

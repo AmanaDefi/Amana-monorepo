@@ -3,8 +3,9 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../interfaces/I4626Vault.sol";
+import "../interfaces/IErrors.sol";
 
 // USDC.ETH 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a
 // Mock 4626 0xcfc479dC5371D21C52eeAd66290b21CDa2eB0C9f
@@ -12,7 +13,7 @@ import "../interfaces/I4626Vault.sol";
 /// @title Mock4626ZetachainStrategy
 /// @notice A mock implementation of a 4626-compatible strategy for ZetaChain.
 /// @dev This contract facilitates deposits and withdrawals into a 4626 vault via the Amana Vault.
-contract Mock4626ZetachainStrategy is Ownable {
+contract Mock4626ZetachainStrategy is Ownable2Step {
     string public name;
     address public immutable amanaVault;
     IERC20 public immutable inputToken;
@@ -55,45 +56,62 @@ contract Mock4626ZetachainStrategy is Ownable {
     /// @notice Invests funds into the 4626 vault.
     /// @param amount The amount of funds to invest.
     /// @return shares The number of shares received in exchange for the deposit.
-    function invest(uint256 amount) external onlyVault returns (uint256) {
+    function invest(
+        uint256 amount,
+        uint256 minSharesOut
+    ) external onlyVault returns (uint256) {
         SafeERC20.safeTransferFrom(
             inputToken,
             msg.sender,
             address(this),
             amount
         );
-
-        bool success = inputToken.approve(address(receiptToken), amount);
-        require(success, "Approval failed");
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.deposit(amount, address(this));
-        require(shares > 0, "Deposit failed");
-
+        if (shares < minSharesOut) {
+            revert IErrors.InsufficientOut();
+        }
         emit FundsDeposited(msg.sender, amount);
         return shares;
     }
 
     /// @notice Withdraws funds from the 4626 vault.
-    /// @param _amountToWithdraw The amount to withdraw.
+    /// @param fractionToWithdraw The fraction of shares to withdraw.
+    /// @param minAmountOut The minimum amount of funds to withdraw.
     /// @return The amount withdrawn.
     function withdraw(
-        uint256 _amountToWithdraw,
-        uint256
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) external onlyVault returns (uint256) {
-        receiptToken.withdraw(
-            _amountToWithdraw,
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
+        uint256 amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
+        if (amountWithdrawn < minAmountOut) {
+            revert IErrors.InsufficientOut();
+        }
+        SafeERC20.safeTransfer(IERC20(inputToken), msg.sender, amountWithdrawn);
 
-        SafeERC20.safeTransfer(
-            IERC20(inputToken),
-            msg.sender,
-            _amountToWithdraw
-        );
+        emit FundsWithdrawn(msg.sender, amountWithdrawn);
+        return amountWithdrawn;
+    }
 
-        emit FundsWithdrawn(msg.sender, _amountToWithdraw);
-        return _amountToWithdraw;
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /// @notice Gets the total underlying assets held in the strategy.
@@ -111,10 +129,32 @@ contract Mock4626ZetachainStrategy is Ownable {
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
-    /// @notice Allows the owner to withdraw ETH in case of emergency.
-    function emergencyWithdrawETH() external onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No ETH to withdraw");
-        payable(owner()).transfer(balance);
+    function approveOrIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(msg.sender, spender);
+
+        if (currentAllowance == 0) {
+            // First-time approval
+            token.approve(spender, amount);
+        } else {
+            // Handle USDT-like tokens by forcing reset to zero first
+            token.approve(spender, 0); // Reset to zero
+            token.approve(spender, amount); // Set new allowance
+        }
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view virtual returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view virtual returns (uint256) {
+        return receiptToken.convertToAssets(shares);
     }
 }

@@ -30,13 +30,13 @@ export default function MobileMenuModal() {
                         >
                             Vaults
                         </span>
-                    <span
+                    {/* <span
                         className={`cursor-pointer py-6 ${path === "/buy" ? "font-bold text-themeColor" : ""
                         }`}
                         onClick={() => router.push("/buy")}
                     >
                             Fund Wallet
-                        </span>
+                        </span> */}
                     <span
                         className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-themeColor" : ""
                         }`}

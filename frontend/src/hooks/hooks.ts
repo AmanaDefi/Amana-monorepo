@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
   calculateCompoundAPY,
   calculateMoonwellAPY,
   calculateVenusAPY,
+  calculateVenusRewardsAPY,
   calculateEddyAPY,
+  calculateBeefyAPY,
+  calculateCurveAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
-  fetchUserVaultMaxWithdraw
+  fetchUserVaultMaxRedeem,
+  calculateCurveRewardsAPY,
+  calculateCompoundRewardsAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
@@ -15,7 +20,7 @@ import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useContractEvents } from "thirdweb/react";
-import { isZetachain } from "@/utils/utils";
+import { getOnlyTokenSymbol, isZetachain } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 
@@ -39,18 +44,11 @@ export const useUpdateVaultBalanceAndTotal = (
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
 
               // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
-              const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+              const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
                 vault.inputToken.decimals,
                 activeAccount?.address as Address,
                 vault.id as Address
               );
-
-              console.log("FETCHED BALANCE: ", {
-                vaultId: vault.id,
-                balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
-              });
 
               return {
                 vaultId: vault.id,
@@ -69,7 +67,6 @@ export const useUpdateVaultBalanceAndTotal = (
             }
           })
         );
-        console.log("balancedata", balancesAndAssets)
         const balances = balancesAndAssets.map(({ vaultId, balance }) => ({
           vaultId,
           balance,
@@ -114,14 +111,11 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             vault.id as Address
           );
 
-          console.log("88888888888888", balance)
-
-          const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+          const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,
             activeAccount?.address as Address,
             vault?.id as Address
           );
-          console.log("888888888888881", newTotalAssetsinToken)
 
           setUserVaultBalance(balance);
 
@@ -133,8 +127,6 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         }
 
       } catch (error) {
-        console.log("888888888888882", error)
-
         console.error("Error updating vault balances and total assets:", error);
       }
     };
@@ -147,7 +139,10 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
 export const useUpdateAPYs = (
   vaults: VaultData[],
   setVaultAPYs: (vaultAPYs: { vaultId: string, APY7d: number }[]) => void,
-  setLoading: (loading: boolean) => void
+  setLoading: (loading: boolean) => void,
+  crvTokenPrice: number,
+  ethTokenPrice: number,
+  compTokenPrice: number
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
@@ -166,23 +161,33 @@ export const useUpdateAPYs = (
                 method: "function receiptToken() view returns (address)",
               });
               let APY7d = 0;
-
+              let RewardsAPY = 0;
               if (vault.protocol.name === "Aave" || vault.protocol.name === "ZeroLend") {
-                console.log("Calculating APY for Aave or ZeroLend")
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
-                console.log("Calculating APY for Compound")
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
-              } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler") {
-                console.log("Calculating APY for Moonwell or Euler")
+                console.log("Fetching Compound Rewards APY")
+                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.gaugeAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
+                console.log("RewardsAPY", RewardsAPY)
+                APY7d = APY7d + RewardsAPY;
+              } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
                 // TO DO This only works for Base right now - it's hardcoded
+
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
+
               } else if (vault.protocol.name === "Venus") {
-                console.log("Calculating APY for Venus");
                 APY7d = await calculateVenusAPY(receiptTokenAddress as Address, strategyChain);
+                RewardsAPY = await calculateVenusRewardsAPY(receiptTokenAddress as Address, strategyChain);
+                APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
+              } else if (vault.protocol.name === "Beefy") {
+                APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "Curve") {
+                APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
+                RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
               }
+
               return { vaultId: vault.id, APY7d };
             } catch (error) {
               console.error(`Error fetching APY for vault ${vault.id}:`, error);
@@ -226,7 +231,9 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
       prepareEvent({ signature: "event ReturnFundsFromStrategyFailed(bytes32 indexed crossChainTxId)" })
     ],
     withdrawalReceiver: [
-      prepareEvent({ signature: "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)" })
+      prepareEvent({ signature: "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event CrossChainDepositFailed(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event CrossChainWithdrawFailed(bytes32 indexed crossChainTxId)" })
     ]
   }), []);
 
@@ -281,7 +288,7 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    const tokenSymbol = symbol.split('.')[0].toUpperCase();
+    const tokenSymbol = getOnlyTokenSymbol(symbol).toUpperCase()
     return priceContext.prices?.[tokenSymbol] ?? 0;
   }, [priceContext, symbol]);
 }

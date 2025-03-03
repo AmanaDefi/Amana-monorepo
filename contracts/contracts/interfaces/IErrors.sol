@@ -4,23 +4,17 @@ pragma solidity 0.8.26;
 interface IErrors {
     error OnlyGateway();
     error OnlyVault();
-    error ApprovalFailed();
     error InvalidAddress();
     error OldStrategyNotSet();
-    error Unauthorized();
+    error NotAuthorized();
     error NoFundsReceived();
     error NothingToWithdraw();
-    error DepositFailed();
+    error InsufficientOut();
     error TransferFailed();
-
-    error InvalidStrategyAddress();
+    error ExceedsMaxSharesOut();
     error InvalidStrategyChainId();
-    error InvalidTreasuryAddress();
     error FeeExceedsLimit();
-    error DepositCantBeZero();
-    error WithdrawCantBeZero();
-    error InvalidZRC20Address();
-    error CantBeZeroAddress();
+    error AmountCantBeZero();
     error DepositExceedsLimit();
     error MintExceedsLimit();
     error WithdrawExceedsLimit();
@@ -28,14 +22,12 @@ interface IErrors {
     error ConfirmationAlreadyProcessed();
     error StrategyAlreadySet();
     error NoAssetsToSwitch();
+    error DepositsPaused();
 
     error InsufficientBalance();
-    error NotAuthorized();
     error VaultAlreadyAuthorized();
-    error VaultNotAuthorized();
 
     error InvalidPathLength();
-    error CantBeIdenticalAddresses();
     error InsufficientLiquidity();
     error InsufficientInputAmount();
     error InvalidPath();

@@ -4,6 +4,7 @@ import { useActiveAccount, useConnectModal, useActiveWalletConnectionStatus } fr
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "../utils/client";
+import {usePathname} from "next/navigation";
 
 // Explicitly type the shared configuration for ConnectButton and connect
 const connectModalConfig: {
@@ -38,6 +39,8 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     const [initialCheckCount, setInitialCheckCount] = useState(0);
     const [isThirdwebReady, setIsThirdwebReady] = useState(false);
 
+    const route = usePathname();
+
     useEffect(() => {
         if (initialCheckCount >= 2) {
             setIsThirdwebReady(true);
@@ -63,21 +66,23 @@ export default function AccountProvider({ children }: PropsWithChildren) {
             page: "Vaults List",
         });
 
+        if (route === '/') return;
+
         // Automatically show the connect modal if no account is connected
-        if (!account && !isConnecting && connectionStatus !== 'connecting') {
-            connect({
-                ...connectModalConfig, // Use shared configuration
-                locale: "en_US", // Additional options if needed
-            }).catch(() => {
-                console.log("Connect modal closed without connecting.");
-            });
-        } else if (account) {
-            mixpanel.identify(account.address);
-            mixpanel.people.set({
-                wallet_address: account.address,
-            });
-        }
-    }, [account, connect, connectionStatus, initialCheckCount, isConnecting, isThirdwebReady]);
+        // if (!account && !isConnecting && connectionStatus !== 'connecting') {
+        //     connect({
+        //         ...connectModalConfig, // Use shared configuration
+        //         locale: "en_US", // Additional options if needed
+        //     }).catch(() => {
+        //         console.log("Connect modal closed without connecting.");
+        //     });
+        // } else if (account) {
+        //     mixpanel.identify(account.address);
+        //     mixpanel.people.set({
+        //         wallet_address: account.address,
+        //     });
+        // }
+    }, [route, account, connect, connectionStatus, initialCheckCount, isConnecting, isThirdwebReady]);
 
     return <>{children}</>
 }

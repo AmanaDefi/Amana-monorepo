@@ -1,6 +1,6 @@
 import "./tasks/deployGeneric";
 import "./tasks/deployAaveEthStrategy";
-import "./tasks/deployEth_4626_Strategy";
+import "./tasks/deployCurveEthStrategy";
 import "./tasks/deployAmanaConnectedChainVault";
 import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";
@@ -9,10 +9,14 @@ import "./tasks/deployGasTank";
 import "./tasks/deploySwapHelper";
 import "./tasks/deployMockERC20";
 import "./tasks/deployMock4626";
-import "./tasks/deployERC20_4626_Strategy";
+import "./tasks/deployERC20_Strategy";
 import "./tasks/deployZetachainStrategy";
 import "./tasks/deployPriceOracle";
 import "./tasks/deployWithdrawalReceiver";
+import "./tasks/deployZapContract";
+import "./tasks/deployCurveERC20_Strategy";
+import "./tasks/deployCurveEthStrategy";
+import "./tasks/updatePythPrices";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -24,12 +28,17 @@ import "@nomiclabs/hardhat-ethers";
 import { getHardhatConfigNetworks } from "@zetachain/networks";
 import { HardhatUserConfig } from "hardhat/config";
 import * as dotenv from "dotenv";
+import { mainnet } from "@zetachain/protocol-contracts";
 
 dotenv.config();
 
 const config: HardhatUserConfig = {
   networks: {
     ...getHardhatConfigNetworks(),
+    ethereum: {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+    },
     arbitrumOne: {
       url: "https://arb1.arbitrum.io/rpc",
       accounts: [process.env.PRIVATE_KEY],
@@ -88,6 +97,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 1000,
           },
+          viaIR: true,
         },
       },
       {
@@ -95,14 +105,39 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 175,
+            runs: 10000,
           },
+          viaIR: true,
         },
       },
     ],
+    overrides: {
+      "contracts/AmanaConnectedChainVault.sol": {
+        version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 300,
+          },
+          viaIR: true,
+        },
+      },
+      "contracts/AmanaZetachainVault.sol": {
+        version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 750,
+          },
+          viaIR: true,
+        },
+      },
+    }
   },
   etherscan: {
     apiKey: {
+      ethereum: process.env.ETHERSCAN_API_KEY || "",
+      mainnet: process.env.ETHERSCAN_API_KEY || "",
       arbitrumOne: process.env.ARBISCAN_API_KEY || "",
       base: process.env.BASESCAN_API_KEY || "",
       base_sepolia: process.env.BASESCAN_API_KEY || "",

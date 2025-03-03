@@ -5,11 +5,12 @@ interface ISwapRouter {
     struct ExactInputSingleParams {
         address tokenIn; // The token being swapped in
         address tokenOut; // The token being swapped out
-        uint256 amountIn; // The amount of input tokens
-        uint256 amountOutMinimum; // The minimum amount of output tokens to receive
-        uint160 limitSqrtPrice; // The price limit for the swap
+        uint24 fee; // The fee to pay
         address recipient; // The recipient of the output tokens
         uint256 deadline; // The deadline for the swap to be executed
+        uint256 amountIn; // The amount of input tokens
+        uint256 amountOutMinimum; // The minimum amount of output tokens to receive
+        uint160 sqrtPriceLimitX96; // The price limit for the swap
     }
 
     struct ExactInputParams {

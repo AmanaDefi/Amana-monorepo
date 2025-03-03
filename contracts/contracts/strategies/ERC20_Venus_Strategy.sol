@@ -38,27 +38,55 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
 
     /// @notice Deposits funds into the yield source.
     /// @param amount Amount to be deposited.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
-        bool success = inputToken.approve(address(receiptToken), amount);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal override {
+        uint initialBalance = receiptToken.balanceOf(address(this));
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
         receiptToken.mint(amount);
-        // if (shares == 0) {
-        //     revert DepositFailed();
-        // }
+        uint finalBalance = receiptToken.balanceOf(address(this));
+        uint shares = finalBalance - initialBalance;
+        if (shares < minimumOut) {
+            revert InsufficientOut();
+        }
     }
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param amount The amount of funds to withdraw from the yield source.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param minAmountOut The minimum amount of USDC to withdraw.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        receiptToken.redeemUnderlying(amount);
-        return amount;
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
+        uint256 initialBalance = IERC20(inputToken).balanceOf(address(this));
+
+        receiptToken.redeem(sharesToWithdraw);
+        uint256 finalBalance = IERC20(inputToken).balanceOf(address(this));
+        amountWithdrawn = finalBalance - initialBalance;
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
+        return amountWithdrawn;
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /**
@@ -69,24 +97,27 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
-        bool success = inputToken.approve(newStrategy, strategyTotalBalance);
-        if (!success) {
-            revert ApprovalFailed();
-        }
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            1e18,
+            minAmountOut
+        );
+
+        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
         IStrategy(newStrategy).depositFromOldStrategy(
-            strategyTotalBalance,
+            amountWithdrawn,
+            minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            amountWithdrawn,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -98,5 +129,19 @@ contract ERC20_Venus_Strategy is ERC20StrategyParent {
         uint256 vTokenBalance = receiptToken.balanceOf(address(this));
         uint256 exchangeRate = receiptToken.exchangeRateStored();
         return (vTokenBalance * exchangeRate) / (10 ** 18);
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view override returns (uint256) {
+        uint256 exchangeRate = receiptToken.exchangeRateStored();
+        return (assetAmount * (10 ** 18)) / exchangeRate;
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256) {
+        uint256 exchangeRate = receiptToken.exchangeRateStored();
+        return (shares * exchangeRate) / (10 ** 18);
     }
 }

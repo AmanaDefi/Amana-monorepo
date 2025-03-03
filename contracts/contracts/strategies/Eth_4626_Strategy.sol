@@ -38,27 +38,52 @@ contract Eth_4626_Strategy is EthStrategyParent {
     }
 
     /// @notice deposits funds into the yield source.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal override {
         weth.deposit{value: amount}();
-        bool success = weth.approve(address(receiptToken), amount);
-        if (!success) {
-            revert ApprovalFailed();
+        approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
+
+        uint256 shares = receiptToken.deposit(amount, address(this));
+        if (shares < minimumOut) {
+            revert InsufficientOut();
         }
-        receiptToken.deposit(amount, address(this));
     }
 
     /// @notice Withdraws funds from the Aave pool.
-    /// @param amount Amount to be withdrawn.
+    /// @param fractionToWithdraw Fraction of shares to be withdrawn.
+    /// @param minAmountOut Minimum amount of ETH to be withdrawn.
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        amountWithdrawn = receiptToken.withdraw(
-            amount,
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
+
+        amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
-
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
         weth.withdraw{gas: 50000}(amountWithdrawn);
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /**
@@ -69,19 +94,26 @@ contract Eth_4626_Strategy is EthStrategyParent {
      * @param _crossChainTxId The cross-chain transaction ID.
      */
     function _transferAssetsToNewStrategy(
+        uint256 minAmountOut,
+        uint256 minimumSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            1e18,
+            minAmountOut
+        );
 
-        IStrategy(newStrategy).depositFromOldStrategy{
-            value: strategyTotalBalance
-        }(strategyTotalBalance, currentExecutionNonce, _crossChainTxId);
+        IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
+            amountWithdrawn,
+            minimumSharesOut,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
         emit AssetsTransferredToNewStrategy(
             newStrategy,
-            strategyTotalBalance,
+            amountWithdrawn,
             currentExecutionNonce,
             _crossChainTxId
         );
@@ -91,6 +123,18 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
+        return receiptToken.convertToAssets(shares);
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256) {
         return receiptToken.convertToAssets(shares);
     }
 }
