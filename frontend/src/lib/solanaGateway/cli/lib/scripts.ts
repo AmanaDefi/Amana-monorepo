@@ -32,6 +32,25 @@ export const createSolanaDepositTx = async (payer: PublicKey, amount: BigInt, re
   return ix;
 }
 
+export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: BigInt, recipient: string, message:any, program: anchor.Program) => {
+  const seeds = [Buffer.from(SEED, "utf-8")];
+  const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+    seeds,
+    program.programId
+  );
+  const ix = await program.methods
+    .depositAndCall(
+      amount,
+      Buffer.from(ethers.getBytes(recipient))
+    ).accounts({
+      pda: pdaAccount,
+      signer: payer,
+      systemProgram: SystemProgram.programId
+  }).instruction();
+
+  return ix;
+}
+
 
 
 

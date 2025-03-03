@@ -24,7 +24,7 @@ import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useActiveAccount } from "thirdweb/react";
 import { useWallet, Wallet, WalletContextState } from "@solana/wallet-adapter-react";
-import { SolanaZetaClient } from "@/lib/solanaGateway.ts/cli/scripts";
+import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 
 
