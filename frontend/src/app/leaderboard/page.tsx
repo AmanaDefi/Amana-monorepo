@@ -147,14 +147,16 @@ export default function Page() {
                                                     {isCurrentUser && (
                                                         <div className="absolute left-0 top-0 w-1 h-full bg-blue-500" />
                                                     )}
-                                                    <div className="flex items-center gap-2">
-                                                        {item.position <= 3 || isCurrentUser ? (
-                                                            <TrophyIcon
-                                                                className={`${getRankColor(index + 1)} w-4 h-4`}
-                                                            />
-                                                        ) : null}
-                                                        <span
-                                                            className={item.position <= 3 ? 'font-bold' : ''}>{item.position}</span>
+                                                    <div className="w-8">
+                                                        <div className="flex items-center justify-end gap-2 w-full">
+                                                            {item.position <= 3 || isCurrentUser ? (
+                                                                <TrophyIcon
+                                                                    className={`${getRankColor(item.position)} w-4 h-4`}
+                                                                />
+                                                            ) : null}
+                                                            <span
+                                                                className={item.position <= 3 ? 'font-bold' : ''}>{item.position}</span>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-4 whitespace-nowrap">

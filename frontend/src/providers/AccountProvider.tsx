@@ -7,7 +7,7 @@ import { client } from "../utils/client";
 import {usePathname} from "next/navigation";
 
 // Explicitly type the shared configuration for ConnectButton and connect
-const connectModalConfig: {
+export const connectModalConfig: {
     client: typeof client;
     chains: typeof SUPPORTED_CHAINS;
     wallets: ReturnType<typeof inAppWallet | typeof createWallet>[];
