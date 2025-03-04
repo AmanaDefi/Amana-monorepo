@@ -11,7 +11,8 @@ import curvePoolABI from "../../abis/curvePoolABI.json";
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
 import { keccak256 } from "thirdweb";
-import { swapHelperLibEddy } from "@/constants";
+const Nori = require("nori-sdk").Nori;
+const sdk = new Nori();
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -871,22 +872,29 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   return formattedBalance.toString();
 }
 
-export const getAmountOutFromSwap = async (amount: bigint, inputTokenAddress: Address, outputTokenAddress: Address) => {
-  const contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0],
-    address: swapHelperLibEddy as Address
-  });
+export const getAmountOutFromSwap = async (
+  amount: bigint,
+  inputTokenAddress: string,
+  outputTokenAddress: string
+): Promise<bigint> => {
+  const quoteRequest = {
+    inputTokenAddress,
+    outputTokenAddress,
+    sourceChainId: 7000, // Setting input chain to 7000
+    destinationChainId: 7000, // Setting output chain to 7000
+    amount: amount.toString(), // Convert bigint to string
+    slippage: 0.5, // Slippage in percentage
+  };
+
   try {
-    return await readContract({
-      contract,
-      method: "function getAmountOutCurveOrUniswap(address inputToken,address outputToken, uint amountIn,) view returns (uint shares)",
-      params: [inputTokenAddress, outputTokenAddress, amount]
-    });
+    const quoteResponse = await sdk.bridge.getQuoteForBridge(quoteRequest);
+    return BigInt(quoteResponse.quoteAmount); // Return the quoteAmount as bigint
   } catch (e) {
-    return BigInt('0')
+    console.error("Error fetching quote:", e);
+    return BigInt(0);
   }
-}
+};
+
 
 export const getSharesFromDeposit = async (amount: bigint, vaultData: VaultData) => {
   const contract = getContract({
