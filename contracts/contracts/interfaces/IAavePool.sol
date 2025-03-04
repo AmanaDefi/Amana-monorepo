@@ -8,12 +8,26 @@ interface IAavePool {
         address onBehalfOf,
         uint16 referralCode
     ) external;
+
     function withdraw(
         address asset,
         uint256 amount,
         address to
     ) external returns (uint256);
+
     function getReserveNormalizedIncome(
         address asset
+    ) external view returns (uint256);
+
+    function flashLoanSimple(
+        address receiver,
+        address asset,
+        uint256 amount,
+        bytes calldata params
+    ) external;
+
+    function getBorrowedAmount(
+        address asset,
+        address user
     ) external view returns (uint256);
 }
