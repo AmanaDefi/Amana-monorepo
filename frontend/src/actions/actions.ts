@@ -875,7 +875,8 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 export const getAmountOutFromSwap = async (
   amount: bigint,
   inputTokenAddress: string,
-  outputTokenAddress: string
+  outputTokenAddress: string,
+  vaultData: VaultData
 ): Promise<bigint> => {
   const quoteRequest = {
     inputTokenAddress,
