@@ -10,12 +10,12 @@ import ConnectButton from "./ConnectButton";
 import { useState } from "react";
 
 export const wallets = [
-  inAppWallet({
-    auth: {
-      options: ["google", "email", "passkey"],
-    },
+//   inAppWallet({
+//     auth: {
+//       options: ["google", "email", "passkey"],
+//     },
     // smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
-  }),
+//   }),
   createWallet("io.metamask"),
   createWallet("com.coinbase.wallet"),
   createWallet("me.rainbow"),

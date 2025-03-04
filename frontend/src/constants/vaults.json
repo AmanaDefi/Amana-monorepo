@@ -61,7 +61,7 @@
       symbol: "USDT.POL",
       decimals: 6,
       address: ZC_USDT_POL_ADDRESS,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false
@@ -88,7 +88,7 @@
       symbol: "USDT.BNB",
       decimals: 18,
       address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false

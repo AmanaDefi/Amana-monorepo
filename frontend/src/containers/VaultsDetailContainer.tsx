@@ -62,8 +62,8 @@ const VaultsDetailContainer: React.FC<{
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     console.log("crvTokenPrice", crvTokenPrice);
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
-    const comTokenPrice = useTokenPriceBySymbol("COM");
-    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, comTokenPrice);
+    const compTokenPrice = useTokenPriceBySymbol("COMP");
+    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
     return (
 
       vaultData ? (
