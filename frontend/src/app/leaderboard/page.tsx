@@ -9,20 +9,10 @@ import { useActiveAccount } from "thirdweb/react";
 import { ZERO_ACCOUNT } from "@/containers/VaultsContainer";
 import { useLeaderboardData } from "@/hooks/useLeaderboardData";
 
-type PaginationParams = {
-    page: number;
-    itemsPerPage: number;
-    searchQuery?: string;
-}
-
-type PaginatedResponse = {
-    data: LeaderboardUserData[];
-    total: number;
-}
 const initialSearchParams = {
     userAddress: "",
     page: 1,
-    perPage: 1
+    perPage: 5
 }
 
 export default function Page() {
@@ -33,8 +23,8 @@ export default function Page() {
     const { data: leaderboardData, isLoading, error } = useLeaderboardData(searchParams);
 
     const totalItems = useMemo(() => {
-        if(isLoading || error) return 0
-        return leaderboardData.length
+        if (isLoading || error) return 0
+        return leaderboardData.total_records
     }, [leaderboardData, isLoading]);
 
     const totalPages = Math.ceil(totalItems / searchParams.perPage);
@@ -139,10 +129,10 @@ export default function Page() {
                             {
                                 isLoading ? (
                                     Array.from({ length: 5 }).map((_, index) => <LoadingRow key={index} />)
-                                ) : leaderboardData.length == 0 ? (
+                                ) : leaderboardData?.data?.length == 0 ? (
                                     <td colSpan={3}><div className="w-full flex justify-center py-4">No Data Found</div></td>
                                 ) : (
-                                    leaderboardData.map((item: LeaderboardUserData, index: number) => {
+                                    leaderboardData?.data?.map((item: LeaderboardUserData, index: number) => {
                                         const isCurrentUser = item.user_address.toLowerCase() === currentUserAccount.address.toLowerCase() || item.user_address.toLowerCase() === searchTerm.toLocaleLowerCase();
                                         return (
                                             <tr key={index}

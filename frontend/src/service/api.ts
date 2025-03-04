@@ -14,7 +14,7 @@ export default class BaseAPI {
         const to: number = page * perPage;
         try {
             const res = await this.api.get(`/vaults/v1/leaderboard?start=${from}&limit=${to}&user_address=${userAddress}`);
-            return res.data.data
+            return res.data
         } catch (error) {
             console.log(error);
             return []
