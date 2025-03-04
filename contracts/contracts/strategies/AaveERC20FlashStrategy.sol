@@ -81,13 +81,21 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
             sharesToWithdraw = totalShares;
         }
 
-        // Determine the proportional borrowed amount that needs to be repaid
-        uint256 totalBorrowed = zeroLendPool.getBorrowedAmount(
-            address(inputToken),
-            address(this)
-        );
-        uint256 repayAmount = (fractionToWithdraw * totalBorrowed) / 1e18;
+        // Step 1: Get the current borrowed amount (totalDebtBase)
+        (
+            ,
+            // totalCollateralBase (not needed)
+            uint256 totalDebtBase, // This is the borrowed amount // availableBorrowsBase // currentLiquidationThreshold // ltv // healthFactor
+            ,
+            ,
+            ,
 
+        ) = zeroLendPool.getUserAccountData(address(this));
+
+        require(totalDebtBase > 0, "No borrowed amount to unwind");
+
+        // Step 2: Calculate the proportional debt repayment
+        uint256 repayAmount = (fractionToWithdraw * totalDebtBase) / 1e18;
         // Prepare parameters (operationType = 1 for withdrawal)
         bytes memory params = abi.encode(
             1,
