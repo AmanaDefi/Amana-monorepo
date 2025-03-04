@@ -22,7 +22,7 @@ type PaginatedResponse = {
 const initialSearchParams = {
     userAddress: "",
     page: 1,
-    perPage: 3
+    perPage: 1
 }
 
 export default function Page() {
@@ -143,7 +143,7 @@ export default function Page() {
                                     <td colSpan={3}><div className="w-full flex justify-center py-4">No Data Found</div></td>
                                 ) : (
                                     leaderboardData.map((item: LeaderboardUserData, index: number) => {
-                                        const isCurrentUser = item.user_address.toLowerCase() === currentUserAccount.address.toLowerCase();
+                                        const isCurrentUser = item.user_address.toLowerCase() === currentUserAccount.address.toLowerCase() || item.user_address.toLowerCase() === searchTerm.toLocaleLowerCase();
                                         return (
                                             <tr key={index}
                                                 role="button"
@@ -158,13 +158,13 @@ export default function Page() {
                                                         <div className="absolute left-0 top-0 w-1 h-full bg-blue-500" />
                                                     )}
                                                     <div className="flex items-center gap-2">
-                                                        {index <= 2 || isCurrentUser ? (
+                                                        {item.position <= 3 || isCurrentUser ? (
                                                             <TrophyIcon
                                                                 className={`${getRankColor(index + 1)} w-4 h-4`}
                                                             />
                                                         ) : null}
                                                         <span
-                                                            className={index <= 2 ? 'font-bold' : ''}>{index + 1}</span>
+                                                            className={item.position <= 3 ? 'font-bold' : ''}>{item.position}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-4 whitespace-nowrap">

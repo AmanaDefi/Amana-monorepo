@@ -179,7 +179,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
 
 export type LeaderboardUserData = {
   user_address: Address,
-  points: number
+  points: number,
+  position: number
 }
 
 export type SearchParams = {

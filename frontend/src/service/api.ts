@@ -11,7 +11,7 @@ export default class BaseAPI {
     async getLeaderboardData(searchParams: SearchParams) {
         const {page, perPage, userAddress} = searchParams;
         const from: number = (page - 1) * perPage;
-        const to: number = page * perPage - 1;
+        const to: number = page * perPage;
         try {
             const res = await this.api.get(`/vaults/v1/leaderboard?start=${from}&limit=${to}&user_address=${userAddress}`);
             return res.data.data
