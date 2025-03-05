@@ -23,6 +23,7 @@
     "jotai": "2.8.4",
     "mixpanel-browser": "^2.55.1",
     "next": "14.1.0",
+    "nori-sdk": "^0.0.1",
     "react": "^18.3",
     "react-copy-to-clipboard": "5.1.0",
     "react-dom": "^18.3",

@@ -78,7 +78,6 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         withdrawToken = vaultData.inputToken;
         withdrawZRC20 = withdrawToken.address;
     } else {
-        withdrawToken = determineVaultTokenFromApprovedTokens(activeChain.id, vaultData.inputToken) ?? APPROVED_TOKENS[activeChain.id][0];
         withdrawZRC20 = withdrawToken.ZRC20equivalent
     }
     if (!withdrawToken || !withdrawZRC20) {
