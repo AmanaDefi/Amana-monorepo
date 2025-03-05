@@ -12,8 +12,7 @@ import { ethers } from "ethers";
 
 const SEED = 'meta';
 
-export const createSolanaDepositTx = async (payer: PublicKey, amount: BigInt, recipient: string, program: anchor.Program) => {
-
+export const createSolanaDepositTx = async (payer: PublicKey, amount: number, recipient: string, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
@@ -21,18 +20,19 @@ export const createSolanaDepositTx = async (payer: PublicKey, amount: BigInt, re
   );
   const ix = await program.methods
     .deposit(
-      amount,
-      Buffer.from(ethers.getBytes(recipient))
+      new anchor.BN(amount),
+      ethers.getBytes(recipient)
     ).accounts({
       pda: pdaAccount,
       signer: payer,
       systemProgram: SystemProgram.programId
-  }).instruction();
+    }).instruction();
 
+  console.log({ ix })
   return ix;
 }
 
-export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: BigInt, recipient: string, message:any, program: anchor.Program) => {
+export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: BigInt, recipient: string, message: any, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
@@ -41,16 +41,12 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: Big
   const ix = await program.methods
     .depositAndCall(
       amount,
-      Buffer.from(ethers.getBytes(recipient))
+      Uint8Array.from(ethers.getBytes(recipient))
     ).accounts({
       pda: pdaAccount,
       signer: payer,
       systemProgram: SystemProgram.programId
-  }).instruction();
+    }).instruction();
 
   return ix;
 }
-
-
-
-

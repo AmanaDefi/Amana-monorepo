@@ -49,8 +49,9 @@ export class SolanaZetaClient {
 
   solanaDeposit = async (amount: BigInt, recipient: string) => {
     try {
+      console.log(`Depositing ${amount} SOL to ${recipient}`)
       const tx = new Transaction().add(
-        await createSolanaDepositTx(this.wallet.publicKey, amount, recipient, this.program)
+        await createSolanaDepositTx(this.wallet.publicKey, Number(amount), recipient, this.program)
       );
 
       const { blockhash } = await this.connection.getLatestBlockhash();

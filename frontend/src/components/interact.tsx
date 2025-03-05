@@ -30,6 +30,7 @@ import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 
 const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
     setTransactionCompleted(false)
+
     try {
         const depositAmount = inputBalance.value
         console.log("inputToken in handleDepositTransaction: ", inputToken.symbol)
@@ -84,7 +85,8 @@ const handleSolanaDepositTransation = async (vaultData: VaultData, inputBalance:
             signTransaction: walletContext.signTransaction,
             signAllTransactions: walletContext.signAllTransactions
         } as AnchorWallet
-        const client = new SolanaZetaClient(wallet)
+        const client = new SolanaZetaClient(wallet);
+        
         const tx = await client.solanaDeposit(inputBalance.value, vaultData.id );
         const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? ''
         setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${tx}`)
