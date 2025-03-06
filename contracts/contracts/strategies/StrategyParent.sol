@@ -304,7 +304,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         uint256 _executionNonce,
         bytes32 _crossChainTxId,
         uint16 slippage
-    ) internal {
+    ) internal virtual {
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             fractionOfTotalShares,
             minAmountOut
@@ -524,7 +524,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     /// @notice Handles reverts from the Gateway.
     /// @param context Context of the revert.
-    function onRevert(RevertContext calldata context) external onlyGateway {
+    function onRevert(
+        RevertContext calldata context
+    ) external virtual onlyGateway {
         (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
             context.revertMessage,
             (string, bytes32)

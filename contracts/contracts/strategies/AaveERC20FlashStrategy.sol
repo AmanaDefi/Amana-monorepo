@@ -2,11 +2,13 @@
 pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IAavePool.sol";
 import "../interfaces/IAaveReceiptToken.sol";
 import "./ERC20StrategyParent.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 /// @title AaveERC20Strategy
 /// @notice Contract for ERC20 strategies using Aave and ZetaChain.
@@ -14,9 +16,51 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    struct DepositParams {
+        uint8 operationType;
+        uint256 amount;
+        uint256 minSharesOut;
+        address receiver;
+        uint256 executionNonce;
+        bytes32 crossChainTxId;
+    }
+
+    struct WithdrawParams {
+        uint8 operationType;
+        uint256 sharesToWithdraw;
+        uint256 repayAmount;
+        uint256 minAmountOut;
+        address receiver;
+        uint256 executionNonce;
+        bytes32 crossChainTxId;
+        address user;
+        uint256 fractionOfTotalShares;
+        address withdrawZRC20;
+        address withdrawERC20;
+        uint32 withdrawChainId;
+        uint16 slippage;
+    }
+
+    struct TransferParams {
+        uint8 operationType;
+        uint256 sharesToWithdraw;
+        uint256 repayAmount;
+        uint256 minAmountOut;
+        uint256 minSharesOut;
+        address newStrategy;
+        uint256 executionNonce;
+        bytes32 crossChainTxId;
+    }
+
     IAavePool public immutable zeroLendPool;
     IAaveReceiptToken public immutable receiptToken;
-    uint256 public constant BORROW_RATIO = 8000; // 80% of supplied funds
+    IERC20 public immutable variableDebtToken;
+
+    uint16 public borrowRatio = 8000; // 80% of supplied funds
+    uint16 public flashloanPremium = 5; // 0.05% premium
+
+    event FlashLoanExecuted(uint256 flashLoanAmount, uint256 totalDeposit);
+    event FlashLoanRepaid(uint256 repayAmount);
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -29,6 +73,7 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
         address _amanaVault,
         address _inputTokenAddress,
         address _receiptTokenAddress,
+        address _variableDebtTokenAddress,
         address _gateway
     )
         StrategyParent(_name, _amanaVault, _gateway)
@@ -36,178 +81,343 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
     {
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         zeroLendPool = IAavePool(receiptToken.POOL());
+        variableDebtToken = IERC20(_variableDebtTokenAddress);
+    }
+
+    function setBorrowRatio(uint16 _borrowRatio) external onlyOwner {
+        require(_borrowRatio <= 10000, "Borrow ratio must be less than 100%");
+        borrowRatio = _borrowRatio;
+    }
+
+    function setFlashloanPremium(uint16 _flashloanPremium) external onlyOwner {
+        require(_flashloanPremium <= 10000, "Premium must be less than 100%");
+        flashloanPremium = _flashloanPremium;
     }
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
         uint256 minSharesOut
-    ) internal override {
-        require(amount > 0, "Deposit amount must be greater than zero");
-
-        // Transfer user's deposit to contract
-        inputToken.safeTransferFrom(msg.sender, address(this), amount);
-
-        // Calculate flash loan amount needed
-        uint256 flashLoanAmount = (amount * 4) / 3;
-        uint256 totalDeposit = amount + flashLoanAmount;
-
-        // Prepare parameters (operationType = 0 for deposit)
-        bytes memory params = abi.encode(
-            0,
-            amount,
-            flashLoanAmount,
-            minSharesOut
-        );
-
-        // Request a flash loan from the ZeroLend Pool
-        zeroLendPool.flashLoanSimple(
-            address(this),
-            address(inputToken),
-            flashLoanAmount,
-            params,
-            0
-        );
-    }
+    ) internal override {}
 
     function _withdrawFundsFromYieldSource(
         uint256 fractionToWithdraw,
         uint256 minAmountOut
-    ) internal override returns (uint256 amountWithdrawn) {
-        uint256 totalShares = receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw * totalShares + 5e17) /
-            1e18;
+    ) internal override returns (uint256 amountWithdrawn) {}
 
-        if (sharesToWithdraw > totalShares) {
-            sharesToWithdraw = totalShares;
-        }
-
-        // Step 1: Get the current borrowed amount (totalDebtBase)
-        (
-            ,
-            // totalCollateralBase (not needed)
-            uint256 totalDebtBase, // This is the borrowed amount // availableBorrowsBase // currentLiquidationThreshold // ltv // healthFactor
-            ,
-            ,
-            ,
-
-        ) = zeroLendPool.getUserAccountData(address(this));
-
-        require(totalDebtBase > 0, "No borrowed amount to unwind");
-
-        // Step 2: Calculate the proportional debt repayment
-        uint256 repayAmount = (fractionToWithdraw * totalDebtBase) / 1e18;
-        // Prepare parameters (operationType = 1 for withdrawal)
-        bytes memory params = abi.encode(
-            1,
-            sharesToWithdraw,
-            repayAmount,
-            minAmountOut
+    function _invest(
+        address receiver,
+        uint256 amount,
+        uint256 minSharesOut,
+        uint256 executionNonce,
+        bytes32 crossChainTxId
+    ) internal override {
+        inputToken.safeTransferFrom(msg.sender, address(this), amount);
+        _executeFlashLoan(
+            DepositParams(
+                0,
+                amount,
+                minSharesOut,
+                receiver,
+                executionNonce,
+                crossChainTxId
+            )
         );
+    }
 
-        // Request a flash loan to cover proportional repayment
+    function _calculateFlashLoanAmount(
+        uint256 amount
+    ) internal view returns (uint256) {
+        return
+            (borrowRatio * amount) / (10000 + flashloanPremium - borrowRatio);
+    }
+
+    function _executeFlashLoan(DepositParams memory params) internal {
+        bytes memory encodedParams = abi.encode(params);
         zeroLendPool.flashLoanSimple(
             address(this),
             address(inputToken),
-            repayAmount,
-            params,
+            _calculateFlashLoanAmount(params.amount),
+            encodedParams,
             0
         );
+    }
 
-        return amountWithdrawn;
+    function _divest(
+        address user,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        uint256 fractionOfTotalShares,
+        uint256 minAmountOut,
+        uint32 withdrawChainId,
+        uint256 executionNonce,
+        bytes32 crossChainTxId,
+        uint16 slippage
+    ) internal override {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 sharesToWithdraw = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        sharesToWithdraw = sharesToWithdraw > totalShares
+            ? totalShares
+            : sharesToWithdraw;
+
+        uint256 fullDebtAmount = IERC20(variableDebtToken).balanceOf(
+            address(this)
+        );
+        uint256 repayAmount = (fractionOfTotalShares * fullDebtAmount) / 1e18;
+
+        WithdrawParams memory params = WithdrawParams(
+            1,
+            sharesToWithdraw,
+            repayAmount,
+            minAmountOut,
+            receiver,
+            executionNonce,
+            crossChainTxId,
+            user,
+            fractionOfTotalShares,
+            withdrawZRC20,
+            withdrawERC20,
+            withdrawChainId,
+            slippage
+        );
+
+        _executeFlashLoanWithdrawal(params);
+    }
+
+    function _executeFlashLoanWithdrawal(
+        WithdrawParams memory params
+    ) internal {
+        bytes memory encodedParams = abi.encode(params);
+        zeroLendPool.flashLoanSimple(
+            address(this),
+            address(inputToken),
+            params.repayAmount,
+            encodedParams,
+            0
+        );
+    }
+
+    function _executeFlashLoanTransfer(TransferParams memory params) internal {
+        bytes memory encodedParams = abi.encode(params);
+        zeroLendPool.flashLoanSimple(
+            address(this),
+            address(inputToken),
+            params.repayAmount,
+            encodedParams,
+            0
+        );
     }
 
     function executeOperation(
         address asset,
         uint256 amount,
         uint256 premium,
-        address initiator,
+        address, //initiator
         bytes memory data
-    ) external override nonReentrant returns (bool success) {
+    ) external nonReentrant returns (bool success) {
         require(
             msg.sender == address(zeroLendPool),
             "Unauthorized flash loan caller"
         );
         require(asset == address(inputToken), "Invalid flash loan asset");
+        // Extract operation type (first parameter)
+        uint8 operationType;
 
-        // Decode the payload
-        (
-            uint256 operationType,
-            uint256 value1,
-            uint256 value2,
-            uint256 minAmountOut
-        ) = abi.decode(data, (uint256, uint256, uint256, uint256));
-
-        if (operationType == 0) {
-            // 🔹 Deposit Flash Loan Execution
-            uint256 initialDeposit = value1;
-            uint256 flashLoanAmount = value2;
-
-            uint256 totalDeposit = initialDeposit + flashLoanAmount;
-
-            // Approve and deposit into ZeroLend
-            inputToken.safeApprove(address(zeroLendPool), totalDeposit);
-            zeroLendPool.supply(
-                address(inputToken),
-                totalDeposit,
-                address(this)
-            );
-
-            // Borrow 80% of supplied funds
-            uint256 borrowAmount = (totalDeposit * BORROW_RATIO) / 10000;
-            zeroLendPool.borrow(
-                address(inputToken),
-                borrowAmount,
-                address(this)
-            );
-
-            // Repay the flash loan
-            uint256 repaymentAmount = flashLoanAmount + premium;
-            require(
-                borrowAmount >= repaymentAmount,
-                "Not enough borrowed to repay flash loan"
-            );
-            inputToken.safeTransfer(address(zeroLendPool), repaymentAmount);
-
-            emit FlashLoanExecuted(flashLoanAmount, totalDeposit);
-            emit LeveragedDeposit(totalDeposit, borrowAmount);
-        } else if (operationType == 1) {
-            // 🔹 Withdrawal Flash Loan Execution
-            uint256 sharesToWithdraw = value1;
-            uint256 repayAmount = value2;
-
-            // Use flash loan proceeds to repay proportional borrowed amount
-            inputToken.safeApprove(address(zeroLendPool), repayAmount);
-            zeroLendPool.repay(address(inputToken), repayAmount, address(this));
-
-            // Withdraw user's requested amount (debt is now partially repaid)
-            uint256 amountWithdrawn = zeroLendPool.withdraw(
-                address(inputToken),
-                sharesToWithdraw,
-                address(this)
-            );
-
-            // Ensure enough funds to repay the flash loan
-            uint256 repaymentAmount = amount + premium;
-            require(
-                amountWithdrawn >= repaymentAmount,
-                "Insufficient funds to repay flash loan"
-            );
-
-            // Repay the flash loan
-            inputToken.safeTransfer(address(zeroLendPool), repaymentAmount);
-
-            // Send the remaining funds to the user
-            uint256 finalUserAmount = amountWithdrawn - repaymentAmount;
-            require(
-                finalUserAmount >= minAmountOut,
-                "Final withdrawal amount too low"
-            );
-
-            emit FlashLoanRepaid(repayAmount);
-            emit WithdrawCompleted(finalUserAmount);
+        assembly {
+            operationType := mload(add(data, 32)) // Load first 32 bytes
+            operationType := byte(31, operationType) // Extract the last byte
         }
 
+        if (operationType == 0) {
+            DepositParams memory params = abi.decode(data, (DepositParams));
+            _handleDepositExecution(params, amount, premium);
+        } else if (operationType == 1) {
+            WithdrawParams memory params = abi.decode(data, (WithdrawParams));
+            _handleWithdrawalExecution(params, amount, premium);
+        } else if (operationType == 2) {
+            TransferParams memory params = abi.decode(data, (TransferParams));
+            _handleTransferExecution(params, amount, premium);
+        } else {
+            revert("Invalid operation type");
+        }
         return true;
+    }
+
+    function _handleDepositExecution(
+        DepositParams memory params,
+        uint256 amount,
+        uint256 premium
+    ) internal {
+        uint256 totalDeposit = params.amount + amount;
+        approveOrIncreaseAllowance(
+            inputToken,
+            address(zeroLendPool),
+            totalDeposit
+        );
+        zeroLendPool.supply(
+            address(inputToken),
+            totalDeposit,
+            address(this),
+            0
+        );
+        _sendInvestConfirmation(
+            params.receiver,
+            params.amount,
+            totalUnderlyingAssets(),
+            params.executionNonce,
+            params.crossChainTxId
+        );
+
+        emit FundsInvested(
+            params.crossChainTxId,
+            params.receiver,
+            params.amount
+        );
+
+        uint256 borrowAmount = amount + premium;
+        zeroLendPool.borrow(
+            address(inputToken),
+            borrowAmount,
+            2,
+            0,
+            address(this)
+        );
+
+        approveOrIncreaseAllowance(
+            inputToken,
+            address(zeroLendPool),
+            borrowAmount
+        );
+        console.log("Completed deposit");
+        emit FundsInvested(params.crossChainTxId, params.receiver, amount);
+
+        emit FlashLoanExecuted(amount, totalDeposit);
+    }
+
+    function _handleWithdrawalExecution(
+        WithdrawParams memory params,
+        uint256 amount,
+        uint256 premium
+    ) internal {
+        approveOrIncreaseAllowance(
+            inputToken,
+            address(zeroLendPool),
+            params.repayAmount
+        );
+        zeroLendPool.repay(
+            address(inputToken),
+            params.repayAmount,
+            2,
+            address(this)
+        );
+
+        uint256 amountWithdrawn = zeroLendPool.withdraw(
+            address(inputToken),
+            params.sharesToWithdraw,
+            address(this)
+        );
+
+        uint256 repaymentAmount = amount + premium;
+        require(
+            amountWithdrawn >= repaymentAmount,
+            "Insufficient funds to repay flash loan"
+        );
+
+        approveOrIncreaseAllowance(
+            inputToken,
+            address(zeroLendPool),
+            repaymentAmount
+        );
+
+        uint256 finalUserAmount = amountWithdrawn - repaymentAmount;
+        require(
+            finalUserAmount >= params.minAmountOut,
+            "Final withdrawal too low"
+        );
+
+        _sendFundsAndDivestConfirmation(
+            params.user,
+            params.receiver,
+            params.withdrawZRC20,
+            params.withdrawERC20,
+            finalUserAmount,
+            params.fractionOfTotalShares,
+            params.withdrawChainId,
+            totalUnderlyingAssets(),
+            params.executionNonce,
+            params.crossChainTxId,
+            params.slippage
+        );
+        console.log("Completed withdrawal");
+        emit FundsDivested(params.crossChainTxId, params.user, finalUserAmount);
+
+        emit FlashLoanRepaid(params.repayAmount);
+    }
+
+    function _handleTransferExecution(
+        TransferParams memory params,
+        uint256 amount,
+        uint256 premium
+    ) internal {
+        approveOrIncreaseAllowance(
+            inputToken,
+            address(zeroLendPool),
+            params.repayAmount
+        );
+        zeroLendPool.repay(
+            address(inputToken),
+            params.repayAmount,
+            2,
+            address(this)
+        );
+
+        uint256 amountWithdrawn = zeroLendPool.withdraw(
+            address(inputToken),
+            params.sharesToWithdraw,
+            address(this)
+        );
+
+        uint256 repaymentAmount = amount + premium;
+        require(
+            amountWithdrawn >= repaymentAmount,
+            "Insufficient funds to repay flash loan"
+        );
+
+        approveOrIncreaseAllowance(
+            inputToken,
+            address(zeroLendPool),
+            repaymentAmount
+        );
+
+        uint256 transferAmount = amountWithdrawn - repaymentAmount;
+        require(
+            transferAmount >= params.minAmountOut,
+            "Final withdrawal too low"
+        );
+
+        approveOrIncreaseAllowance(
+            inputToken,
+            params.newStrategy,
+            transferAmount
+        );
+        IStrategy(params.newStrategy).depositFromOldStrategy(
+            transferAmount,
+            params.minSharesOut,
+            params.executionNonce,
+            params.crossChainTxId
+        );
+        emit AssetsTransferredToNewStrategy(
+            params.newStrategy,
+            amountWithdrawn,
+            params.executionNonce,
+            params.crossChainTxId
+        );
+        console.log("Completed transfer");
+        emit FundsDivested(params.crossChainTxId, address(0), transferAmount);
+
+        emit FlashLoanRepaid(params.repayAmount);
     }
 
     /**
@@ -219,30 +429,29 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
      */
     function _transferAssetsToNewStrategy(
         uint256 minAmountOut,
-        uint256 minimumSharesOut,
+        uint256 minSharesOut,
         address newStrategy,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
-        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            1e18,
-            minAmountOut
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+
+        uint256 fullDebtAmount = IERC20(variableDebtToken).balanceOf(
+            address(this)
         );
 
-        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
-        IStrategy(newStrategy).depositFromOldStrategy(
-            amountWithdrawn,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-        emit AssetsTransferredToNewStrategy(
+        TransferParams memory params = TransferParams(
+            2, // transfer
+            totalShares,
+            fullDebtAmount,
+            minAmountOut,
+            minSharesOut,
             newStrategy,
-            amountWithdrawn,
             currentExecutionNonce,
             _crossChainTxId
         );
+
+        _executeFlashLoanTransfer(params);
     }
 
     function getStrategyWithdrawShareAmount(
@@ -261,6 +470,40 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
     /// @notice Gets the total assets held in the strategy.
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
-        return receiptToken.balanceOf(address(this));
+        uint256 totalDebt = variableDebtToken.balanceOf(address(this));
+        return receiptToken.balanceOf(address(this)) - totalDebt;
+    }
+
+    /// @notice Handles reverts from the Gateway.
+    /// @param context Context of the revert.
+    function onRevert(
+        RevertContext calldata context
+    ) external override onlyGateway {
+        (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
+            context.revertMessage,
+            (string, bytes32)
+        );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_investConfirmFailed"))
+        ) {
+            emit InvestConfirmFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsFromStrategyFailed"))
+        ) {
+            _executeFlashLoan(
+                DepositParams(0, context.amount, 0, address(0), 0, 0)
+            );
+            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
+        ) {
+            emit SendTotalUnderlyingAssetsFailed();
+        } else {
+            revert("Revert not handled");
+        }
     }
 }

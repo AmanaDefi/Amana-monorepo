@@ -15,9 +15,9 @@ abstract contract ERC20StrategyParent is StrategyParent {
         inputToken = IERC20(_inputTokenAddress);
     }
 
-    /// @notice Invests ETH into the Aave pool.
+    /// @notice Invests ERC20 into the yield source.
     /// @param receiverAddress Address of the user whose funds are being invested.
-    /// @param amount Amount of ETH to invest.
+    /// @param amount Amount of ERC20 to invest.
     /// @param _executionNonce Current execution nonce for the transaction.
     /// @param _crossChainTxId Cross-chain transaction ID.
     function _invest(
@@ -26,7 +26,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         uint256 minimumOut,
         uint256 _executionNonce,
         bytes32 _crossChainTxId
-    ) internal override {
+    ) internal virtual override {
         SafeERC20.safeTransferFrom(
             inputToken,
             msg.sender,
