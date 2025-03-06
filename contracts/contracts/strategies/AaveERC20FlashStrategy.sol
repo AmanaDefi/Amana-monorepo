@@ -8,7 +8,6 @@ import "../interfaces/IAavePool.sol";
 import "../interfaces/IAaveReceiptToken.sol";
 import "./ERC20StrategyParent.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 /// @title AaveERC20Strategy
 /// @notice Contract for ERC20 strategies using Aave and ZetaChain.
@@ -290,7 +289,6 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
             address(zeroLendPool),
             borrowAmount
         );
-        console.log("Completed deposit");
         emit FundsInvested(params.crossChainTxId, params.receiver, amount);
 
         emit FlashLoanExecuted(amount, totalDeposit);
@@ -350,7 +348,6 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
             params.crossChainTxId,
             params.slippage
         );
-        console.log("Completed withdrawal");
         emit FundsDivested(params.crossChainTxId, params.user, finalUserAmount);
 
         emit FlashLoanRepaid(params.repayAmount);
@@ -414,7 +411,6 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
             params.executionNonce,
             params.crossChainTxId
         );
-        console.log("Completed transfer");
         emit FundsDivested(params.crossChainTxId, address(0), transferAmount);
 
         emit FlashLoanRepaid(params.repayAmount);

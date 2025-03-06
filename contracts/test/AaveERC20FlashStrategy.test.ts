@@ -93,17 +93,12 @@ describe("AaveERC20FlashStrategy - Full Coverage", function () {
   });
 
   it("should revert if a non-gateway address tries to call onCall", async function () {
-    // const shares = await strategy.convertToAssets(ethers.BigNumber.from("120160000000"));
-    // console.log(shares.toString());
-    // const price = await strategy.fetchCrvUsdPrice();
-    // console.log(price.toString());
     const depositAmount = ethers.utils.parseEther("1");
     const slippage = 10000;
     const minSharesOut = ethers.utils.parseEther("0");
 
     await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
-    console.log("got here")
     await expect(simulateDepositCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
       OWNER_ADDRESS,
@@ -180,9 +175,7 @@ describe("AaveERC20FlashStrategy - Full Coverage", function () {
     const slippage = 10000;
 
     await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 3);
-    console.log(await inputToken.balanceOf(await gatewaySigner.getAddress()));
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
-    console.log(await inputToken.allowance(await gatewaySigner.getAddress(), strategy.address));
 
     await simulateDepositCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
