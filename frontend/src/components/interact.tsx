@@ -26,9 +26,10 @@ import { useActiveAccount } from "thirdweb/react";
 import { useWallet, Wallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 
-const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
+const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, walletContext: WalletContextState, activeAccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
     setTransactionCompleted(false)
 
     try {
@@ -42,8 +43,9 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             vaultData.id as Address,
             vaultData.protocol.strategyAddress as Address,
             vaultData.protocol.chainId,
-            inputToken.address as Address,
-            EOAaccount,
+            inputToken,
+            walletContext,
+            activeAccount,
             activeChain,
             depositAmount,
             setcrossChainTxId
@@ -88,6 +90,17 @@ const handleSolanaDepositTransation = async (vaultData: VaultData, inputBalance:
         const client = new SolanaZetaClient(wallet);
         
         const tx = await client.solanaDeposit(inputBalance.value, vaultData.id );
+
+        mixpanel.track("Deposit Submitted", {
+            vault: vaultData.id.toString(),
+            amount: inputBalance.value.toString(),
+        });
+        const receiptObject = {
+            transactionHash: tx,
+            client, // Assuming `client` is already defined somewhere in this scope
+            chain: activeChain,
+        };
+
         const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? ''
         setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${tx}`)
         setCrosschainInvestHash(tx);
@@ -599,8 +612,9 @@ function Interaction(
         }):
     JSX.Element {
 
-    const EVMAccount = useActiveAccount();
-    const solanaWallet = useWallet();
+    const activeAccount = useActiveAccount();
+    const walletContext = useWallet();
+    const {selectedChain} = useMultiChain();
 
     useEffect(() => {
         console.log("%c Called SWITCH!!", 'color: blue')
@@ -1061,8 +1075,8 @@ function Interaction(
             vaultData,
             inputBalance,
             inputToken,
-            EVMAccount!,
-            solanaWallet!,
+            activeAccount!,
+            walletContext,
             setTransactionCompleted,
             activeChain,
             action,
@@ -1156,8 +1170,8 @@ function handleInteraction(
     vaultData: VaultData,
     inputBalance: Balance,
     inputToken: Token,
-    EVMAccount: Account,
-    solanaWallet: WalletContextState,
+    activeAccount: Account,
+    walletContext: WalletContextState | any,
     setTransactionCompleted: (value: boolean) => void,
     activeChain: Chain,
     action: Action,
@@ -1174,7 +1188,7 @@ function handleInteraction(
                 const result = await Approvedeposit(
                     vaultData.id as Address,
                     inputToken.address as Address,
-                    EVMAccount,
+                    activeAccount,
                     activeChain,
                     depositAmount
                 )
@@ -1182,14 +1196,8 @@ function handleInteraction(
             }
         case Action.deposit:
             return async () => {
-                console.log(solanaWallet,"HHHHHH")
-                const result = solanaWallet.connected ?
-                    await handleSolanaDepositTransation(
-                        vaultData, inputBalance, inputToken, solanaWallet,
-                        setTransactionCompleted, activeChain,
-                        setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash)
-                    : await handleDepositTransaction(
-                        vaultData, inputBalance, inputToken, EVMAccount,
+                const result = await handleDepositTransaction(
+                        vaultData, inputBalance, inputToken, walletContext, activeAccount,
                         setTransactionCompleted, activeChain,
                         setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash);
                 return result;
@@ -1197,7 +1205,7 @@ function handleInteraction(
         case Action.withdraw:
             return async () => {
                 const result = await handleWithdrawTransaction(
-                    vaultData, inputBalance, inputToken, EVMAccount,
+                    vaultData, inputBalance, inputToken, activeAccount,
                     setTransactionCompleted, activeChain, setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash);
                 return result;
             }

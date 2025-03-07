@@ -103,7 +103,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   transactionCompleted: boolean,
 ) => {
-  const {selectedChain} = useMultiChain()
+  const { selectedChain } = useMultiChain()
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
       try {
@@ -273,6 +273,11 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     enabled: isTransactionStarted && !(isZetachain(strategyChainID) && isZetachain(activeChainId)),
   });
 
+  console.log({
+    vaultEvents,
+    strategyEvents,
+    withdrawalReceiverEvents
+  }, "HHHHHHHHHHHHHHHH")
   return {
     vaultEvents,
     strategyEvents,

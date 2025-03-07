@@ -10,6 +10,7 @@ import {
 
 import IDL from "./lib/IDL.json";
 import {
+  createSolanaDepositAndCallTx,
   createSolanaDepositTx,
 } from "./lib/scripts";
 import { solanaConnection } from "@/utils/utils";
@@ -52,6 +53,27 @@ export class SolanaZetaClient {
       console.log(`Depositing ${amount} SOL to ${recipient}`)
       const tx = new Transaction().add(
         await createSolanaDepositTx(this.wallet.publicKey, Number(amount), recipient, this.program)
+      );
+
+      const { blockhash } = await this.connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = this.wallet?.publicKey;
+
+      this.wallet?.signTransaction(tx);
+      const txId = this.provider.sendAndConfirm!(tx, [], {
+        commitment: "confirmed"
+      });
+      return txId;
+    } catch (e) {
+      console.log(e)
+      throw new Error;
+    }
+  }
+
+  solanaDepositAndCall = async (amount: number, recipient: string, args: any) => {
+    try {
+      const tx = new Transaction().add(
+        await createSolanaDepositAndCallTx(this.wallet.publicKey, amount, recipient, args, this.program)
       );
 
       const { blockhash } = await this.connection.getLatestBlockhash();

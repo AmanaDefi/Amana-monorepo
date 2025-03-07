@@ -1,6 +1,6 @@
 import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction, readContract, defineChain } from "thirdweb";
 import { client } from "../utils/client";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
+import { SUPPORTED_CHAINS, zeroSolAddress } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { ethers, JsonRpcProvider } from "ethers";
@@ -18,7 +18,10 @@ const sdk = new Nori();
 
 import * as dotenv from "dotenv";
 import { getCurrentSlippage } from "@/utils/utils";
-import { VaultData } from "@/types/types";
+import { Token, VaultData } from "@/types/types";
+import { WalletContextState } from "@solana/wallet-adapter-react";
+import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
+import { Wallet } from "@coral-xyz/anchor";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -439,11 +442,11 @@ export async function calculateVenusRewardsAPY(receiptTokenAddress: Address, str
   return Number(0.067);
 }
 
-export const executeDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
+export const executeDeposit = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, inputToken: Token, walletContext: WalletContextState | undefined, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
   if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
     return executeDirectDeposit(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, transactionAmount);
   } else {
-    return executeCrossChainDeposit(vaultId, strategyAddress, strategyChainId, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
+    return executeCrossChainDeposit(vaultId, strategyAddress, strategyChainId, inputToken, walletContext, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
   }
 };
 
@@ -559,12 +562,12 @@ const executeDirectDeposit = async (vaultId: Address, strategyAddress: Address, 
 
 // Helper function to generate a unique transaction ID (bytes32)
 const generateTransactionId = (
-  activeAccount: Account,
+  accountAddress: string,
   activeChain: Chain
 ): `0x${string}` => {
   const timestamp = Date.now().toString(); // Current timestamp in milliseconds
   const randomValue = Math.floor(Math.random() * 100000).toString(); // Random number
-  const inputString = `${activeAccount.address}-${activeChain.id}-${timestamp}-${randomValue}`;
+  const inputString = `${accountAddress}-${activeChain.id}-${timestamp}-${randomValue}`;
   return keccak256(toUtf8Bytes(inputString)) as `0x${string}`;
 };
 
@@ -572,7 +575,8 @@ const executeCrossChainDeposit = async (
   vaultId: Address,
   strategyAddress: Address,
   strategyChainId: number,
-  inputToken: Address,
+  inputToken: Token,
+  walletContext: WalletContextState | undefined,
   activeAccount: Account,
   activeChain: Chain,
   transactionAmount: bigint,
@@ -582,30 +586,29 @@ const executeCrossChainDeposit = async (
   const minSharesOut = await getMinSharesOut(transactionAmount, strategyAddress, strategyChainId);
   console.log("minSharesOut", minSharesOut);
 
+  const walletAddress = walletContext ? walletContext.publicKey?.toBase58()! : activeAccount.address
+
   // Generate a unique transaction ID
-  const transactionId = generateTransactionId(activeAccount, activeChain);
+  const transactionId = generateTransactionId(walletAddress, activeChain);
   console.log("Generated Transaction ID (bytes32):", transactionId);
 
-  // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
-  const isNativeToken = inputToken === ZeroAddress;
-
-  let contract, approveTx, payload, revertOptions;
+  let contract, approveTx, receipt, payload, revertOptions;
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
 
   // Prepare payload (calldata to pass to the receiver)
   payload = abiCoder.encode(
     ["address", "uint256", "uint16", "bytes32"],
-    [inputToken, minSharesOut, slippageValue, transactionId]
+    [inputToken.address, minSharesOut, slippageValue, transactionId]
   ) as `0x${string}`;
 
-  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainDepositFailed", transactionId, activeAccount.address]);
+  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainDepositFailed", transactionId, walletAddress]);
 
   // Prepare revertOptions
   revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
     true, // callOnRevert
-    activeAccount.address, // abortAddress
+    walletAddress, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
   ] as const;
@@ -616,32 +619,49 @@ const executeCrossChainDeposit = async (
   // };
 
   // Case 1: Native token (ETH, BNB, etc.)
-  if (isNativeToken) {
+  if (inputToken.isNative) {
     console.log("Native token deposit detected");
 
-    contract = getContract({
-      client,
-      chain: activeChain,
-      address: EVMGatewayAddress,
-    });
-    const depositTx = prepareContractCall({
-      contract,
-      method:
-        "function depositAndCall(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
-      params: [vaultId, payload, revertOptions],
-      value: transactionAmount,
-    });
+    if (walletContext) {
+      const wallet = {
+        publicKey: walletContext.publicKey,
+        signTransaction: walletContext.signTransaction,
+        signAllTransactions: walletContext.signAllTransactions
+      } as Wallet
+      const client = new SolanaZetaClient(wallet);
 
-    const receipt = await sendAndConfirmTransaction({
-      account: activeAccount,
-      transaction: depositTx,
-      // ...txOptions,
-    });
+      const args = {
+        types: ["address", "uint256", "uint16", "bytes32"],
+        values: [inputToken, minSharesOut, slippageValue, transactionId]
+      }
 
+      const txHash = await client.solanaDepositAndCall(Number(transactionAmount), vaultId, args);
+      console.log("Deposit executed");
+      setcrossChainTxId(transactionId)
+      return { transactionHash: txHash }
+    } else {
+      contract = getContract({
+        client,
+        chain: activeChain,
+        address: EVMGatewayAddress,
+      });
+      const depositTx = prepareContractCall({
+        contract,
+        method:
+          "function depositAndCall(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+        params: [vaultId, payload, revertOptions],
+        value: transactionAmount,
+      });
 
-    console.log("Deposit executed");
-    setcrossChainTxId(transactionId)
-    return receipt;
+      receipt = await sendAndConfirmTransaction({
+        account: activeAccount,
+        transaction: depositTx,
+        // ...txOptions,
+      });
+      console.log("Deposit executed");
+      setcrossChainTxId(transactionId)
+      return receipt;
+    }
 
   } else {
     // Case 2: ERC20 token
@@ -682,7 +702,7 @@ const executeCrossChainDeposit = async (
       params: [
         vaultId,
         transactionAmount,
-        inputToken,
+        inputToken.address,
         payload,
         revertOptions,
       ],

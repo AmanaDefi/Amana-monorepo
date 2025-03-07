@@ -8,7 +8,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { ethers } from "ethers";
+import { AbiCoder, ethers, getBytes } from "ethers";
 
 const SEED = 'meta';
 
@@ -32,16 +32,22 @@ export const createSolanaDepositTx = async (payer: PublicKey, amount: number, re
   return ix;
 }
 
-export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: BigInt, recipient: string, message: any, program: anchor.Program) => {
+export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: number, recipient:string, args: any, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
     program.programId
   );
+  const message = Buffer.from(
+    getBytes(
+      new AbiCoder().encode(args.types, args.values)
+    )
+  );
   const ix = await program.methods
     .depositAndCall(
-      amount,
-      Uint8Array.from(ethers.getBytes(recipient))
+      new anchor.BN(amount),
+      ethers.getBytes(recipient),
+      message
     ).accounts({
       pda: pdaAccount,
       signer: payer,

@@ -23,7 +23,6 @@ import {
 import { client } from "@/utils/client";
 import { wallets } from "@/components/header";
 import useSolanaBalance from "@/hooks/useSolanaBalance";
-import { WalletName } from "@solana/wallet-adapter-base";
 import { Chain } from "thirdweb";
 import { Balance } from "@/types/types";
 declare global {

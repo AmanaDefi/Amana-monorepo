@@ -22,9 +22,17 @@ const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
 export const solanaRpcUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
+export enum CHAIN_ID {
+  zetachain = deployEnv === 'testnet' ? 7001 : 7000,
+  ethereum = deployEnv === 'testnet' ? 11155111 : 1,
+  base = deployEnv === 'testnet' ? 84532 : 8453,
+  polygon = deployEnv === 'testnet' ? 80001 : 137,
+  bsc = deployEnv === 'testnet' ? 97 : 56,
+  solana = deployEnv === 'testnet' ? 901 : 900,
+}
 
 const zetaChain = defineChain({
-  chainId: deployEnv === "testnet" ? 7001 : 7000, // 7001 for testnet, 7000 for mainnet
+  chainId: CHAIN_ID.zetachain, // 7001 for testnet, 7000 for mainnet
   name: deployEnv === "testnet" ? "ZetaChain Testnet" : "ZetaChain Mainnet",
   shortName: "zeta",
   chain: "ZetaChain",
@@ -49,7 +57,7 @@ const zetaChain = defineChain({
 
 // Define Sepolia configuration
 const ethereumChain = defineChain({
-  chainId: deployEnv === "testnet" ? 11155111 : 1, // 11155111 for Sepolia Testnet, 1 for Ethereum Mainnet
+  chainId: CHAIN_ID.ethereum, // 11155111 for Sepolia Testnet, 1 for Ethereum Mainnet
   name: deployEnv === "testnet" ? "Sepolia Testnet" : "Ethereum Mainnet",
   shortName: deployEnv === "testnet" ? "sepolia" : "eth",
   chain: "ETH",
@@ -74,7 +82,7 @@ const ethereumChain = defineChain({
 
 // Define Base configuration
 const baseChain = defineChain({
-  chainId: deployEnv === "testnet" ? 84532 : 8453, // 84532 for Base Sepolia Testnet, 8453 for Base Mainnet
+  chainId: CHAIN_ID.base, // 84532 for Base Sepolia Testnet, 8453 for Base Mainnet
   name: deployEnv === "testnet" ? "Base Sepolia Testnet" : "Base Mainnet",
   shortName: "base",
   chain: "Base",
@@ -99,7 +107,7 @@ const baseChain = defineChain({
 
 // Define Polygon configuration
 const polygonChain = defineChain({
-  chainId: deployEnv === "testnet" ? 80001 : 137, // 80001 for Mumbai Testnet, 137 for Polygon Mainnet
+  chainId: CHAIN_ID.polygon, // 80001 for Mumbai Testnet, 137 for Polygon Mainnet
   name: deployEnv === "testnet" ? "Polygon Mumbai Testnet" : "Polygon Mainnet",
   shortName: "polygon",
   chain: "Polygon",
@@ -124,7 +132,7 @@ const polygonChain = defineChain({
 
 // Define BSC configuration
 const bscChain = defineChain({
-  chainId: deployEnv === "testnet" ? 97 : 56, // 97 for BSC Testnet, 56 for BSC Mainnet
+  chainId: CHAIN_ID.bsc, // 97 for BSC Testnet, 56 for BSC Mainnet
   name: deployEnv === "testnet" ? "BSC Testnet" : "BSC Mainnet",
   shortName: "bsc",
   chain: "BSC",
@@ -148,7 +156,7 @@ const bscChain = defineChain({
 });
 
 const solanaChain = defineChain({
-  chainId: deployEnv === "testnet" ? 7565163 : 7565164, // Solana uses string identifiers
+  chainId: CHAIN_ID.solana, // Solana uses string identifiers
   name: deployEnv === "testnet" ? "devnet" : "mainnet",
   shortName: "sol",
   chain: "Solana",
@@ -181,17 +189,8 @@ export const SUPPORTED_CHAINS = deployEnv === "testnet"
   ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain] // always put Zetachain first
   : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain]; // always put Zetachain first
 
-  export enum CHAIN_ID {
-    zethchain = deployEnv === 'testnet' ? 7001 : 7000,
-    ethereum = deployEnv === 'testnet' ? 11155111 : 1,
-    base = deployEnv === 'testnet' ? 84532 : 8453,
-    polygon = deployEnv === 'testnet' ? 80001 : 137,
-    bsc = deployEnv === 'testnet' ? 97 : 56,
-    solana = deployEnv === 'testnet' ? 7565163 : 7565164,
-  }
-
 export const chainConfigs = {
-  [CHAIN_ID.zethchain]: zetaChain,
+  [CHAIN_ID.zetachain]: zetaChain,
   [CHAIN_ID.ethereum]: ethereumChain,
   [CHAIN_ID.base]: baseChain,
   [CHAIN_ID.bsc]: bscChain,
@@ -398,7 +397,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7",
     },
   ],
-  7565164 : [
+  900: [
     {
       symbol: "SOL",
       address: zeroSolAddress,
@@ -429,7 +428,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       isNative: false,
       ZRC20equivalent: "0xEe9CC614D03e7Dbe994b514079f4914a605B4719",
     },
-    {symbol:"CBBTC",
+    {
+      symbol: "CBBTC",
       address: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
       decimals: 8,
       imgURL: "/cbbtc.png",
@@ -458,16 +458,15 @@ export const PRICE_IDS: { [key: string]: string } = {
   "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
   "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
-  "SOL" : "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
+  "SOL": "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
   "COMP": "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
 };
 
 export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
-  7000: "https://zetachain.blockscout.com",
-  8453: "https://basescan.org",
-  56: "https://bscscan.com",
-  137: "https://polygonscan.com",
-  1: "https://etherscan.io",
-  7565164: "https://solscan.io"
-
+  [CHAIN_ID.zetachain]: "https://zetachain.blockscout.com",
+  [CHAIN_ID.base]: "https://basescan.org",
+  [CHAIN_ID.bsc]: "https://bscscan.com",
+  [CHAIN_ID.polygon]: "https://polygonscan.com",
+  [CHAIN_ID.ethereum]: "https://etherscan.io",
+  [CHAIN_ID.solana]: "https://solscan.io"
 }
