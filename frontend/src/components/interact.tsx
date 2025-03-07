@@ -9,7 +9,7 @@ import {
     VaultData
 } from "@/types/types";
 import mixpanel from "mixpanel-browser";
-import { Approvedeposit, executeDeposit, executeWithdrawal } from "@/actions/actions"
+import { Approvedeposit, executeDeposit, executeWithdrawal, waitForReceiptSol } from "@/actions/actions"
 import { Address, Chain, signTransaction, waitForReceipt } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import MainActionButton from "@/components/button/MainActionButton"
@@ -19,7 +19,7 @@ import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { isZetachain } from "@/utils/utils";
 import { useInteractionEvents } from "@/hooks/hooks";
 import { determineVaultTokenFromApprovedTokens } from "@/utils/utils";
-import { APPROVED_TOKENS, CHAINS_EXPLORER_BASE_URL_MAINNET, deployEnv } from "@/constants/chainConfig";
+import { APPROVED_TOKENS, CHAIN_ID, CHAINS_EXPLORER_BASE_URL_MAINNET, deployEnv } from "@/constants/chainConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useActiveAccount } from "thirdweb/react";
@@ -51,19 +51,26 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             setcrossChainTxId
         );
 
+        console.log({receipt});
+
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
             amount: depositAmount.toString(),
         });
 
-        // Create an object to pass to waitForReceipt with the required fields
-        const receiptObject = {
-            transactionHash: receipt.transactionHash as `0x${string}`,
-            client, // Assuming `client` is already defined somewhere in this scope
-            chain: activeChain,
-        };
+        if (activeChain.id === CHAIN_ID.solana) {
+            console.log("Waiting for solana Cross-schain tx")
+            await waitForReceiptSol(receipt.transactionHash)
+        } else {
+            // Create an object to pass to waitForReceipt with the required fields
+            const receiptObject = {
+                transactionHash: receipt.transactionHash as `0x${string}`,
+                client, // Assuming `client` is already defined somewhere in this scope
+                chain: activeChain,
+            };
+            await waitForReceipt(receiptObject);
+        }
 
-        await waitForReceipt(receiptObject);
         const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? ''
         setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`)
         setCrosschainInvestHash(receipt.transactionHash)
@@ -78,38 +85,6 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
         }
     }
 };
-
-const handleSolanaDepositTransation = async (vaultData: VaultData, inputBalance: Balance, inputToken: Token, walletContext: WalletContextState, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
-    setTransactionCompleted(false);
-    try {
-        const wallet = {
-            publicKey: walletContext.publicKey,
-            signTransaction: walletContext.signTransaction,
-            signAllTransactions: walletContext.signAllTransactions
-        } as AnchorWallet
-        const client = new SolanaZetaClient(wallet);
-        
-        const tx = await client.solanaDeposit(inputBalance.value, vaultData.id );
-
-        mixpanel.track("Deposit Submitted", {
-            vault: vaultData.id.toString(),
-            amount: inputBalance.value.toString(),
-        });
-        const receiptObject = {
-            transactionHash: tx,
-            client, // Assuming `client` is already defined somewhere in this scope
-            chain: activeChain,
-        };
-
-        const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? ''
-        setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${tx}`)
-        setCrosschainInvestHash(tx);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false
-    }
-}
 
 const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
     setTransactionCompleted(false)
@@ -614,7 +589,7 @@ function Interaction(
 
     const activeAccount = useActiveAccount();
     const walletContext = useWallet();
-    const {selectedChain} = useMultiChain();
+    const { selectedChain } = useMultiChain();
 
     useEffect(() => {
         console.log("%c Called SWITCH!!", 'color: blue')
@@ -1026,7 +1001,7 @@ function Interaction(
         }
     }
 
-    const handleMainAction = async() => {
+    const handleMainAction = async () => {
         if (isTransactionProcessing) return;
         setIsTransactionProcessing(true);
         if (action == Action.depositApprove) {
@@ -1180,7 +1155,7 @@ function handleInteraction(
     setInputBalance: Function,
     setLastEventTxHash: Function
 ) {
-    console.log("inputToken in handleInteraction: ", inputToken.symbol, {action});
+    console.log("inputToken in handleInteraction: ", inputToken.symbol, { action });
     switch (action) {
         case Action.depositApprove:
             return async () => {
@@ -1197,9 +1172,9 @@ function handleInteraction(
         case Action.deposit:
             return async () => {
                 const result = await handleDepositTransaction(
-                        vaultData, inputBalance, inputToken, walletContext, activeAccount,
-                        setTransactionCompleted, activeChain,
-                        setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash);
+                    vaultData, inputBalance, inputToken, walletContext, activeAccount,
+                    setTransactionCompleted, activeChain,
+                    setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash);
                 return result;
             }
         case Action.withdraw:

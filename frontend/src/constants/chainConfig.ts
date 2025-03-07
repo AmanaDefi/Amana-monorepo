@@ -22,6 +22,7 @@ const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
 export const solanaRpcUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
+export const crossChainTxUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API_TEST || "" : process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API || "";
 export enum CHAIN_ID {
   zetachain = deployEnv === 'testnet' ? 7001 : 7000,
   ethereum = deployEnv === 'testnet' ? 11155111 : 1,
