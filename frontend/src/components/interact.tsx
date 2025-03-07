@@ -28,10 +28,6 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     try {
         const depositAmount = inputBalance.value
         console.log("inputToken in handleDepositTransaction: ", inputToken.symbol)
-        mixpanel.track("Deposit Submitted", {
-            vault: vaultData.id.toString(),
-            amount: depositAmount.toString(),
-        });
         const receipt = await executeDeposit(
             vaultData.id as Address,
             vaultData.protocol.strategyAddress as Address,
