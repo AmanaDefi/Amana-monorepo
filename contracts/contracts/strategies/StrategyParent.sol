@@ -416,7 +416,12 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(this),
             true,
             address(this),
-            abi.encode("_returnFundsFromStrategyFailed", _crossChainTxId),
+            abi.encode(
+                "_returnFundsFromStrategyFailed",
+                _crossChainTxId,
+                _executionNonce,
+                amountWithdrawn
+            ),
             uint256(1000000)
         );
         _sendDepositAndCall(
@@ -542,6 +547,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 0);
+            executionNonce -= 1;
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
