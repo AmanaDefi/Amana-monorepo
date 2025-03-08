@@ -308,7 +308,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (newStrategyAddress == address(0)) revert InvalidAddress();
         if (newStrategyAddress == strategyAddress) revert InvalidAddress();
 
-        if (totalAssets() == 1) {
+        if (totalAssets() <= 1) {
             strategyAddress = newStrategyAddress;
             emit StrategyUpdated(newStrategyAddress);
             return;
@@ -326,7 +326,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 block.number // Current block number
             )
         );
-
+        strategyAddress = newStrategyAddress;
         bytes memory outgoingMessage = abi.encode(
             address(0),
             address(0),
