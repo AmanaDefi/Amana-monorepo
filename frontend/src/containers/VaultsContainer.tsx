@@ -9,7 +9,7 @@ import { Account } from "thirdweb/wallets";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
-const ZERO_ACCOUNT: Account = {
+export const ZERO_ACCOUNT: Account = {
   address: "0x0000000000000000000000000000000000000000",
   sendTransaction: async () => {
     throw new Error("sendTransaction not implemented for ZERO_ACCOUNT");

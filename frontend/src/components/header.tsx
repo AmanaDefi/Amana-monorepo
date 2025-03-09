@@ -60,6 +60,13 @@ const Header = () => {
                             About
                         </span>
                         <span
+                            className={`cursor-pointer ${path === "/leaderboard" ? "font-bold text-themeColor" : ""
+                                }`}
+                            onClick={() => router.push("/leaderboard")}
+                        >
+                            Leaderboard
+                        </span>
+                        <span
                             className={`cursor-pointer ${path === "/roadmap" ? "font-bold text-themeColor" : ""
                                 }`}
                             onClick={() => router.push("/roadmap")}
@@ -74,7 +81,7 @@ const Header = () => {
                         connectModal={{ size: "compact" }}
                     />
                 </div>
-                <MobileMenuModal />
+                <MobileMenuModal/>
             </div>
         </header>
     )
