@@ -81,10 +81,10 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
     }
     try {
 
-        const withdrawAmount = inputBalance.value
+        const withdrawShareAmount = inputBalance.value
         mixpanel.track("Withdraw Submitted", {
             vault: vaultData.id.toString(),
-            amount: withdrawAmount.toString(),
+            amount: withdrawShareAmount.toString(),
         });
         const receipt = await executeWithdrawal(
             vaultData.id as Address,
@@ -92,14 +92,14 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             vaultData.protocol.chainId as number,
             EOAaccount,
             activeChain,
-            withdrawAmount,
+            withdrawShareAmount,
             withdrawToken.address as Address,
             withdrawZRC20 as Address,
             setcrossChainTxId
         );
         mixpanel.track("Withdraw Succeeded", {
             vault: vaultData.id.toString(),
-            amount: withdrawAmount.toString(),
+            amount: withdrawShareAmount.toString(),
         });
 
         // Create an object to pass to waitForReceipt with the required fields
