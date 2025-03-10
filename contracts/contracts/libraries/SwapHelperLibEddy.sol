@@ -281,29 +281,29 @@ library SwapHelperLibEddy {
         }
 
         // UniswapV3 Indirect Swap via USDC_ETH_ADDRESS (Checks both fee tiers)
-        (exists, feeTier) = _existsV3Pool(zrc20, USDC_ETH_ADDRESS);
-        if (exists) {
-            uint24 feeTier2;
-            (exists, feeTier2) = _existsV3Pool(USDC_ETH_ADDRESS, targetZRC20);
-            if (exists) {
-                path = new address[](3);
-                feeTiers = new uint24[](2);
-                path[0] = zrc20;
-                path[1] = USDC_ETH_ADDRESS;
-                path[2] = targetZRC20;
-                feeTiers[0] = feeTier;
-                feeTiers[1] = feeTier2;
-                encodedPath = abi.encodePacked(path[0]);
-                for (uint256 k = 0; k < feeTiers.length; k++) {
-                    encodedPath = abi.encodePacked(
-                        encodedPath,
-                        feeTiers[k],
-                        path[k + 1]
-                    );
-                }
-                return (path, feeTiers, encodedPath);
-            }
-        }
+        // (exists, feeTier) = _existsV3Pool(zrc20, USDC_ETH_ADDRESS);
+        // if (exists) {
+        //     uint24 feeTier2;
+        //     (exists, feeTier2) = _existsV3Pool(USDC_ETH_ADDRESS, targetZRC20);
+        //     if (exists) {
+        //         path = new address[](3);
+        //         feeTiers = new uint24[](2);
+        //         path[0] = zrc20;
+        //         path[1] = USDC_ETH_ADDRESS;
+        //         path[2] = targetZRC20;
+        //         feeTiers[0] = feeTier;
+        //         feeTiers[1] = feeTier2;
+        //         encodedPath = abi.encodePacked(path[0]);
+        //         for (uint256 k = 0; k < feeTiers.length; k++) {
+        //             encodedPath = abi.encodePacked(
+        //                 encodedPath,
+        //                 feeTiers[k],
+        //                 path[k + 1]
+        //             );
+        //         }
+        //         return (path, feeTiers, encodedPath);
+        //     }
+        // }
 
         // UniswapV2 Indirect Swap via WZETA_TOKEN
         if (

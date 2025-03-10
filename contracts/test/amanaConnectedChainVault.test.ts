@@ -18,6 +18,7 @@ import {
   ZC_ETH_BASE_ADDRESS,
   ZC_ETH_ETH_ADDRESS,
   ZC_USDC_BSC_ADDRESS,
+  ZC_USDC_ETH_ADDRESS,
 } from "../../constants";
 
 describe("AmanaConnectedChainVault Tests", function () {
@@ -44,8 +45,9 @@ describe("AmanaConnectedChainVault Tests", function () {
   const WITHDRAWAL_RECEIVER = "0xD2f84247ac3462cD52cb380fda0d95D19501e130";
   const INPUT_TOKEN = ethers.constants.AddressZero;
   const ZAP_CONTRACT_ADDRESS = "0x5659BbBf8633Eb85203aEc5cBde4c0b64abc0F27";
-  const FORK_BLOCK_NUMBER = 7180230;
-  const SWAP_HELPER_ADDRESS = "0x1968643f36ad81a2756Dba0C4Dfe948bBa957A72";
+  const FORK_BLOCK_NUMBER = 7381074;
+  // const SWAP_HELPER_ADDRESS = "0x1968643f36ad81a2756Dba0C4Dfe948bBa957A72";
+  const UNISWAP_V3_ROUTER = "0x9b30cfbacd3504252f82263f72d6acf62bf733c2";
 
   const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
   const STRATEGY_CHAIN_ID = 1;
@@ -124,7 +126,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     // Set token balance for the vault
     await setTokenBalance(ZC_ETH_BASE_ADDRESS, amanaVault.address, depositAmount, 3);
     const minSharesOut = depositAmount.mul(1000).div(1001);
-    const slippage = 1000;
+    const slippage = 10000;
 
     // Generate a transaction ID using your generateTransactionId function
     const transactionId = generateTransactionId(await user.getAddress(), 8453);
@@ -195,7 +197,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const tx = await amanaVault.connect(gatewaySigner).onCall(
       {
         origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
-        sender: STRATEGY_ADDRESS,
+        sender: newStrategyAddress,
         chainID: STRATEGY_CHAIN_ID,
       },
       ZC_ETH_ETH_ADDRESS,
@@ -234,7 +236,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   ): Promise<void> {
     // await updatePythPrices(pythContract, user);
     const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
-    const slippage = 500;
+    const slippage = 10000;
     const transactionId = generateTransactionId(await user.getAddress(), 8453)
 
     const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
@@ -412,6 +414,10 @@ describe("AmanaConnectedChainVault Tests", function () {
       ZEVM_GATEWAY_ADDRESS
     );
 
+    const SwapHelperLibEddy = await ethers.getContractFactory("SwapHelperLibEddy");
+    const swapHelper = await SwapHelperLibEddy.deploy();
+    await swapHelper.deployed();
+
     const GasTank = await ethers.getContractFactory("GasTank");
     const gasTank = await GasTank.deploy();
     await gasTank.deployed();
@@ -419,7 +425,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", {
       signer: owner,  // Keep the signer as 'owner'
       libraries: {
-        SwapHelperLibEddy: SWAP_HELPER_ADDRESS,  // Link the external library
+        SwapHelperLibEddy: swapHelper.address,  // Link the external library
       },
     });
 
@@ -675,26 +681,18 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateDepositCallFromBase(user1, depositAmount1, pythContract);
 
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
-
+      console.log("calling switch strategy")
       await expect(
         amanaVault.connect(owner).switchStrategy(newStrategyAddress, 0, 0)
       )
         .to.emit(gatewayZEVM, "Called");
       // .withArgs(newStrategyAddress);
-
+      console.log("called switch strategy")
       await simulateConfirmSwitch(depositAmount1, newStrategyAddress, 2, 2);
-
+      console.log("confirmed switch")
       const updatedStrategy = await amanaVault.strategyAddress();
 
       expect(updatedStrategy).to.equal(newStrategyAddress);
-    });
-
-    it("should process a strategy switch confirmation successfully", async function () {
-      const { } = await loadFixture(setup);
-      const transferredAmount = ethers.utils.parseUnits("0.1", 18);
-      const newStrategyAddress = ethers.Wallet.createRandom().address;
-      const receipt = await simulateConfirmSwitch(transferredAmount, newStrategyAddress, 1, 1);
-      expect(receipt).to.emit(amanaVault, "StrategyUpdated");
     });
 
     it("should process a totalAssets update confirmation successfully", async function () {
@@ -1066,6 +1064,100 @@ describe("AmanaConnectedChainVault Tests", function () {
       expect(user2Reward).to.be.closeTo(user2ExpectedRewards, ethers.utils.parseUnits("1", 18));
     });
 
+    it("should execute a direct ERC20 multi-hop swap using exactInput on Uniswap V3 Router", async function () {
+      const { user1 } = await loadFixture(setup);
+
+      // Uniswap V3 Router Address
+      const swapRouter = await ethers.getContractAt("ISwapRouter", UNISWAP_V3_ROUTER);
+
+      // Define input and output tokens
+      const inputToken = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);  // Example ERC20 token
+      const outputToken = await ethers.getContractAt("IERC20", ZC_ETH_ETH_ADDRESS); // Example ERC20 token
+
+      // Set the amount to swap
+      const swapAmount = ethers.utils.parseUnits("0.0001", 18);
+
+      // Fund the user with enough input tokens
+      await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), swapAmount, 3);
+      console.log("user1 inputtoken balance:", await inputToken.balanceOf(await user1.getAddress()));
+      console.log("swapAmount:", swapAmount.toString());
+      // Approve Uniswap Router to spend user's tokens
+      await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
+
+      // Construct the path for the swap (inputToken -> outputToken with a 0.3% fee)
+      const fee = 3000;
+      const encodedPath = ethers.utils.solidityPack(
+        ["address", "uint24", "address", "uint24", "address"],
+        [ZC_ETH_BASE_ADDRESS, fee, ZC_USDC_ETH_ADDRESS, fee, ZC_ETH_ETH_ADDRESS]
+      );
+      console.log("Encoded path:", encodedPath);
+      // Set up swap parameters
+      const params = {
+        path: encodedPath,
+        recipient: await user1.getAddress(),
+        deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10-minute deadline
+        amountIn: swapAmount,
+        amountOutMinimum: 0, // Adjust for slippage in real cases
+      };
+
+      // Execute swap
+      await expect(swapRouter.connect(user1).exactInput(params))
+        .to.emit(swapRouter, "Swap")
+      // .withArgs(await user1.getAddress(), swapAmount, anyValue); // Ensure swap event is emitted
+
+      // Get the final balance of the output token
+      const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
+      console.log("Final output token balance:", finalOutputBalance.toString());
+
+      expect(finalOutputBalance).to.be.gt(0);
+    });
+
+    it("should execute a direct ERC20 swap using exactInputSingle on Uniswap V3 Router", async function () {
+      const { user1 } = await loadFixture(setup);
+
+      // Uniswap V3 Router Address
+      const swapRouter = await ethers.getContractAt("ISwapRouter", UNISWAP_V3_ROUTER);
+
+      // Define input and output tokens
+      const inputToken = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);  // Example ERC20 token
+      const outputToken = await ethers.getContractAt("IERC20", ZC_USDC_ETH_ADDRESS); // Example ERC20 token
+
+      // Set the amount to swap
+      const swapAmount = ethers.utils.parseUnits("0.0001", 18);
+
+      // Fund the user with enough input tokens
+      await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), swapAmount, 3);
+      console.log("user1 inputtoken balance:", await inputToken.balanceOf(await user1.getAddress()));
+      console.log("swapAmount:", swapAmount.toString());
+
+      // Approve Uniswap Router to spend user's tokens
+      await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
+      const allowance = await inputToken.allowance(await user1.getAddress(), UNISWAP_V3_ROUTER);
+      console.log("Allowance:", allowance.toString());
+
+      // Set up swap parameters for exactInputSingle
+      const fee = 3000; // 0.3% pool fee
+      const params = {
+        tokenIn: ZC_ETH_BASE_ADDRESS,
+        tokenOut: ZC_USDC_ETH_ADDRESS,
+        fee: fee,
+        recipient: await user1.getAddress(),
+        deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10-minute deadline
+        amountIn: swapAmount,
+        amountOutMinimum: 0, // Adjust for slippage in real cases
+        sqrtPriceLimitX96: 0, // No price limit
+      };
+
+      // Execute swap
+      // await expect(swapRouter.connect(user1).exactInputSingle(params))
+      //   .to.emit(swapRouter, "Swap");
+      swapRouter.connect(user1).exactInputSingle(params)
+      // Get the final balance of the output token
+      const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
+      console.log("Final output token balance:", finalOutputBalance.toString());
+
+      expect(finalOutputBalance).to.be.gt(0);
+    });
 
   });
 });

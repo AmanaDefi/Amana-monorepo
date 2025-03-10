@@ -156,12 +156,6 @@ abstract contract AmanaVaultBase is
         depositsPaused = !depositsPaused;
     }
 
-    // function getFractionOfTotalShares(
-    //     uint256 shares
-    // ) public view returns (uint256) {
-    //     return (shares * 1e18 + totalSupply() / 2) / totalSupply(); // we add totalSupply() / 2 to prevent truncation errors
-    // }
-
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
      * @param _strategyAddress The address of the new strategy.
@@ -671,11 +665,10 @@ abstract contract AmanaVaultBase is
         } else {
             // Get the path and fee tiers
             (
-                address[] memory path,
+                address[] memory path, // uint24[] memory feeTiers
                 ,
                 bytes memory encodedPath
             ) = SwapHelperLibEddy.getPath(zrc20, targetZRC20);
-
             if (encodedPath.length > 0) {
                 // Uniswap V3 Swap
                 IZRC20(zrc20).approve(
@@ -683,7 +676,20 @@ abstract contract AmanaVaultBase is
                     amount
                 );
 
-                // Swap on Uniswap V3
+                // ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+                //     .ExactInputSingleParams({
+                //         tokenIn: zrc20,
+                //         tokenOut: targetZRC20,
+                //         fee: feeTiers[0],
+                //         recipient: vault,
+                //         deadline: block.timestamp + maxDeadline,
+                //         amountIn: amount,
+                //         amountOutMinimum: minimumOut,
+                //         sqrtPriceLimitX96: 0
+                //     });
+
+                // ISwapRouter(SwapHelperLibEddy.UNISWAP_V3_ROUTER)
+                //     .exactInputSingle(params);
                 ISwapRouter.ExactInputParams memory params = ISwapRouter
                     .ExactInputParams({
                         path: encodedPath,
