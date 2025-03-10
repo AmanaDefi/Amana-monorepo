@@ -101,11 +101,14 @@ export class SolanaZetaClient {
       throw new Error(`Transaction failed`);
     }
   }
-  depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args:any) => {
-    try{
+  depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any) => {
+    try {
       const tx = new Transaction().add(
-        await createDepositSplTokenAndCallTx(this.wallet.publicKey, mint, amount, recipient, args, this.program)
-      )
+        await createDepositSplTokenAndCallTx(this.wallet.publicKey, new PublicKey(mint), amount, recipient, args, this.program)
+      );
+    } catch (error) {
+      console.log(error);
+      throw new Error(`Transaction failed`);
     }
   }
 }

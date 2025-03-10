@@ -57,34 +57,34 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
   return ix;
 }
 
-export const createWithdrawTx = async (payer: PublicKey, amount: number, recipient: PublicKey, args: any, program: anchor.Program) => {
-  const seeds = [Buffer.from(SEED, "utf-8")];
-  const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
-    seeds,
-    program.programId
-  );
-  const message = Buffer.from(
-    getBytes(
-      new AbiCoder().encode(args.types, args.values)
-    )
-  );
-  const ix = await program.methods
-    .depositAndCall(
-      new anchor.BN(amount),
-      signature,
-      recover_id,
-      message_hash,
-      nonce,
-      message
-    ).accounts({
-      pda: pdaAccount,
-      signer: payer,
-      recipient,
-      systemProgram: SystemProgram.programId
-    }).instruction();
+// export const createWithdrawTx = async (payer: PublicKey, amount: number, recipient: PublicKey, args: any, program: anchor.Program) => {
+//   const seeds = [Buffer.from(SEED, "utf-8")];
+//   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+//     seeds,
+//     program.programId
+//   );
+//   const message = Buffer.from(
+//     getBytes(
+//       new AbiCoder().encode(args.types, args.values)
+//     )
+//   );
+//   const ix = await program.methods
+//     .depositAndCall(
+//       new anchor.BN(amount),
+//       signature,
+//       recover_id,
+//       message_hash,
+//       nonce,
+//       message
+//     ).accounts({
+//       pda: pdaAccount,
+//       signer: payer,
+//       recipient,
+//       systemProgram: SystemProgram.programId
+//     }).instruction();
 
-  return ix;
-}
+//   return ix;
+// }
 
 export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, 'utf-8')];
@@ -99,11 +99,7 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
   );
   const from = getAssociatedTokenAddressSync(mint, payer);
   const to = getAssociatedTokenAddressSync(mint, pdaAccount);
-  const message = Buffer.from(
-    getBytes(
-      new AbiCoder().encode(args.types, args.values)
-    )
-  );
+  const message = Buffer.from(getBytes(new AbiCoder().encode(args.types, args.values)));
 
   const ix = await program.methods
     .depositSplTokenAndCall(
