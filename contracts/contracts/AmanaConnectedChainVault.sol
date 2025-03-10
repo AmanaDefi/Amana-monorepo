@@ -11,7 +11,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     using Math for uint256;
 
     uint256 latestTotalAssetsUpdateFromStrategy;
-    uint256 lastProcessedNonce;
+    uint256 public lastProcessedNonce;
 
     struct Confirmation {
         address user;
@@ -308,7 +308,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (newStrategyAddress == address(0)) revert InvalidAddress();
         if (newStrategyAddress == strategyAddress) revert InvalidAddress();
 
-        if (totalAssets() == 1) {
+        if (totalAssets() <= 1) {
             strategyAddress = newStrategyAddress;
             emit StrategyUpdated(newStrategyAddress);
             return;
@@ -326,7 +326,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 block.number // Current block number
             )
         );
-
+        strategyAddress = newStrategyAddress;
         bytes memory outgoingMessage = abi.encode(
             address(0),
             address(0),
@@ -688,10 +688,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             totalSupply() +
             totalSupply() /
             2) / 1e18; // we add totalSupply() to prevent truncation errors
+        if (shares > balanceOf(user)) {
+            shares = balanceOf(user);
+        }
         uint256 fractionOfUserShares = (shares * 1e18) / balanceOf(user);
         uint256 principalWithdrawn = (fractionOfUserShares *
             userPrincipal[user]) / 1e18;
-
         uint256 feeToWithdraw;
         if (amountWithdrawn > principalWithdrawn) {
             feeToWithdraw =
@@ -705,8 +707,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(user, shares);
-        pendingWithdrawals[user] -= shares;
-
+        if (pendingWithdrawals[user] >= shares) {
+            pendingWithdrawals[user] -= shares;
+        } else {
+            pendingWithdrawals[user] = 0; // Prevent underflow
+        }
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
             userChainId,

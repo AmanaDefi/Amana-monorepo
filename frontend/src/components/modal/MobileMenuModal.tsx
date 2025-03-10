@@ -21,7 +21,8 @@ export default function MobileMenuModal() {
             </button>
             <div
                 className={`z-[1] lg:!hidden fixed top-[var(--header-height)] bottom-0 left-0 right-0 bg-black ${openedMobileMenu ? 'flex' : 'hidden'}`}>
-                <nav className="flex flex-col h-fit divide-y divide-tuatara-900 border-b border-tuatara-900 w-full text-center">
+                <nav
+                    className="flex flex-col h-fit divide-y divide-tuatara-900 border-b border-tuatara-900 w-full text-center">
                         <span
                             className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
                             }`}
@@ -42,7 +43,14 @@ export default function MobileMenuModal() {
                         onClick={() => router.push("/about")}
                     >
                             About
-                        </span>
+                    </span>
+                    <span
+                        className={`cursor-pointer py-6 ${path === "/leaderboard" ? "font-bold text-themeColor" : ""
+                        }`}
+                        onClick={() => router.push("/leaderboard")}
+                    >
+                            Leaderboard
+                    </span>
                 </nav>
             </div>
         </>

@@ -18,6 +18,7 @@ export interface Domain {
   chainId: number;
   verifyingContract: string;
 }
+
 export interface Rate {
   id: string;
   type: string;
@@ -175,3 +176,15 @@ export interface UserSettings {
 export const DEFAULT_SETTINGS: UserSettings = {
   slippage: { isAuto: true, value: 100 }
 };
+
+export type LeaderboardUserData = {
+  user_address: Address,
+  points: number,
+  position: number
+}
+
+export type SearchParams = {
+  userAddress: string,
+  page: number,
+  perPage: number,
+}

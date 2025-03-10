@@ -207,28 +207,34 @@ library SwapHelperLibEddy {
         if (zrc20 == targetZRC20) {
             revert IErrors.InvalidAddress();
         }
-        if (zrc20 == targetZRC20) {
-            revert IErrors.InvalidAddress();
-        }
-        bool existsDirectPool = _existsPairPool(zrc20, targetZRC20);
 
-        if (existsDirectPool) {
+        if (_existsPairPool(zrc20, targetZRC20)) {
             path = new address[](2);
             path[0] = zrc20;
             path[1] = targetZRC20;
-        } else if (
-            // Check for intermediate liquidity via WZeta
-            !_existsPairPool(zrc20, WZETA_TOKEN) ||
-            !_existsPairPool(WZETA_TOKEN, targetZRC20)
+            return path;
+        }
+        if (
+            _existsPairPool(zrc20, USDC_ETH_ADDRESS) &&
+            _existsPairPool(USDC_ETH_ADDRESS, targetZRC20)
         ) {
-            revert IErrors.InsufficientLiquidity();
-        } else {
+            path = new address[](3);
+            path[0] = zrc20;
+            path[1] = USDC_ETH_ADDRESS;
+            path[2] = targetZRC20;
+            return path;
+        }
+        if (
+            _existsPairPool(zrc20, WZETA_TOKEN) &&
+            _existsPairPool(WZETA_TOKEN, targetZRC20)
+        ) {
             path = new address[](3);
             path[0] = zrc20;
             path[1] = WZETA_TOKEN;
             path[2] = targetZRC20;
+            return path;
         }
-        return path;
+        revert IErrors.InsufficientLiquidity();
     }
 
     function getAmountOut(

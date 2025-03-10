@@ -13,6 +13,7 @@ import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
 import { keccak256 } from "thirdweb";
 const Nori = require("nori-sdk").Nori;
 const sdk = new Nori();
+import { formatUnits } from "viem";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -23,6 +24,7 @@ import { WalletContextState } from "@solana/wallet-adapter-react";
 import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet } from "@coral-xyz/anchor";
 import axios from "axios";
+import { API_URL } from "@/config.ts/apiConfig";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -806,7 +808,7 @@ const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Addres
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
     address: vaultId
   });
-
+  console.log("withdrawShareAmount", withdrawShareAmount);
   const withdrawTx = prepareContractCall({
     contract,
     method:
@@ -847,7 +849,7 @@ const executeCrossChainWithdrawal = async (
   });
 
   const slippageValue = (slippage * 100).toFixed(0);
-
+  console.log("withdrawShareAmount", withdrawShareAmount);
   console.log("minAmountOut", minAmountOut);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
@@ -916,24 +918,27 @@ export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: 
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [shares]
   });
-  const formattedBalance = Number(balance) / 10 ** decimals;
-  return formattedBalance.toString();
+  return formatUnits(balance, decimals);
 }
+
 
 export const fetchUserVaultMaxRedeem = async (decimals: number, userAddress: Address, vaultAddress: Address) => {
   const contract = getContract({
     client,
-    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
+    chain: SUPPORTED_CHAINS[0], // Always Zetachain
     address: vaultAddress
   });
+
   const maxRedeem = await readContract({
     contract,
     method: "function maxRedeem(address) view returns (uint256)",
     params: [userAddress]
   });
-  const formattedMaxRedeem = Number(maxRedeem) / 10 ** decimals;
-  return formattedMaxRedeem.toString();
-}
+
+  // Use formatUnits instead of Number conversion
+  return formatUnits(maxRedeem, decimals);
+};
+
 
 export const fetchTotalAssets = async (vaultAddress: Address) => {
 
@@ -950,8 +955,7 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
     contract,
     method: "function decimals() view returns (uint8)"
   });
-  const formattedBalance = Number(balance) / 10 ** decimals;
-  return formattedBalance.toString();
+  return formatUnits(balance, decimals);
 }
 
 export const getAmountOutFromSwap = async (
