@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ERC20StrategyParent.sol";
 import "../interfaces/ICurvePool.sol";
 import "../interfaces/ICurveLiquidityGauge.sol";
-import "../interfaces/IUniswapV3Router.sol";
+import "../interfaces/ISwapRouter.sol";
 import "../interfaces/IPriceOracle.sol";
 
 // input token USDC 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
@@ -21,7 +21,7 @@ contract CurveERC20Strategy is ERC20StrategyParent {
 
     ICurvePool public immutable receiptToken;
     ICurveLiquidityGauge public immutable gauge;
-    IUniswapV3Router public immutable uniswapRouter;
+    ISwapRouter public immutable uniswapRouter;
 
     uint256 public constant USDC_INDEX = 1; // USDC's index in the Curve pool
     address public constant REWARD_TOKEN =
@@ -55,7 +55,7 @@ contract CurveERC20Strategy is ERC20StrategyParent {
     {
         receiptToken = ICurvePool(_receiptTokenAddress);
         gauge = ICurveLiquidityGauge(_liquidityGaugeAddress);
-        uniswapRouter = IUniswapV3Router(UNISWAP_ROUTER);
+        uniswapRouter = ISwapRouter(UNISWAP_ROUTER);
     }
 
     /// @notice Allows the owner to enable or disable staking.
@@ -156,7 +156,7 @@ contract CurveERC20Strategy is ERC20StrategyParent {
         path[0] = REWARD_TOKEN;
         path[1] = address(inputToken);
 
-        IUniswapV3Router.ExactInputSingleParams memory swapParams = IUniswapV3Router
+        ISwapRouter.ExactInputSingleParams memory swapParams = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: REWARD_TOKEN,
                 tokenOut: address(inputToken),

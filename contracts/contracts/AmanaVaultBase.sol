@@ -15,6 +15,7 @@ import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ICurvePool.sol";
 import "./interfaces/IZapContract.sol";
+import "./interfaces/ISwapRouter.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
 
@@ -43,13 +44,16 @@ abstract contract AmanaVaultBase is
     address public strategyAddress;
     address public treasury;
     address public withdrawalReceiver;
-    uint16 public perfFee;
-    uint256 public totalPrincipal;
-    mapping(address => uint256) internal userPrincipal;
-    IGasTank gasTank;
+    IGasTank internal gasTank;
+
+    uint256 internal totalPrincipal;
+
     uint32 public gasLimitForWithdrawAndCall; // this is used in two places - for investing into the strategy and returning funds to the user
     uint32 public gasLimitForCall; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
+    uint16 public perfFee;
     bool public depositsPaused;
+
+    mapping(address => uint256) internal userPrincipal;
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
@@ -63,9 +67,8 @@ abstract contract AmanaVaultBase is
 
     event StrategyUpdated(address indexed newStrategyAddress);
     event PerformanceFeePaid(address indexed user, uint256 amount);
-    event PerformanceFeeUpdated(uint256 newFeeRate);
+    event PerformanceFeeUpdated(uint16 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event ContextDataRevert(RevertContext context);
     event TreasuryUpdated(address indexed newTreasury);
     event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
     event GasTankUpdated(address indexed newGasTank);
@@ -165,10 +168,8 @@ abstract contract AmanaVaultBase is
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function setStrategy(address _strategyAddress) external onlyOwner {
-        if (
-            strategyAddress != address(0) || _strategyAddress == strategyAddress
-        ) revert StrategyAlreadySet();
-        if (_strategyAddress == address(0)) revert InvalidAddress();
+        if (_strategyAddress == address(0) || strategyAddress != address(0))
+            revert InvalidAddress();
         strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
     }
@@ -341,9 +342,9 @@ abstract contract AmanaVaultBase is
                 userChainId
             );
         }
-        uint256 outputAmount = assets;
-        if (zrc20source != address(asset())) {
-            outputAmount = swap(
+        uint256 outputAmount = zrc20source == address(asset())
+            ? assets
+            : swap(
                 zrc20source,
                 assets,
                 address(asset()),
@@ -351,7 +352,7 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        }
+
         _investAssets(
             outputAmount,
             minimumOut,
@@ -635,7 +636,7 @@ abstract contract AmanaVaultBase is
      * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
      * @param vault The address where the swapped tokens will be sent.
      * @param maxDeadline The maximum deadline for the swap to complete.
-     * @return The amount of output tokens received.
+     * @return amountOut The amount of output tokens received.
      * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
      */
     function swap(
@@ -645,7 +646,7 @@ abstract contract AmanaVaultBase is
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline
-    ) internal returns (uint256) {
+    ) internal returns (uint256 amountOut) {
         uint256 minimumOut = SwapHelperLibEddy.calculateMinAmountOut(
             zrc20,
             targetZRC20,
@@ -668,24 +669,53 @@ abstract contract AmanaVaultBase is
                     minimumOut // Minimum amount of output token to receive
                 );
         } else {
-            address[] memory path = SwapHelperLibEddy.getPath(
-                zrc20,
-                targetZRC20
-            );
+            // Get the path and fee tiers
+            (
+                address[] memory path,
+                ,
+                bytes memory encodedPath
+            ) = SwapHelperLibEddy.getPath(zrc20, targetZRC20);
 
-            IZRC20(zrc20).approve(SwapHelperLibEddy.UNISWAP_V2_ROUTER, amount);
-            // Perform the swap
-            uint256[] memory amounts = IUniswapV2Router02(
-                SwapHelperLibEddy.UNISWAP_V2_ROUTER
-            ).swapExactTokensForTokens(
-                    amount,
-                    minimumOut,
-                    path,
-                    vault,
-                    block.timestamp + maxDeadline
+            if (encodedPath.length > 0) {
+                // Uniswap V3 Swap
+                IZRC20(zrc20).approve(
+                    SwapHelperLibEddy.UNISWAP_V3_ROUTER,
+                    amount
                 );
 
-            return amounts[amounts.length - 1];
+                // Swap on Uniswap V3
+                ISwapRouter.ExactInputParams memory params = ISwapRouter
+                    .ExactInputParams({
+                        path: encodedPath,
+                        recipient: vault,
+                        deadline: block.timestamp + maxDeadline,
+                        amountIn: amount,
+                        amountOutMinimum: minimumOut
+                    });
+
+                amountOut = ISwapRouter(SwapHelperLibEddy.UNISWAP_V3_ROUTER)
+                    .exactInput(params);
+            } else {
+                // Uniswap V2 Swap
+                IZRC20(zrc20).approve(
+                    SwapHelperLibEddy.UNISWAP_V2_ROUTER,
+                    amount
+                );
+
+                uint256[] memory amounts = IUniswapV2Router02(
+                    SwapHelperLibEddy.UNISWAP_V2_ROUTER
+                ).swapExactTokensForTokens(
+                        amount,
+                        minimumOut,
+                        path,
+                        vault,
+                        block.timestamp + maxDeadline
+                    );
+
+                amountOut = amounts[amounts.length - 1];
+            }
+
+            return amountOut;
         }
     }
 

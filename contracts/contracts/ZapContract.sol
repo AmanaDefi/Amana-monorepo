@@ -8,6 +8,7 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
 import "./interfaces/IAmanaVault.sol";
+import "./interfaces/ISwapRouter.sol";
 
 contract ZapContract {
     using SwapHelperLibEddy for address;
@@ -46,22 +47,33 @@ contract ZapContract {
      * @return The amount of output tokens received.
      * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
      */
+    /**
+     * @notice Swaps a specific amount of tokens for another token.
+     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
+     * @param zrc20 The address of the input token.
+     * @param amount The amount of input tokens to swap.
+     * @param targetZRC20 The address of the output token.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @param maxDeadline The maximum deadline for the swap to complete.
+     * @return amountOut The amount of output tokens received.
+     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     */
     function swap(
         address zrc20,
         uint256 amount,
         address targetZRC20,
         uint16 slippageBps,
         uint16 maxDeadline
-    ) internal returns (uint256) {
+    ) internal returns (uint256 amountOut) {
         uint256 minimumOut = SwapHelperLibEddy.calculateMinAmountOut(
             zrc20,
             targetZRC20,
             amount,
             slippageBps
         );
+
         (address curvePool, uint256 i, uint256 j) = SwapHelperLibEddy
             .getCurvePool(zrc20, targetZRC20);
-
         if (curvePool != address(0)) {
             // Approve Curve pool to spend your tokens
             IZRC20(zrc20).approve(curvePool, amount);
@@ -75,24 +87,53 @@ contract ZapContract {
                     minimumOut // Minimum amount of output token to receive
                 );
         } else {
-            address[] memory path = SwapHelperLibEddy.getPath(
-                zrc20,
-                targetZRC20
-            );
+            // Get the path and fee tiers
+            (
+                address[] memory path,
+                ,
+                bytes memory encodedPath
+            ) = SwapHelperLibEddy.getPath(zrc20, targetZRC20);
 
-            IZRC20(zrc20).approve(SwapHelperLibEddy.UNISWAP_V2_ROUTER, amount);
-            // Perform the swap
-            uint256[] memory amounts = IUniswapV2Router02(
-                SwapHelperLibEddy.UNISWAP_V2_ROUTER
-            ).swapExactTokensForTokens(
-                    amount,
-                    minimumOut,
-                    path,
-                    address(this),
-                    block.timestamp + maxDeadline
+            if (encodedPath.length > 0) {
+                // Uniswap V3 Swap
+                IZRC20(zrc20).approve(
+                    SwapHelperLibEddy.UNISWAP_V3_ROUTER,
+                    amount
                 );
 
-            return amounts[amounts.length - 1];
+                // Swap on Uniswap V3
+                ISwapRouter.ExactInputParams memory params = ISwapRouter
+                    .ExactInputParams({
+                        path: encodedPath,
+                        recipient: address(this),
+                        deadline: block.timestamp + maxDeadline,
+                        amountIn: amount,
+                        amountOutMinimum: minimumOut
+                    });
+
+                amountOut = ISwapRouter(SwapHelperLibEddy.UNISWAP_V3_ROUTER)
+                    .exactInput(params);
+            } else {
+                // Uniswap V2 Swap
+                IZRC20(zrc20).approve(
+                    SwapHelperLibEddy.UNISWAP_V2_ROUTER,
+                    amount
+                );
+
+                uint256[] memory amounts = IUniswapV2Router02(
+                    SwapHelperLibEddy.UNISWAP_V2_ROUTER
+                ).swapExactTokensForTokens(
+                        amount,
+                        minimumOut,
+                        path,
+                        address(this),
+                        block.timestamp + maxDeadline
+                    );
+
+                amountOut = amounts[amounts.length - 1];
+            }
+
+            return amountOut;
         }
     }
 

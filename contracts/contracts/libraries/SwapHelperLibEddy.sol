@@ -10,6 +10,9 @@ import "../interfaces/IZRC20.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IPriceOracle.sol";
 import "../interfaces/ICurvePool.sol";
+import "../interfaces/IUniswapV3Factory.sol";
+import "../interfaces/IUniswapV3Pool.sol";
+
 import "../CurvePoolRegistry.sol";
 
 library SwapHelperLibEddy {
@@ -17,6 +20,13 @@ library SwapHelperLibEddy {
         0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
     address constant UNISWAP_V2_ROUTER =
         0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+    address constant UNISWAP_V3_FACTORY =
+        0x67AA6B2b715937Edc1Eb4D3b7B5d5dCD1fd93E8C; // mainnet and testnet
+    address constant UNISWAP_V3_ROUTER =
+        0x9b30CfbACD3504252F82263F72D6acf62bf733C2;
+    uint24 constant V3_FEE_TIER_LOW = 500;
+    uint24 constant V3_FEE_TIER_HIGH = 3000;
+
     address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
 
     address constant PRICE_ORACLE_ADDRESS =
@@ -200,58 +210,200 @@ library SwapHelperLibEddy {
         return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
     }
 
+    function _existsV3Pool(
+        address tokenA,
+        address tokenB
+    ) internal view returns (bool exists, uint24 feeTier) {
+        address poolLow = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
+            tokenA,
+            tokenB,
+            V3_FEE_TIER_LOW
+        );
+        if (poolLow != address(0) && IUniswapV3Pool(poolLow).liquidity() > 0) {
+            return (true, V3_FEE_TIER_LOW); // Prioritize 0.05% fee pool
+        }
+
+        address poolHigh = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
+            tokenA,
+            tokenB,
+            V3_FEE_TIER_HIGH
+        );
+        if (
+            poolHigh != address(0) && IUniswapV3Pool(poolHigh).liquidity() > 0
+        ) {
+            return (true, V3_FEE_TIER_HIGH); // Fallback to 0.3% fee pool
+        }
+
+        return (false, 0); // No valid V3 pool found
+    }
+
     function getPath(
         address zrc20,
         address targetZRC20
-    ) public view returns (address[] memory path) {
+    )
+        public
+        view
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        )
+    {
         if (zrc20 == targetZRC20) {
             revert IErrors.InvalidAddress();
         }
 
-        if (_existsPairPool(zrc20, targetZRC20)) {
+        bool exists;
+        uint24 feeTier;
+
+        // UniswapV3 Direct Swap (Checks both fee tiers, prioritizes 0.05%)
+        (exists, feeTier) = _existsV3Pool(zrc20, targetZRC20);
+        if (exists) {
             path = new address[](2);
+            feeTiers = new uint24[](1);
             path[0] = zrc20;
             path[1] = targetZRC20;
-            return path;
+            feeTiers[0] = feeTier;
+            encodedPath = abi.encodePacked(path[0], feeTiers[0], path[1]);
+            return (path, feeTiers, encodedPath);
         }
+        // UniswapV2 Direct Swap
         if (
             _existsPairPool(zrc20, USDC_ETH_ADDRESS) &&
             _existsPairPool(USDC_ETH_ADDRESS, targetZRC20)
         ) {
             path = new address[](3);
+            feeTiers = new uint24[](1);
             path[0] = zrc20;
             path[1] = USDC_ETH_ADDRESS;
             path[2] = targetZRC20;
-            return path;
+            return (path, feeTiers, "");
         }
+
+        // UniswapV3 Indirect Swap via USDC_ETH_ADDRESS (Checks both fee tiers)
+        (exists, feeTier) = _existsV3Pool(zrc20, USDC_ETH_ADDRESS);
+        if (exists) {
+            uint24 feeTier2;
+            (exists, feeTier2) = _existsV3Pool(USDC_ETH_ADDRESS, targetZRC20);
+            if (exists) {
+                path = new address[](3);
+                feeTiers = new uint24[](2);
+                path[0] = zrc20;
+                path[1] = USDC_ETH_ADDRESS;
+                path[2] = targetZRC20;
+                feeTiers[0] = feeTier;
+                feeTiers[1] = feeTier2;
+                encodedPath = abi.encodePacked(path[0]);
+                for (uint256 k = 0; k < feeTiers.length; k++) {
+                    encodedPath = abi.encodePacked(
+                        encodedPath,
+                        feeTiers[k],
+                        path[k + 1]
+                    );
+                }
+                return (path, feeTiers, encodedPath);
+            }
+        }
+
+        // UniswapV2 Indirect Swap via WZETA_TOKEN
         if (
             _existsPairPool(zrc20, WZETA_TOKEN) &&
             _existsPairPool(WZETA_TOKEN, targetZRC20)
         ) {
             path = new address[](3);
+            feeTiers = new uint24[](1);
             path[0] = zrc20;
             path[1] = WZETA_TOKEN;
             path[2] = targetZRC20;
-            return path;
+            return (path, feeTiers, "");
         }
         revert IErrors.InsufficientLiquidity();
     }
 
-    function getAmountOut(
+    function getAmountOutV2(
         uint amountIn,
-        uint reserveIn,
-        uint reserveOut
-    ) internal pure returns (uint amountOut) {
-        if (amountIn == 0) {
-            revert IErrors.InsufficientInputAmount();
+        address[] memory path
+    ) public view returns (uint amountOut) {
+        if (amountIn == 0 || path.length < 2) {
+            revert IErrors.InvalidPath();
         }
-        if (reserveIn == 0 || reserveOut == 0) {
-            revert IErrors.InsufficientLiquidity();
+
+        amountOut = amountIn;
+
+        for (uint i = 0; i < path.length - 1; i++) {
+            address tokenIn = path[i];
+            address tokenOut = path[i + 1];
+
+            // Fetch the Uniswap V2 pair
+            address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+                tokenIn,
+                tokenOut
+            );
+            if (pair == address(0)) {
+                revert IErrors.InsufficientLiquidity();
+            }
+
+            // Fetch reserves
+            (uint reserve0, uint reserve1, ) = IUniswapV2Pair(pair)
+                .getReserves();
+            (uint reserveIn, uint reserveOut) = tokenIn < tokenOut
+                ? (reserve0, reserve1)
+                : (reserve1, reserve0);
+
+            if (reserveIn == 0 || reserveOut == 0) {
+                revert IErrors.InsufficientLiquidity();
+            }
+
+            // Apply Uniswap V2 swap formula
+            uint amountInWithFee = amountOut * 997;
+            uint numerator = amountInWithFee * reserveOut;
+            uint denominator = (reserveIn * 1000) + amountInWithFee;
+            amountOut = numerator / denominator;
         }
-        uint amountInWithFee = amountIn * 997;
-        uint numerator = amountInWithFee * reserveOut;
-        uint denominator = (reserveIn * 1000) + amountInWithFee;
-        amountOut = numerator / denominator;
+    }
+
+    function getAmountOutV3(
+        uint amountIn,
+        address[] memory path,
+        uint24[] memory feeTiers
+    ) internal view returns (uint amountOut) {
+        if (
+            amountIn == 0 ||
+            path.length < 2 ||
+            path.length - 1 != feeTiers.length
+        ) {
+            revert IErrors.InvalidPath();
+        }
+
+        amountOut = amountIn;
+
+        for (uint i = 0; i < path.length - 1; i++) {
+            address tokenIn = path[i];
+            address tokenOut = path[i + 1];
+            uint24 feeTier = feeTiers[i];
+
+            // Fetch Uniswap V3 pool address
+            address pool = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
+                tokenIn,
+                tokenOut,
+                feeTier
+            );
+            if (pool == address(0)) {
+                revert IErrors.InsufficientLiquidity();
+            }
+
+            // Fetch slot0 to get sqrtPriceX96
+            (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
+            uint128 liquidity = IUniswapV3Pool(pool).liquidity();
+            if (liquidity == 0) {
+                revert IErrors.InsufficientLiquidity();
+            }
+
+            // Calculate amountOut using Uniswap V3 price formula
+            uint256 priceX96 = (uint256(sqrtPriceX96) * uint256(sqrtPriceX96)) /
+                (1 << 96);
+            amountOut = (amountOut * priceX96) / (1 << 96);
+        }
     }
 
     function getReserves(
@@ -269,28 +421,6 @@ library SwapHelperLibEddy {
         (reserveA, reserveB) = tokenA == token0
             ? (reserve0, reserve1)
             : (reserve1, reserve0);
-    }
-
-    function getUniswapAmountOut(
-        uint amountIn,
-        address inputZrc20,
-        address outputZrc20
-    ) public view returns (uint finalAmountOut) {
-        address[] memory path = getPath(inputZrc20, outputZrc20);
-
-        if (path.length < 2) {
-            revert IErrors.InvalidPath();
-        }
-        uint[] memory amounts = new uint[](path.length);
-        amounts[0] = amountIn;
-        for (uint i = 0; i < path.length - 1; i++) {
-            (uint reserveIn, uint reserveOut) = getReserves(
-                path[i],
-                path[i + 1]
-            );
-            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
-        }
-        finalAmountOut = amounts[amounts.length - 1];
     }
 
     /**
@@ -386,7 +516,17 @@ library SwapHelperLibEddy {
             return
                 getCurveAmountOut(curvePool, inputToken, outputToken, amount);
         } else {
-            return getUniswapAmountOut(amount, inputToken, outputToken);
+            (
+                address[] memory path,
+                uint24[] memory feeTiers,
+                bytes memory encodedPath
+            ) = getPath(inputToken, outputToken);
+
+            if (encodedPath.length > 0) {
+                return getAmountOutV3(amount, path, feeTiers);
+            } else {
+                return getAmountOutV2(amount, path);
+            }
         }
     }
 }
