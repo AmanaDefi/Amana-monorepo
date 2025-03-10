@@ -10,6 +10,7 @@ import {
 
 import IDL from "./lib/IDL.json";
 import {
+  createDepositSplTokenAndCallTx,
   createSolanaDepositAndCallTx,
   createSolanaDepositTx,
 } from "./lib/scripts";
@@ -72,22 +73,39 @@ export class SolanaZetaClient {
 
   solanaDepositAndCall = async (amount: number, recipient: string, args: any) => {
     try {
+      // Create transaction
       const tx = new Transaction().add(
         await createSolanaDepositAndCallTx(this.wallet.publicKey, amount, recipient, args, this.program)
       );
 
+      // Set blockhash and fee payer
       const { blockhash } = await this.connection.getLatestBlockhash();
       tx.recentBlockhash = blockhash;
-      tx.feePayer = this.wallet?.publicKey;
+      tx.feePayer = this.wallet.publicKey;
 
-      this.wallet?.signTransaction(tx);
-      const txId = this.provider.sendAndConfirm!(tx, [], {
-        commitment: "confirmed"
-      });
-      return txId;
+      // For wallet adapters, use the signTransaction from the adapter 
+      const signedTx = await this.wallet.signTransaction(tx);
+
+      // Send the pre-signed transaction
+      const signature = await this.connection.sendRawTransaction(
+        signedTx.serialize(),
+        { skipPreflight: false }
+      );
+
+      // Wait for confirmation
+      const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
+
+      return signature;
     } catch (e) {
-      console.log(e)
-      throw new Error;
+      console.log(e);
+      throw new Error(`Transaction failed`);
+    }
+  }
+  depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args:any) => {
+    try{
+      const tx = new Transaction().add(
+        await createDepositSplTokenAndCallTx(this.wallet.publicKey, mint, amount, recipient, args, this.program)
+      )
     }
   }
 }

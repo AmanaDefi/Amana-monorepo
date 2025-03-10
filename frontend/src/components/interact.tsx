@@ -59,8 +59,8 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
         });
 
         if (activeChain.id === CHAIN_ID.solana) {
-            console.log("Waiting for solana Cross-schain tx")
-            await waitForReceiptSol(receipt.transactionHash)
+            // console.log("Waiting for solana Cross-schain tx")
+            // await waitForReceiptSol(receipt.transactionHash)
         } else {
             // Create an object to pass to waitForReceipt with the required fields
             const receiptObject = {

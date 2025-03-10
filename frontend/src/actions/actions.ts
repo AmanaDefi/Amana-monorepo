@@ -777,8 +777,8 @@ const executeSolanaDeposit = async (
 
 
     const args = {
-      types: ["bytes32", "uint256", "uint16", "bytes32"],
-      values: [keccak256(toUtf8Bytes(inputToken.address)), minSharesOut, slippageValue, transactionId]
+      types: ["address", "uint256", "uint16", "bytes32"],
+      values: [inputToken.address, minSharesOut, slippageValue, transactionId]
     }
 
     const txHash = await client.solanaDepositAndCall(Number(transactionAmount), vaultId, args);
