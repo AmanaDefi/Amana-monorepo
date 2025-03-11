@@ -336,6 +336,7 @@ abstract contract AmanaVaultBase is
                 userChainId
             );
         }
+        console.log("zrc20source: %s", zrc20source);
         uint256 outputAmount = zrc20source == address(asset())
             ? assets
             : swap(
@@ -346,7 +347,7 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-
+        console.log("outputAmount: %s", outputAmount);
         _investAssets(
             outputAmount,
             minimumOut,
@@ -553,6 +554,7 @@ abstract contract AmanaVaultBase is
         bytes memory outgoingMessage
     ) internal {
         // Cross-chain transfer
+        console.log("targetAddress: %s", targetAddress);
         bytes memory recipient = abi.encodePacked(targetAddress);
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -597,12 +599,16 @@ abstract contract AmanaVaultBase is
 
         if (userChainId == 900 && targetAddress == withdrawalReceiver) {
             // Solana
+            console.log("Solana withdraw");
+            console.log("withdrawZRC20: %s", withdrawZRC20);
+            console.log("amount: %s", amount);
             IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
                 recipient,
                 amount,
                 withdrawZRC20,
                 revertOptions
             );
+            console.log("withdraw done");
         } else {
             // Ethereum
 
