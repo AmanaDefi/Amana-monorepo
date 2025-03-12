@@ -11,6 +11,34 @@ contract AmanaZetachainVault is AmanaVaultBase {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        IERC20 asset_,
+        address treasury_,
+        uint16 perfFee_,
+        address gasTank_,
+        address withdrawalReceiver_,
+        address swapHelper_,
+        address withdrawHelper,
+        uint32 gasLimitForWithdrawAndCall_,
+        uint32 gasLimitForCall_
+    )
+        AmanaVaultBase(
+            name_,
+            symbol_,
+            asset_,
+            treasury_,
+            perfFee_,
+            gasTank_,
+            withdrawalReceiver_,
+            swapHelper_,
+            withdrawHelper,
+            gasLimitForWithdrawAndCall_,
+            gasLimitForCall_
+        )
+    {}
+
     /**
      * @notice Handles incoming messages from connected chains.
      * @param context Context of the cross-chain message.

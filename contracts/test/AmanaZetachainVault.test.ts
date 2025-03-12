@@ -61,36 +61,36 @@ async function setup() {
 
   const gatewaySigner = await setupGatewaySigner();
 
+  const SwapHelper = await ethers.getContractFactory("SwapHelper");
+  const swapHelper = await SwapHelper.deploy();
+  await swapHelper.deployed();
+
+  const WithdrawHelper = await ethers.getContractFactory("WithdrawHelper");
+  const withdrawHelper = await WithdrawHelper.deploy(ZEVM_GATEWAY_ADDRESS);
+  await withdrawHelper.deployed();
+
   const GasTank = await ethers.getContractFactory("GasTank");
   const gasTank = await GasTank.deploy();
   await gasTank.deployed();
 
-  const Vault = await ethers.getContractFactory("AmanaZetachainVault", {
-    signer: owner,  // Keep the signer as 'owner'
-    libraries: {
-      SwapHelperLibEddy: SWAP_HELPER_ADDRESS,  // Link the external library
-    },
-  });
+  const Vault = await ethers.getContractFactory("AmanaZetachainVault", owner);
 
-  const vaultDeployTransaction = await upgrades.deployProxy(
-    Vault,
-    [
-      "Mock4626ZetachainERC20Vault",
-      "AVU",
-      VAULT_ASSET,
-      await owner.getAddress(),
-      FEE_RATE,
-      gasTank.address,
-      WITHDRAWAL_RECEIVER,
-      GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
-      GAS_LIMIT_FOR_CALL
-    ],
-    {
-      initializer: "initialize", unsafeAllowLinkedLibraries: true,  // Allow linking the external library
-    },
-
+  const amanaVault = await Vault.deploy(
+    "Mock4626ZetachainERC20Vault",     // Vault name
+    "AVU",                             // Symbol
+    VAULT_ASSET,                       // Vault asset
+    await owner.getAddress(),          // Owner/Treasury
+    FEE_RATE,                          // Performance fee rate
+    gasTank.address,                   // Gas tank address
+    WITHDRAWAL_RECEIVER,               // Receiver for withdrawals
+    swapHelper.address,
+    withdrawHelper.address,
+    GAS_LIMIT_FOR_WITHDRAW_AND_CALL,   // Gas limit for withdraw and call
+    GAS_LIMIT_FOR_CALL                 // Gas limit for call
   );
-  const amanaVault = await vaultDeployTransaction.deployed();
+
+  await amanaVault.deployed();
+
   const zapContract = await ethers.getContractAt("ZapContract", ZAP_CONTRACT_ADDRESS);
 
   await gasTank.authorizeVault(amanaVault.address);

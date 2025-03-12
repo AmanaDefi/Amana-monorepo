@@ -1,7 +1,7 @@
 // This test simulates a vault with ETH.ETH as the vault assets
 // Cross chain deposits and withdrawals are simulated to be coming from Base
 
-import { ethers, upgrades, network } from "hardhat";
+import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
@@ -421,41 +421,35 @@ describe("AmanaConnectedChainVault Tests", function () {
       ZEVM_GATEWAY_ADDRESS
     );
 
-    const SwapHelperLibEddy = await ethers.getContractFactory("SwapHelperLibEddy");
-    const swapHelper = await SwapHelperLibEddy.deploy();
+    const SwapHelper = await ethers.getContractFactory("SwapHelper");
+    const swapHelper = await SwapHelper.deploy();
     await swapHelper.deployed();
+
+    const WithdrawHelper = await ethers.getContractFactory("WithdrawHelper");
+    const withdrawHelper = await WithdrawHelper.deploy(ZEVM_GATEWAY_ADDRESS);
+    await withdrawHelper.deployed();
 
     const GasTank = await ethers.getContractFactory("GasTank");
     const gasTank = await GasTank.deploy();
     await gasTank.deployed();
 
-    const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", {
-      signer: owner,  // Keep the signer as 'owner'
-      libraries: {
-        SwapHelperLibEddy: swapHelper.address,  // Link the external library
-      },
-    });
+    const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
 
-    const vaultDeployTransaction = await upgrades.deployProxy(
-      Vault,
-      [
-        "AaveV3EthVault",                  // Vault name
-        "AVU",                             // Symbol
-        VAULT_ASSET,                       // Vault asset
-        await owner.getAddress(),          // Owner/Treasury
-        FEE_RATE,                          // Performance fee rate
-        gasTank.address,                   // Gas tank address
-        WITHDRAWAL_RECEIVER,               // Receiver for withdrawals
-        GAS_LIMIT_FOR_WITHDRAW_AND_CALL,   // Gas limit for withdraw and call
-        GAS_LIMIT_FOR_CALL                 // Gas limit for call
-      ],
-      {
-        initializer: "initialize",
-        unsafeAllowLinkedLibraries: true,  // Allow linking the external library
-      }
+    amanaVault = await Vault.deploy(
+      "AaveV3EthVault",                  // Vault name
+      "AVU",                             // Symbol
+      VAULT_ASSET,                       // Vault asset
+      await owner.getAddress(),          // Owner/Treasury
+      FEE_RATE,                          // Performance fee rate
+      gasTank.address,                   // Gas tank address
+      WITHDRAWAL_RECEIVER,               // Receiver for withdrawals
+      swapHelper.address,
+      withdrawHelper.address,
+      GAS_LIMIT_FOR_WITHDRAW_AND_CALL,   // Gas limit for withdraw and call
+      GAS_LIMIT_FOR_CALL                 // Gas limit for call
     );
 
-    amanaVault = await vaultDeployTransaction.deployed();
+    await amanaVault.deployed();
 
     // await network.provider.send("hardhat_setBalance", [
     //   amanaVault.address,
