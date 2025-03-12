@@ -1,55 +1,29 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-const deployLibrary = async (args: any, hre: HardhatRuntimeEnvironment) => {
-  const network = hre.network.name;
-  const [deployer] = await hre.ethers.getSigners();
-
-  if (!deployer) {
-    throw new Error(
-      `Wallet not found. Please, set a PRIVATE_KEY env variable or run "npx hardhat account --save"`
-    );
+const deploySwapHelper = async (_args: any, hre: HardhatRuntimeEnvironment) => {
+  const [signer] = await hre.ethers.getSigners();
+  if (!signer) {
+    throw new Error(`Wallet not found. Please set PRIVATE_KEY in an .env file.`);
   }
 
-  console.log(`🔑 Deploying using account: ${deployer.address}`);
-  console.log(`🚀 Deploying SwapHelperLibEddy on ${network}...`);
+  console.log(`🔑 Deploying SwapHelper with signer: ${signer.address}`);
 
-  // Deploy the library
-  const factory = await hre.ethers.getContractFactory("SwapHelperLibEddy");
-  const swapHelperLib = await factory.deploy();
+  const SwapHelperFactory = await hre.ethers.getContractFactory("SwapHelper", signer);
+  const swapHelper = await SwapHelperFactory.deploy();
 
-  console.log("📜 Contract deployed, waiting for confirmations...");
-  await swapHelperLib.deployed();
+  console.log(`🚀 Deploying SwapHelper...`);
+  await swapHelper.deployed();
+  console.log(`✅ SwapHelper deployed at: ${swapHelper.address}`);
 
-  console.log(`✅ Successfully deployed SwapHelperLibEddy on ${network}.`);
-  console.log(`📍 Library address: ${swapHelperLib.address}`);
-
-  // Verify contract on Etherscan if API key is set
-  const etherscanApiKey = hre.config.etherscan.apiKey[network];
-  if (etherscanApiKey) {
-    console.log(`🛠 Verifying contract on ${network} explorer...`);
-    try {
-      await hre.run("verify:verify", {
-        address: swapHelperLib.address,
-        constructorArguments: [], // Libraries don't have constructor arguments
-      });
-      console.log(`✅ Contract verified on ${network} explorer`);
-    } catch (err) {
-      console.error("❌ Contract verification failed:", err);
-    }
-  } else {
-    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
-  }
-
-  // Output JSON if the flag is set
-  if (args.json) {
-    console.log(JSON.stringify(swapHelperLib));
+  if (_args.json) {
+    console.log(JSON.stringify({ contractAddress: swapHelper.address }));
   }
 };
 
-// Register the Hardhat task
-task("deploy-swap-helper", "Deploy SwapHelperLibEddy library", deployLibrary)
-  .addFlag("json", "Output in JSON format");
+// Hardhat task
+task("deploy-swap-helper", "Deploys SwapHelper contract", deploySwapHelper)
+  .addFlag("json", "Output in JSON");
 
-// Export for Hardhat
+// Export task
 export default {};
