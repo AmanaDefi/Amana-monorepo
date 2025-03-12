@@ -485,47 +485,33 @@ abstract contract AmanaVaultBase is
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
-        uint256 outputAmount = amount;
+        uint256 outputAmount = (userChainId == uint32(block.chainid) ||
+            address(asset()) == withdrawZRC20)
+            ? amount
+            : swap(
+                address(asset()),
+                amount,
+                withdrawZRC20,
+                slippage,
+                address(this),
+                200
+            );
 
         if (userChainId == uint32(block.chainid)) {
-            // Same-chain transfer
-            if (withdrawZRC20 == address(asset())) {
-                SafeERC20.safeTransfer(IERC20(asset()), receiver, amount);
-            } else {
-                IERC20(address(asset())).approve(ZAP_CONTRACT_ADDRESS, amount);
-
-                IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
-                    amount,
-                    address(this),
-                    address(asset()),
-                    withdrawZRC20,
-                    slippage,
-                    receiver
-                );
-            }
+            IERC20(address(asset())).approve(ZAP_CONTRACT_ADDRESS, amount);
+            IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
+                amount,
+                address(this),
+                address(asset()),
+                withdrawZRC20,
+                slippage,
+                receiver
+            );
         } else {
-            if (address(asset()) != withdrawZRC20) {
-                console.log("address(asset()): %s", address(asset()));
-                console.log("withdrawZRC20: %s", withdrawZRC20);
-                console.log("amount: %s", amount);
-                console.log(
-                    "vault balance withdrawZRC20: %s",
-                    IERC20(withdrawZRC20).balanceOf(address(this))
-                );
-                // Swap assets if needed
-                outputAmount = swap(
-                    address(asset()),
-                    amount,
-                    withdrawZRC20,
-                    slippage,
-                    address(this),
-                    200
-                );
-            }
-
+            // Cross-chain transfer
             bytes memory outgoingMessage = abi.encode(
-                receiver, // the user the funds have to go to
-                withdrawERC20, // the token on the target chain that the user receives (can be native)
+                receiver, // user to receive funds
+                withdrawERC20, // token on target chain
                 outputAmount, // amount to be sent
                 _crossChainTxId
             );
@@ -543,6 +529,7 @@ abstract contract AmanaVaultBase is
                 outgoingMessage
             );
         }
+
         emit ReturnFundsToUserSent(_crossChainTxId);
     }
 
@@ -558,14 +545,12 @@ abstract contract AmanaVaultBase is
         string memory revertMessage,
         bytes memory outgoingMessage
     ) internal {
-        // Cross-chain transfer
-        console.log("targetAddress: %s", targetAddress);
         bytes memory recipient = abi.encodePacked(targetAddress);
 
         RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
+            address(this),
+            true,
+            address(this),
             abi.encode(
                 revertMessage,
                 _crossChainTxId,
@@ -575,70 +560,34 @@ abstract contract AmanaVaultBase is
                 withdrawERC20,
                 userChainId
             ),
-            uint256(0) // onRevertGasLimit
+            0
         );
-        console.log("tokenToTransfer: %s", tokenToTransfer);
-        address gas_zrc20;
-        uint256 gasFee;
-        if (userChainId == 900 && targetAddress == withdrawalReceiver) {
-            (gas_zrc20, gasFee) = IZRC20(tokenToTransfer).withdrawGasFee(); // ZRC-20 of the gas token of the chain the user is on, and the gas fee for the withdrawal
-        } else {
-            (gas_zrc20, gasFee) = IZRC20(tokenToTransfer)
-                .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the user is on, and the gas fee for the withdrawal
-        }
+
+        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
+            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+
         gasTank.getGas(gas_zrc20, gasFee);
 
-        if (gas_zrc20 != tokenToTransfer) {
-            approveOrIncreaseAllowance(
-                IERC20(tokenToTransfer),
-                _GATEWAY_ADDRESS,
-                amount
-            );
+        approveOrIncreaseAllowance(
+            IERC20(tokenToTransfer),
+            _GATEWAY_ADDRESS,
+            amount + gasFee
+        );
+        if (gas_zrc20 != tokenToTransfer)
             approveOrIncreaseAllowance(
                 IERC20(gas_zrc20),
                 _GATEWAY_ADDRESS,
                 gasFee
             );
-        } else {
-            approveOrIncreaseAllowance(
-                IERC20(tokenToTransfer),
-                _GATEWAY_ADDRESS,
-                amount + gasFee
-            );
-        }
 
-        if (userChainId == 900 && targetAddress == withdrawalReceiver) {
-            // Solana
-            console.log("Solana withdraw");
-            console.log("withdrawZRC20: %s", withdrawZRC20);
-            console.log("amount: %s", amount);
-            console.log(
-                "vault balance of withdrawZRC20: %s",
-                IERC20(withdrawZRC20).balanceOf(address(this))
-            );
-            IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
-                recipient,
-                amount,
-                withdrawZRC20,
-                revertOptions
-            );
-            console.log("withdraw done");
-        } else {
-            // Ethereum
-
-            CallOptions memory callOptions = CallOptions(
-                gasLimitForWithdrawAndCall,
-                false
-            );
-            IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-                recipient,
-                amount,
-                tokenToTransfer,
-                outgoingMessage,
-                callOptions,
-                revertOptions
-            );
-        }
+        IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
+            recipient,
+            amount,
+            tokenToTransfer,
+            outgoingMessage,
+            CallOptions(gasLimitForWithdrawAndCall, false),
+            revertOptions
+        );
     }
 
     /**
