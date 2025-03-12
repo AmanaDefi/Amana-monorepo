@@ -5,6 +5,8 @@ viaIR = true                   # Enable the Yul Intermediate Representation comp
 libs = ['node_modules','lib']          # Use node_modules for libraries (Hardhat-compatible)
 test = 'test'                  # Test folder
 cache_path = 'cache_forge'     # Cache folder for Forge
+optimizer = true
+optimizer_runs = 100
 
 [rpc_endpoints]
 base = "${BASE_RPC_URL}"
