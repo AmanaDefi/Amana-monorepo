@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IErrors.sol";
+import "hardhat/console.sol";
 
 contract GasTank is Ownable2Step, IErrors {
     using SafeERC20 for IERC20;
@@ -43,6 +44,9 @@ contract GasTank is Ownable2Step, IErrors {
         uint256 amount
     ) external onlyAuthorized {
         uint256 balance = IERC20(zrc20Token).balanceOf(address(this));
+        console.log("balance: ", balance);
+        console.log("amount: ", amount);
+        console.log("zrc20Token: ", zrc20Token);
         if (balance <= amount) revert InsufficientBalance();
 
         SafeERC20.safeTransfer(IERC20(zrc20Token), msg.sender, amount);

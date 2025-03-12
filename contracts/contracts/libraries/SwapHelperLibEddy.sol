@@ -257,13 +257,15 @@ library SwapHelperLibEddy {
         if (zrc20 == targetZRC20) {
             revert IErrors.InvalidAddress();
         }
-
+        console.log("zrc20: ", zrc20);
+        console.log("targetZRC20: ", targetZRC20);
         bool exists;
         uint24 feeTier;
 
         // UniswapV3 Direct Swap (Checks both fee tiers, prioritizes 0.05%)
         (exists, feeTier) = _existsV3Pool(zrc20, targetZRC20);
         if (exists) {
+            console.log("direct v3 path exists");
             path = new address[](2);
             feeTiers = new uint24[](1);
             path[0] = zrc20;
@@ -277,6 +279,7 @@ library SwapHelperLibEddy {
             _existsPairPool(zrc20, USDC_ETH_ADDRESS) &&
             _existsPairPool(USDC_ETH_ADDRESS, targetZRC20)
         ) {
+            console.log("direct v2 path exists");
             path = new address[](3);
             feeTiers = new uint24[](1);
             path[0] = zrc20;
@@ -288,9 +291,11 @@ library SwapHelperLibEddy {
         // UniswapV3 Indirect Swap via USDC_ETH_ADDRESS (Checks both fee tiers)
         (exists, feeTier) = _existsV3Pool(zrc20, USDC_ETH_ADDRESS);
         if (exists) {
+            console.log("first half of v3 path exists");
             uint24 feeTier2;
             (exists, feeTier2) = _existsV3Pool(USDC_ETH_ADDRESS, targetZRC20);
             if (exists) {
+                console.log("indirect v3 path exists");
                 path = new address[](3);
                 feeTiers = new uint24[](2);
                 path[0] = zrc20;
@@ -315,6 +320,7 @@ library SwapHelperLibEddy {
             _existsPairPool(zrc20, WZETA_TOKEN) &&
             _existsPairPool(WZETA_TOKEN, targetZRC20)
         ) {
+            console.log("indirect v2 path exists");
             path = new address[](3);
             feeTiers = new uint24[](1);
             path[0] = zrc20;
