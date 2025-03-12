@@ -336,7 +336,6 @@ abstract contract AmanaVaultBase is
                 userChainId
             );
         }
-        console.log("zrc20source: %s", zrc20source);
         uint256 outputAmount = zrc20source == address(asset())
             ? assets
             : swap(
@@ -347,7 +346,6 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        console.log("outputAmount: %s", outputAmount);
         _investAssets(
             outputAmount,
             minimumOut,
@@ -507,6 +505,13 @@ abstract contract AmanaVaultBase is
             }
         } else {
             if (address(asset()) != withdrawZRC20) {
+                console.log("address(asset()): %s", address(asset()));
+                console.log("withdrawZRC20: %s", withdrawZRC20);
+                console.log("amount: %s", amount);
+                console.log(
+                    "vault balance withdrawZRC20: %s",
+                    IERC20(withdrawZRC20).balanceOf(address(this))
+                );
                 // Swap assets if needed
                 outputAmount = swap(
                     address(asset()),
@@ -572,10 +577,15 @@ abstract contract AmanaVaultBase is
             ),
             uint256(0) // onRevertGasLimit
         );
-
-        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
-            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
-
+        console.log("tokenToTransfer: %s", tokenToTransfer);
+        address gas_zrc20;
+        uint256 gasFee;
+        if (userChainId == 900 && targetAddress == withdrawalReceiver) {
+            (gas_zrc20, gasFee) = IZRC20(tokenToTransfer).withdrawGasFee(); // ZRC-20 of the gas token of the chain the user is on, and the gas fee for the withdrawal
+        } else {
+            (gas_zrc20, gasFee) = IZRC20(tokenToTransfer)
+                .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the user is on, and the gas fee for the withdrawal
+        }
         gasTank.getGas(gas_zrc20, gasFee);
 
         if (gas_zrc20 != tokenToTransfer) {
@@ -602,6 +612,10 @@ abstract contract AmanaVaultBase is
             console.log("Solana withdraw");
             console.log("withdrawZRC20: %s", withdrawZRC20);
             console.log("amount: %s", amount);
+            console.log(
+                "vault balance of withdrawZRC20: %s",
+                IERC20(withdrawZRC20).balanceOf(address(this))
+            );
             IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
                 recipient,
                 amount,
