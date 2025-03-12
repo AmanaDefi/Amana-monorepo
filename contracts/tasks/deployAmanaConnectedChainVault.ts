@@ -68,23 +68,6 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     } catch (err) {
       console.error("❌ Failed to verify implementation contract:", err);
     }
-
-    // Verifying the proxy contract
-    const proxyAddress = contract.address;  // Updated from getAddress()
-    console.log(`Verifying proxy: ${proxyAddress}`);
-    try {
-      await hre.run("verify:verify", {
-        address: proxyAddress,
-        constructorArguments: [], // Proxy has no constructor arguments
-      });
-      console.log(`✅ Successfully verified proxy contract at ${proxyAddress}`);
-    } catch (err) {
-      if (err.message.includes("Already Verified")) {
-        console.log(`ℹ️ Proxy contract at ${proxyAddress} is already verified.`);
-      } else {
-        console.error("❌ Failed to verify proxy contract:", err);
-      }
-    }
   } else {
     console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
   }
