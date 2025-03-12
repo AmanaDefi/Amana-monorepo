@@ -116,13 +116,11 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
 
     const updateFee = await pythContract.getUpdateFee(priceUpdateData);
-    console.log("Update fee: ", updateFee.toString());
     const tx = await pythContract
       .connect(signer)
       .updatePriceFeeds(priceUpdateData, { value: updateFee });
 
     const receipt = await tx.wait();
-    console.log(receipt)
   }
 
   async function simulateDepositCallFromSolana(
@@ -146,7 +144,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       ["address", "uint256", "uint16", "bytes32"],
       [INPUT_TOKEN, minSharesOut, slippage, transactionId]
     );
-    console.log(depositMessage)
     // Execute the onCall function to simulate a deposit
     await amanaVault.connect(gatewaySigner).onCall(
       {
@@ -594,11 +591,9 @@ describe("AmanaConnectedChainVault Tests", function () {
       let totalShares = await amanaVault.balanceOf(await user1.getAddress());
 
       await simulateWithdrawCallFromSolana(user1, totalShares, pythContract);
-      console.log("Withdraw call from base done");
       await simulateConfirmWithdrawToSolana(user1, depositAmount1, ethers.utils.parseUnits("1", 18), depositAmount1, 2, 2);
 
       totalShares = await amanaVault.balanceOf(await user1.getAddress());
-      console.log("Total shares: ", totalShares.toString());
       expect(totalShares).to.be.closeTo(0, ERROR_MARGIN);
     });
 
@@ -686,15 +681,12 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateDepositCallFromSolana(user1, depositAmount1, pythContract);
 
       await simulateConfirmDeposit(user1, depositAmount1, 0, 1, 1);
-      console.log("calling switch strategy")
       await expect(
         amanaVault.connect(owner).switchStrategy(newStrategyAddress, 0, 0)
       )
         .to.emit(gatewayZEVM, "Called");
       // .withArgs(newStrategyAddress);
-      console.log("called switch strategy")
       await simulateConfirmSwitch(depositAmount1, newStrategyAddress, 2, 2);
-      console.log("confirmed switch")
       const updatedStrategy = await amanaVault.strategyAddress();
 
       expect(updatedStrategy).to.equal(newStrategyAddress);
@@ -757,7 +749,6 @@ describe("AmanaConnectedChainVault Tests", function () {
         .div(await amanaVault.totalSupply());
 
       await simulateWithdrawCallFromSolana(user1, sharesToWithdraw, pythContract);
-      console.log("Withdraw call from base done");
       await expect(simulateConfirmWithdrawToSolana(user1, withdrawAmount, fractionOfTotalShares, updatedTotalAssets, 3, 3))
         .to.emit(amanaVault, "PerformanceFeePaid")
         .withArgs(await user1.getAddress(), expectedFee);
@@ -1084,8 +1075,6 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Fund the user with enough input tokens
       await setTokenBalance(ORIGIN_CHAIN_ZRC20_INPUT, await user1.getAddress(), swapAmount, 3);
-      console.log("user1 inputtoken balance:", await inputToken.balanceOf(await user1.getAddress()));
-      console.log("swapAmount:", swapAmount.toString());
       // Approve Uniswap Router to spend user's tokens
       await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
 
@@ -1096,7 +1085,6 @@ describe("AmanaConnectedChainVault Tests", function () {
         ["address", "uint24", "address", "uint24", "address"],
         [ORIGIN_CHAIN_ZRC20_INPUT, fee1, ZC_USDC_ETH_ADDRESS, fee2, VAULT_ASSET]
       );
-      console.log("Encoded path:", encodedPath);
       // Set up swap parameters
       const params = {
         path: encodedPath,
@@ -1111,7 +1099,6 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Get the final balance of the output token
       const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
-      console.log("Final output token balance:", finalOutputBalance.toString());
 
       expect(finalOutputBalance).to.be.gt(0);
     });
@@ -1131,13 +1118,10 @@ describe("AmanaConnectedChainVault Tests", function () {
 
       // Fund the user with enough input tokens
       await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), swapAmount, 3);
-      console.log("user1 inputtoken balance:", await inputToken.balanceOf(await user1.getAddress()));
-      console.log("swapAmount:", swapAmount.toString());
 
       // Approve Uniswap Router to spend user's tokens
       await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
       const allowance = await inputToken.allowance(await user1.getAddress(), UNISWAP_V3_ROUTER);
-      console.log("Allowance:", allowance.toString());
 
       // Set up swap parameters for exactInputSingle
       const fee = 3000; // 0.3% pool fee
@@ -1158,7 +1142,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       swapRouter.connect(user1).exactInputSingle(params)
       // Get the final balance of the output token
       const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
-      console.log("Final output token balance:", finalOutputBalance.toString());
 
       expect(finalOutputBalance).to.be.gt(0);
     });
