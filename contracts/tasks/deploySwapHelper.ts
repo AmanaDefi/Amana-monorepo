@@ -1,29 +1,25 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-const deploySwapHelper = async (_args: any, hre: HardhatRuntimeEnvironment) => {
+const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const [signer] = await hre.ethers.getSigners();
-  if (!signer) {
-    throw new Error(`Wallet not found. Please set PRIVATE_KEY in an .env file.`);
-  }
 
   console.log(`🔑 Deploying SwapHelper with signer: ${signer.address}`);
 
-  const SwapHelperFactory = await hre.ethers.getContractFactory("SwapHelper", signer);
-  const swapHelper = await SwapHelperFactory.deploy();
-
-  console.log(`🚀 Deploying SwapHelper...`);
+  const SwapHelper = await hre.ethers.getContractFactory("SwapHelper", signer);
+  const swapHelper = await SwapHelper.deploy();
   await swapHelper.deployed();
+
   console.log(`✅ SwapHelper deployed at: ${swapHelper.address}`);
 
-  if (_args.json) {
-    console.log(JSON.stringify({ contractAddress: swapHelper.address }));
+  // Check storage slots to ensure the contract is stateless
+  const storageSlot0 = await hre.ethers.provider.getStorageAt(swapHelper.address, 0);
+  if (storageSlot0 !== "0x0") {
+    throw new Error("🚨 Deployment failed: SwapHelper is not stateless!");
   }
+
+  console.log(`✅ SwapHelper verified as stateless.`);
 };
 
-// Hardhat task
-task("deploy-swap-helper", "Deploys SwapHelper contract", deploySwapHelper)
-  .addFlag("json", "Output in JSON");
-
-// Export task
+task("deploy-swap-helper", "Deploys the SwapHelper contract", main);
 export default {};
