@@ -132,7 +132,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   },
 
   {
-    id: "0xB6644BE3B49928E4F4C102BdAc8381657958e89f", // Aave USDT on BNB
+    id: "0xcE6bF4B9C0BFEfdB2A030163683141224E2F1a84", // Aave USDT on BNB
     name: "USDT Lend Pool",
     des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
     symbol: "aAaveUSDT",
@@ -148,7 +148,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0xD3fD9fA68FC7E331Dd62aDDaFf527131Ea42E612",
+      strategyAddress: "0x5Feb6E013A6f1fd2135ccA330D875Fd0b4e6F2F5",
       network: "BNB",
       chainId: 56,
       netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
