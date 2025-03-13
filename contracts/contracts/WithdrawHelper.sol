@@ -25,7 +25,8 @@ contract WithdrawHelper {
         bytes32 _crossChainTxId,
         string memory revertMessage,
         bytes memory outgoingMessage,
-        uint32 gasLimitForWithdrawAndCall
+        uint32 gasLimitForWithdrawAndCall,
+        bytes calldata data
     ) external {
         bytes memory recipient = abi.encodePacked(targetAddress);
 

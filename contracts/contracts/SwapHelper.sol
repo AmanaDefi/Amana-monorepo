@@ -536,7 +536,8 @@ contract SwapHelper {
         address targetZRC20,
         uint16 slippageBps,
         address vault,
-        uint16 maxDeadline
+        uint16 maxDeadline,
+        bytes calldata data
     ) external returns (uint256 amountOut) {
         uint256 minimumOut = calculateMinAmountOut(
             zrc20,

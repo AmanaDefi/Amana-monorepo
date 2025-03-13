@@ -557,7 +557,7 @@ abstract contract AmanaVaultBase is
 
         (bool success, ) = withdrawHelper.delegatecall(
             abi.encodeWithSignature(
-                "handleWithdrawAndCall(address,address,address,address,address,address,uint256,uint32,bytes32,string,bytes,uint32)",
+                "handleWithdrawAndCall(address,address,address,address,address,address,uint256,uint32,bytes32,string,bytes,uint32,bytes)",
                 address(gasTank),
                 targetAddress,
                 receiver,
@@ -569,7 +569,8 @@ abstract contract AmanaVaultBase is
                 _crossChainTxId,
                 revertMessage,
                 outgoingMessage,
-                gasLimitForWithdrawAndCall
+                gasLimitForWithdrawAndCall,
+                ""
             )
         );
 
@@ -597,13 +598,14 @@ abstract contract AmanaVaultBase is
         uint16 maxDeadline
     ) internal returns (uint256 amountOut) {
         bytes memory data = abi.encodeWithSignature(
-            "swap(address,uint256,address,uint16,address,uint16)",
+            "swap(address,uint256,address,uint16,address,uint16,bytes)",
             zrc20,
             amount,
             targetZRC20,
             slippageBps,
             vault,
-            maxDeadline
+            maxDeadline,
+            "" // empty bytes param for future-proofing
         );
 
         amountOut = _delegateCall(swapHelper, data);
