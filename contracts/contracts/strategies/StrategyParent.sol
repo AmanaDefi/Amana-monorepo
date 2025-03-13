@@ -541,12 +541,12 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
+            executionNonce -= 1;
             emit InvestConfirmFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount, 0);
             executionNonce -= 1;
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
