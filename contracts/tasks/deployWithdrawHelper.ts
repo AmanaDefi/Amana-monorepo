@@ -19,7 +19,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Check storage slots to ensure the contract is stateless
   const storageSlot0 = await hre.ethers.provider.getStorageAt(withdrawHelper.address, 0);
-  if (storageSlot0 !== "0x0") {
+  if (BigInt(storageSlot0) !== BigInt(0)) {
     throw new Error("🚨 Deployment failed: WithdrawHelper is not stateless!");
   }
 

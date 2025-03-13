@@ -18,6 +18,7 @@ import "./tasks/deployCurveERC20_Strategy";
 import "./tasks/deployCurveEthStrategy";
 import "./tasks/updatePythPrices";
 import "./tasks/deployAaveERC20Flash_Strategy";
+import "./tasks/deployWithdrawHelper";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
