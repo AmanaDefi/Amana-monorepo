@@ -22,8 +22,6 @@ export const wallets = [
   createWallet("io.rabby"),
   createWallet("com.trustwallet.app"),
   createWallet("com.ledger"),
-  createWallet("global.safe"),
-  createWallet("app.phantom"),
 ];
 
 const Header = () => {

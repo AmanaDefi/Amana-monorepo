@@ -17,7 +17,7 @@ export default function useSolanaBalance() {
           const balance = await connection.getBalance(publicKey);
           return {
             value: BigInt(balance),
-            formatted: (balance / LAMPORTS_PER_SOL).toFixed(4)
+            formatted: parseFloat((balance / LAMPORTS_PER_SOL).toFixed(4)).toString()
           }
         } catch (error) {
           return { value: 0n, formatted: "0" }

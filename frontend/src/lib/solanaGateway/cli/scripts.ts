@@ -13,6 +13,7 @@ import {
   createDepositSplTokenAndCallTx,
   createSolanaDepositAndCallTx,
   createSolanaDepositTx,
+  createSolanaWithdrawalTx,
 } from "./lib/scripts";
 import { solanaConnection } from "@/utils/utils";
 
@@ -101,11 +102,58 @@ export class SolanaZetaClient {
       throw new Error(`Transaction failed`);
     }
   }
+
+  solanaWithdrawal = async (recipient: string, args: any) => {
+    try {
+      const tx = new Transaction().add(
+        await createSolanaWithdrawalTx(this.wallet.publicKey, recipient, args, this.program)
+      );
+      // Set blockhash and fee payer
+      const { blockhash } = await this.connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = this.wallet.publicKey;
+
+      // For wallet adapters, use the signTransaction from the adapter 
+      const signedTx = await this.wallet.signTransaction(tx);
+
+      // Send the pre-signed transaction
+      const signature = await this.connection.sendRawTransaction(
+        signedTx.serialize(),
+        { skipPreflight: false }
+      );
+
+      // Wait for confirmation
+      const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
+
+      return signature;
+    } catch (error) {
+      console.log(error);
+      throw new Error("Transacction Failed")
+    }
+  }
   depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any) => {
     try {
       const tx = new Transaction().add(
         await createDepositSplTokenAndCallTx(this.wallet.publicKey, new PublicKey(mint), amount, recipient, args, this.program)
       );
+      // Set blockhash and fee payer
+      const { blockhash } = await this.connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = this.wallet.publicKey;
+
+      // For wallet adapters, use the signTransaction from the adapter 
+      const signedTx = await this.wallet.signTransaction(tx);
+
+      // Send the pre-signed transaction
+      const signature = await this.connection.sendRawTransaction(
+        signedTx.serialize(),
+        { skipPreflight: false }
+      );
+
+      // Wait for confirmation
+      const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
+
+      return signature;
     } catch (error) {
       console.log(error);
       throw new Error(`Transaction failed`);

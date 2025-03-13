@@ -3,7 +3,7 @@ import { client } from "../utils/client";
 import { CHAIN_ID, crossChainTxUrl, SUPPORTED_CHAINS, zeroSolAddress } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { ethers, JsonRpcProvider } from "ethers";
+import { ethers, getBytes, JsonRpcProvider } from "ethers";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
@@ -24,6 +24,7 @@ import { WalletContextState } from "@solana/wallet-adapter-react";
 import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet } from "@coral-xyz/anchor";
 import axios from "axios";
+import { PublicKey } from "@solana/web3.js";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -464,7 +465,6 @@ export const waitForReceiptSol = async (txHash: string) => {
       try {
         attempts++;
         const res = await axios.get(`${crossChainTxUrl}/${txHash}`);
-        console.log({res}, "HHHHHHHHHHHHHH")
 
         if (res.data.CrossChainTxs) {
           resolve(res.data);
@@ -764,34 +764,90 @@ const executeSolanaDeposit = async (
 
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
+  const wallet = {
+    publicKey: walletContext.publicKey,
+    signTransaction: walletContext.signTransaction,
+    signAllTransactions: walletContext.signAllTransactions
+  } as Wallet
+  const client = new SolanaZetaClient(wallet);
 
-  // Case 1: Native token (ETH, BNB, etc.)
   if (inputToken.isNative) {
-    console.log("Native token deposit detected");
-
-    const wallet = {
-      publicKey: walletContext.publicKey,
-      signTransaction: walletContext.signTransaction,
-      signAllTransactions: walletContext.signAllTransactions
-    } as Wallet
-    const client = new SolanaZetaClient(wallet);
-
-
+    // Case 1: Native token (ETH, BNB, etc.)
     const args = {
       types: ["address", "uint256", "uint16", "bytes32"],
       values: [inputToken.address, minSharesOut, slippageValue, transactionId]
     }
-
     const txHash = await client.solanaDepositAndCall(Number(transactionAmount), vaultId, args);
     console.log("Deposit executed");
     setcrossChainTxId(transactionId)
     return { transactionHash: txHash }
-  } return { transactionHash: "SplToken" }
+  } else {
+    // Case 2: SPL token
+    const splTokenAddressBytes = new PublicKey(inputToken).toBytes();
+    const ethereumCompatibleAddress = getBytes(
+      ethers.zeroPadBytes(splTokenAddressBytes.slice(0, 20), 20)
+    );
+    console.log(ethereumCompatibleAddress, "HHHHHHHHHHHHHH")
+    const args = {
+      types: ["address", "uint256", "uint16", "bytes32"],
+      values: [ethereumCompatibleAddress, minSharesOut, slippageValue, transactionId]
+    }
+    console.log("SPL token deposit detected");
+    const txHash = await client.depositSplTokenAndCall(inputToken.address, Number(transactionAmount), vaultId, args)
+    console.log("Deposit executed");
+    setcrossChainTxId(transactionId)
+    return { transactionHash: txHash }
+  }
 }
 
-export const executeWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
-  if (activeChain.id === 7000 || activeChain.id === 7001) { // if active chain is Zetachain (main or testnet)
+export const executeSolanaWithdrawal = async (
+  vaultId: Address,
+  strategyAddress: Address,
+  strategyChainId: number,
+  walletContext: WalletContextState,
+  activeChain: Chain,
+  withdrawShareAmount: bigint,
+  withdrawERC20: Address,
+  withdrawZRC20: Address,
+  setcrossChainTxId: Function
+) => {
+  console.log("Executing Cross-Chain Withdrawal");
+  const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
+
+  // Generate a unique transaction ID
+  const transactionId = generateTransactionId(walletContext.publicKey!.toBase58(), activeChain);
+  console.log("Generated Transaction ID (bytes32):", transactionId);
+
+  const slippage = getCurrentSlippage();
+
+  const slippageValue = (slippage * 100).toFixed(0);
+  console.log("withdrawShareAmount", withdrawShareAmount);
+  console.log("minAmountOut", minAmountOut);
+
+  const wallet = {
+    publicKey: walletContext.publicKey,
+    signTransaction: walletContext.signTransaction,
+    signAllTransactions: walletContext.signAllTransactions
+  } as Wallet
+  const client = new SolanaZetaClient(wallet);
+
+  // Prepare payload (calldata to pass to the receiver)
+  const args = {
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
+    values: [withdrawZRC20, withdrawERC20, withdrawShareAmount, minAmountOut, slippageValue, transactionId]
+  }
+
+  const txHash = await client.solanaWithdrawal(vaultId, args);
+  console.log("Withdrawal executed");
+  setcrossChainTxId(transactionId)
+  return { transactionHash: txHash }
+}
+
+export const executeWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, walletContext: WalletContextState, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
+  if (activeChain.id == CHAIN_ID.zetachain) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount);
+  } else if (activeChain.id == CHAIN_ID.solana) {
+    return executeSolanaWithdrawal(vaultId, strategyAddress, strategyChainId, walletContext, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   } else {
     console.log("withdrawShareAmount", withdrawShareAmount);
     return executeCrossChainWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);

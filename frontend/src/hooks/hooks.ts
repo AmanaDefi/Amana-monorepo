@@ -18,7 +18,7 @@ import { Address, defineChain, getContract, prepareEvent, readContract } from "t
 import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { CHAIN_ID, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useContractEvents } from "thirdweb/react";
 import { getOnlyTokenSymbol, isZetachain } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";

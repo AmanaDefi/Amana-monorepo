@@ -47,7 +47,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
             setcrossChainTxId
         );
 
-        console.log({receipt});
+        console.log({ receipt });
 
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
@@ -82,7 +82,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
     }
 };
 
-const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, EOAaccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
+const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Balance, withdrawToken: Token, walletContext: WalletContextState, activeAccount: Account, setTransactionCompleted: (value: boolean) => void, activeChain: any, setCrosschainInvestHash: Function, setcrossChainTxId: Function, setInputBalance: Function, setLastEventTxHash: Function) => {
     setTransactionCompleted(false)
     let withdrawZRC20;
     if (activeChain.id === 7001 || activeChain.id === 7000) {
@@ -105,7 +105,8 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             vaultData.id as Address,
             vaultData.protocol.strategyAddress as Address,
             vaultData.protocol.chainId as number,
-            EOAaccount,
+            walletContext,
+            activeAccount,
             activeChain,
             withdrawShareAmount,
             withdrawToken.address as Address,
@@ -1176,7 +1177,7 @@ function handleInteraction(
         case Action.withdraw:
             return async () => {
                 const result = await handleWithdrawTransaction(
-                    vaultData, inputBalance, inputToken, activeAccount,
+                    vaultData, inputBalance, inputToken, walletContext, activeAccount,
                     setTransactionCompleted, activeChain, setCrosschainInvestHash, setcrossChainTxId, setInputBalance, setLastEventTxHash);
                 return result;
             }
