@@ -173,7 +173,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Aave",
-      strategyAddress: "0xe8bc1B1EBA3a7A5c97E7eEB2d373d17856856777",
+      strategyAddress: "0x84482eFc98b22C78C00137F858c56ed1AF8F1a02",
       network: "BNB",
       chainId: 56,
       netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",

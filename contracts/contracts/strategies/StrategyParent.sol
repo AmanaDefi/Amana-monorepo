@@ -153,6 +153,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         oldStrategy = _oldStrategy;
     }
 
+    function setExecutionNonce(uint256 _executionNonce) external onlyOwner {
+        executionNonce = _executionNonce;
+    }
+
     /**
      * @notice Returns the total underlying assets managed by the contract.
      * @return The total amount of underlying assets in the contract.

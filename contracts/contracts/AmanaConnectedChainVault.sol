@@ -384,7 +384,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
 
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
+        CallOptions memory callOptions = CallOptions(
+            gasLimitForCall + gasLimitForWithdrawAndCall,
+            false
+        );
         IGatewayZEVM(_GATEWAY_ADDRESS).call(
             recipient,
             address(asset()),
