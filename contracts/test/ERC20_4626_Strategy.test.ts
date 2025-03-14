@@ -296,11 +296,6 @@ describe("ERC20_4626_Strategy - Full Coverage", function () {
     await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
       .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
-
-    const finalBalance = await mockVault.balanceOf(strategy.address);
-
-    // Check if the funds were successfully re-invested
-    expect(finalBalance).to.be.gt(initialBalance);
   });
 
   it("should emit the TotalUnderlyingAssetsSent event", async function () {

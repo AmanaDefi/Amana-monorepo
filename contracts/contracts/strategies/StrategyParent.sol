@@ -318,7 +318,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            fractionOfTotalShares,
+            fractionOfTotalShares - 5,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -541,19 +541,18 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
-            executionNonce -= 1;
             emit InvestConfirmFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            executionNonce -= 1;
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
         ) {
             emit SendTotalUnderlyingAssetsFailed();
+            executionNonce--;
         } else {
             revert("Revert not handled");
         }

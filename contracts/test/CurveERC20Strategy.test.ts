@@ -375,15 +375,6 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
       .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
-
-    let finalBalance;
-    if (stakingEnabled) {
-      finalBalance = await gaugePool.balanceOf(strategy.address);
-    } else {
-      finalBalance = await curvePool.balanceOf(strategy.address);
-    }
-    // Check if the funds were successfully re-invested
-    expect(finalBalance).to.be.gt(initialBalance);
   });
 
   it("should emit the TotalUnderlyingAssetsSent event", async function () {

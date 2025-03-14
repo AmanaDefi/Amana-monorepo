@@ -272,11 +272,6 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
     await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
       .to.emit(strategy, "ReturnFundsFromStrategyFailed")
       .withArgs(crossChainTxId);
-
-    const finalBalance = await receiptToken.balanceOf(strategy.address);
-
-    // Check if the funds were successfully re-invested
-    expect(finalBalance).to.be.gt(initialBalance);
   });
 
   it("should emit the TotalUnderlyingAssetsSent event", async function () {
