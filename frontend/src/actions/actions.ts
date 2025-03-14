@@ -152,6 +152,54 @@ export async function calculateAaveAPY(receiptTokenAddress: Address, strategyCha
   return depositAPY;
 }
 
+export async function calculateAaveFlashAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+  const receiptTokenContract = getContract({
+    client,
+    chain: strategyChain,
+    address: receiptTokenAddress,
+  });
+
+  const poolAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function POOL() view returns (address)",
+  });
+
+  const underlyingAssetAddress = await readContract({
+    contract: receiptTokenContract,
+    method: "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
+  });
+
+  const aaveLendingPool = getContract({
+    client,
+    chain: strategyChain,
+    address: poolAddress
+  });
+
+  const reserveData = await readContract({
+    contract: aaveLendingPool,
+    method: "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
+    params: [underlyingAssetAddress as Address]
+  });
+
+  const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
+
+  // Get the liquidity rate (in Ray) and normalize it
+  const liquidityRate = Number(reserveData[2]); // Supply rate (Ray format)
+  const depositAPR = liquidityRate / 1e27;
+  const depositAPY = (Math.pow(1 + (depositAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
+
+  // Get the variable borrow rate (Ray format)
+  const variableBorrowRate = Number(reserveData[4]); // Borrow rate (Ray format)
+  const borrowAPR = variableBorrowRate / 1e27;
+  const borrowAPY = (Math.pow(1 + (borrowAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
+
+  // Flash Loan Strategy: Using 5x leverage (borrowing $4 and using a $1 deposit)
+  const leveragedAPY = (5 * depositAPY) - (4 * borrowAPY);
+
+  return leveragedAPY;
+}
+
+
 export async function calculateCurveAPY(poolAddress: Address, strategyChain: Chain) {
   let relevant_provider = provider;
   if (strategyChain.id === 1) {

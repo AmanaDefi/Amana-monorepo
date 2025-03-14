@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
+  calculateAaveFlashAPY,
   calculateCompoundAPY,
   calculateMoonwellAPY,
   calculateVenusAPY,
@@ -162,7 +163,9 @@ export const useUpdateAPYs = (
               });
               let APY7d = 0;
               let RewardsAPY = 0;
-              if (vault.protocol.name === "Aave" || vault.protocol.name === "ZeroLend") {
+              if (vault.protocol.name === "Aave") {
+                APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "ZeroLend") {
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
