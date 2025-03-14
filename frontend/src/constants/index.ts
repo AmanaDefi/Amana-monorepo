@@ -130,7 +130,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
     },
   },
-
+  {
+    id: "0xcE6bF4B9C0BFEfdB2A030163683141224E2F1a84", // Aave USDT on BNB
+    name: "USDT Lend Pool V2",
+    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
+    symbol: "aAaveUSDT",
+    imgURL: "/bnb_logo.png",
+    inputToken: {
+      symbol: "USDT.BNB",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x1aaA558F422dFA7BF0E643A1543959B2bf9Ba812",
+      network: "BNB",
+      chainId: 56,
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      imgURL: "/aave.png",
+      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
+    },
+  },
   {
     id: "0xb1d9b596799aC5fe6Ac7510392EC037B5Df04724", // Aave USDT on BNB
     name: "USDT Lend Pool - Deposits paused",
@@ -156,31 +180,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
     },
   },
-  {
-    id: "0xcE6bF4B9C0BFEfdB2A030163683141224E2F1a84", // Aave USDT on BNB
-    name: "USDT Lend Pool V2",
-    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
-    symbol: "aAaveUSDT",
-    imgURL: "/bnb_logo.png",
-    inputToken: {
-      symbol: "USDT.BNB",
-      decimals: 18,
-      address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x84482eFc98b22C78C00137F858c56ed1AF8F1a02",
-      network: "BNB",
-      chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-      imgURL: "/aave.png",
-      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
-    },
-  },
+
   // {
   //   id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
   //   name: "AaveV3 ETH",
