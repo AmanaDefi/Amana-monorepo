@@ -20,6 +20,7 @@ import { client } from "./client";
 import { Chain } from "viem";
 import { ChainOptions } from "thirdweb/chains";
 import { getBalance } from "thirdweb/extensions/erc20";
+import { keccak_256 } from 'js-sha3';
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -396,7 +397,7 @@ export function getCurrentSlippage(): number {
  */
 
 export const solanaConnection = new Connection(solanaRpcUrl, "confirmed");
-export function isSolanaAddress(address: string): boolean {
+export function isSolanaAddress(address: any): boolean {
   try {
     new PublicKey(address);
     return true;
@@ -449,4 +450,20 @@ export async function getSplTokenBalance(walletAddress: string, tokenMint: strin
 
 export function shortAddressForm(address: Address) {
   return address.slice(0, 6) + '...' + address.slice(-4);
+}
+
+export function getSolanaEVMAddress(solanaPublicKey: string) {
+  // Ensure we're working with a proper Solana public key
+  const pubKey = new PublicKey(solanaPublicKey);
+
+  // Get the public key as a Buffer
+  const pubKeyBuffer = pubKey.toBuffer();
+
+  // Hash the public key using keccak256
+  const hash = keccak_256(pubKeyBuffer);
+
+  // Take the last 20 bytes (40 characters in hex) and add 0x prefix
+  const evmAddress = '0x' + hash.substring(hash.length - 40);
+
+  return evmAddress;
 }

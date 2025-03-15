@@ -18,7 +18,7 @@ import { formatUnits } from "viem";
 // import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
-import { getCurrentSlippage } from "@/utils/utils";
+import { getCurrentSlippage, getSolanaEVMAddress } from "@/utils/utils";
 import { Token, VaultData } from "@/types/types";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
@@ -775,7 +775,7 @@ const executeSolanaDeposit = async (
     // Case 1: Native token (ETH, BNB, etc.)
     const args = {
       types: ["address", "uint256", "uint16", "bytes32"],
-      values: [inputToken.address, minSharesOut, slippageValue, transactionId]
+      values: [getSolanaEVMAddress(inputToken.address), minSharesOut, slippageValue, transactionId]
     }
     const txHash = await client.solanaDepositAndCall(Number(transactionAmount), vaultId, args);
     console.log("Deposit executed");
@@ -783,14 +783,10 @@ const executeSolanaDeposit = async (
     return { transactionHash: txHash }
   } else {
     // Case 2: SPL token
-    const splTokenAddressBytes = new PublicKey(inputToken).toBytes();
-    const ethereumCompatibleAddress = getBytes(
-      ethers.zeroPadBytes(splTokenAddressBytes.slice(0, 20), 20)
-    );
-    console.log(ethereumCompatibleAddress, "HHHHHHHHHHHHHH")
+    const evmAddress = getSolanaEVMAddress(inputToken.address)
     const args = {
       types: ["address", "uint256", "uint16", "bytes32"],
-      values: [ethereumCompatibleAddress, minSharesOut, slippageValue, transactionId]
+      values: [evmAddress, minSharesOut, slippageValue, transactionId]
     }
     console.log("SPL token deposit detected");
     const txHash = await client.depositSplTokenAndCall(inputToken.address, Number(transactionAmount), vaultId, args)
@@ -807,7 +803,7 @@ export const executeSolanaWithdrawal = async (
   walletContext: WalletContextState,
   activeChain: Chain,
   withdrawShareAmount: bigint,
-  withdrawERC20: Address,
+  splMint: string,
   withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
@@ -834,7 +830,7 @@ export const executeSolanaWithdrawal = async (
   // Prepare payload (calldata to pass to the receiver)
   const args = {
     types: ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    values: [withdrawZRC20, withdrawERC20, withdrawShareAmount, minAmountOut, slippageValue, transactionId]
+    values: [withdrawZRC20, getSolanaEVMAddress(splMint), withdrawShareAmount, minAmountOut, slippageValue, transactionId]
   }
 
   const txHash = await client.solanaWithdrawal(vaultId, args);
@@ -1090,4 +1086,6 @@ export const getPerformanceFee = async (vaultId: Address) => {
 
   return perfFee;
 };
+
+export const updatePythPrices = async () => { }
 

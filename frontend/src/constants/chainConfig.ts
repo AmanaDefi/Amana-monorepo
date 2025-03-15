@@ -401,7 +401,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   900: [
     {
       symbol: "SOL",
-      address: "0x0000000000000000000000000000000000000000",
+      address: "11111111111111111111111111111111",
       decimals: 9,
       imgURL: "/solana_logo.png",
       price: 1,
