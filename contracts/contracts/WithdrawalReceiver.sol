@@ -4,11 +4,12 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 
 import "./interfaces/IErrors.sol";
 
-contract WithdrawalReceiver is Revertable {
+contract WithdrawalReceiver is Revertable, Ownable {
     using SafeERC20 for IERC20;
 
     address public constant _GATEWAY_ADDRESS =
@@ -30,6 +31,8 @@ contract WithdrawalReceiver is Revertable {
         }
         _;
     }
+
+    constructor() Ownable(msg.sender) {}
 
     /**
      * @notice Handles calls from the ZetaChain gateway to return funds to users.
@@ -68,23 +71,45 @@ contract WithdrawalReceiver is Revertable {
         address asset,
         bytes32 crossChainTxId
     ) internal {
-        // Logic to return funds to the user
+        require(receiver != address(0), "Invalid receiver");
+
         if (asset == address(0)) {
-            // Native asset
+            // Native asset transfer
             require(
                 address(this).balance >= amount,
                 "Insufficient native balance"
             );
             (bool success, ) = payable(receiver).call{value: amount}("");
-            if (!success) {
-                revert IErrors.TransferFailed();
-            }
+            require(success, "Native transfer failed");
         } else {
-            // ERC20 token
-            SafeERC20.safeTransfer(IERC20(asset), receiver, amount);
+            SafeERC20.safeTransferFrom(
+                IERC20(asset),
+                msg.sender,
+                receiver,
+                amount
+            );
         }
-
         emit FundsReturned(receiver, asset, amount, crossChainTxId);
+    }
+
+    /**
+     * @dev Allows the owner to withdraw all of a specified token from the vault in case of an emergency.
+     * @param _token The address of the token to withdraw.
+     * @notice Reverts if the vault has no balance of the specified token.
+     */
+    function emergencyWithdraw(address _token) external onlyOwner {
+        if (_token == address(0)) {
+            // Withdraw native token (ETH)
+            uint256 nativeBalance = address(this).balance;
+            if (nativeBalance == 0) revert IErrors.NothingToWithdraw();
+            (bool success, ) = payable(owner()).call{value: nativeBalance}("");
+            require(success, "ETH transfer failed");
+        } else {
+            // Withdraw ERC-20 token
+            uint256 balance = IERC20(_token).balanceOf(address(this));
+            if (balance == 0) revert IErrors.NothingToWithdraw();
+            SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
+        }
     }
 
     /**
@@ -103,11 +128,10 @@ contract WithdrawalReceiver is Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainDepositFailed"))
         ) {
-            _returnFundsToUser(
-                context.amount,
-                context.asset,
+            SafeERC20.safeTransfer(
+                IERC20(context.asset),
                 receiver,
-                _crossChainTxId
+                context.amount
             );
             emit CrossChainDepositFailed(_crossChainTxId);
         } else if (

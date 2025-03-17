@@ -773,6 +773,46 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
     }
 
+    function manualCallWithdrawalReceiver(
+        address receiver,
+        address asset,
+        address targetChainZRC20,
+        uint256 amount,
+        bytes32 crossChainTxId
+    ) external onlyOwner {
+        (address gasZRC20, uint256 gasFee) = IZRC20(targetChainZRC20)
+            .withdrawGasFeeWithGasLimit(gasLimitForCall);
+
+        gasTank.getGas(gasZRC20, gasFee);
+        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
+
+        bytes memory recipient = abi.encodePacked(withdrawalReceiver);
+
+        bytes memory outgoingMessage = abi.encode(
+            receiver,
+            asset,
+            amount,
+            crossChainTxId
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this), // revert address
+            true, // callOnRevert
+            address(this), // abortAddress
+            abi.encode("_manualCallFailed", crossChainTxId),
+            uint256(0) // onRevertGasLimit - NA on ZEVM
+        );
+
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
+        IGatewayZEVM(_GATEWAY_ADDRESS).call(
+            recipient,
+            address(targetChainZRC20),
+            outgoingMessage,
+            callOptions,
+            revertOptions
+        );
+    }
+
     /**
      * @dev Handles revert scenarios during cross-chain operations.
      * @param context The revert context containing details about the revert scenario.
