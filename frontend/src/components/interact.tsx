@@ -95,7 +95,6 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         throw new Error("Withdraw token not found");
     }
     try {
-
         const withdrawShareAmount = inputBalance.value
         mixpanel.track("Withdraw Submitted", {
             vault: vaultData.id.toString(),
@@ -118,14 +117,18 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
             amount: withdrawShareAmount.toString(),
         });
 
-        // Create an object to pass to waitForReceipt with the required fields
-        const receiptObject = {
-            transactionHash: receipt.transactionHash as `0x${string}`,
-            client, // Assuming `client` is already defined somewhere in this scope
-            chain: activeChain,
-        };
-
-        await waitForReceipt(receiptObject);
+        if (activeChain.id === CHAIN_ID.solana) {
+            // console.log("Waiting for solana Cross-schain tx")
+            // await waitForReceiptSol(receipt.transactionHash)
+        } else {
+            // Create an object to pass to waitForReceipt with the required fields
+            const receiptObject = {
+                transactionHash: receipt.transactionHash as `0x${string}`,
+                client, // Assuming `client` is already defined somewhere in this scope
+                chain: activeChain,
+            };
+            await waitForReceipt(receiptObject);
+        }
         const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? ''
         setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`)
         setCrosschainInvestHash(receipt.transactionHash)
