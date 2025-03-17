@@ -111,8 +111,8 @@ export enum StepStatus {
 }
 
 export type Step = {
-    description: string,
-    status: StepStatus
+  description: string,
+  status: StepStatus
 }
 
 export type Milestone = {
@@ -174,7 +174,7 @@ export interface UserSettings {
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
-  slippage: { isAuto: true, value: 100 }
+  slippage: { isAuto: true, value: 5 }
 };
 
 export type LeaderboardUserData = {

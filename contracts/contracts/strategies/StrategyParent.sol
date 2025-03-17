@@ -153,6 +153,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         oldStrategy = _oldStrategy;
     }
 
+    function setExecutionNonce(uint256 _executionNonce) external onlyOwner {
+        executionNonce = _executionNonce;
+    }
+
     /**
      * @notice Returns the total underlying assets managed by the contract.
      * @return The total amount of underlying assets in the contract.
@@ -318,7 +322,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            fractionOfTotalShares,
+            fractionOfTotalShares - 5,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -546,14 +550,13 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount, 0);
-            executionNonce -= 1;
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
         ) {
             emit SendTotalUnderlyingAssetsFailed();
+            executionNonce--;
         } else {
             revert("Revert not handled");
         }

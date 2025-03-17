@@ -37,6 +37,34 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event TotalAssetsUpdated(uint256 totalAssets);
     event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
 
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        IERC20 asset_,
+        address treasury_,
+        uint16 perfFee_,
+        address gasTank_,
+        address withdrawalReceiver_,
+        address swapHelper_,
+        address withdrawHelper,
+        uint32 gasLimitForWithdrawAndCall_,
+        uint32 gasLimitForCall_
+    )
+        AmanaVaultBase(
+            name_,
+            symbol_,
+            asset_,
+            treasury_,
+            perfFee_,
+            gasTank_,
+            withdrawalReceiver_,
+            swapHelper_,
+            withdrawHelper,
+            gasLimitForWithdrawAndCall_,
+            gasLimitForCall_
+        )
+    {}
+
     /**
      * @dev Handles cross-chain communication via the gateway.
      * @param context Message context including origin and sender.
@@ -356,7 +384,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
 
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
+        CallOptions memory callOptions = CallOptions(
+            gasLimitForCall + gasLimitForWithdrawAndCall,
+            false
+        );
         IGatewayZEVM(_GATEWAY_ADDRESS).call(
             recipient,
             address(asset()),
@@ -742,6 +773,46 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
     }
 
+    function manualCallWithdrawalReceiver(
+        address receiver,
+        address asset,
+        address targetChainZRC20,
+        uint256 amount,
+        bytes32 crossChainTxId
+    ) external onlyOwner {
+        (address gasZRC20, uint256 gasFee) = IZRC20(targetChainZRC20)
+            .withdrawGasFeeWithGasLimit(gasLimitForCall);
+
+        gasTank.getGas(gasZRC20, gasFee);
+        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
+
+        bytes memory recipient = abi.encodePacked(withdrawalReceiver);
+
+        bytes memory outgoingMessage = abi.encode(
+            receiver,
+            asset,
+            amount,
+            crossChainTxId
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this), // revert address
+            true, // callOnRevert
+            address(this), // abortAddress
+            abi.encode("_manualCallFailed", crossChainTxId),
+            uint256(0) // onRevertGasLimit - NA on ZEVM
+        );
+
+        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
+        IGatewayZEVM(_GATEWAY_ADDRESS).call(
+            recipient,
+            address(targetChainZRC20),
+            outgoingMessage,
+            callOptions,
+            revertOptions
+        );
+    }
+
     /**
      * @dev Handles revert scenarios during cross-chain operations.
      * @param context The revert context containing details about the revert scenario.
@@ -767,7 +838,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            uint16 slippage = 10000;
+            uint16 slippage = 1000;
             _returnFundsToUser(
                 context.amount,
                 userChainId,

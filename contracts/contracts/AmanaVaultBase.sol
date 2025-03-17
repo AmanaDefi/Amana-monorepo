@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "./ERC4626RewardsUpgradeable.sol";
+import "./ERC4626Rewards.sol";
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
@@ -15,6 +14,7 @@ import "./interfaces/IGasTank.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ICurvePool.sol";
 import "./interfaces/IZapContract.sol";
+import "./interfaces/ISwapRouter.sol";
 
 import "./libraries/SwapHelperLibEddy.sol";
 
@@ -22,8 +22,7 @@ import "./libraries/SwapHelperLibEddy.sol";
 /// @notice A vault that interacts with ZetaChain-connected strategies
 /// @dev Implements ERC4626 with custom cross-chain functionality
 abstract contract AmanaVaultBase is
-    ERC4626RewardsUpgradeable,
-    UUPSUpgradeable,
+    ERC4626Rewards,
     UniversalContract,
     Revertable,
     IErrors
@@ -43,13 +42,19 @@ abstract contract AmanaVaultBase is
     address public strategyAddress;
     address public treasury;
     address public withdrawalReceiver;
-    uint16 public perfFee;
-    uint256 public totalPrincipal;
-    mapping(address => uint256) internal userPrincipal;
-    IGasTank gasTank;
+    address public swapHelper;
+    address public withdrawHelper;
+
+    IGasTank internal gasTank;
+
+    uint256 internal totalPrincipal;
+
     uint32 public gasLimitForWithdrawAndCall; // this is used in two places - for investing into the strategy and returning funds to the user
     uint32 public gasLimitForCall; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
+    uint16 public perfFee;
     bool public depositsPaused;
+
+    mapping(address => uint256) internal userPrincipal;
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
@@ -63,9 +68,8 @@ abstract contract AmanaVaultBase is
 
     event StrategyUpdated(address indexed newStrategyAddress);
     event PerformanceFeePaid(address indexed user, uint256 amount);
-    event PerformanceFeeUpdated(uint256 newFeeRate);
+    event PerformanceFeeUpdated(uint16 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event ContextDataRevert(RevertContext context);
     event TreasuryUpdated(address indexed newTreasury);
     event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
     event GasTankUpdated(address indexed newGasTank);
@@ -87,21 +91,20 @@ abstract contract AmanaVaultBase is
         bytes32 indexed crossChainTxId
     );
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
     /**
-     * @dev Initializes the vault contract.
+     * @dev Constructor to initialize the vault contract.
      * @param name_ Name of the vault token.
      * @param symbol_ Symbol of the vault token.
      * @param asset_ The underlying asset for the vault.
      * @param treasury_ Treasury address for performance fees.
      * @param perfFee_ Performance fee rate.
      * @param gasTank_ Gas tank contract address.
+     * @param withdrawalReceiver_ Address where withdrawals are received.
+     * @param swapHelper_ Address of the SwapHelper contract.
+     * @param gasLimitForWithdrawAndCall_ Gas limit for withdrawAndCall.
+     * @param gasLimitForCall_ Gas limit for call functions.
      */
-    function initialize(
+    constructor(
         string memory name_,
         string memory symbol_,
         IERC20 asset_,
@@ -109,31 +112,25 @@ abstract contract AmanaVaultBase is
         uint16 perfFee_,
         address gasTank_,
         address withdrawalReceiver_,
+        address swapHelper_,
+        address withdrawHelper_,
         uint32 gasLimitForWithdrawAndCall_,
         uint32 gasLimitForCall_
-    ) external initializer {
+    ) ERC4626(asset_) ERC20(name_, symbol_) Ownable(msg.sender) {
         if (treasury_ == address(0)) revert InvalidAddress();
-        __ERC20_init(name_, symbol_);
-        __ERC4626_init(asset_);
-        __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
+
         treasury = treasury_;
         perfFee = perfFee_;
-        totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
+        totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero
         gasTank = IGasTank(gasTank_);
         withdrawalReceiver = withdrawalReceiver_;
+        swapHelper = swapHelper_;
+        withdrawHelper = withdrawHelper_;
         gasLimitForWithdrawAndCall = gasLimitForWithdrawAndCall_;
         gasLimitForCall = gasLimitForCall_;
+
         emit VaultInitialized(decimals(), perfFee_);
     }
-
-    /**
-     * @dev Authorizes an upgrade for the contract. Restricted to the owner.
-     * @param newImplementation Address of the new implementation contract.
-     */
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyOwner {}
 
     /**
      * @dev Handles cross-chain communication via the gateway.
@@ -153,22 +150,14 @@ abstract contract AmanaVaultBase is
         depositsPaused = !depositsPaused;
     }
 
-    // function getFractionOfTotalShares(
-    //     uint256 shares
-    // ) public view returns (uint256) {
-    //     return (shares * 1e18 + totalSupply() / 2) / totalSupply(); // we add totalSupply() / 2 to prevent truncation errors
-    // }
-
     /**
      * @dev Sets the strategy for the vault. Can only be called by the owner.
      * @param _strategyAddress The address of the new strategy.
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function setStrategy(address _strategyAddress) external onlyOwner {
-        if (
-            strategyAddress != address(0) || _strategyAddress == strategyAddress
-        ) revert StrategyAlreadySet();
-        if (_strategyAddress == address(0)) revert InvalidAddress();
+        if (_strategyAddress == address(0) || strategyAddress != address(0))
+            revert InvalidAddress();
         strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
     }
@@ -195,6 +184,20 @@ abstract contract AmanaVaultBase is
         if (_withdrawalReceiver == address(0)) revert InvalidAddress();
         withdrawalReceiver = _withdrawalReceiver;
         emit WithdrawalReceiverUpdated(_withdrawalReceiver);
+    }
+
+    /**
+     * @dev Updates the swap helper address for the vault. Can only be called by the owner.
+     * @param _swapHelper The address of the new swap helper.
+     * @notice Reverts if the swap helper address is zero.
+     */
+    function updateSwapHelperAddress(address _swapHelper) external onlyOwner {
+        if (_swapHelper == address(0)) revert InvalidAddress();
+        swapHelper = _swapHelper;
+    }
+
+    function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {
+        withdrawHelper = _withdrawHelper;
     }
 
     /**
@@ -341,9 +344,9 @@ abstract contract AmanaVaultBase is
                 userChainId
             );
         }
-        uint256 outputAmount = assets;
-        if (zrc20source != address(asset())) {
-            outputAmount = swap(
+        uint256 outputAmount = zrc20source == address(asset())
+            ? assets
+            : swap(
                 zrc20source,
                 assets,
                 address(asset()),
@@ -351,7 +354,6 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        }
         _investAssets(
             outputAmount,
             minimumOut,
@@ -491,40 +493,33 @@ abstract contract AmanaVaultBase is
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
-        uint256 outputAmount = amount;
+        uint256 outputAmount = (userChainId == uint32(block.chainid) ||
+            address(asset()) == withdrawZRC20)
+            ? amount
+            : swap(
+                address(asset()),
+                amount,
+                withdrawZRC20,
+                slippage,
+                address(this),
+                200
+            );
 
         if (userChainId == uint32(block.chainid)) {
-            // Same-chain transfer
-            if (withdrawZRC20 == address(asset())) {
-                SafeERC20.safeTransfer(IERC20(asset()), receiver, amount);
-            } else {
-                IERC20(address(asset())).approve(ZAP_CONTRACT_ADDRESS, amount);
-
-                IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
-                    amount,
-                    address(this),
-                    address(asset()),
-                    withdrawZRC20,
-                    slippage,
-                    receiver
-                );
-            }
+            IERC20(address(asset())).approve(ZAP_CONTRACT_ADDRESS, amount);
+            IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
+                amount,
+                address(this),
+                address(asset()),
+                withdrawZRC20,
+                slippage,
+                receiver
+            );
         } else {
-            if (address(asset()) != withdrawZRC20) {
-                // Swap assets if needed
-                outputAmount = swap(
-                    address(asset()),
-                    amount,
-                    withdrawZRC20,
-                    slippage,
-                    address(this),
-                    200
-                );
-            }
-
+            // Cross-chain transfer
             bytes memory outgoingMessage = abi.encode(
-                receiver, // the user the funds have to go to
-                withdrawERC20, // the token on the target chain that the user receives (can be native)
+                receiver, // user to receive funds
+                withdrawERC20, // token on target chain
                 outputAmount, // amount to be sent
                 _crossChainTxId
             );
@@ -542,6 +537,7 @@ abstract contract AmanaVaultBase is
                 outgoingMessage
             );
         }
+
         emit ReturnFundsToUserSent(_crossChainTxId);
     }
 
@@ -557,73 +553,28 @@ abstract contract AmanaVaultBase is
         string memory revertMessage,
         bytes memory outgoingMessage
     ) internal {
-        // Cross-chain transfer
-        bytes memory recipient = abi.encodePacked(targetAddress);
+        require(withdrawHelper != address(0), "WithdrawHelper not set");
 
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                revertMessage,
-                _crossChainTxId,
-                amount,
+        (bool success, ) = withdrawHelper.delegatecall(
+            abi.encodeWithSignature(
+                "handleWithdrawAndCall(address,address,address,address,address,address,uint256,uint32,bytes32,string,bytes,uint32,bytes)",
+                address(gasTank),
+                targetAddress,
                 receiver,
                 withdrawZRC20,
                 withdrawERC20,
-                userChainId
-            ),
-            uint256(0) // onRevertGasLimit
+                tokenToTransfer,
+                amount,
+                userChainId,
+                _crossChainTxId,
+                revertMessage,
+                outgoingMessage,
+                gasLimitForWithdrawAndCall,
+                ""
+            )
         );
 
-        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
-            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall); // ZRC-20 of the gas token of the chain the strategy is on, and the gas fee for the withdrawal
-
-        gasTank.getGas(gas_zrc20, gasFee);
-
-        if (gas_zrc20 != tokenToTransfer) {
-            approveOrIncreaseAllowance(
-                IERC20(tokenToTransfer),
-                _GATEWAY_ADDRESS,
-                amount
-            );
-            approveOrIncreaseAllowance(
-                IERC20(gas_zrc20),
-                _GATEWAY_ADDRESS,
-                gasFee
-            );
-        } else {
-            approveOrIncreaseAllowance(
-                IERC20(tokenToTransfer),
-                _GATEWAY_ADDRESS,
-                amount + gasFee
-            );
-        }
-
-        if (userChainId == 900 && targetAddress == withdrawalReceiver) {
-            // Solana
-            IGatewayZEVM(_GATEWAY_ADDRESS).withdraw(
-                recipient,
-                amount,
-                withdrawZRC20,
-                revertOptions
-            );
-        } else {
-            // Ethereum
-
-            CallOptions memory callOptions = CallOptions(
-                gasLimitForWithdrawAndCall,
-                false
-            );
-            IGatewayZEVM(_GATEWAY_ADDRESS).withdrawAndCall(
-                recipient,
-                amount,
-                tokenToTransfer,
-                outgoingMessage,
-                callOptions,
-                revertOptions
-            );
-        }
+        require(success, "WithdrawHelper call failed");
     }
 
     /**
@@ -635,7 +586,7 @@ abstract contract AmanaVaultBase is
      * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
      * @param vault The address where the swapped tokens will be sent.
      * @param maxDeadline The maximum deadline for the swap to complete.
-     * @return The amount of output tokens received.
+     * @return amountOut The amount of output tokens received.
      * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
      */
     function swap(
@@ -645,48 +596,29 @@ abstract contract AmanaVaultBase is
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline
-    ) internal returns (uint256) {
-        uint256 minimumOut = SwapHelperLibEddy.calculateMinAmountOut(
+    ) internal returns (uint256 amountOut) {
+        bytes memory data = abi.encodeWithSignature(
+            "swap(address,uint256,address,uint16,address,uint16,bytes)",
             zrc20,
-            targetZRC20,
             amount,
-            slippageBps
+            targetZRC20,
+            slippageBps,
+            vault,
+            maxDeadline,
+            "" // empty bytes param for future-proofing
         );
 
-        (address curvePool, uint256 i, uint256 j) = SwapHelperLibEddy
-            .getCurvePool(zrc20, targetZRC20);
-        if (curvePool != address(0)) {
-            // Approve Curve pool to spend your tokens
-            IZRC20(zrc20).approve(curvePool, amount);
+        amountOut = _delegateCall(swapHelper, data);
+    }
 
-            // Perform the swap
-            return
-                ICurvePool(curvePool).exchange(
-                    i, // Index of input token
-                    j, // Index of output token
-                    amount, // Amount of input token
-                    minimumOut // Minimum amount of output token to receive
-                );
-        } else {
-            address[] memory path = SwapHelperLibEddy.getPath(
-                zrc20,
-                targetZRC20
-            );
-
-            IZRC20(zrc20).approve(SwapHelperLibEddy.UNISWAP_V2_ROUTER, amount);
-            // Perform the swap
-            uint256[] memory amounts = IUniswapV2Router02(
-                SwapHelperLibEddy.UNISWAP_V2_ROUTER
-            ).swapExactTokensForTokens(
-                    amount,
-                    minimumOut,
-                    path,
-                    vault,
-                    block.timestamp + maxDeadline
-                );
-
-            return amounts[amounts.length - 1];
-        }
+    // Internal function for delegatecall
+    function _delegateCall(
+        address logicContract,
+        bytes memory data
+    ) internal returns (uint256) {
+        (bool success, bytes memory result) = logicContract.delegatecall(data);
+        require(success, "Delegatecall failed");
+        return abi.decode(result, (uint256));
     }
 
     function approveOrIncreaseAllowance(

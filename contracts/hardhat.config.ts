@@ -18,6 +18,7 @@ import "./tasks/deployCurveERC20_Strategy";
 import "./tasks/deployCurveEthStrategy";
 import "./tasks/updatePythPrices";
 import "./tasks/deployAaveERC20Flash_Strategy";
+import "./tasks/deployWithdrawHelper";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -118,7 +119,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 300,
+            runs: 1000,
           },
           viaIR: true,
         },
@@ -128,7 +129,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 750,
+            runs: 1000,
           },
           viaIR: true,
         },

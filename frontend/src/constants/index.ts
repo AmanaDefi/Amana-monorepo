@@ -130,7 +130,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
     },
   },
-
+  {
+    id: "0xcE6bF4B9C0BFEfdB2A030163683141224E2F1a84", // Aave USDT on BNB
+    name: "USDT Lend Pool V2",
+    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
+    symbol: "aAaveUSDT",
+    imgURL: "/bnb_logo.png",
+    inputToken: {
+      symbol: "USDT.BNB",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x1aaA558F422dFA7BF0E643A1543959B2bf9Ba812",
+      network: "BNB",
+      chainId: 56,
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      imgURL: "/aave.png",
+      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
+    },
+  },
   {
     id: "0xB6644BE3B49928E4F4C102BdAc8381657958e89f", // Aave USDT on BNB
     name: "USDT Lend Pool",
@@ -155,157 +179,158 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/aave.png",
       des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
     },
-    // {
-    //   id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
-    //   name: "AaveV3 ETH",
-    //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-    //   symbol: "aAaveETH",
-    //   imgURL: "/base.png",
-    //   inputToken: {
-    //     symbol: "ETH.BASE",
-    //     decimals: 18,
-    //     address: ZC_ETH_BASE_ADDRESS,
-    //     imgURL: "/ETH.png",
-    //     price: ethPrice,
-    //     balance: EMPTY_BALANCE,
-    //     isNative: false
-    //   },
-    //   protocol: {
-    //     name: "Aave",
-    //     strategyAddress: "0x3D85ef74f5FA2c56b53CcC8c9a2a140363dE014E",
-    //     network: "Base",
-    //     chainId: 8453,
-    //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-    //     imgURL: "/aave.png",
-    //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    //   },
-    // },
-    // {
-    //   id: "0x2B0FD687c0EBF26D4e4F67f9b9Ab96cC5Fe69193", // Polygon POL Vault
-    //   name: "AaveV3 POL",
-    //   des: " This vault invests POL into a simple strategy which deposits the funds as collateral into an Aave POL pool, which earns interest every block.",
-    //   symbol: "aAavePOL",
-    //   imgURL: "/polygon_logo.png",
-    //   inputToken: {
-    //     symbol: "POL.POL",
-    //     decimals: 18,
-    //     address: ZC_POL_POL_ADDRESS,
-    //     imgURL: "/polygon_logo.png",
-    //     price: 0.5,
-    //     balance: EMPTY_BALANCE,
-    //     isNative: false
-    //   },
-    //   protocol: {
-    //     name: "Aave",
-    //     strategyAddress: "0xC1F7903C20C4Da3cf4699950218069b56E52CFE6",
-    //     network: "Polygon",
-    //     chainId: 137,
-    //     netdes: "Polygon is a POS side chain to Ethereum.",
-    //     imgURL: "/aave.png",
-    //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    //   },
-    // },
-    // {
-    //   id: "0x9E204c8109FC388DE5eA26d16d1c6cC209f4e731", // Euler USDC vault on Base
-    //   name: "Euler USDC",
-    //   des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
-    //   symbol: "aEulerUSDC",
-    //   imgURL: "/base.png",
-    //   inputToken: {
-    //     symbol: "USDC.BASE",
-    //     decimals: 6,
-    //     address: ZC_USDC_BASE_ADDRESS,
-    //     imgURL: "/USDC.png",
-    //     price: 1,
-    //     balance: EMPTY_BALANCE,
-    //     isNative: false
-    //   },
-    //   protocol: {
-    //     name: "Euler",
-    //     strategyAddress: "0x42d0906c80d1950E630dD70b9D710a32F81A5F76",
-    //     network: "Base",
-    //     chainId: 8453,
-    //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-    //     imgURL: "/euler.svg",
-    //     des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    //   },
-    // },
-    // {
-    //   id: "0xC967154127af55cecC47328B06385EFd8f8C427E",
-    //   name: "Moonwell Flagship USDC",
-    //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
-    //   symbol: "aMoonwellUSDC",
-    //   imgURL: "/base.png",
-    //   inputToken: {
-    //     symbol: "USDC.BASE",
-    //     decimals: 6,
-    //     address: ZC_USDC_BASE_ADDRESS,
-    //     imgURL: "/USDC.png",
-    //     price: 1,
-    //     balance: EMPTY_BALANCE,
-    //     isNative: false
-    //   },
-    //   protocol: {
-    //     name: "Moonwell",
-    //     strategyAddress: "0x912864B5F00F9391Dc78E86C8b186455BB4C626c",
-    //     network: "Base",
-    //     chainId: 8453,
-    //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-    //     imgURL: "/Moonwell.jpg",
-    //     des: "Moonwell is a relatively new protocol."
-    //   },
-    // },
-    // {
-    //   id: "0xBc1BAF5a96E8302c5469B0D3A8D5AD3aAccCAE7b",
-    //   name: "Moonwell Eth",
-    //   des: " This vault invests ETH into a strategy which deposits the funds into the Moonwell Eth vault.",
-    //   symbol: "aMoonwellEth",
-    //   imgURL: "/base.png",
-    //   inputToken: {
-    //     symbol: "ETH.BASE",
-    //     decimals: 18,
-    //     address: ZC_ETH_BASE_ADDRESS,
-    //     imgURL: "/ETH.png",
-    //     price: 1,
-    //     balance: EMPTY_BALANCE,
-    //     isNative: false
-    //   },
-    //   protocol: {
-    //     name: "Moonwell",
-    //     strategyAddress: "0x405F526e5F05E7a41836Ba6B6EafFaaAB9454880",
-    //     network: "Base",
-    //     chainId: 8453,
-    //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-    //     imgURL: "/Moonwell.jpg",
-    //     des: "Moonwell is a relatively new protocol."
-    //   },
-    // },
-    // {
-    //   id: "0xc8b8fc1Cc87a6d412fFd91398EE9b5C80Ecf7881", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
-    //   name: "Mock USDC",
-    //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
-    //   symbol: "aMockUSDC",
-    //   imgURL: "/ZetaChain.jpeg",
-    //   inputToken: {
-    //     symbol: "USDC.ETH",
-    //     decimals: 6,
-    //     address: ZC_USDC_ETH_ADDRESS,
-    //     imgURL: "/USDC.png",
-    //     price: 1,
-    //     balance: EMPTY_BALANCE,
-    //     isNative: false
-    //   },
-    //   protocol: {
-    //     name: "Mock",
-    //     strategyAddress: "0xe7b322b6445C81cD6da8e87D63731fB1cF5c9eEf",
-    //     network: "Zetachain",
-    //     chainId: 7000,
-    //     netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
-    //     imgURL: "/aave.png",
-    //     des: "This is a mock strategy for testing purposes."
-    //   },
-    // },
   },
+
+  // {
+  //   id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
+  //   name: "AaveV3 ETH",
+  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+  //   symbol: "aAaveETH",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "ETH.BASE",
+  //     decimals: 18,
+  //     address: ZC_ETH_BASE_ADDRESS,
+  //     imgURL: "/ETH.png",
+  //     price: ethPrice,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Aave",
+  //     strategyAddress: "0x3D85ef74f5FA2c56b53CcC8c9a2a140363dE014E",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/aave.png",
+  //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //   },
+  // },
+  // {
+  //   id: "0x2B0FD687c0EBF26D4e4F67f9b9Ab96cC5Fe69193", // Polygon POL Vault
+  //   name: "AaveV3 POL",
+  //   des: " This vault invests POL into a simple strategy which deposits the funds as collateral into an Aave POL pool, which earns interest every block.",
+  //   symbol: "aAavePOL",
+  //   imgURL: "/polygon_logo.png",
+  //   inputToken: {
+  //     symbol: "POL.POL",
+  //     decimals: 18,
+  //     address: ZC_POL_POL_ADDRESS,
+  //     imgURL: "/polygon_logo.png",
+  //     price: 0.5,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Aave",
+  //     strategyAddress: "0xC1F7903C20C4Da3cf4699950218069b56E52CFE6",
+  //     network: "Polygon",
+  //     chainId: 137,
+  //     netdes: "Polygon is a POS side chain to Ethereum.",
+  //     imgURL: "/aave.png",
+  //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //   },
+  // },
+  // {
+  //   id: "0x9E204c8109FC388DE5eA26d16d1c6cC209f4e731", // Euler USDC vault on Base
+  //   name: "Euler USDC",
+  //   des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
+  //   symbol: "aEulerUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Euler",
+  //     strategyAddress: "0x42d0906c80d1950E630dD70b9D710a32F81A5F76",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/euler.svg",
+  //     des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //   },
+  // },
+  // {
+  //   id: "0xC967154127af55cecC47328B06385EFd8f8C427E",
+  //   name: "Moonwell Flagship USDC",
+  //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
+  //   symbol: "aMoonwellUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Moonwell",
+  //     strategyAddress: "0x912864B5F00F9391Dc78E86C8b186455BB4C626c",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/Moonwell.jpg",
+  //     des: "Moonwell is a relatively new protocol."
+  //   },
+  // },
+  // {
+  //   id: "0xBc1BAF5a96E8302c5469B0D3A8D5AD3aAccCAE7b",
+  //   name: "Moonwell Eth",
+  //   des: " This vault invests ETH into a strategy which deposits the funds into the Moonwell Eth vault.",
+  //   symbol: "aMoonwellEth",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "ETH.BASE",
+  //     decimals: 18,
+  //     address: ZC_ETH_BASE_ADDRESS,
+  //     imgURL: "/ETH.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Moonwell",
+  //     strategyAddress: "0x405F526e5F05E7a41836Ba6B6EafFaaAB9454880",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/Moonwell.jpg",
+  //     des: "Moonwell is a relatively new protocol."
+  //   },
+  // },
+  // {
+  //   id: "0xc8b8fc1Cc87a6d412fFd91398EE9b5C80Ecf7881", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+  //   name: "Mock USDC",
+  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+  //   symbol: "aMockUSDC",
+  //   imgURL: "/ZetaChain.jpeg",
+  //   inputToken: {
+  //     symbol: "USDC.ETH",
+  //     decimals: 6,
+  //     address: ZC_USDC_ETH_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     strategyAddress: "0xe7b322b6445C81cD6da8e87D63731fB1cF5c9eEf",
+  //     network: "Zetachain",
+  //     chainId: 7000,
+  //     netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+  //     imgURL: "/aave.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
   // {
   //   id: "0x2951CeE73b27c2b1Ffd66A03b77eEdD79012d2BF",
   //   name: "Eddy USDC",

@@ -8,7 +8,6 @@ import "../interfaces/IAavePool.sol";
 import "../interfaces/IAaveReceiptToken.sol";
 import "./ERC20StrategyParent.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 /// @title AaveERC20Strategy
 /// @notice Contract for ERC20 strategies using Aave and ZetaChain.
@@ -262,10 +261,6 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
             address(this),
             0
         );
-        console.log("totalDeposit", totalDeposit);
-        console.log("amount", amount);
-        console.log("params.amount", params.amount);
-        console.log("totalUnderlyingAssets", totalUnderlyingAssets());
         _sendInvestConfirmation(
             params.receiver,
             params.amount,

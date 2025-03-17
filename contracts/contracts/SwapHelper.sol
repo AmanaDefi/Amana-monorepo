@@ -6,16 +6,17 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "../interfaces/IZRC20.sol";
-import "../interfaces/IErrors.sol";
-import "../interfaces/IPriceOracle.sol";
-import "../interfaces/ICurvePool.sol";
-import "../interfaces/IUniswapV3Factory.sol";
-import "../interfaces/IUniswapV3Pool.sol";
+import "./interfaces/IZRC20.sol";
+import "./interfaces/IErrors.sol";
+import "./interfaces/IPriceOracle.sol";
+import "./interfaces/ICurvePool.sol";
+import "./interfaces/IUniswapV3Factory.sol";
+import "./interfaces/IUniswapV3Pool.sol";
+import "./interfaces/ISwapRouter.sol";
 
-import "../CurvePoolRegistry.sol";
+import "./CurvePoolRegistry.sol";
 
-library SwapHelperLibEddy {
+contract SwapHelper {
     address constant UNISWAP_V2_FACTORY =
         0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
     address constant UNISWAP_V2_ROUTER =
@@ -525,6 +526,64 @@ library SwapHelperLibEddy {
                 return getAmountOutV3(amount, path, feeTiers);
             } else {
                 return getAmountOutV2(amount, path);
+            }
+        }
+    }
+
+    function swap(
+        address zrc20,
+        uint256 amount,
+        address targetZRC20,
+        uint16 slippageBps,
+        address vault,
+        uint16 maxDeadline,
+        bytes calldata data
+    ) external returns (uint256 amountOut) {
+        uint256 minimumOut = calculateMinAmountOut(
+            zrc20,
+            targetZRC20,
+            amount,
+            slippageBps
+        );
+        (address curvePool, uint256 i, uint256 j) = getCurvePool(
+            zrc20,
+            targetZRC20
+        );
+        if (curvePool != address(0)) {
+            // Approve Curve pool to spend tokens
+            IZRC20(zrc20).approve(curvePool, amount);
+            return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
+        } else {
+            (
+                address[] memory path,
+                uint24[] memory feeTiers,
+                bytes memory encodedPath
+            ) = getPath(zrc20, targetZRC20);
+            if (encodedPath.length > 0) {
+                // Uniswap V3 Swap
+                IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
+                ISwapRouter.ExactInputParams memory params = ISwapRouter
+                    .ExactInputParams({
+                        path: encodedPath,
+                        recipient: vault,
+                        deadline: block.timestamp + maxDeadline,
+                        amountIn: amount,
+                        amountOutMinimum: minimumOut
+                    });
+
+                amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
+            } else {
+                // Uniswap V2 Swap
+                IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+                uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                    .swapExactTokensForTokens(
+                        amount,
+                        minimumOut,
+                        path,
+                        vault,
+                        block.timestamp + maxDeadline
+                    );
+                amountOut = amounts[amounts.length - 1];
             }
         }
     }

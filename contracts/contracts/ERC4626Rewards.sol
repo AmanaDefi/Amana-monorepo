@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /// @title ERC4626RewardsUpgradeable
 /// @notice Extends ERC4626Upgradeable with a reward system for token holders.
-abstract contract ERC4626RewardsUpgradeable is
-    ERC4626Upgradeable,
-    Ownable2StepUpgradeable
-{
+abstract contract ERC4626Rewards is ERC4626, Ownable2Step {
     using SafeERC20 for IERC20;
 
     /// @notice Emitted when rewards are set.

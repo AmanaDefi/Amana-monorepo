@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./EthStrategyParent.sol";
 import "../interfaces/ICurvePool.sol";
 import "../interfaces/ICurveLiquidityGauge.sol";
-import "../interfaces/IUniswapV3Router.sol";
+import "../interfaces/ISwapRouter.sol";
 import "../interfaces/IPriceOracle.sol";
 
 // curve pool 0x0f2f4d68308db60d36268a602ef273421a227021
@@ -21,7 +21,7 @@ contract CurveEthStrategy is EthStrategyParent {
 
     ICurvePool public immutable receiptToken;
     ICurveLiquidityGauge public immutable gauge;
-    IUniswapV3Router public immutable uniswapRouter;
+    ISwapRouter public immutable uniswapRouter;
     IWETH public immutable weth;
 
     uint256 public constant WETH_INDEX = 0; // USDC's index in the Curve pool
@@ -55,7 +55,7 @@ contract CurveEthStrategy is EthStrategyParent {
     ) StrategyParent(_name, _amanaVault, _gateway) {
         receiptToken = ICurvePool(_receiptTokenAddress);
         gauge = ICurveLiquidityGauge(_liquidityGaugeAddress);
-        uniswapRouter = IUniswapV3Router(UNISWAP_ROUTER);
+        uniswapRouter = ISwapRouter(UNISWAP_ROUTER);
         weth = IWETH(_wethAddress);
     }
 
@@ -172,7 +172,7 @@ contract CurveEthStrategy is EthStrategyParent {
         path[0] = REWARD_TOKEN;
         path[1] = address(weth);
 
-        IUniswapV3Router.ExactInputSingleParams memory swapParams = IUniswapV3Router
+        ISwapRouter.ExactInputSingleParams memory swapParams = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: REWARD_TOKEN,
                 tokenOut: address(weth),

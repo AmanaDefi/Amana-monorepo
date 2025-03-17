@@ -14,11 +14,11 @@ interface ISwapRouter {
     }
 
     struct ExactInputParams {
-        bytes path; // The encoded swap path
-        uint256 amountIn; // The amount of input tokens
-        uint256 amountOutMinimum; // The minimum amount of output tokens to receive
-        address recipient; // The recipient of the output tokens
-        uint256 deadline; // The deadline for the swap to be executed
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
     }
 
     struct ExactOutputSingleParams {

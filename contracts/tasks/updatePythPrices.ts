@@ -1,11 +1,11 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { PriceServiceConnection } from "@pythnetwork/price-service-client";
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
 
-dotenv.config();
+// dotenv.config();
 
-const PYTH_CONTRACT_ADDRESS = "0x4305fb66699c3b2702d4d05cf36551390a4c69c6"; // Replace this with the actual address
+const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43"; // Replace this with the actual address
 
 const priceIds = [
   "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
