@@ -587,4 +587,77 @@ contract SwapHelper {
             }
         }
     }
+
+    function swapForExactOutput(
+        address zrc20, // Token being swapped
+        uint256 amountOut, // Exact amount of target token required
+        address targetZRC20, // Token to receive
+        uint16 slippageBps, // Slippage in basis points (BPS)
+        address vault, // Recipient of the swapped tokens
+        uint16 maxDeadline, // Deadline for transaction execution
+        bytes calldata data // Extra data (if needed)
+    ) external returns (uint256 amountIn) {
+        uint256 maximumIn = calculateMaxAmountIn(
+            zrc20,
+            targetZRC20,
+            amountOut,
+            slippageBps
+        );
+
+        (address curvePool, uint256 i, uint256 j) = getCurvePool(
+            zrc20,
+            targetZRC20
+        );
+
+        if (curvePool != address(0)) {
+            // Approve Curve pool to spend tokens
+            IZRC20(zrc20).approve(curvePool, maximumIn);
+            return ICurvePool(curvePool).exchange(j, i, maximumIn, amountOut);
+        } else {
+            (
+                address[] memory path,
+                uint24[] memory feeTiers,
+                bytes memory encodedPath
+            ) = getPath(zrc20, targetZRC20);
+
+            if (encodedPath.length > 0) {
+                // Uniswap V3 Swap (Exact Output)
+                IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, maximumIn);
+                ISwapRouter.ExactOutputParams memory params = ISwapRouter
+                    .ExactOutputParams({
+                        path: encodedPath,
+                        recipient: vault,
+                        deadline: block.timestamp + maxDeadline,
+                        amountOut: amountOut,
+                        amountInMaximum: maximumIn
+                    });
+
+                amountIn = ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(params);
+
+                // Refund excess input tokens
+                if (amountIn < maximumIn) {
+                    IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, 0); // Reset approval
+                    IZRC20(zrc20).transfer(msg.sender, maximumIn - amountIn);
+                }
+            } else {
+                // Uniswap V2 Swap (Exact Output)
+                IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, maximumIn);
+                uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                    .swapTokensForExactTokens(
+                        amountOut,
+                        maximumIn,
+                        path,
+                        vault,
+                        block.timestamp + maxDeadline
+                    );
+
+                amountIn = amounts[0];
+
+                // Refund excess input tokens
+                // if (amountIn < maximumIn) {
+                //     IZRC20(zrc20).transfer(msg.sender, maximumIn - amountIn);
+                // }
+            }
+        }
+    }
 }
