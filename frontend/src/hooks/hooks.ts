@@ -53,13 +53,6 @@ export const useUpdateVaultBalanceAndTotal = (
                 vault.id as Address
               );
 
-
-              console.log({
-                vaultId: vault.id,
-                balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
-              }, "HHHHHHHHHHHHH")
               return {
                 vaultId: vault.id,
                 balance,
