@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // PYTH_CONTRACT_ADDRESS = 0x0708325268dF9F66270F1401206434524814508b for ZetaChain testnet
 // PYTH_CONTRACT_ADDRESS = 0x2880aB155794e7179c9eE2e38200202908C17B43 for ZetaChain mainnet
 // PYTH_CONTRACT_ADDRESS = 0x4305FB66699C3B2702D4d05CF36551390A4c69C6 for Ethereum mainnet
+// PYTH_CONTRACT_ADDRESS = 0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a for Base mainnet
 
 contract PriceOracle is Ownable {
     address public immutable PYTH_CONTRACT_ADDRESS;

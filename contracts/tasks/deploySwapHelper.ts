@@ -7,7 +7,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   console.log(`🔑 Deploying SwapHelper with signer: ${signer.address}`);
 
-  const SwapHelper = await hre.ethers.getContractFactory("SwapHelper", signer);
+  const SwapHelper = await hre.ethers.getContractFactory("SwapHelperOnBase", signer);
   const swapHelper = await SwapHelper.deploy();
   await swapHelper.deployed();
 

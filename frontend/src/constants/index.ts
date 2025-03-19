@@ -257,7 +257,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   // {
-  //   id: "0xC967154127af55cecC47328B06385EFd8f8C427E",
+  //   id: "0x25f43240450c43c58Cb7CDbB424C0c80001C72E3",
   //   name: "Moonwell Flagship USDC",
   //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
   //   symbol: "aMoonwellUSDC",
@@ -273,7 +273,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   //   protocol: {
   //     name: "Moonwell",
-  //     strategyAddress: "0x912864B5F00F9391Dc78E86C8b186455BB4C626c",
+  //     strategyAddress: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
   //     network: "Base",
   //     chainId: 8453,
   //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
