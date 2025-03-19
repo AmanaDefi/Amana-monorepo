@@ -32,7 +32,7 @@
     "react-spinners": "^0.15.0",
     "react-toastify": "^10.0.5",
     "react-tooltip": "5.22.0",
-    "thirdweb": "^5.63.2",
+    "thirdweb": "5.92.1",
     "viem": "2.17.0"
   },
   "devDependencies": {
