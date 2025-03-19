@@ -11,24 +11,15 @@ import "../interfaces/IPriceOracle.sol";
 
 import "./ERC20StrategyParent.sol";
 
-contract ERC20_4626_Moonwell_Strategy is ERC20StrategyParent {
+contract ERC20_MoonwellStrategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
     I4626Vault public immutable receiptToken;
-    ISwapRouter public immutable swapRouter;
+    address public swapHelperOnBase;
 
     address public constant WELL = 0xA88594D404727625A9437C3f886C7643872296AE;
     address public constant MORPHO = 0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842;
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-    address public constant UNISWAP_V3_ROUTER =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    address constant PRICE_ORACLE_ADDRESS =
-        0x0D313486083fe6f0A1868EAeEe07D46fed92E9f9; // TODO - deploy this on Base!
-
-    bytes32 constant wellUsdPriceFeedId =
-        0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
-    bytes32 constant morphoUsdPriceFeedId =
-        0x5b2a4c542d4a74dd11784079ef337c0403685e3114ba0d9909b5c7a7e06fdc42;
 
     uint16 public slippageBps = 100; // 1% slippage tolerance
 
@@ -43,13 +34,14 @@ contract ERC20_4626_Moonwell_Strategy is ERC20StrategyParent {
         address _amanaVault,
         address _inputTokenAddress,
         address _receiptTokenAddress,
+        address _swapHelperOnBase,
         address _gateway
     )
         StrategyParent(_name, _amanaVault, _gateway)
         ERC20StrategyParent(_inputTokenAddress)
     {
         receiptToken = I4626Vault(_receiptTokenAddress);
-        swapRouter = ISwapRouter(UNISWAP_V3_ROUTER);
+        swapHelperOnBase = _swapHelperOnBase;
     }
 
     function setSlippageBps(uint16 _slippageBps) external onlyOwner {
@@ -58,25 +50,29 @@ contract ERC20_4626_Moonwell_Strategy is ERC20StrategyParent {
 
     function _swapTokenForInputToken(address token, uint256 amountIn) internal {
         if (amountIn == 0) return;
-        IERC20(token).safeIncreaseAllowance(UNISWAP_V3_ROUTER, amountIn);
-        uint256 amountOutMinimum = calculateMinAmountOut(
-            token,
-            address(inputToken),
-            amountIn
-        );
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: token,
-                tokenOut: address(inputToken),
-                fee: 500,
-                recipient: address(this),
-                deadline: block.timestamp + 60,
-                amountIn: amountIn,
-                amountOutMinimum: amountOutMinimum,
-                sqrtPriceLimitX96: 0
-            });
 
-        swapRouter.exactInputSingle(params);
+        bytes memory data = abi.encodeWithSignature(
+            "swap(address,uint256,address,uint16,address,uint16,bytes)",
+            token,
+            amountIn,
+            inputToken,
+            slippageBps,
+            address(this),
+            block.timestamp + 60,
+            "" // empty bytes param for future-proofing
+        );
+
+        _delegateCall(swapHelperOnBase, data);
+    }
+
+    // Internal function for delegatecall
+    function _delegateCall(
+        address logicContract,
+        bytes memory data
+    ) internal returns (uint256) {
+        (bool success, bytes memory result) = logicContract.delegatecall(data);
+        require(success, "Delegatecall failed");
+        return abi.decode(result, (uint256));
     }
 
     function _swapAllRewards() internal {
@@ -84,9 +80,10 @@ contract ERC20_4626_Moonwell_Strategy is ERC20StrategyParent {
         uint256 morphoBalance = IERC20(MORPHO).balanceOf(address(this));
         uint256 usdcBalance = IERC20(USDC).balanceOf(address(this));
 
-        _swapTokenForInputToken(MORPHO, morphoBalance);
-        _swapTokenForInputToken(WELL, wellBalance);
-        _swapTokenForInputToken(USDC, usdcBalance);
+        if (morphoBalance > 0) _swapTokenForInputToken(MORPHO, morphoBalance);
+        if (wellBalance > 0) _swapTokenForInputToken(WELL, wellBalance);
+        if (usdcBalance > 0 && address(inputToken) != USDC)
+            _swapTokenForInputToken(USDC, usdcBalance);
     }
 
     function _swapAndReinvest() public {
@@ -108,8 +105,7 @@ contract ERC20_4626_Moonwell_Strategy is ERC20StrategyParent {
         uint256 minimumOut
     ) internal override {
         _swapAllRewards();
-        uint256 totalDeposit = amount +
-            IERC20(inputToken).balanceOf(address(this));
+        uint256 totalDeposit = IERC20(inputToken).balanceOf(address(this));
         if (totalDeposit > 0) {
             approveOrIncreaseAllowance(
                 inputToken,
@@ -174,6 +170,8 @@ contract ERC20_4626_Moonwell_Strategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        _swapAndReinvest();
+
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             1e18,
             minAmountOut
@@ -212,88 +210,5 @@ contract ERC20_4626_Moonwell_Strategy is ERC20StrategyParent {
         uint256 shares
     ) public view override returns (uint256) {
         return receiptToken.convertToAssets(shares);
-    }
-
-    /**
-     * @notice Returns the price feed ID for a given token address.
-     * @param token The address of the token.
-     * @return The price feed ID associated with the token.
-     */
-    function getPriceFeedId(address token) internal pure returns (bytes32) {
-        if (token == WELL) {
-            return wellUsdPriceFeedId;
-        } else if (token == MORPHO) {
-            return morphoUsdPriceFeedId;
-        } else {
-            return bytes32(0); // Return zero bytes if no price feed exists
-        }
-    }
-
-    /**
-     * @notice Checks if a token is a USD stablecoin.
-     * @param token The address of the token.
-     * @return True if the token is a stablecoin, false otherwise.
-     */
-    function isStablecoin(address token) internal pure returns (bool) {
-        return (token == USDC);
-    }
-
-    /**
-     * @notice Fetches the token's decimal places from its contract.
-     * @dev Assumes 18 decimals for native tokens (ETH, BNB, POL, WZETA).
-     * @param token The address of the token.
-     * @return The number of decimal places.
-     */
-    function getTokenDecimals(address token) internal view returns (uint8) {
-        return IERC20Metadata(token).decimals();
-    }
-
-    /**
-     * @notice Calculates the minimum output amount based on input token, output token, and slippage.
-     * @param inputToken The address of the input token.
-     * @param outputToken The address of the output token.
-     * @param amount The input amount in token units.
-     * @return The minimum acceptable output amount.
-     */
-    function calculateMinAmountOut(
-        address inputToken,
-        address outputToken,
-        uint256 amount
-    ) internal view returns (uint256) {
-        bytes32 inputPriceFeed = getPriceFeedId(inputToken);
-        bytes32 outputPriceFeed = getPriceFeedId(outputToken);
-
-        require(
-            inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
-            "Invalid input token"
-        );
-        require(
-            outputPriceFeed != bytes32(0) || isStablecoin(outputToken),
-            "Invalid output token"
-        );
-
-        // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
-        uint256 inputPrice = isStablecoin(inputToken)
-            ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
-        uint256 outputPrice = isStablecoin(outputToken)
-            ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
-
-        require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
-
-        // Get token decimals dynamically
-        uint256 inputDecimals = getTokenDecimals(inputToken);
-        uint256 outputDecimals = getTokenDecimals(outputToken);
-
-        // Convert input amount to USD value
-        uint256 amountInUsd = (amount * inputPrice) / (10 ** inputDecimals);
-
-        // Convert USD value to output token amount
-        uint256 amountOut = (amountInUsd * (10 ** outputDecimals)) /
-            outputPrice;
-
-        // Apply slippage
-        return amountOut - ((amountOut * slippageBps) / 10000);
     }
 }

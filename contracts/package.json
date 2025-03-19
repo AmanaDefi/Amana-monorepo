@@ -61,6 +61,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.30.0",
+    "@merkl/api": "^0.18.5",
     "@pythnetwork/price-service-client": "^1.9.0",
     "@pythnetwork/pyth-sdk-solidity": "^4.0.0",
     "@solana-developers/helpers": "^2.4.0",

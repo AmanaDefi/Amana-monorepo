@@ -21,10 +21,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const inputToken = args.inputToken;
   const receiptToken = args.receiptToken;
   const gateway = args.gateway;
-  if (args.swapHelper) {
-    const swapHelper = args.swapHelper;
-
-  }
+  const swapHelper = args.swapHelper;
 
   if (!name) {
     throw new Error("🚨 Strategy name is required");
@@ -47,7 +44,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway);
+  const contract = await factory.deploy(name, vault, inputToken, receiptToken, swapHelper, gateway);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for contract to be deployed before proceeding
@@ -63,7 +60,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, inputToken, receiptToken, gateway],
+        constructorArguments: [name, vault, inputToken, receiptToken, swapHelper, gateway],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -79,7 +76,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 };
 
 // Define the Hardhat task for deployment
-task("deploy-erc20-strategy", "Deploy a Strategy contract", main)
+task("deploy-erc20-moonwell-strategy", "Deploy a Strategy contract", main)
   .addFlag("json", "Output in JSON")
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
@@ -87,6 +84,6 @@ task("deploy-erc20-strategy", "Deploy a Strategy contract", main)
   .addParam("inputToken", "The address of the input token")
   .addParam("receiptToken", "The address of the receipt token")
   .addParam("gateway", "The address of the gateway contract")
-  .addOptionalParam("swapHelper", "The address of the SwapHelper contract");
+  .addParam("swapHelper", "The address of the SwapHelper contract");
 
 export default {};
