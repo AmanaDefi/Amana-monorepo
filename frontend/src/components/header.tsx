@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import MobileMenuModal from "@/components/modal/MobileMenuModal";
-import ConnectButton from "./ConnectButton";
+// import ConnectButton from "./ConnectButton";
 import { useState } from "react";
+import { ConnectButton } from "thirdweb/react";
+import { client } from "@/utils/client";
 
 export const wallets = [
   //   inAppWallet({
@@ -68,7 +70,8 @@ const Header = () => {
             </span>
           </nav>
           {/* Select Network Modal */}
-          <ConnectButton />
+          {/* <ConnectButton /> */}
+          <ConnectButton wallets={wallets} client={client}/>
         </div>
         <MobileMenuModal />
       </div>
