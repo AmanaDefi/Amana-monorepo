@@ -2,27 +2,45 @@ import { ethers, network } from "hardhat";
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import { Signer, BigNumber } from "ethers";
 
-export async function setTokenBalance(tokenAddress, account, amount, storageSlot) {
-
+export async function setTokenBalance(tokenAddress, account, amount, balanceSlot) {
   const balanceAmount = ethers.BigNumber.from(amount);
-
-  // Normalize and log the account address
   const normalizedAccount = ethers.utils.getAddress(account);
 
-  // Compute the storage key for the account's balance
-  const key = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(["address", "uint256"], [normalizedAccount, storageSlot])
+  let computedSlot;
+
+  // Check if we're using OpenZeppelin's ERC-7201 storage slot
+  if (ethers.utils.isHexString(balanceSlot)) {
+    console.log(`Using ERC-7201 Storage Slot: ${balanceSlot}`);
+
+    // Hash the storage slot (since it's part of a struct)
+    computedSlot = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(["uint256"], [balanceSlot])
+    );
+  } else {
+    console.log(`Using Custom ERC20 Storage Slot: ${balanceSlot}`);
+
+    // Use the manually specified slot (e.g., 0, 3, or 9)
+    computedSlot = balanceSlot;
+  }
+
+  // Compute the final storage key (hashed address + slot)
+  const storageKey = ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(["address", "uint256"], [normalizedAccount, computedSlot])
   );
 
+  // Set storage on the proxy contract or normal ERC20
   await network.provider.send("hardhat_setStorageAt", [
     tokenAddress,
-    key,
+    storageKey,
     ethers.utils.hexZeroPad(balanceAmount.toHexString(), 32), // Ensure 32-byte padding
   ]);
 
+  // Verify balance update
   const token = await ethers.getContractAt("IERC20", tokenAddress);
   const newBalance = await token.balanceOf(account);
+  console.log("Updated Balance:", ethers.utils.formatUnits(newBalance, 6)); // Adjust decimals if needed
 }
+
 
 // Helper function to generate a unique transaction ID (bytes32)
 export const generateTransactionId = (
@@ -50,7 +68,6 @@ export async function simulateDepositCallFromVaultToStrategy(
     ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
     [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage]
   );
-
   await
     strategy.connect(gatewaySigner).onCall(
       {
@@ -79,7 +96,6 @@ export async function simulateWithdrawCallFromVaultToStrategy(
     ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
     [owner, owner, withdrawZRC20, ethers.constants.AddressZero, fractionOfTotalShares, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
   );
-
   await
     strategy.connect(gatewaySigner).onCall(
       {
