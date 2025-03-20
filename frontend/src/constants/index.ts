@@ -256,31 +256,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
   //   },
   // },
-  // {
-  //   id: "0x25f43240450c43c58Cb7CDbB424C0c80001C72E3",
-  //   name: "Moonwell Flagship USDC",
-  //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
-  //   symbol: "aMoonwellUSDC",
-  //   imgURL: "/base.png",
-  //   inputToken: {
-  //     symbol: "USDC.BASE",
-  //     decimals: 6,
-  //     address: ZC_USDC_BASE_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Moonwell",
-  //     strategyAddress: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
-  //     network: "Base",
-  //     chainId: 8453,
-  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-  //     imgURL: "/Moonwell.jpg",
-  //     des: "Moonwell is a relatively new protocol."
-  //   },
-  // },
+  {
+    id: "0x25f43240450c43c58Cb7CDbB424C0c80001C72E3",
+    name: "Moonwell Flagship USDC",
+    des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
+    symbol: "aMoonwellUSDC",
+    imgURL: "/base.png",
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Moonwell",
+      strategyAddress: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/Moonwell.jpg",
+      des: "Moonwell is a relatively new protocol."
+    },
+  },
   // {
   //   id: "0xBc1BAF5a96E8302c5469B0D3A8D5AD3aAccCAE7b",
   //   name: "Moonwell Eth",

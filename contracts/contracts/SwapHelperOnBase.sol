@@ -15,12 +15,13 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 contract SwapHelperOnBase {
-    address public constant WELL = 0xA88594D404727625A9437C3f886C7643872296AE;
-    address public constant MORPHO = 0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842;
-    address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-    address public constant UNISWAP_V3_ROUTER =
+    address constant WELL = 0xA88594D404727625A9437C3f886C7643872296AE;
+    address constant MORPHO = 0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842;
+    address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address constant UNISWAP_V3_ROUTER =
         0x2626664c2603336E57B271c5C0b26F421741e481;
     address constant UNISWAP_V3_FACTORY =
         0x33128a8fC17869897dcE68Ed026d694621f6FDfD; // mainnet and testnet
@@ -390,14 +391,17 @@ contract SwapHelperOnBase {
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline,
-        bytes calldata data
+        bytes memory data
     ) external returns (uint256 amountOut) {
-        uint256 minimumOut = calculateMinAmountOut(
-            zrc20,
-            targetZRC20,
-            amount,
-            slippageBps
-        );
+        console.log("got here");
+        amountOut = 0;
+        // uint256 minimumOut = calculateMinAmountOut(
+        //     zrc20,
+        //     targetZRC20,
+        //     amount,
+        //     slippageBps
+        // );
+        // console.log("Minimum out: %d", minimumOut);
         // (address curvePool, uint256 i, uint256 j) = getCurvePool(
         //     zrc20,
         //     targetZRC20
@@ -407,25 +411,25 @@ contract SwapHelperOnBase {
         //     IZRC20(zrc20).approve(curvePool, amount);
         //     return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
         // } else {
-        (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory encodedPath
-        ) = getPath(zrc20, targetZRC20);
-        if (encodedPath.length > 0) {
-            // Uniswap V3 Swap
-            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
-            ISwapRouter.ExactInputParams memory params = ISwapRouter
-                .ExactInputParams({
-                    path: encodedPath,
-                    recipient: vault,
-                    deadline: block.timestamp + maxDeadline,
-                    amountIn: amount,
-                    amountOutMinimum: minimumOut
-                });
+        // (
+        //     address[] memory path,
+        //     uint24[] memory feeTiers,
+        //     bytes memory encodedPath
+        // ) = getPath(zrc20, targetZRC20);
+        // if (encodedPath.length > 0) {
+        //     // Uniswap V3 Swap
+        //     IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
+        //     ISwapRouter.ExactInputParams memory params = ISwapRouter
+        //         .ExactInputParams({
+        //             path: encodedPath,
+        //             recipient: vault,
+        //             deadline: block.timestamp + maxDeadline,
+        //             amountIn: amount,
+        //             amountOutMinimum: minimumOut
+        //         });
 
-            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
-        }
+        //     amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
+        // }
         // }
     }
 }
