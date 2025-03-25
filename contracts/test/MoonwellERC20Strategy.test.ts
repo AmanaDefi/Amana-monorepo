@@ -219,6 +219,43 @@ describe("ERC20_MoonwellStrategy - Full Coverage", function () {
     expect(strategyBalance).to.be.gte(depositAmount);
   });
 
+  it("should swap WELL into input token and reinvest ahead of withdraw", async function () {
+    const depositAmount = ethers.utils.parseUnits("1", 6);
+    const minSharesOut = ethers.utils.parseUnits("0", 6);
+    const slippage = 10000;
+
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
+
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_CHAIN_ID,
+    );
+    const fractionOfSharesToWithdraw = ethers.utils.parseEther("1");
+    const minAmountOut = ethers.utils.parseUnits("0", 6);
+
+    await simulateWithdrawCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      INPUT_TOKEN_ADDRESS,
+      fractionOfSharesToWithdraw,
+      minAmountOut,
+      slippage,
+      ETHEREUM_CHAIN_ID
+    );
+
+    const strategyBalance = await receiptToken.balanceOf(strategy.address);
+    expect(strategyBalance).to.equal(0);
+  });
+
   it("should allow owner to perform emergencyWithdraw", async function () {
     await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, ethers.utils.parseUnits("1", 6), 9);
 
