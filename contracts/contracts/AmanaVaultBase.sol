@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "./ERC4626Rewards.sol";
+import "./ERC4626BytesRewards.sol";
 
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
@@ -22,7 +22,7 @@ import "./libraries/SwapHelperLibEddy.sol";
 /// @notice A vault that interacts with ZetaChain-connected strategies
 /// @dev Implements ERC4626 with custom cross-chain functionality
 abstract contract AmanaVaultBase is
-    ERC4626Rewards,
+    ERC4626BytesRewards,
     UniversalContract,
     Revertable,
     IErrors
