@@ -9,6 +9,7 @@ import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
+import "../interfaces/IDistributor.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -20,6 +21,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     address public immutable amanaVault;
     uint256 public executionNonce = 1;
     address public oldStrategy;
+    address public rewardsDistributor;
 
     event FundsInvested(
         bytes32 indexed crossChainTxId,
@@ -155,6 +157,27 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     function setExecutionNonce(uint256 _executionNonce) external onlyOwner {
         executionNonce = _executionNonce;
+    }
+
+    /**
+     * @notice Sets the address of the Merkl rewards distributor contract.
+     * @param _rewardsDistributor The address of the rewards distributor contract.
+     */
+    function setRewardsDistributor(
+        address _rewardsDistributor
+    ) external onlyOwner {
+        rewardsDistributor = _rewardsDistributor;
+    }
+
+    /**
+     * @notice Whitelists an operator for rewards distribution.
+     * @param operator can whitelist a wallet that can claim merkl rewards on behalf of this strategy
+     */
+    function whitelistOperatorForRewards(address operator) external onlyOwner {
+        IDistributor(rewardsDistributor).toggleOperator(
+            address(this),
+            operator
+        );
     }
 
     /**
@@ -550,6 +573,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
+            _depositFundsIntoYieldSource(context.amount, 0);
+            executionNonce--;
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==

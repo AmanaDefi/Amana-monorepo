@@ -32,4 +32,6 @@ interface IErrors {
     error InsufficientInputAmount();
     error InvalidPath();
     error InvalidTokenPair();
+
+    error InvalidMessage();
 }
