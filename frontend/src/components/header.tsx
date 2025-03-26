@@ -10,6 +10,7 @@ import MobileMenuModal from "@/components/modal/MobileMenuModal";
 import { useState } from "react";
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/utils/client";
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 
 export const wallets = [
   //   inAppWallet({
@@ -71,7 +72,7 @@ const Header = () => {
           </nav>
           {/* Select Network Modal */}
           {/* <ConnectButton /> */}
-          <ConnectButton wallets={wallets} client={client}/>
+          <ConnectButton wallets={wallets} chains={SUPPORTED_CHAINS} client={client} />
         </div>
         <MobileMenuModal />
       </div>
