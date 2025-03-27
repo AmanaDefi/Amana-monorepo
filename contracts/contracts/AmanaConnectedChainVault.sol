@@ -2,6 +2,9 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
+import "hardhat/console.sol";
+
+// import "./OnCallHelper.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -12,6 +15,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     uint256 latestTotalAssetsUpdateFromStrategy;
     uint256 public lastProcessedNonce;
+
+    // OnCallHelper public onCallHelper;
 
     struct Confirmation {
         address user;
@@ -27,6 +32,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint16 slippage;
     }
 
+    struct NewMessageContext {
+        bytes origin;
+        bytes sender;
+        address senderEVM;
+        uint256 chainID;
+    }
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
     mapping(address => uint256) pendingWithdrawals;
 
@@ -47,6 +58,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawalReceiver_,
         address swapHelper_,
         address withdrawHelper,
+        // address onCallHelper_,
         uint32 gasLimitForWithdrawAndCall_,
         uint32 gasLimitForCall_
     )
@@ -63,7 +75,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             gasLimitForWithdrawAndCall_,
             gasLimitForCall_
         )
-    {}
+    {
+        // onCallHelper = OnCallHelper(onCallHelper_);
+    }
 
     /**
      * @dev Handles cross-chain communication via the gateway.
@@ -78,7 +92,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amount,
         bytes calldata message
     ) external override onlyGateway {
-        if (context.sender == strategyAddress) {
+        (address normalizedSender, bytes memory rawSender) = _decodeSender(
+            abi.encode(context)
+        );
+
+        // Use normalizedSender instead of context.sender from now on
+        // Then continue with your existing logic:
+        if (normalizedSender == strategyAddress) {
             (
                 address user,
                 address receiver,
@@ -109,6 +129,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                         uint16
                     )
                 );
+
             _processConfirmationFromStrategy(
                 user,
                 receiver,
@@ -124,7 +145,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 slippage
             );
         } else {
-            if (context.sender == address(0)) revert InvalidAddress();
+            if (normalizedSender == address(0)) revert InvalidAddress();
+            console.log("normalizedSender: %s", normalizedSender);
+            console.log("message.length: %s", message.length);
             if (message.length == 128) {
                 (
                     address erc20source,
@@ -132,8 +155,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     uint16 slippage,
                     bytes32 crossChainTxId
                 ) = abi.decode(message, (address, uint256, uint16, bytes32));
+
                 _depositComingFromConnectedChain(
-                    context.sender,
+                    normalizedSender,
                     context.chainID,
                     amount,
                     minimumOut,
@@ -154,8 +178,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                         message,
                         (address, address, uint256, uint256, uint16, bytes32)
                     );
+
                 _withdrawComingFromConnectedChain(
-                    context.sender,
+                    normalizedSender,
                     withdrawZRC20,
                     withdrawERC20,
                     shares,
@@ -168,6 +193,36 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 revert InvalidMessage();
             }
         }
+    }
+
+    function _decodeSender(
+        bytes memory rawContext
+    ) internal view returns (address normalizedSender, bytes memory rawSender) {
+        // Try decoding as NewMessageContext (with senderEVM)
+        try
+            AmanaConnectedChainVault(address(this))._decodeNewContext(
+                rawContext
+            )
+        returns (NewMessageContext memory ctx) {
+            return (ctx.senderEVM, ctx.sender);
+        } catch {
+            // Decode as old format (origin, sender, chainID)
+            (, bytes memory sender, ) = abi.decode(
+                rawContext,
+                (bytes, bytes, uint256)
+            );
+            address fallbackSender = address(
+                uint160(uint256(keccak256(sender)))
+            );
+            return (fallbackSender, sender);
+        }
+    }
+
+    // External view function used only for try/catch to work
+    function _decodeNewContext(
+        bytes calldata rawContext
+    ) external pure returns (NewMessageContext memory) {
+        return abi.decode(rawContext, (NewMessageContext));
     }
 
     /**
