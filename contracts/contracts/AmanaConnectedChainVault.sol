@@ -125,7 +125,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             );
         } else {
             if (context.sender == address(0)) revert InvalidAddress();
-            if (amount > 0) {
+            if (message.length == 128) {
                 (
                     address erc20source,
                     uint256 minimumOut,
@@ -142,7 +142,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     slippage,
                     crossChainTxId
                 );
-            } else {
+            } else if (message.length == 192) {
                 (
                     address withdrawZRC20,
                     address withdrawERC20,
@@ -164,6 +164,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     slippage,
                     crossChainTxId
                 );
+            } else {
+                revert InvalidMessage();
             }
         }
     }
