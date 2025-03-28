@@ -22,7 +22,6 @@ export const useMutlichainTokenBalance = (token: Token | undefined) => {
             }
 
             if (token.isNative) {
-
                 const decimals = token.address == zeroSolAddress ? 9 : 18;
                 setBalance(nativeBalance);
                 return;

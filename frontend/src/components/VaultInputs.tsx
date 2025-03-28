@@ -1,8 +1,8 @@
 import TabSelector from "@/components/common/TabSelector";
-import InputTokenWithError, {InputTokenWithErrorProps} from "@/components/input/InputTokenWithError";
+import InputTokenWithError, { InputTokenWithErrorProps } from "@/components/input/InputTokenWithError";
 import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToken, Action } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
-import {useState, useEffect, useMemo, useCallback, useRef} from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Account, parseUnits } from "viem";
 import { Address, Chain, getContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
@@ -18,9 +18,9 @@ import {
 } from "@/utils/utils";
 import { ethers } from "ethers";
 import InteractionContainer from "./interact";
-import {useTokenPriceBySymbol} from "@/hooks/hooks";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
-import {getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit} from "@/actions/actions";
+import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
 
@@ -86,7 +86,7 @@ export default function VaultInputs({
   const [loadingOutputToken, setLoadingOutputToken] = useState(false);
   const [conversionOutput, setConversionOutput] = useState<ConversionOutput>(initialConversionOutput);
 
-  const {activeChain, walletAddress} = useMultiChain();
+  const { activeChain, walletAddress } = useMultiChain();
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol)
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol)
@@ -212,8 +212,8 @@ export default function VaultInputs({
 
   const tokenList = useMemo(() => {
     return activeChain?.id === 7001 || activeChain?.id === 7000
-        ? vaultData.inputToken ? [vaultData.inputToken] : []  // Ensure vault token is defined
-        : (APPROVED_TOKENS[activeChain?.id as number] ?? []).filter((token): token is Token => token !== undefined) // Ensure array is valid
+      ? vaultData.inputToken ? [vaultData.inputToken] : []  // Ensure vault token is defined
+      : (APPROVED_TOKENS[activeChain?.id as number] ?? []).filter((token): token is Token => token !== undefined) // Ensure array is valid
 
   }, [activeChain?.id, vaultData.inputToken])
 
@@ -233,7 +233,11 @@ export default function VaultInputs({
     });
     let tokenConversionAmount = assetsAmount;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address, vaultData);
+      try {
+        tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address, vaultData);
+      } catch (error) {
+        console.log(error);
+      }
     }
     console.log('Double Box - Conversion amounts:', {
       tokenConversionAmount: tokenConversionAmount.toString(),
@@ -373,68 +377,68 @@ export default function VaultInputs({
   return (
     <>
       <TabSelector
-          className="mb-5"
-          availableTabs={["Deposit", "Withdraw"]}
-          activeTab={isDeposit ? "Deposit" : "Withdraw"}
-          setActiveTab={switchTokens}
+        className="mb-5"
+        availableTabs={["Deposit", "Withdraw"]}
+        activeTab={isDeposit ? "Deposit" : "Withdraw"}
+        setActiveTab={switchTokens}
       />
       <InputTokenWithError
-          captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
-          onSelectToken={isDeposit ? handleTokenSelect : () => {}}
-          allowInput={allowInput}
-          vaultData={vaultData}
-          onMaxClick={handleMaxClick}
-          value={inputBalance.formatted}
-          onChange={handleChangeInput}
-          selectedToken={isDeposit ? inputToken : vaultToken}
-          inputTokenbalance={isDeposit ? inputTokenBalance : vaultTotalAssetinToken?.toString() ?? "0"}
-          errorMessage={errorMessage}
-          tokenList={isDeposit ? tokenList : []}
-          disabled={false}
-          isDeposit={isDeposit}
-          userVaultBalance={isDeposit ? userVaultBalance : vaultTotalAssetinToken?.toString() ?? "0"}
-          loadingOutputToken={loadingOutputToken}
-          conversionOutput={conversionOutput}
-          isSlippageExceedingLimit={isSlippageExceedingLimit}
-          setInputBalance={setInputBalance}
+        captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
+        onSelectToken={isDeposit ? handleTokenSelect : () => { }}
+        allowInput={allowInput}
+        vaultData={vaultData}
+        onMaxClick={handleMaxClick}
+        value={inputBalance.formatted}
+        onChange={handleChangeInput}
+        selectedToken={isDeposit ? inputToken : vaultToken}
+        inputTokenbalance={isDeposit ? inputTokenBalance : vaultTotalAssetinToken?.toString() ?? "0"}
+        errorMessage={errorMessage}
+        tokenList={isDeposit ? tokenList : []}
+        disabled={false}
+        isDeposit={isDeposit}
+        userVaultBalance={isDeposit ? userVaultBalance : vaultTotalAssetinToken?.toString() ?? "0"}
+        loadingOutputToken={loadingOutputToken}
+        conversionOutput={conversionOutput}
+        isSlippageExceedingLimit={isSlippageExceedingLimit}
+        setInputBalance={setInputBalance}
       />
       <div className='pt-4 pb-2 flex items-center gap-3'>
         <div className='w-full h-px bg-tuatara-900'></div>
         <button className='group flex-center hover:border-white' onClick={switchTokens}>
-          <ArrowDownCircleIcon width={48} height={48} className='size-12 text-tuatara-900 group-hover:text-tuatara-300 transition-colors'/>
+          <ArrowDownCircleIcon width={48} height={48} className='size-12 text-tuatara-900 group-hover:text-tuatara-300 transition-colors' />
         </button>
         <div className='w-full h-px bg-tuatara-900'></div>
       </div>
       <InputTokenWithError
-          captionText={"Output amount"}
-          onSelectToken={isDeposit ? () => {} : handleTokenSelect}
-          allowInput={allowInput}
-          vaultData={vaultData}
-          onMaxClick={() => {}}
-          value={conversionOutput.outputAmountFormatted}
-          onChange={() => {}}
-          selectedToken={isDeposit ? vaultToken : inputToken}
-          inputTokenbalance={isDeposit ? vaultTotalAssetinToken?.toString() ?? "0" : inputTokenBalance}
-          errorMessage={!errorMessage ? outputBoxErrorMessage : ''}
-          tokenList={isDeposit ? [] : tokenList}
+        captionText={"Output amount"}
+        onSelectToken={isDeposit ? () => { } : handleTokenSelect}
+        allowInput={allowInput}
+        vaultData={vaultData}
+        onMaxClick={() => { }}
+        value={conversionOutput.outputAmountFormatted}
+        onChange={() => { }}
+        selectedToken={isDeposit ? vaultToken : inputToken}
+        inputTokenbalance={isDeposit ? vaultTotalAssetinToken?.toString() ?? "0" : inputTokenBalance}
+        errorMessage={!errorMessage ? outputBoxErrorMessage : ''}
+        tokenList={isDeposit ? [] : tokenList}
 
-          disabled={false}
-          isDeposit={isDeposit}
-          userVaultBalance={isDeposit ? vaultTotalAssetinToken?.toString() ?? "0" : userVaultBalance}
-          isOutput={true}
-          loadingOutputToken={loadingOutputToken}
-          conversionOutput={conversionOutput}
-          setInputBalance={setInputBalance}
+        disabled={false}
+        isDeposit={isDeposit}
+        userVaultBalance={isDeposit ? vaultTotalAssetinToken?.toString() ?? "0" : userVaultBalance}
+        isOutput={true}
+        loadingOutputToken={loadingOutputToken}
+        conversionOutput={conversionOutput}
+        setInputBalance={setInputBalance}
       />
       <div className="mt-4">
         {
-            conversionOutput.slippageActualValue !== null &&
-            (
-                <p className='text-white font-bold mb-2 text-start'>
-                  Estimated slippage value:
-                  <span className={`${ isSlippageExceedingLimit ? 'text-red-500' : 'text-green-500' } whitespace-pre`}>{' '}{ conversionOutput.slippageActualValue }%</span>
-                </p>
-            )
+          conversionOutput.slippageActualValue !== null &&
+          (
+            <p className='text-white font-bold mb-2 text-start'>
+              Estimated slippage value:
+              <span className={`${isSlippageExceedingLimit ? 'text-red-500' : 'text-green-500'} whitespace-pre`}>{' '}{conversionOutput.slippageActualValue}%</span>
+            </p>
+          )
         }
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
         <div className="bg-customNeutral200 py-2 px-4 rounded-lg">
@@ -452,7 +456,7 @@ export default function VaultInputs({
           </span>
           <span className="flex flex-row items-center justify-between text-white py-1">
             <p>Performance Fee</p>
-            <span className='font-bold'>{ performanceFee }%</span>
+            <span className='font-bold'>{performanceFee}%</span>
           </span>
         </div>
       </div>

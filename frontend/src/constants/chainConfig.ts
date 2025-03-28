@@ -440,6 +440,28 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0x54Bf2B1E91FCb56853097BD2545750d218E245e1"
     }
   ],
+  901: [
+    {
+      symbol: "SOL",
+      address: "11111111111111111111111111111111",
+      decimals: 9,
+      imgURL: "/solana_logo.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501",
+    },
+    {
+      symbol: "USDC",
+      address: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0xD10932EB3616a937bd4a2652c87E9FeBbAce53e5",
+    }
+  ],
 };
 
 
