@@ -187,11 +187,19 @@ export default function VaultInputs({
     if (!inputToken) return;
     let value = e.currentTarget.value;
 
-    const [integers, decimals] = String(value).split('.');
+    if (!value.includes('.')) {
+      value = String(Number(value));
+    }
+    else {
+      const [integers, decimals] = value.split('.');
+      const cleanIntegers = String(Number(integers));
+      value = `${cleanIntegers}.${decimals}`;
+    }
+
+    const [integers, decimals] = value.split('.');
     let inputAmt = value;
 
     const decimalsNumber = isDeposit ? inputToken.decimals : vaultToken.decimals;
-    // if precision is more than token decimal, cut it
     if (decimals?.length > decimalsNumber) {
       inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
     }

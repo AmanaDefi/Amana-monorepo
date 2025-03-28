@@ -36,6 +36,7 @@ export const useUpdateVaultBalanceAndTotal = (
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
       let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
+      // let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
       try {
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
@@ -116,13 +117,13 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
       const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
+      // const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
       try {
         if (vault.id) {
           const balance = await fetchUserVaultBalance(
             address as Address,
             vault.id as Address
           );
-          console.log({ balance, address }, "HHHHHHHHHHHHHHHH")
 
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,

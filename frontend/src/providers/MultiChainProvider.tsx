@@ -146,7 +146,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       return
     } else if (chain) setActiveChain(chain);
     else setActiveChain(null);
-  }, [selectedChain]);
+  }, [selectedChain, chain]);
 
 
   return (
