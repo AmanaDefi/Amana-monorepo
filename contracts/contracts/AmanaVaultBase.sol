@@ -15,8 +15,9 @@ import "./interfaces/IErrors.sol";
 import "./interfaces/ICurvePool.sol";
 import "./interfaces/IZapContract.sol";
 import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IZRC20.sol";
 
-import "./libraries/SwapHelperLibEddy.sol";
+import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -35,8 +36,6 @@ abstract contract AmanaVaultBase is
         0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address constant _SYSTEM_ADDRESS =
         0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
-    address constant ZAP_CONTRACT_ADDRESS =
-        0x5659BbBf8633Eb85203aEc5cBde4c0b64abc0F27;
 
     // Variables
     address public strategyAddress;
@@ -44,6 +43,7 @@ abstract contract AmanaVaultBase is
     address public withdrawalReceiver;
     address public swapHelper;
     address public withdrawHelper;
+    address public zapContract;
 
     IGasTank internal gasTank;
 
@@ -114,6 +114,7 @@ abstract contract AmanaVaultBase is
         address withdrawalReceiver_,
         address swapHelper_,
         address withdrawHelper_,
+        address zapContract_,
         uint32 gasLimitForWithdrawAndCall_,
         uint32 gasLimitForCall_
     ) ERC4626(asset_) ERC20(name_, symbol_) Ownable(msg.sender) {
@@ -126,6 +127,7 @@ abstract contract AmanaVaultBase is
         withdrawalReceiver = withdrawalReceiver_;
         swapHelper = swapHelper_;
         withdrawHelper = withdrawHelper_;
+        zapContract = zapContract_;
         gasLimitForWithdrawAndCall = gasLimitForWithdrawAndCall_;
         gasLimitForCall = gasLimitForCall_;
 
@@ -344,6 +346,7 @@ abstract contract AmanaVaultBase is
                 userChainId
             );
         }
+        console.log("Depositing from connected chain");
         uint256 outputAmount = zrc20source == address(asset())
             ? assets
             : swap(
@@ -493,6 +496,15 @@ abstract contract AmanaVaultBase is
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
+        console.log("Returning funds to user");
+        console.log("asset address: %s", address(asset()));
+        console.log("userChainId: %s", userChainId);
+        console.log("withdrawZRC20: %s", withdrawZRC20);
+        console.log(
+            "balance of asset: %s",
+            IERC20(address(asset())).balanceOf(address(this))
+        );
+        console.log("amount being withdrawn: %s", amount);
         uint256 outputAmount = (userChainId == uint32(block.chainid) ||
             address(asset()) == withdrawZRC20)
             ? amount
@@ -504,10 +516,10 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-
+        console.log("outputAmount (after swap, if swapped): %s", outputAmount);
         if (userChainId == uint32(block.chainid)) {
-            IERC20(address(asset())).approve(ZAP_CONTRACT_ADDRESS, amount);
-            IZapContract(ZAP_CONTRACT_ADDRESS).zapSwapAndReturnToUser(
+            IERC20(address(asset())).approve(zapContract, amount);
+            IZapContract(zapContract).zapSwapAndReturnToUser(
                 amount,
                 address(this),
                 address(asset()),
@@ -522,6 +534,59 @@ abstract contract AmanaVaultBase is
                 withdrawERC20, // token on target chain
                 outputAmount, // amount to be sent
                 _crossChainTxId
+            );
+            console.log("Now preparing for withdrawAndCall");
+            console.log("receiver - withdrawalReceiver, I think: %s", receiver);
+            console.log("withdrawERC20: %s", withdrawERC20);
+            console.log("withdrawZRC20: %s", withdrawZRC20);
+            console.log(
+                "outputAmount that's going out, of withdrawZRC20: %s",
+                outputAmount
+            );
+            console.log(
+                "balance of withdrawZRC20: %s",
+                IERC20(withdrawZRC20).balanceOf(address(this))
+            );
+            (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
+                .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+
+            IGasTank(gasTank).getGas(gas_zrc20, gasFee);
+
+            // uint256 amountToDeduct = gasFee;
+
+            // console.log("gasFee in gas token terms: %s", amountToDeduct);
+            // if (gas_zrc20 != withdrawZRC20) {
+            //     console.log("Swapping withdrawZRC20 to gas_zrc20");
+            //     amountToDeduct = swapExactOut(
+            //         withdrawZRC20,
+            //         gasFee,
+            //         gas_zrc20,
+            //         10000,
+            //         address(this),
+            //         200 //deadline
+            //     );
+            //     console.log(
+            //         "amountToDeductAfterSwap - gas fee ito withdrawZRC20: %s",
+            //         amountToDeduct
+            //     );
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                _GATEWAY_ADDRESS,
+                gasFee
+            );
+            // }
+            console.log(
+                "balance of gas_zrc20: %s",
+                IERC20(gas_zrc20).balanceOf(address(this))
+            );
+            console.log(
+                "balance of withdrawZRC20: %s",
+                IERC20(withdrawZRC20).balanceOf(address(this))
+            );
+            approveOrIncreaseAllowance(
+                IERC20(withdrawZRC20),
+                _GATEWAY_ADDRESS,
+                amount + gasFee
             );
 
             _handleWithdrawAndCall(
@@ -557,8 +622,7 @@ abstract contract AmanaVaultBase is
 
         (bool success, ) = withdrawHelper.delegatecall(
             abi.encodeWithSignature(
-                "handleWithdrawAndCall(address,address,address,address,address,address,uint256,uint32,bytes32,string,bytes,uint32,bytes)",
-                address(gasTank),
+                "handleWithdrawAndCall(address,address,address,address,address,uint256,uint32,bytes32,string,bytes,uint32,bytes)",
                 targetAddress,
                 receiver,
                 withdrawZRC20,
@@ -607,8 +671,52 @@ abstract contract AmanaVaultBase is
             maxDeadline,
             "" // empty bytes param for future-proofing
         );
+        console.log("zrc20: %s", zrc20);
+        console.log("amount being swapped: %s", amount);
+        console.log(
+            "balance of zrc20 being swapped: %s",
+            IERC20(zrc20).balanceOf(address(this))
+        );
+        console.log("targetZRC20: %s", targetZRC20);
+        console.log("slippageBps: %s", slippageBps);
+        console.log("vault: %s", vault);
+        console.log("maxDeadline: %s", maxDeadline);
 
         amountOut = _delegateCall(swapHelper, data);
+        console.log("amountOut: %s", amountOut);
+    }
+
+    /**
+     * @notice Swaps an amount of tokens for a specific amount of another token.
+     * @dev Determines the swap path and uses Uniswap V2/V3/Curve to execute the swap.
+     * @param zrc20 The address of the input token.
+     * @param amountOut The amount of output tokens to swap for.
+     * @param targetZRC20 The address of the output token.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @param vault The address where the swapped tokens will be sent.
+     * @param maxDeadline The maximum deadline for the swap to complete.
+     * @return amountIn The amount of input tokens used.
+     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     */
+    function swapExactOut(
+        address zrc20,
+        uint256 amountOut,
+        address targetZRC20,
+        uint16 slippageBps,
+        address vault,
+        uint16 maxDeadline
+    ) internal returns (uint256 amountIn) {
+        bytes memory data = abi.encodeWithSignature(
+            "swapExactOut(address,uint256,address,uint16,address,uint16,bytes)",
+            zrc20,
+            amountOut,
+            targetZRC20,
+            slippageBps,
+            vault,
+            maxDeadline,
+            "" // empty bytes param for future-proofing
+        );
+        amountIn = _delegateCall(swapHelper, data);
     }
 
     // Internal function for delegatecall

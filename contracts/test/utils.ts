@@ -10,14 +10,12 @@ export async function setTokenBalance(tokenAddress, account, amount, balanceSlot
 
   // Check if we're using OpenZeppelin's ERC-7201 storage slot
   if (ethers.utils.isHexString(balanceSlot)) {
-    console.log(`Using ERC-7201 Storage Slot: ${balanceSlot}`);
 
     // Hash the storage slot (since it's part of a struct)
     computedSlot = ethers.utils.keccak256(
       ethers.utils.defaultAbiCoder.encode(["uint256"], [balanceSlot])
     );
   } else {
-    console.log(`Using Custom ERC20 Storage Slot: ${balanceSlot}`);
 
     // Use the manually specified slot (e.g., 0, 3, or 9)
     computedSlot = balanceSlot;
@@ -38,7 +36,6 @@ export async function setTokenBalance(tokenAddress, account, amount, balanceSlot
   // Verify balance update
   const token = await ethers.getContractAt("IERC20", tokenAddress);
   const newBalance = await token.balanceOf(account);
-  console.log("Updated Balance:", ethers.utils.formatUnits(newBalance, 6)); // Adjust decimals if needed
 }
 
 

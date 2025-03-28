@@ -277,7 +277,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
         uint16 maxDeadline,
         bytes memory data
     ) internal returns (uint256 amountOut) {
-        console.log("got here");
         amountOut = 0;
         uint256 minimumOut = calculateMinAmountOut(
             tokenIn,

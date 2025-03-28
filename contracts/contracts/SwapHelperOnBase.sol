@@ -393,7 +393,6 @@ contract SwapHelperOnBase {
         uint16 maxDeadline,
         bytes memory data
     ) external returns (uint256 amountOut) {
-        console.log("got here");
         amountOut = 0;
         // uint256 minimumOut = calculateMinAmountOut(
         //     zrc20,

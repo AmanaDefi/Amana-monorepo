@@ -47,6 +47,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address withdrawalReceiver_,
         address swapHelper_,
         address withdrawHelper,
+        address zapContract_,
         uint32 gasLimitForWithdrawAndCall_,
         uint32 gasLimitForCall_
     )
@@ -60,6 +61,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             withdrawalReceiver_,
             swapHelper_,
             withdrawHelper,
+            zapContract_,
             gasLimitForWithdrawAndCall_,
             gasLimitForCall_
         )
@@ -492,13 +494,38 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             0 // slippage
         );
 
+        // need to swap into an amount for gas fee here
+        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
+            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+
+        uint256 amountSwapped = swapExactOut(
+            address(asset()),
+            gasFee,
+            gas_zrc20,
+            10000,
+            address(this),
+            200 //deadline
+        );
+
+        approveOrIncreaseAllowance(
+            IERC20(address(asset())),
+            _GATEWAY_ADDRESS,
+            amount
+        );
+        if (gas_zrc20 != address(asset()))
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                _GATEWAY_ADDRESS,
+                gasFee
+            );
+
         _handleWithdrawAndCall(
             strategyAddress,
             receiver,
             userZRC20,
             userERC20,
             address(asset()),
-            amount,
+            amount - amountSwapped,
             userChainId,
             crossChainTxId,
             "_crossChainInvestFailed",

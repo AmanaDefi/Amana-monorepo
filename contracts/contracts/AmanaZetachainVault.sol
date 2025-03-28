@@ -21,6 +21,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
         address withdrawalReceiver_,
         address swapHelper_,
         address withdrawHelper,
+        address zapContract_,
         uint32 gasLimitForWithdrawAndCall_,
         uint32 gasLimitForCall_
     )
@@ -34,6 +35,7 @@ contract AmanaZetachainVault is AmanaVaultBase {
             withdrawalReceiver_,
             swapHelper_,
             withdrawHelper,
+            zapContract_,
             gasLimitForWithdrawAndCall_,
             gasLimitForCall_
         )

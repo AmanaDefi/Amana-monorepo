@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IZRC20.sol";
+import "hardhat/console.sol";
 
 contract WithdrawHelper {
     address public immutable GATEWAY_ADDRESS;
@@ -14,7 +15,6 @@ contract WithdrawHelper {
     }
 
     function handleWithdrawAndCall(
-        address gasTank,
         address targetAddress,
         address receiver,
         address withdrawZRC20,
@@ -29,7 +29,6 @@ contract WithdrawHelper {
         bytes calldata data
     ) external {
         bytes memory recipient = abi.encodePacked(targetAddress);
-
         RevertOptions memory revertOptions = RevertOptions(
             msg.sender, // Vault address (since it's called via delegatecall)
             true,
@@ -46,23 +45,7 @@ contract WithdrawHelper {
             0
         );
 
-        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
-            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
-
-        IGasTank(gasTank).getGas(gas_zrc20, gasFee);
-
-        approveOrIncreaseAllowance(
-            IERC20(tokenToTransfer),
-            GATEWAY_ADDRESS,
-            amount + gasFee
-        );
-        if (gas_zrc20 != tokenToTransfer)
-            approveOrIncreaseAllowance(
-                IERC20(gas_zrc20),
-                GATEWAY_ADDRESS,
-                gasFee
-            );
-
+        console.log("About to withdrawAndCall");
         IGatewayZEVM(GATEWAY_ADDRESS).withdrawAndCall(
             recipient,
             amount,
