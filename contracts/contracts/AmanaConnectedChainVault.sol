@@ -12,7 +12,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     uint256 latestTotalAssetsUpdateFromStrategy;
     uint256 public lastProcessedNonce;
-
     struct Confirmation {
         address user;
         address receiver;
@@ -29,6 +28,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
     mapping(address => uint256) pendingWithdrawals;
+    bool internal initialized;
 
     event CrossChainInvestSent(bytes32 indexed crossChainTxId);
     event CrossChainInvestFailed(bytes32 indexed crossChainTxId);
@@ -37,35 +37,31 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     event TotalAssetsUpdated(uint256 totalAssets);
     event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
 
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        IERC20 asset_,
-        address treasury_,
+    /// @dev Initializer instead of constructor for upgradeability
+    function initialize(
+        string memory name,
+        string memory symbol,
+        IERC20 asset,
+        address registry_,
         uint16 perfFee_,
-        address gasTank_,
-        address withdrawalReceiver_,
-        address swapHelper_,
-        address withdrawHelper,
-        address zapContract_,
-        uint32 gasLimitForWithdrawAndCall_,
-        uint32 gasLimitForCall_
-    )
-        AmanaVaultBase(
-            name_,
-            symbol_,
-            asset_,
-            treasury_,
+        uint32 gasLimitWithdrawAndCall_,
+        uint32 gasLimitCall_
+    ) external initializer {
+        // __ERC20_init(name, symbol);
+        // __Ownable_init(msg.sender);
+        // __ERC4626_init(asset);
+        // __UUPSUpgradeable_init();
+        __AmanaVaultBase_init(
+            name,
+            symbol,
+            asset,
+            msg.sender,
+            registry_,
             perfFee_,
-            gasTank_,
-            withdrawalReceiver_,
-            swapHelper_,
-            withdrawHelper,
-            zapContract_,
-            gasLimitForWithdrawAndCall_,
-            gasLimitForCall_
-        )
-    {}
+            gasLimitWithdrawAndCall_,
+            gasLimitCall_
+        );
+    }
 
     /**
      * @dev Handles cross-chain communication via the gateway.
@@ -494,18 +490,30 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             0 // slippage
         );
 
-        // need to swap into an amount for gas fee here
         (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
 
-        uint256 amountSwapped = swapExactOut(
-            address(asset()),
-            gasFee,
-            gas_zrc20,
-            10000,
-            address(this),
-            200 //deadline
+        if (IAmanaRegistry(registry).swapHelper() == address(0))
+            revert InvalidAddress();
+
+        SafeERC20.safeTransfer(
+            IERC20(address(asset())),
+            IAmanaRegistry(registry).swapHelper(),
+            amount
         );
+
+        uint256 amountSwapped = ISwapHelper(
+            IAmanaRegistry(registry).swapHelper()
+        ).swapExactOut(
+                amount,
+                address(asset()),
+                gasFee,
+                gas_zrc20,
+                10000,
+                address(this),
+                200, //deadline
+                "" // empty bytes param for future-proofing
+            );
 
         approveOrIncreaseAllowance(
             IERC20(address(asset())),
@@ -760,7 +768,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 ((amountWithdrawn - principalWithdrawn) * perfFee) /
                 10000;
             emit PerformanceFeePaid(user, feeToWithdraw);
-            SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
+            SafeERC20.safeTransfer(
+                IERC20(asset()),
+                IAmanaRegistry(registry).treasury(),
+                feeToWithdraw
+            );
         }
         userPrincipal[user] -= principalWithdrawn;
         totalPrincipal -= principalWithdrawn;
@@ -798,7 +810,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) private returns (address gasZRC20, uint256 gasFee) {
         (gasZRC20, gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(gasLimit);
-        gasTank.getGas(gasZRC20, gasFee);
+        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
         approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
     }
 
@@ -812,10 +824,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         (address gasZRC20, uint256 gasFee) = IZRC20(targetChainZRC20)
             .withdrawGasFeeWithGasLimit(gasLimitForCall);
 
-        gasTank.getGas(gasZRC20, gasFee);
+        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
         approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
 
-        bytes memory recipient = abi.encodePacked(withdrawalReceiver);
+        bytes memory recipient = abi.encodePacked(
+            IAmanaRegistry(registry).withdrawalReceiver()
+        );
 
         bytes memory outgoingMessage = abi.encode(
             receiver,

@@ -1,7 +1,7 @@
 // This test simulates a vault with ETH.ETH as the vault assets
 // Cross chain deposits and withdrawals are simulated to be coming from Base
 
-import { ethers, network } from "hardhat";
+import { ethers, network, upgrades } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
@@ -11,6 +11,7 @@ import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/Ga
 import dotenv from "dotenv";
 import { PriceServiceConnection } from "@pythnetwork/price-service-client";
 import { generateTransactionId } from "./utils";
+import { getImplementationAddress } from "@openzeppelin/upgrades-core";
 
 dotenv.config();
 
@@ -422,48 +423,65 @@ describe("AmanaConnectedChainVault Tests", function () {
       ZEVM_GATEWAY_ADDRESS
     );
 
+    const Treasury = await ethers.getContractFactory("Treasury");
+    const treasury = await Treasury.deploy(await owner.getAddress());
+    await treasury.deployed();
+
+    const WithdrawalReceiver = await ethers.getContractFactory("WithdrawalReceiver");
+    const withdrawalReceiver = await WithdrawalReceiver.deploy();
+    await withdrawalReceiver.deployed();
+
     const SwapHelper = await ethers.getContractFactory("SwapHelper");
     const swapHelper = await SwapHelper.deploy();
     await swapHelper.deployed();
-
-    const WithdrawHelper = await ethers.getContractFactory("WithdrawHelper");
-    const withdrawHelper = await WithdrawHelper.deploy(ZEVM_GATEWAY_ADDRESS);
-    await withdrawHelper.deployed();
 
     const GasTank = await ethers.getContractFactory("GasTank");
     const gasTank = await GasTank.deploy();
     await gasTank.deployed();
 
+    const WithdrawHelper = await ethers.getContractFactory("WithdrawHelper");
+    const withdrawHelper = await WithdrawHelper.deploy(ZEVM_GATEWAY_ADDRESS, gasTank.address);
+    await withdrawHelper.deployed();
+
     const ZapContract = await ethers.getContractFactory("ZapContract", owner);
     const zapContract = await ZapContract.deploy(swapHelper.address);
     await zapContract.deployed();
 
+    const AmanaRegistry = await ethers.getContractFactory("AmanaRegistry");
+    const amanaRegistry = await AmanaRegistry.deploy(
+      gasTank.address,
+      treasury.address,
+      withdrawHelper.address,
+      withdrawalReceiver.address,
+      swapHelper.address,
+      zapContract.address,
+    );
+    await amanaRegistry.deployed();
+
     const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
 
-    amanaVault = await Vault.deploy(
-      "AaveV3EthVault",                  // Vault name
-      "AVU",                             // Symbol
-      VAULT_ASSET,                       // Vault asset
-      await owner.getAddress(),          // Owner/Treasury
-      FEE_RATE,                          // Performance fee rate
-      gasTank.address,                   // Gas tank address
-      WITHDRAWAL_RECEIVER,               // Receiver for withdrawals
-      swapHelper.address,
-      withdrawHelper.address,
-      zapContract.address,
-      GAS_LIMIT_FOR_WITHDRAW_AND_CALL,   // Gas limit for withdraw and call
-      GAS_LIMIT_FOR_CALL                 // Gas limit for call
+    amanaVault = await upgrades.deployProxy(
+      Vault,
+      [
+        "AaveV3EthVault",                  // Vault name
+        "AVU",                             // Symbol
+        VAULT_ASSET,                       // Vault asset
+        amanaRegistry.address,
+        FEE_RATE,                          // Performance fee rate
+        GAS_LIMIT_FOR_WITHDRAW_AND_CALL,   // Gas limit for withdraw and call
+        GAS_LIMIT_FOR_CALL                 // Gas limit for call
+      ],
+      {
+        initializer: "initialize",
+        kind: "uups"
+      }
     );
 
     await amanaVault.deployed();
 
-    // await network.provider.send("hardhat_setBalance", [
-    //   amanaVault.address,
-    //   ethers.utils.parseEther("1000").toHexString(),
-    // ]);
-
-
     await gasTank.authorizeVault(amanaVault.address);
+
+    await gasTank.authorizeVault(withdrawHelper.address);
 
     await amanaVault.setStrategy(STRATEGY_ADDRESS);
 
@@ -491,6 +509,25 @@ describe("AmanaConnectedChainVault Tests", function () {
       expect(await amanaVault.asset()).to.equal(VAULT_ASSET);
       expect(await amanaVault.owner()).to.equal(await owner.getAddress());
       expect(await amanaVault.perfFee()).to.equal(FEE_RATE);
+    });
+
+    it("should be upgradeable", async () => {
+      const implBefore = await getImplementationAddress(
+        ethers.provider,
+        amanaVault.address
+      );
+
+      const VaultV2 = await ethers.getContractFactory("AmanaConnectedChainVault");
+      const upgraded = await upgrades.upgradeProxy(amanaVault.address, VaultV2);
+      await upgraded.deployed();
+      console.log("Upgraded to:", upgraded.address);
+
+      const implAfter = await getImplementationAddress(
+        ethers.provider,
+        upgraded.address
+      );
+
+      expect(implAfter).to.not.equal(implBefore);
     });
 
     it("should reject unauthorized access to setStrategy", async function () {
@@ -806,12 +843,12 @@ describe("AmanaConnectedChainVault Tests", function () {
       ).to.emit(amanaVault, "CrossChainInvestFailed").withArgs(txId);
     });
 
-    it("should reject unauthorized treasury updates", async function () {
+    it("should reject unauthorized registry updates", async function () {
       const { amanaVault, user1 } = await loadFixture(setup);
 
-      const newTreasuryAddress = ethers.Wallet.createRandom().address;
+      const newRegistryAddress = ethers.Wallet.createRandom().address;
       await expect(
-        amanaVault.connect(user1).updateTreasuryAddress(newTreasuryAddress)
+        amanaVault.connect(user1).setRegistry(newRegistryAddress)
       ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
     });
 

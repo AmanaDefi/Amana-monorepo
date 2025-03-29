@@ -603,7 +603,11 @@ contract SwapHelper {
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut) {
-        console.log("Start of swap function");
+        require(
+            IERC20(zrc20).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+
         uint256 minimumOut = calculateMinAmountOut(
             zrc20,
             targetZRC20,
@@ -658,11 +662,10 @@ contract SwapHelper {
                 );
             amountOut = amounts[amounts.length - 1];
         }
-        console.log("End of swap function");
-        // }
     }
 
     function swapExactOut(
+        uint256 totalAmountAvailable,
         address zrc20,
         uint256 amountOut,
         address targetZRC20,
@@ -676,6 +679,10 @@ contract SwapHelper {
             targetZRC20,
             amountOut,
             slippageBps
+        );
+        require(
+            IERC20(zrc20).balanceOf(address(this)) >= maxAmountIn,
+            "Insufficient balance"
         );
         (
             address[] memory path,
@@ -710,6 +717,8 @@ contract SwapHelper {
                 );
             amountIn = amounts[0];
         }
+        IERC20(zrc20).transfer(vault, totalAmountAvailable - amountIn);
+
         return amountIn;
     }
 }

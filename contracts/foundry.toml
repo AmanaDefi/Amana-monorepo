@@ -7,6 +7,7 @@ test = 'test'                  # Test folder
 cache_path = 'cache_forge'     # Cache folder for Forge
 optimizer = true
 optimizer_runs = 100
+evm_version = "paris"          # 👈 Prevents usage of PUSH0 from EIP-3855
 
 [rpc_endpoints]
 base = "${BASE_RPC_URL}"

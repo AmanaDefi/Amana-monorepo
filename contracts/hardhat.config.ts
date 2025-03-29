@@ -20,6 +20,7 @@ import "./tasks/updatePythPrices";
 import "./tasks/deployAaveERC20Flash_Strategy";
 import "./tasks/deployWithdrawHelper";
 import "./tasks/deployERC20_MoonwellStrategy";
+import "./tasks/deployAmanaRegistry";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -106,6 +107,7 @@ const config: HardhatUserConfig = {
       {
         version: "0.8.26",
         settings: {
+          evmVersion: "paris",
           optimizer: {
             enabled: true,
             runs: 10000,
@@ -118,9 +120,10 @@ const config: HardhatUserConfig = {
       "contracts/AmanaConnectedChainVault.sol": {
         version: "0.8.26",
         settings: {
+          evmVersion: "paris",
           optimizer: {
             enabled: true,
-            runs: 1000,
+            runs: 175,
           },
           viaIR: true,
         },
@@ -128,6 +131,7 @@ const config: HardhatUserConfig = {
       "contracts/AmanaZetachainVault.sol": {
         version: "0.8.26",
         settings: {
+          evmVersion: "paris",
           optimizer: {
             enabled: true,
             runs: 1000,

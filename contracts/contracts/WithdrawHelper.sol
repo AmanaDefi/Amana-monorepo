@@ -9,9 +9,11 @@ import "hardhat/console.sol";
 
 contract WithdrawHelper {
     address public immutable GATEWAY_ADDRESS;
+    address public immutable GAS_TANK;
 
-    constructor(address _gatewayAddress) {
+    constructor(address _gatewayAddress, address _gasTank) {
         GATEWAY_ADDRESS = _gatewayAddress;
+        GAS_TANK = _gasTank;
     }
 
     function handleWithdrawAndCall(
@@ -28,12 +30,35 @@ contract WithdrawHelper {
         uint32 gasLimitForWithdrawAndCall,
         bytes calldata data
     ) external {
+        // Request gas
+        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
+            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+
+        console.log("Requesting gas fee from GasTank");
+        IGasTank(GAS_TANK).getGas(gas_zrc20, gasFee);
+
+        console.log("Approving token and gas to Gateway");
+        approveOrIncreaseAllowance(
+            IERC20(tokenToTransfer),
+            GATEWAY_ADDRESS,
+            amount + gasFee
+        );
+
+        if (gas_zrc20 != tokenToTransfer) {
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                GATEWAY_ADDRESS,
+                gasFee
+            );
+        }
+
         bytes memory recipient = abi.encodePacked(targetAddress);
-        RevertOptions memory revertOptions = RevertOptions(
-            msg.sender, // Vault address (since it's called via delegatecall)
-            true,
-            msg.sender,
-            abi.encode(
+
+        RevertOptions memory revertOptions = RevertOptions({
+            revertAddress: msg.sender,
+            callOnRevert: true,
+            abortAddress: msg.sender,
+            revertMessage: abi.encode(
                 revertMessage,
                 _crossChainTxId,
                 amount,
@@ -42,10 +67,10 @@ contract WithdrawHelper {
                 withdrawERC20,
                 userChainId
             ),
-            0
-        );
+            onRevertGasLimit: 0
+        });
 
-        console.log("About to withdrawAndCall");
+        console.log("Calling withdrawAndCall");
         IGatewayZEVM(GATEWAY_ADDRESS).withdrawAndCall(
             recipient,
             amount,
@@ -62,9 +87,7 @@ contract WithdrawHelper {
         uint256 amount
     ) internal {
         uint256 currentAllowance = token.allowance(address(this), spender);
-        if (currentAllowance == 0) {
-            token.approve(spender, amount);
-        } else {
+        if (currentAllowance < amount) {
             token.approve(spender, 0);
             token.approve(spender, amount);
         }
