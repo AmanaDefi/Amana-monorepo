@@ -287,7 +287,12 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(this),
             false,
             address(this),
-            abi.encode("_investConfirmFailed", _crossChainTxId),
+            abi.encode(
+                "_investConfirmFailed",
+                _crossChainTxId,
+                _executionNonce,
+                amount
+            ),
             uint256(1000000)
         );
 
@@ -494,9 +499,12 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        uint256 currentExecutionNonce = executionNonce;
+        uint256 nonceToUse = executionNonce;
         executionNonce++;
-        // Construct the message payload with the desired information
+        _sendTotalUnderlyingAssetsToVault(nonceToUse);
+    }
+
+    function _sendTotalUnderlyingAssetsToVault(uint256 nonceToUse) internal {
         bytes memory outgoingMessage = abi.encode(
             address(0),
             address(0),
@@ -507,25 +515,28 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             0,
             false,
             totalUnderlyingAssets(),
-            currentExecutionNonce,
+            nonceToUse,
             0,
             0
         );
 
-        // Configure revert options for the cross-chain call
         RevertOptions memory revertOptions = RevertOptions(
-            address(this), // Address to send revert message to
-            false, // Flag to indicate whether to revert on failure
-            address(this), // Address to handle revert logic
-            abi.encode("_handleRevertOnSendTotalUnderlyingAssets", bytes32(0)), // Revert handling logic
-            uint256(1000000) // Gas for revert call
+            address(this),
+            false,
+            address(this),
+            abi.encode(
+                "_handleRevertOnSendTotalUnderlyingAssets",
+                bytes32(0),
+                nonceToUse,
+                0
+            ),
+            1_000_000
         );
 
-        // Use the GatewayEVM contract to make the call
         IGatewayEVM(_GATEWAY_ADDRESS).call(
-            amanaVault, // Destination contract (vault on ZetaChain)
-            outgoingMessage, // Encoded message payload
-            revertOptions // Revert options
+            amanaVault,
+            outgoingMessage,
+            revertOptions
         );
 
         emit TotalUnderlyingAssetsSent(
@@ -559,10 +570,15 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     function onRevert(
         RevertContext calldata context
     ) external virtual onlyGateway {
-        (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
-            context.revertMessage,
-            (string, bytes32)
-        );
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            uint256 _executionNonce,
+            uint256 amount
+        ) = abi.decode(
+                context.revertMessage,
+                (string, bytes32, uint256, uint256)
+            );
 
         if (
             keccak256(bytes(revertMessage)) ==
@@ -574,14 +590,13 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 0);
-            executionNonce--;
+            _sendTotalUnderlyingAssetsToVault(_executionNonce);
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
         ) {
             emit SendTotalUnderlyingAssetsFailed();
-            executionNonce--;
         } else {
             revert("Revert not handled");
         }
