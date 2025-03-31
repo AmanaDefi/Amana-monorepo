@@ -6,6 +6,8 @@ import {useActiveAccount} from "thirdweb/react";
 import Link from "next/link";
 import {BannersCarousel} from "@/components/banners/BannersCarousel";
 
+const guideText = "Deposit to any of the vaults below from any of our connected chains - Ethereum, Basem Polygon, BNB Smart Chain or Zetachain. Switch active chain using the wallet connection button in the top right hand corner of the screen!"
+
 export default function Page() {
   const account = useActiveAccount();
   return (
@@ -18,6 +20,9 @@ export default function Page() {
           </div>
           <div className='pb-10 pt-5 lg:pb-14 lg:pt-10'>
               <BannersCarousel />
+          </div>
+          <div>
+            {guideText}
           </div>
           <div className="flex-1 flex flex-col w-full justify-between pb-10">
               <div className="flex-1 p-4 container mx-auto gap-5">
