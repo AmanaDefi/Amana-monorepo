@@ -79,7 +79,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69",
+    id: "0x48CAD47d5F0211c6610754F511d3A75eCd7c3084",
     name: "USDC Lend Pool",
     des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
     symbol: "aFluidUSDC",
@@ -95,7 +95,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Fluid",
-      strategyAddress: "0xCf867eF209d76f3C66ed5eDCe8391f4A5660C3a5",
+      strategyAddress: "0x3BF3BB802eFc297669475aD50434Ff0905e79990",
       network: "Base",
       chainId: 8453,
       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
@@ -256,31 +256,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
   //   },
   // },
-  {
-    id: "0x25f43240450c43c58Cb7CDbB424C0c80001C72E3",
-    name: "Moonwell Flagship USDC",
-    des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
-    symbol: "aMoonwellUSDC",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Moonwell",
-      strategyAddress: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-      imgURL: "/Moonwell.jpg",
-      des: "Moonwell is a relatively new protocol."
-    },
-  },
+  // {
+  //   id: "0x25f43240450c43c58Cb7CDbB424C0c80001C72E3",
+  //   name: "Moonwell Flagship USDC",
+  //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
+  //   symbol: "aMoonwellUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Moonwell",
+  //     strategyAddress: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/Moonwell.jpg",
+  //     des: "Moonwell is a relatively new protocol."
+  //   },
+  // },
   // {
   //   id: "0xBc1BAF5a96E8302c5469B0D3A8D5AD3aAccCAE7b",
   //   name: "Moonwell Eth",
