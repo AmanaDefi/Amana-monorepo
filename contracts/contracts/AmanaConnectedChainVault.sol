@@ -28,7 +28,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
     mapping(address => uint256) pendingWithdrawals;
-    bool internal initialized;
+    bool public depositFeePaidFromGasTank = true;
 
     event CrossChainInvestSent(bytes32 indexed crossChainTxId);
     event CrossChainInvestFailed(bytes32 indexed crossChainTxId);
@@ -485,21 +485,36 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             IAmanaRegistry(registry).withdrawHelper(),
             amount
         );
-
-        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
-            .handleWithdrawAndCall(
-                strategyAddress,
-                receiver,
-                userZRC20,
-                userERC20,
-                address(asset()),
-                amount,
-                minimumOut,
-                userChainId,
-                crossChainTxId,
-                gasLimitForWithdrawAndCall,
-                registry
-            );
+        if (depositFeePaidFromGasTank) {
+            IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+                .handleGasFeeAndWithdrawAndCall(
+                    strategyAddress,
+                    receiver,
+                    userZRC20,
+                    userERC20,
+                    address(asset()),
+                    amount,
+                    userChainId,
+                    crossChainTxId,
+                    gasLimitForWithdrawAndCall,
+                    registry
+                );
+        } else {
+            IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+                .handleWithdrawAndCall(
+                    strategyAddress,
+                    receiver,
+                    userZRC20,
+                    userERC20,
+                    address(asset()),
+                    amount,
+                    minimumOut,
+                    userChainId,
+                    crossChainTxId,
+                    gasLimitForWithdrawAndCall,
+                    registry
+                );
+        }
 
         emit CrossChainInvestSent(crossChainTxId);
     }
