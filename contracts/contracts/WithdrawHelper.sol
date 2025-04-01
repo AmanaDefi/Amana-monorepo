@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./interfaces/IGasTank.sol";
@@ -12,22 +11,14 @@ import "./interfaces/IAmanaRegistry.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ISwapHelper.sol";
 
-contract WithdrawHelper is Ownable {
+contract WithdrawHelper {
     using SafeERC20 for IERC20;
     using SafeERC20 for IZRC20;
 
     address public immutable GATEWAY_ADDRESS;
-    address public immutable GAS_TANK;
-    address public registry;
 
-    constructor(address _gatewayAddress, address _gasTank) Ownable(msg.sender) {
+    constructor(address _gatewayAddress) {
         GATEWAY_ADDRESS = _gatewayAddress;
-        GAS_TANK = _gasTank;
-    }
-
-    function setRegistry(address _registry) external onlyOwner {
-        require(_registry != address(0), "Invalid address");
-        registry = _registry;
     }
 
     function handleGasFeeAndWithdrawAndCall(
@@ -39,7 +30,8 @@ contract WithdrawHelper is Ownable {
         uint256 amount,
         uint32 userChainId,
         bytes32 _crossChainTxId,
-        uint32 gasLimitForWithdrawAndCall
+        uint32 gasLimitForWithdrawAndCall,
+        address registry
     ) external {
         bytes memory outgoingMessage = abi.encode(
             receiver, // user to receive funds
@@ -52,7 +44,7 @@ contract WithdrawHelper is Ownable {
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
 
-        IGasTank(GAS_TANK).getGas(gas_zrc20, gasFee);
+        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
 
         approveOrIncreaseAllowance(
             IERC20(tokenToTransfer),
@@ -106,21 +98,9 @@ contract WithdrawHelper is Ownable {
         uint256 minimumOut,
         uint32 userChainId,
         bytes32 _crossChainTxId,
-        uint32 gasLimitForWithdrawAndCall
+        uint32 gasLimitForWithdrawAndCall,
+        address registry
     ) external {
-        bytes memory outgoingMessage = abi.encode(
-            address(0),
-            receiver,
-            address(0),
-            address(0),
-            amount,
-            minimumOut,
-            0, // chain ID
-            true,
-            _crossChainTxId,
-            0 // slippage
-        );
-
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
         uint256 amountToDeduct = gasFee;
@@ -166,6 +146,19 @@ contract WithdrawHelper is Ownable {
                 gasFee
             );
         }
+
+        bytes memory outgoingMessage = abi.encode(
+            address(0),
+            receiver,
+            address(0),
+            address(0),
+            amount - amountToDeduct,
+            minimumOut,
+            0, // chain ID
+            true,
+            _crossChainTxId,
+            0 // slippage
+        );
 
         bytes memory recipient = abi.encodePacked(targetAddress);
 

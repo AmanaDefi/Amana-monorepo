@@ -497,7 +497,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 minimumOut,
                 userChainId,
                 crossChainTxId,
-                gasLimitForWithdrawAndCall
+                gasLimitForWithdrawAndCall,
+                registry
             );
 
         emit CrossChainInvestSent(crossChainTxId);
@@ -775,6 +776,21 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
     }
 
+    // This function makes a manual call to the withdrawal receiver.
+    // It is used to handle cases where the cross-chain transaction fails or needs to be retried.
+    // It allows the owner to specify the receiver, asset, target chain ZRC20, amount, and cross-chain transaction ID.
+    // The function retrieves the gas fee for the specified target chain ZRC20 and approves it for the gateway.
+    // It then constructs the outgoing message with the provided parameters and calls the gateway to send the message.
+    // The function also includes revert options to handle any potential failures during the call.
+    // The revert options specify the address to revert to, whether to call on revert, the abort address,
+    // the revert message, and the gas limit for the revert.
+    // The function emits an event indicating the manual call to the withdrawal receiver.
+    // @param receiver The address of the receiver to send the funds to.
+    // @param asset The address of the asset to be sent.
+    // @param targetChainZRC20 The address of the target chain ZRC20 token.
+    // @param amount The amount of the asset to be sent.
+    // @param crossChainTxId The ID of the cross-chain transaction.
+    // @notice This function is only callable by the owner of the contract.
     function manualCallWithdrawalReceiver(
         address receiver,
         address asset,

@@ -478,7 +478,8 @@ abstract contract AmanaVaultBase is
                     outputAmount,
                     userChainId,
                     _crossChainTxId,
-                    gasLimitForWithdrawAndCall
+                    gasLimitForWithdrawAndCall,
+                    registry
                 );
         }
 

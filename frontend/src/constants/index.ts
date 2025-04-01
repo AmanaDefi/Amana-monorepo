@@ -79,7 +79,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0x48CAD47d5F0211c6610754F511d3A75eCd7c3084",
+    id: "0x45166CF9125C72B008A8187603AbcB2561263DF6",
     name: "USDC Lend Pool",
     des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
     symbol: "aFluidUSDC",
@@ -95,7 +95,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Fluid",
-      strategyAddress: "0x3BF3BB802eFc297669475aD50434Ff0905e79990",
+      strategyAddress: "0x59c34Ea6c2648769915da1A57ad6cAfa00A2c628",
       network: "Base",
       chainId: 8453,
       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",

@@ -12,7 +12,8 @@ interface IWithdrawHelper {
         uint256 minimumOut,
         uint32 userChainId,
         bytes32 crossChainTxId,
-        uint32 gasLimitForWithdrawAndCall
+        uint32 gasLimitForWithdrawAndCall,
+        address registry
     ) external;
 
     function handleGasFeeAndWithdrawAndCall(
@@ -24,6 +25,7 @@ interface IWithdrawHelper {
         uint256 amount,
         uint32 userChainId,
         bytes32 crossChainTxId,
-        uint32 gasLimitForWithdrawAndCall
+        uint32 gasLimitForWithdrawAndCall,
+        address registry
     ) external;
 }

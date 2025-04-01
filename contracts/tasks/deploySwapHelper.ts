@@ -13,14 +13,6 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   console.log(`✅ SwapHelper deployed at: ${swapHelper.address}`);
 
-  // Check storage slots to ensure the contract is stateless
-  const storageSlot0 = await hre.ethers.provider.getStorageAt(swapHelper.address, 0);
-  if (BigInt(storageSlot0) !== BigInt(0)) {
-    throw new Error("🚨 Deployment failed: SwapHelper is not stateless!");
-  }
-
-  console.log(`✅ SwapHelper verified as stateless.`);
-
   const etherscanApiKey = hre.config.etherscan.apiKey[network];
   if (etherscanApiKey) {
     console.log(`🛠 Verifying contract on ${network} explorer...`);
