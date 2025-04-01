@@ -3,6 +3,7 @@
 import React from "react";
 import VaultsContainer from "../containers/VaultsContainer";
 import { useActiveAccount } from "thirdweb/react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { BannersCarousel } from "@/components/banners/BannersCarousel";
 import { Note } from "@/components/Note";
@@ -10,6 +11,7 @@ import { Note } from "@/components/Note";
 
 export default function Page() {
   const account = useActiveAccount();
+  const wallet = useWallet();
   return (
     <div className='flex flex-col w-full'>
       <div className='w-full text-center bg-amber-50'>

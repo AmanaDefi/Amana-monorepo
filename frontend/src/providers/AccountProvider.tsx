@@ -14,7 +14,7 @@ export const connectModalConfig: {
     connectModal: { size: "compact" };
 } = {
     client,
-    chains: [SUPPORTED_CHAINS[0]],
+    chains: SUPPORTED_CHAINS,
     wallets: [
         // inAppWallet({
         //     auth: {

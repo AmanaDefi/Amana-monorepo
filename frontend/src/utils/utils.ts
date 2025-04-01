@@ -1,4 +1,4 @@
-import { ParseEventLogsResult, Address } from "thirdweb";
+import { ParseEventLogsResult, Address, getContract } from "thirdweb";
 import {
   TransactionResult,
   SmartVaultActionType,
@@ -10,11 +10,17 @@ import {
   DEFAULT_SETTINGS
 } from "@/types/types"
 import { Account } from "thirdweb/wallets";
-import { handleAllowance } from "@/utils/approve";
-import { ZeroAddress } from "ethers";
-import { APPROVED_TOKENS, HERMES_URL } from "@/constants/chainConfig";
+import { isApproved } from "@/utils/approve";
+import { ethers, Provider, ZeroAddress } from "ethers";
+import { APPROVED_TOKENS, CHAIN_ID, HERMES_URL, solanaRpcUrl } from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { client } from "./client";
+import { Chain } from "viem";
+import { ChainOptions } from "thirdweb/chains";
+import { getBalance } from "thirdweb/extensions/erc20";
+import { keccak_256 } from 'js-sha3';
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -85,6 +91,9 @@ export function getVaultErrorMessage(
   }
 }
 
+export function isEthereumAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
 
 export function formatCurrency(amount: number): string {
   if (Number.isNaN(amount)) {
@@ -120,18 +129,18 @@ export const selectActions = async (
   action: SmartVaultActionType,
   vaultData: VaultData,
   activeChain: any,
-  EOAaccount: Account,
+  walletAddress: string,
   inputBalance: Balance,
   inputToken: Token
 ) => {
 
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value)
-  const chainID = vaultData.protocol.chainId
-  const allowanceResult = await handleAllowance({
+  const chainID = vaultData.protocol.chainId;
+  const allowanceResult = activeChain?.id == CHAIN_ID.solana ? true : await isApproved({
     token: inputToken?.address as Address,
     activeChain: activeChain,
-    activeAccount: EOAaccount.address as Address,
+    activeAccount: walletAddress as Address,
     spender: vaultData.id as Address,
     amount: value
   });
@@ -354,12 +363,10 @@ export async function fetchTokenPrices(priceIds: string[]): Promise<{
 
     parsed.forEach((update, index) => {
       const price = parseFloat(update?.ema_price?.price ?? "0");
-      console.log("price: ", price)
       const decimals = update?.ema_price?.expo ?? 0;
       const adjustedPrice = price * Math.pow(10, decimals);
 
       prices[priceIds[index]] = adjustedPrice;
-      console.log(`Price for ${priceIds[index]}:`, adjustedPrice);
     });
 
     return prices;
@@ -379,10 +386,84 @@ export function getStoredSettings(): UserSettings {
   }
 }
 
+
+
 export function getCurrentSlippage(): number {
   return getStoredSettings().slippage.value;
 }
 
+/**
+ * Solana part
+ */
+
+export const solanaConnection = new Connection(solanaRpcUrl, "confirmed");
+export function isSolanaAddress(address: any): boolean {
+  try {
+    new PublicKey(address);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: string, chain: any) => {
+  const contract = getContract({
+    client,
+    chain: chain,
+    address: tokenAddress
+  });
+  const { value, decimals } = await getBalance({
+    contract,
+    address: walletAddress as Address,
+  });
+
+  return {
+    balance: value,
+    decimals
+  }
+};
+
+export async function getSplTokenBalance(walletAddress: string, tokenMint: string) {
+  const publicKey = new PublicKey(walletAddress);
+  const mintAddress = new PublicKey(tokenMint);
+
+  // Fetch all SPL token accounts owned by the wallet
+  const tokenAccounts = await solanaConnection.getParsedTokenAccountsByOwner(publicKey, {
+    programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), // SPL Token Program
+  });
+
+  // Find the token account that matches the specified token mint
+  const tokenAccount = tokenAccounts.value.find(
+    (account) => account.account.data.parsed.info.mint === mintAddress.toBase58()
+  );
+
+  if (!tokenAccount) {
+    return { balance: 0, decimals: 0 }; // No token balance found
+  }
+
+  const balanceInfo = tokenAccount.account.data.parsed.info.tokenAmount;
+  return {
+    balance: balanceInfo.amount,
+    decimals: balanceInfo.decimals,
+  };
+}
+
 export function shortAddressForm(address: Address) {
   return address.slice(0, 6) + '...' + address.slice(-4);
+}
+
+export function getSolanaEVMAddress(solanaPublicKey: string) {
+  // Ensure we're working with a proper Solana public key
+  const pubKey = new PublicKey(solanaPublicKey);
+
+  // Get the public key as a Buffer
+  const pubKeyBuffer = pubKey.toBuffer();
+
+  // Hash the public key using keccak256
+  const hash = keccak_256(pubKeyBuffer);
+
+  // Take the last 20 bytes (40 characters in hex) and add 0x prefix
+  const evmAddress = '0x' + hash.substring(hash.length - 40);
+
+  return evmAddress;
 }

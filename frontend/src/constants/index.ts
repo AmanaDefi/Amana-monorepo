@@ -156,8 +156,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xb1d9b596799aC5fe6Ac7510392EC037B5Df04724", // Aave USDT on BNB
-    name: "USDT Lend Pool - Deposits paused",
+    id: "0xB6644BE3B49928E4F4C102BdAc8381657958e89f", // Aave USDT on BNB
+    name: "USDT Lend Pool",
     des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
     symbol: "aAaveUSDT",
     imgURL: "/bnb_logo.png",
