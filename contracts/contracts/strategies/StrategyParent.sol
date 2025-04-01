@@ -19,6 +19,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     string public name;
     address public immutable amanaVault;
+    address public withdrawHelper;
     uint256 public executionNonce = 1;
     address public oldStrategy;
     address public rewardsDistributor;
@@ -61,12 +62,14 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     constructor(
         string memory _name,
         address _amanaVault,
-        address _gateway
+        address _gateway,
+        address _withdrawHelper
     ) Ownable(msg.sender) {
         if (_amanaVault == address(0)) revert InvalidAddress();
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
+        withdrawHelper = _withdrawHelper;
     }
 
     /// @notice Processes calls from the Gateway for deposits or withdrawals.
@@ -76,7 +79,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         MessageContext calldata context,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory result) {
-        if (context.sender != address(amanaVault)) {
+        if (
+            context.sender != address(amanaVault) &&
+            context.sender != withdrawHelper
+        ) {
             revert OnlyVault();
         }
 

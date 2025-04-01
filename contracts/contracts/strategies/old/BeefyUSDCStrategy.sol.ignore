@@ -30,7 +30,7 @@ contract BeefyUSDCStrategy is ERC20StrategyParent {
         address _receiptTokenAddress,
         address _gateway
     )
-        StrategyParent(_name, _amanaVault, _gateway)
+        StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
         receiptToken = IBeefyVault(_receiptTokenAddress);

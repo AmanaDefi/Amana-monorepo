@@ -51,8 +51,9 @@ contract CurveEthStrategy is EthStrategyParent {
         address _receiptTokenAddress,
         address _liquidityGaugeAddress,
         address _gateway,
-        address _wethAddress
-    ) StrategyParent(_name, _amanaVault, _gateway) {
+        address _wethAddress,
+        address _withdrawHelper
+    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
         receiptToken = ICurvePool(_receiptTokenAddress);
         gauge = ICurveLiquidityGauge(_liquidityGaugeAddress);
         uniswapRouter = ISwapRouter(UNISWAP_ROUTER);

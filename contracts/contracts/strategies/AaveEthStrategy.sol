@@ -43,8 +43,9 @@ contract AaveEthStrategy is EthStrategyParent {
         address _receiptTokenAddress,
         address _gateway,
         address _wrappedTokenGateway,
-        address _wethAddress
-    ) StrategyParent(_name, _amanaVault, _gateway) {
+        address _wethAddress,
+        address _withdrawHelper
+    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());
         tokenGateway = IWrappedTokenGatewayV3(_wrappedTokenGateway);

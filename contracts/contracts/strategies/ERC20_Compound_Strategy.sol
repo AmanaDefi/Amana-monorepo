@@ -48,9 +48,10 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         address _amanaVault,
         address _inputTokenAddress,
         address _receiptTokenAddress,
-        address _gateway
+        address _gateway,
+        address _withdrawHelper
     )
-        StrategyParent(_name, _amanaVault, _gateway)
+        StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
         receiptToken = ICompoundVault(_receiptTokenAddress);
