@@ -4,7 +4,7 @@ import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToke
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import {useState, useEffect, useMemo, useCallback, useRef} from "react";
 import { parseUnits } from "viem";
-import { Address, getContract } from "thirdweb";
+import { Address, getContract, readContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -86,7 +86,7 @@ function useTokenBalance(
 
 export type ConversionOutput = {
   slippageActualValue: number | null
-  assetsConversionInUSDFormatted: string,
+  finalConvertedAmountInUSDFormatted: string,
   outputAmountFormatted: string,
   outputAmountInUSDFormatted: string
 }
@@ -130,7 +130,7 @@ export default function VaultInputs({
 
   const initialConversionOutput: ConversionOutput = useMemo(() => ({
     slippageActualValue: null,
-    assetsConversionInUSDFormatted: '0',
+    finalConvertedAmountInUSDFormatted: '0',
     outputAmountFormatted: '0',
     outputAmountInUSDFormatted: '0'
   }), [])
@@ -313,13 +313,13 @@ export default function VaultInputs({
     if (inputAmountValue === debouncedInputBalance.value) {
       console.log('Double Box - Conversion Output:', {
         slippageActualValue: Number(slippageActualValue.toFixed(2)),
-        assetsConversionInUSDFormatted: formatCurrency(assetsConversionInUSD).toString(),
+        finalConvertedAmountInUSDFormatted: formatCurrency(assetsConversionInUSD).toString(),
         outputAmountFormatted: (tokenConversionFromWei).toString(),
         outputAmountInUSDFormatted: formatCurrency(tokenConversionInUSD).toString()
       });
       setConversionOutput({
         slippageActualValue: Number(slippageActualValue.toFixed(2)),
-        assetsConversionInUSDFormatted: formatCurrency(assetsConversionInUSD).toString(),
+        finalConvertedAmountInUSDFormatted: formatCurrency(assetsConversionInUSD).toString(),
         outputAmountFormatted: (tokenConversionFromWei).toString(),
         outputAmountInUSDFormatted: formatCurrency(tokenConversionInUSD).toString()
       });
@@ -342,33 +342,77 @@ export default function VaultInputs({
       assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, inputTokenAddress as Address, vaultData.inputToken.address as Address);
     }
 
-    console.log('Double Box - Conversion amounts:', {
+    console.log('Double Box - Pre Gas Conversion amounts:', {
       assetsConversionAmount: assetsConversionAmount.toString(),
     });
 
-    const sharesAmountFormatted = await getSharesFromDeposit(assetsConversionAmount, vaultData);
+    // 2. Fetch gas fee info from the ZRC20 token
+    const vaultContract = getContract({
+      client,
+      chain: activeChain,
+      address: vaultData.id as Address,
+    })
+    const gasLimitForWithdrawAndCall = await readContract({
+      contract: vaultContract,
+      method: "function gasLimitForWithdrawAndCall() view returns (uint256)",
+    });
+    const tokenContract = getContract({
+      client,
+      chain: SUPPORTED_CHAINS[0],
+      address: vaultData.inputToken.address as Address,
+    })
+    const result = await readContract({
+      contract: tokenContract,
+      method: "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
+      params: [gasLimitForWithdrawAndCall],
+    });
+    const gasZRC20 = result[0] as Address;
+    const gasFee = result[1] as bigint;
+    console.log("gasZRC20", gasZRC20);
+    console.log("gasFee", gasFee);
+  // 3. If vault token and gas token match, subtract directly
+  let gasFeeInVaultAsset = gasFee;
+
+  if (gasZRC20 !== vaultData.inputToken.address) {
+    // Convert fee from gas token into vault asset terms
+    gasFeeInVaultAsset = await getAmountOutFromSwap(
+      gasFee,
+      gasZRC20,
+      vaultData.inputToken.address
+    );
+  }
+
+  // 4. Subtract gas fee from converted amount
+  const finalConvertedAmount = assetsConversionAmount - gasFeeInVaultAsset;
+
+  console.log('Double Box - Final converted amount after gas fee:', {
+    finalConvertedAmount: finalConvertedAmount.toString(),
+    gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
+  });
+
+    const sharesAmountFormatted = await getSharesFromDeposit(finalConvertedAmount, vaultData);
 
     console.log('Double Box - Shares calculation:', {
       sharesAmountFormatted,
-      assetsConversionAmount: assetsConversionAmount.toString()
+      finalConvertedAmount: finalConvertedAmount.toString()
     });
     const inputAmountValueInUSD = (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice;
-    const assetsConversionInUSD = (Number(assetsConversionAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
-    const assetsConversionInUSDFormatted = formatCurrency(assetsConversionInUSD).toString();
+    const finalConvertedAmountInUSD = (Number(finalConvertedAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+    const finalConvertedAmountInUSDFormatted = formatCurrency(finalConvertedAmountInUSD).toString();
 
-    const slippageActualValue = (Math.max(0, 100 - ((assetsConversionInUSD * 100) / inputAmountValueInUSD)));
+    const slippageActualValue = (Math.max(0, 100 - ((finalConvertedAmountInUSD * 100) / inputAmountValueInUSD)));
     if (inputAmountValue === debouncedInputBalance.value) {
       console.log('Double Box - Conversion Output:', {
         slippageActualValue: Number(slippageActualValue.toFixed(2)),
-        assetsConversionInUSDFormatted,
+        finalConvertedAmountInUSDFormatted,
         outputAmountFormatted: sharesAmountFormatted,
-        outputAmountInUSDFormatted: assetsConversionInUSDFormatted
+        outputAmountInUSDFormatted: finalConvertedAmountInUSDFormatted
       });
       setConversionOutput({
         slippageActualValue: Number(slippageActualValue.toFixed(2)),
-        assetsConversionInUSDFormatted,
+        finalConvertedAmountInUSDFormatted,
         outputAmountFormatted: sharesAmountFormatted,
-        outputAmountInUSDFormatted: assetsConversionInUSDFormatted
+        outputAmountInUSDFormatted: finalConvertedAmountInUSDFormatted
       });
     }
     setLoadingOutputToken(false);
