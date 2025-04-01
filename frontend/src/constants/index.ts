@@ -95,7 +95,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Fluid",
-      strategyAddress: "0x59c34Ea6c2648769915da1A57ad6cAfa00A2c628",
+      strategyAddress: "0x73a043bFc0D461a9597B3331545f1edB5A77bFf5",
       network: "Base",
       chainId: 8453,
       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
