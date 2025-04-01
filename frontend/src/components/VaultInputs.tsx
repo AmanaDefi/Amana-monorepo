@@ -4,7 +4,7 @@ import { VaultData, Token, Balance, SmartVaultActionType, VaultTotalAssetsinToke
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Account, parseUnits } from "viem";
-import { Address, Chain, getContract } from "thirdweb";
+import { Address, Chain, getContract, readContract } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useWalletBalance } from "thirdweb/react";
 import { client } from "@/utils/client";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -326,7 +326,8 @@ export default function VaultInputs({
     gasFeeInVaultAsset = await getAmountOutFromSwap(
       gasFee,
       gasZRC20,
-      vaultData.inputToken.address
+      vaultData.inputToken.address,
+      vaultData
     );
   }
 
