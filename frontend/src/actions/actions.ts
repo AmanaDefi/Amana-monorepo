@@ -940,7 +940,9 @@ export const getAmountOutFromSwap = async (
   };
 
   try {
+    console.log("Making api request to get quote");
     const quoteResponse = await sdk.bridge.getQuoteForBridge(quoteRequest);
+    console.log("Quote response:", quoteResponse);
     return BigInt(quoteResponse.quoteAmount); // Return the quoteAmount as bigint
   } catch (e) {
     console.error("Error fetching quote:", e);
