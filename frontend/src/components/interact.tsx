@@ -22,6 +22,7 @@ import { determineVaultTokenFromApprovedTokens } from "@/utils/utils";
 import { APPROVED_TOKENS, CHAIN_ID, CHAINS_EXPLORER_BASE_URL_MAINNET, deployEnv } from "@/constants/chainConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
+import {ethers, formatUnits} from "ethers";
 import { useActiveAccount } from "thirdweb/react";
 import { useWallet, Wallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
@@ -51,7 +52,7 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
 
         mixpanel.track("Deposit Submitted", {
             vault: vaultData.id.toString(),
-            amount: depositAmount.toString(),
+            amount: ethers.formatUnits(depositAmount, inputToken.decimals),
         });
 
         if (activeChain.id === CHAIN_ID.solana) {
@@ -98,7 +99,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         const withdrawShareAmount = inputBalance.value
         mixpanel.track("Withdraw Submitted", {
             vault: vaultData.id.toString(),
-            amount: withdrawShareAmount.toString(),
+            amount: formatUnits(withdrawShareAmount, 18),
         });
         const receipt = await executeWithdrawal(
             vaultData.id as Address,
@@ -114,7 +115,7 @@ const handleWithdrawTransaction = async (vaultData: VaultData, inputBalance: Bal
         );
         mixpanel.track("Withdraw Succeeded", {
             vault: vaultData.id.toString(),
-            amount: withdrawShareAmount.toString(),
+            amount: formatUnits(withdrawShareAmount, 18),
         });
 
         if (activeChain.id === CHAIN_ID.solana) {
