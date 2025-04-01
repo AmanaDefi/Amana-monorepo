@@ -457,87 +457,32 @@ abstract contract AmanaVaultBase is
                 );
         } else {
             // Cross-chain transfer
-            bytes memory outgoingMessage = abi.encode(
-                receiver, // user to receive funds
-                withdrawERC20, // token on target chain
-                outputAmount, // amount to be sent
-                _crossChainTxId
-            );
-            (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
-                .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+            if (IAmanaRegistry(registry).withdrawHelper() == address(0))
+                revert InvalidAddress();
 
-            IGasTank(IAmanaRegistry(registry).gasTank()).getGas(
-                gas_zrc20,
-                gasFee
-            );
-
-            approveOrIncreaseAllowance(
-                IERC20(gas_zrc20),
-                _GATEWAY_ADDRESS,
-                gasFee
-            );
-
-            approveOrIncreaseAllowance(
+            // Step 1: Transfer tokens to the helper contract
+            SafeERC20.safeTransfer(
                 IERC20(withdrawZRC20),
-                _GATEWAY_ADDRESS,
-                amount + gasFee
+                IAmanaRegistry(registry).withdrawHelper(),
+                outputAmount
             );
 
-            _handleWithdrawAndCall(
-                IAmanaRegistry(registry).withdrawalReceiver(),
-                receiver,
-                withdrawZRC20,
-                withdrawERC20,
-                withdrawZRC20,
-                outputAmount,
-                userChainId,
-                _crossChainTxId,
-                "_returnFundsToUserFailed",
-                outgoingMessage
-            );
+            // Step 2: Call helper with required arguments
+            IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+                .handleGasFeeAndWithdrawAndCall(
+                    IAmanaRegistry(registry).withdrawalReceiver(),
+                    receiver,
+                    withdrawZRC20,
+                    withdrawERC20,
+                    withdrawZRC20,
+                    outputAmount,
+                    userChainId,
+                    _crossChainTxId,
+                    gasLimitForWithdrawAndCall
+                );
         }
 
         emit ReturnFundsToUserSent(_crossChainTxId);
-    }
-
-    function _handleWithdrawAndCall(
-        address targetAddress,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        address tokenToTransfer,
-        uint256 amount,
-        uint32 userChainId,
-        bytes32 _crossChainTxId,
-        string memory revertMessage,
-        bytes memory outgoingMessage
-    ) internal {
-        if (IAmanaRegistry(registry).withdrawHelper() == address(0))
-            revert InvalidAddress();
-
-        // Step 1: Transfer tokens to the helper contract
-        SafeERC20.safeTransfer(
-            IERC20(tokenToTransfer),
-            IAmanaRegistry(registry).withdrawHelper(),
-            amount
-        );
-
-        // Step 2: Call helper with required arguments
-        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
-            .handleWithdrawAndCall(
-                targetAddress,
-                receiver,
-                withdrawZRC20,
-                withdrawERC20,
-                tokenToTransfer,
-                amount,
-                userChainId,
-                _crossChainTxId,
-                revertMessage,
-                outgoingMessage,
-                gasLimitForWithdrawAndCall,
-                "" // placeholder for extra data
-            );
     }
 
     /**

@@ -9,7 +9,6 @@ import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol";
 import "./SwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
 import "./interfaces/ISwapRouter.sol";
-import "hardhat/console.sol";
 
 contract ZapContract {
     using Address for address payable;
@@ -76,12 +75,6 @@ contract ZapContract {
             maxDeadline,
             "" // empty bytes param for future-proofing
         );
-        console.log("zrc20", zrc20);
-        console.log("amount", amount);
-        console.log("targetZRC20", targetZRC20);
-        console.log("slippageBps", slippageBps);
-        console.log("maxDeadline", maxDeadline);
-        console.log("about to delegate call");
         amountOut = _delegateCall(swapHelper, data);
     }
 
@@ -111,9 +104,6 @@ contract ZapContract {
                 // Native ZETA
                 require(msg.value == amount, "Incorrect ZETA amount sent");
                 wZeta.deposit{value: msg.value}();
-                console.log("slippage", slippage);
-                console.log("address(wZeta)", address(wZeta));
-                console.log("amount", amount);
                 swappedAmount = swap(
                     inputToken,
                     amount,
@@ -128,7 +118,6 @@ contract ZapContract {
                     address(this),
                     amount
                 );
-                console.log("slippage", slippage);
 
                 swappedAmount = swap(
                     inputToken,

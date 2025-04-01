@@ -9,11 +9,21 @@ interface IWithdrawHelper {
         address withdrawERC20,
         address tokenToTransfer,
         uint256 amount,
+        uint256 minimumOut,
         uint32 userChainId,
         bytes32 crossChainTxId,
-        string memory revertMessage,
-        bytes memory outgoingMessage,
-        uint32 gasLimitForWithdrawAndCall,
-        bytes calldata data
+        uint32 gasLimitForWithdrawAndCall
+    ) external;
+
+    function handleGasFeeAndWithdrawAndCall(
+        address targetAddress,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        address tokenToTransfer,
+        uint256 amount,
+        uint32 userChainId,
+        bytes32 crossChainTxId,
+        uint32 gasLimitForWithdrawAndCall
     ) external;
 }

@@ -15,7 +15,6 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 contract SwapHelper {
     address constant UNISWAP_V2_FACTORY =
@@ -143,7 +142,6 @@ contract SwapHelper {
         uint256 amount,
         uint16 slippageBps
     ) internal view returns (uint256) {
-        console.log("got here");
         bytes32 inputPriceFeed = getPriceFeedId(inputToken);
         bytes32 outputPriceFeed = getPriceFeedId(outputToken);
 
@@ -614,13 +612,11 @@ contract SwapHelper {
             amount,
             slippageBps
         );
-        console.log("minimumOut: %d", minimumOut);
         // (address curvePool, uint256 i, uint256 j) = getCurvePool(
         //     zrc20,
         //     targetZRC20
         // );
         // if (curvePool != address(0)) {
-        //     console.log("Curve pool: %s", curvePool);
         //     // Approve Curve pool to spend tokens
         //     IZRC20(zrc20).approve(curvePool, amount);
         //     return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
@@ -630,11 +626,8 @@ contract SwapHelper {
             uint24[] memory feeTiers,
             bytes memory encodedPath
         ) = getPathV3(zrc20, targetZRC20);
-        console.log("path length: %d", path.length);
 
         if (encodedPath.length > 0) {
-            console.log("About to swap via V3");
-            console.log("amountIn: %d", amount);
             // Uniswap V3 Swap
             IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
@@ -649,7 +642,6 @@ contract SwapHelper {
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else {
             // Uniswap V2 Swap
-            console.log("About to swap via V2");
             path = getPathV2(zrc20, targetZRC20);
             IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
             uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)

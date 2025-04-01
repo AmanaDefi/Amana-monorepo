@@ -477,68 +477,29 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 userChainId,
         bytes32 crossChainTxId
     ) internal override {
-        bytes memory outgoingMessage = abi.encode(
-            address(0),
-            receiver,
-            address(0),
-            address(0),
-            amount,
-            minimumOut,
-            0, // chain ID
-            true,
-            crossChainTxId,
-            0 // slippage
-        );
-
-        (address gas_zrc20, uint256 gasFee) = IZRC20(address(asset()))
-            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
-
-        if (IAmanaRegistry(registry).swapHelper() == address(0))
+        if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
 
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
-            IAmanaRegistry(registry).swapHelper(),
+            IAmanaRegistry(registry).withdrawHelper(),
             amount
         );
 
-        uint256 amountSwapped = ISwapHelper(
-            IAmanaRegistry(registry).swapHelper()
-        ).swapExactOut(
-                amount,
+        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+            .handleWithdrawAndCall(
+                strategyAddress,
+                receiver,
+                userZRC20,
+                userERC20,
                 address(asset()),
-                gasFee,
-                gas_zrc20,
-                10000,
-                address(this),
-                200, //deadline
-                "" // empty bytes param for future-proofing
+                amount,
+                minimumOut,
+                userChainId,
+                crossChainTxId,
+                gasLimitForWithdrawAndCall
             );
 
-        approveOrIncreaseAllowance(
-            IERC20(address(asset())),
-            _GATEWAY_ADDRESS,
-            amount
-        );
-        if (gas_zrc20 != address(asset()))
-            approveOrIncreaseAllowance(
-                IERC20(gas_zrc20),
-                _GATEWAY_ADDRESS,
-                gasFee
-            );
-
-        _handleWithdrawAndCall(
-            strategyAddress,
-            receiver,
-            userZRC20,
-            userERC20,
-            address(asset()),
-            amount - amountSwapped,
-            userChainId,
-            crossChainTxId,
-            "_crossChainInvestFailed",
-            outgoingMessage
-        );
         emit CrossChainInvestSent(crossChainTxId);
     }
 

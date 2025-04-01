@@ -2,40 +2,48 @@ import { ethers, network } from "hardhat";
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import { Signer, BigNumber } from "ethers";
 
-export async function setTokenBalance(tokenAddress, account, amount, balanceSlot) {
-  const balanceAmount = ethers.BigNumber.from(amount);
+/**
+ * Sets the token balance of an account in a local Hardhat network.
+ *
+ * @param tokenAddress - Address of the token contract
+ * @param account - Address of the user to modify the balance for
+ * @param amount - The new balance (BigNumberish)
+ * @param balanceSlot - The storage slot where balances are stored (usually 0 or 3)
+ */
+export async function setTokenBalance(
+  tokenAddress: string,
+  account: string,
+  amount: BigNumber,
+  balanceSlot: number
+) {
   const normalizedAccount = ethers.utils.getAddress(account);
 
-  let computedSlot;
-
-  // Check if we're using OpenZeppelin's ERC-7201 storage slot
-  if (ethers.utils.isHexString(balanceSlot)) {
-
-    // Hash the storage slot (since it's part of a struct)
-    computedSlot = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(["uint256"], [balanceSlot])
-    );
-  } else {
-
-    // Use the manually specified slot (e.g., 0, 3, or 9)
-    computedSlot = balanceSlot;
-  }
-
-  // Compute the final storage key (hashed address + slot)
-  const storageKey = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(["address", "uint256"], [normalizedAccount, computedSlot])
+  // Format the amount as a 32-byte hex string
+  const paddedValue = ethers.utils.hexZeroPad(
+    ethers.BigNumber.from(amount).toHexString(),
+    32
   );
 
-  // Set storage on the proxy contract or normal ERC20
+  // Compute the storage slot: keccak256(abi.encode(account, balanceSlot))
+  const rawSlot = ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(
+      ["address", "uint256"],
+      [normalizedAccount, balanceSlot]
+    )
+  );
+
+  // Convert slot to a QUANTITY (unpadded hex string with 0x prefix)
+  const slot = ethers.BigNumber.from(rawSlot).toHexString();
+  // Set the storage slot directly
   await network.provider.send("hardhat_setStorageAt", [
     tokenAddress,
-    storageKey,
-    ethers.utils.hexZeroPad(balanceAmount.toHexString(), 32), // Ensure 32-byte padding
+    slot,
+    paddedValue,
   ]);
 
-  // Verify balance update
+  // Verify it worked (optional)
   const token = await ethers.getContractAt("IERC20", tokenAddress);
-  const newBalance = await token.balanceOf(account);
+  const newBalance = await token.balanceOf(normalizedAccount);
 }
 
 
