@@ -28,7 +28,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
     mapping(address => uint256) pendingWithdrawals;
-    bool public depositFeePaidFromGasTank = true;
+    bool public depositFeePaidFromGasTank;
 
     event CrossChainInvestSent(bytes32 indexed crossChainTxId);
     event CrossChainInvestFailed(bytes32 indexed crossChainTxId);
@@ -45,7 +45,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address registry_,
         uint16 perfFee_,
         uint32 gasLimitWithdrawAndCall_,
-        uint32 gasLimitCall_
+        uint32 gasLimitCall_,
+        bool depositFeePaidFromGasTank_
     ) external initializer {
         // __ERC20_init(name, symbol);
         // __Ownable_init(msg.sender);
@@ -61,6 +62,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             gasLimitWithdrawAndCall_,
             gasLimitCall_
         );
+        depositFeePaidFromGasTank_;
     }
 
     /**
