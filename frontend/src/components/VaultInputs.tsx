@@ -349,7 +349,7 @@ export default function VaultInputs({
     // 2. Fetch gas fee info from the ZRC20 token
     const vaultContract = getContract({
       client,
-      chain: activeChain,
+      chain: SUPPORTED_CHAINS[0],
       address: vaultData.id as Address,
     })
     const gasLimitForWithdrawAndCall = await readContract({

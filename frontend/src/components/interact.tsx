@@ -29,10 +29,8 @@ const handleDepositTransaction = async (vaultData: VaultData, inputBalance: Bala
         const depositAmount = inputBalance.value
         console.log("inputToken in handleDepositTransaction: ", inputToken.symbol)
         const receipt = await executeDeposit(
-            vaultData.id as Address,
-            vaultData.protocol.strategyAddress as Address,
-            vaultData.protocol.chainId,
-            inputToken.address as Address,
+            vaultData,
+            inputToken,
             EOAaccount,
             activeChain,
             depositAmount,
