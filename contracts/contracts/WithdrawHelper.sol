@@ -153,6 +153,7 @@ contract WithdrawHelper {
             address(0),
             address(0),
             amount - amountToDeduct,
+            0, // on withdrawals this is used for fractionOfTotalShares
             minimumOut,
             0, // chain ID
             true,

@@ -19,7 +19,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         address withdrawZRC20;
         address withdrawERC20;
         uint256 amount;
-        uint256 fractionOfTotalShares;
+        uint256 vaultSharesToBeBurnt;
         uint32 withdrawChainId;
         bool isDeposit;
         uint256 totalAssetsAfter;
@@ -58,7 +58,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 address withdrawZRC20,
                 address withdrawERC20,
                 uint256 withdrawAmount,
-                uint256 fractionOfTotalShares,
+                uint256 vaultSharesToBeBurnt,
                 uint32 withdrawChainId,
                 bool isDeposit,
                 uint256 totalAssetsAfter,
@@ -88,7 +88,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 withdrawZRC20,
                 withdrawERC20,
                 withdrawAmount,
-                fractionOfTotalShares,
+                vaultSharesToBeBurnt,
                 withdrawChainId,
                 isDeposit,
                 totalAssetsAfter,
@@ -119,7 +119,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 (
                     address withdrawZRC20,
                     address withdrawERC20,
-                    uint256 shares,
+                    uint256 vaultSharesToBeBurnt,
                     uint256 minimumOut,
                     uint16 slippage,
                     bytes32 crossChainTxId
@@ -131,7 +131,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                     context.sender,
                     withdrawZRC20,
                     withdrawERC20,
-                    shares,
+                    vaultSharesToBeBurnt,
                     minimumOut,
                     uint32(context.chainID),
                     slippage,
@@ -161,7 +161,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 withdrawAmount,
-        uint256 fractionOfTotalShares,
+        uint256 vaultSharesToBeBurnt,
         uint32 withdrawChainId,
         bool isDeposit,
         uint256 totalAssetsAfter,
@@ -181,7 +181,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             withdrawZRC20: withdrawZRC20,
             withdrawERC20: withdrawERC20,
             amount: withdrawAmount,
-            fractionOfTotalShares: fractionOfTotalShares,
+            vaultSharesToBeBurnt: vaultSharesToBeBurnt,
             withdrawChainId: withdrawChainId,
             isDeposit: isDeposit,
             totalAssetsAfter: totalAssetsAfter,
@@ -209,7 +209,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 withdrawAmount,
-        uint256 fractionOfTotalShares,
+        uint256 vaultSharesToBeBurnt,
         uint32 withdrawChainId,
         bool isDeposit,
         uint256 totalAssetsAfter,
@@ -229,7 +229,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             withdrawZRC20: withdrawZRC20,
             withdrawERC20: withdrawERC20,
             amount: withdrawAmount,
-            fractionOfTotalShares: fractionOfTotalShares,
+            vaultSharesToBeBurnt: vaultSharesToBeBurnt,
             withdrawChainId: withdrawChainId,
             isDeposit: isDeposit,
             totalAssetsAfter: totalAssetsAfter,
@@ -258,6 +258,10 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             }
             // Process the confirmation
             if (confirmation.crossChainTxId == 0) {
+                if (confirmation.vaultSharesToBeBurnt > 0) {
+                    pendingWithdrawals[confirmation.user] -= confirmation
+                        .vaultSharesToBeBurnt;
+                }
                 // update total assets
                 latestTotalAssetsUpdateFromStrategy = confirmation
                     .totalAssetsAfter;
@@ -282,7 +286,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                     confirmation.withdrawZRC20,
                     confirmation.withdrawERC20,
                     confirmation.amount,
-                    confirmation.fractionOfTotalShares,
+                    confirmation.vaultSharesToBeBurnt,
                     confirmation.withdrawChainId,
                     confirmation.totalAssetsAfter,
                     confirmation.crossChainTxId,
@@ -586,7 +590,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
      * @param user The address of the user receiving the withdrawn assets.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param shares The amount of shares being withdrawn.
+     * @param vaultSharesToBeBurnt The amount of shares being withdrawn.
      * @param userChainId The chain ID of the user's connected chain.
      * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
      */
@@ -594,28 +598,32 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         address user,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 shares,
+        uint256 vaultSharesToBeBurnt,
         uint256 minimumOut,
         uint32 userChainId,
         uint16 slippage,
         bytes32 crossChainTxId
     ) internal override {
-        if (shares == 0) {
+        if (vaultSharesToBeBurnt == 0) {
             revert AmountCantBeZero();
         }
         uint256 maxShares = maxRedeem(user);
-        if (shares > maxShares - pendingWithdrawals[user]) {
-            revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
+        if (vaultSharesToBeBurnt > maxShares - pendingWithdrawals[user]) {
+            revert ERC4626ExceededMaxRedeem(
+                user,
+                vaultSharesToBeBurnt,
+                maxShares
+            );
         }
 
-        pendingWithdrawals[user] += shares;
+        pendingWithdrawals[user] += vaultSharesToBeBurnt;
 
         _divestFromStrategy(
             user,
             user,
             withdrawZRC20,
             withdrawERC20,
-            shares,
+            vaultSharesToBeBurnt,
             minimumOut,
             userChainId,
             slippage,
@@ -627,7 +635,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
      * @dev Initiates the process to divest assets from the strategy on a connected chain.
      * @param user The address of the user requesting the withdrawal.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param shares The amount of assets to be withdrawn.
+     * @param vaultSharesToBeBurnt The amount of assets to be withdrawn.
      * @param withdrawChainId The chain ID of the chain where the withdrawal is taking place.
      * @notice Sends a cross-chain call to the strategy to initiate divestment, ensuring gas fees are handled appropriately.
      */
@@ -636,7 +644,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 shares,
+        uint256 vaultSharesToBeBurnt,
         uint256 minimumOut,
         uint32 withdrawChainId,
         uint16 slippage,
@@ -646,14 +654,17 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
-        uint256 fractionOfTotalShares = (shares * 1e18 + totalSupply() / 2) /
-            totalSupply(); // // we add totalSupply() / 2 to prevent truncation errors
+        uint256 fractionOfTotalShares = (vaultSharesToBeBurnt *
+            1e18 +
+            totalSupply() /
+            2) / totalSupply(); // // we add totalSupply() / 2 to prevent truncation errors
 
         bytes memory outgoingMessage = abi.encode(
             user,
             receiver,
             withdrawZRC20,
             withdrawERC20,
+            vaultSharesToBeBurnt,
             fractionOfTotalShares,
             minimumOut,
             withdrawChainId,
@@ -669,7 +680,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             abi.encode(
                 "_divestConnectedChainStrategyFailed",
                 crossChainTxId,
-                shares,
+                vaultSharesToBeBurnt,
                 user,
                 withdrawZRC20,
                 withdrawERC20,
@@ -693,7 +704,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
      * @dev Confirms the withdrawal process by burning shares, applying fees, and returning assets to the user.
      * @param user The address of the user requesting the withdrawal.
      * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param fractionOfTotalShares The amount of assets to be withdrawn.
+     * @param vaultSharesToBeBurnt The amount of assets to be withdrawn.
      * @param userChainId The chain ID of the user's connected chain.
      * @param totalAssetsAfterWithdraw The total assets held by the vault after the withdrawal.
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
@@ -704,20 +715,14 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amountWithdrawn,
-        uint256 fractionOfTotalShares,
+        uint256 vaultSharesToBeBurnt,
         uint32 userChainId,
         uint256 totalAssetsAfterWithdraw,
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
-        uint256 shares = (fractionOfTotalShares *
-            totalSupply() +
-            totalSupply() /
-            2) / 1e18; // we add totalSupply() to prevent truncation errors
-        if (shares > balanceOf(user)) {
-            shares = balanceOf(user);
-        }
-        uint256 fractionOfUserShares = (shares * 1e18) / balanceOf(user);
+        uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
+            balanceOf(user);
         uint256 principalWithdrawn = (fractionOfUserShares *
             userPrincipal[user]) / 1e18;
         uint256 feeToWithdraw;
@@ -732,12 +737,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         totalPrincipal -= principalWithdrawn;
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
-        _burn(user, shares);
-        if (pendingWithdrawals[user] >= shares) {
-            pendingWithdrawals[user] -= shares;
-        } else {
-            pendingWithdrawals[user] = 0; // Prevent underflow
-        }
+        _burn(user, vaultSharesToBeBurnt);
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
             userChainId,
@@ -748,7 +748,12 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             slippage
         );
 
-        emit Withdrawn(user, amountWithdrawn, shares, _crossChainTxId);
+        emit Withdrawn(
+            user,
+            amountWithdrawn,
+            vaultSharesToBeBurnt,
+            _crossChainTxId
+        );
     }
 
     /**
