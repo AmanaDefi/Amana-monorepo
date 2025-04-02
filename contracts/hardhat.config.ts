@@ -128,6 +128,17 @@ const config: HardhatUserConfig = {
           viaIR: true,
         },
       },
+      "contracts/AmanaConnectedChainVaultV1.sol": {
+        version: "0.8.26",
+        settings: {
+          evmVersion: "paris",
+          optimizer: {
+            enabled: true,
+            runs: 175,
+          },
+          viaIR: true,
+        },
+      },
       "contracts/AmanaZetachainVault.sol": {
         version: "0.8.26",
         settings: {
