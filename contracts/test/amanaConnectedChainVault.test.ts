@@ -440,7 +440,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await gasTank.deployed();
 
     const WithdrawHelper = await ethers.getContractFactory("WithdrawHelper");
-    const withdrawHelper = await WithdrawHelper.deploy(ZEVM_GATEWAY_ADDRESS, gasTank.address);
+    const withdrawHelper = await WithdrawHelper.deploy(ZEVM_GATEWAY_ADDRESS);
     await withdrawHelper.deployed();
 
     const ZapContract = await ethers.getContractFactory("ZapContract", owner);
@@ -458,7 +458,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
     await amanaRegistry.deployed();
 
-    await withdrawHelper.setRegistry(amanaRegistry.address);
 
     const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
 
@@ -471,7 +470,8 @@ describe("AmanaConnectedChainVault Tests", function () {
         amanaRegistry.address,
         FEE_RATE,                          // Performance fee rate
         GAS_LIMIT_FOR_WITHDRAW_AND_CALL,   // Gas limit for withdraw and call
-        GAS_LIMIT_FOR_CALL                 // Gas limit for call
+        GAS_LIMIT_FOR_CALL,                 // Gas limit for call
+        false
       ],
       {
         initializer: "initialize",

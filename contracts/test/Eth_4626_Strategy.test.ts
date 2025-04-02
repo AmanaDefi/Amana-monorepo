@@ -16,6 +16,7 @@ const GATEWAY_ADDRESS = "0x0c487a766110c85d301d96e33579c5b317fa4995";
 const AMANA_VAULT_ADDRESS = "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B";
 const OWNER_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
+const WITHDRAW_HELPER_ADDRESS = "0x1F2C8D4A3E5B7C6D9F2A0E4B5C7F3D8E1A6B8C9F";
 
 let owner: Signer;
 let user1: Signer;
@@ -71,7 +72,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       AMANA_VAULT_ADDRESS,
       mockVault.address,
       GATEWAY_ADDRESS,
-      WETH_ADDRESS
+      WETH_ADDRESS,
+      WITHDRAW_HELPER_ADDRESS
     );
     await strategy.deployed();
 
@@ -494,7 +496,8 @@ describe("Eth_4626_Strategy - Full Coverage", function () {
       AMANA_VAULT_ADDRESS,
       mockVault.address,
       GATEWAY_ADDRESS,
-      WETH_ADDRESS
+      WETH_ADDRESS,
+      WITHDRAW_HELPER_ADDRESS
     );
     await newStrategy.deployed();
 

@@ -17,6 +17,8 @@ const ERC20_CUSTODY_ADDRESS = "0xD80BE3710F08D280F51115e072e5d2a778946cd7";
 const INPUT_TOKEN_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const RECEIPT_TOKEN_ADDRESS = "0x169A5f124A3663a25313Ee0F7f3Bff028728867f";
 const GAUGE_ADDRESS = "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185";
+const WITHDRAW_HELPER_ADDRESS = "0x1F2C8D4A3E5B7C6D9F2A0E4B5C7F3D8E1A6B8C9F";
+
 const FORK_BLOCK = 21916968;
 
 let owner: Signer;
@@ -79,7 +81,8 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       INPUT_TOKEN_ADDRESS,
       RECEIPT_TOKEN_ADDRESS,
       GAUGE_ADDRESS,
-      GATEWAY_ADDRESS
+      GATEWAY_ADDRESS,
+      WITHDRAW_HELPER_ADDRESS
     );
     await strategy.deployed();
     stakingEnabled = await strategy.stakingEnabled();
@@ -619,7 +622,8 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       INPUT_TOKEN_ADDRESS,
       RECEIPT_TOKEN_ADDRESS,
       GAUGE_ADDRESS,
-      GATEWAY_ADDRESS
+      GATEWAY_ADDRESS,
+      WITHDRAW_HELPER_ADDRESS
     );
     await newStrategy.deployed();
 
