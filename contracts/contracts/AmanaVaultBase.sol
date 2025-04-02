@@ -506,7 +506,7 @@ abstract contract AmanaVaultBase is
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256 amountOut) {
-        if (IAmanaRegistry(registry).withdrawHelper() == address(0))
+        if (IAmanaRegistry(registry).swapHelper() == address(0))
             revert InvalidAddress();
 
         // Step 1: Transfer tokens to the helper contract
