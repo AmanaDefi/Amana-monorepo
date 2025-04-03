@@ -456,38 +456,17 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         uint32 userChainId,
         bytes32 crossChainTxId
     ) internal override {
-        if (
-            IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                .withdrawHelper() == address(0)
-        ) revert InvalidAddress();
+        if (IAmanaRegistry(registry).withdrawHelper() == address(0))
+            revert InvalidAddress();
 
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
-            IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                .withdrawHelper(),
+            IAmanaRegistry(registry).withdrawHelper(),
             amount
         );
         if (depositFeePaidFromGasTank) {
-            IWithdrawHelper(
-                IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                    .withdrawHelper()
-            ).handleGasFeeAndWithdrawAndCall(
-                    strategyAddress,
-                    receiver,
-                    userZRC20,
-                    userERC20,
-                    address(asset()),
-                    amount,
-                    userChainId,
-                    crossChainTxId,
-                    gasLimitForWithdrawAndCall,
-                    0x57981bb54a488861EB4f155e5001a0825D86Ff86
-                );
-        } else {
-            IWithdrawHelper(
-                IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                    .withdrawHelper()
-            ).handleWithdrawAndCall(
+            IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+                .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
                     receiver,
                     userZRC20,
@@ -498,7 +477,22 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                     userChainId,
                     crossChainTxId,
                     gasLimitForWithdrawAndCall,
-                    0x57981bb54a488861EB4f155e5001a0825D86Ff86
+                    registry
+                );
+        } else {
+            IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+                .handleWithdrawAndCallToStrategy(
+                    strategyAddress,
+                    receiver,
+                    userZRC20,
+                    userERC20,
+                    address(asset()),
+                    amount,
+                    minimumOut,
+                    userChainId,
+                    crossChainTxId,
+                    gasLimitForWithdrawAndCall,
+                    registry
                 );
         }
         emit CrossChainInvestSent(crossChainTxId);
@@ -731,10 +725,15 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 ((amountWithdrawn - principalWithdrawn) * perfFee) /
                 10000;
             emit PerformanceFeePaid(user, feeToWithdraw);
-            SafeERC20.safeTransfer(IERC20(asset()), treasury, feeToWithdraw);
+            SafeERC20.safeTransfer(
+                IERC20(asset()),
+                IAmanaRegistry(registry).treasury(),
+                feeToWithdraw
+            );
         }
         userPrincipal[user] -= principalWithdrawn;
         totalPrincipal -= principalWithdrawn;
+        pendingWithdrawals[user] -= vaultSharesToBeBurnt;
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(user, vaultSharesToBeBurnt);
@@ -769,7 +768,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     ) private returns (address gasZRC20, uint256 gasFee) {
         (gasZRC20, gasFee) = IZRC20(address(asset()))
             .withdrawGasFeeWithGasLimit(gasLimit);
-        gasTank.getGas(gasZRC20, gasFee);
+        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
         approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
     }
 
@@ -798,14 +797,11 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         (address gasZRC20, uint256 gasFee) = IZRC20(targetChainZRC20)
             .withdrawGasFeeWithGasLimit(gasLimitForCall);
 
-        IGasTank(
-            IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86).gasTank()
-        ).getGas(gasZRC20, gasFee);
+        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
         approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
 
         bytes memory recipient = abi.encodePacked(
-            IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                .withdrawalReceiver()
+            IAmanaRegistry(registry).withdrawalReceiver()
         );
 
         bytes memory outgoingMessage = abi.encode(

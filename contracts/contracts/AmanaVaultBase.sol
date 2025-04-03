@@ -469,7 +469,7 @@ abstract contract AmanaVaultBase is
 
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
-                .handleGasFeeAndWithdrawAndCall(
+                .handleGasFeeAndWithdrawAndCallToReceiver(
                     IAmanaRegistry(registry).withdrawalReceiver(),
                     receiver,
                     withdrawZRC20,
@@ -478,7 +478,6 @@ abstract contract AmanaVaultBase is
                     outputAmount,
                     userChainId,
                     _crossChainTxId,
-                    gasLimitForWithdrawAndCall,
                     registry
                 );
         }

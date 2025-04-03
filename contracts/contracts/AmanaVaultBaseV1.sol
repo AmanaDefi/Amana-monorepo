@@ -40,12 +40,12 @@ abstract contract AmanaVaultBaseV1 is
 
     // Variables
     address public strategyAddress;
-    address public treasury;
-    address public withdrawalReceiver;
+    address public registry;
+    address public withdrawalReceiver; // not used anymore, but kept for backward compatibility
     uint16 public perfFee;
     uint256 public totalPrincipal;
     mapping(address => uint256) internal userPrincipal;
-    IGasTank gasTank;
+    IGasTank gasTank; // not used anymore, but kept for backward compatibility
     uint32 public gasLimitForWithdrawAndCall; // this is used in two places - for investing into the strategy and returning funds to the user
     uint32 public gasLimitForCall; // this is used in two places - for the switchStrategy function (divest and invest) and for a call to divest
     bool public depositsPaused;
@@ -95,31 +95,26 @@ abstract contract AmanaVaultBaseV1 is
      * @param name_ Name of the vault token.
      * @param symbol_ Symbol of the vault token.
      * @param asset_ The underlying asset for the vault.
-     * @param treasury_ Treasury address for performance fees.
+     * @param registry_ Registry address
      * @param perfFee_ Performance fee rate.
-     * @param gasTank_ Gas tank contract address.
      */
     function initialize(
         string memory name_,
         string memory symbol_,
         IERC20 asset_,
-        address treasury_,
+        address registry_,
         uint16 perfFee_,
-        address gasTank_,
-        address withdrawalReceiver_,
         uint32 gasLimitForWithdrawAndCall_,
         uint32 gasLimitForCall_
     ) external initializer {
-        if (treasury_ == address(0)) revert InvalidAddress();
+        if (registry_ == address(0)) revert InvalidAddress();
         __ERC20_init(name_, symbol_);
         __ERC4626_init(asset_);
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        treasury = treasury_;
+        registry = registry_;
         perfFee = perfFee_;
         totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
-        gasTank = IGasTank(gasTank_);
-        withdrawalReceiver = withdrawalReceiver_;
         gasLimitForWithdrawAndCall = gasLimitForWithdrawAndCall_;
         gasLimitForCall = gasLimitForCall_;
         emit VaultInitialized(decimals(), perfFee_);
@@ -163,28 +158,9 @@ abstract contract AmanaVaultBaseV1 is
         emit StrategyUpdated(_strategyAddress);
     }
 
-    /**
-     * @dev Updates the treasury address for the vault. Can only be called by the owner.
-     * @param _treasury The address of the new treasury.
-     * @notice Reverts if the treasury address is zero.
-     */
-    function updateTreasuryAddress(address _treasury) external onlyOwner {
-        if (_treasury == address(0)) revert InvalidAddress();
-        treasury = _treasury;
-        emit TreasuryUpdated(_treasury);
-    }
-
-    /**
-     * @dev Updates the withdrawalReceiver address for the vault. Can only be called by the owner.
-     * @param _withdrawalReceiver The address of the new withdrawalReceiver.
-     * @notice Reverts if the withdrawalReceiver address is zero.
-     */
-    function updateWithdrawalReceiverAddress(
-        address _withdrawalReceiver
-    ) external onlyOwner {
-        if (_withdrawalReceiver == address(0)) revert InvalidAddress();
-        withdrawalReceiver = _withdrawalReceiver;
-        emit WithdrawalReceiverUpdated(_withdrawalReceiver);
+    function setRegistry(address _registry) external onlyOwner {
+        if (_registry == address(0)) revert InvalidAddress();
+        registry = _registry;
     }
 
     /**
@@ -197,17 +173,6 @@ abstract contract AmanaVaultBaseV1 is
         if (newFeeRate > 2000) revert FeeExceedsLimit();
         perfFee = newFeeRate;
         emit PerformanceFeeUpdated(newFeeRate);
-    }
-
-    /**
-     * @dev Sets the gas tank address for the vault. Can only be called by the owner.
-     * @param newGasTank The address of the new gas tank.
-     * @notice Reverts if the gas tank address is zero.
-     */
-    function setGasTank(address newGasTank) external onlyOwner {
-        if (newGasTank == address(0)) revert InvalidAddress();
-        gasTank = IGasTank(newGasTank);
-        emit GasTankUpdated(newGasTank);
     }
 
     /**
@@ -493,14 +458,11 @@ abstract contract AmanaVaultBaseV1 is
             );
         if (userChainId == uint32(block.chainid)) {
             IERC20(address(asset())).approve(
-                IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                    .zapContract(),
+                IAmanaRegistry(registry).zapContract(),
                 amount
             );
-            IZapContract(
-                IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                    .zapContract()
-            ).zapSwapAndReturnToUser(
+            IZapContract(IAmanaRegistry(registry).zapContract())
+                .zapSwapAndReturnToUser(
                     amount,
                     address(this),
                     address(asset()),
@@ -510,26 +472,20 @@ abstract contract AmanaVaultBaseV1 is
                 );
         } else {
             // Cross-chain transfer
-            if (
-                IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                    .withdrawHelper() == address(0)
-            ) revert InvalidAddress();
+            if (IAmanaRegistry(registry).withdrawHelper() == address(0))
+                revert InvalidAddress();
 
             // Step 1: Transfer tokens to the helper contract
             SafeERC20.safeTransfer(
                 IERC20(withdrawZRC20),
-                IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                    .withdrawHelper(),
+                IAmanaRegistry(registry).withdrawHelper(),
                 outputAmount
             );
 
             // Step 2: Call helper with required arguments
-            IWithdrawHelper(
-                IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                    .withdrawHelper()
-            ).handleGasFeeAndWithdrawAndCall(
-                    IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                        .withdrawalReceiver(),
+            IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+                .handleGasFeeAndWithdrawAndCallToReceiver(
+                    IAmanaRegistry(registry).withdrawalReceiver(),
                     receiver,
                     withdrawZRC20,
                     withdrawERC20,
@@ -537,8 +493,7 @@ abstract contract AmanaVaultBaseV1 is
                     outputAmount,
                     userChainId,
                     _crossChainTxId,
-                    gasLimitForWithdrawAndCall,
-                    0x57981bb54a488861EB4f155e5001a0825D86Ff86
+                    registry
                 );
         }
         emit ReturnFundsToUserSent(_crossChainTxId);
@@ -564,23 +519,18 @@ abstract contract AmanaVaultBaseV1 is
         address vault,
         uint16 maxDeadline
     ) internal returns (uint256) {
-        if (
-            IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                .swapHelper() == address(0)
-        ) revert InvalidAddress();
+        if (IAmanaRegistry(registry).swapHelper() == address(0))
+            revert InvalidAddress();
 
         // Step 1: Transfer tokens to the helper contract
         SafeERC20.safeTransfer(
             IERC20(zrc20),
-            IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                .swapHelper(),
+            IAmanaRegistry(registry).swapHelper(),
             amount
         );
 
-        uint256 amountOut = ISwapHelper(
-            IAmanaRegistry(0x57981bb54a488861EB4f155e5001a0825D86Ff86)
-                .swapHelper()
-        ).swap(
+        uint256 amountOut = ISwapHelper(IAmanaRegistry(registry).swapHelper())
+            .swap(
                 zrc20,
                 amount,
                 targetZRC20,
@@ -592,6 +542,13 @@ abstract contract AmanaVaultBaseV1 is
         return amountOut;
     }
 
+    /**
+     * @dev Approves or increases the allowance of a token for a spender.
+     * @param token The token to approve.
+     * @param spender The address of the spender.
+     * @param amount The amount to approve.
+     * @notice Handles USDT-like tokens by resetting the allowance to zero first.
+     */
     function approveOrIncreaseAllowance(
         IERC20 token,
         address spender,
