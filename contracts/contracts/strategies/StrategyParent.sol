@@ -300,7 +300,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 "_investConfirmFailed",
                 _crossChainTxId,
                 _executionNonce,
-                amount
+                amount,
+                receiver,
+                0 // vaultSharesToBeBurnt
             ),
             uint256(1000000)
         );
@@ -547,7 +549,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 "_handleRevertOnSendTotalUnderlyingAssets",
                 bytes32(0),
                 nonceToUse,
-                0
+                totalUnderlyingAssets(),
+                user,
+                vaultSharesToBeBurnt
             ),
             1_000_000
         );
@@ -594,7 +598,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             bytes32 _crossChainTxId,
             uint256 _executionNonce,
             uint256 amount,
-            address user,
+            address userOrReceiver,
             uint256 vaultSharesToBeBurnt
         ) = abi.decode(
                 context.revertMessage,
@@ -611,7 +615,11 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 0);
-            _sendUpdateToVault(user, vaultSharesToBeBurnt, _executionNonce);
+            _sendUpdateToVault(
+                userOrReceiver,
+                vaultSharesToBeBurnt,
+                _executionNonce
+            );
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
