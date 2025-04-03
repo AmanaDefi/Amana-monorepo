@@ -16,12 +16,19 @@ contract WithdrawHelper {
     using SafeERC20 for IZRC20;
 
     address public immutable GATEWAY_ADDRESS;
+    uint256 public gasLimitForWithdrawAndCallToReceiver = 500000;
 
     constructor(address _gatewayAddress) {
         GATEWAY_ADDRESS = _gatewayAddress;
     }
 
-    function handleGasFeeAndWithdrawAndCall(
+    function updateGasLimitForWithdrawAndCallToReceiver(
+        uint256 _gasLimitForWithdrawAndCallToReceiver
+    ) external {
+        gasLimitForWithdrawAndCallToReceiver = _gasLimitForWithdrawAndCallToReceiver;
+    }
+
+    function handleGasFeeAndWithdrawAndCallToReceiver(
         address targetAddress,
         address receiver,
         address withdrawZRC20,
@@ -30,7 +37,6 @@ contract WithdrawHelper {
         uint256 amount,
         uint32 userChainId,
         bytes32 _crossChainTxId,
-        uint32 gasLimitForWithdrawAndCall,
         address registry
     ) external {
         bytes memory outgoingMessage = abi.encode(
@@ -42,7 +48,7 @@ contract WithdrawHelper {
 
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
-            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCallToReceiver);
 
         IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
 
@@ -83,12 +89,86 @@ contract WithdrawHelper {
             amount,
             tokenToTransfer,
             outgoingMessage,
+            CallOptions(gasLimitForWithdrawAndCallToReceiver, false),
+            revertOptions
+        );
+    }
+
+    function handleGasFeeAndWithdrawAndCallToStrategy(
+        address targetAddress,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        address tokenToTransfer,
+        uint256 amount,
+        uint256 minimumOut,
+        uint32 userChainId,
+        bytes32 _crossChainTxId,
+        uint32 gasLimitForWithdrawAndCall,
+        address registry
+    ) external {
+        // Request gas
+        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
+            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+
+        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
+
+        approveOrIncreaseAllowance(
+            IERC20(tokenToTransfer),
+            GATEWAY_ADDRESS,
+            amount + gasFee
+        );
+
+        if (gas_zrc20 != tokenToTransfer) {
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                GATEWAY_ADDRESS,
+                gasFee
+            );
+        }
+        bytes memory outgoingMessage = abi.encode(
+            address(0),
+            receiver,
+            address(0),
+            address(0),
+            amount,
+            0, // on withdrawals this is used for fractionOfTotalShares
+            minimumOut,
+            0, // chain ID
+            true,
+            _crossChainTxId,
+            0 // slippage
+        );
+
+        bytes memory recipient = abi.encodePacked(targetAddress);
+
+        RevertOptions memory revertOptions = RevertOptions({
+            revertAddress: msg.sender,
+            callOnRevert: true,
+            abortAddress: msg.sender,
+            revertMessage: abi.encode(
+                "_returnFundsToUserFailed",
+                _crossChainTxId,
+                amount,
+                receiver,
+                withdrawZRC20,
+                withdrawERC20,
+                userChainId
+            ),
+            onRevertGasLimit: 0
+        });
+
+        IGatewayZEVM(GATEWAY_ADDRESS).withdrawAndCall(
+            recipient,
+            amount,
+            tokenToTransfer,
+            outgoingMessage,
             CallOptions(gasLimitForWithdrawAndCall, false),
             revertOptions
         );
     }
 
-    function handleWithdrawAndCall(
+    function handleWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,
         address withdrawZRC20,
