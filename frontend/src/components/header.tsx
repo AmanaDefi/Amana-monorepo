@@ -8,17 +8,20 @@ import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import MobileMenuModal from "@/components/modal/MobileMenuModal";
 // import ConnectButton from "./ConnectButton";
 import { useState } from "react";
-import { ConnectButton } from "thirdweb/react";
+import { ConnectButton, useConnectModal } from "thirdweb/react";
 import { client } from "@/utils/client";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { ACCOUNT_ABSTRACTION_CONFIG, SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import AccountModeModal from "./modal/AccountModal";
+import { AccountMode, useAcountMode } from "@/providers/AccountProvider";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 export const wallets = [
-  //   inAppWallet({
-  //     auth: {
-  //       options: ["google", "email", "passkey"],
-  //     },
-  // smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
-  //   }),
+  inAppWallet({
+    auth: {
+      options: ["google", "email", "passkey"],
+    },
+    smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
+  }),
   createWallet("io.metamask"),
   createWallet("com.coinbase.wallet"),
   createWallet("me.rainbow"),
@@ -30,7 +33,25 @@ export const wallets = [
 const Header = () => {
   const path = usePathname();
   const router = useRouter();
-  const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
+
+  const {
+    selectedMode,
+    setSelectedMode,
+    isModalOpen: isAccountModalOpen,
+    setIsModalOpen: setIsAccountModalOpen
+  } = useAcountMode()
+  const {
+    selectedChain,
+    walletAddress,
+    balance,
+    isModalOpen,
+    connectSolana,
+    connectEthereum,
+    disconnectWallet,
+    setIsModalOpen,
+  } = useMultiChain();
+
+   const {} = useConnectModal();
 
   return (
     <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">
@@ -47,6 +68,13 @@ const Header = () => {
               onClick={() => router.push("/")}
             >
               Vaults
+            </span>
+            <span
+              className={`cursor-pointer ${path === "/wallet" ? "font-bold text-themeColor" : ""
+                }`}
+              onClick={() => router.push("/wallet")}
+            >
+              Wallet
             </span>
             <span
               className={`cursor-pointer ${path === "/about" ? "font-bold text-themeColor" : ""
@@ -75,6 +103,13 @@ const Header = () => {
           <ConnectButton wallets={wallets} chains={SUPPORTED_CHAINS} client={client} />
         </div>
         <MobileMenuModal />
+        <AccountModeModal
+          isOpen={isAccountModalOpen}
+          onClose={() => setIsAccountModalOpen(false)}
+          selectedMode={selectedMode}
+          onSelectMode={(mode: AccountMode) => setSelectedMode(mode)}
+          disconnectWallet={disconnectWallet}
+        />
       </div>
     </header>
   )

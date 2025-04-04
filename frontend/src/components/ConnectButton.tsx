@@ -7,6 +7,8 @@ import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useEffect } from "react";
+import AccountModeModal from "./modal/AccountModal";
+import { AccountMode, useAcountMode } from "@/providers/AccountProvider";
 export default function ConnectButton() {
   const {
     selectedChain,
@@ -18,6 +20,13 @@ export default function ConnectButton() {
     disconnectWallet,
     setIsModalOpen,
   } = useMultiChain();
+
+  const {
+    selectedMode,
+    setSelectedMode,
+    isModalOpen: isAccountModalOpen,
+    setIsModalOpen: setIsAccountModalOpen
+  } = useAcountMode();
 
   return (
     <>
@@ -70,6 +79,13 @@ export default function ConnectButton() {
           )}
         </div>
       )}
+      <AccountModeModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        selectedMode={selectedMode}
+        onSelectMode={(mode: AccountMode) => setSelectedMode(mode)}
+        disconnectWallet={disconnectWallet}
+      />
       <SelectNetworkModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

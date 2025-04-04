@@ -85,6 +85,7 @@ export type Balance = {
 }
 
 export interface Token {
+  name?: string;
   address: Address | string;
   symbol: string;
   decimals: number;
@@ -93,6 +94,7 @@ export interface Token {
   balance: Balance;
   isNative: boolean;
   ZRC20equivalent?: Address;
+  chainId?: number;
 }
 
 export interface TokenByAddress {

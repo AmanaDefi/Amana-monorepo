@@ -1,10 +1,10 @@
-import React, {PropsWithChildren, useEffect, useState} from "react";
+import React, { createContext, Dispatch, PropsWithChildren, SetStateAction, useContext, useEffect, useState } from "react";
 import mixpanel from "mixpanel-browser";
 import { useActiveAccount, useConnectModal, useActiveWalletConnectionStatus } from "thirdweb/react";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "../utils/client";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
 // Explicitly type the shared configuration for ConnectButton and connect
 export const connectModalConfig: {
@@ -32,12 +32,32 @@ export const connectModalConfig: {
     connectModal: { size: "compact" }, // Explicitly set the type to "compact"
 };
 
+export type AccountMode = "wallet" | "passkey" | null;
+
+interface AccountModeContextType {
+    selectedMode: AccountMode;
+    setSelectedMode: Dispatch<SetStateAction<AccountMode>>
+    isModalOpen: boolean;
+    setIsModalOpen: Dispatch<SetStateAction<boolean>>;
+}
+
+const AccountModeContext = createContext<AccountModeContextType | undefined>(undefined);
+export const useAcountMode = () => {
+    const context = useContext(AccountModeContext);
+    if (!context) {
+        throw new Error("useMultiChain must be used within MultiChainProvider");
+    }
+    return context;
+};
+
 export default function AccountProvider({ children }: PropsWithChildren) {
     const account = useActiveAccount();
     const { connect, isConnecting } = useConnectModal(); // Access the connect function
     const connectionStatus = useActiveWalletConnectionStatus();
     const [initialCheckCount, setInitialCheckCount] = useState(0);
     const [isThirdwebReady, setIsThirdwebReady] = useState(false);
+    const [selectedMode, setSelectedMode] = useState<AccountMode>(null);
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
     const route = usePathname();
 
@@ -84,5 +104,13 @@ export default function AccountProvider({ children }: PropsWithChildren) {
         // }
     }, [route, account, connect, connectionStatus, initialCheckCount, isConnecting, isThirdwebReady]);
 
-    return <>{children}</>
+    return (
+        <AccountModeContext.Provider
+            value={{
+                selectedMode,
+                setSelectedMode,
+                isModalOpen,
+                setIsModalOpen
+            }}>{children}
+        </AccountModeContext.Provider>)
 }

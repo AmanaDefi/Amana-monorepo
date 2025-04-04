@@ -40,8 +40,8 @@ const ClientLayout = ({
         <QueryClientProvider client={queryClient}>
           <SolanaWalletProvider>
             <ThirdwebProvider>
-              <AccountProvider>
-                <MultiChainProvider>
+              <MultiChainProvider>
+                <AccountProvider>
                   <TokenPriceProvider>
                     <main className="min-h-screen flex flex-col relative overflow-hidden">
                       <div className="flex flex-col flex-1">
@@ -54,8 +54,8 @@ const ClientLayout = ({
                       </div>
                     </main>
                   </TokenPriceProvider>
-                </MultiChainProvider>
-              </AccountProvider>
+                </AccountProvider>
+              </MultiChainProvider>
               <ToastContainer />
             </ThirdwebProvider>
           </SolanaWalletProvider>

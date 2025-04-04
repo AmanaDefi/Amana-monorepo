@@ -35,7 +35,7 @@ export default function MobileMenuModal() {
                         }`}
                         onClick={() => router.push("/buy")}
                     >
-                            Fund Wallet
+                            Wallet
                         </span> */}
                     <span
                         className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-themeColor" : ""
@@ -50,6 +50,13 @@ export default function MobileMenuModal() {
                         onClick={() => router.push("/leaderboard")}
                     >
                             Leaderboard
+                    </span>
+                    <span
+                        className={`cursor-pointer py-6 ${path === "/roadmap" ? "font-bold text-themeColor" : ""
+                        }`}
+                        onClick={() => router.push("/roadmap")}
+                    >
+                            Roadmap
                     </span>
                 </nav>
             </div>
