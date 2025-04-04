@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ICompoundVault.sol";
 import "../interfaces/ISwapRouter.sol";
 import "./ERC20StrategyParent.sol";
+import "../interfaces/ISwapHelper.sol";
 
 // Polygon USDT receiptToken: 0xaeB318360f27748Acb200CE616E389A6C9409a07
 // Polygon COMP token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
@@ -29,7 +30,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ICompoundVault public immutable receiptToken;
     ICometRewards public immutable compoundRewards;
     ISwapRouter public immutable swapRouter;
-
+    address public swapHelperPolygon;
     address public constant COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c; // COMP on Polygon
     address public constant UNISWAP_V3_ROUTER =
         0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Polygon
@@ -49,7 +50,8 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         address _inputTokenAddress,
         address _receiptTokenAddress,
         address _gateway,
-        address _withdrawHelper
+        address _withdrawHelper,
+        address _swapHelperPolygon
     )
         StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
@@ -57,6 +59,13 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         receiptToken = ICompoundVault(_receiptTokenAddress);
         compoundRewards = ICometRewards(COMET_REWARDS);
         swapRouter = ISwapRouter(UNISWAP_V3_ROUTER);
+        swapHelperPolygon = _swapHelperPolygon;
+    }
+
+    function updateSwapHelperPolygon(
+        address _swapHelperPolygon
+    ) external onlyOwner {
+        swapHelperPolygon = _swapHelperPolygon;
     }
 
     /// @notice Claims COMP rewards from Compound
@@ -81,24 +90,23 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ) internal returns (uint256 amountOut) {
         require(amountIn > 0, "Amount must be greater than zero");
 
-        // Approve Uniswap V3 Router to spend COMP
-        IERC20(COMP).safeIncreaseAllowance(UNISWAP_V3_ROUTER, amountIn);
+        SafeERC20.safeTransfer(
+            IERC20(zrc20),
+            IAmanaRegistry(registry).swapHelper(),
+            amount
+        );
 
-        // Create swap parameters
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: COMP,
-                tokenOut: address(inputToken),
-                fee: 500, // 0.05% fee tier
-                recipient: address(this),
-                deadline: block.timestamp + 60, // 1-minute deadline
-                amountIn: amountIn,
-                amountOutMinimum: minUsdcOut,
-                sqrtPriceLimitX96: 0 // No price limit
-            });
-
-        // Execute swap
-        amountOut = swapRouter.exactInputSingle(params);
+        uint256 amountOut = ISwapHelper(IAmanaRegistry(registry).swapHelper())
+            .swap(
+                zrc20,
+                amount,
+                targetZRC20,
+                slippageBps,
+                vault,
+                maxDeadline,
+                "" // empty bytes param for future-proofing
+            );
+        return amountOut;
 
         require(amountOut >= minUsdcOut, "Insufficient output");
     }
