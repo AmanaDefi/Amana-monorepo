@@ -286,7 +286,6 @@ export default function VaultInputs({
     console.log('Double Box - Starting getWithdrawOutputAmount:', {
       inputAmountValue: inputAmountValue.toString(),
     });
-    console.log("inputAmountValue", inputAmountValue);
     const assetsAmount = await getAssetsFromShares(inputAmountValue, vaultData);
     console.log('Double Box - Assets from shares:', {
       assetsAmount: assetsAmount.toString(),
@@ -304,10 +303,8 @@ export default function VaultInputs({
     console.log('Double Box - Conversion amounts:', {
       tokenConversionAmount: tokenConversionAmount.toString(),
     });
-    console.log("assetsAmount", assetsAmount);
-    console.log("vaultTokenPrice", vaultTokenPrice);
+
     const assetsConversionInUSD = (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
-    console.log("assetsConversionInUSD", assetsConversionInUSD);
     const tokenConversionFromWei = Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
     const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
 
