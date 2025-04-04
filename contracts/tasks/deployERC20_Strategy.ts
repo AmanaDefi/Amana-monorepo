@@ -13,6 +13,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       `Wallet not found. Please, run "npx hardhat account --save" or set PRIVATE_KEY env variable (for example, in a .env file)`
     );
   }
+  const currentNonce = await hre.ethers.provider.getTransactionCount(signer.address);
+  console.log(`📟 Current on-chain nonce for ${signer.address}: ${currentNonce}`);
 
   // Fetch the vault address argument required for the BaseAaveStrategy constructor
   const contractName = args.contract;
@@ -46,6 +48,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const factory = await hre.ethers.getContractFactory(contractName);
   const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway, withdrawHelper);
   console.log("Contract deployed, waiting for confirmations...");
+  console.log(`📦 Deploy tx sent with nonce: ${contract.deployTransaction.nonce}`);
 
   // Wait for contract to be deployed before proceeding
   await contract.deployed();
