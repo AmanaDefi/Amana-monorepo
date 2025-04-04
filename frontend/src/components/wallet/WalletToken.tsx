@@ -11,11 +11,22 @@ export default function WalletToken({ token }: WalletTokenProps) {
         <div className="grid grid-cols-4 gap-4 rounded mt-4 shadow-md">
             <div className="grid-item p-4 rounded-lg flex items-center gap-2">
                 <div className="relative w-8 h-8 rounded-full">
-                    <Image src={token.imgURL} fill className="rounded-full" alt="Token Image" />
+                    <Image
+                        src={token.imgURL}
+                        fill
+                        className="rounded-full"
+                        alt={`${token.symbol} logo`}
+                        onError={(e) => {
+                            // Fallback to a default image if loading fails
+                            e.currentTarget.src = "/coin.svg";
+                        }}
+                        placeholder="blur"
+                        blurDataURL="data:image/svg+xml;base64,..."
+                    />
                 </div>
                 <div>
-                    {token.name}
-                    {token.balance.formatted} {token.symbol}
+                    <div>{token.name}</div>
+                    <div className="text-gray-400 text-sm">{token.balance.formatted} {token.symbol}</div>
                 </div>
             </div>
             <div className="grid-item flex items-center p-4 rounded-lg">
