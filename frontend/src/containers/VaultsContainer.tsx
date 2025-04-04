@@ -8,6 +8,7 @@ import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 export const ZERO_ACCOUNT: Account = {
   address: "0x0000000000000000000000000000000000000000",
@@ -36,14 +37,9 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
 
   const vaults: VaultData[] = VAULT_DATA;
   const EOAaccount = useActiveAccount() || defaultAccount;
-  const hookActiveChain = useActiveWalletChain(); // Always call the hook unconditionally
-  const resolvedActiveChain = activeChain || hookActiveChain || SUPPORTED_CHAINS[0]; // Compute resolved chain
+  const { walletAddress } = useMultiChain();
 
-  if (!resolvedActiveChain) {
-    throw new Error("No active chain found");
-  }
-
-  useUpdateVaultBalanceAndTotal(vaults, EOAaccount, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken);
+  useUpdateVaultBalanceAndTotal(vaults, walletAddress, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken);
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");

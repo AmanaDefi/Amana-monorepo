@@ -10,7 +10,7 @@ interface HandleAllowanceProps {
     amount: Number
 }
 
-export async function handleAllowance({
+export async function isApproved({
     token,
     activeChain,
     activeAccount,

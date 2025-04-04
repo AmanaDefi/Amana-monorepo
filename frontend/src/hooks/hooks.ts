@@ -19,38 +19,53 @@ import { Address, defineChain, getContract, prepareEvent, readContract } from "t
 import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { CHAIN_ID, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useContractEvents } from "thirdweb/react";
-import { getOnlyTokenSymbol, isZetachain } from "@/utils/utils";
+import { getOnlyTokenSymbol, getSolanaEVMAddress, isSolanaAddress, isZetachain } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
-  activeAccount: Account,
+  walletAddress: string | null,
   setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
 ) => {
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
+      let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
       try {
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
             try {
-              const balance = await fetchUserVaultBalance(
-                activeAccount?.address as Address,
-                vault.id as Address
-              );
+              let balance: any;
+              let newTotalAssetsinToken: any;
+              if (address) {
+                balance = await fetchUserVaultBalance(
+                  address as Address,
+                  vault.id as Address
+                )
+                newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
+                  vault.inputToken.decimals,
+                  address as Address,
+                  vault.id as Address
+                );
+              } else {
+                balance = "Error"
+                newTotalAssetsinToken = "Error"
+              }
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
 
               // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
-              const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
-                vault.inputToken.decimals,
-                activeAccount?.address as Address,
-                vault.id as Address
-              );
 
+              console.log({
+                vaultId: vault.id,
+                balance,
+                totalAssets: newTotalAssets.toString(),
+                totalAssetsinToken: newTotalAssetsinToken.toString(),
+              })
               return {
                 vaultId: vault.id,
                 balance,
@@ -89,32 +104,35 @@ export const useUpdateVaultBalanceAndTotal = (
       }
     };
 
-    if (activeAccount && vaults.length > 0) {
+    if (vaults.length > 0) {
       updateVaultBalanceAndTotal();
     }
-  }, [vaults, activeAccount, setUserVaultBalances, setVaultTotalAssets]);
+  }, [vaults, walletAddress, setUserVaultBalances, setVaultTotalAssets]);
 };
 
 export const useUpdateVaultBalanceAndTotalPerVault = (
   vault: any,
-  activeAccount: Account,
+  userAddress: string | null,
   setUserVaultBalance: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   transactionCompleted: boolean,
 ) => {
+  const { selectedChain } = useMultiChain();
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
+      const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
       try {
-        if (vault?.id) {
+        if (vault.id) {
           const balance = await fetchUserVaultBalance(
-            activeAccount?.address as Address,
+            address as Address,
             vault.id as Address
           );
+          console.log({ balance, address }, "HHHHHHHHHHHHHHHH")
 
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,
-            activeAccount?.address as Address,
+            address as Address,
             vault?.id as Address
           );
 
@@ -124,17 +142,15 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           setVaultTotalAsset(newTotalAssets);
 
           setVaultTotalAssetinToken(newTotalAssetsinToken);
-
         }
-
       } catch (error) {
         console.error("Error updating vault balances and total assets:", error);
       }
     };
-    if (activeAccount) {
+    if (userAddress) {
       updateVaultBalanceAndTotal();
     }
-  }, [vault, activeAccount, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
+  }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
 };
 
 export const useUpdateAPYs = (
@@ -254,7 +270,7 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     }),
     withdrawalReceiver: getContract({
       client,
-      chain: defineChain(activeChainId),
+      chain: defineChain(!activeChainId || activeChainId == CHAIN_ID.solana ? strategyChainID : activeChainId),
       address: contractWithdrawalReceiverAddress
     })
   }), [vaultData.id, strategyChainID, strategyAddress, activeChainId, contractWithdrawalReceiverAddress]);
@@ -276,12 +292,14 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     enabled: isTransactionStarted && !(isZetachain(strategyChainID) && isZetachain(activeChainId)),
   });
 
+  // console.log({ vaultEvents, strategyEvents, withdrawalReceiverEvents }, { vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }, "HHHHHHHHHHHHHHHH");
+
   return {
     vaultEvents,
     strategyEvents,
     withdrawalReceiverEvents
   }
-}
+};
 
 export function useTokenPriceBySymbol(symbol: string | undefined) {
   const priceContext = useTokenPrices();
