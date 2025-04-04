@@ -38,6 +38,34 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     event TotalAssetsUpdated(uint256 totalAssets);
     event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
 
+    /// @dev Initializer instead of constructor for upgradeability
+    function initialize(
+        string memory name,
+        string memory symbol,
+        IERC20 asset,
+        address registry_,
+        uint16 perfFee_,
+        uint32 gasLimitWithdrawAndCall_,
+        uint32 gasLimitCall_,
+        bool depositFeePaidFromGasTank_
+    ) external initializer {
+        // __ERC20_init(name, symbol);
+        // __Ownable_init(msg.sender);
+        // __ERC4626_init(asset);
+        // __UUPSUpgradeable_init();
+        __AmanaVaultBase_init(
+            name,
+            symbol,
+            asset,
+            msg.sender,
+            registry_,
+            perfFee_,
+            gasLimitWithdrawAndCall_,
+            gasLimitCall_
+        );
+        depositFeePaidFromGasTank_;
+    }
+
     /**
      * @dev Handles cross-chain communication via the gateway.
      * @param context Message context including origin and sender.
@@ -333,12 +361,12 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 block.number // Current block number
             )
         );
-        strategyAddress = newStrategyAddress;
         bytes memory outgoingMessage = abi.encode(
             address(0),
             address(0),
             newStrategyAddress,
             address(0),
+            0,
             minAmountOut,
             minSharesOut,
             0, // chain ID
@@ -355,13 +383,14 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 "_switchStrategyFailed",
                 crossChainTxId,
                 0,
-                address(0),
+                strategyAddress,
                 newStrategyAddress,
                 address(0),
                 0
             ),
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
+        strategyAddress = newStrategyAddress;
 
         CallOptions memory callOptions = CallOptions(
             gasLimitForCall + gasLimitForWithdrawAndCall,
@@ -374,6 +403,10 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             callOptions,
             revertOptions
         );
+    }
+
+    function toggleDepositFeePaidFromGasTank() external onlyOwner {
+        depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
     }
 
     /**
@@ -547,6 +580,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         uint16 slippage
     ) internal override {
         uint256 maxShares = maxRedeem(user);
+
         if (shares > maxShares - pendingWithdrawals[user]) {
             revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
         }
@@ -841,7 +875,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             string memory revertMessage,
             bytes32 _crossChainTxId,
             uint256 amount,
-            address receiver,
+            address receiverOrOldStrategy,
             address userZRC20,
             address userERC20,
             uint32 userChainId
@@ -858,7 +892,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             _returnFundsToUser(
                 context.amount,
                 userChainId,
-                receiver,
+                receiverOrOldStrategy,
                 userZRC20,
                 userERC20,
                 _crossChainTxId,
@@ -869,7 +903,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_divestConnectedChainStrategyFailed"))
         ) {
-            pendingWithdrawals[receiver] -= amount;
+            pendingWithdrawals[receiverOrOldStrategy] -= amount;
             emit DivestFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
@@ -880,6 +914,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_switchStrategyFailed"))
         ) {
+            strategyAddress = receiverOrOldStrategy;
             emit SwitchStrategyFailed(_crossChainTxId);
         } else {
             revert("Revert not handled");
