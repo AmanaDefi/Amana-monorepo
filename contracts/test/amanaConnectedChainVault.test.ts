@@ -5,7 +5,7 @@ import { ethers, network, upgrades } from "hardhat";
 import { expect } from "chai";
 import { Signer, BigNumber } from "ethers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { AmanaConnectedChainVault, IERC20 } from "../typechain";
+import { AmanaConnectedChainVaultV1, IERC20 } from "../typechain";
 import { setTokenBalance } from "./utils";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import dotenv from "dotenv";
@@ -27,9 +27,9 @@ import {
   ETH_USDT_ADDRESS
 } from "../../constants";
 
-describe("AmanaConnectedChainVault Tests", function () {
+describe("AmanaConnectedChainVaultV1 Tests", function () {
 
-  let amanaVault: AmanaConnectedChainVault;
+  let amanaVault: AmanaConnectedChainVaultV1;
   let owner: Signer;
   let user1: Signer;
   let user2: Signer;
@@ -459,7 +459,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await amanaRegistry.deployed();
 
 
-    const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
+    const Vault = await ethers.getContractFactory("AmanaConnectedChainVaultV1", owner);
 
     amanaVault = await upgrades.deployProxy(
       Vault,
@@ -519,7 +519,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     //     amanaVault.address
     //   );
 
-    //   const VaultV2 = await ethers.getContractFactory("AmanaConnectedChainVault");
+    //   const VaultV2 = await ethers.getContractFactory("AmanaConnectedChainVaultV1");
     //   const upgraded = await upgrades.upgradeProxy(amanaVault.address, VaultV2);
     //   await upgraded.deployed();
 
