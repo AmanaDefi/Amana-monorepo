@@ -243,7 +243,7 @@ export default function VaultInputs({
     });
     let tokenConversionAmount = assetsAmount;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address, vaultData);
+      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address);
     }
     console.log('Double Box - Conversion amounts:', {
       tokenConversionAmount: tokenConversionAmount.toString(),
