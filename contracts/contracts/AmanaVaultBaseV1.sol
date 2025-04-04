@@ -92,32 +92,31 @@ abstract contract AmanaVaultBaseV1 is
 
     /**
      * @dev Initializes the vault contract.
-     * @param name_ Name of the vault token.
-     * @param symbol_ Symbol of the vault token.
-     * @param asset_ The underlying asset for the vault.
+     * @param name Name of the vault token.
+     * @param symbol Symbol of the vault token.
+     * @param asset The underlying asset for the vault.
      * @param registry_ Registry address
      * @param perfFee_ Performance fee rate.
      */
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        IERC20 asset_,
+    function __AmanaVaultBase_init(
+        string memory name,
+        string memory symbol,
+        IERC20 asset,
+        address owner,
         address registry_,
         uint16 perfFee_,
-        uint32 gasLimitForWithdrawAndCall_,
-        uint32 gasLimitForCall_
-    ) external initializer {
+        uint32 gasLimitWithdrawAndCall_,
+        uint32 gasLimitCall_
+    ) internal onlyInitializing {
+        __ERC4626RewardsUpgradeable_init(asset, name, symbol, owner); // <- this already calls the base in correct order
+        __UUPSUpgradeable_init(); // <- comes after the ERC4626 chain
+
         if (registry_ == address(0)) revert InvalidAddress();
-        __ERC20_init(name_, symbol_);
-        __ERC4626_init(asset_);
-        __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
         registry = registry_;
         perfFee = perfFee_;
-        totalPrincipal = 1; // preset to 1 virtual asset to avoid division by zero, align with totalAssets
-        gasLimitForWithdrawAndCall = gasLimitForWithdrawAndCall_;
-        gasLimitForCall = gasLimitForCall_;
-        emit VaultInitialized(decimals(), perfFee_);
+        totalPrincipal = 1;
+        gasLimitForWithdrawAndCall = gasLimitWithdrawAndCall_;
+        gasLimitForCall = gasLimitCall_;
     }
 
     /**

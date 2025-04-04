@@ -87,6 +87,19 @@ abstract contract AmanaVaultBase is
         bytes32 indexed crossChainTxId
     );
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @dev Initializes the vault contract.
+     * @param name Name of the vault token.
+     * @param symbol Symbol of the vault token.
+     * @param asset The underlying asset for the vault.
+     * @param registry_ Registry address
+     * @param perfFee_ Performance fee rate.
+     */
     function __AmanaVaultBase_init(
         string memory name,
         string memory symbol,
@@ -108,7 +121,10 @@ abstract contract AmanaVaultBase is
         gasLimitForCall = gasLimitCall_;
     }
 
-    /// @dev Authorize contract upgrades (onlyOwner)
+    /**
+     * @dev Authorizes an upgrade for the contract. Restricted to the owner.
+     * @param newImplementation Address of the new implementation contract.
+     */
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
