@@ -187,7 +187,7 @@ export default function InputTokenWithError({
                         loadingOutputToken ?
                             <PendingDots/> :
                             (
-                                "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.assetsConversionInUSDFormatted)
+                                "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.finalConvertedAmountInUSDFormatted)
                             )
                     )
               }
