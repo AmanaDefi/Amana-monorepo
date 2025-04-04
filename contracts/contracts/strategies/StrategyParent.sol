@@ -154,6 +154,11 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         }
     }
 
+    function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {
+        if (_withdrawHelper == address(0)) revert InvalidAddress();
+        withdrawHelper = _withdrawHelper;
+    }
+
     /**
      * @dev Sets the address of the old strategy to enable migration of funds.
      * @param _oldStrategy The address of the old strategy contract.
