@@ -286,6 +286,7 @@ export default function VaultInputs({
     console.log('Double Box - Starting getWithdrawOutputAmount:', {
       inputAmountValue: inputAmountValue.toString(),
     });
+    console.log("inputAmountValue", inputAmountValue);
     const assetsAmount = await getAssetsFromShares(inputAmountValue, vaultData);
     console.log('Double Box - Assets from shares:', {
       assetsAmount: assetsAmount.toString(),
@@ -303,8 +304,10 @@ export default function VaultInputs({
     console.log('Double Box - Conversion amounts:', {
       tokenConversionAmount: tokenConversionAmount.toString(),
     });
-
+    console.log("assetsAmount", assetsAmount);
+    console.log("vaultTokenPrice", vaultTokenPrice);
     const assetsConversionInUSD = (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+    console.log("assetsConversionInUSD", assetsConversionInUSD);
     const tokenConversionFromWei = Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
     const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
 
@@ -352,36 +355,43 @@ export default function VaultInputs({
       chain: SUPPORTED_CHAINS[0],
       address: vaultData.id as Address,
     })
-    const gasLimitForWithdrawAndCall = await readContract({
+    const depositFeePaidFromGasTank = await readContract({
       contract: vaultContract,
-      method: "function gasLimitForWithdrawAndCall() view returns (uint256)",
+      method: "function depositFeePaidFromGasTank() view returns (bool)",
     });
-    const tokenContract = getContract({
-      client,
-      chain: SUPPORTED_CHAINS[0],
-      address: vaultData.inputToken.address as Address,
-    })
-    const result = await readContract({
-      contract: tokenContract,
-      method: "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
-      params: [gasLimitForWithdrawAndCall],
-    });
-    const gasZRC20 = result[0] as Address;
-    const gasFee = result[1] as bigint;
-    console.log("gasZRC20", gasZRC20);
-    console.log("gasFee", gasFee);
-  // 3. If vault token and gas token match, subtract directly
-  let gasFeeInVaultAsset = gasFee;
-
-  if (gasZRC20 !== vaultData.inputToken.address) {
-    // Convert fee from gas token into vault asset terms
-    gasFeeInVaultAsset = await getAmountOutFromSwap(
-      gasFee,
-      gasZRC20,
-      vaultData.inputToken.address
-    );
-  }
-
+    let gasFeeInVaultAsset = BigInt(0);
+    if (!depositFeePaidFromGasTank) {
+      const gasLimitForWithdrawAndCall = await readContract({
+        contract: vaultContract,
+        method: "function gasLimitForWithdrawAndCall() view returns (uint256)",
+      });
+      const tokenContract = getContract({
+        client,
+        chain: SUPPORTED_CHAINS[0],
+        address: vaultData.inputToken.address as Address,
+      })
+      const result = await readContract({
+        contract: tokenContract,
+        method: "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
+        params: [gasLimitForWithdrawAndCall],
+      });
+      const gasZRC20 = result[0] as Address;
+      const gasFee = result[1] as bigint;
+      console.log("gasZRC20", gasZRC20);
+      console.log("gasFee", gasFee);
+      // 3. If vault token and gas token match, subtract directly
+      gasFeeInVaultAsset = gasFee;
+    
+      if (gasZRC20 !== vaultData.inputToken.address) {
+        // Convert fee from gas token into vault asset terms
+        gasFeeInVaultAsset = await getAmountOutFromSwap(
+          gasFee,
+          gasZRC20,
+          vaultData.inputToken.address
+        );
+      }
+    }
+    
   // 4. Subtract gas fee from converted amount
   const finalConvertedAmount = assetsConversionAmount - gasFeeInVaultAsset;
 
