@@ -12,6 +12,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     uint256 latestTotalAssetsUpdateFromStrategy;
     uint256 public lastProcessedNonce;
+
     struct Confirmation {
         address user;
         address receiver;
@@ -403,6 +404,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         );
     }
 
+    function toggleDepositFeePaidFromGasTank() external onlyOwner {
+        depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
+    }
+
     /**
      * @dev Returns the total assets currently held by the vault, including assets directly held
      *      and the latest update from the strategy's total assets.
@@ -762,6 +767,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         userPrincipal[user] -= principalWithdrawn;
         totalPrincipal -= principalWithdrawn;
         pendingWithdrawals[user] -= vaultSharesToBeBurnt;
+
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(user, vaultSharesToBeBurnt);
         _returnFundsToUser(
