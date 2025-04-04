@@ -21,6 +21,7 @@ import "./tasks/deployAaveERC20Flash_Strategy";
 import "./tasks/deployWithdrawHelper";
 import "./tasks/deployERC20_MoonwellStrategy";
 import "./tasks/deployAmanaRegistry";
+import "./tasks/clearNonces";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -52,7 +53,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY],
     },
     polygon: {
-      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      url: "https://137.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c",
       accounts: [process.env.PRIVATE_KEY],
     },
     sepolia_testnet: {
@@ -154,7 +155,6 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      ethereum: process.env.ETHERSCAN_API_KEY || "",
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       arbitrumOne: process.env.ARBISCAN_API_KEY || "",
       base: process.env.BASESCAN_API_KEY || "",

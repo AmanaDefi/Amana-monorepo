@@ -45,7 +45,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "ZeroLend",
-      strategyAddress: "0x7CA437BfeAB2dAce82CFA6c48Da44B04D4cb6Bd4",
+      strategyAddress: "0xC967154127af55cecC47328B06385EFd8f8C427E",
       network: "Base",
       chainId: 8453,
       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
@@ -79,7 +79,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0x45166CF9125C72B008A8187603AbcB2561263DF6",
+    id: "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69",
     name: "USDC Lend Pool",
     des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
     symbol: "aFluidUSDC",
@@ -95,7 +95,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Fluid",
-      strategyAddress: "0x73a043bFc0D461a9597B3331545f1edB5A77bFf5",
+      strategyAddress: "0x5D4a0eF44758c9ab0571b67927ED0B849bbB12D0",
       network: "Base",
       chainId: 8453,
       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
