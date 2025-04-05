@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ICompoundVault.sol";
-import "../interfaces/ISwapRouter.sol";
 import "./ERC20StrategyParent.sol";
 import "../interfaces/ISwapHelper.sol";
 
@@ -29,13 +28,11 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
 
     ICompoundVault public immutable receiptToken;
     ICometRewards public immutable compoundRewards;
-    ISwapRouter public immutable swapRouter;
+
     address public swapHelperPolygon;
     address public constant COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c; // COMP on Polygon
-    address public constant UNISWAP_V3_ROUTER =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Polygon
     address public constant COMET_REWARDS =
-        0x45939657d1CA34A8FA39A924B71D28Fe8431e581; // TODO get correct one
+        0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
 
     event RewardsHarvested(
         uint256 rewardsClaimed,
@@ -58,7 +55,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     {
         receiptToken = ICompoundVault(_receiptTokenAddress);
         compoundRewards = ICometRewards(COMET_REWARDS);
-        swapRouter = ISwapRouter(UNISWAP_V3_ROUTER);
         swapHelperPolygon = _swapHelperPolygon;
     }
 
@@ -81,40 +77,35 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /**
      * @notice Swaps COMP for USDC on Uniswap V3 (Polygon)
      * @param amountIn Amount of COMP to swap
-     * @param minUsdcOut Minimum USDC expected (slippage protection)
+     * @param slippageBps slippage
      * @return amountOut The amount of USDC received
      */
     function swapCompForUsdc(
         uint256 amountIn,
-        uint256 minUsdcOut
+        uint16 slippageBps
     ) internal returns (uint256 amountOut) {
         require(amountIn > 0, "Amount must be greater than zero");
 
-        SafeERC20.safeTransfer(
-            IERC20(zrc20),
-            IAmanaRegistry(registry).swapHelper(),
-            amount
+        SafeERC20.safeTransfer(IERC20(COMP), swapHelperPolygon, amountIn);
+        uint16 maxDeadline = uint16(block.timestamp + 1 hours); // Set a deadline for the swap
+
+        amountOut = ISwapHelper(swapHelperPolygon).swap(
+            COMP,
+            amountIn,
+            address(inputToken),
+            slippageBps,
+            address(this),
+            maxDeadline,
+            "" // empty bytes param for future-proofing
         );
 
-        uint256 amountOut = ISwapHelper(IAmanaRegistry(registry).swapHelper())
-            .swap(
-                zrc20,
-                amount,
-                targetZRC20,
-                slippageBps,
-                vault,
-                maxDeadline,
-                "" // empty bytes param for future-proofing
-            );
         return amountOut;
-
-        require(amountOut >= minUsdcOut, "Insufficient output");
     }
 
     /// @notice Harvests COMP rewards and reinvests them into Compound
     function harvest() public {
         uint256 compBalance = claimRewards();
-        uint256 usdcReceived = swapCompForUsdc(compBalance, 0);
+        uint256 usdcReceived = swapCompForUsdc(compBalance, 500);
 
         // Reinvest USDC into Compound
         _depositFundsIntoYieldSource(usdcReceived, 0);
@@ -177,9 +168,9 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         );
 
         // Claim & swap COMP before transferring funds
-        uint256 compBalance = claimRewards();
+        uint256 compBalance = claimRewards(); //  TODO I think this is redundant - claim happens when you withdraw
         if (compBalance > 0) {
-            withdrawnAmount += swapCompForUsdc(compBalance, minAmountOut);
+            withdrawnAmount += swapCompForUsdc(compBalance, 500);
         }
 
         approveOrIncreaseAllowance(inputToken, newStrategy, withdrawnAmount);
