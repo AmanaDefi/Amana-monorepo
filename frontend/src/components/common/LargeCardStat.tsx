@@ -11,7 +11,7 @@ export default function LargeCardStat({ id, label, value, secondaryValue, childr
       </p>
       {value ?
         <>
-          <p className="text-3xl font-bold whitespace-nowrap text-white leading-0">
+          <p className="text-2xl lg:text-3xl font-bold whitespace-nowrap text-white leading-0">
             {value}
           </p>
           {

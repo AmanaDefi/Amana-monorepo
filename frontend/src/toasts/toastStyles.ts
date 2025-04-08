@@ -15,6 +15,7 @@ export const loadingToast = (message: string) => {
   toast(message, {
     style: { ...defaultToastStyle },
     position: "bottom-left",
+
   });
 };
 
@@ -24,7 +25,6 @@ export const successToast = (message: string) => {
     style: {
       ...defaultToastStyle,
       border: "1px solid #34C759",
-      color: "#34C759",
     },
     position: "bottom-left",
   });

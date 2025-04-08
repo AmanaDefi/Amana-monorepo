@@ -56,14 +56,14 @@ const VaultsDetailContainer: React.FC<{
       vaultData ? (
         <div className="overflow-x-auto">
           <button
-            className="border border-customGray500 hover:bg-gray-800 rounded-lg transition-colors flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0"
+            className="bg-gradient-to-r from-[#262830] to-[#06afbc] hover:bg-gradient-to-l rounded-lg flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0"
             type="button"
             onClick={() => router.push("/")}
           >
             <div className="w-5 h-5">
               <LeftArrowIcon color="white" />
             </div>
-            <p className="text-white leading-0">Back to Vaults</p>
+            <p className="text-white leading-0 ">Back to Vaults</p>
           </button>
 
           <VaultHeader
@@ -75,8 +75,8 @@ const VaultsDetailContainer: React.FC<{
             transactionCompleted={transactionCompleted}
           />
 
-          <section className="w-full md:flex md:flex-row md:justify-between md:space-x-8 py-10 px-4 md:px-0">
-            <div className="w-full md:w-1/2">
+          <section className="w-full flex flex-col lg:flex-row gap-4 my-4 ">
+            <div className="w-full ">
               <div className="bg-customNeutral200 p-6 rounded-lg">
                 <div className="bg-customNeutral300 px-6 py-6 rounded-lg">
                   <VaultInputs
@@ -89,7 +89,7 @@ const VaultsDetailContainer: React.FC<{
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-1/2 mt-8 md:mt-0 space-y-4">
+            <div className="w-full mt-8 md:mt-0 space-y-4">
               <div className="bg-customNeutral200 p-6 rounded-lg">
                 <p className="text-white text-2xl font-bold">Information</p>
                 <div className="md:flex md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4 mt-4">

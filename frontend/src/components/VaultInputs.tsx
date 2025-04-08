@@ -189,6 +189,10 @@ export default function VaultInputs({
     if (!inputToken) return;
     let value = e.currentTarget.value;
 
+    if (!/^\d+\.?d*$/.test(value)){
+      return;
+    }
+
     if (!value.includes('.')) {
       value = String(Number(value));
     }
@@ -206,9 +210,13 @@ export default function VaultInputs({
       inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
     }
 
+    console.log("Input Amount", inputAmt);
     // convert string amt to bigint
     const newAmt = parseUnits(inputAmt, decimalsNumber);
+    
     setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
+
+
   }, [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals])
 
   const handleMaxClick = useCallback(() => {
