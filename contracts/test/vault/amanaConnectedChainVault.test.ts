@@ -93,11 +93,8 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     it("should execute a basic cross chain deposit", async function () {
       const { user1, amanaVault, pythContract, gatewaySigner } = await loadFixture(setupVaultFixture);
-      console.log("here")
       await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId);
-      console.log("Done deposit call");
       await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-      console.log("Done confirm deposit");
       const totalShares = await amanaVault.balanceOf(await user1.getAddress());
 
       expect(totalShares).to.be.closeTo(txConfig.crossChainDepositAmount1, ERROR_MARGIN);
@@ -130,11 +127,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
       const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
       const userExpectedAmountWithdrawn = await amanaVault.convertToAssets(userMaxRedeem);
-      console.log("Max redeem: ", userMaxRedeem.toString());
       await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken);
-      console.log("Withdraw call simulated");
       await simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, user1, userExpectedAmountWithdrawn, userMaxRedeem, txConfig.crossChainDepositAmount1, 2, 2, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originERC20Input, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-      console.log("Withdraw confirmed");
       const totalShares = await amanaVault.balanceOf(await user1.getAddress());
       expect(totalShares).to.eq(0);
 

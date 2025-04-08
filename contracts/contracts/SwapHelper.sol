@@ -15,7 +15,6 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 contract SwapHelper {
     address constant UNISWAP_V2_FACTORY =
@@ -602,8 +601,6 @@ contract SwapHelper {
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut) {
-        console.log("slippageBps", slippageBps);
-        console.log("amount", amount);
         require(
             IERC20(zrc20).balanceOf(address(this)) >= amount,
             "Insufficient balance"
@@ -641,8 +638,6 @@ contract SwapHelper {
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
-            console.log("amountIn", amount);
-            console.log("amountOutMinimum", minimumOut);
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else {
             // Uniswap V2 Swap

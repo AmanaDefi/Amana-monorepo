@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -50,15 +49,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 gasLimitCall_,
         bool depositFeePaidFromGasTank_
     ) external initializer {
-        console.log(
-            "Initializing AmanaConnectedChainVault with name: %s, symbol: %s",
-            name,
-            symbol
-        );
-        // __ERC20_init(name, symbol);
-        // __Ownable_init(msg.sender);
-        // __ERC4626_init(asset);
-        // __UUPSUpgradeable_init();
         __AmanaVaultBase_init(
             name,
             symbol,
@@ -448,7 +438,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-        console.log("In _deposit function");
         // Generate a unique crossChainTxId
         bytes32 crossChainTxId = keccak256(
             abi.encodePacked(
@@ -459,14 +448,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 block.number // Current block number
             )
         );
-        console.log("About to transfer assets");
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
             address(this),
             assets
         );
-        console.log("Assets transferred");
         _investAssets(
             assets,
             minimumOut,
@@ -497,15 +484,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
-        console.log("In _investAssets function");
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
             amount
         );
-        console.log("Assets transferred to withdrawHelper");
         if (depositFeePaidFromGasTank) {
-            console.log("Handling gas fee and withdraw");
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
@@ -521,7 +505,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     registry
                 );
         } else {
-            console.log("Handling withdraw and call");
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleWithdrawAndCallToStrategy(
                     strategyAddress,

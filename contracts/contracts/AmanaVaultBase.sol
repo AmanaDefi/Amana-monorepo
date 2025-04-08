@@ -17,7 +17,6 @@ import "./interfaces/IZRC20.sol";
 import "./interfaces/IWithdrawHelper.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaRegistry.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -230,8 +229,6 @@ abstract contract AmanaVaultBase is
         uint256 minimumOut,
         address receiver
     ) public returns (uint256) {
-        console.log("Deposit called");
-        console.log("Assets: ", assets);
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
