@@ -69,6 +69,13 @@ const Header = () => {
             >
               Roadmap
             </span>
+            <span
+              className={`cursor-pointer ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
+                }`}
+              onClick={() => router.push("/old-vaults")}
+            >
+              Old Vaults
+            </span>
           </nav>
           {/* Select Network Modal */}
           {/* <ConnectButton /> */}
