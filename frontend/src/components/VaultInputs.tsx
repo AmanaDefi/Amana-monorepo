@@ -189,10 +189,6 @@ export default function VaultInputs({
     if (!inputToken) return;
     let value = e.currentTarget.value;
 
-    if (!/^\d+\.?d*$/.test(value)){
-      return;
-    }
-
     if (!value.includes('.')) {
       value = String(Number(value));
     }
