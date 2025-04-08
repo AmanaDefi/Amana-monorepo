@@ -26,13 +26,6 @@ export default function MobileMenuModal() {
                     <span
                         className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
                             }`}
-                        onClick={() => router.push("/old-vaults")}
-                    >
-                        Old Vaults
-                    </span>
-                    <span
-                        className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
-                            }`}
                         onClick={() => router.push("/")}
                     >
                         Vaults
@@ -57,6 +50,20 @@ export default function MobileMenuModal() {
                         onClick={() => router.push("/leaderboard")}
                     >
                         Leaderboard
+                    </span>
+                    <span
+                        className={`cursor-pointer py-6 ${path === "/raodmap" ? "font-bold text-themeColor" : ""
+                            }`}
+                        onClick={() => router.push("/roadmap")}
+                    >
+                        Roadmap
+                    </span>
+                    <span
+                        className={`cursor-pointer py-6 ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
+                            }`}
+                        onClick={() => router.push("/old-vaults")}
+                    >
+                        Old Vaults
                     </span>
                 </nav>
             </div>
