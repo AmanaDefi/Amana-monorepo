@@ -69,7 +69,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             gasLimitWithdrawAndCall_,
             gasLimitCall_
         );
-        depositFeePaidFromGasTank_;
+        depositFeePaidFromGasTank = depositFeePaidFromGasTank_;
     }
 
     /**
@@ -448,7 +448,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-
+        console.log("In _deposit function");
         // Generate a unique crossChainTxId
         bytes32 crossChainTxId = keccak256(
             abi.encodePacked(
@@ -459,14 +459,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 block.number // Current block number
             )
         );
-
+        console.log("About to transfer assets");
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
             address(this),
             assets
         );
-
+        console.log("Assets transferred");
         _investAssets(
             assets,
             minimumOut,
@@ -497,13 +497,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
-
+        console.log("In _investAssets function");
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
             amount
         );
+        console.log("Assets transferred to withdrawHelper");
         if (depositFeePaidFromGasTank) {
+            console.log("Handling gas fee and withdraw");
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
@@ -519,6 +521,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     registry
                 );
         } else {
+            console.log("Handling withdraw and call");
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleWithdrawAndCallToStrategy(
                     strategyAddress,

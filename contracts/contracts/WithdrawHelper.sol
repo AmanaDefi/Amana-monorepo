@@ -10,6 +10,7 @@ import "./interfaces/IZRC20.sol";
 import "./interfaces/IAmanaRegistry.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ISwapHelper.sol";
+import "hardhat/console.sol";
 
 contract WithdrawHelper {
     using SafeERC20 for IERC20;
@@ -110,22 +111,38 @@ contract WithdrawHelper {
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
-
+        console.log("Requesting gas for withdrawAndCall");
         IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
-
-        approveOrIncreaseAllowance(
-            IERC20(tokenToTransfer),
-            GATEWAY_ADDRESS,
-            amount + gasFee
+        console.log("Gas requested");
+        console.log("Gas fee: ", gasFee);
+        console.log("Gas token: ", gas_zrc20);
+        console.log("Token to transfer: ", tokenToTransfer);
+        console.log(
+            "Contract balance of gasToken: ",
+            IERC20(gas_zrc20).balanceOf(address(this))
         );
-
         if (gas_zrc20 != tokenToTransfer) {
+            console.log("Approving gas fee");
             approveOrIncreaseAllowance(
                 IERC20(gas_zrc20),
                 GATEWAY_ADDRESS,
                 gasFee
             );
+            console.log("Approving tokenToTransfer");
+            approveOrIncreaseAllowance(
+                IERC20(tokenToTransfer),
+                GATEWAY_ADDRESS,
+                amount
+            );
+        } else {
+            console.log("Approving combined amount");
+            approveOrIncreaseAllowance(
+                IERC20(tokenToTransfer),
+                GATEWAY_ADDRESS,
+                amount + gasFee
+            );
         }
+
         bytes memory outgoingMessage = abi.encode(
             address(0),
             receiver,
@@ -157,7 +174,12 @@ contract WithdrawHelper {
             ),
             onRevertGasLimit: 0
         });
-
+        console.log("Calling withdrawAndCall");
+        console.log(
+            "Contract balance of tokenToTransfer: ",
+            IERC20(tokenToTransfer).balanceOf(address(this))
+        );
+        console.log("Amount to transfer: ", amount);
         IGatewayZEVM(GATEWAY_ADDRESS).withdrawAndCall(
             recipient,
             amount,
@@ -166,6 +188,7 @@ contract WithdrawHelper {
             CallOptions(gasLimitForWithdrawAndCall, false),
             revertOptions
         );
+        console.log("withdrawAndCall called");
     }
 
     function handleWithdrawAndCallToStrategy(

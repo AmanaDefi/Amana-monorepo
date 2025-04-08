@@ -213,6 +213,8 @@ export async function simulateDepositCallFromConnChain(
     ["address", "uint256", "uint16", "bytes32"],
     [inputToken, minSharesOut, slippage, transactionId]
   );
+  console.log("slippage", slippage)
+  console.log("minSharesOut", minSharesOut)
   // Execute the onCall function to simulate a deposit
   await amanaVault.connect(gatewaySigner).onCall(
     {

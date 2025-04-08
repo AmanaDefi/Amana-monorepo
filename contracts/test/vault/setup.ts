@@ -1,5 +1,5 @@
 import { ethers, network, upgrades } from "hardhat";
-import { Signer, BigNumber } from "ethers";
+import { Signer } from "ethers";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
@@ -66,7 +66,7 @@ export async function setupVaultFixture() {
       vaultConfig.feeRate,
       vaultConfig.gasLimitWithdrawAndCall,
       vaultConfig.gasLimitCall,
-      false,
+      true,
     ],
     {
       initializer: "initialize",
@@ -85,35 +85,28 @@ export async function setupVaultFixture() {
 
   await amanaVault.setStrategy(strategyConfig.address);
 
-  const depositAmount1 = ethers.utils.parseUnits("100", 18);
-  const depositAmount2 = ethers.utils.parseUnits("50", 18);
 
-  const rewardAmount = BigNumber.from(1000); // Example reward amount
 
   // supply the gas tank with the gasToken of the strategy contract chain, to fund deposits
-  await setTokenBalance(strategyConfig.gasToken, gasTank.address, depositAmount1.mul(20).div(1), 3);
+  await setTokenBalance(strategyConfig.gasToken, gasTank.address, txConfig.gasTankAmount, 3);
   // supply the gas tank with the gasToken of the origin chain, to fund withdrawals
-  await setTokenBalance(txConfig.originGasToken, gasTank.address, depositAmount1.mul(20000).div(1), 3);
+  await setTokenBalance(txConfig.originGasToken, gasTank.address, txConfig.gasTankAmount, 3);
 
   // supply the owner address with an amount of vault asset, so they can make deposits
-  await setTokenBalance(vaultConfig.asset, await owner.getAddress(), depositAmount1.mul(20).div(1), 3);
+  await setTokenBalance(vaultConfig.asset, await owner.getAddress(), txConfig.depositAmount1.mul(20).div(1), 3);
 
-  await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), depositAmount1.mul(200).div(1), 3);
-  await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1), 3);
+  await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.depositAmount1.mul(200).div(1), 3);
+  await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), txConfig.depositAmount1.mul(200).div(1), 3);
 
   return {
     amanaVault,
     owner,
     user1,
     user2,
-    depositAmount1,
-    depositAmount2,
-    rewardAmount,
     gasTank,
     swapHelper,
     zapContract,
     gatewaySigner,
-    withdrawZRC20: ZC_USDT_BSC_ADDRESS,
     vaultAsset,
     otherZRC20,
     usdcBSC,
