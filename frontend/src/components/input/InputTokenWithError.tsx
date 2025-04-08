@@ -138,8 +138,7 @@ export default function InputTokenWithError({
                 ? "group-hover/max:text-white cursor-pointer "
                 : ""
                 }`}
-              onClick={allowInput ? onMaxClick : () => {
-              }}
+              onClick={allowInput ? onMaxClick : () => { }}
             >
               <div className={`mb-1 ${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
                 <svg
@@ -170,18 +169,18 @@ export default function InputTokenWithError({
             <p className="group-hover/max:text-white">
               {
                 (isDeposit && !isOutput) ?
-                    (
-                        "$ " + (selectedToken ?
-                            formatCurrency((Number(props.value) * selectedTokenPrice)).toString()
-                            : "0")
-                    ) :
-                    (
-                        loadingOutputToken ?
-                            <PendingDots/> :
-                            (
-                                "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.finalConvertedAmountInUSDFormatted)
-                            )
-                    )
+                  (
+                    "$ " + (selectedToken ?
+                      formatCurrency((Number(props.value) * selectedTokenPrice)).toString()
+                      : "0")
+                  ) :
+                  (
+                    loadingOutputToken ?
+                      <PendingDots /> :
+                      (
+                        "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.finalConvertedAmountInUSDFormatted)
+                      )
+                  )
               }
             </p>
             <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
