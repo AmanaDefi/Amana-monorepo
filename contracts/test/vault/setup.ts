@@ -26,7 +26,7 @@ export async function setupVaultFixture() {
 
   const otherZRC20 = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
   const vaultAsset = await ethers.getContractAt("IERC20", vaultConfig.asset);
-  const usdcBSC = await ethers.getContractAt("IERC20", ZC_USDC_BSC_ADDRESS);
+  const rewardToken = await ethers.getContractAt("IERC20", vaultConfig.rewardToken);
 
   let gatewaySigner = await setupGatewaySigner();
 
@@ -93,10 +93,10 @@ export async function setupVaultFixture() {
   await setTokenBalance(txConfig.originGasToken, gasTank.address, txConfig.gasTankAmount, 3);
 
   // supply the owner address with an amount of vault asset, so they can make deposits
-  await setTokenBalance(vaultConfig.asset, await owner.getAddress(), txConfig.depositAmount1.mul(20).div(1), 3);
-
-  await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.depositAmount1.mul(200).div(1), 3);
-  await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), txConfig.depositAmount1.mul(200).div(1), 3);
+  await setTokenBalance(vaultConfig.asset, await owner.getAddress(), txConfig.directDepositAmount1.mul(20).div(1), 3);
+  // supply the owner address with an amount of origin chain input ZRC20 token, so they can make deposits
+  await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
+  await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), txConfig.directDepositAmount1.mul(200).div(1), 3);
 
   return {
     amanaVault,
@@ -108,8 +108,8 @@ export async function setupVaultFixture() {
     zapContract,
     gatewaySigner,
     vaultAsset,
+    rewardToken,
     otherZRC20,
-    usdcBSC,
     pythContract,
     gatewayZEVM
   };
