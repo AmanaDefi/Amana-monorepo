@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import {usePathname, useRouter} from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function MobileMenuModal() {
     const [openedMobileMenu, setOpenedMobileMenu] = useState(false);
@@ -12,7 +12,7 @@ export default function MobileMenuModal() {
     return (
         <>
             <button className={`group relative w-7 h-4 flex justify-end lg:hidden ${openedMobileMenu && 'opened'}`}
-                    onClick={() => setOpenedMobileMenu(!openedMobileMenu)}>
+                onClick={() => setOpenedMobileMenu(!openedMobileMenu)}>
                 <div
                     className='absolute w-full h-px bg-white top-0 transition-all group-[.opened]:top-1/2 group-[.opened]:-translate-y-1/2 group-[.opened]:-rotate-45 group-[.opened]:w-6'></div>
                 <div
@@ -23,33 +23,40 @@ export default function MobileMenuModal() {
                 className={`z-[1] lg:!hidden fixed top-[var(--header-height)] bottom-0 left-0 right-0 bg-black ${openedMobileMenu ? 'flex' : 'hidden'}`}>
                 <nav
                     className="flex flex-col h-fit divide-y divide-tuatara-900 border-b border-tuatara-900 w-full text-center">
-                        <span
-                            className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
+                    <span
+                        className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
                             }`}
-                            onClick={() => router.push("/")}
-                        >
-                            Vaults
-                        </span>
-                    {/* <span
-                        className={`cursor-pointer py-6 ${path === "/buy" ? "font-bold text-themeColor" : ""
-                        }`}
-                        onClick={() => router.push("/buy")}
+                        onClick={() => router.push("/old-vaults")}
                     >
-                            Fund Wallet
-                        </span> */}
+                        Old Vaults
+                    </span>
+                    <span
+                        className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
+                            }`}
+                        onClick={() => router.push("/")}
+                    >
+                        Vaults
+                    </span>
+                    <span
+                        className={`cursor-pointer py-6 ${path === "/buy" ? "font-bold text-themeColor" : ""
+                            }`}
+                        onClick={() => router.push("/wallet")}
+                    >
+                        Wallet
+                    </span>
                     <span
                         className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-themeColor" : ""
-                        }`}
+                            }`}
                         onClick={() => router.push("/about")}
                     >
-                            About
+                        About
                     </span>
                     <span
                         className={`cursor-pointer py-6 ${path === "/leaderboard" ? "font-bold text-themeColor" : ""
-                        }`}
+                            }`}
                         onClick={() => router.push("/leaderboard")}
                     >
-                            Leaderboard
+                        Leaderboard
                     </span>
                 </nav>
             </div>

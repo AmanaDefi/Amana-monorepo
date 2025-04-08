@@ -44,6 +44,13 @@ const Header = () => {
             <span
               className={`cursor-pointer ${path === "/" ? "font-bold text-themeColor" : ""
                 }`}
+              onClick={() => router.push("/old-vaults")}
+            >
+              Old Vaults
+            </span>
+            <span
+              className={`cursor-pointer ${path === "/" ? "font-bold text-themeColor" : ""
+                }`}
               onClick={() => router.push("/")}
             >
               Vaults

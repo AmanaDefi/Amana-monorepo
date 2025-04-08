@@ -3,7 +3,7 @@ import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "@/types/types";
-import { VAULT_DATA } from "@/constants";
+import { DEPRECATED_VAULT_DATA, VAULT_DATA } from "@/constants";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
@@ -16,8 +16,10 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
+  old?: boolean
 }> = ({
-  vaultID
+  vaultID,
+  old = false
 }) => {
     const [vaultData, setVaultData] = useState<VaultData>();
     const router = useRouter();
@@ -30,8 +32,7 @@ const VaultsDetailContainer: React.FC<{
     const [vaultTotalAssetinToken, setVaultTotalAssetinToken] = useState<VaultTotalAssetsinToken>();
     const [transactionCompleted, setTransactionCompleted] = useState(false);
 
-
-    const vaults: VaultData[] = VAULT_DATA;
+    const vaults: VaultData[] = old ? DEPRECATED_VAULT_DATA : VAULT_DATA;
     const { walletAddress } = useMultiChain();
 
     useEffect(() => {

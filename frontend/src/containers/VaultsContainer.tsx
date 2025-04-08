@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import VaultsView from "../components/VaultsView";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
-import { VAULT_DATA } from "../constants/index";
+import { DEPRECATED_VAULT_DATA, VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
@@ -26,16 +26,17 @@ export const ZERO_ACCOUNT: Account = {
 interface VaultsContainerProps {
   activeChain?: Chain; // Make activeChain optional
   defaultAccount?: Account; // Optional default account
+  old?: boolean
 }
 
-const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultAccount = ZERO_ACCOUNT }) => {
+const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultAccount = ZERO_ACCOUNT, old = false }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
   const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>([]);
   const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
 
-  const vaults: VaultData[] = VAULT_DATA;
+  const vaults: VaultData[] = old ? DEPRECATED_VAULT_DATA : VAULT_DATA;
   const EOAaccount = useActiveAccount() || defaultAccount;
   const { walletAddress } = useMultiChain();
 
