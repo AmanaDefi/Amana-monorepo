@@ -573,6 +573,8 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
   let assetsConversionAmount: bigint = transactionAmount;
   if (inputTokenAddress !== vaultData.inputToken.address) {
+    console.log("inputTokenAddress", inputTokenAddress);
+    console.log("vaultData.inputToken.address", vaultData.inputToken.address);
     assetsConversionAmount = await getAmountOutFromSwap(transactionAmount, inputTokenAddress as Address, vaultData.inputToken.address as Address);
   }
   const strategyChain = defineChain(vaultData.protocol.chainId);
@@ -631,7 +633,7 @@ const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strat
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Deposit here");
 
-  const minSharesOut = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
+  const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
   console.log("minSharesOut", minSharesOut);
 
   let contract = getContract({
@@ -640,11 +642,14 @@ const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, act
     address: vaultData.id
   });
   console.log("About to prepare contract call");
+  console.log("transactionAmount", transactionAmount);
+  console.log("minSharesOut", minSharesOut);
+  console.log("activeAccount", activeAccount);
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
-    params: [transactionAmount, ethers.toBigInt("0"), activeAccount?.address],
+    params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
   const receipt = await sendTransaction({
     account: activeAccount,

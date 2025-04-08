@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
+import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -49,6 +50,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 gasLimitCall_,
         bool depositFeePaidFromGasTank_
     ) external initializer {
+        console.log(
+            "Initializing AmanaConnectedChainVault with name: %s, symbol: %s",
+            name,
+            symbol
+        );
         // __ERC20_init(name, symbol);
         // __Ownable_init(msg.sender);
         // __ERC4626_init(asset);
@@ -361,12 +367,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 block.number // Current block number
             )
         );
-        strategyAddress = newStrategyAddress;
         bytes memory outgoingMessage = abi.encode(
             address(0),
             address(0),
             newStrategyAddress,
             address(0),
+            0,
             minAmountOut,
             minSharesOut,
             0, // chain ID
@@ -383,13 +389,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 "_switchStrategyFailed",
                 crossChainTxId,
                 0,
-                address(0),
+                strategyAddress,
                 newStrategyAddress,
                 address(0),
                 0
             ),
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
+        strategyAddress = newStrategyAddress;
 
         CallOptions memory callOptions = CallOptions(
             gasLimitForCall + gasLimitForWithdrawAndCall,
@@ -874,7 +881,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             string memory revertMessage,
             bytes32 _crossChainTxId,
             uint256 amount,
-            address receiver,
+            address receiverOrOldStrategy,
             address userZRC20,
             address userERC20,
             uint32 userChainId
@@ -891,7 +898,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             _returnFundsToUser(
                 context.amount,
                 userChainId,
-                receiver,
+                receiverOrOldStrategy,
                 userZRC20,
                 userERC20,
                 _crossChainTxId,
@@ -902,7 +909,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_divestConnectedChainStrategyFailed"))
         ) {
-            pendingWithdrawals[receiver] -= amount;
+            pendingWithdrawals[receiverOrOldStrategy] -= amount;
             emit DivestFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
@@ -913,6 +920,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_switchStrategyFailed"))
         ) {
+            strategyAddress = receiverOrOldStrategy;
             emit SwitchStrategyFailed(_crossChainTxId);
         } else {
             revert("Revert not handled");

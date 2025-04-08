@@ -303,6 +303,7 @@ export default function VaultInputs({
     });
     let gasFeeInVaultAsset = BigInt(0);
     if (!depositFeePaidFromGasTank) {
+      console.log("Gas fee paid from gas tank is false");
       const gasLimitForWithdrawAndCall = await readContract({
         contract: vaultContract,
         method: "function gasLimitForWithdrawAndCall() view returns (uint256)",

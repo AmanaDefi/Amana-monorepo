@@ -46,12 +46,25 @@ contract PriceOracle is Ownable {
     function fetchPrice(
         bytes32 priceFeedId
     ) external payable returns (uint256 returnedPrice) {
-        // Fetch the latest price that is no older than the specified maxStaleness
-        PythStructs.Price memory price = pyth.getPriceNoOlderThan(
-            priceFeedId,
-            maxStaleness
-        );
+        PythStructs.Price memory price;
 
+        // Try fetching the safe price first
+        try pyth.getPriceNoOlderThan(priceFeedId, maxStaleness) returns (
+            PythStructs.Price memory result
+        ) {
+            price = result;
+        } catch (bytes memory lowLevelData) {
+            // Decode and inspect error selector
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            if (selector == bytes4(keccak256("InvalidUpdateData()"))) {
+                price = pyth.getPriceUnsafe(priceFeedId);
+            } else {
+                revert("Failed to fetch price");
+            }
+        }
         // Ensure the price is valid (greater than 0)
         require(price.price > 0, "Invalid price");
 

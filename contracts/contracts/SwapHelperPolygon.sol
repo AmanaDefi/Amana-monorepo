@@ -15,7 +15,7 @@ import "./interfaces/ISwapRouter.sol";
 
 // import "./CurvePoolRegistry.sol";
 
-contract SwapHelper {
+contract SwapHelperPolygon {
     address constant UNISWAP_V2_FACTORY =
         0x9e5A52f57b3038F1B8EeE45F28b3C1967e22799C; // Polygon
     address constant UNISWAP_V2_ROUTER =
@@ -31,7 +31,7 @@ contract SwapHelper {
     address constant WETH_TOKEN = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // Polygon
 
     address constant PRICE_ORACLE_ADDRESS =
-        0xd98Cb58026Ff3C13C61b308c79c2fDbcB84e5458; // Polygon
+        0xd052F4383e5ae6A17d67DA5eC0c0cc679Ba04a77; // Polygon
 
     address constant USDC_ADDRESS = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174; // mainnet only
     address constant USDT_ADDRESS = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F; // mainnet only
@@ -115,7 +115,6 @@ contract SwapHelper {
         uint256 outputPrice = isStablecoin(outputToken)
             ? 1e8
             : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
-
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
         // Get token decimals dynamically

@@ -103,7 +103,32 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
     },
   },
-
+  {
+    id: "0x671C6Ecce2c6B52f5Fbf66b35a593d04CbB69DA3",
+    name: "USDT Lend Pool - New",
+    des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+    symbol: "aPolUSDT",
+    imgURL: "/polygon_logo.png",
+    inputToken: {
+      symbol: "USDT.POL",
+      decimals: 6,
+      address: ZC_USDT_POL_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Compound",
+      strategyAddress: "0x5Feb6E013A6f1fd2135ccA330D875Fd0b4e6F2F5",
+      gaugeAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+      network: "Polygon",
+      chainId: 137,
+      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
+      imgURL: "/compound.png",
+      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
+    },
+  },
   // {
   //   id: "0xe1e40a368e11B0cE6B16745984c26b19AD9B8D31",
   //   name: "USDT Lend Pool - Deposits Paused",

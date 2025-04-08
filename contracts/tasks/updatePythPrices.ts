@@ -1,13 +1,12 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { PriceServiceConnection } from "@pythnetwork/price-service-client";
-// import dotenv from "dotenv";
 
-// dotenv.config();
+const PYTH_CONTRACT_ADDRESS_ZETACHAIN = "0x2880aB155794e7179c9eE2e38200202908C17B43"; // Zetachain
+const PYTH_CONTRACT_ADDRESS_BASE = "0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a"; // Base
+const PYTH_CONTRACT_ADDRESS_POLYGON = "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C"; // Polygon
 
-const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43"; // Zetachain
-// const PYTH_CONTRACT_ADDRESS = "0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a"; // Base
-const priceIds = [
+const priceIdsZetachain = [
   "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
   "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472", // POL/USD
   "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f", // BNB/USD
@@ -16,13 +15,50 @@ const priceIds = [
   "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8" // CRV/USD
 ];
 
-// const priceIds = [
-//   "0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b", // WELL/USD
-//   "0x5b2a4c542d4a74dd11784079ef337c0403685e3114ba0d9909b5c7a7e06fdc42" // MORPHO/USD
-// ]
+const priceIdsBase = [
+  "0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b", // WELL/USD
+  "0x5b2a4c542d4a74dd11784079ef337c0403685e3114ba0d9909b5c7a7e06fdc42" // MORPHO/USD
+];
+
+const priceIdsPolygon = [
+  "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
+  "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472", // POL/USD
+  "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478" // COMP/USD
+];
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
+
+  let PYTH_CONTRACT_ADDRESS;
+  if (network === "zetachain") {
+    PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_ZETACHAIN;
+  } else if (network === "base") {
+    PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_BASE;
+  } else if (network === "polygon") {
+    PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_POLYGON;
+  } else {
+    throw new Error(
+      `Unsupported network: ${network}. Supported networks are: zetachain, base, polygon.`
+    );
+  }
+  console.log(`📍 Pyth contract address: ${PYTH_CONTRACT_ADDRESS}`);
+  let priceIds;
+  if (network === "zetachain") {
+    console.log("Setting price feeds for Zetachain...")
+    priceIds = priceIdsZetachain;
+  } else if (network === "base") {
+    console.log("Setting price feeds for Base...")
+    priceIds = priceIdsBase;
+  } else if (network === "polygon") {
+    console.log("Setting price feeds for Polygon...")
+    priceIds = priceIdsPolygon;
+  }
+
+  if (!priceIds) {
+    throw new Error(
+      `Unsupported network: ${network}. Supported networks are: zetachain, base, polygon.`
+    );
+  }
 
   // Fetch the deployer account
   const [signer] = await hre.ethers.getSigners();

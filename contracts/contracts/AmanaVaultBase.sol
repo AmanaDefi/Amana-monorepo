@@ -497,7 +497,6 @@ abstract contract AmanaVaultBase is
                     registry
                 );
         }
-
         emit ReturnFundsToUserSent(_crossChainTxId);
     }
 
