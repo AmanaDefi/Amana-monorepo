@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat";
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import { Signer, BigNumber } from "ethers";
 import { PriceServiceConnection } from "@pythnetwork/price-service-client";
-import { AmanaConnectedChainVault, IERC20 } from "../typechain";
+import { AmanaConnectedChainVault } from "../typechain";
 
 /**
  * Sets the token balance of an account in a local Hardhat network.
@@ -187,7 +187,7 @@ export async function updatePythPrices(pythContract: any, signer: Signer): Promi
   const receipt = await tx.wait();
 }
 
-async function simulateDepositCallFromEthereum(
+export async function simulateDepositCallFromConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
@@ -230,7 +230,7 @@ async function simulateDepositCallFromEthereum(
 }
 
 
-async function simulateConfirmDeposit(
+export async function simulateConfirmDeposit(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
@@ -262,7 +262,7 @@ async function simulateConfirmDeposit(
   );
 }
 
-async function simulateConfirmSwitch(
+export async function simulateConfirmSwitch(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   transferredAmount: any,
@@ -292,7 +292,7 @@ async function simulateConfirmSwitch(
   return tx;
 }
 
-async function simulateConfirmAssetUpdate(
+export async function simulateConfirmAssetUpdate(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   totalAssetsAmount: any,
@@ -319,7 +319,7 @@ async function simulateConfirmAssetUpdate(
   return tx;
 }
 
-async function simulateWithdrawCallFromEthereum(
+export async function simulateWithdrawCallFromConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
@@ -351,7 +351,7 @@ async function simulateWithdrawCallFromEthereum(
   )
 }
 
-async function simulateConfirmWithdrawToEthereum(
+export async function simulateConfirmWithdrawToConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
@@ -388,7 +388,7 @@ async function simulateConfirmWithdrawToEthereum(
 
   // Mock token balance setup for the test environment
   await setTokenBalance(vaultAsset, amanaVault.address, withdrawnAmount, 3);
-
+  console.log("Token balance set ")
   // Return the transaction object so it can be awaited or used in tests
   return await amanaVault.connect(gatewaySigner).onCall(
     {
@@ -402,7 +402,7 @@ async function simulateConfirmWithdrawToEthereum(
   );
 }
 
-async function simulateConfirmDirectWithdraw(
+export async function simulateConfirmDirectWithdraw(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
@@ -413,8 +413,7 @@ async function simulateConfirmDirectWithdraw(
   crossChainTxId: number,
   vaultAsset: string,
   strategyAddress: string,
-  strategyChainId: number,
-  strategyGasToken: string
+  strategyChainId: number
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
@@ -444,13 +443,13 @@ async function simulateConfirmDirectWithdraw(
       sender: strategyAddress,
       chainID: strategyChainId,
     },
-    VAULT_ASSET,
+    vaultAsset,
     withdrawnAmount,
     confirmMessage
   );
 }
 
-async function simulateConfirmRedeemToAnyToken(
+export async function simulateConfirmRedeemToAnyToken(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
@@ -459,7 +458,11 @@ async function simulateConfirmRedeemToAnyToken(
   fractionOfTotalShares: BigNumber,
   totalAssetsBefore: BigNumber,
   executionNonce: number,
-  crossChainTxId: number
+  crossChainTxId: number,
+  vaultAsset: string,
+  strategyAddress: string,
+  strategyChainId: number,
+
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
@@ -470,7 +473,7 @@ async function simulateConfirmRedeemToAnyToken(
       withdrawZRC20,
       withdrawnAmount,
       fractionOfTotalShares,
-      ZC_CHAIN_ID,
+      7000,
       false,
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
@@ -480,16 +483,16 @@ async function simulateConfirmRedeemToAnyToken(
   );
 
   // Mock token balance setup for the test environment
-  await setTokenBalance(VAULT_ASSET, amanaVault.address, withdrawnAmount, 3);
+  await setTokenBalance(vaultAsset, amanaVault.address, withdrawnAmount, 3);
 
   // Return the transaction object so it can be awaited or used in tests
   return await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
-      sender: STRATEGY_ADDRESS,
-      chainID: STRATEGY_CHAIN_ID,
+      sender: strategyAddress,
+      chainID: strategyChainId,
     },
-    VAULT_ASSET,
+    vaultAsset,
     withdrawnAmount,
     confirmMessage
   );

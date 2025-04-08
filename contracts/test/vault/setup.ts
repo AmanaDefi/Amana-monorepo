@@ -87,6 +87,9 @@ export async function setupVaultFixture() {
   await gasTank.authorizeVault(amanaVault.address);
   console.log(`Vault authorized with GasTank.`);
 
+  await gasTank.authorizeVault(withdrawHelper.address);
+  console.log(`WithdrawHelper authorized with GasTank.`);
+
   await amanaVault.setStrategy(STRATEGY_ADDRESS);
 
   const depositAmount1 = ethers.utils.parseUnits("100", 18);
@@ -118,7 +121,7 @@ export async function setupVaultFixture() {
     otherZRC20,
     usdcBSC,
     pythContract,
-    GatewayZEVMABI
+    gatewayZEVM
   };
 }
 
