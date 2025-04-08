@@ -34,8 +34,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     it("should correctly initialize the vault", async function () {
       const { amanaVault, owner } = await loadFixture(setupVaultFixture);
 
-      expect(await amanaVault.name()).to.equal("AaveV3EthVault");
-      expect(await amanaVault.symbol()).to.equal("AVU");
+      expect(await amanaVault.name()).to.equal(vaultConfig.name);
+      expect(await amanaVault.symbol()).to.equal(vaultConfig.symbol);
       expect(await amanaVault.asset()).to.equal(vaultConfig.asset);
       expect(await amanaVault.owner()).to.equal(await owner.getAddress());
       expect(await amanaVault.perfFee()).to.equal(vaultConfig.feeRate);
@@ -53,14 +53,17 @@ describe("AmanaConnectedChainVault Tests", function () {
       const { user1, depositAmount1, amanaVault, vaultAsset, gatewaySigner } = await loadFixture(setupVaultFixture);
       // await setTokenBalance(ZC_ETH_ETH_ADDRESS, amanaVault.address, 0, 3);
 
+      // fund user with vault asset so that they can deposit
       await setTokenBalance(vaultConfig.asset, await user1.getAddress(), depositAmount1, 3);
-
+      console.log("User1 balance: ", (await vaultAsset.balanceOf(await user1.getAddress())).toString());
+      console.log("vaultAsset address: ", vaultAsset.address);
+      console.log("Deposit amount: ", depositAmount1.toString());
       await vaultAsset.connect(user1).approve(amanaVault.address, depositAmount1);
       const minSharesOut = depositAmount1.mul(1000).div(1001);
       await amanaVault.connect(user1)["deposit(uint256,uint256,address)"](depositAmount1, minSharesOut, await user1.getAddress());
-
+      console.log("Deposit function called");
       await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, depositAmount1, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-
+      console.log("Deposit confirmed");
       const totalShares = await amanaVault.balanceOf(await user1.getAddress());
 
       expect(totalShares).to.be.closeTo(depositAmount1, ERROR_MARGIN);

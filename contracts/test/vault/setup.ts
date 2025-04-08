@@ -1,20 +1,13 @@
 import { ethers, network, upgrades } from "hardhat";
 import { Signer, BigNumber } from "ethers";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
-import { ZC_USDT_BSC_ADDRESS, ZC_BNB_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_ETH_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
+import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
 import { AmanaConnectedChainVault } from "../../typechain";
+import { vaultConfig, strategyConfig, txConfig } from "../config/testConfig";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
-const VAULT_ASSET = ZC_USDT_BSC_ADDRESS;
-const GAS_LIMIT_FOR_WITHDRAW_AND_CALL = 300000;
-const GAS_LIMIT_FOR_CALL = 300000;
-const FEE_RATE = 1000;
-const STRATEGY_ADDRESS = "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE";
-const STRATEGY_GAS_TOKEN = ZC_BNB_BSC_ADDRESS;
-const ORIGIN_CHAIN_GAS_TOKEN = ZC_ETH_ETH_ADDRESS;
-const ORIGIN_CHAIN_ZRC20_INPUT = ZC_ETH_ETH_ADDRESS;
-const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43"; // Replace with your Pyth contract address
+const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43";
 
 export async function setupVaultFixture() {
   const FORK_BLOCK_NUMBER = 7624477;
@@ -32,7 +25,7 @@ export async function setupVaultFixture() {
   const [owner, user1, user2] = await ethers.getSigners();
 
   const otherZRC20 = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
-  const vaultAsset = await ethers.getContractAt("IERC20", VAULT_ASSET);
+  const vaultAsset = await ethers.getContractAt("IERC20", vaultConfig.asset);
   const usdcBSC = await ethers.getContractAt("IERC20", ZC_USDC_BSC_ADDRESS);
 
   let gatewaySigner = await setupGatewaySigner();
@@ -68,11 +61,11 @@ export async function setupVaultFixture() {
     [
       "AaveV3EthVault",
       "AVU",
-      VAULT_ASSET,
+      vaultConfig.asset,
       amanaRegistry.address,
-      FEE_RATE,
-      GAS_LIMIT_FOR_WITHDRAW_AND_CALL,
-      GAS_LIMIT_FOR_CALL,
+      vaultConfig.feeRate,
+      vaultConfig.gasLimitWithdrawAndCall,
+      vaultConfig.gasLimitCall,
       false,
     ],
     {
@@ -90,18 +83,22 @@ export async function setupVaultFixture() {
   await gasTank.authorizeVault(withdrawHelper.address);
   console.log(`WithdrawHelper authorized with GasTank.`);
 
-  await amanaVault.setStrategy(STRATEGY_ADDRESS);
+  await amanaVault.setStrategy(strategyConfig.address);
 
   const depositAmount1 = ethers.utils.parseUnits("100", 18);
   const depositAmount2 = ethers.utils.parseUnits("50", 18);
 
   const rewardAmount = BigNumber.from(1000); // Example reward amount
 
-  await setTokenBalance(STRATEGY_GAS_TOKEN, gasTank.address, depositAmount1.mul(20).div(1), 3);
-  await setTokenBalance(ORIGIN_CHAIN_GAS_TOKEN, gasTank.address, depositAmount1.mul(20000).div(1), 3);
+  // supply the gas tank with the gasToken of the strategy contract chain, to fund deposits
+  await setTokenBalance(strategyConfig.gasToken, gasTank.address, depositAmount1.mul(20).div(1), 3);
+  // supply the gas tank with the gasToken of the origin chain, to fund withdrawals
+  await setTokenBalance(txConfig.originGasToken, gasTank.address, depositAmount1.mul(20000).div(1), 3);
 
-  await setTokenBalance(VAULT_ASSET, await owner.getAddress(), depositAmount1.mul(20).div(1), 3);
-  await setTokenBalance(ORIGIN_CHAIN_ZRC20_INPUT, await owner.getAddress(), depositAmount1.mul(200).div(1), 3);
+  // supply the owner address with an amount of vault asset, so they can make deposits
+  await setTokenBalance(vaultConfig.asset, await owner.getAddress(), depositAmount1.mul(20).div(1), 3);
+
+  await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), depositAmount1.mul(200).div(1), 3);
   await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), depositAmount1.mul(200).div(1), 3);
 
   return {
@@ -131,6 +128,7 @@ async function setupGatewaySigner(): Promise<Signer> {
       method: "hardhat_impersonateAccount",
       params: [ZEVM_GATEWAY_ADDRESS],
     });
+    // fund the gateway signer with some ETH
     await network.provider.send("hardhat_setBalance", [
       ZEVM_GATEWAY_ADDRESS,
       ethers.utils.parseEther("10").toHexString(),

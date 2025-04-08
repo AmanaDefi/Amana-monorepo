@@ -30,7 +30,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
 
   let PYTH_CONTRACT_ADDRESS;
-  if (network === "zetachain") {
+  if (network === "zeta_mainnet") {
     PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_ZETACHAIN;
   } else if (network === "base") {
     PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_BASE;
@@ -38,12 +38,12 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_POLYGON;
   } else {
     throw new Error(
-      `Unsupported network: ${network}. Supported networks are: zetachain, base, polygon.`
+      `Unsupported network: ${network}. Supported networks are: zeta_mainnet, base, polygon.`
     );
   }
   console.log(`📍 Pyth contract address: ${PYTH_CONTRACT_ADDRESS}`);
   let priceIds;
-  if (network === "zetachain") {
+  if (network === "zeta_mainnet") {
     console.log("Setting price feeds for Zetachain...")
     priceIds = priceIdsZetachain;
   } else if (network === "base") {
@@ -56,7 +56,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   if (!priceIds) {
     throw new Error(
-      `Unsupported network: ${network}. Supported networks are: zetachain, base, polygon.`
+      `Unsupported network: ${network}. Supported networks are: zeta_mainnet, base, polygon.`
     );
   }
 
