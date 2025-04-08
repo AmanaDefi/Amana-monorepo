@@ -9,6 +9,7 @@ import { Account } from "thirdweb/wallets";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { usePathname } from "next/navigation";
 
 export const ZERO_ACCOUNT: Account = {
   address: "0x0000000000000000000000000000000000000000",
@@ -26,17 +27,17 @@ export const ZERO_ACCOUNT: Account = {
 interface VaultsContainerProps {
   activeChain?: Chain; // Make activeChain optional
   defaultAccount?: Account; // Optional default account
-  old?: boolean
 }
 
-const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultAccount = ZERO_ACCOUNT, old = false }) => {
+const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultAccount = ZERO_ACCOUNT }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
   const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>([]);
   const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
+  const pathname = usePathname();
 
-  const vaults: VaultData[] = old ? DEPRECATED_VAULT_DATA : VAULT_DATA;
+  const vaults: VaultData[] = pathname.includes("old-vaults") ? DEPRECATED_VAULT_DATA : VAULT_DATA;
   const EOAaccount = useActiveAccount() || defaultAccount;
   const { walletAddress } = useMultiChain();
 

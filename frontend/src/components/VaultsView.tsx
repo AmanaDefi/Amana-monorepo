@@ -1,7 +1,7 @@
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, UserVaultBalance } from "../types/types";
 import { Address } from "thirdweb";
 import { Account } from "thirdweb/wallets";
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from "next/image";
 import { formatBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { useActiveAccount } from "thirdweb/react";
@@ -21,10 +21,11 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   vaultAPYs,
   userVaultBalances,
   vaultTotalAssets,
-  vaultTotalAssetsinToken
+  vaultTotalAssetsinToken,
 }) => {
   const router = useRouter();
-
+  const pathname = usePathname();
+  const path = pathname.includes("old-vaults") ? "old-vaults" : "vaults";
   return (
     <div>
       {loading ? (
@@ -58,7 +59,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
             <tbody className="bg-gray-900">
               {vaults.map((vault) => (
                 <tr key={vault.id}
-                  onClick={() => { router.push("/vaults/" + vault.id) }}
+                  onClick={() => { router.push(path + `/${vault.id}`) }}
                   role="button"
                   className='hover:bg-gray-800 transition-colors'
                 >

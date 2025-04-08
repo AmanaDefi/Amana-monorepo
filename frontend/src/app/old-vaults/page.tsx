@@ -10,8 +10,6 @@ import { Note } from "@/components/Note";
 
 
 export default function Page() {
-    const account = useActiveAccount();
-    const wallet = useWallet();
     return (
         <div className='flex flex-col w-full'>
             <div className='w-full text-center bg-amber-50'>
@@ -26,7 +24,7 @@ export default function Page() {
             <Note />
             <div className="flex-1 flex flex-col w-full justify-between pb-10">
                 <div className="flex-1 p-4 container mx-auto gap-5">
-                    <VaultsContainer old />
+                    <VaultsContainer />
                 </div>
             </div>
         </div>
