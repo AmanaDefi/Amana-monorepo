@@ -76,10 +76,7 @@ const ChainSwitcher: React.FC = () => {
     }
 
     setIsLoading(chain.id);
-    try {    
-     // Show loading toast
-     showLoadingToast(`Switching to ${chain.name}...`);
-      
+    try {          
       // Switch chain
       await switchChain(chain);
       

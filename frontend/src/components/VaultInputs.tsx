@@ -190,19 +190,14 @@ export default function VaultInputs({
     if (!inputToken) return;
     let value = e.currentTarget.value;
 
-     // Handle empty or invalid input
-    if (!value || isNaN(Number(value))) {
-     setInputBalance({ value: BigInt(0), formatted: "0", formattedUSD: "0" });
-     return;
-    }
-
     // Format the number properly
     if (!value.includes('.')) {
       value = String(Number(value));
-    } else {
-      const parts = value.split('.');
-      const cleanIntegers = parts[0] === '' ? '0' : String(Number(parts[0]));
-      value = parts[1] === undefined ? cleanIntegers : `${cleanIntegers}.${parts[1]}`;
+    }
+    else {
+      const [integers, decimals] = value.split('.');
+      const cleanIntegers = String(Number(integers));
+      value = `${cleanIntegers}.${decimals}`;
     }
 
     const [integers, decimals] = value.split('.');
@@ -215,19 +210,10 @@ export default function VaultInputs({
 
     console.log("Input Amount", inputAmt);
 
-    try {
-      // Convert string amt to bigint
-      const newAmt = parseUnits(inputAmt, decimalsNumber);
-      setInputBalance({ 
-        value: newAmt, 
-        formatted: inputAmt, 
-        formattedUSD: String(Number(inputAmt) * inputTokenPrice) 
-      });
-    } catch (error) {
-      console.error("Error parsing input amount:", error);
-      // Set to zero or some default value on error
-      setInputBalance({ value: BigInt(0), formatted: "0", formattedUSD: "0" });
-    }
+  // convert string amt to bigint
+  const newAmt = parseUnits(inputAmt, decimalsNumber);
+    
+  setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
 
 
   }, [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals])
