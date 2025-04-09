@@ -406,20 +406,46 @@ export function isSolanaAddress(address: any): boolean {
   }
 }
 
+// Updated the getERC20TokenBalance function
 export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: string, chain: any) => {
-  const contract = getContract({
-    client,
-    chain: chain,
-    address: tokenAddress
-  });
-  const { value, decimals } = await getBalance({
-    contract,
-    address: walletAddress as Address,
-  });
+  try {
+    // Create the contract instance
+    const contract = getContract({
+      client,
+      chain: chain,
+      address: tokenAddress as Address
+    });
+    
+    try {
+      const { value, decimals } = await getBalance({
+        contract,
+        address: walletAddress as Address,
+      });
 
-  return {
-    balance: value,
-    decimals
+      return {
+        balance: value,
+        decimals
+      };
+    } catch (error) {
+      console.error("Error fetching token balance:", error);
+      
+      // Special handling for "AbiDecodingZeroDataError"
+      if (error instanceof Error && error.name === "AbiDecodingZeroDataError") {
+        console.warn("Zero data returned from contract. Contract may not exist or implement the expected functions.");
+      }
+      
+      // Return a default value when balance fetching fails
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+  } catch (error) {
+    console.error("Error initializing contract:", error);
+    return {
+      balance: 0n,
+      decimals: 18
+    };
   }
 };
 

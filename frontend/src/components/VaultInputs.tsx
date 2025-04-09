@@ -24,6 +24,7 @@ import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getShares
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
 import { showErrorToast } from "@/toasts";
+import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -165,6 +166,12 @@ export default function VaultInputs({
     console.log("Token selected:", selectedToken); // Debug log
     setInputToken(selectedToken);
     setAllowInput(true);
+
+  //    // After setting the token, check if we need to update the UI for the new chain
+  // // The chain switch itself is handled by ChainTokenSelector internally
+  // if (activeChain?.id !== selectedToken.chainId) {
+  //   console.log(`Chain switched from ${activeChain?.id} to ${selectedToken.chainId}`);
+  //   // You may want to reset some state or perform other actions when chain changes
   }
 
   async function switchTokens() {
@@ -445,6 +452,13 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={switchTokens}
       />
+      <div className="token-selection-container">
+        <ChainTokenSelector 
+          onSelectToken={handleTokenSelect}
+          selectedToken={inputToken}
+          className="w-full"
+        />
+      </div>
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
         onSelectToken={isDeposit ? handleTokenSelect : () => { }}

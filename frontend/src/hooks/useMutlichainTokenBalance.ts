@@ -13,37 +13,50 @@ export const useMutlichainTokenBalance = (token: Token | undefined) => {
 
     useEffect(() => {
         const fetchBalance = async () => {
-            if (!walletAddress || !token) {
-                setBalance({
-                    value: 0n,
-                    formatted: "0"
-                })
-                return;
-            }
+            try {
+                if (!walletAddress || !token) {
+                    setBalance({
+                        value: 0n,
+                        formatted: "0"
+                    })
+                    return;
+                }
 
-            if (token.isNative) {
+                if (token.isNative) {
+                    setBalance(nativeBalance);
+                    return;
+                }
 
-                const decimals = token.address == zeroSolAddress ? 9 : 18;
-                setBalance(nativeBalance);
-                return;
-            }
-
-            if (isSolanaAddress(token.address) && isSolanaAddress(walletAddress)) {
-                const { balance, decimals } = await getSplTokenBalance(walletAddress, token.address);
-                setBalance({
-                    value: balance,
-                    formatted: (balance / 10 ** decimals).toFixed(4)
-                })
-            } else if (isEthereumAddress(token.address) && isEthereumAddress(walletAddress)) {
-                const { balance, decimals } = await getERC20TokenBalance(walletAddress, token.address, activeChain);
-                setBalance({
-                    value: balance,
-                    formatted: (Number(balance) / 10 ** decimals).toFixed(4)
-                })
+                if (isSolanaAddress(token.address) && isSolanaAddress(walletAddress)) {
+                    try {
+                        const { balance, decimals } = await getSplTokenBalance(walletAddress, token.address);
+                        setBalance({
+                            value: balance,
+                            formatted: (balance / 10 ** decimals).toFixed(4)
+                        });
+                    } catch (error) {
+                        console.error("Error fetching Solana token balance:", error);
+                        setBalance({ value: 0n, formatted: "0" });
+                    }
+                } else if (isEthereumAddress(token.address) && isEthereumAddress(walletAddress)) {
+                    try {
+                        const { balance, decimals } = await getERC20TokenBalance(walletAddress, token.address, activeChain);
+                        setBalance({
+                            value: balance,
+                            formatted: (Number(balance) / 10 ** decimals).toFixed(4)
+                        });
+                    } catch (error) {
+                        console.error("Error fetching EVM token balance:", error);
+                        setBalance({ value: 0n, formatted: "0" });
+                    }
+                }
+            } catch (error) {
+                console.error("Error in fetchBalance:", error);
+                setBalance({ value: 0n, formatted: "0" });
             }
         }
         fetchBalance();
-    }, [token, walletAddress]);
+    }, [token, walletAddress, activeChain, nativeBalance]);
 
     return balance
 }

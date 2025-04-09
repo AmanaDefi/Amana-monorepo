@@ -44,6 +44,7 @@ interface MultiChainContextType {
   disconnectWallet: () => void;
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
+  switchToChain: (chain: Chain) => Promise<void>;
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -151,6 +152,30 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     else setActiveChain(null);
   }, [selectedChain, chain]);
 
+  const switchToChain = async (chain: Chain) => {
+    try {
+      if (chain.id === CHAIN_ID.solana) {
+        setSelectedChain("solana");
+        setActiveChain(chainConfigs[CHAIN_ID.solana]);
+      } else {
+        // For EVM chains, we need to request the wallet to switch chains
+        const wallet = activeAccount;
+        if (wallet) {
+          try {
+            // This will prompt the user's wallet to switch chains
+            await wallet.switchChain(chain);
+            setSelectedChain("evm");
+            setActiveChain(chain);
+          } catch (error) {
+            console.error("Failed to switch chain in wallet:", error);
+            // Handle error appropriately
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in switchToChain:", error);
+    }
+  };
 
   return (
     <MultiChainContext.Provider
@@ -164,6 +189,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         disconnectWallet,
         isModalOpen,
         setIsModalOpen,
+        switchToChain,
       }}
     >
       {children}
