@@ -26,6 +26,7 @@ import { Wallet } from "@coral-xyz/anchor";
 import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
 import { VAULT_DATA } from "@/constants";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -885,7 +886,7 @@ export const executeSolanaWithdrawal = async (
   // Prepare payload (calldata to pass to the receiver)
   const args = {
     types: ["address", "bytes32", "uint256", "uint256", "uint16", "bytes32", "bytes32"],
-    values: [withdrawZRC20, splMint, withdrawShareAmount, minAmountOut, slippageValue, transactionId, ethers.getBytes(walletContext.publicKey!.toBytes())]
+    values: [withdrawZRC20, splMint, withdrawShareAmount, minAmountOut, slippageValue, transactionId, walletContext.publicKey?.toBase58()]
   }
 
   const txHash = await client.solanaWithdrawal(vaultId, args);

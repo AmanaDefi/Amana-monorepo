@@ -7,7 +7,7 @@ import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useEffect } from "react";
-export default function ConnectButton() {
+export default function MultiConnectButton() {
   const {
     selectedChain,
     walletAddress,
