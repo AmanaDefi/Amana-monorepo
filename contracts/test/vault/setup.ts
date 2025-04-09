@@ -85,8 +85,6 @@ export async function setupVaultFixture() {
 
   await amanaVault.setStrategy(strategyConfig.address);
 
-
-
   // supply the gas tank with the gasToken of the strategy contract chain, to fund deposits
   await setTokenBalance(strategyConfig.gasToken, gasTank.address, txConfig.gasTankAmount, 3);
   // supply the gas tank with the gasToken of the origin chain, to fund withdrawals
