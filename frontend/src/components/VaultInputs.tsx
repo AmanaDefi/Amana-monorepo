@@ -127,7 +127,6 @@ export default function VaultInputs({
       setInputTokenBalance(tokenBalance!.formatted);
       setInputBalance({
         ...tokenBalance,
-        formatted: "0",
       })
     }
   }, [tokenBalance, isDeposit]);
@@ -212,11 +211,12 @@ export default function VaultInputs({
   const handleMaxClick = useCallback(() => {
     if (!inputToken) return;
     if (isDeposit) {
-      handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
+      // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
+      setInputBalance(tokenBalance);
     } else {
       handleChangeInput({ currentTarget: { value: vaultTotalAssetinToken?.toString() } } as React.ChangeEvent<HTMLInputElement>);
     }
-  }, [handleChangeInput, inputToken, inputTokenBalance, isDeposit, vaultTotalAssetinToken])
+  }, [handleChangeInput, inputToken, tokenBalance, isDeposit, vaultTotalAssetinToken])
 
   const tokenList = useMemo(() => {
     return activeChain?.id === 7001 || activeChain?.id === 7000
