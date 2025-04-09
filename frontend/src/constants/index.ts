@@ -104,7 +104,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x671C6Ecce2c6B52f5Fbf66b35a593d04CbB69DA3",
+    id: "0xfF74198E4805f205266d9cEC5D8E4401Bd9F8Efe",
     name: "USDT Lend Pool - New",
     des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
     symbol: "aPolUSDT",
@@ -120,7 +120,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Compound",
-      strategyAddress: "0x5Feb6E013A6f1fd2135ccA330D875Fd0b4e6F2F5",
+      strategyAddress: "0xe8bc1B1EBA3a7A5c97E7eEB2d373d17856856777",
       gaugeAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
       network: "Polygon",
       chainId: 137,
