@@ -66,9 +66,10 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
         address _inputTokenAddress,
         address _receiptTokenAddress,
         address _swapHelperOnBase,
-        address _gateway
+        address _gateway,
+        address _withdrawHelper
     )
-        StrategyParent(_name, _amanaVault, _gateway)
+        StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
         receiptToken = I4626Vault(_receiptTokenAddress);
@@ -277,7 +278,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
         uint16 maxDeadline,
         bytes memory data
     ) internal returns (uint256 amountOut) {
-        console.log("got here");
         amountOut = 0;
         uint256 minimumOut = calculateMinAmountOut(
             tokenIn,

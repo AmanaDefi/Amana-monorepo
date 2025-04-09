@@ -41,26 +41,32 @@ export const useUpdateVaultBalanceAndTotal = (
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
             try {
-              const balance = await fetchUserVaultBalance(
-                address as Address,
-                vault.id as Address
-              );
+              let balance: any;
+              let newTotalAssetsinToken: any;
+              if (address) {
+                balance = await fetchUserVaultBalance(
+                  address as Address,
+                  vault.id as Address
+                )
+                newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
+                  vault.inputToken.decimals,
+                  address as Address,
+                  vault.id as Address
+                );
+              } else {
+                balance = "Error"
+                newTotalAssetsinToken = "Error"
+              }
               const newTotalAssets = await fetchTotalAssets(vault.id as Address);
 
               // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
-              const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
-                vault.inputToken.decimals,
-                address as Address,
-                vault.id as Address
-              );
-
 
               console.log({
                 vaultId: vault.id,
                 balance,
                 totalAssets: newTotalAssets.toString(),
                 totalAssetsinToken: newTotalAssetsinToken.toString(),
-              }, "HHHHHHHHHHHHH")
+              })
               return {
                 vaultId: vault.id,
                 balance,
@@ -99,7 +105,7 @@ export const useUpdateVaultBalanceAndTotal = (
       }
     };
 
-    if (walletAddress && vaults.length > 0) {
+    if (vaults.length > 0) {
       updateVaultBalanceAndTotal();
     }
   }, [vaults, walletAddress, setUserVaultBalances, setVaultTotalAssets]);

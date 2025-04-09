@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { ZC_USDT_POL_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_ETH_ETH_ADDRESS, ZC_USDT_POL_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -27,6 +27,84 @@ export const tokens: Token[] = [
   },
 ]
 
+const OLD_VAULT_DATA: VaultData[] = [
+  {
+    id: "0xe1e40a368e11B0cE6B16745984c26b19AD9B8D31",
+    name: "USDT Lend Pool - Deposits Paused",
+    des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+    symbol: "aPolUSDT",
+    imgURL: "/polygon_logo.png",
+    inputToken: {
+      symbol: "USDT.POL",
+      decimals: 6,
+      address: ZC_USDT_POL_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Compound",
+      strategyAddress: "0xfb8ae3096bbE8da1B910D193e029F3dFefa4A618",
+      gaugeAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+      network: "Polygon",
+      chainId: 137,
+      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
+      imgURL: "/compound.png",
+      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
+    },
+  },
+  {
+    id: "0xcE6bF4B9C0BFEfdB2A030163683141224E2F1a84", // Aave USDT on BNB
+    name: "USDT Lend Pool V2 - Deposits Paused",
+    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
+    symbol: "aAaveUSDT",
+    imgURL: "/bnb_logo.png",
+    inputToken: {
+      symbol: "USDT.BNB",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x1aaA558F422dFA7BF0E643A1543959B2bf9Ba812",
+      network: "BNB",
+      chainId: 56,
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      imgURL: "/aave.png",
+      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
+    },
+  },
+  {
+    id: "0xb1d9b596799aC5fe6Ac7510392EC037B5Df04724", // Aave USDT on BNB
+    name: "USDT Lend Pool - Deposits paused",
+    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
+    symbol: "aAaveUSDT",
+    imgURL: "/bnb_logo.png",
+    inputToken: {
+      symbol: "USDT.BNB",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x0AebE2977E81Da0A241A2c7359f8727BB3618437",
+      network: "BNB",
+      chainId: 56,
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      imgURL: "/aave.png",
+      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
+    },
+  },
+];
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
     id: "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e", // Base ZeroLend USDC Vault
@@ -45,7 +123,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "ZeroLend",
-      strategyAddress: "0x7CA437BfeAB2dAce82CFA6c48Da44B04D4cb6Bd4",
+      strategyAddress: "0xC967154127af55cecC47328B06385EFd8f8C427E",
       network: "Base",
       chainId: 8453,
       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
@@ -95,7 +173,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Fluid",
-      strategyAddress: "0xCf867eF209d76f3C66ed5eDCe8391f4A5660C3a5",
+      strategyAddress: "0x5D4a0eF44758c9ab0571b67927ED0B849bbB12D0",
       network: "Base",
       chainId: 8453,
       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
@@ -104,82 +182,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
 
-  {
-    id: "0xe1e40a368e11B0cE6B16745984c26b19AD9B8D31",
-    name: "USDT Lend Pool",
-    des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
-    symbol: "aPolUSDT",
-    imgURL: "/polygon_logo.png",
-    inputToken: {
-      symbol: "USDT.POL",
-      decimals: 6,
-      address: ZC_USDT_POL_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Compound",
-      strategyAddress: "0xfb8ae3096bbE8da1B910D193e029F3dFefa4A618",
-      gaugeAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
-      network: "Polygon",
-      chainId: 137,
-      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
-      imgURL: "/compound.png",
-      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
-    },
-  },
-  {
-    id: "0xcE6bF4B9C0BFEfdB2A030163683141224E2F1a84", // Aave USDT on BNB
-    name: "USDT Lend Pool V2",
-    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
-    symbol: "aAaveUSDT",
-    imgURL: "/bnb_logo.png",
-    inputToken: {
-      symbol: "USDT.BNB",
-      decimals: 18,
-      address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x1aaA558F422dFA7BF0E643A1543959B2bf9Ba812",
-      network: "BNB",
-      chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-      imgURL: "/aave.png",
-      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
-    },
-  },
-  {
-    id: "0xB6644BE3B49928E4F4C102BdAc8381657958e89f", // Aave USDT on BNB
-    name: "USDT Lend Pool",
-    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
-    symbol: "aAaveUSDT",
-    imgURL: "/bnb_logo.png",
-    inputToken: {
-      symbol: "USDT.BNB",
-      decimals: 18,
-      address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x36c7fEdE7556A07AE4f4a4165532f75aa21f2710",
-      network: "BNB",
-      chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-      imgURL: "/aave.png",
-      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
-    },
-  },
+  // 
 
   // {
   //   id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
@@ -256,31 +259,31 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Euler is one of the oldest and most established lending protocols in web3. It is highly trusted."
   //   },
   // },
-  {
-    id: "0x25f43240450c43c58Cb7CDbB424C0c80001C72E3",
-    name: "Moonwell Flagship USDC",
-    des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
-    symbol: "aMoonwellUSDC",
-    imgURL: "/base.png",
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Moonwell",
-      strategyAddress: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-      imgURL: "/Moonwell.jpg",
-      des: "Moonwell is a relatively new protocol."
-    },
-  },
+  // {
+  //   id: "0x25f43240450c43c58Cb7CDbB424C0c80001C72E3",
+  //   name: "Moonwell Flagship USDC",
+  //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
+  //   symbol: "aMoonwellUSDC",
+  //   imgURL: "/base.png",
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Moonwell",
+  //     strategyAddress: "0x7287b68099308cEf2581BE1e24b4A7C9C9a226fC",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/Moonwell.jpg",
+  //     des: "Moonwell is a relatively new protocol."
+  //   },
+  // },
   // {
   //   id: "0xBc1BAF5a96E8302c5469B0D3A8D5AD3aAccCAE7b",
   //   name: "Moonwell Eth",
@@ -611,5 +614,6 @@ const TESTNET_VAULT_DATA: VaultData[] = [
 
 // Export the appropriate vault data based on DEPLOY_ENV
 export const VAULT_DATA = deployEnv === "testnet" ? TESTNET_VAULT_DATA : MAINNET_VAULT_DATA;
+export const DEPRECATED_VAULT_DATA = deployEnv === "testnet" ? TESTNET_VAULT_DATA : OLD_VAULT_DATA;
 
 export const USER_SETTINGS_LOCAL_STORAGE_KEY = 'user_settings';

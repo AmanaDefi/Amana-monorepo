@@ -102,6 +102,6 @@ abstract contract ERC20StrategyParent is StrategyParent {
         if (balance == 0) {
             revert NothingToWithdraw();
         }
-        inputToken.safeTransfer(owner(), balance);
+        IERC20(_token).safeTransfer(owner(), balance);
     }
 }

@@ -6,18 +6,18 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol";
 
-import "./libraries/SwapHelperLibEddy.sol";
+import "./SwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
 import "./interfaces/ISwapRouter.sol";
 
 contract ZapContract {
-    using SwapHelperLibEddy for address;
     using Address for address payable;
     using SafeERC20 for IERC20;
 
     address public owner;
+    address public swapHelper;
 
-    IWETH9 constant wZeta = IWETH9(SwapHelperLibEddy.WZETA_TOKEN);
+    IWETH9 constant wZeta = IWETH9(0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf);
 
     event ZapDeposit(
         address indexed user,
@@ -32,21 +32,21 @@ contract ZapContract {
         _;
     }
 
-    constructor() {
+    constructor(address _swapHelper) {
+        swapHelper = _swapHelper;
         owner = msg.sender;
     }
 
     /**
-     * @notice Swaps a specific amount of tokens for another token.
-     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
-     * @param zrc20 The address of the input token.
-     * @param amount The amount of input tokens to swap.
-     * @param targetZRC20 The address of the output token.
-     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
-     * @param maxDeadline The maximum deadline for the swap to complete.
-     * @return The amount of output tokens received.
-     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     * @dev Updates the swap helper address for the vault. Can only be called by the owner.
+     * @param _swapHelper The address of the new swap helper.
+     * @notice Reverts if the swap helper address is zero.
      */
+    function updateSwapHelperAddress(address _swapHelper) external onlyOwner {
+        if (_swapHelper == address(0)) revert IErrors.InvalidAddress();
+        swapHelper = _swapHelper;
+    }
+
     /**
      * @notice Swaps a specific amount of tokens for another token.
      * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
@@ -65,76 +65,27 @@ contract ZapContract {
         uint16 slippageBps,
         uint16 maxDeadline
     ) internal returns (uint256 amountOut) {
-        uint256 minimumOut = SwapHelperLibEddy.calculateMinAmountOut(
+        bytes memory data = abi.encodeWithSignature(
+            "swap(address,uint256,address,uint16,address,uint16,bytes)",
             zrc20,
-            targetZRC20,
             amount,
-            slippageBps
+            targetZRC20,
+            slippageBps,
+            address(this),
+            maxDeadline,
+            "" // empty bytes param for future-proofing
         );
+        amountOut = _delegateCall(swapHelper, data);
+    }
 
-        (address curvePool, uint256 i, uint256 j) = SwapHelperLibEddy
-            .getCurvePool(zrc20, targetZRC20);
-        if (curvePool != address(0)) {
-            // Approve Curve pool to spend your tokens
-            IZRC20(zrc20).approve(curvePool, amount);
-
-            // Perform the swap
-            return
-                ICurvePool(curvePool).exchange(
-                    i, // Index of input token
-                    j, // Index of output token
-                    amount, // Amount of input token
-                    minimumOut // Minimum amount of output token to receive
-                );
-        } else {
-            // Get the path and fee tiers
-            (
-                address[] memory path,
-                ,
-                bytes memory encodedPath
-            ) = SwapHelperLibEddy.getPath(zrc20, targetZRC20);
-
-            if (encodedPath.length > 0) {
-                // Uniswap V3 Swap
-                IZRC20(zrc20).approve(
-                    SwapHelperLibEddy.UNISWAP_V3_ROUTER,
-                    amount
-                );
-
-                // Swap on Uniswap V3
-                ISwapRouter.ExactInputParams memory params = ISwapRouter
-                    .ExactInputParams({
-                        path: encodedPath,
-                        recipient: address(this),
-                        deadline: block.timestamp + maxDeadline,
-                        amountIn: amount,
-                        amountOutMinimum: minimumOut
-                    });
-
-                amountOut = ISwapRouter(SwapHelperLibEddy.UNISWAP_V3_ROUTER)
-                    .exactInput(params);
-            } else {
-                // Uniswap V2 Swap
-                IZRC20(zrc20).approve(
-                    SwapHelperLibEddy.UNISWAP_V2_ROUTER,
-                    amount
-                );
-
-                uint256[] memory amounts = IUniswapV2Router02(
-                    SwapHelperLibEddy.UNISWAP_V2_ROUTER
-                ).swapExactTokensForTokens(
-                        amount,
-                        minimumOut,
-                        path,
-                        address(this),
-                        block.timestamp + maxDeadline
-                    );
-
-                amountOut = amounts[amounts.length - 1];
-            }
-
-            return amountOut;
-        }
+    // Internal function for delegatecall
+    function _delegateCall(
+        address logicContract,
+        bytes memory data
+    ) internal returns (uint256) {
+        (bool success, bytes memory result) = logicContract.delegatecall(data);
+        require(success, "Delegatecall failed");
+        return abi.decode(result, (uint256));
     }
 
     // Function to zap tokens into the vault
@@ -154,7 +105,7 @@ contract ZapContract {
                 require(msg.value == amount, "Incorrect ZETA amount sent");
                 wZeta.deposit{value: msg.value}();
                 swappedAmount = swap(
-                    address(wZeta),
+                    inputToken,
                     amount,
                     vaultAsset,
                     slippage,
@@ -167,6 +118,7 @@ contract ZapContract {
                     address(this),
                     amount
                 );
+
                 swappedAmount = swap(
                     inputToken,
                     amount,
@@ -206,7 +158,7 @@ contract ZapContract {
                 swappedAmount = swap(
                     vaultAsset,
                     amount,
-                    SwapHelperLibEddy.WZETA_TOKEN,
+                    address(wZeta),
                     slippage,
                     200
                 );

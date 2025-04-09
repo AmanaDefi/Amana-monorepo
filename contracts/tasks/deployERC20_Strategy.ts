@@ -13,6 +13,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       `Wallet not found. Please, run "npx hardhat account --save" or set PRIVATE_KEY env variable (for example, in a .env file)`
     );
   }
+  const currentNonce = await hre.ethers.provider.getTransactionCount(signer.address);
+  console.log(`📟 Current on-chain nonce for ${signer.address}: ${currentNonce}`);
 
   // Fetch the vault address argument required for the BaseAaveStrategy constructor
   const contractName = args.contract;
@@ -21,10 +23,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const inputToken = args.inputToken;
   const receiptToken = args.receiptToken;
   const gateway = args.gateway;
-  if (args.swapHelper) {
-    const swapHelper = args.swapHelper;
-
-  }
+  const withdrawHelper = args.withdrawHelper;
 
   if (!name) {
     throw new Error("🚨 Strategy name is required");
@@ -47,8 +46,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway);
+  const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway, withdrawHelper);
   console.log("Contract deployed, waiting for confirmations...");
+  console.log(`📦 Deploy tx sent with nonce: ${contract.deployTransaction.nonce}`);
 
   // Wait for contract to be deployed before proceeding
   await contract.deployed();
@@ -63,7 +63,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, inputToken, receiptToken, gateway],
+        constructorArguments: [name, vault, inputToken, receiptToken, gateway, withdrawHelper],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -87,6 +87,7 @@ task("deploy-erc20-strategy", "Deploy a Strategy contract", main)
   .addParam("inputToken", "The address of the input token")
   .addParam("receiptToken", "The address of the receipt token")
   .addParam("gateway", "The address of the gateway contract")
+  .addParam("withdrawHelper", "The address of the WithdrawHelper contract")
   .addOptionalParam("swapHelper", "The address of the SwapHelper contract");
 
 export default {};

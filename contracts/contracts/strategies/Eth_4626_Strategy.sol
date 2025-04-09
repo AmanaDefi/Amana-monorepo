@@ -31,8 +31,9 @@ contract Eth_4626_Strategy is EthStrategyParent {
         address _amanaVault,
         address _receiptTokenAddress,
         address _gateway,
-        address _wethAddress
-    ) StrategyParent(_name, _amanaVault, _gateway) {
+        address _wethAddress,
+        address _withdrawHelper
+    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
         receiptToken = I4626Vault(_receiptTokenAddress);
         weth = IWETH(_wethAddress);
     }

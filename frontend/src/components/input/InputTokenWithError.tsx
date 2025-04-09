@@ -138,8 +138,7 @@ export default function InputTokenWithError({
                 ? "group-hover/max:text-white cursor-pointer "
                 : ""
                 }`}
-              onClick={allowInput ? onMaxClick : () => {
-              }}
+              onClick={allowInput ? onMaxClick : () => { }}
             >
               <div className={`mb-1 ${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
                 <svg
@@ -160,7 +159,7 @@ export default function InputTokenWithError({
               {
                 <p className={`${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
                   {inputTokenbalance
-                    ? formatBalance(Number(inputTokenbalance)).toString()
+                    ? inputTokenbalance
                     : "0"}
                 </p>
               }
@@ -179,7 +178,7 @@ export default function InputTokenWithError({
                     loadingOutputToken ?
                       <PendingDots /> :
                       (
-                        "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.assetsConversionInUSDFormatted)
+                        "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.finalConvertedAmountInUSDFormatted)
                       )
                   )
               }

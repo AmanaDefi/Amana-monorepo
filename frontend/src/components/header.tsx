@@ -6,8 +6,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import MobileMenuModal from "@/components/modal/MobileMenuModal";
-import ConnectButton from "./ConnectButton";
+// import ConnectButton from "./ConnectButton";
 import { useState } from "react";
+import { ConnectButton } from "thirdweb/react";
+import { client } from "@/utils/client";
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 
 export const wallets = [
   //   inAppWallet({
@@ -32,7 +36,7 @@ const Header = () => {
   return (
     <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">
       <Link href='/' className='flex items-center gap-2 lg:gap-3'>
-        <AmanaLogo height={30} className='h-[30px] w-auto md:h-[54px] text-white' />
+        <AmanaLogo height={30} className='h-[25px] w-auto md:h-[54px] text-white' />
         <h1 className="text-xl lg:text-3xl lg:leading-[44px] font-bold font-mono tracking-tighter text-zinc-100">AMANA</h1>
       </Link>
       <div className='flex items-center gap-3'>
@@ -66,9 +70,18 @@ const Header = () => {
             >
               Roadmap
             </span>
+            <span
+              className={`cursor-pointer ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
+                }`}
+              onClick={() => router.push("/old-vaults")}
+            >
+              Old Vaults
+            </span>
           </nav>
           {/* Select Network Modal */}
-          <ConnectButton />
+          <ChainSwitcher/>
+          {/* <ConnectButton /> */}
+          <ConnectButton wallets={wallets} chains={SUPPORTED_CHAINS} client={client} />
         </div>
         <MobileMenuModal />
       </div>

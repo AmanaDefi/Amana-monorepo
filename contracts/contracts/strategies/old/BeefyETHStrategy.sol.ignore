@@ -29,7 +29,7 @@ contract BeefyETHStrategy is EthStrategyParent {
         address _receiptTokenAddress,
         address _gateway,
         address _wethAddress
-    ) StrategyParent(_name, _amanaVault, _gateway) {
+    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
         receiptToken = IBeefyVault(_receiptTokenAddress);
         weth = IWETH(_wethAddress);
     }

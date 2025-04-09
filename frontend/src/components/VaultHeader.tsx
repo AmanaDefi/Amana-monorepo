@@ -18,7 +18,7 @@ import { Address, Chain, getContract } from "thirdweb";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
+import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -55,7 +55,7 @@ export default function VaultHeader({
     setdata1(formatBalance(Number(userVaultBalance)));
   }, [userVaultBalance]);
 
-  const walletTokenBalance = useMutlichainTokenBalance(inputToken);
+  const walletTokenBalance = useMultichainTokenBalance(inputToken);
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);

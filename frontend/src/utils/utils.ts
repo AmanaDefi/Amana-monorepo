@@ -121,7 +121,7 @@ export function formatBalance(balance: number) {
   }
 
   let remaining: string;
-  remaining = Number(balance.toFixed(2)).toString();
+  remaining = Number(balance.toFixed(4)).toString();
   return remaining;
 }
 

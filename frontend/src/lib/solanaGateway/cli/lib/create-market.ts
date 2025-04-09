@@ -394,11 +394,11 @@ export const createMarket = async (
         }
       }
       console.log("Market ID: ", `https://solscan.io/account/${marketAccounts.market.publicKey.toBase58()}${cluster == "devnet" ? "?cluster=devnet" : ""}`);
-      console.log("Market Event Queue:",marketAccounts.eventQueue.publicKey.toBase58())
-      console.log("Market Request Queue:",marketAccounts.requestQueue.publicKey.toBase58())
-      console.log("Market Bids:",marketAccounts.bids.publicKey.toBase58())
-      console.log("Market Asks:",marketAccounts.asks.publicKey.toBase58())
-      console.log("Base Vault:",marketAccounts.baseVault.publicKey.toBase58())
+      console.log("Market Event Queue:", marketAccounts.eventQueue.publicKey.toBase58())
+      console.log("Market Request Queue:", marketAccounts.requestQueue.publicKey.toBase58())
+      console.log("Market Bids:", marketAccounts.bids.publicKey.toBase58())
+      console.log("Market Asks:", marketAccounts.asks.publicKey.toBase58())
+      console.log("Base Vault:", marketAccounts.baseVault.publicKey.toBase58())
       console.log("Quote Vault", marketAccounts.quoteVault.publicKey.toBase58())
       return marketAccounts.market.publicKey;
     } catch (error) {
@@ -413,6 +413,6 @@ export const createMarket = async (
 
 import adminKey from '../../keys/admin.json';
 
-const wallet = Keypair.fromSecretKey(Uint8Array.from(adminKey));
+const wallet = Keypair.fromSecretKey(Uint8Array.from(adminKey as any));
 const tokenMint = new PublicKey(NUM_TOKEN_MINT);
 createMarket(wallet, tokenMint);

@@ -2,43 +2,48 @@ import { ethers, network } from "hardhat";
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import { Signer, BigNumber } from "ethers";
 
-export async function setTokenBalance(tokenAddress, account, amount, balanceSlot) {
-  const balanceAmount = ethers.BigNumber.from(amount);
+/**
+ * Sets the token balance of an account in a local Hardhat network.
+ *
+ * @param tokenAddress - Address of the token contract
+ * @param account - Address of the user to modify the balance for
+ * @param amount - The new balance (BigNumberish)
+ * @param balanceSlot - The storage slot where balances are stored (usually 0 or 3)
+ */
+export async function setTokenBalance(
+  tokenAddress: string,
+  account: string,
+  amount: BigNumber,
+  balanceSlot: number
+) {
   const normalizedAccount = ethers.utils.getAddress(account);
 
-  let computedSlot;
-
-  // Check if we're using OpenZeppelin's ERC-7201 storage slot
-  if (ethers.utils.isHexString(balanceSlot)) {
-    console.log(`Using ERC-7201 Storage Slot: ${balanceSlot}`);
-
-    // Hash the storage slot (since it's part of a struct)
-    computedSlot = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(["uint256"], [balanceSlot])
-    );
-  } else {
-    console.log(`Using Custom ERC20 Storage Slot: ${balanceSlot}`);
-
-    // Use the manually specified slot (e.g., 0, 3, or 9)
-    computedSlot = balanceSlot;
-  }
-
-  // Compute the final storage key (hashed address + slot)
-  const storageKey = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(["address", "uint256"], [normalizedAccount, computedSlot])
+  // Format the amount as a 32-byte hex string
+  const paddedValue = ethers.utils.hexZeroPad(
+    ethers.BigNumber.from(amount).toHexString(),
+    32
   );
 
-  // Set storage on the proxy contract or normal ERC20
+  // Compute the storage slot: keccak256(abi.encode(account, balanceSlot))
+  const rawSlot = ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(
+      ["address", "uint256"],
+      [normalizedAccount, balanceSlot]
+    )
+  );
+
+  // Convert slot to a QUANTITY (unpadded hex string with 0x prefix)
+  const slot = ethers.BigNumber.from(rawSlot).toHexString();
+  // Set the storage slot directly
   await network.provider.send("hardhat_setStorageAt", [
     tokenAddress,
-    storageKey,
-    ethers.utils.hexZeroPad(balanceAmount.toHexString(), 32), // Ensure 32-byte padding
+    slot,
+    paddedValue,
   ]);
 
-  // Verify balance update
+  // Verify it worked (optional)
   const token = await ethers.getContractAt("IERC20", tokenAddress);
-  const newBalance = await token.balanceOf(account);
-  console.log("Updated Balance:", ethers.utils.formatUnits(newBalance, 6)); // Adjust decimals if needed
+  const newBalance = await token.balanceOf(normalizedAccount);
 }
 
 
@@ -65,8 +70,8 @@ export async function simulateDepositCallFromVaultToStrategy(
 ) {
   // Attempt deposit from a non-gateway address
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage]
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage]
   );
   await
     strategy.connect(gatewaySigner).onCall(
@@ -87,14 +92,15 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   gatewaySigner: Signer,
   strategy: any,
   withdrawZRC20: any,
+  vaultSharesToBeBurnt: BigNumber,
   fractionOfTotalShares: BigNumber,
   minAmountOut: BigNumber,
   slippage: number,
   ORIGIN_CHAIN_ID: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, fractionOfTotalShares, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, vaultSharesToBeBurnt, fractionOfTotalShares, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
   );
   await
     strategy.connect(gatewaySigner).onCall(
@@ -115,7 +121,7 @@ export async function simulateSwitchCallFromVaultToStrategy(
   newStrategyAddress: any
 ) {
   const switchMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
     [
       ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
       ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
@@ -123,6 +129,7 @@ export async function simulateSwitchCallFromVaultToStrategy(
       ethers.constants.AddressZero,
       0, // minAmountOut (is usually just amount)
       0, // minSharesOut
+      0, // not used
       0, // withdrawChainId
       false, // isDeposit
       0, //ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId

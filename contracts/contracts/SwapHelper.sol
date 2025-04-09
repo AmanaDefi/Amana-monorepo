@@ -180,6 +180,58 @@ contract SwapHelper {
     }
 
     /**
+     * @notice Calculates the maximum acceptable input amount to receive a desired output amount.
+     * @param inputToken The address of the input token.
+     * @param outputToken The address of the output token.
+     * @param desiredOutputAmount The desired output amount in token units.
+     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
+     * @return The maximum acceptable input amount.
+     */
+    function calculateMaxAmountIn(
+        address inputToken,
+        address outputToken,
+        uint256 desiredOutputAmount,
+        uint16 slippageBps
+    ) internal view returns (uint256) {
+        bytes32 inputPriceFeed = getPriceFeedId(inputToken);
+        bytes32 outputPriceFeed = getPriceFeedId(outputToken);
+
+        require(
+            inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
+            "Invalid input token"
+        );
+        require(
+            outputPriceFeed != bytes32(0) || isStablecoin(outputToken),
+            "Invalid output token"
+        );
+
+        // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
+        uint256 inputPrice = isStablecoin(inputToken)
+            ? 1e8
+            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
+        uint256 outputPrice = isStablecoin(outputToken)
+            ? 1e8
+            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
+
+        require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
+
+        // Get token decimals
+        uint256 inputDecimals = getTokenDecimals(inputToken);
+        uint256 outputDecimals = getTokenDecimals(outputToken);
+
+        // Convert desired output to USD
+        uint256 desiredOutputInUsd = (desiredOutputAmount * outputPrice) /
+            (10 ** outputDecimals);
+
+        // Convert USD to input token amount
+        uint256 rawAmountIn = (desiredOutputInUsd * (10 ** inputDecimals)) /
+            inputPrice;
+
+        // Apply slippage buffer (increase the amount in)
+        return rawAmountIn + ((rawAmountIn * slippageBps) / 10000);
+    }
+
+    /**
      * @notice Sorts two token addresses in ascending order.
      * @dev Ensures consistent order for token pairs in Uniswap and other protocols.
      * @param tokenA The first token address.
@@ -238,7 +290,41 @@ contract SwapHelper {
         return (false, 0); // No valid V3 pool found
     }
 
-    function getPath(
+    function getPathV2(
+        address zrc20,
+        address targetZRC20
+    ) public view returns (address[] memory path) {
+        if (zrc20 == targetZRC20) {
+            revert IErrors.InvalidAddress();
+        }
+
+        // UniswapV2 Direct Swap
+        if (
+            _existsPairPool(zrc20, USDC_ETH_ADDRESS) &&
+            _existsPairPool(USDC_ETH_ADDRESS, targetZRC20)
+        ) {
+            path = new address[](3);
+            path[0] = zrc20;
+            path[1] = USDC_ETH_ADDRESS;
+            path[2] = targetZRC20;
+            return (path);
+        }
+
+        // UniswapV2 Indirect Swap via WZETA_TOKEN
+        if (
+            _existsPairPool(zrc20, WZETA_TOKEN) &&
+            _existsPairPool(WZETA_TOKEN, targetZRC20)
+        ) {
+            path = new address[](3);
+            path[0] = zrc20;
+            path[1] = WZETA_TOKEN;
+            path[2] = targetZRC20;
+            return (path);
+        }
+        return path;
+    }
+
+    function getPathV3(
         address zrc20,
         address targetZRC20
     )
@@ -267,18 +353,6 @@ contract SwapHelper {
             encodedPath = abi.encodePacked(path[0], feeTiers[0], path[1]);
             return (path, feeTiers, encodedPath);
         }
-        // UniswapV2 Direct Swap
-        if (
-            _existsPairPool(zrc20, USDC_ETH_ADDRESS) &&
-            _existsPairPool(USDC_ETH_ADDRESS, targetZRC20)
-        ) {
-            path = new address[](3);
-            feeTiers = new uint24[](1);
-            path[0] = zrc20;
-            path[1] = USDC_ETH_ADDRESS;
-            path[2] = targetZRC20;
-            return (path, feeTiers, "");
-        }
 
         // UniswapV3 Indirect Swap via USDC_ETH_ADDRESS (Checks both fee tiers)
         (exists, feeTier) = _existsV3Pool(zrc20, USDC_ETH_ADDRESS);
@@ -305,19 +379,7 @@ contract SwapHelper {
             }
         }
 
-        // UniswapV2 Indirect Swap via WZETA_TOKEN
-        if (
-            _existsPairPool(zrc20, WZETA_TOKEN) &&
-            _existsPairPool(WZETA_TOKEN, targetZRC20)
-        ) {
-            path = new address[](3);
-            feeTiers = new uint24[](1);
-            path[0] = zrc20;
-            path[1] = WZETA_TOKEN;
-            path[2] = targetZRC20;
-            return (path, feeTiers, "");
-        }
-        revert IErrors.InsufficientLiquidity();
+        return (path, feeTiers, encodedPath);
     }
 
     function getAmountOutV2(
@@ -520,11 +582,11 @@ contract SwapHelper {
                 address[] memory path,
                 uint24[] memory feeTiers,
                 bytes memory encodedPath
-            ) = getPath(inputToken, outputToken);
-
+            ) = getPathV3(inputToken, outputToken);
             if (encodedPath.length > 0) {
                 return getAmountOutV3(amount, path, feeTiers);
             } else {
+                path = getPathV2(inputToken, outputToken);
                 return getAmountOutV2(amount, path);
             }
         }
@@ -539,52 +601,116 @@ contract SwapHelper {
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut) {
+        require(
+            IERC20(zrc20).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+
         uint256 minimumOut = calculateMinAmountOut(
             zrc20,
             targetZRC20,
             amount,
             slippageBps
         );
-        (address curvePool, uint256 i, uint256 j) = getCurvePool(
-            zrc20,
-            targetZRC20
-        );
-        if (curvePool != address(0)) {
-            // Approve Curve pool to spend tokens
-            IZRC20(zrc20).approve(curvePool, amount);
-            return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
-        } else {
-            (
-                address[] memory path,
-                uint24[] memory feeTiers,
-                bytes memory encodedPath
-            ) = getPath(zrc20, targetZRC20);
-            if (encodedPath.length > 0) {
-                // Uniswap V3 Swap
-                IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
-                ISwapRouter.ExactInputParams memory params = ISwapRouter
-                    .ExactInputParams({
-                        path: encodedPath,
-                        recipient: vault,
-                        deadline: block.timestamp + maxDeadline,
-                        amountIn: amount,
-                        amountOutMinimum: minimumOut
-                    });
+        // (address curvePool, uint256 i, uint256 j) = getCurvePool(
+        //     zrc20,
+        //     targetZRC20
+        // );
+        // if (curvePool != address(0)) {
+        //     // Approve Curve pool to spend tokens
+        //     IZRC20(zrc20).approve(curvePool, amount);
+        //     return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
+        // } else {
+        (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        ) = getPathV3(zrc20, targetZRC20);
 
-                amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
-            } else {
-                // Uniswap V2 Swap
-                IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
-                uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-                    .swapExactTokensForTokens(
-                        amount,
-                        minimumOut,
-                        path,
-                        vault,
-                        block.timestamp + maxDeadline
-                    );
-                amountOut = amounts[amounts.length - 1];
-            }
+        if (encodedPath.length > 0) {
+            // Uniswap V3 Swap
+            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
+            ISwapRouter.ExactInputParams memory params = ISwapRouter
+                .ExactInputParams({
+                    path: encodedPath,
+                    recipient: vault,
+                    deadline: block.timestamp + maxDeadline,
+                    amountIn: amount,
+                    amountOutMinimum: minimumOut
+                });
+
+            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
+        } else {
+            // Uniswap V2 Swap
+            path = getPathV2(zrc20, targetZRC20);
+            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapExactTokensForTokens(
+                    amount,
+                    minimumOut,
+                    path,
+                    vault,
+                    block.timestamp + maxDeadline
+                );
+            amountOut = amounts[amounts.length - 1];
         }
+    }
+
+    function swapExactOut(
+        uint256 totalAmountAvailable,
+        address zrc20,
+        uint256 amountOut,
+        address targetZRC20,
+        uint16 slippageBps,
+        address vault,
+        uint16 maxDeadline,
+        bytes calldata data
+    ) external returns (uint256 amountIn) {
+        uint256 maxAmountIn = calculateMaxAmountIn(
+            zrc20,
+            targetZRC20,
+            amountOut,
+            slippageBps
+        );
+        require(
+            IERC20(zrc20).balanceOf(address(this)) >= maxAmountIn,
+            "Insufficient balance"
+        );
+        (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        ) = getPathV3(targetZRC20, zrc20);
+        if (encodedPath.length > 0) {
+            // Uniswap V3 Swap (tokens for exact tokens out)
+            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, maxAmountIn);
+
+            ISwapRouter.ExactOutputParams memory params = ISwapRouter
+                .ExactOutputParams({
+                    path: encodedPath,
+                    recipient: vault,
+                    deadline: block.timestamp,
+                    amountOut: amountOut,
+                    amountInMaximum: maxAmountIn
+                });
+
+            amountIn = ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(params);
+        } else {
+            // Uniswap V2 Swap (tokens for exact tokens out)
+            path = getPathV2(zrc20, targetZRC20);
+            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, maxAmountIn);
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapTokensForExactTokens(
+                    amountOut,
+                    maxAmountIn,
+                    path,
+                    vault,
+                    block.timestamp + maxDeadline
+                );
+            amountIn = amounts[0];
+        }
+        IERC20(zrc20).transfer(vault, totalAmountAvailable - amountIn);
+
+        return amountIn;
     }
 }

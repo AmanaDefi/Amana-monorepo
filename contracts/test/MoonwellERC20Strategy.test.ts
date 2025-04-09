@@ -16,6 +16,7 @@ const RECEIPT_TOKEN_ADDRESS = "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca";
 // const SWAP_HELPER_ADDRESS = "0x9A8f1987da23b4DE5Bf2B3C5796819Af253599b6";
 const WELL_TOKEN = "0xA88594D404727625A9437C3f886C7643872296AE";
 const MORPHO_TOKEN = "0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842";
+const WITHDRAW_HELPER_ADDRESS = "0x1F2C8D4A3E5B7C6D9F2A0E4B5C7F3D8E1A6B8C9F";
 
 let gatewaySigner: Signer;
 let strategy: ERC20_MoonwellStrategy;
@@ -73,7 +74,8 @@ describe("ERC20_MoonwellStrategy - Full Coverage", function () {
       INPUT_TOKEN_ADDRESS,
       RECEIPT_TOKEN_ADDRESS,
       swapHelper.address,
-      GATEWAY_ADDRESS
+      GATEWAY_ADDRESS,
+      WITHDRAW_HELPER_ADDRESS
     );
     await strategy.deployed();
   });
@@ -145,7 +147,8 @@ describe("ERC20_MoonwellStrategy - Full Coverage", function () {
       slippage,
       BASE_CHAIN_ID,
     );
-    const fractionOfSharesToWithdraw = ethers.utils.parseEther("1");
+    const withdrawAmountInShares = ethers.utils.parseUnits("1", 6);
+    const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount);
     const minAmountOut = ethers.utils.parseUnits("0", 6);
 
     await simulateWithdrawCallFromVaultToStrategy(
@@ -154,7 +157,8 @@ describe("ERC20_MoonwellStrategy - Full Coverage", function () {
       gatewaySigner,
       strategy,
       INPUT_TOKEN_ADDRESS,
-      fractionOfSharesToWithdraw,
+      withdrawAmountInShares,
+      withdrawFractionOfTotalShares,
       minAmountOut,
       slippage,
       ETHEREUM_CHAIN_ID
@@ -237,8 +241,8 @@ describe("ERC20_MoonwellStrategy - Full Coverage", function () {
       slippage,
       BASE_CHAIN_ID,
     );
-    const fractionOfSharesToWithdraw = ethers.utils.parseEther("1");
-    const minAmountOut = ethers.utils.parseUnits("0", 6);
+    const withdrawAmountInShares = ethers.utils.parseUnits("1", 6);
+    const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount); const minAmountOut = ethers.utils.parseUnits("0", 6);
 
     await simulateWithdrawCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
@@ -246,7 +250,8 @@ describe("ERC20_MoonwellStrategy - Full Coverage", function () {
       gatewaySigner,
       strategy,
       INPUT_TOKEN_ADDRESS,
-      fractionOfSharesToWithdraw,
+      withdrawAmountInShares,
+      withdrawFractionOfTotalShares,
       minAmountOut,
       slippage,
       ETHEREUM_CHAIN_ID

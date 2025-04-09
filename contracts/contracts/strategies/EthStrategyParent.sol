@@ -93,6 +93,14 @@ abstract contract EthStrategyParent is StrategyParent {
         }
     }
 
+    function emergencyWithdraw(address _token) external onlyOwner {
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        if (balance == 0) {
+            revert NothingToWithdraw();
+        }
+        IERC20(_token).safeTransfer(owner(), balance);
+    }
+
     /// @notice Allows the contract to receive ETH.
     receive() external payable {}
 }

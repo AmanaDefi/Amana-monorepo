@@ -1,9 +1,73 @@
 import { defineChain } from "thirdweb";
-import { Token } from "@/types/types";
+import { Token, Icon } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { PublicKey, Connection } from "@solana/web3.js";
 
 export const zeroSolAddress = PublicKey.default.toBase58();
+
+// Chain icons mapping (optional fallback if modal icons fail) {It's a long one, should we move it to utils || any other data center}
+const CHAIN_ICONS: { [chainId: number]: Icon } = {
+  7000: {
+    url: "/ZetaChain.jpeg",
+    width: 32, 
+    height: 32, 
+    format: "jpeg"
+  }, // ZetaChain Mainnet
+  7001:{
+    url: "/ZetaChain.jpeg",
+    width: 32, 
+    height: 32, 
+    format: "jpeg"
+  }, // ZetaChain Testnet
+  1: {
+    url: "/ETH.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // Ethereum Mainnet
+  11155111: {
+    url: "/ETH.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // Ethereum Sepolia Testnet
+  8453: {
+    url: "/base.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // Base Mainnet
+  84532:{
+    url: "/base.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // Base Testnet
+  137: {
+    url:  "/polygon_logo.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // Polygon Mainnet
+  80002:{
+    url:  "/polygon_logo.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // Polygon Amoy Testnet
+  56: {
+    url:  "/bnb_logo.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // BSC Mainnet
+  97: {
+    url:  "/bnb_logo.png",
+    width: 32, 
+    height: 32, 
+    format: "png"
+  }, // BSC Testnet
+};
 
 // Load environment variables
 export const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV || "mainnet"; // Default to mainnet if not set
@@ -32,11 +96,13 @@ export enum CHAIN_ID {
   solana = deployEnv === 'testnet' ? 901 : 900,
 }
 
+// Define ZetaChain configuration
 const zetaChain = defineChain({
   chainId: CHAIN_ID.zetachain, // 7001 for testnet, 7000 for mainnet
-  name: deployEnv === "testnet" ? "ZetaChain Testnet" : "ZetaChain Mainnet",
+  name: deployEnv === "testnet" ? "ZetaChain Testnet" : "ZetaChain",
   shortName: "zeta",
   chain: "ZetaChain",
+  icon: CHAIN_ICONS[7000],
   rpc: [zetaRpcUrl], // RPC should be an array of strings
   nativeCurrency: {
     name: "Zeta",
@@ -56,12 +122,13 @@ const zetaChain = defineChain({
   slug: "zetachain",
 });
 
-// Define Sepolia configuration
+// Define Ethereum configuration
 const ethereumChain = defineChain({
   chainId: CHAIN_ID.ethereum, // 11155111 for Sepolia Testnet, 1 for Ethereum Mainnet
-  name: deployEnv === "testnet" ? "Sepolia Testnet" : "Ethereum Mainnet",
+  name: deployEnv === "testnet" ? "Sepolia Testnet" : "Ethereum",
   shortName: deployEnv === "testnet" ? "sepolia" : "eth",
   chain: "ETH",
+  icon: CHAIN_ICONS[1],
   rpc: [deployEnv === "testnet" ? sepoliaRpcUrl : ethMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "Ether",
@@ -84,9 +151,10 @@ const ethereumChain = defineChain({
 // Define Base configuration
 const baseChain = defineChain({
   chainId: CHAIN_ID.base, // 84532 for Base Sepolia Testnet, 8453 for Base Mainnet
-  name: deployEnv === "testnet" ? "Base Sepolia Testnet" : "Base Mainnet",
+  name: deployEnv === "testnet" ? "Base Sepolia Testnet" : "Base",
   shortName: "base",
   chain: "Base",
+  icon: CHAIN_ICONS[84532],
   rpc: [deployEnv === "testnet" ? baseSepoliaRpcUrl : baseMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "Ether",
@@ -109,9 +177,10 @@ const baseChain = defineChain({
 // Define Polygon configuration
 const polygonChain = defineChain({
   chainId: CHAIN_ID.polygon, // 80001 for Mumbai Testnet, 137 for Polygon Mainnet
-  name: deployEnv === "testnet" ? "Polygon Mumbai Testnet" : "Polygon Mainnet",
+  name: deployEnv === "testnet" ? "Polygon Mumbai Testnet" : "Polygon",
   shortName: "polygon",
   chain: "Polygon",
+  icon: CHAIN_ICONS[137],
   rpc: [deployEnv === "testnet" ? polygonAmoyRpcUrl : polygonMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "MATIC",
@@ -134,9 +203,10 @@ const polygonChain = defineChain({
 // Define BSC configuration
 const bscChain = defineChain({
   chainId: CHAIN_ID.bsc, // 97 for BSC Testnet, 56 for BSC Mainnet
-  name: deployEnv === "testnet" ? "BSC Testnet" : "BSC Mainnet",
+  name: deployEnv === "testnet" ? "BSC Testnet" : "BNB",
   shortName: "bsc",
   chain: "BSC",
+  icon: CHAIN_ICONS[97],
   rpc: [deployEnv === "testnet" ? bscTestnetRpcUrl : bscMainnetRpcUrl], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "Binance Coin",
@@ -181,9 +251,6 @@ const solanaChain = defineChain({
   testnet: deployEnv === "testnet",
   slug: "solana",
 });
-
-
-
 
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"

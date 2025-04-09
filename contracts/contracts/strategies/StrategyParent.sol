@@ -19,6 +19,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     string public name;
     address public immutable amanaVault;
+    address public withdrawHelper;
     uint256 public executionNonce = 1;
     address public oldStrategy;
     address public rewardsDistributor;
@@ -61,12 +62,14 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     constructor(
         string memory _name,
         address _amanaVault,
-        address _gateway
+        address _gateway,
+        address _withdrawHelper
     ) Ownable(msg.sender) {
         if (_amanaVault == address(0)) revert InvalidAddress();
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
+        withdrawHelper = _withdrawHelper;
     }
 
     /// @notice Processes calls from the Gateway for deposits or withdrawals.
@@ -76,7 +79,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         MessageContext calldata context,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory result) {
-        if (context.sender != address(amanaVault)) {
+        if (
+            context.sender != address(amanaVault) &&
+            context.sender != withdrawHelper
+        ) {
             revert OnlyVault();
         }
 
@@ -85,7 +91,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address receiver,
             address ZRC20AddressOrNewStrategy,
             address withdrawERC20,
-            uint256 amountOrFraction,
+            uint256 amount,
+            uint256 fraction,
             uint256 minimumOut,
             uint32 withdrawChainId,
             bool isDeposit,
@@ -100,6 +107,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                     address,
                     uint256,
                     uint256,
+                    uint256,
                     uint32,
                     bool,
                     bytes32,
@@ -112,7 +120,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
         if (user == address(0) && receiver == address(0)) {
             _transferAssetsToNewStrategy(
-                amountOrFraction,
+                fraction,
                 minimumOut,
                 ZRC20AddressOrNewStrategy,
                 currentExecutionNonce,
@@ -122,7 +130,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         } else if (isDeposit) {
             _invest(
                 receiver,
-                amountOrFraction,
+                amount,
                 minimumOut,
                 currentExecutionNonce,
                 crossChainTxId
@@ -134,7 +142,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 receiver,
                 ZRC20AddressOrNewStrategy,
                 withdrawERC20,
-                amountOrFraction,
+                amount,
+                fraction,
                 minimumOut,
                 withdrawChainId,
                 currentExecutionNonce,
@@ -143,6 +152,11 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             );
             return abi.encode(true);
         }
+    }
+
+    function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {
+        if (_withdrawHelper == address(0)) revert InvalidAddress();
+        withdrawHelper = _withdrawHelper;
     }
 
     /**
@@ -287,7 +301,14 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(this),
             false,
             address(this),
-            abi.encode("_investConfirmFailed", _crossChainTxId),
+            abi.encode(
+                "_investConfirmFailed",
+                _crossChainTxId,
+                _executionNonce,
+                amount,
+                receiver,
+                0 // vaultSharesToBeBurnt
+            ),
             uint256(1000000)
         );
 
@@ -316,6 +337,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     /// @notice Withdraws funds from the yield source.
     /// @param user Address of the user whose funds are being withdrawn.
     /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
+    /// @param vaultSharesToBeBurnt amount of vault shares to be burnt.
     /// @param fractionOfTotalShares Amount to withdraw.
     /// @param withdrawChainId Chain ID for the withdrawal.
     /// @param _executionNonce Current execution nonce for the transaction.
@@ -325,6 +347,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
+        uint256 vaultSharesToBeBurnt,
         uint256 fractionOfTotalShares,
         uint256 minAmountOut,
         uint32 withdrawChainId,
@@ -345,7 +368,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            fractionOfTotalShares - 5,
+            vaultSharesToBeBurnt,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -374,7 +397,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amountWithdrawn,
-        uint256 fractionOfTotalShares,
+        uint256 vaultSharesToBeBurnt,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -387,7 +410,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            fractionOfTotalShares,
+            vaultSharesToBeBurnt,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -417,7 +440,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amountWithdrawn,
-        uint256 fractionOfTotalShares,
+        uint256 vaultSharesToBeBurnt,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -430,7 +453,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            fractionOfTotalShares,
+            vaultSharesToBeBurnt,
             withdrawChainId,
             false,
             totalUnderlyingAssetsAfter,
@@ -447,7 +470,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 "_returnFundsFromStrategyFailed",
                 _crossChainTxId,
                 _executionNonce,
-                amountWithdrawn
+                amountWithdrawn,
+                user,
+                vaultSharesToBeBurnt
             ),
             uint256(1000000)
         );
@@ -494,38 +519,52 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        uint256 currentExecutionNonce = executionNonce;
+        uint256 nonceToUse = executionNonce;
+        address user = address(0);
+        uint256 vaultSharesToBeBurnt = 0;
         executionNonce++;
-        // Construct the message payload with the desired information
+        _sendUpdateToVault(user, vaultSharesToBeBurnt, nonceToUse);
+    }
+
+    function _sendUpdateToVault(
+        address user,
+        uint256 vaultSharesToBeBurnt,
+        uint256 nonceToUse
+    ) internal {
         bytes memory outgoingMessage = abi.encode(
-            address(0),
+            user,
             address(0),
             address(0),
             address(0),
             block.number,
-            0,
+            vaultSharesToBeBurnt,
             0,
             false,
             totalUnderlyingAssets(),
-            currentExecutionNonce,
+            nonceToUse,
             0,
             0
         );
 
-        // Configure revert options for the cross-chain call
         RevertOptions memory revertOptions = RevertOptions(
-            address(this), // Address to send revert message to
-            false, // Flag to indicate whether to revert on failure
-            address(this), // Address to handle revert logic
-            abi.encode("_handleRevertOnSendTotalUnderlyingAssets", bytes32(0)), // Revert handling logic
-            uint256(1000000) // Gas for revert call
+            address(this),
+            false,
+            address(this),
+            abi.encode(
+                "_handleRevertOnSendTotalUnderlyingAssets",
+                bytes32(0),
+                nonceToUse,
+                totalUnderlyingAssets(),
+                user,
+                vaultSharesToBeBurnt
+            ),
+            1_000_000
         );
 
-        // Use the GatewayEVM contract to make the call
         IGatewayEVM(_GATEWAY_ADDRESS).call(
-            amanaVault, // Destination contract (vault on ZetaChain)
-            outgoingMessage, // Encoded message payload
-            revertOptions // Revert options
+            amanaVault,
+            outgoingMessage,
+            revertOptions
         );
 
         emit TotalUnderlyingAssetsSent(
@@ -559,10 +598,17 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     function onRevert(
         RevertContext calldata context
     ) external virtual onlyGateway {
-        (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
-            context.revertMessage,
-            (string, bytes32)
-        );
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            uint256 _executionNonce,
+            uint256 amount,
+            address userOrReceiver,
+            uint256 vaultSharesToBeBurnt
+        ) = abi.decode(
+                context.revertMessage,
+                (string, bytes32, uint256, uint256, address, uint256)
+            );
 
         if (
             keccak256(bytes(revertMessage)) ==
@@ -574,14 +620,17 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 0);
-            executionNonce--;
+            _sendUpdateToVault(
+                userOrReceiver,
+                vaultSharesToBeBurnt,
+                _executionNonce
+            );
             emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
         ) {
             emit SendTotalUnderlyingAssetsFailed();
-            executionNonce--;
         } else {
             revert("Revert not handled");
         }

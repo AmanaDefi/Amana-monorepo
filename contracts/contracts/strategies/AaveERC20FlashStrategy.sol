@@ -33,7 +33,7 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
         uint256 executionNonce;
         bytes32 crossChainTxId;
         address user;
-        uint256 fractionOfTotalShares;
+        uint256 vaultSharesToBeBurnt;
         address withdrawZRC20;
         address withdrawERC20;
         uint32 withdrawChainId;
@@ -73,9 +73,10 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
         address _inputTokenAddress,
         address _receiptTokenAddress,
         address _variableDebtTokenAddress,
-        address _gateway
+        address _gateway,
+        address _withdrawHelper
     )
-        StrategyParent(_name, _amanaVault, _gateway)
+        StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
@@ -146,6 +147,7 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
+        uint256 vaultSharesToBeBurnt,
         uint256 fractionOfTotalShares,
         uint256 minAmountOut,
         uint32 withdrawChainId,
@@ -175,7 +177,7 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
             executionNonce,
             crossChainTxId,
             user,
-            fractionOfTotalShares,
+            vaultSharesToBeBurnt,
             withdrawZRC20,
             withdrawERC20,
             withdrawChainId,
@@ -341,7 +343,7 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
             params.withdrawZRC20,
             params.withdrawERC20,
             finalUserAmount,
-            params.fractionOfTotalShares,
+            params.vaultSharesToBeBurnt,
             params.withdrawChainId,
             totalUnderlyingAssets(),
             params.executionNonce,
