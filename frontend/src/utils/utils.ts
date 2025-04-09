@@ -1,4 +1,4 @@
-import { ParseEventLogsResult, Address, getContract } from "thirdweb";
+import { ParseEventLogsResult, Address, getContract, toTokens } from "thirdweb";
 import {
   TransactionResult,
   SmartVaultActionType,
@@ -121,7 +121,7 @@ export function formatBalance(balance: number) {
   }
 
   let remaining: string;
-  remaining = Number(balance.toFixed(4)).toString();
+  remaining = parseFloat(balance.toFixed(4)).toString();
   return remaining;
 }
 
@@ -466,4 +466,11 @@ export function getSolanaEVMAddress(solanaPublicKey: string) {
   const evmAddress = '0x' + hash.substring(hash.length - 40);
 
   return evmAddress;
+}
+
+export function format(value: bigint, decimals: number) {
+  if (!value || value == 0n) return "0"
+
+  const str = Number(toTokens(value, decimals)).toFixed(6);
+  return Number(str).toString();
 }

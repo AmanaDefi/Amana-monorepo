@@ -31,6 +31,7 @@ const VaultsDetailContainer: React.FC<{
     const [transactionCompleted, setTransactionCompleted] = useState(false);
 
     const vaults: VaultData[] = pathname.includes("old-vaults") ? DEPRECATED_VAULT_DATA : VAULT_DATA;
+    const backPath: string = pathname.includes("old-vaults") ? "/old-vaults" : "/";
     const { walletAddress } = useMultiChain();
 
     useEffect(() => {
@@ -57,7 +58,7 @@ const VaultsDetailContainer: React.FC<{
           <button
             className="bg-gradient-to-r from-[#262830] to-[#06afbc] hover:bg-gradient-to-l rounded-lg flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0"
             type="button"
-            onClick={() => router.push("/")}
+            onClick={() => router.push(backPath)}
           >
             <div className="w-5 h-5">
               <LeftArrowIcon color="white" />
