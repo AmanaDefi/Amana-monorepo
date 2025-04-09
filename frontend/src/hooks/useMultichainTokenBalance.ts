@@ -3,6 +3,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Balance, Token } from "@/types/types"
 import { getERC20TokenBalance, getSplTokenBalance, isEthereumAddress, isSolanaAddress, solanaConnection } from "@/utils/utils";
 import { useEffect, useState } from "react"
+import { toTokens } from "thirdweb";
 
 export const useMultichainTokenBalance = (token: Token | undefined) => {
     const { walletAddress, activeChain, balance: nativeBalance } = useMultiChain();
@@ -22,8 +23,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
             }
 
             if (token.isNative) {
-
-                const decimals = token.address == zeroSolAddress ? 9 : 18;
                 setBalance(nativeBalance);
                 return;
             }
@@ -32,13 +31,13 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
                 const { balance, decimals } = await getSplTokenBalance(walletAddress, token.address);
                 setBalance({
                     value: balance,
-                    formatted: (balance / 10 ** decimals).toFixed(4)
+                    formatted: toTokens(balance, decimals)
                 })
             } else if (isEthereumAddress(token.address) && isEthereumAddress(walletAddress)) {
                 const { balance, decimals } = await getERC20TokenBalance(walletAddress, token.address, activeChain);
                 setBalance({
                     value: balance,
-                    formatted: (Number(balance) / 10 ** decimals).toFixed(4)
+                    formatted: toTokens(balance, decimals)
                 })
             }
         }

@@ -126,7 +126,7 @@ export default function VaultInputs({
       // Set the inputTokenBalance separately to track balance as a string
       setInputTokenBalance(tokenBalance!.formatted);
       setInputBalance({
-        ...inputBalance,
+        ...tokenBalance,
         formatted: "0",
       })
     }
