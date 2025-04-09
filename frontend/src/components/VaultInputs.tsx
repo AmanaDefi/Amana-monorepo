@@ -22,7 +22,8 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
+import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
+import { showErrorToast } from "@/toasts";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -69,7 +70,6 @@ export default function VaultInputs({
       setPerformanceFee(percentagePerformanceFee);
     }
     handlePerformanceFee()
-    console.log({ vaultData }, "HHHHHHHHHHHHHHHH")
   }, [vaultData]);
 
   // const initialOutputBalance: OutputBalance = useMemo(() => ({
@@ -119,17 +119,15 @@ export default function VaultInputs({
   }, [activeChain, vaultData]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useMutlichainTokenBalance(inputToken);
+  const tokenBalance = useMultichainTokenBalance(inputToken);
 
   // Watch action type change
   useEffect(() => {
     if (inputToken) {
-      console.log("tokenBalance", tokenBalance)
       // Set the inputTokenBalance separately to track balance as a string
       setInputTokenBalance(tokenBalance!.formatted);
       setInputBalance({
-        ...inputBalance,
-        formatted: "0",
+        ...tokenBalance,
       })
     }
   }, [tokenBalance, isDeposit]);
@@ -159,7 +157,7 @@ export default function VaultInputs({
     };
     // Call the async function
     fetchData();
-  }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, walletAddress])
+  }, [inputBalance, inputToken?.address, activeChain?.id, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
   function handleTokenSelect(selectedToken: Token): void {
     console.log("Token selected:", selectedToken); // Debug log
@@ -189,6 +187,7 @@ export default function VaultInputs({
     if (!inputToken) return;
     let value = e.currentTarget.value;
 
+    // Format the number properly
     if (!value.includes('.')) {
       value = String(Number(value));
     }
@@ -206,19 +205,25 @@ export default function VaultInputs({
       inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
     }
 
-    // convert string amt to bigint
-    const newAmt = parseUnits(inputAmt, decimalsNumber);
-    setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
+    console.log("Input Amount", inputAmt);
+
+  // convert string amt to bigint
+  const newAmt = parseUnits(inputAmt, decimalsNumber);
+    
+  setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
+
+
   }, [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals])
 
   const handleMaxClick = useCallback(() => {
     if (!inputToken) return;
     if (isDeposit) {
-      handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
+      // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
+      setInputBalance(tokenBalance);
     } else {
       handleChangeInput({ currentTarget: { value: vaultTotalAssetinToken?.toString() } } as React.ChangeEvent<HTMLInputElement>);
     }
-  }, [handleChangeInput, inputToken, inputTokenBalance, isDeposit, vaultTotalAssetinToken])
+  }, [handleChangeInput, inputToken, tokenBalance, isDeposit, vaultTotalAssetinToken])
 
   const tokenList = useMemo(() => {
     return activeChain?.id === 7001 || activeChain?.id === 7000

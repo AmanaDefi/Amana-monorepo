@@ -188,3 +188,10 @@ export type SearchParams = {
   page: number,
   perPage: number,
 }
+
+export type Icon = {
+  url: string;
+  width: number;
+  height: number;
+  format: string;
+}
