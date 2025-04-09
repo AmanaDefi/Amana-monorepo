@@ -189,6 +189,9 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         _swapAndReinvest();
 
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(

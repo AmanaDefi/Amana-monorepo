@@ -14,11 +14,11 @@ import "../interfaces/IDistributor.sol";
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract StrategyParent is Ownable2Step, IErrors {
+abstract contract StrategyParentV1 is Ownable2Step, IErrors {
     using SafeERC20 for IERC20;
 
     string public name;
-    address public amanaVault;
+    address public immutable amanaVault;
     address public withdrawHelper;
     uint256 public executionNonce = 1;
     address public oldStrategy;
@@ -91,8 +91,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address receiver,
             address ZRC20AddressOrNewStrategy,
             address withdrawERC20,
-            uint256 amount,
-            uint256 fraction,
+            uint256 fractionOrAmount,
             uint256 minimumOut,
             uint32 withdrawChainId,
             bool isDeposit,
@@ -107,7 +106,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                     address,
                     uint256,
                     uint256,
-                    uint256,
                     uint32,
                     bool,
                     bytes32,
@@ -120,7 +118,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
         if (user == address(0) && receiver == address(0)) {
             _transferAssetsToNewStrategy(
-                fraction,
+                fractionOrAmount,
                 minimumOut,
                 ZRC20AddressOrNewStrategy,
                 currentExecutionNonce,
@@ -130,7 +128,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         } else if (isDeposit) {
             _invest(
                 receiver,
-                amount,
+                fractionOrAmount,
                 minimumOut,
                 currentExecutionNonce,
                 crossChainTxId
@@ -142,8 +140,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 receiver,
                 ZRC20AddressOrNewStrategy,
                 withdrawERC20,
-                amount,
-                fraction,
+                fractionOrAmount,
                 minimumOut,
                 withdrawChainId,
                 currentExecutionNonce,
@@ -157,11 +154,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {
         if (_withdrawHelper == address(0)) revert InvalidAddress();
         withdrawHelper = _withdrawHelper;
-    }
-
-    function updateVault(address _amanaVault) external onlyOwner {
-        if (_amanaVault == address(0)) revert InvalidAddress();
-        amanaVault = _amanaVault;
     }
 
     /**
@@ -316,6 +308,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             ),
             uint256(1000000)
         );
+
         IGatewayEVM(_GATEWAY_ADDRESS).call(
             amanaVault,
             outgoingMessage,
@@ -341,7 +334,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     /// @notice Withdraws funds from the yield source.
     /// @param user Address of the user whose funds are being withdrawn.
     /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
-    /// @param vaultSharesToBeBurnt amount of vault shares to be burnt.
     /// @param fractionOfTotalShares Amount to withdraw.
     /// @param withdrawChainId Chain ID for the withdrawal.
     /// @param _executionNonce Current execution nonce for the transaction.
@@ -351,7 +343,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address receiver,
         address withdrawZRC20,
         address withdrawERC20,
-        uint256 vaultSharesToBeBurnt,
         uint256 fractionOfTotalShares,
         uint256 minAmountOut,
         uint32 withdrawChainId,
@@ -372,7 +363,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            vaultSharesToBeBurnt,
+            fractionOfTotalShares,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -401,7 +392,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amountWithdrawn,
-        uint256 vaultSharesToBeBurnt,
+        uint256 fractionOfVaultShares,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -414,7 +405,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            vaultSharesToBeBurnt,
+            fractionOfVaultShares,
             withdrawChainId,
             totalUnderlyingAssetsAfter,
             _executionNonce,
@@ -444,7 +435,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         address withdrawZRC20,
         address withdrawERC20,
         uint256 amountWithdrawn,
-        uint256 vaultSharesToBeBurnt,
+        uint256 fractionOfVaultShares,
         uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 _executionNonce,
@@ -457,7 +448,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             withdrawZRC20,
             withdrawERC20,
             amountWithdrawn,
-            vaultSharesToBeBurnt,
+            fractionOfVaultShares,
             withdrawChainId,
             false,
             totalUnderlyingAssetsAfter,
@@ -476,7 +467,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 _executionNonce,
                 amountWithdrawn,
                 user,
-                vaultSharesToBeBurnt
+                fractionOfVaultShares
             ),
             uint256(1000000)
         );
@@ -541,7 +532,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(0),
             address(0),
             block.number,
-            vaultSharesToBeBurnt,
             0,
             false,
             totalUnderlyingAssets(),
