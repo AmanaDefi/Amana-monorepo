@@ -877,8 +877,8 @@ export const executeSolanaWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
-    types: ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    values: [withdrawZRC20, getSolanaEVMAddress(splMint), withdrawShareAmount, minAmountOut, slippageValue, transactionId]
+    types: ["address", "bytes32", "uint256", "uint256", "uint16", "bytes32", "bytes32"],
+    values: [withdrawZRC20, splMint, withdrawShareAmount, minAmountOut, slippageValue, transactionId, ethers.getBytes(walletContext.publicKey!.toBytes())]
   }
 
   const txHash = await client.solanaWithdrawal(vaultId, args);
