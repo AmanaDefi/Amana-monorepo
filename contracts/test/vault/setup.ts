@@ -56,6 +56,7 @@ export async function setupVaultFixture() {
   ]);
 
   const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
+  console.log("About to deploy vault");
   const amanaVault: AmanaConnectedChainVault = await upgrades.deployProxy(
     Vault,
     [
@@ -73,7 +74,7 @@ export async function setupVaultFixture() {
       kind: "uups",
     }
   );
-
+  console.log("Vault deployed, waiting for confirmation");
   await amanaVault.deployed();
   console.log(`AmanaConnectedChainVault deployed at: ${amanaVault.address}`);
 
@@ -95,7 +96,7 @@ export async function setupVaultFixture() {
   // supply the owner address with an amount of origin chain input ZRC20 token, so they can make deposits
   await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
   await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), txConfig.directDepositAmount1.mul(200).div(1), 3);
-
+  console.log("Setup done, returning values")
   return {
     amanaVault,
     owner,

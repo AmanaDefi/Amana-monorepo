@@ -19,7 +19,7 @@ export const vaultConfig = {
   gasLimitWithdrawAndCall: 500_000,
   gasLimitCall: 500_000,
   rewardToken: ZC_USDC_BASE_ADDRESS,
-  rewardTokenAmount: ethers.utils.parseUnits("1000", 6),
+  rewardTokenAmount: ethers.utils.parseUnits("1000", 6)
 };
 
 // Configuration for the strategy used by the vault
@@ -43,4 +43,5 @@ export const txConfig = {
   originERC20Input: ethers.constants.AddressZero,
   originZRC20Input: ZC_ETH_ETH_ADDRESS,
   crossChainDepositAmount1: ethers.utils.parseUnits("100", 18),
+  crossChainDepositAmount2: ethers.utils.parseUnits("50", 18),
 };
