@@ -15,7 +15,6 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 contract SwapHelperOnBase {
     address constant WELL = 0xA88594D404727625A9437C3f886C7643872296AE;
@@ -400,7 +399,6 @@ contract SwapHelperOnBase {
         //     amount,
         //     slippageBps
         // );
-        // console.log("Minimum out: %d", minimumOut);
         // (address curvePool, uint256 i, uint256 j) = getCurvePool(
         //     zrc20,
         //     targetZRC20

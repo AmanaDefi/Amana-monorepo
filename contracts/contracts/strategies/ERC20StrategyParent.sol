@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import "./StrategyParent.sol";
-import "hardhat/console.sol";
 
 /// @title ERC20StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
