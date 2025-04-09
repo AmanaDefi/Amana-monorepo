@@ -163,15 +163,14 @@ export default function VaultInputs({
   }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
   function handleTokenSelect(selectedToken: Token): void {
-    console.log("Token selected:", selectedToken); // Debug log
+    console.log("Token selected:", selectedToken); 
+    console.log("Current chain:", activeChain);
+    console.log("Token contract exists on this chain:", 
+      APPROVED_TOKENS[activeChain?.id as number]?.some(t => t.address === selectedToken.address)); // it's returning false means token is not on current chain
+    
     setInputToken(selectedToken);
     setAllowInput(true);
 
-  //    // After setting the token, check if we need to update the UI for the new chain
-  // // The chain switch itself is handled by ChainTokenSelector internally
-  // if (activeChain?.id !== selectedToken.chainId) {
-  //   console.log(`Chain switched from ${activeChain?.id} to ${selectedToken.chainId}`);
-  //   // You may want to reset some state or perform other actions when chain changes
   }
 
   async function switchTokens() {
