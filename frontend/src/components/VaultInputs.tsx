@@ -23,6 +23,7 @@ import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
+import { showErrorToast } from "@/toasts";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -188,6 +189,7 @@ export default function VaultInputs({
     if (!inputToken) return;
     let value = e.currentTarget.value;
 
+    // Format the number properly
     if (!value.includes('.')) {
       value = String(Number(value));
     }
@@ -205,9 +207,14 @@ export default function VaultInputs({
       inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
     }
 
-    // convert string amt to bigint
-    const newAmt = parseUnits(inputAmt, decimalsNumber);
-    setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
+    console.log("Input Amount", inputAmt);
+
+  // convert string amt to bigint
+  const newAmt = parseUnits(inputAmt, decimalsNumber);
+    
+  setInputBalance({ value: newAmt, formatted: inputAmt, formattedUSD: String(Number(inputAmt) * inputTokenPrice) });
+
+
   }, [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals])
 
   const handleMaxClick = useCallback(() => {
