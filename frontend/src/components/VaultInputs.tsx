@@ -22,7 +22,7 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
+import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -69,7 +69,6 @@ export default function VaultInputs({
       setPerformanceFee(percentagePerformanceFee);
     }
     handlePerformanceFee()
-    console.log({ vaultData }, "HHHHHHHHHHHHHHHH")
   }, [vaultData]);
 
   // const initialOutputBalance: OutputBalance = useMemo(() => ({
@@ -119,7 +118,7 @@ export default function VaultInputs({
   }, [activeChain, vaultData]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useMutlichainTokenBalance(inputToken);
+  const tokenBalance = useMultichainTokenBalance(inputToken);
 
   // Watch action type change
   useEffect(() => {
@@ -158,7 +157,7 @@ export default function VaultInputs({
     };
     // Call the async function
     fetchData();
-  }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, walletAddress])
+  }, [inputBalance, inputToken?.address, activeChain?.id, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
   function handleTokenSelect(selectedToken: Token): void {
     console.log("Token selected:", selectedToken); // Debug log

@@ -4,7 +4,7 @@ import { Balance, Token } from "@/types/types"
 import { getERC20TokenBalance, getSplTokenBalance, isEthereumAddress, isSolanaAddress, solanaConnection } from "@/utils/utils";
 import { useEffect, useState } from "react"
 
-export const useMutlichainTokenBalance = (token: Token | undefined) => {
+export const useMultichainTokenBalance = (token: Token | undefined) => {
     const { walletAddress, activeChain, balance: nativeBalance } = useMultiChain();
     const [balance, setBalance] = useState<Balance>({
         value: 0n,
