@@ -9,65 +9,95 @@ export const zeroSolAddress = PublicKey.default.toBase58();
 const CHAIN_ICONS: { [chainId: number]: Icon } = {
   7000: {
     url: "/ZetaChain.jpeg",
-    width: 32, 
-    height: 32, 
+    width: 32,
+    height: 32,
     format: "jpeg"
   }, // ZetaChain Mainnet
-  7001:{
+  7001: {
     url: "/ZetaChain.jpeg",
-    width: 32, 
-    height: 32, 
+    width: 32,
+    height: 32,
     format: "jpeg"
   }, // ZetaChain Testnet
   1: {
     url: "/ETH.png",
-    width: 32, 
-    height: 32, 
+    width: 32,
+    height: 32,
     format: "png"
   }, // Ethereum Mainnet
   11155111: {
     url: "/ETH.png",
-    width: 32, 
-    height: 32, 
+    width: 32,
+    height: 32,
     format: "png"
   }, // Ethereum Sepolia Testnet
   8453: {
     url: "/base.png",
-    width: 32, 
-    height: 32, 
+    width: 32,
+    height: 32,
     format: "png"
   }, // Base Mainnet
-  84532:{
+  84532: {
     url: "/base.png",
-    width: 32, 
-    height: 32, 
+    width: 32,
+    height: 32,
     format: "png"
   }, // Base Testnet
   137: {
-    url:  "/polygon_logo.png",
-    width: 32, 
-    height: 32, 
+    url: "/polygon_logo.png",
+    width: 32,
+    height: 32,
     format: "png"
   }, // Polygon Mainnet
-  80002:{
-    url:  "/polygon_logo.png",
-    width: 32, 
-    height: 32, 
+  80002: {
+    url: "/polygon_logo.png",
+    width: 32,
+    height: 32,
     format: "png"
   }, // Polygon Amoy Testnet
   56: {
-    url:  "/bnb_logo.png",
-    width: 32, 
-    height: 32, 
+    url: "/bnb_logo.png",
+    width: 32,
+    height: 32,
     format: "png"
   }, // BSC Mainnet
   97: {
-    url:  "/bnb_logo.png",
-    width: 32, 
-    height: 32, 
+    url: "/bnb_logo.png",
+    width: 32,
+    height: 32,
     format: "png"
   }, // BSC Testnet
-};
+  42161: {
+    url: "/arbitrum-arb-logo.png",
+    width: 32,
+    height: 32,
+    format: "png"
+  }, // Arbitrum Mainnet
+  421613: {
+    url: "/arbitrum-arb-logo.png",
+    width: 32,
+    height: 32,
+    format: "png"
+  }, // Arbitrum Goerli Testnet
+  43114: {
+    url: "/avalanche-avax-logo.png",
+    width: 32,
+    height: 32,
+    format: "png"
+  }, // Avalanche Mainnet
+  43113: {
+    url: "/avalanche-avax-logo.png",
+    width: 32,
+    height: 32,
+    format: "png"
+  }, // Avalanche Fuji Testnet
+  900: {
+    url: "/solana_logo.png",
+    width: 32,
+    height: 32,
+    format: "png"
+  }, // Solana Mainnet;
+}
 
 // Load environment variables
 export const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV || "mainnet"; // Default to mainnet if not set
@@ -85,8 +115,14 @@ const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
 const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
+const avalancheMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
+const avalancheFujiRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
+const arbitrumMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
+const arbitrumGoerliRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_GOERLI || "";
+
 export const solanaRpcUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
 export const crossChainTxUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API_TEST || "" : process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API || "";
+
 export enum CHAIN_ID {
   zetachain = deployEnv === 'testnet' ? 7001 : 7000,
   ethereum = deployEnv === 'testnet' ? 11155111 : 1,
@@ -94,6 +130,8 @@ export enum CHAIN_ID {
   polygon = deployEnv === 'testnet' ? 80001 : 137,
   bsc = deployEnv === 'testnet' ? 97 : 56,
   solana = deployEnv === 'testnet' ? 901 : 900,
+  arbitrum = deployEnv === 'testnet' ? 421613 : 42161,
+  avalanche = deployEnv === 'testnet' ? 43113 : 43114,
 }
 
 // Define ZetaChain configuration
@@ -252,10 +290,60 @@ const solanaChain = defineChain({
   slug: "solana",
 });
 
+const avalancheChain = defineChain({
+  chainId: CHAIN_ID.avalanche, // 43114 for Avalanche Mainnet, 43113 for Fuji Testnet
+  name: deployEnv === "testnet" ? "Avalanche Fuji Testnet" : "Avalanche",
+  shortName: "avax",
+  chain: "Avalanche",
+  icon: CHAIN_ICONS[43114],
+  rpc: [deployEnv === "testnet" ? avalancheFujiRpcUrl : avalancheMainnetRpcUrl],
+  nativeCurrency: {
+    name: "Avalanche",
+    symbol: "AVAX",
+    decimals: 18,
+  },
+  explorers: [
+    {
+      name: "SnowTrace",
+      url: deployEnv === "testnet"
+        ? "https://testnet.snowtrace.io"
+        : "https://snowtrace.io",
+      standard: "EIP3091",
+    },
+  ],
+  testnet: deployEnv === "testnet",
+  slug: "avalanche",
+});
+
+const arbitrumChain = defineChain({
+  chainId: CHAIN_ID.arbitrum, // 42161 for Arbitrum One Mainnet, 421613 for Arbitrum Goerli Testnet
+  name: deployEnv === "testnet" ? "Arbitrum Sepolia Testnet" : "Arbitrum",
+  shortName: "arb",
+  chain: "Arbitrum",
+  icon: CHAIN_ICONS[42161],
+  rpc: [deployEnv === "testnet" ? arbitrumGoerliRpcUrl : arbitrumMainnetRpcUrl],
+  nativeCurrency: {
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  explorers: [
+    {
+      name: "Arbiscan",
+      url: deployEnv === "testnet"
+        ? "https://sepolia.arbiscan.io"
+        : "https://arbiscan.io",
+      standard: "EIP3091",
+    },
+  ],
+  testnet: deployEnv === "testnet",
+  slug: "arbitrum",
+});
+
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"
-  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain] // always put Zetachain first
-  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain]; // always put Zetachain first
+  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain] // always put Zetachain first
+  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain]; // always put Zetachain first
 
 export const chainConfigs = {
   [CHAIN_ID.zetachain]: zetaChain,
@@ -264,6 +352,8 @@ export const chainConfigs = {
   [CHAIN_ID.bsc]: bscChain,
   [CHAIN_ID.polygon]: polygonChain,
   [CHAIN_ID.solana]: solanaChain,
+  [CHAIN_ID.arbitrum]: arbitrumChain,
+  [CHAIN_ID.avalanche]: avalancheChain,
 }
 
 // Define approved tokens per chain
@@ -507,6 +597,70 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0x54Bf2B1E91FCb56853097BD2545750d218E245e1"
     }
   ],
+  42161: [
+    {
+      symbol: "ETH",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      imgURL: "/ETH.png",
+      price: 734, // TODO - is this price field even being used?
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0xA614Aebf7924A3Eb4D066aDCA5595E4980407f1d",
+    },
+    {
+      symbol: "USDC",
+      address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x0327f0660525b15Cdb8f1f5FBF0dD7Cd5Ba182aD",
+    },
+    {
+      symbol: "USDT",
+      address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+      decimals: 6,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x0ca762FA958194795320635c11fF0C45C6412958",
+    },
+  ],
+  43114: [
+    {
+      symbol: "AVAX",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      imgURL: "/avalanche-avax-logo.png",
+      price: 734, // TODO - is this price field even being used?
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: "0xE8d7796535F1cd63F0fe8D631E68eACe6839869B",
+    },
+    {
+      symbol: "USDC",
+      address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+      decimals: 6,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0xa52Ad01A1d62b408fFe06C2467439251da61E4a9",
+    },
+    {
+      symbol: "USDT",
+      address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
+      decimals: 6,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+      ZRC20equivalent: "0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794",
+    },
+  ],
 };
 
 
@@ -536,5 +690,7 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   [CHAIN_ID.bsc]: "https://bscscan.com",
   [CHAIN_ID.polygon]: "https://polygonscan.com",
   [CHAIN_ID.ethereum]: "https://etherscan.io",
-  [CHAIN_ID.solana]: "https://solscan.io"
+  [CHAIN_ID.solana]: "https://solscan.io",
+  [CHAIN_ID.arbitrum]: "https://arbiscan.io",
+  [CHAIN_ID.avalanche]: "https://snowtrace.io",
 }
