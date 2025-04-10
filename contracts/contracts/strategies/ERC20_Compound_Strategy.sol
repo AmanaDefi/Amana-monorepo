@@ -4,21 +4,14 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ICompoundVault.sol";
-import "../interfaces/ISwapRouter.sol";
 import "./ERC20StrategyParent.sol";
+import "../interfaces/ISwapHelper.sol";
+import "../interfaces/ICometRewards.sol";
 
 // Polygon USDT receiptToken: 0xaeB318360f27748Acb200CE616E389A6C9409a07
 // Polygon COMP token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
 // Polygon Rewards contract: 0x45939657d1CA34A8FA39A924B71D28Fe8431e581
 // Polygon USDT input token:
-
-interface ICometRewards {
-    function claim(
-        address receiptToken,
-        address src,
-        bool shouldAccrue
-    ) external;
-}
 
 /// @title ERC20_4626_Strategy
 /// @notice Base contract for USDC strategies using Aave and ZetaChain.
@@ -27,14 +20,13 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
     ICompoundVault public immutable receiptToken;
-    ICometRewards public immutable compoundRewards;
-    ISwapRouter public immutable swapRouter;
+    ICometRewards public immutable cometRewardsContract;
 
+    address public swapHelperPolygon;
+    uint16 harvestSwapSlippage = 500; // 1% slippage
     address public constant COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c; // COMP on Polygon
-    address public constant UNISWAP_V3_ROUTER =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Polygon
     address public constant COMET_REWARDS =
-        0x45939657d1CA34A8FA39A924B71D28Fe8431e581; // TODO get correct one
+        0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
 
     event RewardsHarvested(
         uint256 rewardsClaimed,
@@ -49,19 +41,33 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         address _inputTokenAddress,
         address _receiptTokenAddress,
         address _gateway,
-        address _withdrawHelper
+        address _withdrawHelper,
+        address _swapHelperPolygon
     )
         StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
         receiptToken = ICompoundVault(_receiptTokenAddress);
-        compoundRewards = ICometRewards(COMET_REWARDS);
-        swapRouter = ISwapRouter(UNISWAP_V3_ROUTER);
+        cometRewardsContract = ICometRewards(COMET_REWARDS);
+        swapHelperPolygon = _swapHelperPolygon;
+    }
+
+    function updateSwapHelperPolygon(
+        address _swapHelperPolygon
+    ) external onlyOwner {
+        swapHelperPolygon = _swapHelperPolygon;
+    }
+
+    function setHarvestSwapSlippage(
+        uint16 _harvestSwapSlippage
+    ) external onlyOwner {
+        require(_harvestSwapSlippage <= 10000, "Slippage too high");
+        harvestSwapSlippage = _harvestSwapSlippage;
     }
 
     /// @notice Claims COMP rewards from Compound
     function claimRewards() public returns (uint256) {
-        compoundRewards.claim(address(receiptToken), address(this), true);
+        cometRewardsContract.claim(address(receiptToken), address(this), true);
 
         uint256 compBalance = IERC20(COMP).balanceOf(address(this));
         require(compBalance > 0, "No COMP rewards to claim");
@@ -72,45 +78,43 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /**
      * @notice Swaps COMP for USDC on Uniswap V3 (Polygon)
      * @param amountIn Amount of COMP to swap
-     * @param minUsdcOut Minimum USDC expected (slippage protection)
+     * @param slippageBps slippage
      * @return amountOut The amount of USDC received
      */
     function swapCompForUsdc(
         uint256 amountIn,
-        uint256 minUsdcOut
+        uint16 slippageBps
     ) internal returns (uint256 amountOut) {
         require(amountIn > 0, "Amount must be greater than zero");
 
-        // Approve Uniswap V3 Router to spend COMP
-        IERC20(COMP).safeIncreaseAllowance(UNISWAP_V3_ROUTER, amountIn);
+        SafeERC20.safeTransfer(IERC20(COMP), swapHelperPolygon, amountIn);
+        uint16 maxDeadline = uint16(block.timestamp + 1 hours); // Set a deadline for the swap
 
-        // Create swap parameters
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: COMP,
-                tokenOut: address(inputToken),
-                fee: 500, // 0.05% fee tier
-                recipient: address(this),
-                deadline: block.timestamp + 60, // 1-minute deadline
-                amountIn: amountIn,
-                amountOutMinimum: minUsdcOut,
-                sqrtPriceLimitX96: 0 // No price limit
-            });
+        amountOut = ISwapHelper(swapHelperPolygon).swap(
+            COMP,
+            amountIn,
+            address(inputToken),
+            slippageBps,
+            address(this),
+            maxDeadline,
+            "" // empty bytes param for future-proofing
+        );
 
-        // Execute swap
-        amountOut = swapRouter.exactInputSingle(params);
-
-        require(amountOut >= minUsdcOut, "Insufficient output");
+        return amountOut;
     }
 
     /// @notice Harvests COMP rewards and reinvests them into Compound
     function harvest() public {
-        uint256 compBalance = claimRewards();
-        uint256 usdcReceived = swapCompForUsdc(compBalance, 0);
-
-        // Reinvest USDC into Compound
-        _depositFundsIntoYieldSource(usdcReceived, 0);
-        emit RewardsHarvested(compBalance, compBalance, usdcReceived);
+        uint256 compBalance = checkRewards();
+        if (compBalance > 0) {
+            compBalance = claimRewards();
+            uint256 usdcReceived = swapCompForUsdc(
+                compBalance,
+                harvestSwapSlippage
+            );
+            _depositFundsIntoYieldSource(usdcReceived, 0);
+            emit RewardsHarvested(compBalance, compBalance, usdcReceived);
+        }
     }
 
     /// @notice Deposits funds into the yield source.
@@ -123,6 +127,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 initialBalance = receiptToken.balanceOf(address(this));
         receiptToken.supply(address(inputToken), amount);
         uint256 finalBalance = receiptToken.balanceOf(address(this));
+
         if (finalBalance - initialBalance < minAmountOut) {
             revert InsufficientOut();
         }
@@ -139,11 +144,15 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
+        harvest(); // Harvest rewards before withdrawing
+        uint256 initialBalance = inputToken.balanceOf(address(this)); // take initial balance after harvest
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
             fractionToWithdraw
         );
         receiptToken.withdraw(address(inputToken), sharesToWithdraw);
-        if (sharesToWithdraw < minAmountOut) {
+        uint256 finalBalance = inputToken.balanceOf(address(this));
+        amountWithdrawn = finalBalance - initialBalance;
+        if (amountWithdrawn < minAmountOut) {
             revert InsufficientOut();
         }
         return sharesToWithdraw;
@@ -163,16 +172,13 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
             1e18, // Withdraw all
             minAmountOut
         );
-
-        // Claim & swap COMP before transferring funds
-        uint256 compBalance = claimRewards();
-        if (compBalance > 0) {
-            withdrawnAmount += swapCompForUsdc(compBalance, minAmountOut);
-        }
 
         approveOrIncreaseAllowance(inputToken, newStrategy, withdrawnAmount);
 
@@ -207,5 +213,11 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
             withdrawShareAmount = totalShares;
         }
         return withdrawShareAmount;
+    }
+
+    function checkRewards() public returns (uint256) {
+        ICometRewards.RewardOwed memory reward = cometRewardsContract
+            .getRewardOwed(address(receiptToken), address(this));
+        return reward.owed;
     }
 }

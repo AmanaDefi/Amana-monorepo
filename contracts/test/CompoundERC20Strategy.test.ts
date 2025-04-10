@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
-import { CurveERC20Strategy, IERC20, ICurvePool, IERC20Custody } from "../typechain";
+import { ERC20_Compound_Strategy, IERC20, ICompoundVault, ICometRewards, ISwapHelper } from "../typechain";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../constants";
 import { simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, setTokenBalance } from "./utils";
@@ -13,19 +13,20 @@ const ETHEREUM_CHAIN_ID = 1;
 const GATEWAY_ADDRESS = "0x48b9aacc350b20147001f88821d31731ba4c30ed";
 const AMANA_VAULT_ADDRESS = "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B";
 const OWNER_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-const ERC20_CUSTODY_ADDRESS = "0xD80BE3710F08D280F51115e072e5d2a778946cd7";
-const INPUT_TOKEN_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-const RECEIPT_TOKEN_ADDRESS = "0x169A5f124A3663a25313Ee0F7f3Bff028728867f";
-const GAUGE_ADDRESS = "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185";
+const INPUT_TOKEN_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; //USDT
+const RECEIPT_TOKEN_ADDRESS = "0xaeB318360f27748Acb200CE616E389A6C9409a07";
+const COMET_REWARDS_ADDRESS = "0x45939657d1CA34A8FA39A924B71D28Fe8431e581";
 const WITHDRAW_HELPER_ADDRESS = "0x1F2C8D4A3E5B7C6D9F2A0E4B5C7F3D8E1A6B8C9F";
+const COMP_TOKEN_ADDRESS = "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c";
 
-const FORK_BLOCK = 21916968;
+const FORK_BLOCK = 70004444;
+const ERROR_MARGIN = BigNumber.from("2"); // 0.01% error margin
 
 let owner: Signer;
 let user1: Signer;
 let user2: Signer;
 let gatewaySigner: Signer;
-let strategy: CurveERC20Strategy;
+let strategy: ERC20_Compound_Strategy;
 
 async function setupGatewaySigner() {
   await network.provider.request({
@@ -42,14 +43,14 @@ async function setupGatewaySigner() {
   return gatewaySigner;
 }
 
-describe("CurveERC20Strategy - Full Coverage", function () {
+describe("ERC20_Compound_Strategy - Full Coverage", function () {
 
   let owner: Signer;
   let inputToken: IERC20;
   let gatewaySigner: Signer;
-  let curvePool: ICurvePool;
-  let gaugePool: IERC20;
-  let stakingEnabled: boolean;
+  let compoundVault: ICompoundVault;
+  let cometRewardsContract: ICometRewards;
+  let swapHelper: ISwapHelper;
 
   before(async () => {
     await network.provider.request({
@@ -57,7 +58,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       params: [
         {
           forking: {
-            jsonRpcUrl: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+            jsonRpcUrl: "https://137.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c",
             blockNumber: FORK_BLOCK,
           },
         },
@@ -71,21 +72,24 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     [owner] = await ethers.getSigners();
 
     inputToken = await ethers.getContractAt("IERC20", INPUT_TOKEN_ADDRESS, gatewaySigner);
-    curvePool = await ethers.getContractAt("ICurvePool", RECEIPT_TOKEN_ADDRESS, gatewaySigner);
-    gaugePool = await ethers.getContractAt("IERC20", GAUGE_ADDRESS, gatewaySigner);
+    compoundVault = await ethers.getContractAt("ICompoundVault", RECEIPT_TOKEN_ADDRESS, gatewaySigner);
+    cometRewardsContract = await ethers.getContractAt("ICometRewards", COMET_REWARDS_ADDRESS, gatewaySigner);
 
-    const StrategyFactory = await ethers.getContractFactory("CurveERC20Strategy");
+    const SwapHelperPolygon = await ethers.getContractFactory("SwapHelperPolygon");
+    swapHelper = await SwapHelperPolygon.deploy();
+    await swapHelper.deployed();
+
+    const StrategyFactory = await ethers.getContractFactory("ERC20_Compound_Strategy");
     strategy = await StrategyFactory.deploy(
-      "CurveERC20Strategy",
+      "ERC20_Compound_Strategy",
       AMANA_VAULT_ADDRESS,
       INPUT_TOKEN_ADDRESS,
       RECEIPT_TOKEN_ADDRESS,
-      GAUGE_ADDRESS,
       GATEWAY_ADDRESS,
-      WITHDRAW_HELPER_ADDRESS
+      WITHDRAW_HELPER_ADDRESS,
+      swapHelper.address
     );
     await strategy.deployed();
-    stakingEnabled = await strategy.stakingEnabled();
 
   });
 
@@ -97,15 +101,11 @@ describe("CurveERC20Strategy - Full Coverage", function () {
   });
 
   it("should revert if a non-gateway address tries to call onCall", async function () {
-    // const shares = await strategy.convertToAssets(ethers.BigNumber.from("120160000000"));
-    // console.log(shares.toString());
-    // const price = await strategy.fetchCrvUsdPrice();
-    // console.log(price.toString());
     const depositAmount = ethers.utils.parseEther("1");
     const slippage = 10000;
     const minSharesOut = ethers.utils.parseEther("0");
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     await expect(simulateDepositCallFromVaultToStrategy(
@@ -149,7 +149,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
 
     const invalidSenderAddress = OWNER_ADDRESS;
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     await expect(simulateDepositCallFromVaultToStrategy(
@@ -187,7 +187,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const minSharesOut = ethers.BigNumber.from("0");
     const slippage = 10000;
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     await simulateDepositCallFromVaultToStrategy(
@@ -202,12 +202,10 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     );
 
     let strategyBalance;
-    if (stakingEnabled) {
-      strategyBalance = await gaugePool.balanceOf(strategy.address);
-    } else {
-      strategyBalance = await curvePool.balanceOf(strategy.address);
-    }
-    expect(strategyBalance).to.be.gte(depositAmount);
+
+    strategyBalance = await compoundVault.balanceOf(strategy.address);
+
+    expect(strategyBalance).to.be.closeTo(depositAmount, ERROR_MARGIN);
   });
 
   it("should allow Gateway to withdraw ERC20", async function () {
@@ -215,7 +213,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const minSharesOut = ethers.BigNumber.from("0");
     const slippage = 10000;
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     await simulateDepositCallFromVaultToStrategy(
@@ -228,7 +226,8 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       slippage,
       BASE_CHAIN_ID,
     )
-    const shares = await curvePool.balanceOf(strategy.address);
+    const shares = await compoundVault.balanceOf(strategy.address);
+    expect(shares).to.be.gt(0); // Ensure shares were received
     const withdrawAmountInShares = ethers.utils.parseEther("1"); // represents full amount
     const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount);
 
@@ -247,26 +246,20 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       ETHEREUM_CHAIN_ID
     );
     let strategyBalance;
-    if (stakingEnabled) {
-      strategyBalance = await gaugePool.balanceOf(strategy.address);
-    } else {
-      strategyBalance = await curvePool.balanceOf(strategy.address);
-    }
+
+    strategyBalance = await compoundVault.balanceOf(strategy.address);
+
     expect(strategyBalance).to.equal(0);
 
   });
 
   it("should succesfully harvest when withdrawing after accumulating rewards", async function () {
-    if (!stakingEnabled) {
-      console.log("Skipping test: Staking is not enabled");
-      return;
-    }
     const depositAmount = ethers.BigNumber.from("1000000");
     const minSharesOut = ethers.BigNumber.from("0");
     const slippage = 10000;
 
     // Step 1: Set Token Balance and Approve Strategy
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     // Step 2: Simulate Deposit
@@ -281,8 +274,8 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       BASE_CHAIN_ID,
     );
 
-    // Step 3: Check Initial Shares in Curve Pool
-    const initialShares = await gaugePool.balanceOf(strategy.address);
+    // Step 3: Check Initial Shares in  Pool
+    const initialShares = await compoundVault.balanceOf(strategy.address);
     expect(initialShares).to.be.gt(0); // Ensure shares were received
 
     // Step 4: Simulate Time Passing for Rewards Accumulation
@@ -290,14 +283,16 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     await ethers.provider.send("evm_increaseTime", [timeToSimulate]); // Fast-forward time
     await ethers.provider.send("evm_mine", []); // Mine a new block
 
+    const reward = await cometRewardsContract.callStatic.getRewardOwed(RECEIPT_TOKEN_ADDRESS, strategy.address);
+    expect(reward.owed).to.be.gt(0); // Ensure rewards were received
+
     // Step 5: Check Claimable Rewards
-    const claimableRewards = await strategy.checkRewards();
-    console.log(`Claimable Rewards: ${ethers.utils.formatUnits(claimableRewards, 18)} CRV`);
-    expect(claimableRewards).to.be.gt(0); // Ensure some rewards have accrued
+    console.log(`Claimable Rewards: ${ethers.utils.formatUnits(reward.owed, 18)} COMP`);
+    expect(reward.owed).to.be.gt(0); // Ensure some rewards have accrued
 
     // Step 6: Simulate Withdrawal
-    const withdrawAmountInShares = ethers.utils.parseEther("1"); // Represents full amount
-    const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount);
+    const withdrawAmountInShares = initialShares; // Represents full amount
+    const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(withdrawAmountInShares);
     const minAmountOut = ethers.BigNumber.from("0");
 
     await simulateWithdrawCallFromVaultToStrategy(
@@ -315,23 +310,19 @@ describe("CurveERC20Strategy - Full Coverage", function () {
 
     // Step 7: Check Strategy Balance After Withdrawal
     let strategyBalance;
-    if (stakingEnabled) {
-      strategyBalance = await gaugePool.balanceOf(strategy.address);
-    } else {
-      strategyBalance = await curvePool.balanceOf(strategy.address);
-    }
-    const tolerance = ethers.utils.parseUnits("0.0000001", 18); // Allow minor interest dust
-    expect(strategyBalance).to.be.closeTo(ethers.BigNumber.from("0"), tolerance);
+
+    strategyBalance = await compoundVault.balanceOf(strategy.address);
+    expect(strategyBalance).to.equal(0); // Ensure strategy balance is zero
 
     // Step 8: Check that Rewards Were Claimed (Optional)
-    const finalClaimableRewards = await strategy.checkRewards();
-    console.log(`Final Claimable Rewards: ${ethers.utils.formatUnits(finalClaimableRewards, 18)} CRV`);
-    expect(finalClaimableRewards).to.be.lte(claimableRewards); // Rewards should have been claimed
+    const finalClaimableRewards = await cometRewardsContract.callStatic.getRewardOwed(RECEIPT_TOKEN_ADDRESS, strategy.address);
+    console.log(`Final Claimable Rewards: ${ethers.utils.formatUnits(finalClaimableRewards.owed, 18)} COMP`);
+    expect(finalClaimableRewards.owed).to.be.lt(reward.owed); // Rewards should have been claimed
   });
 
   it("should allow owner to perform emergencyWithdraw", async function () {
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, ethers.utils.parseEther("1").toHexString(), 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, ethers.utils.parseEther("1"), 0);
 
     const initialBalance = await inputToken.balanceOf(strategy.address);
     expect(initialBalance).to.be.gt(0);
@@ -369,14 +360,12 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const withdrawPlusFee = ethers.BigNumber.from("1000000");
 
     // Fund the strategy contract with the required ERC20
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, withdrawPlusFee, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, withdrawPlusFee, 0);
 
     let initialBalance;
-    if (stakingEnabled) {
-      initialBalance = await gaugePool.balanceOf(strategy.address);
-    } else {
-      initialBalance = await curvePool.balanceOf(strategy.address);
-    }
+
+    initialBalance = await compoundVault.balanceOf(strategy.address);
+
     const revertContext = {
       sender: strategy.address,
       asset: INPUT_TOKEN_ADDRESS, // the ERC20 that we were trying to do depositAndCall with
@@ -392,7 +381,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
   it("should emit the TotalUnderlyingAssetsSent event", async function () {
     const depositAmount = ethers.BigNumber.from("1000000");
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     const minSharesOut = ethers.BigNumber.from("0");
@@ -408,7 +397,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       slippage,
       BASE_CHAIN_ID,
     );
-    const shares = await curvePool.balanceOf(strategy.address);
+    const shares = await compoundVault.balanceOf(strategy.address);
     // Call the function
     const tx = await strategy.sendTotalUnderlyingAssetsToVault();
     await expect(tx)
@@ -573,7 +562,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       GATEWAY_ADDRESS
     );
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, ethers.utils.parseEther("1010"), 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, strategy.address, ethers.utils.parseEther("1010"), 0);
     // await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     // Call the function as the owner
@@ -608,7 +597,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const minSharesOut = ethers.BigNumber.from("0");
     const slippage = 10000;
 
-    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 9);
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
     await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
     await simulateDepositCallFromVaultToStrategy(
@@ -621,22 +610,23 @@ describe("CurveERC20Strategy - Full Coverage", function () {
       slippage,
       BASE_CHAIN_ID,
     );
-    const oldStrategyInitialBalance = await curvePool.balanceOf(strategy.address);
+    const oldStrategyInitialBalance = await compoundVault.balanceOf(strategy.address);
 
-    const StrategyFactory = await ethers.getContractFactory("CurveERC20Strategy");
+    const StrategyFactory = await ethers.getContractFactory("ERC20_Compound_Strategy");
 
     const newStrategy = await StrategyFactory.deploy(
-      "CurveERC20Strategy",
+      "ERC20_Compound_Strategy",
       AMANA_VAULT_ADDRESS,
       INPUT_TOKEN_ADDRESS,
       RECEIPT_TOKEN_ADDRESS,
-      GAUGE_ADDRESS,
       GATEWAY_ADDRESS,
-      WITHDRAW_HELPER_ADDRESS
+      WITHDRAW_HELPER_ADDRESS,
+      swapHelper.address
     );
     await newStrategy.deployed();
 
     await newStrategy.connect(owner).setOldStrategy(strategy.address);
+
     await expect(simulateSwitchCallFromVaultToStrategy(
       AMANA_VAULT_ADDRESS,
       gatewaySigner,
@@ -645,44 +635,101 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     )).to.emit(strategy, "AssetsTransferredToNewStrategy")
       .to.emit(newStrategy, "FundsInvested");
 
-    const oldStrategyBalance = await curvePool.balanceOf(strategy.address);
+    const oldStrategyBalance = await compoundVault.balanceOf(strategy.address);
     expect(oldStrategyBalance).to.equal(0);
-    const newStrategyBalance = await curvePool.balanceOf(newStrategy.address);
+    const newStrategyBalance = await compoundVault.balanceOf(newStrategy.address);
     expect(newStrategyBalance).to.be.closeTo(oldStrategyInitialBalance, ethers.utils.parseUnits("0.001", 18));
   });
 
-  it("should emit TotalUnderlyingAssetsSent with value 0", async () => {
-    const tx = await strategy.sendTotalUnderlyingAssetsToVault();
+  it("should harvest and reinvest rewards when called externally", async function () {
+    const depositAmount = ethers.utils.parseUnits("1000000", 6); // USDC has 6 decimals
+    const slippage = 10000;
+    const minSharesOut = ethers.BigNumber.from("0");
+
+    // Step 1: Set Token Balance and Approve
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
+    await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
+
+    // Step 2: Deposit
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_CHAIN_ID
+    );
+
+    // Step 3: Accumulate Rewards
+    const timeToSimulate = 7 * 24 * 60 * 60;
+    await ethers.provider.send("evm_increaseTime", [timeToSimulate]);
+    await ethers.provider.send("evm_mine", []);
+
+    const preHarvestReward = await cometRewardsContract.callStatic.getRewardOwed(RECEIPT_TOKEN_ADDRESS, strategy.address);
+    expect(preHarvestReward.owed).to.be.gt(0);
+
+    // Step 4: Call harvest externally
+    const tx = await strategy.connect(gatewaySigner).harvest();
+    await tx.wait();
+
+    // Step 5: Confirm Rewards Harvested Event
     const receipt = await tx.wait();
-
-    const event = receipt.events?.find((e: any) => e.event === "TotalUnderlyingAssetsSent");
-
+    const event = receipt.events?.find(e => e.event === "RewardsHarvested");
     expect(event).to.not.be.undefined;
+
     if (!event) {
       throw new Error("Event not found");
     }
-    if (!event.args) {
-      throw new Error("Event args not found");
-    }
-    expect(event.args[1]).to.equal(0); // totalUnderlyingAssets
+
+    const [compAmount, , usdcReceived] = event.args!;
+    console.log("COMP harvested:", ethers.utils.formatEther(compAmount));
+    console.log("USDC reinvested:", ethers.utils.formatUnits(usdcReceived, 6));
+
+    expect(compAmount).to.be.gt(0);
+    expect(usdcReceived).to.be.gt(0);
   });
 
-  // it("should emit TotalUnderlyingAssetsSent with value > 0 after deposit", async () => {
-  //   // Simulate a deposit that increases underlying assets
-  //   const depositAmount = ethers.utils.parseEther("10");
-  //   const mockToken = await ethers.getContractAt("IERC20", await strategy.asset());
-  //   await mockToken.transfer(strategy.address, depositAmount); // simulate underlying asset transfer
+  it("should claim rewards when claimRewards is called externally", async function () {
+    const depositAmount = ethers.utils.parseUnits("1000000", 6);
+    const slippage = 10000;
+    const minSharesOut = ethers.BigNumber.from("0");
 
-  //   const totalAssets = await strategy.totalUnderlyingAssets();
-  //   expect(totalAssets).to.equal(depositAmount);
+    // Step 1: Set Token Balance and Approve
+    await setTokenBalance(INPUT_TOKEN_ADDRESS, await gatewaySigner.getAddress(), depositAmount, 0);
+    await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
-  //   const tx = await strategy.sendTotalUnderlyingAssetsToVault();
-  //   const receipt = await tx.wait();
+    // Step 2: Deposit
+    await simulateDepositCallFromVaultToStrategy(
+      AMANA_VAULT_ADDRESS,
+      OWNER_ADDRESS,
+      gatewaySigner,
+      strategy,
+      depositAmount,
+      minSharesOut,
+      slippage,
+      BASE_CHAIN_ID
+    );
 
-  //   const event = receipt.events?.find((e: any) => e.event === "TotalUnderlyingAssetsSent");
+    // Step 3: Accumulate Rewards
+    const timeToSimulate = 7 * 24 * 60 * 60;
+    await ethers.provider.send("evm_increaseTime", [timeToSimulate]);
+    await ethers.provider.send("evm_mine", []);
 
-  //   expect(event).to.not.be.undefined;
-  //   expect(event.args[1]).to.equal(depositAmount);
-  // });
+    const rewardBeforeClaim = await cometRewardsContract.callStatic.getRewardOwed(RECEIPT_TOKEN_ADDRESS, strategy.address);
+    expect(rewardBeforeClaim.owed).to.be.gt(0);
+
+    // Step 4: Call claimRewards externally
+    const claimedAmount = await strategy.connect(gatewaySigner).callStatic.claimRewards();
+    console.log("Claimed COMP amount:", ethers.utils.formatEther(claimedAmount));
+    expect(claimedAmount).to.be.gt(0);
+
+    // Step 5: Execute for real and verify COMP balance
+    await strategy.connect(gatewaySigner).claimRewards();
+    const compToken = await ethers.getContractAt("IERC20", COMP_TOKEN_ADDRESS, gatewaySigner);
+    const compBalance = await compToken.balanceOf(strategy.address);
+    expect(compBalance).to.be.gte(claimedAmount);
+  });
 
 });

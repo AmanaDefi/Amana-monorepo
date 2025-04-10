@@ -6,79 +6,45 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "./interfaces/IZRC20.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/IPriceOracle.sol";
-import "./interfaces/ICurvePool.sol";
+// import "./interfaces/ICurvePool.sol";
 import "./interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 
-import "./CurvePoolRegistry.sol";
+// import "./CurvePoolRegistry.sol";
 
-contract SwapHelper {
+contract SwapHelperPolygon {
     address constant UNISWAP_V2_FACTORY =
-        0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
+        0x9e5A52f57b3038F1B8EeE45F28b3C1967e22799C; // Polygon
     address constant UNISWAP_V2_ROUTER =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
+        0xedf6066a2b290C185783862C7F4776A2C8077AD1; // Polygon
     address constant UNISWAP_V3_FACTORY =
-        0x67AA6B2b715937Edc1Eb4D3b7B5d5dCD1fd93E8C; // mainnet and testnet
-    address constant UNISWAP_V3_ROUTER =
-        0x9b30CfbACD3504252F82263F72D6acf62bf733C2;
+        0x1F98431c8aD98523631AE4a59f267346ea31F984; // Polygon
+    address public constant UNISWAP_V3_ROUTER =
+        0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Polygon
+
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
 
-    address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
+    address constant WETH_TOKEN = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // Polygon
 
     address constant PRICE_ORACLE_ADDRESS =
-        0x0D313486083fe6f0A1868EAeEe07D46fed92E9f9; // mainnet only
+        0xd052F4383e5ae6A17d67DA5eC0c0cc679Ba04a77; // Polygon
 
-    address constant ETH_ETH_ADDRESS =
-        0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
-    address constant USDC_ETH_ADDRESS =
-        0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a; // mainnet only
-    address constant USDT_ETH_ADDRESS =
-        0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7; // mainnet only
-
-    address constant ETH_BASE_ADDRESS =
-        0x1de70f3e971B62A0707dA18100392af14f7fB677; // mainnet only
-    address constant USDC_BASE_ADDRESS =
-        0x96152E6180E085FA57c7708e18AF8F05e37B479D; // mainnet only
-
-    address constant BNB_BSC_ADDRESS =
-        0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb; // mainnet only
-    address constant USDT_BSC_ADDRESS =
-        0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F; // mainnet only
-    address constant USDC_BSC_ADDRESS =
-        0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0; // mainnet only
-
-    address constant POL_POLYGON_ADDRESS =
-        0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501; // mainnet only
-    address constant USDT_POL_ADDRESS =
-        0xdbfF6471a79E5374d771922F2194eccc42210B9F; // mainnet only
-    address constant USDC_POL_ADDRESS =
-        0xfC9201f4116aE6b054722E10b98D904829b469c3; // mainnet only
-
-    address constant SOL_SOL_ADDRESS =
-        0x4bC32034caCcc9B7e02536945eDbC286bACbA073;
-    address constant USDC_SOL_ADDRESS =
-        0x8344d6f84d26f998fa070BbEA6D2E15E359e2641;
-    address constant USDT_SOL_ADDRESS =
-        0xEe9CC614D03e7Dbe994b514079f4914a605B4719;
+    address constant USDC_ADDRESS = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174; // mainnet only
+    address constant USDT_ADDRESS = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F; // mainnet only
+    address constant WMATIC_ADDRESS =
+        0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+    address constant COMP_ADDRESS = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c; // COMP on Polygon
 
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
     bytes32 constant polUsdPriceFeedId =
         0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472;
-    bytes32 constant bnbUsdPriceFeedId =
-        0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
-    bytes32 constant zetaUsdPriceFeedId =
-        0xb70656181007f487e392bf0d92e55358e9f0da5da6531c7c4ce7828aa11277fe;
-    bytes32 constant solUsdPriceFeedId =
-        0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d;
-
-    address constant CURVE_POOL_REGISTRY =
-        0x5524124b8F36e682f3A23D069399247806e8B627; // mainnet only
+    bytes32 constant compUsdPriceFeedId =
+        0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478;
 
     /**
      * @notice Returns the price feed ID for a given token address.
@@ -86,16 +52,12 @@ contract SwapHelper {
      * @return The price feed ID associated with the token.
      */
     function getPriceFeedId(address token) internal pure returns (bytes32) {
-        if (token == ETH_ETH_ADDRESS || token == ETH_BASE_ADDRESS) {
+        if (token == WETH_TOKEN) {
             return ethUsdPriceFeedId;
-        } else if (token == POL_POLYGON_ADDRESS) {
+        } else if (token == WMATIC_ADDRESS) {
             return polUsdPriceFeedId;
-        } else if (token == BNB_BSC_ADDRESS) {
-            return bnbUsdPriceFeedId;
-        } else if (token == WZETA_TOKEN) {
-            return zetaUsdPriceFeedId;
-        } else if (token == SOL_SOL_ADDRESS) {
-            return solUsdPriceFeedId;
+        } else if (token == COMP_ADDRESS) {
+            return compUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -107,15 +69,7 @@ contract SwapHelper {
      * @return True if the token is a stablecoin, false otherwise.
      */
     function isStablecoin(address token) internal pure returns (bool) {
-        return (token == USDC_BSC_ADDRESS ||
-            token == USDC_ETH_ADDRESS ||
-            token == USDC_POL_ADDRESS ||
-            token == USDC_BASE_ADDRESS ||
-            token == USDT_BSC_ADDRESS ||
-            token == USDT_ETH_ADDRESS ||
-            token == USDT_POL_ADDRESS ||
-            token == USDC_SOL_ADDRESS ||
-            token == USDT_SOL_ADDRESS);
+        return (token == USDC_ADDRESS || token == USDT_ADDRESS);
     }
 
     /**
@@ -161,7 +115,6 @@ contract SwapHelper {
         uint256 outputPrice = isStablecoin(outputToken)
             ? 1e8
             : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
-
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
         // Get token decimals dynamically
@@ -291,42 +244,42 @@ contract SwapHelper {
     }
 
     function getPathV2(
-        address zrc20,
-        address targetZRC20
+        address inputToken,
+        address outputToken
     ) public view returns (address[] memory path) {
-        if (zrc20 == targetZRC20) {
+        if (inputToken == outputToken) {
             revert IErrors.InvalidAddress();
         }
 
         // UniswapV2 Direct Swap
         if (
-            _existsPairPool(zrc20, USDC_ETH_ADDRESS) &&
-            _existsPairPool(USDC_ETH_ADDRESS, targetZRC20)
+            _existsPairPool(inputToken, WETH_TOKEN) &&
+            _existsPairPool(WETH_TOKEN, outputToken)
         ) {
             path = new address[](3);
-            path[0] = zrc20;
-            path[1] = USDC_ETH_ADDRESS;
-            path[2] = targetZRC20;
+            path[0] = inputToken;
+            path[1] = WETH_TOKEN;
+            path[2] = outputToken;
             return (path);
         }
 
-        // UniswapV2 Indirect Swap via WZETA_TOKEN
+        // UniswapV2 Indirect Swap via WETH_TOKEN
         if (
-            _existsPairPool(zrc20, WZETA_TOKEN) &&
-            _existsPairPool(WZETA_TOKEN, targetZRC20)
+            _existsPairPool(inputToken, WETH_TOKEN) &&
+            _existsPairPool(WETH_TOKEN, outputToken)
         ) {
             path = new address[](3);
-            path[0] = zrc20;
-            path[1] = WZETA_TOKEN;
-            path[2] = targetZRC20;
+            path[0] = inputToken;
+            path[1] = WETH_TOKEN;
+            path[2] = outputToken;
             return (path);
         }
         return path;
     }
 
     function getPathV3(
-        address zrc20,
-        address targetZRC20
+        address inputToken,
+        address outputToken
     )
         public
         view
@@ -336,35 +289,35 @@ contract SwapHelper {
             bytes memory encodedPath
         )
     {
-        if (zrc20 == targetZRC20) {
+        if (inputToken == outputToken) {
             revert IErrors.InvalidAddress();
         }
         bool exists;
         uint24 feeTier;
 
         // UniswapV3 Direct Swap (Checks both fee tiers, prioritizes 0.05%)
-        (exists, feeTier) = _existsV3Pool(zrc20, targetZRC20);
+        (exists, feeTier) = _existsV3Pool(inputToken, outputToken);
         if (exists) {
             path = new address[](2);
             feeTiers = new uint24[](1);
-            path[0] = zrc20;
-            path[1] = targetZRC20;
+            path[0] = inputToken;
+            path[1] = outputToken;
             feeTiers[0] = feeTier;
             encodedPath = abi.encodePacked(path[0], feeTiers[0], path[1]);
             return (path, feeTiers, encodedPath);
         }
 
-        // UniswapV3 Indirect Swap via USDC_ETH_ADDRESS (Checks both fee tiers)
-        (exists, feeTier) = _existsV3Pool(zrc20, USDC_ETH_ADDRESS);
+        // UniswapV3 Indirect Swap via WETH_TOKEN (Checks both fee tiers)
+        (exists, feeTier) = _existsV3Pool(inputToken, WETH_TOKEN);
         if (exists) {
             uint24 feeTier2;
-            (exists, feeTier2) = _existsV3Pool(USDC_ETH_ADDRESS, targetZRC20);
+            (exists, feeTier2) = _existsV3Pool(WETH_TOKEN, outputToken);
             if (exists) {
                 path = new address[](3);
                 feeTiers = new uint24[](2);
-                path[0] = zrc20;
-                path[1] = USDC_ETH_ADDRESS;
-                path[2] = targetZRC20;
+                path[0] = inputToken;
+                path[1] = WETH_TOKEN;
+                path[2] = outputToken;
                 feeTiers[0] = feeTier;
                 feeTiers[1] = feeTier2;
                 encodedPath = abi.encodePacked(path[0]);
@@ -485,151 +438,151 @@ contract SwapHelper {
             : (reserve1, reserve0);
     }
 
-    /**
-     * @notice Finds the index of a token in a Curve pool.
-     * @param token The token to find in the pool.
-     * @param pool The Curve pool address.
-     * @return index The token index in the pool.
-     */
-    function getTokenIndex(
-        address token,
-        address pool
-    ) public view returns (uint256) {
-        // Assume Curve pools have at most 8 tokens
-        for (uint256 i = 0; i < 8; i++) {
-            try ICurvePool(pool).coins(i) returns (address poolToken) {
-                if (poolToken == token) {
-                    return i;
-                }
-            } catch {
-                break; // Stop if out of range
-            }
-        }
-        revert("Token not found in Curve pool");
-    }
+    // /**
+    //  * @notice Finds the index of a token in a Curve pool.
+    //  * @param token The token to find in the pool.
+    //  * @param pool The Curve pool address.
+    //  * @return index The token index in the pool.
+    //  */
+    // function getTokenIndex(
+    //     address token,
+    //     address pool
+    // ) public view returns (uint256) {
+    //     // Assume Curve pools have at most 8 tokens
+    //     for (uint256 i = 0; i < 8; i++) {
+    //         try ICurvePool(pool).coins(i) returns (address poolToken) {
+    //             if (poolToken == token) {
+    //                 return i;
+    //             }
+    //         } catch {
+    //             break; // Stop if out of range
+    //         }
+    //     }
+    //     revert("Token not found in Curve pool");
+    // }
 
-    /**
-     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
-     * @param inputToken The token being swapped from.
-     * @param outputToken The token being swapped to.
-     * @return curvePool The address of the curve pool to use.
-     */
-    function getCurvePool(
-        address inputToken,
-        address outputToken
-    ) public view returns (address curvePool, uint256 i, uint256 j) {
-        CurvePoolRegistry registry = CurvePoolRegistry(CURVE_POOL_REGISTRY);
-        curvePool = registry.getBestPool(inputToken, outputToken);
-        // Find token indexes in the pool using getTokenIndex()
-        if (curvePool != address(0)) {
-            i = getTokenIndex(inputToken, curvePool);
-            j = getTokenIndex(outputToken, curvePool);
-        } else {
-            i = 0;
-            j = 0;
-        }
-    }
+    // /**
+    //  * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+    //  * @param inputToken The token being swapped from.
+    //  * @param outputToken The token being swapped to.
+    //  * @return curvePool The address of the curve pool to use.
+    //  */
+    // function getCurvePool(
+    //     address inputToken,
+    //     address outputToken
+    // ) public view returns (address curvePool, uint256 i, uint256 j) {
+    //     CurvePoolRegistry registry = CurvePoolRegistry(CURVE_POOL_REGISTRY);
+    //     curvePool = registry.getBestPool(inputToken, outputToken);
+    //     // Find token indexes in the pool using getTokenIndex()
+    //     if (curvePool != address(0)) {
+    //         i = getTokenIndex(inputToken, curvePool);
+    //         j = getTokenIndex(outputToken, curvePool);
+    //     } else {
+    //         i = 0;
+    //         j = 0;
+    //     }
+    // }
 
-    /**
-     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
-     * @param inputToken The token being swapped from.
-     * @param outputToken The token being swapped to.
-     * @param amount The input amount in token units.
-     * @return amountOut The expected amount out from the Curve pool.
-     */
-    function getCurveAmountOut(
-        address curvePool,
-        address inputToken,
-        address outputToken,
-        uint256 amount
-    ) public view returns (uint256 amountOut) {
-        // Find token indexes in the pool using getTokenIndex()
-        uint256 i = getTokenIndex(inputToken, curvePool);
-        uint256 j = getTokenIndex(outputToken, curvePool);
+    // /**
+    //  * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+    //  * @param inputToken The token being swapped from.
+    //  * @param outputToken The token being swapped to.
+    //  * @param amount The input amount in token units.
+    //  * @return amountOut The expected amount out from the Curve pool.
+    //  */
+    // function getCurveAmountOut(
+    //     address curvePool,
+    //     address inputToken,
+    //     address outputToken,
+    //     uint256 amount
+    // ) public view returns (uint256 amountOut) {
+    //     // Find token indexes in the pool using getTokenIndex()
+    //     uint256 i = getTokenIndex(inputToken, curvePool);
+    //     uint256 j = getTokenIndex(outputToken, curvePool);
 
-        // Fetch amount out from Curve pool
-        amountOut = ICurvePool(curvePool).get_dy(i, j, amount);
-    }
+    //     // Fetch amount out from Curve pool
+    //     amountOut = ICurvePool(curvePool).get_dy(i, j, amount);
+    // }
 
-    function approveOrIncreaseAllowance(
-        IZRC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
-        uint256 currentAllowance = token.allowance(msg.sender, spender);
+    // function approveOrIncreaseAllowance(
+    //     IERC20 token,
+    //     address spender,
+    //     uint256 amount
+    // ) internal {
+    //     uint256 currentAllowance = token.allowance(msg.sender, spender);
 
-        if (currentAllowance == 0) {
-            // First-time approval
-            token.approve(spender, amount);
-        } else {
-            // Handle USDT-like tokens by forcing reset to zero first
-            token.approve(spender, 0); // Reset to zero
-            token.approve(spender, amount); // Set new allowance
-        }
-    }
+    //     if (currentAllowance == 0) {
+    //         // First-time approval
+    //         token.approve(spender, amount);
+    //     } else {
+    //         // Handle USDT-like tokens by forcing reset to zero first
+    //         token.approve(spender, 0); // Reset to zero
+    //         token.approve(spender, amount); // Set new allowance
+    //     }
+    // }
 
-    function getAmountOutCurveOrUniswap(
-        address inputToken,
-        address outputToken,
-        uint256 amount
-    ) public view returns (uint256) {
-        (address curvePool, , ) = getCurvePool(inputToken, outputToken);
-        if (curvePool != address(0)) {
-            return
-                getCurveAmountOut(curvePool, inputToken, outputToken, amount);
-        } else {
-            (
-                address[] memory path,
-                uint24[] memory feeTiers,
-                bytes memory encodedPath
-            ) = getPathV3(inputToken, outputToken);
-            if (encodedPath.length > 0) {
-                return getAmountOutV3(amount, path, feeTiers);
-            } else {
-                path = getPathV2(inputToken, outputToken);
-                return getAmountOutV2(amount, path);
-            }
-        }
-    }
+    // function getAmountOutCurveOrUniswap(
+    //     address inputToken,
+    //     address outputToken,
+    //     uint256 amount
+    // ) public view returns (uint256) {
+    //     (address curvePool, , ) = getCurvePool(inputToken, outputToken);
+    //     if (curvePool != address(0)) {
+    //         return
+    //             getCurveAmountOut(curvePool, inputToken, outputToken, amount);
+    //     } else {
+    //         (
+    //             address[] memory path,
+    //             uint24[] memory feeTiers,
+    //             bytes memory encodedPath
+    //         ) = getPathV3(inputToken, outputToken);
+    //         if (encodedPath.length > 0) {
+    //             return getAmountOutV3(amount, path, feeTiers);
+    //         } else {
+    //             path = getPathV2(inputToken, outputToken);
+    //             return getAmountOutV2(amount, path);
+    //         }
+    //     }
+    // }
 
     function swap(
-        address zrc20,
+        address inputToken,
         uint256 amount,
-        address targetZRC20,
+        address outputToken,
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut) {
         require(
-            IERC20(zrc20).balanceOf(address(this)) >= amount,
+            IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
 
         uint256 minimumOut = calculateMinAmountOut(
-            zrc20,
-            targetZRC20,
+            inputToken,
+            outputToken,
             amount,
             slippageBps
         );
         // (address curvePool, uint256 i, uint256 j) = getCurvePool(
-        //     zrc20,
-        //     targetZRC20
+        //     inputToken,
+        //     outputToken
         // );
         // if (curvePool != address(0)) {
         //     // Approve Curve pool to spend tokens
-        //     IZRC20(zrc20).approve(curvePool, amount);
+        //     IERC20(inputToken).approve(curvePool, amount);
         //     return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
         // } else {
         (
             address[] memory path,
             uint24[] memory feeTiers,
             bytes memory encodedPath
-        ) = getPathV3(zrc20, targetZRC20);
+        ) = getPathV3(inputToken, outputToken);
 
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
-            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
+            IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
                     path: encodedPath,
@@ -638,11 +591,12 @@ contract SwapHelper {
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
+
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else {
             // Uniswap V2 Swap
-            path = getPathV2(zrc20, targetZRC20);
-            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+            path = getPathV2(inputToken, outputToken);
+            IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
             uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
                 .swapExactTokensForTokens(
                     amount,
@@ -657,32 +611,32 @@ contract SwapHelper {
 
     function swapExactOut(
         uint256 totalAmountAvailable,
-        address zrc20,
+        address inputToken,
         uint256 amountOut,
-        address targetZRC20,
+        address outputToken,
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountIn) {
         uint256 maxAmountIn = calculateMaxAmountIn(
-            zrc20,
-            targetZRC20,
+            inputToken,
+            outputToken,
             amountOut,
             slippageBps
         );
         require(
-            IERC20(zrc20).balanceOf(address(this)) >= maxAmountIn,
+            IERC20(inputToken).balanceOf(address(this)) >= maxAmountIn,
             "Insufficient balance"
         );
         (
             address[] memory path,
             uint24[] memory feeTiers,
             bytes memory encodedPath
-        ) = getPathV3(targetZRC20, zrc20);
+        ) = getPathV3(outputToken, inputToken);
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap (tokens for exact tokens out)
-            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, maxAmountIn);
+            IERC20(inputToken).approve(UNISWAP_V3_ROUTER, maxAmountIn);
 
             ISwapRouter.ExactOutputParams memory params = ISwapRouter
                 .ExactOutputParams({
@@ -696,8 +650,8 @@ contract SwapHelper {
             amountIn = ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(params);
         } else {
             // Uniswap V2 Swap (tokens for exact tokens out)
-            path = getPathV2(zrc20, targetZRC20);
-            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, maxAmountIn);
+            path = getPathV2(inputToken, outputToken);
+            IERC20(inputToken).approve(UNISWAP_V2_ROUTER, maxAmountIn);
             uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
                 .swapTokensForExactTokens(
                     amountOut,
@@ -708,7 +662,7 @@ contract SwapHelper {
                 );
             amountIn = amounts[0];
         }
-        IERC20(zrc20).transfer(vault, totalAmountAvailable - amountIn);
+        IERC20(inputToken).transfer(vault, totalAmountAvailable - amountIn);
 
         return amountIn;
     }

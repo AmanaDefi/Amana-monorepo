@@ -65,7 +65,6 @@ export default function VaultInputs({
   useEffect(() => {
     async function handlePerformanceFee() {
       const perfFee = await getPerformanceFee(vaultData.id as Address);
-      console.log("Performance feee!!!", perfFee);
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
       setPerformanceFee(percentagePerformanceFee);
     }
@@ -160,7 +159,6 @@ export default function VaultInputs({
   }, [inputBalance, inputToken?.address, activeChain?.id, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
   function handleTokenSelect(selectedToken: Token): void {
-    console.log("Token selected:", selectedToken); // Debug log
     setInputToken(selectedToken);
     setAllowInput(true);
   }
@@ -204,8 +202,6 @@ export default function VaultInputs({
     if (decimals?.length > decimalsNumber) {
       inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
     }
-
-    console.log("Input Amount", inputAmt);
 
   // convert string amt to bigint
   const newAmt = parseUnits(inputAmt, decimalsNumber);
@@ -324,8 +320,6 @@ export default function VaultInputs({
       });
       const gasZRC20 = result[0] as Address;
       const gasFee = result[1] as bigint;
-      console.log("gasZRC20", gasZRC20);
-      console.log("gasFee", gasFee);
       // 3. If vault token and gas token match, subtract directly
       gasFeeInVaultAsset = gasFee;
     

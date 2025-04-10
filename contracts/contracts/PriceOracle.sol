@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // PYTH_CONTRACT_ADDRESS = 0x2880aB155794e7179c9eE2e38200202908C17B43 for ZetaChain mainnet
 // PYTH_CONTRACT_ADDRESS = 0x4305FB66699C3B2702D4d05CF36551390A4c69C6 for Ethereum mainnet
 // PYTH_CONTRACT_ADDRESS = 0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a for Base mainnet
+// PYTH_CONTRACT_ADDRESS = 0xff1a0f4744e8582DF1aE09D5611b887B6a12925C for Polygon
 
 contract PriceOracle is Ownable {
     address public immutable PYTH_CONTRACT_ADDRESS;
@@ -45,12 +46,25 @@ contract PriceOracle is Ownable {
     function fetchPrice(
         bytes32 priceFeedId
     ) external payable returns (uint256 returnedPrice) {
-        // Fetch the latest price that is no older than the specified maxStaleness
-        PythStructs.Price memory price = pyth.getPriceNoOlderThan(
-            priceFeedId,
-            maxStaleness
-        );
+        PythStructs.Price memory price;
 
+        // Try fetching the safe price first
+        try pyth.getPriceNoOlderThan(priceFeedId, maxStaleness) returns (
+            PythStructs.Price memory result
+        ) {
+            price = result;
+        } catch (bytes memory lowLevelData) {
+            // Decode and inspect error selector
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            if (selector == bytes4(keccak256("InvalidUpdateData()"))) {
+                price = pyth.getPriceUnsafe(priceFeedId);
+            } else {
+                revert("Failed to fetch price");
+            }
+        }
         // Ensure the price is valid (greater than 0)
         require(price.price > 0, "Invalid price");
 
