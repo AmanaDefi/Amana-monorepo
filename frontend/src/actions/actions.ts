@@ -256,7 +256,6 @@ export async function calculateCurveRewardsAPY(gaugeAddress: Address, strategyCh
   });
 
   const rewardRate = ethers.toBigInt(rate);
-  console.log("Reward Rate:", rewardRate);
 
   // 4. Get total staked LP tokens
   const totalStaked = await readContract(
@@ -265,16 +264,11 @@ export async function calculateCurveRewardsAPY(gaugeAddress: Address, strategyCh
       method: "function totalSupply() view returns (uint256)",
     }
   )
-  console.log("Total staked LP tokens:", totalStaked);
 
   if (totalStaked === 0n) {
     console.warn("No LP tokens staked. Skipping APY calculation.");
     return 0;
   }
-
-  // 5. Get reward token and LP token prices (use an oracle or DEX API)
-  console.log(`Curve token price (USD): ${crvTokenPrice}`);
-  console.log(`Eth token price (USD): ${ethTokenPrice}`);
 
   if (!crvTokenPrice || !ethTokenPrice) {
     console.warn("Missing price data. Skipping APY calculation.");
@@ -282,13 +276,9 @@ export async function calculateCurveRewardsAPY(gaugeAddress: Address, strategyCh
   }
 
   // 6. Calculate APY
-  console.log("rewardRate: ", rewardRate);
   const yearlyRewardsUSD = Number(rewardRate) * crvTokenPrice * 31536000; // Rewards per year in USD
-  console.log(`Yearly rewards in USD: ${yearlyRewardsUSD}`);
   const totalStakedUSD = Number(totalStaked) * ethTokenPrice; // Total staked value in USD
-  console.log(`Total staked value in USD: ${totalStakedUSD}`);
   const apy = (yearlyRewardsUSD / totalStakedUSD) * 100;
-  console.log(`APY for CRV: ${apy}%`);
 
   return apy;
 }
@@ -349,7 +339,6 @@ export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, stra
 
 export async function calculateMoonwellAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   const moonwellVault = new ethers.Contract(receiptTokenAddress, moonwellVaultABI, provider);
-  console.log("Calculating Moonwell APY in actions.ts");
   const averageBlockTimeInSeconds = 2;
   const secondsInADay = 24 * 60 * 60;
   const secondsIn7Days = 7 * secondsInADay;
@@ -434,11 +423,6 @@ export async function calculateCompoundRewardsAPY(
   //   baseTrackingSupplySpeed /= rescaleFactor
   // }
 
-  console.log("baseTrackingSupplySpeed:", baseTrackingSupplySpeed);
-  // Fetch COMP price (from an Oracle, hardcoded for now)
-  console.log("COMP Price (USD):", compUsdPrice);
-  // Fetch Total Supply of assets in the lending pool
-
   const totalSupply = await readContract({
     contract: cometContract,
     method: "function totalSupply() view returns (uint256)",
@@ -472,7 +456,6 @@ export async function calculateCompoundRewardsAPY(
 }
 
 export async function calculateVenusAPY(receiptTokenAddress: Address, strategyChain: Chain) {
-  console.log("Calculating Venus APY in actions.ts");
   const vToken = getContract({
     client,
     chain: strategyChain,
@@ -581,14 +564,11 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
     chain: strategyChain,
     address: vaultData.protocol.strategyAddress
   });
-  console.log("assetsConversionAmount", assetsConversionAmount);
-  console.log("contract", contract);
   const sharesOutForUnderlying = await readContract({
     contract,
     method: "function convertToShares(uint256) view returns (uint256)",
     params: [assetsConversionAmount]
   });
-  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   const minSharesOut = sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minSharesOut;
 }
@@ -603,9 +583,7 @@ const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strat
     contract: vaultContract,
     method: "function totalSupply() view returns (uint256)"
   });
-  console.log("vaultTotalSupply", vaultTotalSupply);
   const fractionOfTotalShares = transactionAmount * ethers.parseEther("1") / vaultTotalSupply;
-  console.log("fractionOfTotalShares", fractionOfTotalShares);
   const strategyChain = defineChain(strategyChainId);
   const contract = getContract({
     client,
@@ -617,34 +595,29 @@ const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strat
     method: "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
     params: [fractionOfTotalShares]
   });
-  console.log("strategyWithdrawShareAmount", strategyWithdrawShareAmount);
   const amountOutForShares = await readContract({
     contract,
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [strategyWithdrawShareAmount]
   });
-  console.log("amountOutForShares", amountOutForShares);
   const minAmountOut = amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minAmountOut;
 }
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-  console.log("Executing Deposit here");
 
-  const minSharesOut = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
-  console.log("minSharesOut", minSharesOut);
+  const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
 
   let contract = getContract({
     client,
     chain: activeChain,
     address: vaultData.id
   });
-  console.log("About to prepare contract call");
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
-    params: [transactionAmount, ethers.toBigInt("0"), activeAccount?.address],
+    params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
   const receipt = await sendTransaction({
     account: activeAccount,
@@ -674,12 +647,10 @@ const executeCrossChainDeposit = async (
 ) => {
   console.log("Executing Cross-Chain Deposit");
   const minSharesOut = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
-  console.log("minSharesOut", minSharesOut);
 
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount.address, activeChain);
-  console.log("Generated Transaction ID (bytes32):", transactionId);
 
   // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
   const isNativeToken = inputToken.address === ZeroAddress;
@@ -809,13 +780,11 @@ const executeSolanaDeposit = async (
 ) => {
   console.log("Executing Cross-Chain Deposit");
   const minSharesOut = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
-  console.log("minSharesOut", minSharesOut);
 
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(walletAddress, activeChain);
-  console.log("Generated Transaction ID (bytes32):", transactionId);
 
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
@@ -867,13 +836,10 @@ export const executeSolanaWithdrawal = async (
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(walletContext.publicKey!.toBase58(), activeChain);
-  console.log("Generated Transaction ID (bytes32):", transactionId);
 
   const slippage = getCurrentSlippage();
 
   const slippageValue = (slippage * 100).toFixed(0);
-  console.log("withdrawShareAmount", withdrawShareAmount);
-  console.log("minAmountOut", minAmountOut);
 
   const wallet = {
     publicKey: walletContext.publicKey,
@@ -900,28 +866,23 @@ export const executeWithdrawal = async (vaultId: Address, strategyAddress: Addre
   } else if (activeChain.id == CHAIN_ID.solana) {
     return executeSolanaWithdrawal(vaultId, strategyAddress, strategyChainId, walletContext, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   } else {
-    console.log("withdrawShareAmount", withdrawShareAmount);
     return executeCrossChainWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   }
 };
 
 const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint) => { //vaultId: string
-  console.log(" getting minAmountOut")
   const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
-  console.log("minAmountOut: ", minAmountOut)
   let contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
     address: vaultId
   });
-  console.log("withdrawShareAmount", withdrawShareAmount);
   const withdrawTx = prepareContractCall({
     contract,
     method:
       "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
     params: [withdrawShareAmount, minAmountOut, activeAccount?.address, activeAccount?.address],
   });
-  console.log("withdrawTx: ", withdrawTx)
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: withdrawTx
@@ -945,7 +906,6 @@ const executeCrossChainWithdrawal = async (
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount.address, activeChain);
-  console.log("Generated Transaction ID (bytes32):", transactionId);
 
   const slippage = getCurrentSlippage();
   let contract = getContract({
@@ -955,8 +915,6 @@ const executeCrossChainWithdrawal = async (
   });
 
   const slippageValue = (slippage * 100).toFixed(0);
-  console.log("withdrawShareAmount", withdrawShareAmount);
-  console.log("minAmountOut", minAmountOut);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
@@ -1081,7 +1039,6 @@ export const getAmountOutFromSwap = async (
   try {
     console.log("Making api request to get quote");
     const quoteResponse = await sdk.bridge.getQuoteForBridge(quoteRequest);
-    console.log("Quote response:", quoteResponse);
     return BigInt(quoteResponse.quoteAmount); // Return the quoteAmount as bigint
   } catch (e) {
     console.error("Error fetching quote:", e);

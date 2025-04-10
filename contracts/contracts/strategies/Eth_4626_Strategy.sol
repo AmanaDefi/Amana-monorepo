@@ -101,6 +101,9 @@ contract Eth_4626_Strategy is EthStrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             1e18,
             minAmountOut

@@ -128,7 +128,6 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             address as Address,
             vault.id as Address
           );
-          console.log({ balance, address }, "HHHHHHHHHHHHHHHH")
 
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,

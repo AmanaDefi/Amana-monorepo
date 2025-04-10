@@ -159,7 +159,7 @@ export default function InputTokenWithError({
               {
                 <p className={`${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
                   {inputTokenbalance
-                    ? formatBalance(Number(inputTokenbalance)).toString()
+                    ? inputTokenbalance
                     : "0"}
                 </p>
               }

@@ -2,10 +2,10 @@ import { zeroSolAddress } from "@/constants/chainConfig";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Balance, Token } from "@/types/types"
-import { getERC20TokenBalance, getSplTokenBalance, isEthereumAddress, isSolanaAddress, solanaConnection } from "@/utils/utils";
+import { format, getERC20TokenBalance, getSplTokenBalance, isEthereumAddress, isSolanaAddress } from "@/utils/utils";
 import { useEffect, useState, useRef } from "react"
 
-export const useMutlichainTokenBalance = (token: Token | undefined) => {
+export const useMultichainTokenBalance = (token: Token | undefined) => {
     const { walletAddress, activeChain, balance: nativeBalance } = useMultiChain();
     const [balance, setBalance] = useState<Balance>({
         value: 0n,
@@ -40,7 +40,7 @@ export const useMutlichainTokenBalance = (token: Token | undefined) => {
                         const { balance, decimals } = await getSplTokenBalance(walletAddress, token.address);
                         setBalance({
                             value: balance,
-                            formatted: (balance / 10 ** decimals).toFixed(4)
+                            formatted: format(balance, decimals)
                         });
                     } catch (error) {
                         console.error("Error fetching Solana token balance:", error);
@@ -69,7 +69,7 @@ export const useMutlichainTokenBalance = (token: Token | undefined) => {
                         const { balance, decimals } = await getERC20TokenBalance(walletAddress, token.address, activeChain);
                         setBalance({
                             value: balance,
-                            formatted: (Number(balance) / 10 ** decimals).toFixed(4)
+                            formatted: format(balance, decimals)
                         });
                         
                         // If we got a valid balance, reset retry count

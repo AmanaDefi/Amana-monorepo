@@ -432,6 +432,9 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         uint256 totalShares = receiptToken.balanceOf(address(this));
 
         uint256 fullDebtAmount = IERC20(variableDebtToken).balanceOf(

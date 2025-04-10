@@ -22,6 +22,8 @@ import "./tasks/deployWithdrawHelper";
 import "./tasks/deployERC20_MoonwellStrategy";
 import "./tasks/deployAmanaRegistry";
 import "./tasks/clearNonces";
+import "./tasks/deploySwapHelperPolygon";
+import "./tasks/deployERC20_Strategy_SwapHelper";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";

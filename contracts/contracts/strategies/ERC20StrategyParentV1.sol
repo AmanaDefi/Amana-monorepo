@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "./StrategyParent.sol";
+import "./StrategyParentV1.sol";
 
 /// @title ERC20StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract ERC20StrategyParent is StrategyParent {
+abstract contract ERC20StrategyParentV1 is StrategyParentV1 {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable inputToken;
@@ -34,6 +34,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
             amount
         );
         _depositFundsIntoYieldSource(amount, minimumOut);
+
         _sendInvestConfirmation(
             receiverAddress,
             amount,
@@ -41,6 +42,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
             _executionNonce,
             _crossChainTxId
         );
+
         emit FundsInvested(_crossChainTxId, receiverAddress, amount);
     }
 

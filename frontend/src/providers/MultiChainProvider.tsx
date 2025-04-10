@@ -26,6 +26,8 @@ import { wallets } from "@/components/header";
 import useSolanaBalance from "@/hooks/useSolanaBalance";
 import { Chain } from "thirdweb";
 import { Balance } from "@/types/types";
+import { format } from "@/utils/utils";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 declare global {
   interface Window {
     solana?: any;
@@ -144,10 +146,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     client,
   });
 
-  const evmBalance = {
+  const evmBalance = data ? {
     value: data?.value || 0n,
-    formatted: data?.displayValue || "0"
-  }
+    formatted: format(data?.value, data?.decimals)
+  } : { EMPTY_BALANCE }
 
   useEffect(() => {
     if (!account && !publicKey) {

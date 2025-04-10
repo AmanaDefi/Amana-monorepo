@@ -153,8 +153,7 @@ abstract contract AmanaVaultBase is
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function setStrategy(address _strategyAddress) external onlyOwner {
-        if (_strategyAddress == address(0) || strategyAddress != address(0))
-            revert InvalidAddress();
+        if (_strategyAddress == address(0)) revert InvalidAddress();
         strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
     }
@@ -497,7 +496,6 @@ abstract contract AmanaVaultBase is
                     registry
                 );
         }
-
         emit ReturnFundsToUserSent(_crossChainTxId);
     }
 

@@ -110,22 +110,26 @@ contract WithdrawHelper {
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
-
         IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
-
-        approveOrIncreaseAllowance(
-            IERC20(tokenToTransfer),
-            GATEWAY_ADDRESS,
-            amount + gasFee
-        );
-
         if (gas_zrc20 != tokenToTransfer) {
             approveOrIncreaseAllowance(
                 IERC20(gas_zrc20),
                 GATEWAY_ADDRESS,
                 gasFee
             );
+            approveOrIncreaseAllowance(
+                IERC20(tokenToTransfer),
+                GATEWAY_ADDRESS,
+                amount
+            );
+        } else {
+            approveOrIncreaseAllowance(
+                IERC20(tokenToTransfer),
+                GATEWAY_ADDRESS,
+                amount + gasFee
+            );
         }
+
         bytes memory outgoingMessage = abi.encode(
             address(0),
             receiver,
@@ -157,7 +161,6 @@ contract WithdrawHelper {
             ),
             onRevertGasLimit: 0
         });
-
         IGatewayZEVM(GATEWAY_ADDRESS).withdrawAndCall(
             recipient,
             amount,

@@ -22,7 +22,7 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
+import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import { showErrorToast } from "@/toasts";
 
@@ -66,12 +66,10 @@ export default function VaultInputs({
   useEffect(() => {
     async function handlePerformanceFee() {
       const perfFee = await getPerformanceFee(vaultData.id as Address);
-      console.log("Performance feee!!!", perfFee);
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
       setPerformanceFee(percentagePerformanceFee);
     }
     handlePerformanceFee()
-    console.log({ vaultData }, "HHHHHHHHHHHHHHHH")
   }, [vaultData]);
 
   // const initialOutputBalance: OutputBalance = useMemo(() => ({
@@ -121,7 +119,7 @@ export default function VaultInputs({
   }, [activeChain, vaultData]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const tokenBalance = useMutlichainTokenBalance(inputToken);
+  const tokenBalance = useMultichainTokenBalance(inputToken);
 
   // Reset token when chain changes to prevent cross-chain token errors
   useEffect(() => {
@@ -140,8 +138,7 @@ export default function VaultInputs({
       // Set the inputTokenBalance separately to track balance as a string
       setInputTokenBalance(tokenBalance!.formatted);
       setInputBalance({
-        ...inputBalance,
-        formatted: "0",
+        ...tokenBalance,
       })
     }
   }, [tokenBalance, isDeposit]);
@@ -171,8 +168,7 @@ export default function VaultInputs({
     };
     // Call the async function
     fetchData();
-  }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, walletAddress])
-
+  }, [inputBalance, inputToken?.address, activeChain?.id, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
   // Replace the handleTokenSelect function with this improved version
   const handleTokenSelect = (selectedToken: Token, selectedChain: Chain) => {
@@ -228,8 +224,6 @@ export default function VaultInputs({
       inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
     }
 
-    console.log("Input Amount", inputAmt);
-
   // convert string amt to bigint
   const newAmt = parseUnits(inputAmt, decimalsNumber);
     
@@ -241,11 +235,12 @@ export default function VaultInputs({
   const handleMaxClick = useCallback(() => {
     if (!inputToken) return;
     if (isDeposit) {
-      handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
+      // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
+      setInputBalance(tokenBalance);
     } else {
       handleChangeInput({ currentTarget: { value: vaultTotalAssetinToken?.toString() } } as React.ChangeEvent<HTMLInputElement>);
     }
-  }, [handleChangeInput, inputToken, inputTokenBalance, isDeposit, vaultTotalAssetinToken])
+  }, [handleChangeInput, inputToken, tokenBalance, isDeposit, vaultTotalAssetinToken])
 
   const tokenList = useMemo(() => {
     return activeChain?.id === 7001 || activeChain?.id === 7000
@@ -346,8 +341,6 @@ export default function VaultInputs({
       });
       const gasZRC20 = result[0] as Address;
       const gasFee = result[1] as bigint;
-      console.log("gasZRC20", gasZRC20);
-      console.log("gasFee", gasFee);
       // 3. If vault token and gas token match, subtract directly
       gasFeeInVaultAsset = gasFee;
     

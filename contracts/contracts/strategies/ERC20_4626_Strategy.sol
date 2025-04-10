@@ -98,6 +98,9 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             1e18,
             minAmountOut

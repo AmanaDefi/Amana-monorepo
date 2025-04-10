@@ -34,4 +34,5 @@ interface IErrors {
     error InvalidTokenPair();
 
     error InvalidMessage();
+    error InvalidAmanaVault();
 }

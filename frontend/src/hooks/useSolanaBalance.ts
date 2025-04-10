@@ -3,6 +3,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { solanaRpcUrl } from "@/constants/chainConfig";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "@/utils/utils";
 
 export default function useSolanaBalance() {
   const { publicKey, connected } = useWallet()
@@ -17,7 +18,7 @@ export default function useSolanaBalance() {
           const balance = await connection.getBalance(publicKey);
           return {
             value: BigInt(balance),
-            formatted: parseFloat((balance / LAMPORTS_PER_SOL).toFixed(4)).toString()
+            formatted: format(BigInt(balance), 9)
           }
         } catch (error) {
           return { value: 0n, formatted: "0" }
