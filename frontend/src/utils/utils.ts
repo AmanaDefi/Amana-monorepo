@@ -553,3 +553,30 @@ export function format(value: bigint, decimals: number) {
   const str = Number(toTokens(value, decimals)).toFixed(6);
   return Number(str).toString();
 }
+
+// Format number with suffix M = Million, K = Thousand, B = Billion, T = Trillion, etc.
+export function formatNumberWithSuffix(num: number): string {
+  if (num === null || num === undefined || isNaN(num)) {
+    return "0";
+  }
+  
+  if (num < 1000) {
+    return num.toFixed(2);
+  }
+  
+  const absNum = Math.abs(num);
+  
+  if (absNum >= 1000000000) {
+    return (num / 1000000000).toFixed(2) + 'B';
+  }
+  
+  if (absNum >= 1000000) {
+    return (num / 1000000).toFixed(2) + 'M';
+  }
+  
+  if (absNum >= 1000) {
+    return (num / 1000).toFixed(2) + 'K';
+  }
+  
+  return num.toFixed(2);
+}

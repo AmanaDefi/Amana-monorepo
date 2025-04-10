@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Token } from "@/types/types";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import Image from "next/image";
@@ -22,22 +22,33 @@ export default function ChainTokenSelector({
   const [expandedChain, setExpandedChain] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { activeChain, switchToChain } = useMultiChain();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const isInitialRender = useRef(true);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const dropdown = document.getElementById('chain-token-selector');
-      if (dropdown && !dropdown.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setExpandedChain(null);
       }
     }
 
+    // Skip the first render to prevent immediate closure
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
-  const handleChainClick = (chainId: number) => {
+  const handleChainClick = (chainId: number, event: React.MouseEvent) => {
+    // Prevent the event from bubbling up
+    event.stopPropagation();
+    event.preventDefault();
+    
     if (expandedChain === chainId) {
       setExpandedChain(null);
     } else {
@@ -45,19 +56,20 @@ export default function ChainTokenSelector({
     }
   };
 
-  const handleTokenSelect = async (token: Token, chain: Chain) => {
+  const handleTokenSelect = async (token: Token, chain: Chain, event: React.MouseEvent) => {
+    // Prevent the event from bubbling up
+    event.stopPropagation();
+    event.preventDefault();
+    
     console.log(`Selected token: ${token.symbol} from chain ${chain.id} (${chain.name})`);
     console.log(`Current active chain: ${activeChain?.id} (${activeChain?.name})`);
 
     if (activeChain?.id !== chain.id) {
       console.log(`Attempting to switch from chain ${activeChain?.id} to ${chain.id}`);
       try {
-        // Call switchToChain and await its completion - this now uses the ref-based tracking
+        // Call switchToChain and await its completion
         await switchToChain(chain);
-        
-        // The chain should now be switched properly, but let's verify
         console.log(`Chain switch completed for ${chain.id} (${chain.name})`);
-        
       } catch (error) {
         console.error('Failed to switch chain:', error);
         return; // Don't proceed if chain switch failed
@@ -86,9 +98,12 @@ export default function ChainTokenSelector({
   }, [searchQuery]);
 
   return (
-    <div className="chain-token-selector relative" id="chain-token-selector">
+    <div className="chain-token-selector relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
         className={`flex items-center space-x-2 bg-customNeutral200 hover:bg-customNeutral300 rounded-lg px-4 py-2 ${className}`}
       >
         {selectedToken ? (
@@ -103,7 +118,10 @@ export default function ChainTokenSelector({
             <span className="text-white">{selectedToken.symbol}</span>
           </>
         ) : (
-          <span className="text-white">Select Token</span>
+          <div className="flex items-center space-x-2">
+            <Image src="/tokens_colored.png" alt="Logo" width={24} height={24} className="rounded-full" />
+            <span className="text-white">Select Token</span>
+          </div>
         )}
         <ChevronDownIcon className={`w-5 h-5 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -111,14 +129,15 @@ export default function ChainTokenSelector({
       {isOpen && (
         <div className="dropdown-container absolute z-50 mt-2 w-72">
           <div className="relative">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-4 flex mx-2 items-center pointer-events-none">
               <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"
-              className="search-input pl-12"
+              className="search-input pl-12 text-center"
               placeholder="Search chains or tokens"
               value={searchQuery}
+              onClick={(e) => e.stopPropagation()}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
@@ -137,7 +156,7 @@ export default function ChainTokenSelector({
               return (
                 <div key={chain.id}>
                   <button
-                    onClick={() => handleChainClick(chain.id)}
+                    onClick={(e) => handleChainClick(chain.id, e)}
                     className="chain-button"
                   >
                     <div className="flex items-center space-x-3">
@@ -164,7 +183,7 @@ export default function ChainTokenSelector({
                       {filteredTokens.map((token) => (
                         <button
                           key={token.address}
-                          onClick={() => handleTokenSelect(token, chain)}
+                          onClick={(e) => handleTokenSelect(token, chain, e)}
                           className="token-button"
                         >
                           <Image

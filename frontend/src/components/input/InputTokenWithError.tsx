@@ -1,6 +1,6 @@
 import React, { HTMLProps } from "react";
 import { Token, VaultData } from "@/types/types";
-import SelectToken from "@/components/input/SelectToken";
+import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency, formatBalance, getOnlyTokenSymbol, isZetachain } from "@/utils/utils";
 import { useState, useEffect } from "react";
@@ -11,7 +11,6 @@ import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-import { useActiveWalletChain } from "thirdweb/react";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -185,10 +184,12 @@ export default function InputTokenWithError({
             </p>
             <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
               {tokenList.length > 1 ? (
-                <SelectToken
-                  selectedToken={selectedToken!}
-                  options={tokenList}
-                  selectToken={onSelectToken}
+                <ChainTokenSelector
+                  selectedToken={selectedToken}
+                  onSelectToken={(token, chain) => {
+                    onSelectToken(token);
+                  }}
+                  className="w-full justify-end"
                 />
               ) : (
                 <div className="flex items-center">

@@ -23,8 +23,6 @@ import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import ChainTokenSelector from "@/components/input/ChainTokenSelector";
-import { showErrorToast } from "@/toasts";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -465,13 +463,6 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={switchTokens}
       />
-      <div className="token-selection-container">
-        <ChainTokenSelector 
-          onSelectToken={handleTokenSelect}
-          selectedToken={inputToken}
-          className="w-full"
-        />
-      </div>
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
         onSelectToken={isDeposit ? singleParamAdapter : () => { }}
