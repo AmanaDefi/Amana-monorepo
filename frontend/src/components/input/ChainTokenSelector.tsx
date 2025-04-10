@@ -8,7 +8,7 @@ import { Chain } from "thirdweb";
 import '@/styles/ChainTokenSelector.css';
 
 interface ChainTokenSelectorProps {
-  onSelectToken: (token: Token) => void;
+  onSelectToken: (token: Token, chain: Chain) => void;
   selectedToken?: Token;
   className?: string;
 }
@@ -46,13 +46,29 @@ export default function ChainTokenSelector({
   };
 
   const handleTokenSelect = async (token: Token, chain: Chain) => {
+    console.log(`Selected token: ${token.symbol} from chain ${chain.id} (${chain.name})`);
+    console.log(`Current active chain: ${activeChain?.id} (${activeChain?.name})`);
+
     if (activeChain?.id !== chain.id) {
       console.log(`Attempting to switch from chain ${activeChain?.id} to ${chain.id}`);
-await switchToChain(chain);
-console.log(`After switchToChain, activeChain is now ${activeChain?.id}`);
-      await switchToChain(chain);
+      try {
+        // Call switchToChain and await its completion - this now uses the ref-based tracking
+        await switchToChain(chain);
+        
+        // The chain should now be switched properly, but let's verify
+        console.log(`Chain switch completed for ${chain.id} (${chain.name})`);
+        
+      } catch (error) {
+        console.error('Failed to switch chain:', error);
+        return; // Don't proceed if chain switch failed
+      }
+    } else {
+      console.log(`Already on chain ${chain.id} (${chain.name}), no switch needed`);
     }
-    onSelectToken(token);
+
+    // Now that we're on the right chain, select the token
+    console.log(`Selecting token ${token.symbol} on chain ${chain.id}`);
+    onSelectToken(token, chain);
     setIsOpen(false);
     setExpandedChain(null);
   };

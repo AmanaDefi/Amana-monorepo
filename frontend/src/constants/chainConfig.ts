@@ -345,7 +345,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0x1de70f3e971B62A0707dA18100392af14f7fB677"
     },
     {
-      symbol: "USDC.ETH",
+      symbol: "USDC.BASE",
       address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       decimals: 6,
       imgURL: "/USDC.png",

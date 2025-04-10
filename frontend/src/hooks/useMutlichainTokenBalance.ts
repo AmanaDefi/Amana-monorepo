@@ -1,4 +1,5 @@
 import { zeroSolAddress } from "@/constants/chainConfig";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Balance, Token } from "@/types/types"
 import { getERC20TokenBalance, getSplTokenBalance, isEthereumAddress, isSolanaAddress, solanaConnection } from "@/utils/utils";
@@ -47,6 +48,24 @@ export const useMutlichainTokenBalance = (token: Token | undefined) => {
                     }
                 } else if (isEthereumAddress(token.address) && isEthereumAddress(walletAddress)) {
                     try {
+                        // Verify the token is supported on this chain before fetching balance
+                        if (!activeChain?.id) {
+                            console.warn("No active chain detected when fetching balance");
+                            setBalance({ value: 0n, formatted: "0" });
+                            return;
+                        }
+                        
+                        // Check if the token is in the APPROVED_TOKENS list for this chain
+                        const isTokenApproved = APPROVED_TOKENS[activeChain.id]?.some(
+                            (t: Token) => t.address.toLowerCase() === token.address.toLowerCase()
+                        );
+                        
+                        if (!isTokenApproved) {
+                            console.warn(`Token ${token.symbol} (${token.address}) is not approved for chain ${activeChain.id}`);
+                            setBalance({ value: 0n, formatted: "0" });
+                            return;
+                        }
+                        
                         const { balance, decimals } = await getERC20TokenBalance(walletAddress, token.address, activeChain);
                         setBalance({
                             value: balance,

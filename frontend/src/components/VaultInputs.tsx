@@ -23,8 +23,8 @@ import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMutlichainTokenBalance } from "@/hooks/useMutlichainTokenBalance";
-import { showErrorToast } from "@/toasts";
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
+import { showErrorToast } from "@/toasts";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -123,6 +123,17 @@ export default function VaultInputs({
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const tokenBalance = useMutlichainTokenBalance(inputToken);
 
+  // Reset token when chain changes to prevent cross-chain token errors
+  useEffect(() => {
+    // Clear token selection and balance when the active chain changes
+    // This prevents the app from attempting to use a token from the previous chain
+    // which could cause AbiDecodingZeroDataError when fetching token balances
+    if (activeChain?.id) {
+      setInputToken(undefined);
+      setInputBalance(EMPTY_BALANCE);
+    }
+  }, [activeChain?.id]);
+
   // Watch action type change
   useEffect(() => {
     if (inputToken) {
@@ -162,16 +173,20 @@ export default function VaultInputs({
     fetchData();
   }, [inputBalance.value, inputToken?.address, activeChain?.id, inputBalance, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
-  function handleTokenSelect(selectedToken: Token): void {
-    console.log("Token selected:", selectedToken); 
-    console.log("Current chain:", activeChain);
-    console.log("Token contract exists on this chain:", 
-      APPROVED_TOKENS[activeChain?.id as number]?.some(t => t.address === selectedToken.address)); // it's returning false means token is not on current chain
+
+  // Replace the handleTokenSelect function with this improved version
+  const handleTokenSelect = (selectedToken: Token, selectedChain: Chain) => {
+    console.log("Selected token:", selectedToken);
+    console.log("Current chain:", selectedChain);
     
+    // Important: Use the selectedChain parameter instead of activeChain from context
+    // as the context value might not have updated yet
+    
+    // If the selected token is from the selected chain, use it directly
+    // No need to check against activeChain as we specifically switched to this chain
     setInputToken(selectedToken);
     setAllowInput(true);
-
-  }
+  };
 
   async function switchTokens() {
     setInputBalance(EMPTY_BALANCE);
@@ -443,6 +458,12 @@ export default function VaultInputs({
     else getWithdrawOutputAmount(debouncedInputBalance.value)
   }, [debouncedInputBalance, inputToken]);
 
+  // Create an adapter function for InputTokenWithError
+  const singleParamAdapter = (token: Token) => {
+    // Call the original function with activeChain as the second parameter
+    handleTokenSelect(token, activeChain as Chain);
+  };
+
   return (
     <>
       <TabSelector
@@ -460,7 +481,7 @@ export default function VaultInputs({
       </div>
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
-        onSelectToken={isDeposit ? handleTokenSelect : () => { }}
+        onSelectToken={isDeposit ? singleParamAdapter : () => { }}
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={handleMaxClick}
@@ -487,7 +508,7 @@ export default function VaultInputs({
       </div>
       <InputTokenWithError
         captionText={"Output amount"}
-        onSelectToken={isDeposit ? () => { } : handleTokenSelect}
+        onSelectToken={isDeposit ? () => { } : singleParamAdapter}
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={() => { }}
