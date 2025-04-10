@@ -24,8 +24,11 @@ import { WalletContextState } from "@solana/wallet-adapter-react";
 import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet } from "@coral-xyz/anchor";
 import axios from "axios";
-import { PublicKey } from "@solana/web3.js";
-import { VAULT_DATA } from "@/constants";
+import { swap } from "codemelt-retro-api-sdk/functional/api";
+
+
+
+import type { IConnection } from 'codemelt-retro-api-sdk';
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
@@ -1022,29 +1025,87 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   return formatUnits(balance, decimals);
 }
 
+const beamConnection: IConnection = {
+  host: 'https://beam-api.codemelt.xyz', // Replace with actual Beam API host
+  headers: {
+    'x-api-key': process.env.NEXT_PUBLIC_BEAM_API_KEY!,
+  },
+};
+
+export const getBeamTokenId = async (
+  tokenAddress: string,
+  chainId: number
+): Promise<number | null> => {
+  const BeamApi = require('codemelt-retro-api-sdk/functional/api');
+  const currency = BeamApi.currency;
+  try {
+    const response = await currency.getPartners(beamConnection);
+    const token = response.data.find(
+      (t) =>
+        t.chainId === chainId &&
+        t.address.toLowerCase() === tokenAddress.toLowerCase()
+    );
+    return token?.id ?? null;
+  } catch (err) {
+    console.error("Failed to fetch token ID from Beam API:", err);
+    return null;
+  }
+};
+
 export const getAmountOutFromSwap = async (
   amount: bigint,
+  inputTokenId: number, // Beam-specific ID
+  outputTokenId: number, // Beam-specific ID
   inputTokenAddress: string,
-  outputTokenAddress: string
+  outputTokenAddress: string,
+  userAddress: string
 ): Promise<bigint> => {
-  const quoteRequest = {
-    inputTokenAddress,
-    outputTokenAddress,
-    sourceChainId: 7000, // Setting input chain to 7000
-    destinationChainId: 7000, // Setting output chain to 7000
-    amount: amount.toString(), // Convert bigint to string
-    slippage: 0.5, // Slippage in percentage
-  };
+  // Try Beam first
 
+  // const swap = BeamApi.swap;
+  console.log("swap", swap);
   try {
-    console.log("Making api request to get quote");
-    const quoteResponse = await sdk.bridge.getQuoteForBridge(quoteRequest);
-    return BigInt(quoteResponse.quoteAmount); // Return the quoteAmount as bigint
+    console.log("Getting quote from Beam api")
+    const beamQuote = await swap.native.getSwapData(beamConnection, {
+      tokenAId: inputTokenId,
+      tokenBId: outputTokenId,
+      slippage: 50, // 0.5% slippage
+      amount: Number(amount), // Beam expects number
+      sender: userAddress,
+      recipient: userAddress,
+    });
+    console.log("Beam quote response:", beamQuote);
+    const quoteAmount = beamQuote?.data?.quoteAmount;
+    console.log("Beam quote amount:", quoteAmount);
+    if (quoteAmount && Number(quoteAmount) > 0) {
+      console.log("✅ Beam quote found");
+      return BigInt(quoteAmount);
+    }
+
+    console.warn("⚠️ Beam quote returned 0 or no data, falling back to Eddy");
   } catch (e) {
-    console.error("Error fetching quote:", e);
+    console.warn("⚠️ Beam quote failed, falling back to Eddy:", e);
+  }
+
+  // Fallback to Eddy
+  try {
+    const eddyQuote = await sdk.bridge.getQuoteForBridge({
+      inputTokenAddress,
+      outputTokenAddress,
+      sourceChainId: 7000,
+      destinationChainId: 7000,
+      amount: amount.toString(),
+      slippage: 0.5,
+    });
+
+    console.log("✅ Eddy quote found");
+    return BigInt(eddyQuote.quoteAmount);
+  } catch (e) {
+    console.error("❌ Eddy quote failed:", e);
     return BigInt(0);
   }
 };
+
 
 
 export const getSharesFromDeposit = async (amount: bigint, vaultData: VaultData) => {

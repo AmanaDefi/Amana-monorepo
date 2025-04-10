@@ -13,10 +13,19 @@ import "./interfaces/ICurvePool.sol";
 import "./interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IAlgebraFactory.sol";
+import "./interfaces/IAlgebraPool.sol";
 
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 contract SwapHelper {
+    enum SwapType {
+        None,
+        Beam,
+        Eddy
+    }
+
     address constant UNISWAP_V2_FACTORY_EDDY =
         0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
     address constant UNISWAP_V2_ROUTER_EDDY =
@@ -25,9 +34,9 @@ contract SwapHelper {
         0x67AA6B2b715937Edc1Eb4D3b7B5d5dCD1fd93E8C; // mainnet and testnet
     address constant UNISWAP_V3_ROUTER_EDDY =
         0x9b30CfbACD3504252F82263F72D6acf62bf733C2;
-    address constant UNISWAP_V3_FACTORY_BEAM =
+    address constant ALGEBRA_FACTORY_BEAM =
         0x28b5244B6CA7Cb07f2f7F40edE944c07C2395603; // mainnet and testnet
-    address constant UNISWAP_V3_ROUTER_BEAM =
+    address constant SWAPROUTER_BEAM =
         0x84A5509Dce0b68C73B89e67454C30912293c7ea0;
 
     uint24 constant V3_FEE_TIER_LOW = 500;
@@ -298,28 +307,21 @@ contract SwapHelper {
     function _existsV3PoolBeam(
         address tokenA,
         address tokenB
-    ) internal view returns (bool exists, uint24 feeTier) {
-        address poolLow = IUniswapV3Factory(UNISWAP_V3_FACTORY_BEAM).getPool(
+    ) internal view returns (bool exists) {
+        console.log("Checking Beam pool for tokens:", tokenA, tokenB);
+        address pool = IAlgebraFactory(ALGEBRA_FACTORY_BEAM).poolByPair(
             tokenA,
-            tokenB,
-            V3_FEE_TIER_LOW
+            tokenB
         );
-        if (poolLow != address(0) && IUniswapV3Pool(poolLow).liquidity() > 0) {
-            return (true, V3_FEE_TIER_LOW); // Prioritize 0.05% fee pool
+        console.log("Pool address:", pool);
+        if (pool != address(0)) {
+            console.log("Pool liquidity:", IAlgebraPool(pool).liquidity());
         }
-
-        address poolHigh = IUniswapV3Factory(UNISWAP_V3_FACTORY_BEAM).getPool(
-            tokenA,
-            tokenB,
-            V3_FEE_TIER_HIGH
-        );
-        if (
-            poolHigh != address(0) && IUniswapV3Pool(poolHigh).liquidity() > 0
-        ) {
-            return (true, V3_FEE_TIER_HIGH); // Fallback to 0.3% fee pool
+        if (pool != address(0) && IAlgebraPool(pool).liquidity() > 0) {
+            console.log("Found valid Beam pool");
+            return true; // Prioritize 0.05% fee pool
         }
-
-        return (false, 0); // No valid V3 pool found
+        return false; // No valid V3 pool found
     }
 
     function getPathV2(
@@ -365,7 +367,8 @@ contract SwapHelper {
         returns (
             address[] memory path,
             uint24[] memory feeTiers,
-            bytes memory encodedPath
+            bytes memory encodedPath,
+            SwapType swapType
         )
     {
         if (zrc20 == targetZRC20) {
@@ -375,15 +378,13 @@ contract SwapHelper {
         uint24 feeTier;
 
         // UniswapV3 Direct Swap on Beam (Checks both fee tiers, prioritizes 0.05%)
-        (exists, feeTier) = _existsV3PoolBeam(zrc20, targetZRC20);
+        exists = _existsV3PoolBeam(zrc20, targetZRC20);
         if (exists) {
             path = new address[](2);
-            feeTiers = new uint24[](1);
             path[0] = zrc20;
             path[1] = targetZRC20;
-            feeTiers[0] = feeTier;
-            encodedPath = abi.encodePacked(path[0], feeTiers[0], path[1]);
-            return (path, feeTiers, encodedPath);
+            encodedPath = abi.encodePacked(path[0], path[1]);
+            return (path, feeTiers, encodedPath, SwapType.Beam);
         }
 
         // UniswapV3 Direct Swap on Eddy (Checks both fee tiers, prioritizes 0.05%)
@@ -395,34 +396,21 @@ contract SwapHelper {
             path[1] = targetZRC20;
             feeTiers[0] = feeTier;
             encodedPath = abi.encodePacked(path[0], feeTiers[0], path[1]);
-            return (path, feeTiers, encodedPath);
+            return (path, feeTiers, encodedPath, SwapType.Eddy);
         }
 
         // UniswapV3 Indirect Swap on Beam via USDC_ETH_ADDRESS (Checks both fee tiers)
-        (exists, feeTier) = _existsV3PoolBeam(zrc20, USDC_ETH_ADDRESS);
+        exists = _existsV3PoolBeam(zrc20, USDC_ETH_ADDRESS);
         if (exists) {
-            uint24 feeTier2;
-            (exists, feeTier2) = _existsV3PoolBeam(
-                USDC_ETH_ADDRESS,
-                targetZRC20
-            );
+            exists = _existsV3PoolBeam(USDC_ETH_ADDRESS, targetZRC20);
             if (exists) {
                 path = new address[](3);
-                feeTiers = new uint24[](2);
                 path[0] = zrc20;
                 path[1] = USDC_ETH_ADDRESS;
                 path[2] = targetZRC20;
-                feeTiers[0] = feeTier;
-                feeTiers[1] = feeTier2;
-                encodedPath = abi.encodePacked(path[0]);
-                for (uint256 k = 0; k < feeTiers.length; k++) {
-                    encodedPath = abi.encodePacked(
-                        encodedPath,
-                        feeTiers[k],
-                        path[k + 1]
-                    );
-                }
-                return (path, feeTiers, encodedPath);
+                encodedPath = abi.encodePacked(path[0], path[1], path[2]);
+
+                return (path, feeTiers, encodedPath, SwapType.Beam);
             }
         }
 
@@ -450,11 +438,11 @@ contract SwapHelper {
                         path[k + 1]
                     );
                 }
-                return (path, feeTiers, encodedPath);
+                return (path, feeTiers, encodedPath, SwapType.Eddy);
             }
         }
 
-        return (path, feeTiers, encodedPath);
+        return (path, feeTiers, encodedPath, SwapType.None);
     }
 
     function getAmountOutV2(
@@ -656,7 +644,8 @@ contract SwapHelper {
             (
                 address[] memory path,
                 uint24[] memory feeTiers,
-                bytes memory encodedPath
+                bytes memory encodedPath,
+                SwapType swapType
             ) = getPathV3(inputToken, outputToken);
             if (encodedPath.length > 0) {
                 return getAmountOutV3(amount, path, feeTiers);
@@ -699,11 +688,11 @@ contract SwapHelper {
         (
             address[] memory path,
             uint24[] memory feeTiers,
-            bytes memory encodedPath
+            bytes memory encodedPath,
+            SwapType swapType
         ) = getPathV3(zrc20, targetZRC20);
 
-        if (encodedPath.length > 0) {
-            // Uniswap V3 Swap
+        if (swapType == SwapType.Eddy) {
             IZRC20(zrc20).approve(UNISWAP_V3_ROUTER_EDDY, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
@@ -714,8 +703,22 @@ contract SwapHelper {
                     amountOutMinimum: minimumOut
                 });
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER_EDDY).exactInput(params);
+        } else if (swapType == SwapType.Beam) {
+            console.log("Executing Beam swap");
+
+            IZRC20(zrc20).approve(SWAPROUTER_BEAM, amount);
+            ISwapRouter.ExactInputParams memory params = ISwapRouter
+                .ExactInputParams({
+                    path: encodedPath,
+                    recipient: vault,
+                    deadline: block.timestamp + maxDeadline,
+                    amountIn: amount,
+                    amountOutMinimum: minimumOut
+                });
+            console.log("Beam swap executed");
+            amountOut = ISwapRouter(SWAPROUTER_BEAM).exactInput(params);
         } else {
-            // Uniswap V2 Swap
+            // fallback to V2 or revert
             path = getPathV2(zrc20, targetZRC20);
             IZRC20(zrc20).approve(UNISWAP_V2_ROUTER_EDDY, amount);
             uint256[] memory amounts = IUniswapV2Router02(
@@ -747,33 +750,53 @@ contract SwapHelper {
             amountOut,
             slippageBps
         );
+
         require(
             IERC20(zrc20).balanceOf(address(this)) >= maxAmountIn,
             "Insufficient balance"
         );
+
         (
             address[] memory path,
             uint24[] memory feeTiers,
-            bytes memory encodedPath
-        ) = getPathV3(targetZRC20, zrc20);
-        if (encodedPath.length > 0) {
-            // Uniswap V3 Swap (tokens for exact tokens out)
+            bytes memory encodedPath,
+            SwapType swapType
+        ) = getPathV3(targetZRC20, zrc20); // Note: reversed order for exactOutput
+
+        if (swapType == SwapType.Eddy) {
+            // Eddy: Uniswap V3-style exactOutput swap
             IZRC20(zrc20).approve(UNISWAP_V3_ROUTER_EDDY, maxAmountIn);
 
             ISwapRouter.ExactOutputParams memory params = ISwapRouter
                 .ExactOutputParams({
                     path: encodedPath,
                     recipient: vault,
-                    deadline: block.timestamp,
+                    deadline: block.timestamp + maxDeadline,
                     amountOut: amountOut,
                     amountInMaximum: maxAmountIn
                 });
 
             amountIn = ISwapRouter(UNISWAP_V3_ROUTER_EDDY).exactOutput(params);
+        } else if (swapType == SwapType.Beam) {
+            // Beam: Algebra V3-style exactOutput swap
+            IZRC20(zrc20).approve(SWAPROUTER_BEAM, maxAmountIn);
+
+            ISwapRouter.ExactOutputParams memory params = ISwapRouter
+                .ExactOutputParams({
+                    path: encodedPath,
+                    recipient: vault,
+                    deadline: block.timestamp + maxDeadline,
+                    amountOut: amountOut,
+                    amountInMaximum: maxAmountIn
+                });
+
+            amountIn = ISwapRouter(SWAPROUTER_BEAM).exactOutput(params);
         } else {
-            // Uniswap V2 Swap (tokens for exact tokens out)
+            // Fallback: Uniswap V2-style exactOutput swap
             path = getPathV2(zrc20, targetZRC20);
+
             IZRC20(zrc20).approve(UNISWAP_V2_ROUTER_EDDY, maxAmountIn);
+
             uint256[] memory amounts = IUniswapV2Router02(
                 UNISWAP_V2_ROUTER_EDDY
             ).swapTokensForExactTokens(
@@ -783,9 +806,14 @@ contract SwapHelper {
                     vault,
                     block.timestamp + maxDeadline
                 );
+
             amountIn = amounts[0];
         }
-        IERC20(zrc20).transfer(vault, totalAmountAvailable - amountIn);
+
+        // Refund the leftover input tokens to the vault
+        if (totalAmountAvailable > amountIn) {
+            IERC20(zrc20).transfer(vault, totalAmountAvailable - amountIn);
+        }
 
         return amountIn;
     }
