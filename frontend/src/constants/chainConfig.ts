@@ -371,7 +371,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   // ],
   1: [
     {
-      symbol: "ETH",
+      symbol: "ETH (ETH)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -403,7 +403,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   11155111: [
     {
-      symbol: "ETH",
+      symbol: "ETH (ETH)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -587,7 +587,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: "0xEe9CC614D03e7Dbe994b514079f4914a605B4719",
     },
     {
-      symbol: "CBBTC.SOL",
+      symbol: "CBBTC (SOL)",
       address: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
       decimals: 8,
       imgURL: "/cbbtc.png",
@@ -599,7 +599,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   42161: [
     {
-      symbol: "ETH.ARB",
+      symbol: "ETH (ARB)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",

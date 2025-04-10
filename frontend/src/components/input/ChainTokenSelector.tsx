@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Token } from "@/types/types";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Token, VaultData } from "@/types/types";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import Image from "next/image";
 import { ChevronDownIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
@@ -11,12 +11,14 @@ interface ChainTokenSelectorProps {
   onSelectToken: (token: Token, chain: Chain) => void;
   selectedToken?: Token;
   className?: string;
+  vaultData?: VaultData;
 }
 
 export default function ChainTokenSelector({
   onSelectToken,
   selectedToken,
-  className = ""
+  className = "",
+  vaultData
 }: ChainTokenSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedChain, setExpandedChain] = useState<number | null>(null);
@@ -24,6 +26,42 @@ export default function ChainTokenSelector({
   const { activeChain, switchToChain } = useMultiChain();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isInitialRender = useRef(true);
+  const [selectedTokenChain, setSelectedTokenChain] = useState<number | null>(null);
+
+  // Auto-expand the active chain when opening the dropdown
+  useEffect(() => {
+    if (isOpen && activeChain) {
+      setExpandedChain(activeChain.id);
+    }
+  }, [isOpen, activeChain]);
+
+  // Track which chain the selected token belongs to
+  useEffect(() => {
+    if (selectedToken) {
+      // Find which chain this token belongs to
+      for (const chainId in APPROVED_TOKENS) {
+        const chainTokens = APPROVED_TOKENS[Number(chainId)] || [];
+        const tokenExists = chainTokens.some(
+          token => token.address === selectedToken.address
+        );
+        if (tokenExists) {
+          setSelectedTokenChain(Number(chainId));
+          return;
+        }
+      }
+
+      // Check if it's the vault token
+      if (vaultData?.inputToken && selectedToken.address === vaultData.inputToken.address) {
+        // Vault tokens belong to ZetaChain
+        setSelectedTokenChain(7000); // or 7001 for testnet
+      } else {
+        // Default to active chain if we couldn't determine
+        setSelectedTokenChain(activeChain?.id || null);
+      }
+    } else {
+      setSelectedTokenChain(null);
+    }
+  }, [selectedToken, vaultData, activeChain]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -64,6 +102,12 @@ export default function ChainTokenSelector({
     console.log(`Selected token: ${token.symbol} from chain ${chain.id} (${chain.name})`);
     console.log(`Current active chain: ${activeChain?.id} (${activeChain?.name})`);
 
+    // Don't switch chains if selecting the same token again
+    if (selectedToken?.address === token.address && activeChain?.id === chain.id) {
+      setIsOpen(false);
+      return;
+    }
+
     if (activeChain?.id !== chain.id) {
       console.log(`Attempting to switch from chain ${activeChain?.id} to ${chain.id}`);
       try {
@@ -78,6 +122,9 @@ export default function ChainTokenSelector({
       console.log(`Already on chain ${chain.id} (${chain.name}), no switch needed`);
     }
 
+    // Update the selected token chain
+    setSelectedTokenChain(chain.id);
+
     // Now that we're on the right chain, select the token
     console.log(`Selecting token ${token.symbol} on chain ${chain.id}`);
     onSelectToken(token, chain);
@@ -85,17 +132,49 @@ export default function ChainTokenSelector({
     setExpandedChain(null);
   };
 
+  // Enhanced token list to include vault asset tokens but ONLY in their own chains
+  const getTokensForChain = useCallback((chain: Chain) => {
+    // Only include tokens that belong to this specific chain
+    let chainTokens = [...(APPROVED_TOKENS[chain.id] || [])];
+    
+    // Only for ZetaChain, ensure the vault token is included if available
+    if ((chain.id === 7000 || chain.id === 7001) && vaultData?.inputToken) {
+      const vaultTokenExists = chainTokens.some(token => 
+        token.address === vaultData.inputToken.address
+      );
+      
+      if (!vaultTokenExists) {
+        chainTokens.push(vaultData.inputToken);
+      }
+    }
+    
+    // For the vault token's chain, ensure it's shown there
+    if (vaultData?.inputToken && 
+        vaultData.protocol && 
+        vaultData.protocol.chainId === chain.id) {
+      const vaultTokenExists = chainTokens.some(token => 
+        token.address === vaultData.inputToken.address
+      );
+      
+      if (!vaultTokenExists) {
+        chainTokens.push(vaultData.inputToken);
+      }
+    }
+    
+    return chainTokens;
+  }, [vaultData]);
+
   const filteredChains = useMemo(() => {
     if (!searchQuery) return SUPPORTED_CHAINS;
 
     return SUPPORTED_CHAINS.filter(chain => {
-      const chainTokens = APPROVED_TOKENS[chain.id] || [];
+      const chainTokens = getTokensForChain(chain);
       const hasMatchingTokens = chainTokens.some(token => 
         token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
       );
       return chain.name?.toLowerCase().includes(searchQuery.toLowerCase()) || hasMatchingTokens;
     });
-  }, [searchQuery]);
+  }, [searchQuery, getTokensForChain]);
 
   return (
     <div className="chain-token-selector relative" ref={dropdownRef}>
@@ -119,7 +198,7 @@ export default function ChainTokenSelector({
           </>
         ) : (
           <div className="flex items-center space-x-2">
-            <Image src="/tokens_colored.png" alt="Logo" width={24} height={24} className="rounded-full" />
+            <Image src="/tokens_white.png" alt="Logo" width={24} height={24} className="rounded-full" />
             <span className="text-white">Select Token</span>
           </div>
         )}
@@ -144,7 +223,7 @@ export default function ChainTokenSelector({
           
           <div className="max-h-96 overflow-y-auto">
             {filteredChains.map((chain) => {
-              const chainTokens = APPROVED_TOKENS[chain.id] || [];
+              const chainTokens = getTokensForChain(chain);
               const filteredTokens = searchQuery
                 ? chainTokens.filter(token => 
                     token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
@@ -152,12 +231,15 @@ export default function ChainTokenSelector({
                 : chainTokens;
 
               if (searchQuery && filteredTokens.length === 0) return null;
+              
+              // Don't show empty chains
+              if (filteredTokens.length === 0) return null;
 
               return (
                 <div key={chain.id}>
                   <button
                     onClick={(e) => handleChainClick(chain.id, e)}
-                    className="chain-button"
+                    className={`chain-button ${activeChain?.id === chain.id ? 'active-chain' : ''}`}
                   >
                     <div className="flex items-center space-x-3">
                       {chain.icon && (
@@ -170,6 +252,11 @@ export default function ChainTokenSelector({
                         />
                       )}
                       <span className="text-white">{chain.name}</span>
+                      {chain.id === selectedTokenChain && (
+                        <span className="ml-2 text-xs px-2 py-0.5 text-white bg-gradient-to-r from-[#262830] to-[#06afbc] rounded-full">
+                          Connected
+                        </span>
+                      )}
                     </div>
                     <ChevronDownIcon 
                       className={`w-5 h-5 text-white transition-transform ${
@@ -180,22 +267,39 @@ export default function ChainTokenSelector({
                   
                   {(expandedChain === chain.id || searchQuery) && filteredTokens.length > 0 && (
                     <div className="token-list">
-                      {filteredTokens.map((token) => (
-                        <button
-                          key={token.address}
-                          onClick={(e) => handleTokenSelect(token, chain, e)}
-                          className="token-button"
-                        >
-                          <Image
-                            src={token.imgURL}
-                            alt={token.symbol}
-                            width={20}
-                            height={20}
-                            className="token-icon"
-                          />
-                          <span className="text-white">{token.symbol}</span>
-                        </button>
-                      ))}
+                      {filteredTokens.map((token) => {
+                        // Mark vault tokens with a highlight indicator
+                        const isVaultToken = vaultData?.inputToken?.address === token.address;
+                        const isSelectedToken = selectedToken?.address === token.address;
+                        return (
+                          <button
+                            key={token.address}
+                            onClick={(e) => handleTokenSelect(token, chain, e)}
+                            className={`token-button ${isVaultToken ? 'vault-token' : ''} ${isSelectedToken ? 'selected-token' : ''}`}
+                          >
+                            <Image
+                              src={token.imgURL}
+                              alt={token.symbol}
+                              width={20}
+                              height={20}
+                              className="token-icon"
+                            />
+                            <span className="text-white flex items-center">
+                              {token.symbol}
+                              {isVaultToken && (
+                                <span className="ml-2 text-xs px-2 py-0.5 bg-gradient-to-r from-[#262830] to-[#06afbc] rounded-full">
+                                  Vault
+                                </span>
+                              )}
+                              {isSelectedToken && (
+                                <span className="ml-2 text-xs px-2 py-0.5 bg-gradient-to-r from-[#262830] to-[#06afbc] rounded-full">
+                                  Selected
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

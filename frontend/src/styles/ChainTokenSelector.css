@@ -2,6 +2,9 @@
   --bg-color: #1E1E1E;
   --hover-bg-color: #2A2A2A;
   --border-color: #333333;
+  --primary-color: #06afbc;
+  --success-color: #06afbc;
+  --primary-gradient: linear-gradient(to bottom, #262830, #06afbc);
 }
 
 .chain-token-selector .dropdown-container {
@@ -22,8 +25,16 @@
   transition: background-color 0.2s;
 }
 
+.chain-token-selector .chain-button.active-chain {
+  background-color: rgba(6, 175, 188, 0.1);
+}
+
 .chain-token-selector .chain-button:hover {
   background: var(--hover-bg-color);
+}
+
+.chain-token-selector .chain-button.active-chain:hover {
+  background-color: rgba(6, 175, 188, 0.15);
 }
 
 .chain-token-selector .chain-button:last-child {
@@ -48,6 +59,39 @@
   background: var(--bg-color);
 }
 
+.chain-token-selector .token-button.vault-token {
+  background-color: rgba(6, 175, 188, 0.1);
+}
+
+.chain-token-selector .token-button.vault-token:hover {
+  background-color: rgba(6, 175, 188, 0.2);
+}
+
+.chain-token-selector .token-button.selected-token {
+  background-color: rgba(6, 175, 188, 0.1);
+}
+
+.chain-token-selector .token-button.selected-token:hover {
+  background-color: rgba(6, 175, 188, 0.2);
+}
+
+.chain-token-selector .token-button.vault-token.selected-token {
+  background: linear-gradient(135deg, rgba(6, 175, 188, 0.1) 0%, rgba(6, 175, 188, 0.15) 100%);
+}
+
+.chain-token-selector .token-button.vault-token.selected-token:hover {
+  background: linear-gradient(135deg, rgba(6, 175, 188, 0.15) 0%, rgba(6, 175, 188, 0.25) 100%);
+}
+
+.chain-token-selector .token-button .vault-badge {
+  background: var(--primary-gradient);
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  margin-left: 8px;
+}
+
 .chain-token-selector .search-input {
   background: var(--hover-bg-color);
   border: 1px solid var(--border-color);
@@ -66,4 +110,29 @@
 .chain-token-selector .token-icon {
   border-radius: 50%;
   object-fit: cover;
+}
+
+/* Custom scrollbar styling */
+.chain-token-selector .max-h-96 {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--bg-color);
+}
+
+.chain-token-selector .max-h-96::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chain-token-selector .max-h-96::-webkit-scrollbar-track {
+  background: var(--bg-color);
+  border-radius: 20px;
+}
+
+.chain-token-selector .max-h-96::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #262830, #06afbc);
+  border-radius: 20px;
+  border: 2px solid var(--bg-color);
+}
+
+.chain-token-selector .max-h-96::-webkit-scrollbar-thumb:hover {
+  background: #06afbc;
 }
