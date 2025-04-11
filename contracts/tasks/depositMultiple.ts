@@ -15,10 +15,15 @@ task("deposit-multiple", "Deposit to vault for multiple users")
     if (recipientAddresses.length !== amounts.length) {
       throw new Error("Recipients and amounts arrays must be the same length");
     }
+    const vaultAbi = [
+      "function deposit(uint256 assets, uint256 minimumOut, address receiver) public returns (uint256)"
+    ];
+
+    const vault = new hre.ethers.Contract(vaultAddress, vaultAbi, signer);
 
     // Get contract instances
-    const vault: Contract = await hre.ethers.getContractAt("AmanaConnectedChainVault", vaultAddress, signer);
-    const tokenAddress = "0x96152E6180E085FA57c7708e18AF8F05e37B479D";
+    // const vault: Contract = await hre.ethers.getContractAt("AmanaConnectedChainVault", vaultAddress, signer);
+    const tokenAddress = "0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F";
     const erc20: Contract = await hre.ethers.getContractAt("IERC20", tokenAddress, signer);
 
     // Calculate total amount for approval
