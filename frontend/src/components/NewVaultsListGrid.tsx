@@ -110,11 +110,6 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
           aValue = calculateRiskLevel(a);
           bValue = calculateRiskLevel(b);
           break;
-        case 'date':
-          // Using ID as a proxy for creation date
-          aValue = a.id;
-          bValue = b.id;
-          break;
         default:
           return 0;
       }
@@ -231,9 +226,8 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-2 mb-2">
-          <div className="text-white mr-2 flex items-center">Sort by:</div>
-          {['apy', 'tvl', 'risk', 'date'].map((option) => (
+        <div className="flex gap-2 mb-4">
+          {['apy', 'tvl', 'risk'].map((option) => (
             <button
               key={option}
               onClick={() => {
@@ -244,9 +238,9 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
                   setSortOrder('desc');
                 }
               }}
-              className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${
+              className={`px-3 py-1 rounded-md text-sm ${
                 sortBy === option
-                  ? 'bg-gradient-to-r from-[#262830] to-[#06afbc] text-white'
+                  ? 'bg-customNeutral300 text-white'
                   : 'bg-customNeutral300 text-white'
               }`}
             >
@@ -364,7 +358,7 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
                     <p className="text-cyan-400 font-bold text-xl">
-                      {Number(vaultAPY?.APY7d || 0).toFixed(2)}%
+                      {(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%
                     </p>
                   </div>
                   <div className="bg-customNeutral300 p-3 rounded-md">

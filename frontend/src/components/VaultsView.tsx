@@ -87,8 +87,8 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                       {formatNumberWithSuffix(Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets))} {getOnlyTokenSymbol(vault.inputToken.symbol)}</div>
                     {/* <div className="text-sm font-light">$ {Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(6)}</div> */}
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                    {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d) * 100).toFixed(2)}%
+                  <td className="px-4 py-2 text-right">
+                    {(Number(vaultAPYs.find((APY7d) => APY7d.vaultId === vault.id)?.APY7d || 0) * 100).toFixed(2)}%
                   </td>
                   <td className="px-9 py-4 whitespace-nowrap text-center">
                     {`${formatBalance(Number(userVaultBalances.find((balance) => balance.vaultId === vault.id)?.balance))} ${getOnlyTokenSymbol(vault.inputToken.symbol)}`}
