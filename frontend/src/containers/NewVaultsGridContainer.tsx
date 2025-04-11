@@ -1,0 +1,85 @@
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { 
+  VaultData, 
+  VaultAPY, 
+  UserVaultBalance, 
+  VaultTotalAssets, 
+  VaultTotalAssetsinToken 
+} from "../types/types";
+import { DEPRECATED_VAULT_DATA, VAULT_DATA } from "../constants/index";
+import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
+import { Chain } from "thirdweb";
+import { Account } from "thirdweb/wallets";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useActiveAccount } from "thirdweb/react";
+import NewVaultsListGrid from "../components/NewVaultsListGrid";
+
+// Zero account for default value
+export const ZERO_ACCOUNT: Account = {
+  address: "0x0000000000000000000000000000000000000000",
+  sendTransaction: async () => {
+    throw new Error("sendTransaction not implemented for ZERO_ACCOUNT");
+  },
+  signMessage: async () => {
+    throw new Error("signMessage not implemented for ZERO_ACCOUNT");
+  },
+  signTypedData: async () => {
+    throw new Error("signTypedData not implemented for ZERO_ACCOUNT");
+  },
+};
+
+interface NewVaultsGridContainerProps {
+  activeChain?: Chain; // Make activeChain optional
+  defaultAccount?: Account; // Optional default account
+}
+
+const NewVaultsGridContainer: React.FC<NewVaultsGridContainerProps> = ({ 
+  activeChain, 
+  defaultAccount = ZERO_ACCOUNT 
+}) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
+  const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
+  const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>([]);
+  const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
+  const pathname = usePathname();
+
+  const vaults: VaultData[] = pathname.includes("old-vaults") ? DEPRECATED_VAULT_DATA : VAULT_DATA;
+  const EOAaccount = useActiveAccount() || defaultAccount;
+  const { walletAddress } = useMultiChain();
+
+  // Fetch vault balances and total values
+  useUpdateVaultBalanceAndTotal(
+    vaults, 
+    walletAddress, 
+    setUserVaultBalances, 
+    setVaultTotalAssets, 
+    setVaultTotalAssetsinToken
+  );
+  
+  // Fetch token prices for APY calculations
+  const crvTokenPrice = useTokenPriceBySymbol("CRV");
+  const ethTokenPrice = useTokenPriceBySymbol("ETH");
+  const compTokenPrice = useTokenPriceBySymbol("COMP");
+  
+  // Calculate APYs
+  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <h1 className="text-white text-2xl font-bold mb-6">Explore Vaults</h1>
+      <NewVaultsListGrid
+        loading={loading}
+        vaults={vaults}
+        vaultAPYs={vaultAPYs}
+        userVaultBalances={userVaultBalances}
+        vaultTotalAssets={vaultTotalAssets}
+        vaultTotalAssetsinToken={vaultTotalAssetsinToken}
+      />
+    </div>
+  );
+};
+
+export default NewVaultsGridContainer; 
