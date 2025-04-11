@@ -24,6 +24,17 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 📜 Contract address: ${contract.address}
 `);
   }
+  // ✅ Etherscan verification step (no constructor args)
+  try {
+    console.log("🔍 Verifying contract...");
+    await hre.run("verify:verify", {
+      address: contract.address,
+      constructorArguments: [], // No constructor args
+    });
+    console.log("✅ Contract verified successfully!");
+  } catch (err) {
+    console.error("❌ Verification failed:", err.message || err);
+  }
 };
 
 task("deploy-generic", "Deploy the contract", main)
