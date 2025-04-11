@@ -25,6 +25,7 @@ import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet } from "@coral-xyz/anchor";
 import axios from "axios";
 import { swap } from "codemelt-retro-api-sdk/functional/api";
+import api from "codemelt-retro-api-sdk";
 
 
 
@@ -559,7 +560,7 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
   let assetsConversionAmount: bigint = transactionAmount;
   if (inputTokenAddress !== vaultData.inputToken.address) {
-    assetsConversionAmount = await getAmountOutFromSwap(transactionAmount, inputTokenAddress as Address, vaultData.inputToken.address as Address);
+    assetsConversionAmount = await getAmountOutFromSwap(transactionAmount, inputTokenAddress as Address, vaultData.inputToken.address as Address, vaultData.id as Address);
   }
   const strategyChain = defineChain(vaultData.protocol.chainId);
   const contract = getContract({
@@ -1026,7 +1027,7 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 }
 
 const beamConnection: IConnection = {
-  host: 'https://beam-api.codemelt.xyz', // Replace with actual Beam API host
+  host: 'https://public-beam-backend-mainnet.codemelt.codes', // Replace with actual Beam API host
   headers: {
     'x-api-key': process.env.NEXT_PUBLIC_BEAM_API_KEY!,
   },
@@ -1036,64 +1037,100 @@ export const getBeamTokenId = async (
   tokenAddress: string,
   chainId: number
 ): Promise<number | null> => {
-  const BeamApi = require('codemelt-retro-api-sdk/functional/api');
-  const currency = BeamApi.currency;
   try {
-    const response = await currency.getPartners(beamConnection);
-    const token = response.data.find(
-      (t) =>
-        t.chainId === chainId &&
-        t.address.toLowerCase() === tokenAddress.toLowerCase()
+    const response = await api.functional.api.currency.partners.getPartners(beamConnection, "7000");
+    console.log("response: ", response);
+
+    const token = response.data.data.find(
+      (t) => t.address.toLowerCase() === tokenAddress.toLowerCase(),
     );
     return token?.id ?? null;
   } catch (err) {
-    console.error("Failed to fetch token ID from Beam API:", err);
+    console.error("Failed to fetch token ID from RETRO:", err);
     return null;
   }
 };
 
+
+
 export const getAmountOutFromSwap = async (
   amount: bigint,
-  inputTokenId: number, // Beam-specific ID
-  outputTokenId: number, // Beam-specific ID
   inputTokenAddress: string,
   outputTokenAddress: string,
   userAddress: string
 ): Promise<bigint> => {
-  // Try Beam first
+  // const BeamApi = require('codemelt-retro-api-sdk/functional/api');
 
-  // const swap = BeamApi.swap;
-  console.log("swap", swap);
-  try {
-    console.log("Getting quote from Beam api")
-    const beamQuote = await swap.native.getSwapData(beamConnection, {
-      tokenAId: inputTokenId,
-      tokenBId: outputTokenId,
-      slippage: 50, // 0.5% slippage
-      amount: Number(amount), // Beam expects number
-      sender: userAddress,
-      recipient: userAddress,
-    });
-    console.log("Beam quote response:", beamQuote);
-    const quoteAmount = beamQuote?.data?.quoteAmount;
-    console.log("Beam quote amount:", quoteAmount);
-    if (quoteAmount && Number(quoteAmount) > 0) {
-      console.log("✅ Beam quote found");
-      return BigInt(quoteAmount);
+  const sourceChainId = 7000;
+  const destinationChainId = 7000;
+
+  // Step 1: Get Beam token IDs
+  const [inputTokenId, outputTokenId] = await Promise.all([
+    getBeamTokenId(inputTokenAddress, sourceChainId),
+    getBeamTokenId("0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891", destinationChainId),
+  ]);
+  console.log("inputTokenAddress: ", inputTokenAddress);
+  console.log("outputTokenAddress: ", "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891");
+  console.log("inputTokenId: ", inputTokenId);
+  console.log("outputTokenId: ", outputTokenId);
+  console.log("userAddress: ", userAddress);
+  if (
+    typeof inputTokenId !== "number" ||
+    typeof outputTokenId !== "number" ||
+    typeof userAddress !== "string" ||
+    !userAddress.startsWith("0x")
+  ) {
+    throw new Error("Invalid input for getSwapData");
+  }
+  const swapDetails: swap.native.getSwapData.Input = {
+    tokenAId: inputTokenId,
+    tokenBId: outputTokenId,
+    slippage: 50,
+    amount: Number(amount),
+    sender: userAddress,
+    recipient: userAddress
+  };
+  // Step 2: If both token IDs are found, try Beam API first
+  if (inputTokenId && outputTokenId) {
+    try {
+      console.log("🚀 Getting quote from Beam API...");
+      const beamQuote = await swap.aggregator.getSwapData(beamConnection, swapDetails);
+      console.log("Beam quote response:", beamQuote);
+      if (!beamQuote.success) {
+        console.error("Beam api is down (service unavailable)");
+        return 0;
+      }
+      //if the status is 200 all requests are wrapped in a data object
+      if (!beamQuote.data.status) {
+        console.error(beamQuote.data.message);
+        return 0;
+      }
+      //quote returned is human readable, not wei
+      //we can add the raw values if needed
+      const quoteAmount = beamQuote.data.data.expectedAmountOut;
+      //also available is: beamQuote.data.data.minAmountOut
+      console.log("Beam quote amount:", quoteAmount);
+      if (quoteAmount > 0) {
+        console.log("✅ Beam quote found");
+        return quoteAmount;
+      }
+
+      console.warn("⚠️ Beam quote returned 0 or no data");
+    } catch (e) {
+      console.warn("⚠️ Beam quote failed, falling back to Eddy:", e);
     }
-
-    console.warn("⚠️ Beam quote returned 0 or no data, falling back to Eddy");
-  } catch (e) {
-    console.warn("⚠️ Beam quote failed, falling back to Eddy:", e);
+  } else {
+    console.warn("❌ Could not find Beam token IDs for both tokens");
   }
 
-  // Fallback to Eddy
+  // Step 3: Fallback to Eddy
   try {
+    console.log("🌐 Trying Eddy as fallback...");
     const eddyQuote = await sdk.bridge.getQuoteForBridge({
       inputTokenAddress,
       outputTokenAddress,
-      sourceChainId: 7000,
-      destinationChainId: 7000,
+      sourceChainId,
+      destinationChainId,
       amount: amount.toString(),
       slippage: 0.5,
     });
@@ -1105,8 +1142,6 @@ export const getAmountOutFromSwap = async (
     return BigInt(0);
   }
 };
-
-
 
 export const getSharesFromDeposit = async (amount: bigint, vaultData: VaultData) => {
   const contract = getContract({

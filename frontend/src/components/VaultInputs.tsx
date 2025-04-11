@@ -244,7 +244,7 @@ export default function VaultInputs({
     });
     let tokenConversionAmount = assetsAmount;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address);
+      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address, vaultData.id as Address);
     }
     console.log('Double Box - Conversion amounts:', {
       tokenConversionAmount: tokenConversionAmount.toString(),
@@ -285,7 +285,7 @@ export default function VaultInputs({
     });
     let assetsConversionAmount: bigint = inputAmountValue;
     if (inputTokenAddress !== vaultData.inputToken.address) {
-      assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, inputTokenAddress as Address, vaultData.inputToken.address as Address);
+      assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, inputTokenAddress as Address, vaultData.inputToken.address as Address, vaultData.id as Address);
     }
 
     console.log('Double Box - Pre Gas Conversion amounts:', {
@@ -328,7 +328,8 @@ export default function VaultInputs({
         gasFeeInVaultAsset = await getAmountOutFromSwap(
           gasFee,
           gasZRC20,
-          vaultData.inputToken.address
+          vaultData.inputToken.address,
+          vaultData.id as Address
         );
       }
     }
