@@ -17,7 +17,7 @@ task("deposit-multiple", "Deposit to vault for multiple users")
     }
 
     // Get contract instances
-    const vault: Contract = await hre.ethers.getContractAt("0x622E956626Cc6aBa655E3d92a3629b04cB038E80", vaultAddress, signer);
+    const vault: Contract = await hre.ethers.getContractAt("AmanaConnectedChainVault", vaultAddress, signer);
     const tokenAddress = "0x96152E6180E085FA57c7708e18AF8F05e37B479D";
     const erc20: Contract = await hre.ethers.getContractAt("IERC20", tokenAddress, signer);
 
