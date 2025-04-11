@@ -1040,15 +1040,21 @@ export const getBeamTokenId = async (
     const response = await api.functional.api.currency.partners.getPartners(beamConnection, "7000"); // hardcoded for ZC
     console.log("response: ", response);
 
-    const token = response.data.data.find(
-      (t) => t.address.toLowerCase() === tokenAddress.toLowerCase(),
+    const data = response.data as {
+      data: { address: string; id: number }[];
+    };
+
+    const token = data.data.find(
+      (t) => t.address.toLowerCase() === tokenAddress.toLowerCase()
     );
+
     return token?.id ?? null;
   } catch (err) {
     console.error("Failed to fetch token ID:", err);
     return null;
   }
 };
+
 
 
 
