@@ -42,7 +42,7 @@ export const useUpdateVaultBalanceAndTotal = (
             try {
               let balance: any;
               let newTotalAssetsinToken: any;
-              if (address) {
+              if (address && vault && vault.id) {
                 balance = await fetchUserVaultBalance(
                   address as Address,
                   vault.id as Address
@@ -56,26 +56,28 @@ export const useUpdateVaultBalanceAndTotal = (
                 balance = "Error"
                 newTotalAssetsinToken = "Error"
               }
-              const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+              const newTotalAssets = vault && vault.id ? await fetchTotalAssets(vault.id as Address) : "Error";
 
-              // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
-
+              const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
+              const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
+              
               console.log({
-                vaultId: vault.id,
+                vaultId: vault?.id || "unknown",
                 balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
-              })
+                totalAssets: totalAssetsStr,
+                totalAssetsinToken: totalAssetsinTokenStr,
+              });
+              
               return {
-                vaultId: vault.id,
+                vaultId: vault?.id || "unknown",
                 balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
+                totalAssets: totalAssetsStr,
+                totalAssetsinToken: totalAssetsinTokenStr,
               };
             } catch (error) {
-              console.error(`Error fetching user balance or total assets for vault ${vault.id}:`, error);
+              console.error(`Error fetching user balance or total assets for vault ${vault?.id || "unknown"}:`, error);
               return {
-                vaultId: vault.id,
+                vaultId: vault?.id || "unknown",
                 balance: "Error",
                 totalAssets: "Error",
                 totalAssetsinToken: "Error"
@@ -123,7 +125,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
     const updateVaultBalanceAndTotal = async () => {
       const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
       try {
-        if (vault.id) {
+        if (vault && vault.id) {
           const balance = await fetchUserVaultBalance(
             address as Address,
             vault.id as Address
@@ -146,7 +148,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         console.error("Error updating vault balances and total assets:", error);
       }
     };
-    if (userAddress) {
+    if (userAddress && vault) {
       updateVaultBalanceAndTotal();
     }
   }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
@@ -308,8 +310,29 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    const tokenSymbol = getOnlyTokenSymbol(symbol).toUpperCase()
-    return priceContext.prices?.[tokenSymbol] ?? 0;
+    // Normalize the symbol format:
+    // Convert "USDC (ETH)" to "USDC.ETH" format for price lookup
+    const normalizedSymbol = symbol.includes('(') ? 
+      symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
+
+    // Try to find price using normalized symbol first
+    const fullSymbolPrice = priceContext.prices?.[normalizedSymbol.toUpperCase()];
+    if (fullSymbolPrice !== undefined) {
+      return fullSymbolPrice;
+    }
+
+    // If full symbol price not found, check if it's a stablecoin by checking the base symbol
+    // For both formats: "USDC (ETH)" -> "USDC" and "USDC.ETH" -> "USDC"
+    const baseSymbol = symbol.includes('(') ? 
+      symbol.split(' (')[0].toUpperCase() : 
+      getOnlyTokenSymbol(symbol).toUpperCase();
+
+    if (baseSymbol === "USDC" || baseSymbol === "USDT") {
+      return 1;
+    }
+
+    // Fallback to base symbol if full symbol price not found
+    return priceContext.prices?.[baseSymbol] ?? 0;
   }, [priceContext, symbol]);
 }
 
@@ -359,3 +382,4 @@ export function useSlippage() {
     toggleAuto
   };
 }
+

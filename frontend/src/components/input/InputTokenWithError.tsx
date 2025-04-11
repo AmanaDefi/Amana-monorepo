@@ -184,8 +184,10 @@ export default function InputTokenWithError({
                 (isDeposit && !isOutput) ?
                   (
                     "$ " + (selectedToken ?
-                      formatCurrency((Number(props.value) * selectedTokenPrice)).toString()
-                      : "0")
+                      // Removed the unnecessary .toString() call since formatCurrency already returns a string
+                      // Changed the default value from "0" to "0.00" to maintain consistent decimal formatting
+                      formatCurrency(Number(props.value || 0) * selectedTokenPrice)
+                      : "0.00")
                   ) :
                   (
                     loadingOutputToken ?

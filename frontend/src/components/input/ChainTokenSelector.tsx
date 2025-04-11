@@ -6,6 +6,7 @@ import { ChevronDownIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outlin
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "thirdweb";
 import '@/styles/ChainTokenSelector.css';
+import { warningToast } from "@/toasts/toastStyles";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token, chain: Chain) => void;
@@ -23,7 +24,7 @@ export default function ChainTokenSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [expandedChain, setExpandedChain] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const { activeChain, switchToChain } = useMultiChain();
+  const { activeChain, switchToChain, walletAddress } = useMultiChain();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isInitialRender = useRef(true);
   const [selectedTokenChain, setSelectedTokenChain] = useState<number | null>(null);
@@ -38,15 +39,34 @@ export default function ChainTokenSelector({
   // Track which chain the selected token belongs to
   useEffect(() => {
     if (selectedToken) {
-      // Find which chain this token belongs to
-      for (const chainId in APPROVED_TOKENS) {
-        const chainTokens = APPROVED_TOKENS[Number(chainId)] || [];
-        const tokenExists = chainTokens.some(
-          token => token.address === selectedToken.address
-        );
-        if (tokenExists) {
-          setSelectedTokenChain(Number(chainId));
-          return;
+      // Check if it's a native token (address 0x0000000000000000000000000000000000000000)
+      const isNativeToken = selectedToken.address === "0x0000000000000000000000000000000000000000" || 
+                            selectedToken.address === "11111111111111111111111111111111"; // Solana native token
+      
+      if (isNativeToken) {
+        // For native tokens, extract chain name from the symbol
+        // e.g., "ETH (ETH)" -> find in which chain this symbol exists
+        for (const chainId in APPROVED_TOKENS) {
+          const chainTokens = APPROVED_TOKENS[Number(chainId)] || [];
+          const tokenExists = chainTokens.some(
+            token => token.symbol === selectedToken.symbol && token.address === selectedToken.address
+          );
+          if (tokenExists) {
+            setSelectedTokenChain(Number(chainId));
+            return;
+          }
+        }
+      } else {
+        // For non-native tokens, find by address as before
+        for (const chainId in APPROVED_TOKENS) {
+          const chainTokens = APPROVED_TOKENS[Number(chainId)] || [];
+          const tokenExists = chainTokens.some(
+            token => token.address === selectedToken.address
+          );
+          if (tokenExists) {
+            setSelectedTokenChain(Number(chainId));
+            return;
+          }
         }
       }
 
@@ -102,6 +122,12 @@ export default function ChainTokenSelector({
     console.log(`Selected token: ${token.symbol} from chain ${chain.id} (${chain.name})`);
     console.log(`Current active chain: ${activeChain?.id} (${activeChain?.name})`);
 
+    // Check if wallet is connected
+    if (!walletAddress) {
+      warningToast("Please connect your wallet to select a token");
+      return;
+    }
+
     // Don't switch chains if selecting the same token again
     if (selectedToken?.address === token.address && activeChain?.id === chain.id) {
       setIsOpen(false);
@@ -137,8 +163,10 @@ export default function ChainTokenSelector({
     // Only include tokens that belong to this specific chain
     let chainTokens = [...(APPROVED_TOKENS[chain.id] || [])];
     
+    const isZetaChain = chain.id === 7000 || chain.id === 7001;
+    
     // Only for ZetaChain, ensure the vault token is included if available
-    if ((chain.id === 7000 || chain.id === 7001) && vaultData?.inputToken) {
+    if (isZetaChain && vaultData?.inputToken) {
       const vaultTokenExists = chainTokens.some(token => 
         token.address === vaultData.inputToken.address
       );
@@ -148,17 +176,11 @@ export default function ChainTokenSelector({
       }
     }
     
-    // For the vault token's chain, ensure it's shown there
-    if (vaultData?.inputToken && 
-        vaultData.protocol && 
-        vaultData.protocol.chainId === chain.id) {
-      const vaultTokenExists = chainTokens.some(token => 
-        token.address === vaultData.inputToken.address
+    // If this is NOT ZetaChain, remove the vault token if it exists in this chain
+    if (!isZetaChain && vaultData?.inputToken) {
+      chainTokens = chainTokens.filter(token => 
+        token.address !== vaultData.inputToken.address
       );
-      
-      if (!vaultTokenExists) {
-        chainTokens.push(vaultData.inputToken);
-      }
     }
     
     return chainTokens;
@@ -183,7 +205,7 @@ export default function ChainTokenSelector({
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className={`flex items-center space-x-2 bg-customNeutral200 hover:bg-customNeutral300 rounded-lg px-4 py-2 ${className}`}
+        className={`selector-main-button flex items-center space-x-2 rounded-lg px-4 py-2 ${className}`}
       >
         {selectedToken ? (
           <>
@@ -198,7 +220,7 @@ export default function ChainTokenSelector({
           </>
         ) : (
           <div className="flex items-center space-x-2">
-            <Image src="/tokens_white.png" alt="Logo" width={24} height={24} className="rounded-full" />
+            {/* <Image src="/tokens_white.png" alt="Logo" width={24} height={24} className="rounded-full" /> */}
             <span className="text-white">Select Token</span>
           </div>
         )}
@@ -252,7 +274,7 @@ export default function ChainTokenSelector({
                         />
                       )}
                       <span className="text-white">{chain.name}</span>
-                      {chain.id === selectedTokenChain && (
+                      {selectedToken && chain.id === selectedTokenChain && (
                         <span className="ml-2 text-xs px-2 py-0.5 text-white bg-gradient-to-r from-[#262830] to-[#06afbc] rounded-full">
                           Connected
                         </span>
@@ -270,10 +292,21 @@ export default function ChainTokenSelector({
                       {filteredTokens.map((token) => {
                         // Mark vault tokens with a highlight indicator
                         const isVaultToken = vaultData?.inputToken?.address === token.address;
-                        const isSelectedToken = selectedToken?.address === token.address;
+                        
+                        // Special handling for native tokens (having zero address)
+                        const isNativeToken = token.address === "0x0000000000000000000000000000000000000000" || 
+                                             token.address === "11111111111111111111111111111111"; // Solana native
+                        
+                        // For native tokens, check both address and symbol
+                        // For non-native tokens, just check the address
+                        const isSelectedToken = isNativeToken 
+                          ? (selectedToken?.address === token.address && 
+                             selectedToken?.symbol === token.symbol)
+                          : (selectedToken?.address === token.address);
+                        
                         return (
                           <button
-                            key={token.address}
+                            key={token.address + token.symbol}
                             onClick={(e) => handleTokenSelect(token, chain, e)}
                             className={`token-button ${isVaultToken ? 'vault-token' : ''} ${isSelectedToken ? 'selected-token' : ''}`}
                           >
