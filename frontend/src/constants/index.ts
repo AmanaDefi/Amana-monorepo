@@ -29,7 +29,7 @@ export const tokens: Token[] = [
 
 const OLD_VAULT_DATA: VaultData[] = [
   {
-    id: "0xe1e40a368e11B0cE6B16745984c26b19AD9B8D31",
+    id: "0x622E956626Cc6aBa655E3d92a3629b04cB038E80",
     name: "USDT Lend Pool - Deposits Paused",
     des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
     symbol: "aPolUSDT",
@@ -45,7 +45,7 @@ const OLD_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Compound",
-      strategyAddress: "0xfb8ae3096bbE8da1B910D193e029F3dFefa4A618",
+      strategyAddress: "0x5E1613bB9d1A8838eD72BE8471326B4C05102757",
       gaugeAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
       network: "Polygon",
       chainId: 137,

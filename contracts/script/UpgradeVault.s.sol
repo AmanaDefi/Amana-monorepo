@@ -8,9 +8,11 @@ import {console} from "forge-std/console.sol";
 contract UpgradeVault is Script {
     function run() external {
         // ✅ Hardcoded proxy address to upgrade
-        address proxyAddress = 0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e;
+        address proxyAddress = 0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69;
         // address newImpl = 0x1a4810A0Dc61FF4d3D46Cb8Ac89612Cc286Ca11C; // <- older version with old switchStrategy function
-        address newImpl = 0x198938Cb9429D35562569AC567f063654166c636; // <- final version with updated switchStrategy function and toggleDepositFeePaidFromGasTank
+        // address newImpl = 0x198938Cb9429D35562569AC567f063654166c636; // <- final version with updated switchStrategy function and toggleDepositFeePaidFromGasTank
+        // address newImpl = 0xcB4b1936df6B44967Ca44A28BbC63cF1e886d06D;
+        address newImpl = 0x70774742d4065792AFeb16709acaD3a1630f3141;
 
         // ✅ Fetch the PRIVATE_KEY from environment and ensure it starts with "0x"
         string memory rawPrivateKey = vm.envString("PRIVATE_KEY");

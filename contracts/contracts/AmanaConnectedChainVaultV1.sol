@@ -28,7 +28,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     }
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
-    mapping(address => uint256) pendingWithdrawals;
+    mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
 
     event CrossChainInvestSent(bytes32 indexed crossChainTxId);
@@ -49,10 +49,6 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         uint32 gasLimitCall_,
         bool depositFeePaidFromGasTank_
     ) external initializer {
-        // __ERC20_init(name, symbol);
-        // __Ownable_init(msg.sender);
-        // __ERC4626_init(asset);
-        // __UUPSUpgradeable_init();
         __AmanaVaultBase_init(
             name,
             symbol,
@@ -63,7 +59,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             gasLimitWithdrawAndCall_,
             gasLimitCall_
         );
-        depositFeePaidFromGasTank_;
+        depositFeePaidFromGasTank = depositFeePaidFromGasTank_;
     }
 
     /**
@@ -169,6 +165,10 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 revert InvalidMessage();
             }
         }
+    }
+
+    function clearPendingWithdrawals(address user) external onlyOwner {
+        pendingWithdrawals[user] = 0;
     }
 
     /**
@@ -442,7 +442,6 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-
         // Generate a unique crossChainTxId
         bytes32 crossChainTxId = keccak256(
             abi.encodePacked(
@@ -453,14 +452,12 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 block.number // Current block number
             )
         );
-
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
             address(this),
             assets
         );
-
         _investAssets(
             assets,
             minimumOut,
@@ -491,7 +488,6 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
-
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
