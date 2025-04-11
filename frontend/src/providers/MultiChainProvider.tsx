@@ -146,10 +146,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     client,
   });
 
-  const evmBalance = data ? {
-    value: data?.value || 0n,
-    formatted: format(data?.value, data?.decimals)
-  } : { EMPTY_BALANCE }
+  const evmBalance: Balance = data
+  ? {
+      value: data.value || 0n,
+      formatted: format(data.value, data.decimals),
+    }
+  : EMPTY_BALANCE;
+
 
   useEffect(() => {
     if (!account && !publicKey) {
