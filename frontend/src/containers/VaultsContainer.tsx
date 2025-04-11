@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import VaultsView from "../components/VaultsView";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
-import { DEPRECATED_VAULT_DATA, VAULT_DATA } from "../constants/index";
+import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
@@ -37,7 +37,7 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
   const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
   const pathname = usePathname();
 
-  const vaults: VaultData[] = pathname.includes("old-vaults") ? DEPRECATED_VAULT_DATA : VAULT_DATA;
+  const vaults: VaultData[] = VAULT_DATA;
   const EOAaccount = useActiveAccount() || defaultAccount;
   const { walletAddress } = useMultiChain();
 

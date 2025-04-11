@@ -560,7 +560,7 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
   let assetsConversionAmount: bigint = transactionAmount;
   if (inputTokenAddress !== vaultData.inputToken.address) {
-    assetsConversionAmount = await getAmountOutFromSwap(transactionAmount, inputTokenAddress as Address, vaultData.inputToken.address as Address, vaultData.id as Address);
+    assetsConversionAmount = await getAmountOutFromSwap(transactionAmount, inputToken, vaultData.inputToken, vaultData.id as Address);
   }
   const strategyChain = defineChain(vaultData.protocol.chainId);
   const contract = getContract({
@@ -1034,11 +1034,10 @@ const beamConnection: IConnection = {
 };
 
 export const getBeamTokenId = async (
-  tokenAddress: string,
-  chainId: number
+  tokenAddress: string
 ): Promise<number | null> => {
   try {
-    const response = await api.functional.api.currency.partners.getPartners(beamConnection, "7000");
+    const response = await api.functional.api.currency.partners.getPartners(beamConnection, "7000"); // hardcoded for ZC
     console.log("response: ", response);
 
     const token = response.data.data.find(
@@ -1046,7 +1045,7 @@ export const getBeamTokenId = async (
     );
     return token?.id ?? null;
   } catch (err) {
-    console.error("Failed to fetch token ID from RETRO:", err);
+    console.error("Failed to fetch token ID:", err);
     return null;
   }
 };
@@ -1055,40 +1054,30 @@ export const getBeamTokenId = async (
 
 export const getAmountOutFromSwap = async (
   amount: bigint,
-  inputTokenAddress: string,
-  outputTokenAddress: string,
+  inputToken: Token,
+  outputToken: Token,
   userAddress: string
 ): Promise<bigint> => {
   // const BeamApi = require('codemelt-retro-api-sdk/functional/api');
 
   const sourceChainId = 7000;
   const destinationChainId = 7000;
+  const inputTokenAddress = inputToken.address;
+  const outputTokenAddress = outputToken.address;
+  console.log("inputTokenAddress: ", inputTokenAddress);
+  console.log("outputTokenAddress: ", outputTokenAddress);
 
   // Step 1: Get Beam token IDs
   const [inputTokenId, outputTokenId] = await Promise.all([
-    getBeamTokenId(inputTokenAddress, sourceChainId),
-    getBeamTokenId("0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891", destinationChainId),
+    getBeamTokenId(inputTokenAddress),
+    getBeamTokenId(outputTokenAddress),
   ]);
-  console.log("inputTokenAddress: ", inputTokenAddress);
-  console.log("outputTokenAddress: ", "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891");
-  console.log("inputTokenId: ", inputTokenId);
-  console.log("outputTokenId: ", outputTokenId);
-  console.log("userAddress: ", userAddress);
-  console.log("amount: ", amount);
   console.log("Number(amount): ", Number(amount));
-  if (
-    typeof inputTokenId !== "number" ||
-    typeof outputTokenId !== "number" ||
-    typeof userAddress !== "string" ||
-    !userAddress.startsWith("0x")
-  ) {
-    throw new Error("Invalid input for getSwapData");
-  }
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
     slippage: 500,
-    amount: Number(10), // TO DO this is just for testing
+    amount: Number(amount / BigInt(10 ** inputToken.decimals)),
     sender: userAddress,
     recipient: userAddress
   };
@@ -1096,16 +1085,15 @@ export const getAmountOutFromSwap = async (
   if (inputTokenId && outputTokenId) {
     try {
       console.log("🚀 Getting quote from Beam API...");
-      const beamQuote = await swap.aggregator.getSwapData(beamConnection, swapDetails);
-      console.log("Beam quote response:", beamQuote);
+      const beamQuote = await swap.native.getSwapData(beamConnection, swapDetails);
       if (!beamQuote.success) {
         console.error("Beam api is down (service unavailable)");
-        return 0;
+        return BigInt(0);
       }
       //if the status is 200 all requests are wrapped in a data object
       if (!beamQuote.data.status) {
         console.error(beamQuote.data.message);
-        return 0;
+        return BigInt(0);
       }
       //quote returned is human readable, not wei
       //we can add the raw values if needed
@@ -1114,7 +1102,7 @@ export const getAmountOutFromSwap = async (
       console.log("Beam quote amount:", quoteAmount);
       if (quoteAmount > 0) {
         console.log("✅ Beam quote found");
-        return quoteAmount;
+        return BigInt((quoteAmount * 10 ** outputToken.decimals).toFixed(0));
       }
 
       console.warn("⚠️ Beam quote returned 0 or no data");
@@ -1129,10 +1117,10 @@ export const getAmountOutFromSwap = async (
   try {
     console.log("🌐 Trying Eddy as fallback...");
     const eddyQuote = await sdk.bridge.getQuoteForBridge({
-      inputTokenAddress,
-      outputTokenAddress,
-      sourceChainId,
-      destinationChainId,
+      inputTokenAddress: inputTokenAddress,
+      outputTokenAddress: outputTokenAddress,
+      sourceChainId: sourceChainId,
+      destinationChainId: destinationChainId,
       amount: amount.toString(),
       slippage: 0.5,
     });

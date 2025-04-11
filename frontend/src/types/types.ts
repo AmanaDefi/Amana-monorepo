@@ -92,7 +92,7 @@ export interface Token {
   price: number;
   balance: Balance;
   isNative: boolean;
-  ZRC20equivalent?: Address;
+  ZRC20equivalent?: Token;
 }
 
 export interface TokenByAddress {

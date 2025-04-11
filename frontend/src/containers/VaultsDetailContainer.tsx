@@ -3,7 +3,7 @@ import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "@/types/types";
-import { DEPRECATED_VAULT_DATA, VAULT_DATA } from "@/constants";
+import { VAULT_DATA } from "@/constants";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
@@ -30,7 +30,7 @@ const VaultsDetailContainer: React.FC<{
     const [vaultTotalAssetinToken, setVaultTotalAssetinToken] = useState<VaultTotalAssetsinToken>();
     const [transactionCompleted, setTransactionCompleted] = useState(false);
 
-    const vaults: VaultData[] = pathname.includes("old-vaults") ? DEPRECATED_VAULT_DATA : VAULT_DATA;
+    const vaults: VaultData[] =  VAULT_DATA;
     const backPath: string = pathname.includes("old-vaults") ? "/old-vaults" : "/";
     const { walletAddress } = useMultiChain();
 

@@ -24,6 +24,7 @@ import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getShares
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { showErrorToast } from "@/toasts";
+import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -236,15 +237,16 @@ export default function VaultInputs({
     console.log('Double Box - Assets from shares:', {
       assetsAmount: assetsAmount.toString(),
     });
-    const inputTokenAddress = isZetachain(activeChain?.id as number) ? inputToken?.address : inputToken?.ZRC20equivalent;
+    const actualInputToken = isZetachain(activeChain?.id as number) ? inputToken : inputToken?.ZRC20equivalent;
+    if(!actualInputToken) return;
     console.log('Double Box - Token addresses:', {
-      inputTokenAddress,
+      inputToken: actualInputToken?.address,
       isZetachain: isZetachain(activeChain?.id as number),
       vaultInputToken: vaultData.inputToken.address
     });
     let tokenConversionAmount = assetsAmount;
-    if (inputTokenAddress !== vaultData.inputToken.address) {
-      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken.address as Address, inputTokenAddress as Address, vaultData.id as Address);
+    if (actualInputToken.address !== vaultData.inputToken.address) {
+      tokenConversionAmount = await getAmountOutFromSwap(assetsAmount, vaultData.inputToken, actualInputToken, vaultData.id as Address);
     }
     console.log('Double Box - Conversion amounts:', {
       tokenConversionAmount: tokenConversionAmount.toString(),
@@ -277,15 +279,19 @@ export default function VaultInputs({
     console.log('Double Box - Starting getDepositOutputAmount:', {
       inputAmountValue: inputAmountValue.toString(),
     });
-    const inputTokenAddress = isZetachain(activeChain?.id as number) ? inputToken?.address : inputToken?.ZRC20equivalent;
+    const actualInputToken = isZetachain(activeChain?.id as number) ? inputToken : inputToken?.ZRC20equivalent;
+    console.log("inputToken: ", inputToken)
+    console.log("inputToken.ZRC20equivalent: ", inputToken?.ZRC20equivalent)
+    console.log("actualInputToken: ", actualInputToken)
+    if(!actualInputToken) return;
     console.log('Double Box - 🏦 Token addresses:', {
-      inputTokenAddress,
+      inputToken: actualInputToken.address,
       isZetachain: isZetachain(activeChain?.id as number),
       vaultInputToken: vaultData.inputToken.address
     });
     let assetsConversionAmount: bigint = inputAmountValue;
-    if (inputTokenAddress !== vaultData.inputToken.address) {
-      assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, inputTokenAddress as Address, vaultData.inputToken.address as Address, vaultData.id as Address);
+    if (actualInputToken.address !== vaultData.inputToken.address) {
+      assetsConversionAmount = await getAmountOutFromSwap(inputAmountValue, actualInputToken, vaultData.inputToken, vaultData.id as Address);
     }
 
     console.log('Double Box - Pre Gas Conversion amounts:', {
@@ -327,8 +333,8 @@ export default function VaultInputs({
         // Convert fee from gas token into vault asset terms
         gasFeeInVaultAsset = await getAmountOutFromSwap(
           gasFee,
-          gasZRC20,
-          vaultData.inputToken.address,
+          ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
+          vaultData.inputToken,
           vaultData.id as Address
         );
       }

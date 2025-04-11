@@ -58,13 +58,13 @@ export default function MobileMenuModal() {
                     >
                         Roadmap
                     </span>
-                    <span
+                    {/* <span
                         className={`cursor-pointer py-6 ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
                             }`}
                         onClick={() => router.push("/old-vaults")}
                     >
                         Old Vaults
-                    </span>
+                    </span> */}
                 </nav>
             </div>
         </>

@@ -2,6 +2,7 @@ import { defineChain } from "thirdweb";
 import { Token, Icon } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { PublicKey, Connection } from "@solana/web3.js";
+import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 
 export const zeroSolAddress = PublicKey.default.toBase58();
 
@@ -378,7 +379,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
       symbol: "USDC",
@@ -388,7 +389,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a"],
     },
     {
       symbol: "USDT",
@@ -398,7 +399,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7"],
     },
   ],
   11155111: [
@@ -410,7 +411,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
     },
     {
       symbol: "USDC",
@@ -420,7 +421,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0xcC683A782f4B30c138787CB5576a86AF66fdc31d",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xcC683A782f4B30c138787CB5576a86AF66fdc31d"],
     },
   ],
   8453: [
@@ -432,7 +433,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0x1de70f3e971B62A0707dA18100392af14f7fB677"
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x1de70f3e971B62A0707dA18100392af14f7fB677"]
     },
     {
       symbol: "USDC",
@@ -442,7 +443,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x96152E6180E085FA57c7708e18AF8F05e37B479D",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x96152E6180E085FA57c7708e18AF8F05e37B479D"],
     },
   ],
   84532: [
@@ -454,7 +455,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD"
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD"]
     },
   ],
   137: [
@@ -466,7 +467,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 0.7159,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501"],
     },
     {
       symbol: "USDC",
@@ -476,7 +477,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0xfC9201f4116aE6b054722E10b98D904829b469c3",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xfC9201f4116aE6b054722E10b98D904829b469c3"],
     },
     {
       symbol: "USDT",
@@ -486,7 +487,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0xdbfF6471a79E5374d771922F2194eccc42210B9F",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xdbfF6471a79E5374d771922F2194eccc42210B9F"],
     },
   ],
   80002: [
@@ -498,7 +499,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 0.7159,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0x777915D031d1e8144c90D025C594b3b8Bf07a08d",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x777915D031d1e8144c90D025C594b3b8Bf07a08d"],
     },
   ],
   56: [
@@ -510,7 +511,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb"],
     },
     {
       symbol: "USDC",
@@ -520,7 +521,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
     },
     {
       symbol: "USDT",
@@ -530,7 +531,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F"],
     },
   ],
   97: [
@@ -542,7 +543,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
       symbol: "USDC",
@@ -552,7 +553,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7"],
     },
   ],
   900: [
@@ -564,7 +565,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0x4bC32034caCcc9B7e02536945eDbC286bACbA073",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x4bC32034caCcc9B7e02536945eDbC286bACbA073"],
     },
     {
       symbol: "USDC",
@@ -574,7 +575,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x8344d6f84d26f998fa070BbEA6D2E15E359e2641",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x8344d6f84d26f998fa070BbEA6D2E15E359e2641"],
     },
     {
       symbol: "USDT",
@@ -584,7 +585,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0xEe9CC614D03e7Dbe994b514079f4914a605B4719",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xEe9CC614D03e7Dbe994b514079f4914a605B4719"],
     },
     {
       symbol: "CBBTC",
@@ -594,7 +595,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 97303,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x54Bf2B1E91FCb56853097BD2545750d218E245e1"
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x54Bf2B1E91FCb56853097BD2545750d218E245e1"]
     }
   ],
   42161: [
@@ -606,7 +607,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734, // TODO - is this price field even being used?
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0xA614Aebf7924A3Eb4D066aDCA5595E4980407f1d",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xA614Aebf7924A3Eb4D066aDCA5595E4980407f1d"],
     },
     {
       symbol: "USDC",
@@ -616,7 +617,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x0327f0660525b15Cdb8f1f5FBF0dD7Cd5Ba182aD",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0327f0660525b15Cdb8f1f5FBF0dD7Cd5Ba182aD"],
     },
     {
       symbol: "USDT",
@@ -626,7 +627,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x0ca762FA958194795320635c11fF0C45C6412958",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0ca762FA958194795320635c11fF0C45C6412958"],
     },
   ],
   43114: [
@@ -638,7 +639,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734, // TODO - is this price field even being used?
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0xE8d7796535F1cd63F0fe8D631E68eACe6839869B",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xE8d7796535F1cd63F0fe8D631E68eACe6839869B"],
     },
     {
       symbol: "USDC",
@@ -648,7 +649,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0xa52Ad01A1d62b408fFe06C2467439251da61E4a9",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xa52Ad01A1d62b408fFe06C2467439251da61E4a9"],
     },
     {
       symbol: "USDT",
@@ -658,7 +659,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794"],
     },
   ],
 };
