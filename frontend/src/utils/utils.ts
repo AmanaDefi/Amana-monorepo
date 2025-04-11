@@ -1,4 +1,4 @@
-import { ParseEventLogsResult, Address, getContract, toTokens } from "thirdweb";
+import { ParseEventLogsResult, Address, getContract, readContract, toTokens } from "thirdweb";
 import {
   TransactionResult,
   SmartVaultActionType,
@@ -406,20 +406,99 @@ export function isSolanaAddress(address: any): boolean {
   }
 }
 
+// Updated the getERC20TokenBalance function
 export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: string, chain: any) => {
-  const contract = getContract({
-    client,
-    chain: chain,
-    address: tokenAddress
-  });
-  const { value, decimals } = await getBalance({
-    contract,
-    address: walletAddress as Address,
-  });
+  try {
+    // Skip call for invalid inputs
+    if (!walletAddress || !tokenAddress || !chain) {
+      console.warn("Missing parameters for getERC20TokenBalance:", { walletAddress, tokenAddress, chain });
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
 
-  return {
-    balance: value,
-    decimals
+    // Don't try to get balance for the zero address (represents native token)
+    if (tokenAddress === "0x0000000000000000000000000000000000000000") {
+      console.log("Skipping balance check for native token address, this should be handled separately");
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+
+    // Validate chain before proceeding
+    if (!chain.id) {
+      console.warn("Invalid chain object:", chain);
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+
+    // Verify if the token exists in APPROVED_TOKENS for this chain
+    if (!APPROVED_TOKENS[chain.id]?.some(token => token.address.toLowerCase() === tokenAddress.toLowerCase())) {
+      console.warn(`Token ${tokenAddress} is not in the approved list for chain ${chain.id}`);
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+
+    // Create the contract instance
+    const contract = getContract({
+      client,
+      chain: chain,
+      address: tokenAddress as Address
+    });
+    
+    try {
+      // Get token decimals first to avoid potential read issues
+      let decimals;
+      try {
+        decimals = await readContract({
+          contract,
+          method: "function decimals() view returns (uint8)",
+        });
+      } catch (error) {
+        console.warn("Failed to read token decimals, using default of 18:", error);
+        decimals = 18;
+      }
+
+      // Now get the balance
+      const { value } = await getBalance({
+        contract,
+        address: walletAddress as Address,
+      });
+
+      return {
+        balance: value,
+        decimals
+      };
+    } catch (error) {
+      console.error("Error fetching token balance:", error);
+      
+      // Special handling for "AbiDecodingZeroDataError"
+      if (error instanceof Error) {
+        if (error.name === "AbiDecodingZeroDataError") {
+          console.warn(`Zero data returned from contract ${tokenAddress} on chain ${chain.id}. Contract may not exist at this address on this chain.`);
+        } else if (error.message.includes("execution reverted") || error.message.includes("call revert exception")) {
+          console.warn(`Contract call reverted for token ${tokenAddress} on chain ${chain.id}`);
+        }
+      }
+      
+      // Return a default value when balance fetching fails
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+  } catch (error) {
+    console.error("Error initializing contract:", error);
+    return {
+      balance: 0n,
+      decimals: 18
+    };
   }
 };
 
@@ -473,4 +552,31 @@ export function format(value: bigint, decimals: number) {
 
   const str = Number(toTokens(value, decimals)).toFixed(6);
   return Number(str).toString();
+}
+
+// Format number with suffix M = Million, K = Thousand, B = Billion, T = Trillion, etc.
+export function formatNumberWithSuffix(num: number): string {
+  if (num === null || num === undefined || isNaN(num)) {
+    return "0";
+  }
+  
+  if (num < 1000) {
+    return num.toFixed(2);
+  }
+  
+  const absNum = Math.abs(num);
+  
+  if (absNum >= 1000000000) {
+    return (num / 1000000000).toFixed(2) + 'B';
+  }
+  
+  if (absNum >= 1000000) {
+    return (num / 1000000).toFixed(2) + 'M';
+  }
+  
+  if (absNum >= 1000) {
+    return (num / 1000).toFixed(2) + 'K';
+  }
+  
+  return num.toFixed(2);
 }

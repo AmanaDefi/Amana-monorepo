@@ -3,8 +3,9 @@ import { Address } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import { usePathname, useRouter } from 'next/navigation';
 import Image from "next/image";
-import { formatBalance, getOnlyTokenSymbol } from "@/utils/utils";
+import { formatBalance, getOnlyTokenSymbol, formatNumberWithSuffix } from "@/utils/utils";
 import { useActiveAccount } from "thirdweb/react";
+import LoadingLogo from "./LoadingLogo";
 
 interface VaultsViewProps {
   loading: boolean;
@@ -29,7 +30,7 @@ const VaultsView: React.FC<VaultsViewProps> = ({
   return (
     <div>
       {loading ? (
-        <p>Loading...</p>
+        <LoadingLogo />
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full bg-black text-zinc-100">
@@ -82,7 +83,8 @@ const VaultsView: React.FC<VaultsViewProps> = ({
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap flex flex-col items-center justify-center text-center">
-                    <div className="font-semibold">{Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets).toFixed(2)} {getOnlyTokenSymbol(vault.inputToken.symbol)}</div>
+                    <div className="font-semibold">
+                      {formatNumberWithSuffix(Number(vaultTotalAssets.find((asset) => asset.vaultId === vault.id)?.totalAssets))} {getOnlyTokenSymbol(vault.inputToken.symbol)}</div>
                     {/* <div className="text-sm font-light">$ {Number(vaultTotalAssetsinToken.find((asset) => asset.vaultId === vault.id)?.totalAssetsinToken).toFixed(6)}</div> */}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-center">

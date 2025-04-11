@@ -46,7 +46,9 @@ const VaultsDetailContainer: React.FC<{
 
     const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000]
 
-    useUpdateVaultBalanceAndTotalPerVault(vaultData, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
+    // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
+    useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
+    
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");

@@ -1,6 +1,6 @@
-import React, { HTMLProps } from "react";
+import React, { HTMLProps, useMemo } from "react";
 import { Token, VaultData } from "@/types/types";
-import SelectToken from "@/components/input/SelectToken";
+import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency, formatBalance, getOnlyTokenSymbol, isZetachain } from "@/utils/utils";
 import { useState, useEffect } from "react";
@@ -11,7 +11,8 @@ import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-import { useActiveWalletChain } from "thirdweb/react";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { Chain } from "thirdweb";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -75,9 +76,21 @@ export default function InputTokenWithError({
   conversionOutput: ConversionOutput,
   isSlippageExceedingLimit?: boolean
 } & HTMLProps<HTMLInputElement>): JSX.Element {
-
-
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
+  const { activeChain } = useMultiChain();
+
+  // Function to handle token selection with chain switching
+  const handleTokenSelection = (token: Token, chain: Chain) => {
+    console.log("Selected token:", token.symbol, "on chain:", chain.name);
+    onSelectToken(token);
+  };
+
+  // Determine if token selection should be available
+  const showTokenSelector = useMemo(() => {
+    // Always show token selector if there are tokens available
+    return tokenList && tokenList.length > 0;
+  }, [tokenList]);
+
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       <div className='flex items-center justify-between mb-3'>
@@ -171,8 +184,10 @@ export default function InputTokenWithError({
                 (isDeposit && !isOutput) ?
                   (
                     "$ " + (selectedToken ?
-                      formatCurrency((Number(props.value) * selectedTokenPrice)).toString()
-                      : "0")
+                      // Removed the unnecessary .toString() call since formatCurrency already returns a string
+                      // Changed the default value from "0" to "0.00" to maintain consistent decimal formatting
+                      formatCurrency(Number(props.value || 0) * selectedTokenPrice)
+                      : "0.00")
                   ) :
                   (
                     loadingOutputToken ?
@@ -184,11 +199,12 @@ export default function InputTokenWithError({
               }
             </p>
             <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
-              {tokenList.length > 1 ? (
-                <SelectToken
-                  selectedToken={selectedToken!}
-                  options={tokenList}
-                  selectToken={onSelectToken}
+              {showTokenSelector ? (
+                <ChainTokenSelector
+                  selectedToken={selectedToken}
+                  onSelectToken={handleTokenSelection}
+                  className="w-full justify-end"
+                  vaultData={vaultData}
                 />
               ) : (
                 <div className="flex items-center">
