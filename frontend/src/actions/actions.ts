@@ -1074,6 +1074,8 @@ export const getAmountOutFromSwap = async (
   console.log("inputTokenId: ", inputTokenId);
   console.log("outputTokenId: ", outputTokenId);
   console.log("userAddress: ", userAddress);
+  console.log("amount: ", amount);
+  console.log("Number(amount): ", Number(amount));
   if (
     typeof inputTokenId !== "number" ||
     typeof outputTokenId !== "number" ||
@@ -1085,8 +1087,8 @@ export const getAmountOutFromSwap = async (
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
-    slippage: 50,
-    amount: Number(amount),
+    slippage: 500,
+    amount: Number(10), // TO DO this is just for testing
     sender: userAddress,
     recipient: userAddress
   };
