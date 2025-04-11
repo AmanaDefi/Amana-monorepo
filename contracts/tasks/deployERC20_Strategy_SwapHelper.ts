@@ -24,7 +24,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const receiptToken = args.receiptToken;
   const gateway = args.gateway;
   const withdrawHelper = args.withdrawHelper;
-  const swapHelper = args.swapHelper;
+  const swapHelper = args.swapHelperStrategyChain;
   if (!swapHelper) {
     throw new Error("🚨 SwapHelper address is required");
   }
@@ -91,6 +91,6 @@ task("deploy-erc20-strategy-swaphelper", "Deploy a Strategy contract", main)
   .addParam("receiptToken", "The address of the receipt token")
   .addParam("gateway", "The address of the gateway contract")
   .addParam("withdrawHelper", "The address of the WithdrawHelper contract")
-  .addParam("swapHelper", "The address of the SwapHelper contract");
+  .addParam("swapHelperStrategyChain", "The address of the SwapHelper contract");
 
 export default {};

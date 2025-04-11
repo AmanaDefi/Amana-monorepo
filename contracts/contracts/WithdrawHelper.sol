@@ -151,7 +151,7 @@ contract WithdrawHelper {
             callOnRevert: true,
             abortAddress: msg.sender,
             revertMessage: abi.encode(
-                "_returnFundsToUserFailed",
+                "_crossChainInvestFailed",
                 _crossChainTxId,
                 amount,
                 receiver,

@@ -79,7 +79,7 @@ const CHAIN_ICONS: { [chainId: number]: Icon } = {
     width: 32,
     height: 32,
     format: "png"
-  }, // Arbitrum Goerli Testnet
+  }, // Arbitrum Sepolia Testnet
   43114: {
     url: "/avalanche-avax-logo.png",
     width: 32,
@@ -119,7 +119,7 @@ const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
 const avalancheMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
 const avalancheFujiRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
 const arbitrumMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
-const arbitrumGoerliRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_GOERLI || "";
+const arbitrumSepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_SEPOLIA || "";
 
 export const solanaRpcUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
 export const crossChainTxUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API_TEST || "" : process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API || "";
@@ -242,7 +242,7 @@ const polygonChain = defineChain({
 // Define BSC configuration
 const bscChain = defineChain({
   chainId: CHAIN_ID.bsc, // 97 for BSC Testnet, 56 for BSC Mainnet
-  name: deployEnv === "testnet" ? "BSC Testnet" : "BNB",
+  name: deployEnv === "testnet" ? "BSC Testnet" : "BNB Smart Chain",
   shortName: "bsc",
   chain: "BSC",
   icon: CHAIN_ICONS[97],
@@ -317,12 +317,12 @@ const avalancheChain = defineChain({
 });
 
 const arbitrumChain = defineChain({
-  chainId: CHAIN_ID.arbitrum, // 42161 for Arbitrum One Mainnet, 421613 for Arbitrum Goerli Testnet
-  name: deployEnv === "testnet" ? "Arbitrum Sepolia Testnet" : "Arbitrum",
+  chainId: CHAIN_ID.arbitrum, // 42161 for Arbitrum One Mainnet, 421613 for Arbitrum Sepolia Testnet
+  name: deployEnv === "testnet" ? "Arbitrum Sepolia Testnet" : "Arbitrum One",
   shortName: "arb",
   chain: "Arbitrum",
   icon: CHAIN_ICONS[42161],
-  rpc: [deployEnv === "testnet" ? arbitrumGoerliRpcUrl : arbitrumMainnetRpcUrl],
+  rpc: [deployEnv === "testnet" ? arbitrumSepoliaRpcUrl : arbitrumMainnetRpcUrl],
   nativeCurrency: {
     name: "Ether",
     symbol: "ETH",
@@ -372,7 +372,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   // ],
   1: [
     {
-      symbol: "ETH",
+      symbol: "ETH (ETH)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -382,7 +382,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (ETH)",
       address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       decimals: 6,
       imgURL: "/USDC.png",
@@ -392,7 +392,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a"],
     },
     {
-      symbol: "USDT",
+      symbol: "USDT (ETH)",
       address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
       decimals: 6,
       imgURL: "/usdt.png",
@@ -404,7 +404,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   11155111: [
     {
-      symbol: "ETH",
+      symbol: "ETH (ETH)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -414,7 +414,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (ETH)",
       address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
       decimals: 6,
       imgURL: "/USDC.png",
@@ -426,7 +426,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   8453: [
     {
-      symbol: "ETH",
+        symbol: "ETH (BASE)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -436,7 +436,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x1de70f3e971B62A0707dA18100392af14f7fB677"]
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (BASE)",
       address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       decimals: 6,
       imgURL: "/USDC.png",
@@ -448,7 +448,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   84532: [
     {
-      symbol: "ETH",
+      symbol: "ETH (BASE)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -470,7 +470,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (POL)",
       address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
       decimals: 6,
       imgURL: "/USDC.png",
@@ -480,7 +480,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xfC9201f4116aE6b054722E10b98D904829b469c3"],
     },
     {
-      symbol: "USDT",
+      symbol: "USDT (POL)",
       address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
       decimals: 6,
       imgURL: "/usdt.png",
@@ -514,7 +514,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (BNB)",
       address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
       decimals: 18,
       imgURL: "/USDC.png",
@@ -524,7 +524,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
     },
     {
-      symbol: "USDT",
+      symbol: "USDT (BNB)",
       address: "0x55d398326f99059fF775485246999027B3197955",
       decimals: 18,
       imgURL: "/usdt.png",
@@ -546,7 +546,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (BNB)",
       address: "0x64544969ed7EBf5f083679233325356EbE738930",
       decimals: 18,
       imgURL: "/USDC.png",
@@ -568,7 +568,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x4bC32034caCcc9B7e02536945eDbC286bACbA073"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (SOL)",
       address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
       decimals: 6,
       imgURL: "/USDC.png",
@@ -578,7 +578,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x8344d6f84d26f998fa070BbEA6D2E15E359e2641"],
     },
     {
-      symbol: "USDT",
+      symbol: "USDT (SOL)",
       address: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
       decimals: 6,
       imgURL: "/USDT.png",
@@ -588,7 +588,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xEe9CC614D03e7Dbe994b514079f4914a605B4719"],
     },
     {
-      symbol: "CBBTC",
+      symbol: "CBBTC (SOL)",
       address: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
       decimals: 8,
       imgURL: "/cbbtc.png",
@@ -600,7 +600,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   42161: [
     {
-      symbol: "ETH",
+      symbol: "ETH (ARB)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -610,7 +610,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xA614Aebf7924A3Eb4D066aDCA5595E4980407f1d"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (ARB)",
       address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       decimals: 6,
       imgURL: "/USDC.png",
@@ -620,7 +620,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0327f0660525b15Cdb8f1f5FBF0dD7Cd5Ba182aD"],
     },
     {
-      symbol: "USDT",
+      symbol: "USDT (ARB)",
       address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
       decimals: 6,
       imgURL: "/usdt.png",
@@ -642,7 +642,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xE8d7796535F1cd63F0fe8D631E68eACe6839869B"],
     },
     {
-      symbol: "USDC",
+      symbol: "USDC (AVAX)",
       address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
       decimals: 6,
       imgURL: "/USDC.png",
@@ -652,7 +652,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xa52Ad01A1d62b408fFe06C2467439251da61E4a9"],
     },
     {
-      symbol: "USDT",
+        symbol: "USDT (AVAX)",
       address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
       decimals: 6,
       imgURL: "/usdt.png",
@@ -675,6 +675,7 @@ export const ACCOUNT_ABSTRACTION_CONFIG = {
 
 export const HERMES_URL = "https://hermes.pyth.network/";
 export const PRICE_IDS: { [key: string]: string } = {
+  // Base tokens
   "ETH": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
   "BNB": "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
   "POL": "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
@@ -683,6 +684,23 @@ export const PRICE_IDS: { [key: string]: string } = {
   "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
   "SOL": "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
   "COMP": "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
+  
+  // Chain-specific tokens - using the "(CHAIN)" format
+  "ETH (BASE)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  "USDC (BASE)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "ETH (ARB)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  "USDC (ARB)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (ARB)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (ETH)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (ETH)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (POL)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (POL)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (BNB)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (BNB)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (SOL)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (SOL)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (AVAX)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (AVAX)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
 };
 
 export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {

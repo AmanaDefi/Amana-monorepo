@@ -23,7 +23,6 @@ import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import { getAmountOutFromSwap, getAssetsFromShares, getPerformanceFee, getSharesFromDeposit } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { showErrorToast } from "@/toasts";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 
 export interface VaultInputsProps {
@@ -121,6 +120,17 @@ export default function VaultInputs({
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const tokenBalance = useMultichainTokenBalance(inputToken);
 
+  // Reset token when chain changes to prevent cross-chain token errors
+  useEffect(() => {
+    // Clear token selection and balance when the active chain changes
+    // This prevents the app from attempting to use a token from the previous chain
+    // which could cause AbiDecodingZeroDataError when fetching token balances
+    if (activeChain?.id) {
+      setInputToken(undefined);
+      setInputBalance(EMPTY_BALANCE);
+    }
+  }, [activeChain?.id]);
+
   // Watch action type change
   useEffect(() => {
     if (inputToken) {
@@ -159,23 +169,43 @@ export default function VaultInputs({
     fetchData();
   }, [inputBalance, inputToken?.address, activeChain?.id, inputToken, isDeposit, vaultData, activeChain, walletAddress])
 
-  function handleTokenSelect(selectedToken: Token): void {
+  // Replace the handleTokenSelect function with this improved version
+  const handleTokenSelect = (selectedToken: Token) => {
+    console.log("Selected token:", selectedToken);
+    
+    // If the selected token is the vault token but from a different chain,
+    // we should still use it directly without trying to find an equivalent
+    if (selectedToken.address === vaultData.inputToken.address) {
+      console.log("Selected vault token directly");
+      setInputToken(selectedToken);
+      setAllowInput(true);
+      return;
+    }
+    
+    // Otherwise, use the token as selected
     setInputToken(selectedToken);
     setAllowInput(true);
-  }
+  };
 
   async function switchTokens() {
     setInputBalance(EMPTY_BALANCE);
-    if (inputToken && activeChain) {
-      if (isDeposit) {
-        // Switch to Withdraw
-        setIsDeposit(false);
+    
+    // Remove condition requiring inputToken to switch between deposit and withdrawal modes
+    if (isDeposit) {
+      // Switch to Withdraw
+      setIsDeposit(false);
+      
+      // Only attempt to set steps if we have a token and chain
+      if (inputToken && activeChain) {
         const newAction = SmartVaultActionType.Withdrawal;
         setSteps(await selectActions(newAction, vaultData, activeChain, walletAddress as any, inputBalance, inputToken));
-
-      } else {
-        // Switch to Deposit
-        setIsDeposit(true);
+      }
+    } else {
+      // Switch to Deposit
+      setIsDeposit(true);
+      
+      // Only attempt to set steps if we have a token and chain
+      if (inputToken && activeChain) {
         const newAction = SmartVaultActionType.Deposit;
         setSteps(await selectActions(newAction, vaultData, activeChain, walletAddress as any, inputBalance, inputToken));
       }
@@ -223,11 +253,35 @@ export default function VaultInputs({
   }, [handleChangeInput, inputToken, tokenBalance, isDeposit, vaultTotalAssetinToken])
 
   const tokenList = useMemo(() => {
-    return activeChain?.id === 7001 || activeChain?.id === 7000
-      ? vaultData.inputToken ? [vaultData.inputToken] : []  // Ensure vault token is defined
-      : (APPROVED_TOKENS[activeChain?.id as number] ?? []).filter((token): token is Token => token !== undefined) // Ensure array is valid
-
-  }, [activeChain?.id, vaultData.inputToken])
+    let tokens: Token[] = [];
+    
+    if (activeChain?.id === 7001 || activeChain?.id === 7000) {
+      // For ZetaChain, include both the vault's input token AND the approved tokens
+      tokens = [...(APPROVED_TOKENS[activeChain.id] || [])];
+      
+      // Check if the vault's input token is already in the list
+      const vaultTokenExists = tokens.some(token => 
+        token.address === vaultData.inputToken.address
+      );
+      
+      // Add vault token if it doesn't already exist in the list
+      if (!vaultTokenExists && vaultData.inputToken) {
+        tokens.push(vaultData.inputToken);
+      }
+    } else {
+      // For other chains, use approved tokens as before
+      tokens = (APPROVED_TOKENS[activeChain?.id as number] ?? [])
+        .filter((token): token is Token => token !== undefined);
+    }
+    
+    // Make sure we always have at least one token in the list
+    // This ensures the token selector is always visible
+    if (tokens.length === 0 && vaultData.inputToken) {
+      tokens.push(vaultData.inputToken);
+    }
+    
+    return tokens;
+  }, [activeChain?.id, vaultData.inputToken]);
 
   const getWithdrawOutputAmount = useCallback(async (inputAmountValue: bigint) => {
     console.log('Double Box - Starting getWithdrawOutputAmount:', {
@@ -437,6 +491,20 @@ export default function VaultInputs({
     else getWithdrawOutputAmount(debouncedInputBalance.value)
   }, [debouncedInputBalance, inputToken]);
 
+  // Create an adapter function for InputTokenWithError in Deposit mode
+  const handleDepositTokenSelect = (token: Token) => {
+    // Call the token selection handler for deposit
+    handleTokenSelect(token);
+  };
+
+  // Create an adapter function for InputTokenWithError in Withdraw mode
+  const handleWithdrawTokenSelect = (token: Token) => {
+    // In withdraw mode, we still want to update the input token
+    // This ensures proper token selection in both modes
+    console.log("Selected withdraw token:", token);
+    setInputToken(token);
+  };
+
   return (
     <>
       <TabSelector
@@ -447,7 +515,7 @@ export default function VaultInputs({
       />
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
-        onSelectToken={isDeposit ? handleTokenSelect : () => { }}
+        onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={handleMaxClick}
@@ -474,7 +542,7 @@ export default function VaultInputs({
       </div>
       <InputTokenWithError
         captionText={"Output amount"}
-        onSelectToken={isDeposit ? () => { } : handleTokenSelect}
+        onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={() => { }}
@@ -484,7 +552,6 @@ export default function VaultInputs({
         inputTokenbalance={isDeposit ? vaultTotalAssetinToken?.toString() ?? "0" : inputTokenBalance}
         errorMessage={!errorMessage ? outputBoxErrorMessage : ''}
         tokenList={isDeposit ? [] : tokenList}
-
         disabled={false}
         isDeposit={isDeposit}
         userVaultBalance={isDeposit ? vaultTotalAssetinToken?.toString() ?? "0" : userVaultBalance}

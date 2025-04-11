@@ -438,113 +438,6 @@ contract SwapHelperPolygon {
             : (reserve1, reserve0);
     }
 
-    // /**
-    //  * @notice Finds the index of a token in a Curve pool.
-    //  * @param token The token to find in the pool.
-    //  * @param pool The Curve pool address.
-    //  * @return index The token index in the pool.
-    //  */
-    // function getTokenIndex(
-    //     address token,
-    //     address pool
-    // ) public view returns (uint256) {
-    //     // Assume Curve pools have at most 8 tokens
-    //     for (uint256 i = 0; i < 8; i++) {
-    //         try ICurvePool(pool).coins(i) returns (address poolToken) {
-    //             if (poolToken == token) {
-    //                 return i;
-    //             }
-    //         } catch {
-    //             break; // Stop if out of range
-    //         }
-    //     }
-    //     revert("Token not found in Curve pool");
-    // }
-
-    // /**
-    //  * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
-    //  * @param inputToken The token being swapped from.
-    //  * @param outputToken The token being swapped to.
-    //  * @return curvePool The address of the curve pool to use.
-    //  */
-    // function getCurvePool(
-    //     address inputToken,
-    //     address outputToken
-    // ) public view returns (address curvePool, uint256 i, uint256 j) {
-    //     CurvePoolRegistry registry = CurvePoolRegistry(CURVE_POOL_REGISTRY);
-    //     curvePool = registry.getBestPool(inputToken, outputToken);
-    //     // Find token indexes in the pool using getTokenIndex()
-    //     if (curvePool != address(0)) {
-    //         i = getTokenIndex(inputToken, curvePool);
-    //         j = getTokenIndex(outputToken, curvePool);
-    //     } else {
-    //         i = 0;
-    //         j = 0;
-    //     }
-    // }
-
-    // /**
-    //  * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
-    //  * @param inputToken The token being swapped from.
-    //  * @param outputToken The token being swapped to.
-    //  * @param amount The input amount in token units.
-    //  * @return amountOut The expected amount out from the Curve pool.
-    //  */
-    // function getCurveAmountOut(
-    //     address curvePool,
-    //     address inputToken,
-    //     address outputToken,
-    //     uint256 amount
-    // ) public view returns (uint256 amountOut) {
-    //     // Find token indexes in the pool using getTokenIndex()
-    //     uint256 i = getTokenIndex(inputToken, curvePool);
-    //     uint256 j = getTokenIndex(outputToken, curvePool);
-
-    //     // Fetch amount out from Curve pool
-    //     amountOut = ICurvePool(curvePool).get_dy(i, j, amount);
-    // }
-
-    // function approveOrIncreaseAllowance(
-    //     IERC20 token,
-    //     address spender,
-    //     uint256 amount
-    // ) internal {
-    //     uint256 currentAllowance = token.allowance(msg.sender, spender);
-
-    //     if (currentAllowance == 0) {
-    //         // First-time approval
-    //         token.approve(spender, amount);
-    //     } else {
-    //         // Handle USDT-like tokens by forcing reset to zero first
-    //         token.approve(spender, 0); // Reset to zero
-    //         token.approve(spender, amount); // Set new allowance
-    //     }
-    // }
-
-    // function getAmountOutCurveOrUniswap(
-    //     address inputToken,
-    //     address outputToken,
-    //     uint256 amount
-    // ) public view returns (uint256) {
-    //     (address curvePool, , ) = getCurvePool(inputToken, outputToken);
-    //     if (curvePool != address(0)) {
-    //         return
-    //             getCurveAmountOut(curvePool, inputToken, outputToken, amount);
-    //     } else {
-    //         (
-    //             address[] memory path,
-    //             uint24[] memory feeTiers,
-    //             bytes memory encodedPath
-    //         ) = getPathV3(inputToken, outputToken);
-    //         if (encodedPath.length > 0) {
-    //             return getAmountOutV3(amount, path, feeTiers);
-    //         } else {
-    //             path = getPathV2(inputToken, outputToken);
-    //             return getAmountOutV2(amount, path);
-    //         }
-    //     }
-    // }
-
     function swap(
         address inputToken,
         uint256 amount,
@@ -565,15 +458,6 @@ contract SwapHelperPolygon {
             amount,
             slippageBps
         );
-        // (address curvePool, uint256 i, uint256 j) = getCurvePool(
-        //     inputToken,
-        //     outputToken
-        // );
-        // if (curvePool != address(0)) {
-        //     // Approve Curve pool to spend tokens
-        //     IERC20(inputToken).approve(curvePool, amount);
-        //     return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
-        // } else {
         (
             address[] memory path,
             uint24[] memory feeTiers,
