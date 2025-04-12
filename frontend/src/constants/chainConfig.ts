@@ -682,8 +682,7 @@ export const PRICE_IDS: { [key: string]: string } = {
   "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
   "SOL": "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
-<<<<<<< HEAD
-  
+
   // Chain-specific tokens - using the "(CHAIN)" format
   "ETH (BASE)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
   "USDC (BASE)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
@@ -700,8 +699,7 @@ export const PRICE_IDS: { [key: string]: string } = {
   "USDT (SOL)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
   "USDC (AVAX)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   "USDT (AVAX)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
-=======
->>>>>>> 06fa9e6 (Fix: removed Curve and Compound token real time price fetching.)
+
 };
 
 export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
