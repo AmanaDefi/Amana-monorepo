@@ -133,7 +133,7 @@ export default function VaultHeader({
                 Number(
                   vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
                     ?.APY7d
-                ) * 100
+                )
               )
                 ? "0%"
                 : `${(

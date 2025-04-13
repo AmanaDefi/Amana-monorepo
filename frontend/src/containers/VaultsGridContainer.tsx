@@ -7,14 +7,14 @@ import {
   VaultTotalAssets, 
   VaultTotalAssetsinToken 
 } from "../types/types";
-import { DEPRECATED_VAULT_DATA, VAULT_DATA } from "../constants/index";
+import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useActiveAccount } from "thirdweb/react";
-import NewVaultsListGrid from "../components/NewVaultsListGrid";
+import VaultsGrid from "../components/VaultsGrid";
 
 // Zero account for default value
 export const ZERO_ACCOUNT: Account = {
@@ -30,12 +30,12 @@ export const ZERO_ACCOUNT: Account = {
   },
 };
 
-interface NewVaultsGridContainerProps {
+interface VaultsGridContainerProps {
   activeChain?: Chain; // Make activeChain optional
   defaultAccount?: Account; // Optional default account
 }
 
-const NewVaultsGridContainer: React.FC<NewVaultsGridContainerProps> = ({ 
+const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({ 
   activeChain, 
   defaultAccount = ZERO_ACCOUNT 
 }) => {
@@ -46,7 +46,7 @@ const NewVaultsGridContainer: React.FC<NewVaultsGridContainerProps> = ({
   const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
   const pathname = usePathname();
 
-  const vaults: VaultData[] = pathname.includes("old-vaults") ? DEPRECATED_VAULT_DATA : VAULT_DATA;
+  const vaults: VaultData[] = VAULT_DATA;
   const EOAaccount = useActiveAccount() || defaultAccount;
   const { walletAddress } = useMultiChain();
 
@@ -68,9 +68,8 @@ const NewVaultsGridContainer: React.FC<NewVaultsGridContainerProps> = ({
   useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-white text-2xl font-bold mb-6">Explore Vaults</h1>
-      <NewVaultsListGrid
+    <div className="container mx-auto">
+      <VaultsGrid
         loading={loading}
         vaults={vaults}
         vaultAPYs={vaultAPYs}
@@ -82,4 +81,4 @@ const NewVaultsGridContainer: React.FC<NewVaultsGridContainerProps> = ({
   );
 };
 
-export default NewVaultsGridContainer; 
+export default VaultsGridContainer; 

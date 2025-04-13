@@ -12,7 +12,7 @@ import { formatNumberWithSuffix, getOnlyTokenSymbol } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
 
 // Risk levels mapping
-const RISK_LEVELS = {
+const RISK_LEVELS: Record<number, { level: string; color: string }> = {
   1: { level: 'Low', color: 'bg-green-500' },
   2: { level: 'Medium', color: 'bg-yellow-500' },
   3: { level: 'High', color: 'bg-red-500' },
@@ -38,7 +38,7 @@ const calculateCapacityPercentage = (vaultId: string): number => {
   return Math.max(30, decimal);
 };
 
-interface NewVaultsListGridProps {
+interface VaultsGridProps {
   loading: boolean;
   vaults: VaultData[];
   vaultAPYs: VaultAPY[];
@@ -47,7 +47,7 @@ interface NewVaultsListGridProps {
   vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
 }
 
-const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
+const VaultsGrid: React.FC<VaultsGridProps> = ({
   loading,
   vaults,
   vaultAPYs,
@@ -226,7 +226,8 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
           </div>
         </div>
         
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-2">
+          <div className="text-white mr-2 flex items-center">Sort by:</div>
           {['apy', 'tvl', 'risk'].map((option) => (
             <button
               key={option}
@@ -238,9 +239,9 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
                   setSortOrder('desc');
                 }
               }}
-              className={`px-3 py-1 rounded-md text-sm ${
+              className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${
                 sortBy === option
-                  ? 'bg-customNeutral300 text-white'
+                  ? 'bg-gradient-to-r from-[#262830] to-[#06afbc] text-white'
                   : 'bg-customNeutral300 text-white'
               }`}
             >
@@ -307,7 +308,7 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
             >
               {/* Card Header with Chain and Risk */}
               <div className="flex justify-between items-center p-3 bg-customNeutral300 border-b border-customNeutral100">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2  ml-[10px]">
                   <Image
                     src={vault.imgURL || ''}
                     alt={vault.protocol.network}
@@ -315,42 +316,52 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
                     height={24}
                     className="rounded-full"
                   />
-                  <span className="text-white font-medium">{vault.protocol.network}</span>
+                  <div className="flex items-center">
+                    <span className="text-gray-400 md:block hidden">Chain:</span>
+                    <span className="text-white font-medium md:ml-1">{vault.protocol.network}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-white text-xs">Risk:</span>
-                  <div className={`w-3 h-3 rounded-full ${RISK_LEVELS[riskLevel as keyof typeof RISK_LEVELS].color}`}></div>
-                  <span className="text-white text-xs">{RISK_LEVELS[riskLevel as keyof typeof RISK_LEVELS].level}</span>
+                <div className="flex items-center gap-1 mr-[10px]">
+                  <span className="text-gray-400 text-xs">Risk:</span>
+                  <div className={`w-3 h-3 rounded-full ${RISK_LEVELS[riskLevel].color}`}></div>
+                  <span className="text-white text-xs">{RISK_LEVELS[riskLevel].level}</span>
                 </div>
               </div>
               
               {/* Card Content */}
               <div className="p-4">
-                {/* Vault Name and Asset */}
-                <div className="flex items-center gap-2 mb-4">
-                  <Image
-                    src={vault.inputToken.imgURL}
-                    alt={vault.inputToken.symbol}
-                    width={32}
-                    height={32}
-                    className="rounded-full"
-                  />
-                  <div>
-                    <h3 className="text-white font-bold">{vault.name}</h3>
-                    <p className="text-gray-400 text-sm">{getOnlyTokenSymbol(vault.inputToken.symbol)}</p>
-                  </div>
-                </div>
-                
+                <div className='flex md:flex-row flex-col gap-2 justify-between'>
+
                 {/* Protocol with Logo */}
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
                   <Image
                     src={vault.protocol.imgURL}
                     alt={vault.protocol.name}
-                    width={24}
-                    height={24}
+                    width={36}
+                    height={36}
                     className="rounded-full"
                   />
-                  <span className="text-white">{vault.protocol.name}</span>
+                  <div>
+                    <span className="text-gray-400 text-xs">Protocol</span>
+                    <p className="text-white font-medium">{vault.protocol.name}</p>
+                  </div>
+                </div>
+                
+                {/* Vault Name and Asset */}
+                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
+                  <Image
+                    src={vault.inputToken.imgURL}
+                    alt={vault.inputToken.symbol}
+                    width={36}
+                    height={36}
+                    className="rounded-full"
+                  />
+                  <div>
+                    <span className="text-gray-400 text-xs">Lending Pool</span>
+                    <h3 className="text-white font-bold">{vault.name}</h3>
+                    {/* <p className="text-gray-400 text-xs">{getOnlyTokenSymbol(vault.inputToken.symbol)}</p> */}
+                  </div>
+                </div>
                 </div>
                 
                 {/* APY and TVL */}
@@ -471,4 +482,4 @@ const NewVaultsListGrid: React.FC<NewVaultsListGridProps> = ({
   );
 };
 
-export default NewVaultsListGrid; 
+export default VaultsGrid; 

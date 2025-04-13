@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
-import VaultsView from "../components/VaultsView";
+import VaultsGrid from "../components/VaultsGrid";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
@@ -50,7 +50,7 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
   useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
 
   return (
-    <VaultsView
+    <VaultsGrid
       loading={loading}
       vaults={vaults}
       vaultAPYs={vaultAPYs}

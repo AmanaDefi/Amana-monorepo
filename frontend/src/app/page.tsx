@@ -26,15 +26,6 @@ export default function Page() {
       <Note />
       <div className="flex-1 flex flex-col w-full justify-between pb-10">
         <div className="flex-1 p-4 container mx-auto gap-5">
-          <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between">
-            <h1 className="text-white text-2xl lg:text-3xl font-bold">Vaults</h1>
-            <Link 
-              href="/vaults-grid"
-              className="mt-2 md:mt-0 px-4 py-2 text-white bg-customNeutral200 hover:bg-customNeutral100 transition-colors rounded-md text-sm"
-            >
-              Switch to Grid View
-            </Link>
-          </div>
           <VaultsContainer />
         </div>
       </div>
