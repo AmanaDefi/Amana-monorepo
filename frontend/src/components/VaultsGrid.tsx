@@ -20,11 +20,8 @@ const RISK_LEVELS: Record<number, { level: string; color: string }> = {
 
 // Calculate risk level based on protocol (this is just an example, you'd want to use real risk metrics)
 const calculateRiskLevel = (vault: VaultData): number => {
-  // This is a simplified example - in a real app you'd use more complex logic
-  const protocol = vault.protocol.name.toLowerCase();
-  if (protocol.includes('aave')) return 1;
-  if (protocol.includes('compound')) return 2;
-  return 3;
+  // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
+  return 1;
 };
 
 // Generate a deterministic capacity percentage based on vault ID
