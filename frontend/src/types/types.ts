@@ -31,6 +31,7 @@ export interface VaultData {
   symbol: string;
   des?: string;
   imgURL?: string;
+  depositFeePaidFromGasTank: boolean;
   inputToken: Token;
   protocol: {
     name: string;
