@@ -134,9 +134,6 @@ export default function VaultInputs({
     if (inputToken) {
       // Set the inputTokenBalance separately to track balance as a string
       setInputTokenBalance(tokenBalance!.formatted);
-      setInputBalance({
-        ...tokenBalance,
-      })
     }
   }, [tokenBalance, isDeposit]);
 
@@ -501,7 +498,7 @@ export default function VaultInputs({
   };
 
   useEffect(() => {
-    console.log(inputBalance, "HHHHHHHHHHHHHHHHHH")
+    console.log({inputBalance, tokenBalance}, "HHHHHHHHHHHHHHHHHH")
   }, [inputBalance])
 
   return (
