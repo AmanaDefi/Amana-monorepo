@@ -31,6 +31,15 @@ export default function Page() {
 />
       </div>
       <Note />
+      <Image
+  src="/banners/chain-switcher-banner.png"
+  alt="Chain Switcher Banner"
+  width={1728}
+  height={200}
+  style={{ width: '100%', height: 'auto', borderRadius: '12px' }}
+/>
+</div>
+<Note />
       <div className="flex-1 flex flex-col w-full justify-between pb-10">
         <div className="flex-1 p-4 container mx-auto gap-5">
           <VaultsContainer />
