@@ -351,17 +351,14 @@ export default function VaultInputs({
     });
 
     // 2. Fetch gas fee info from the ZRC20 token
-    const vaultContract = getContract({
-      client,
-      chain: SUPPORTED_CHAINS[0],
-      address: vaultData.id as Address,
-    })
-    const depositFeePaidFromGasTank = await readContract({
-      contract: vaultContract,
-      method: "function depositFeePaidFromGasTank() view returns (bool)",
-    });
+
     let gasFeeInVaultAsset = BigInt(0);
-    if (!depositFeePaidFromGasTank) {
+    if (!vaultData.depositFeePaidFromGasTank) {
+      const vaultContract = getContract({
+        client,
+        chain: SUPPORTED_CHAINS[0],
+        address: vaultData.id as Address,
+      })
       const gasLimitForWithdrawAndCall = await readContract({
         contract: vaultContract,
         method: "function gasLimitForWithdrawAndCall() view returns (uint256)",
