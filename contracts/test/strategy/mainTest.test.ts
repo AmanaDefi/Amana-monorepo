@@ -5,7 +5,7 @@ import { strategyConfigs, StrategyTestConfig } from "../config/strategy.config";
 import { deployStrategyFixture, StrategyTestContext } from "./setupStrategyTest";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy } from "../utils";
-import { GATEWAY_ADDRESS, WITHDRAW_HELPER_ADDRESS } from "../config/constants";
+import { GATEWAY_ADDRESS, WITHDRAW_HELPER_ADDRESS, AMANA_VAULT_ADDRESS } from "../config/constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import type { Event } from "ethers";
@@ -42,7 +42,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
       await expect(simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         owner, // put in non gateway signer
         strategy,
@@ -61,7 +61,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
 
       await expect(simulateWithdrawCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         owner,
         strategy,
@@ -141,7 +141,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
       await simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -176,7 +176,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
       await simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -193,7 +193,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const minAmountOut = ethers.BigNumber.from("0");
 
       await simulateWithdrawCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -233,7 +233,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 2: Simulate Deposit
       await simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -265,7 +265,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const minAmountOut = ethers.BigNumber.from("0");
 
       await simulateWithdrawCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -384,7 +384,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const slippage = 10000;
 
       await simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -399,7 +399,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await expect(tx)
         .to.emit(strategy, "TotalUnderlyingAssetsSent")
         .withArgs(
-          config.amanaVaultAddress, // Exact match for vault address
+          AMANA_VAULT_ADDRESS, // Exact match for vault address
           anyValue, // Use `anyValue` placeholder for the deposit amount
           (await ethers.provider.getBlockNumber()), // Expected block number
           (await ethers.provider.getBlock("latest")).timestamp // Expected block timestamp
@@ -497,7 +497,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         .to.emit(gatewayEVM, "Called") // Replace with the actual event name
       // .withArgs(
       //   strategy.address,       // From address
-      //   config.amanaVaultAddress,    // Destination vault address
+      //   AMANA_VAULT_ADDRESS,    // Destination vault address
       //   payload,                // The encoded outgoingMessage
       //   revertOptions           // The constructed revertOptions
       // );
@@ -594,7 +594,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         .to.emit(gatewayEVM, "DepositedAndCalled") // Replace with the actual event name
       // .withArgs(
       //   strategy.address,       // From address
-      //   config.amanaVaultAddress,    // Destination vault address
+      //   AMANA_VAULT_ADDRESS,    // Destination vault address
       //   amount,             // Amount to be deposited
       //   config.inputTokenAddress, // ZRC20 token address
       //   payload,                // The encoded outgoingMessage
@@ -621,7 +621,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
 
       await simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -636,7 +636,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       const newStrategy = await StrategyFactory.deploy(
         "ERC20_Compound_Strategy",
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         config.inputTokenAddress,
         config.receiptTokenAddress,
         GATEWAY_ADDRESS,
@@ -648,7 +648,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await newStrategy.connect(owner).setOldStrategy(strategy.address);
 
       await expect(simulateSwitchCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         gatewaySigner,
         strategy,
         newStrategy.address
@@ -681,7 +681,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 2: Deposit
       await simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,
@@ -740,7 +740,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 2: Deposit
       await simulateDepositCallFromVaultToStrategy(
-        config.amanaVaultAddress,
+        AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
         gatewaySigner,
         strategy,

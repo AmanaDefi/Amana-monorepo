@@ -3,8 +3,7 @@ import { ethers, network } from "hardhat";
 import { Signer } from "ethers";
 import { StrategyTestConfig } from "../config/strategy.config";
 import { IERC20 } from "../../typechain";
-import { GATEWAY_ADDRESS, WITHDRAW_HELPER_ADDRESS } from "../config/constants";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { GATEWAY_ADDRESS, WITHDRAW_HELPER_ADDRESS, AMANA_VAULT_ADDRESS } from "../config/constants";
 
 export interface StrategyTestContext {
   owner: Signer;
@@ -25,7 +24,6 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     inputTokenAddress,
     receiptTokenAddress,
     rewardsContractAddress,
-    amanaVaultAddress,
     strategyContractName,
     receiptTokenContractName,
     swapHelperContractName,
@@ -63,7 +61,7 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
   const StrategyFactory = await ethers.getContractFactory(strategyContractName);
   const strategy = await StrategyFactory.deploy(
     config.name,
-    amanaVaultAddress,
+    AMANA_VAULT_ADDRESS,
     inputTokenAddress,
     receiptTokenAddress,
     GATEWAY_ADDRESS,

@@ -9,14 +9,10 @@ export interface StrategyTestConfig {
   rewardsContractName?: string;
   forkBlock: number;
   rpcUrl: string;
-  amanaVaultAddress: string;
   inputTokenAddress: string;
   receiptTokenAddress: string;
   rewardsContractAddress?: string;
   rewardsTokenAddress?: string;
-  zrc20Address: string;
-  slippage: number;
-  decimals: number;
   originChainId: number;
   withdrawZRC20?: string;
 }
@@ -30,16 +26,11 @@ export const strategyConfigs: StrategyTestConfig[] = [
     rewardsContractName: "ICometRewards",
     forkBlock: 70004444,
     rpcUrl: "https://137.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c",
-    amanaVaultAddress: "0xf3949C89b42Ba9d4aC8d3fD0e2d6efec3A63c17B",
     inputTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
     receiptTokenAddress: "0xaeB318360f27748Acb200CE616E389A6C9409a07",
     rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
     rewardsTokenAddress: "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
-    zrc20Address: "0x0000000000000000000000000000000000000000",
-    slippage: 10000,
-    decimals: 6,
     originChainId: 8453,
     withdrawZRC20: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-
   }
 ];
