@@ -1038,7 +1038,6 @@ export const getBeamTokenId = async (
 ): Promise<number | null> => {
   try {
     const response = await api.functional.api.currency.partners.getPartners(beamConnection, "7000"); // hardcoded for ZC
-    console.log("response: ", response);
 
     const data = response.data as {
       data: { address: string; id: number }[];
@@ -1047,7 +1046,6 @@ export const getBeamTokenId = async (
     const token = data.data.find(
       (t) => t.address.toLowerCase() === tokenAddress.toLowerCase()
     );
-
     return token?.id ?? null;
   } catch (err) {
     console.error("Failed to fetch token ID:", err);
@@ -1070,20 +1068,19 @@ export const getAmountOutFromSwap = async (
   const destinationChainId = 7000;
   const inputTokenAddress = inputToken.address;
   const outputTokenAddress = outputToken.address;
-  console.log("inputTokenAddress: ", inputTokenAddress);
-  console.log("outputTokenAddress: ", outputTokenAddress);
 
   // Step 1: Get Beam token IDs
   const [inputTokenId, outputTokenId] = await Promise.all([
     getBeamTokenId(inputTokenAddress),
     getBeamTokenId(outputTokenAddress),
   ]);
-  console.log("Number(amount): ", Number(amount));
+
+
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
     slippage: 500,
-    amount: Number(amount / BigInt(10 ** inputToken.decimals)),
+    amount: Number(amount) / 10 ** inputToken.decimals,
     sender: userAddress,
     recipient: userAddress
   };
@@ -1092,51 +1089,48 @@ export const getAmountOutFromSwap = async (
     try {
       console.log("🚀 Getting quote from Beam API...");
       const beamQuote = await swap.native.getSwapData(beamConnection, swapDetails);
+
       if (!beamQuote.success) {
-        console.error("Beam api is down (service unavailable)");
-        return BigInt(0);
-      }
-      //if the status is 200 all requests are wrapped in a data object
-      if (!beamQuote.data.status) {
-        console.error(beamQuote.data.message);
-        return BigInt(0);
-      }
-      //quote returned is human readable, not wei
-      //we can add the raw values if needed
-      const quoteAmount = beamQuote.data.data.expectedAmountOut;
-      //also available is: beamQuote.data.data.minAmountOut
-      console.log("Beam quote amount:", quoteAmount);
-      if (quoteAmount > 0) {
-        console.log("✅ Beam quote found");
-        return BigInt((quoteAmount * 10 ** outputToken.decimals).toFixed(0));
-      }
+        console.warn("⚠️ Beam quote unsuccessful, falling back to Eddy");
+      } else if (!beamQuote.data || !beamQuote.data.status || !beamQuote.data.data) {
+        console.warn("⚠️ Beam quote returned invalid structure:", beamQuote.data?.message || "Unknown error");
+      } else {
+        const quoteAmount = beamQuote.data.data.expectedAmountOut;
 
-      console.warn("⚠️ Beam quote returned 0 or no data");
-    } catch (e) {
-      console.warn("⚠️ Beam quote failed, falling back to Eddy:", e);
+        if (quoteAmount > 0) {
+          console.log("✅ Beam quote found");
+          const quoteAmountRaw = (quoteAmount * 10 ** outputToken.decimals).toFixed(0);
+          return BigInt(quoteAmountRaw);
+        }
+
+        console.warn("⚠️ Beam quote returned zero amount");
+      }
+    } catch (e: any) {
+      console.warn("⚠️ Beam quote threw error, falling back to Eddy:", e.message || e);
     }
-  } else {
-    console.warn("❌ Could not find Beam token IDs for both tokens");
-  }
 
-  // Step 3: Fallback to Eddy
-  try {
-    console.log("🌐 Trying Eddy as fallback...");
-    const eddyQuote = await sdk.bridge.getQuoteForBridge({
-      inputTokenAddress: inputTokenAddress,
-      outputTokenAddress: outputTokenAddress,
-      sourceChainId: sourceChainId,
-      destinationChainId: destinationChainId,
-      amount: amount.toString(),
-      slippage: 0.5,
-    });
+    // Step 3: Fallback to Eddy
+    try {
+      console.log("🌐 Trying Eddy as fallback...");
+      const eddyQuote = await sdk.bridge.getQuoteForBridge({
+        inputTokenAddress: inputToken.address,
+        outputTokenAddress: outputToken.address,
+        sourceChainId: sourceChainId,
+        destinationChainId: destinationChainId,
+        amount: amount.toString(),
+        slippage: 0.5,
+      });
 
-    console.log("✅ Eddy quote found");
-    return BigInt(eddyQuote.quoteAmount);
-  } catch (e) {
-    console.error("❌ Eddy quote failed:", e);
-    return BigInt(0);
+      console.log("✅ Eddy quote found");
+      return BigInt(eddyQuote.quoteAmount);
+    } catch (e) {
+      console.error("❌ Eddy quote failed:", e);
+      return BigInt(0);
+    }
   }
+  // 🛠️ Final catch-all return
+  console.warn("❌ Could not get Beam token IDs or all fallback methods failed");
+  return BigInt(0);
 };
 
 export const getSharesFromDeposit = async (amount: bigint, vaultData: VaultData) => {
