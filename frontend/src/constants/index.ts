@@ -459,7 +459,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   // },
 ];
 
-// const TESTNET_VAULT_DATA: VaultData[] = [
+const TESTNET_VAULT_DATA: VaultData[] = [
 //   {
 //     id: "0x237B655eB18823C78042Da4CB366BA8093efDe04", // Base Sepolia ETH Vault
 //     name: "AaveV3 ETH",
@@ -586,7 +586,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 //   //     des: "This is a mock strategy for testing purposes."
 //   //   },
 //   // },
-// ];
+];
 
 // Export the appropriate vault data based on DEPLOY_ENV
 export const VAULT_DATA = deployEnv === "testnet" ? TESTNET_VAULT_DATA : MAINNET_VAULT_DATA;
