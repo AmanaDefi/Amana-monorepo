@@ -517,7 +517,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
     {
       symbol: "USDC.BSC",
       address: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
-      decimals: 6,
+      decimals: 18,
       imgURL: TOKEN_LOGO_URLS.USDC,
       price: 1,
       balance: EMPTY_BALANCE,
@@ -535,7 +535,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
     {
       symbol: "USDT.BSC",
       address: "0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F",
-      decimals: 6,
+      decimals: 18,
       imgURL: TOKEN_LOGO_URLS.USDT,
       price: 1,
       balance: EMPTY_BALANCE,

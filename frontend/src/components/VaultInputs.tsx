@@ -497,10 +497,6 @@ export default function VaultInputs({
     setInputToken(token);
   };
 
-  useEffect(() => {
-    console.log({inputBalance, tokenBalance}, "HHHHHHHHHHHHHHHHHH")
-  }, [inputBalance])
-
   return (
     <>
       <TabSelector
