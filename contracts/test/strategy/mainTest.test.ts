@@ -16,15 +16,14 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
   describe(`${config.name}`, function () {
     let ctx: StrategyTestContext;
 
-    beforeEach(async () => {
-      ctx = await loadFixture(() => deployStrategyFixture(config));
-    });
+    // 👇 Define a named fixture wrapper
+    async function strategyFixture() {
+      return await deployStrategyFixture(config);
+    }
 
-    // 🧠 Destructure useful things for each test case from `ctx`
-    const getCtx = () => {
-      if (!ctx) throw new Error("Test context not initialized");
-      return ctx;
-    };
+    beforeEach(async () => {
+      ctx = await loadFixture(strategyFixture);
+    });
 
     it("should revert if a non-gateway address tries to call onCall", async function () {
       const {
@@ -33,7 +32,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         inputToken,
         strategy,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.utils.parseEther("1");
       const slippage = 10000;
@@ -82,7 +81,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         inputToken,
         strategy,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.utils.parseEther("1");
       const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
@@ -132,7 +131,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         receiptTokenContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.BigNumber.from("1000000");
       const minSharesOut = ethers.BigNumber.from("0");
@@ -167,7 +166,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         receiptTokenContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.BigNumber.from("1000000");
       const minSharesOut = ethers.BigNumber.from("0");
@@ -222,7 +221,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         receiptTokenContract,
         rewardsContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.BigNumber.from("1000000");
       const minSharesOut = ethers.BigNumber.from("0");
@@ -295,7 +294,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         inputToken,
         strategy,
         config
-      } = getCtx();
+      } = ctx;
 
 
       await setTokenBalance(config.inputTokenAddress, strategy.address, ethers.utils.parseEther("1"), 0);
@@ -313,7 +312,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const {
         gatewaySigner,
         strategy
-      } = getCtx();
+      } = ctx;
 
       const revertMessage = ethers.utils.defaultAbiCoder.encode(
         ["string", "bytes32", "uint256", "uint256", "address", "uint256"],
@@ -338,7 +337,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         receiptTokenContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const revertMessage = ethers.utils.defaultAbiCoder.encode(
         ["string", "bytes32", "uint256", "uint256", "address", "uint256"],
@@ -374,7 +373,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         receiptTokenContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.BigNumber.from("1000000");
 
@@ -427,7 +426,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         owner,
         strategy,
         config
-      } = getCtx();
+      } = ctx;
 
       // Mock data for the test
       const userAddress = await owner.getAddress();
@@ -511,7 +510,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         inputToken,
         strategy,
         config
-      } = getCtx();
+      } = ctx;
 
       // Mock data for the test
       const userAddress = await owner.getAddress();
@@ -612,7 +611,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         swapHelper,
         receiptTokenContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.BigNumber.from("1000000");
       const minSharesOut = ethers.BigNumber.from("0");
@@ -670,7 +669,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         rewardsContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.utils.parseUnits("1000000", 6); // USDC has 6 decimals
       const slippage = 10000;
@@ -729,7 +728,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         rewardsContract,
         config
-      } = getCtx();
+      } = ctx;
 
       const depositAmount = ethers.utils.parseUnits("1000000", 6);
       const slippage = 10000;
