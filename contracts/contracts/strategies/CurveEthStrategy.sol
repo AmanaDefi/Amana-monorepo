@@ -8,41 +8,35 @@ import "../interfaces/ICurvePool.sol";
 import "../interfaces/ICurveLiquidityGauge.sol";
 import "../interfaces/ISwapRouter.sol";
 import "../interfaces/IPriceOracle.sol";
+import "../interfaces/ISwapHelper.sol";
 
-// curve pool 0x0f2f4d68308db60d36268a602ef273421a227021
-// liquidity gauge 0x8b859fb47b6377a84b61d3891774de462560742c
-// reward token CRV 0xD533a949740bb3306d119CC777fa900bA034cd52
+// curve pool 0xa4c567c662349BeC3D0fB94C4e7f85bA95E208e4
+// liquidity gauge 0x4e227d29b33B77113F84bcC189a6F886755a1f24
 // input token WETH 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
 
 /// @title ERC20_Curve_Strategy
-/// @notice Strategy contract for depositing USDC into a Curve pool on Ethereum.
+/// @notice Strategy contract for depositing WETH into a Curve pool on Ethereum.
 contract CurveEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
     ICurvePool public immutable receiptToken;
     ICurveLiquidityGauge public immutable gauge;
-    ISwapRouter public immutable uniswapRouter;
+
+    address public swapHelperEthereum;
+
     IWETH public immutable weth;
 
-    uint256 public constant WETH_INDEX = 0; // USDC's index in the Curve pool
-    address public constant REWARD_TOKEN =
+    uint256 public constant WETH_INDEX = 0; // WETH's index in the Curve pool
+    address public constant CRV_ADDRESS =
         0xD533a949740bb3306d119CC777fa900bA034cd52; // CRV token
-    address public constant UNISWAP_ROUTER =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router
-    bytes32 constant crvUsdPriceFeedId =
-        0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
-    bytes32 constant ethUsdPriceFeedId =
-        0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
-    address constant PRICE_ORACLE_ADDRESS =
-        0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f; // on ethereum mainnet
 
     bool public stakingEnabled = false;
-    uint32 public harvestSlippage = 500; // 5% slippage
+    uint16 public harvestSwapSlippage = 500; // 5% slippage
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
     /// @param _amanaVault Address of the Amana vault.
-    /// @param _wethAddress Address of the input token (USDC).
+    /// @param _wethAddress Address of the input token (WETH).
     /// @param _receiptTokenAddress Address of the Curve pool.
     /// @param _gateway Address of the ZetaChain Gateway.
     constructor(
@@ -52,11 +46,12 @@ contract CurveEthStrategy is EthStrategyParent {
         address _liquidityGaugeAddress,
         address _gateway,
         address _wethAddress,
-        address _withdrawHelper
+        address _withdrawHelper,
+        address _swapHelperEthereum
     ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
         receiptToken = ICurvePool(_receiptTokenAddress);
         gauge = ICurveLiquidityGauge(_liquidityGaugeAddress);
-        uniswapRouter = ISwapRouter(UNISWAP_ROUTER);
+        swapHelperEthereum = _swapHelperEthereum;
         weth = IWETH(_wethAddress);
     }
 
@@ -70,8 +65,8 @@ contract CurveEthStrategy is EthStrategyParent {
      * @dev This function allows the owner to update the slippage buffer applied when swapping harvested rewards.
      * @param _slippage The new slippage tolerance in basis points (e.g., 500 for 5%).
      */
-    function setHarvestSlippage(uint32 _slippage) external onlyOwner {
-        harvestSlippage = _slippage;
+    function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
+        harvestSwapSlippage = _slippage;
     }
 
     /**
@@ -103,21 +98,82 @@ contract CurveEthStrategy is EthStrategyParent {
         }
     }
 
-    function fetchCrvEthPrice() public view returns (uint256) {
-        uint256 crvUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-            crvUsdPriceFeedId
+    /**
+     * @notice Swaps COMP for WETH on Uniswap V3 (Polygon)
+     * @param amountIn Amount of COMP to swap
+     * @param slippageBps slippage
+     * @return amountOut The amount of WETH received
+     */
+    function swapCrvForWeth(
+        uint256 amountIn,
+        uint16 slippageBps
+    ) internal returns (uint256 amountOut) {
+        require(amountIn > 0, "Amount must be greater than zero");
+
+        SafeERC20.safeTransfer(
+            IERC20(CRV_ADDRESS),
+            swapHelperEthereum,
+            amountIn
         );
-        uint256 ethUsdPrice = IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(
-            ethUsdPriceFeedId
+        uint16 maxDeadline = uint16(block.timestamp + 1 hours); // Set a deadline for the swap
+
+        amountOut = ISwapHelper(swapHelperEthereum).swap(
+            CRV_ADDRESS,
+            amountIn,
+            address(weth),
+            slippageBps,
+            address(this),
+            maxDeadline,
+            "" // empty bytes param for future-proofing
         );
 
-        require(ethUsdPrice > 0, "Invalid ETH price");
-
-        return (crvUsdPrice * 1e18) / ethUsdPrice;
+        return amountOut;
     }
 
-    /// @notice Deposits USDC into the Curve pool.
-    /// @param amount Amount of USDC to deposit.
+    /// @notice Harvests CRV rewards, swaps them to WETH, and redeposits into the Curve pool.
+    function harvest() public {
+        if (!stakingEnabled) return; // Skip if staking is disabled
+
+        // Step 1: Check if there are claimable CRV rewards
+        uint256 claimableCRV = gauge.claimable_reward(
+            address(this),
+            CRV_ADDRESS
+        );
+
+        if (claimableCRV > 0) {
+            // Claim rewards only if there are claimable rewards
+            gauge.claim_rewards();
+        }
+
+        // Step 2: Check CRV balance after claiming
+        uint256 crvBalance = IERC20(CRV_ADDRESS).balanceOf(address(this));
+        if (crvBalance == 0) {
+            return; // Exit function gracefully if no CRV to swap
+        }
+
+        uint256 wethReceived = swapCrvForWeth(crvBalance, harvestSwapSlippage);
+
+        // Step 5: Reinvest the received WETH back into the Curve pool
+        uint256[] memory amounts = new uint256[](2);
+        amounts[WETH_INDEX] = wethReceived; // Only deposit WETH
+        approveOrIncreaseAllowance(
+            IERC20(weth),
+            address(receiptToken),
+            wethReceived
+        );
+        uint256 shares = receiptToken.add_liquidity(amounts, 0); // TODO add slippage
+        if (stakingEnabled) {
+            approveOrIncreaseAllowance(
+                IERC20(receiptToken),
+                address(gauge),
+                shares
+            );
+            gauge.deposit(shares);
+        }
+    }
+
+    /// @notice Deposits WETH into the Curve pool.
+    /// @param amount Amount of WETH to deposit.
     /// @param minimumOut Minimum LP tokens expected.
     function _depositFundsIntoYieldSource(
         uint256 amount,
@@ -140,77 +196,10 @@ contract CurveEthStrategy is EthStrategyParent {
         }
     }
 
-    /// @notice Harvests CRV rewards, swaps them to WETH, and redeposits into the Curve pool.
-    function harvest(uint256 minUSDCOut) public {
-        if (!stakingEnabled) return; // Skip if staking is disabled
-
-        // Step 1: Check if there are claimable CRV rewards
-        uint256 claimableCRV = gauge.claimable_reward(
-            address(this),
-            REWARD_TOKEN
-        );
-
-        if (claimableCRV > 0) {
-            // Claim rewards only if there are claimable rewards
-            gauge.claim_rewards();
-        }
-
-        // Step 2: Check CRV balance after claiming
-        uint256 crvBalance = IERC20(REWARD_TOKEN).balanceOf(address(this));
-        if (crvBalance == 0) {
-            return; // Exit function gracefully if no CRV to swap
-        }
-
-        // Step 3: Approve Uniswap to spend CRV
-        approveOrIncreaseAllowance(
-            IERC20(REWARD_TOKEN),
-            address(uniswapRouter),
-            crvBalance
-        );
-
-        // Step 4: Swap CRV for USDC on Uniswap V3 (using 0.05% fee tier)
-        address[] memory path = new address[](2);
-        path[0] = REWARD_TOKEN;
-        path[1] = address(weth);
-
-        ISwapRouter.ExactInputSingleParams memory swapParams = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: REWARD_TOKEN,
-                tokenOut: address(weth),
-                fee: 500, // 0.05% pool fee
-                recipient: address(this),
-                deadline: block.timestamp + 60,
-                amountIn: crvBalance,
-                amountOutMinimum: minUSDCOut,
-                sqrtPriceLimitX96: 0
-            });
-
-        uint256 wethReceived = uniswapRouter.exactInputSingle(swapParams);
-        require(wethReceived >= minUSDCOut, "Insufficient USDC from swap");
-
-        // Step 5: Reinvest the received WETH back into the Curve pool
-        uint256[] memory amounts = new uint256[](2);
-        amounts[WETH_INDEX] = wethReceived; // Only deposit USDC
-        approveOrIncreaseAllowance(
-            IERC20(weth),
-            address(receiptToken),
-            wethReceived
-        );
-        uint256 shares = receiptToken.add_liquidity(amounts, 0); // TODO add slippage
-        if (stakingEnabled) {
-            approveOrIncreaseAllowance(
-                IERC20(receiptToken),
-                address(gauge),
-                shares
-            );
-            gauge.deposit(shares);
-        }
-    }
-
     /// @notice Withdraws ETH from the Curve pool.
     /// @param fractionToWithdraw The fraction of shares to withdraw.
-    /// @param minAmountOut The minimum amount of USDC to withdraw.
-    /// @return amountWithdrawn The amount of USDC successfully withdrawn.
+    /// @param minAmountOut The minimum amount of WETH to withdraw.
+    /// @return amountWithdrawn The amount of WETH successfully withdrawn.
     function _withdrawFundsFromYieldSource(
         uint256 fractionToWithdraw,
         uint256 minAmountOut
@@ -219,16 +208,7 @@ contract CurveEthStrategy is EthStrategyParent {
             fractionToWithdraw
         );
         if (stakingEnabled) {
-            uint256 crvPrice = fetchCrvUsdPrice(); // CRV/USD price (1e18 precision)
-            uint256 ethPrice = fetchEthUsdPrice(); // ETH/USD price (1e18 precision)
-            uint256 crvBalance = IERC20(REWARD_TOKEN).balanceOf(address(this));
-
-            // Convert CRV to ETH
-            uint256 minWethOut = (crvBalance *
-                crvPrice *
-                (10000 - harvestSlippage)) / (10000 * ethPrice * 1e18); // Apply 5% slippage buffer
-
-            harvest(minWethOut);
+            harvest();
             gauge.withdraw(sharesToWithdraw);
         }
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
@@ -272,14 +252,6 @@ contract CurveEthStrategy is EthStrategyParent {
         );
     }
 
-    function fetchCrvUsdPrice() public view returns (uint256) {
-        return IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(crvUsdPriceFeedId);
-    }
-
-    function fetchEthUsdPrice() public view returns (uint256) {
-        return IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(ethUsdPriceFeedId);
-    }
-
     /// @notice Returns the total underlying assets held in the Curve pool, including staked LP tokens.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 lpTokensHeld = receiptToken.balanceOf(address(this)); // Unstaked LP tokens
@@ -307,17 +279,17 @@ contract CurveEthStrategy is EthStrategyParent {
         return withdrawShareAmount;
     }
 
-    /// @notice Converts an asset amount (USDC) to Curve LP token shares.
+    /// @notice Converts an asset amount (WETH) to Curve LP token shares.
     function convertToShares(
         uint256 assetAmount
     ) public view override returns (uint256) {
         uint256[] memory amounts = new uint256[](2);
-        amounts[WETH_INDEX] = assetAmount; // Only withdraw USDC
+        amounts[WETH_INDEX] = assetAmount; // Only withdraw WETH
         uint256 shares = receiptToken.calc_token_amount(amounts, false);
         return shares;
     }
 
-    /// @notice Converts Curve LP token shares to an asset amount (USDC).
+    /// @notice Converts Curve LP token shares to an asset amount (WETH).
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256) {
@@ -329,7 +301,7 @@ contract CurveEthStrategy is EthStrategyParent {
     }
 
     function checkRewards() public view returns (uint256) {
-        uint256 claimable = gauge.claimable_reward(msg.sender, REWARD_TOKEN);
+        uint256 claimable = gauge.claimable_reward(msg.sender, CRV_ADDRESS);
         return claimable;
     }
 }
