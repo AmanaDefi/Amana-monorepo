@@ -370,6 +370,17 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   //   },
 
   // ],
+  7000: [
+    {
+      symbol: "USDC (BASE)",
+      address: "0x96152E6180E085FA57c7708e18AF8F05e37B479D",
+      decimals: 18,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    }
+  ],
   1: [
     {
       symbol: "ETH (ETH)",
@@ -426,7 +437,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   8453: [
     {
-        symbol: "ETH (BASE)",
+      symbol: "ETH (BASE)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: "/ETH.png",
@@ -652,7 +663,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xa52Ad01A1d62b408fFe06C2467439251da61E4a9"],
     },
     {
-        symbol: "USDT (AVAX)",
+      symbol: "USDT (AVAX)",
       address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
       decimals: 6,
       imgURL: "/usdt.png",
@@ -684,7 +695,7 @@ export const PRICE_IDS: { [key: string]: string } = {
   "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
   "SOL": "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
   "COMP": "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
-  
+
   // Chain-specific tokens - using the "(CHAIN)" format
   "ETH (BASE)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
   "USDC (BASE)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
