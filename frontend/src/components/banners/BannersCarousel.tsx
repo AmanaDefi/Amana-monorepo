@@ -5,6 +5,8 @@ import Autoplay from 'embla-carousel-autoplay'
 import {MaximizeEarningsBanner} from "@/components/banners/MaximizeEarningsBanner";
 import {UnderAudit2Banner} from "@/components/banners/UnderAudit2Banner";
 import {EffortlessStakingBanner} from "@/components/banners/EffortlessStakingBanner";
+import {LeaderboardBanner} from "@/components/banners/LeaderboardBanner";
+import {ChainSwitcherBanner} from "@/components/banners/ChainSwitcherBanner";
 
 export function BannersCarousel() {
     const [emblaRef] = useEmblaCarousel({
@@ -31,6 +33,10 @@ export function BannersCarousel() {
                 </div>
                 <div className="embla__slide">
                     <UnderAudit2Banner/>
+              <div className="embla__slide">
+                    <LeaderboardBanner/>
+                 <div className="embla__slide">
+                    <ChainSwitcherBanner/>
                 </div>
             </div>
         </div>

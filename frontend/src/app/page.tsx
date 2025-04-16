@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image"
 import React from "react";
 import VaultsContainer from "../containers/VaultsContainer";
 import { useActiveAccount } from "thirdweb/react";
@@ -22,8 +22,24 @@ export default function Page() {
       </div>
       <div className='pb-10 pt-5 lg:pb-14 lg:pt-10'>
         <BannersCarousel />
+        <Image
+  src="/banners/LeaderboardBanner.png"
+  alt="Leaderboard Banner"
+  width={1728}
+  height={200}
+  style={{ width: '100%', height: 'auto' }}
+/>
       </div>
       <Note />
+      <Image
+  src="/banners/chain-switcher-banner.png"
+  alt="Chain Switcher Banner"
+  width={1728}
+  height={200}
+  style={{ width: '100%', height: 'auto', borderRadius: '12px' }}
+/>
+</div>
+<Note />
       <div className="flex-1 flex flex-col w-full justify-between pb-10">
         <div className="flex-1 p-4 container mx-auto gap-5">
           <VaultsContainer />
