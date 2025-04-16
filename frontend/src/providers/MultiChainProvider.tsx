@@ -144,14 +144,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     chain: chain,
     address: userAddress,
     client,
-  });
+  }, { refetchInterval: 2000 });
 
   const evmBalance: Balance = data
-  ? {
+    ? {
       value: data.value || 0n,
       formatted: format(data.value, data.decimals),
     }
-  : EMPTY_BALANCE;
+    : EMPTY_BALANCE;
 
 
   useEffect(() => {
@@ -170,7 +170,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const switchToChain = async (chain: Chain) => {
     console.log(`Switching to chain: ${chain.id} (${chain.name})`);
     console.log(`Current chain: ${activeChain?.id} (${activeChain?.name})`);
-    
+
     try {
       if (chain.id === CHAIN_ID.solana) {
         setSelectedChain("solana");
@@ -184,27 +184,27 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           try {
             // This will prompt the user's wallet to switch chains
             await wallet.switchChain(chain);
-            
+
             // Set the chain type first
             setSelectedChain("evm");
-            
+
             // Then update the active chain
             setActiveChain(chain);
-            
+
             // Update our ref immediately (won't be affected by closures)
             latestChainRef.current = chain.id;
-            
+
             // Return a promise that resolves when the chain is actually switched
             return new Promise<void>((resolve, reject) => {
               // Keep track of our own checking
               let checkAttempts = 0;
               const maxAttempts = 100; // 10 seconds at 100ms intervals
-              
+
               const checkChain = setInterval(() => {
                 checkAttempts++;
                 // Use the chain from thirdweb directly to verify the wallet's actual chain
                 console.log(`Checking chain switch: Wallet chain is ${chain?.id}, our ref is ${latestChainRef.current}`);
-                
+
                 // Check BOTH the ref (our tracked value) and the thirdweb chain value
                 if (latestChainRef.current === chain.id) {
                   console.log(`Chain switch successful: Now on chain ${chain.id}`);

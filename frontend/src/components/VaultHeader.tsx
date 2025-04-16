@@ -55,7 +55,7 @@ export default function VaultHeader({
     setdata1(formatBalance(Number(userVaultBalance)));
   }, [userVaultBalance]);
 
-  const walletTokenBalance = useMultichainTokenBalance(inputToken);
+  const { balance: walletTokenBalance } = useMultichainTokenBalance(inputToken);
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);
@@ -122,7 +122,9 @@ export default function VaultHeader({
             id="wallet"
             label="Your Wallet"
             value={`${walletTokenBalance.formatted} ${symbol}`}
-            secondaryValue={`$ ${formatCurrency(Number(walletTokenBalance.formatted) * price)}`}
+            secondaryValue={`$ ${formatCurrency(
+              Number(walletTokenBalance.formatted) * price
+            )}`}
             tooltip="Value of deposit assets held in your wallet"
           />
           <LargeCardStat
