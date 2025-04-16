@@ -9,7 +9,7 @@ import "../interfaces/ISwapHelper.sol";
 import "../interfaces/ICometRewards.sol";
 
 // Polygon USDT receiptToken: 0xaeB318360f27748Acb200CE616E389A6C9409a07
-// Polygon COMP token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
+// Polygon rewardsTokenAddress token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
 // Polygon Rewards contract: 0x45939657d1CA34A8FA39A924B71D28Fe8431e581
 // Polygon USDT input token:
 
@@ -22,40 +22,36 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ICompoundVault public immutable receiptToken;
     ICometRewards public immutable cometRewardsContract;
 
-    address public swapHelperPolygon;
+    address public swapHelper;
     uint16 harvestSwapSlippage = 500; // 1% slippage
-    address public constant COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c; // COMP on Polygon
-    address public constant COMET_REWARDS =
-        0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
-
-    event RewardsHarvested(
-        uint256 rewardsClaimed,
-        uint256 rewardsSwapped,
-        uint256 usdcReinvested
-    );
+    address public rewardsTokenAddress;
+    address public rewardsContractAddress;
 
     /// @notice Initializes the strategy contract.
     constructor(
         string memory _name,
         address _amanaVault,
-        address _inputTokenAddress,
-        address _receiptTokenAddress,
-        address _gateway,
         address _withdrawHelper,
-        address _swapHelperPolygon
+        address _swapHelper,
+        address _receiptTokenAddress,
+        address _inputTokenAddress,
+        address _rewardsContractAddress,
+        address _rewardsTokenAddress,
+        uint256
     )
-        StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
+        StrategyParent(_name, _amanaVault, GATEWAY_ADDRESS, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
+        swapHelper = _swapHelper;
         receiptToken = ICompoundVault(_receiptTokenAddress);
-        cometRewardsContract = ICometRewards(COMET_REWARDS);
-        swapHelperPolygon = _swapHelperPolygon;
+        cometRewardsContract = ICometRewards(_rewardsContractAddress);
+        rewardsTokenAddress = _rewardsTokenAddress;
     }
 
     function updateSwapHelperPolygon(
         address _swapHelperPolygon
     ) external onlyOwner {
-        swapHelperPolygon = _swapHelperPolygon;
+        swapHelper = _swapHelperPolygon;
     }
 
     function setHarvestSwapSlippage(
@@ -65,19 +61,28 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         harvestSwapSlippage = _harvestSwapSlippage;
     }
 
-    /// @notice Claims COMP rewards from Compound
+    /// @notice Claims rewards from Compound
     function claimRewards() public returns (uint256) {
+        uint256 compBalanceBefore = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
         cometRewardsContract.claim(address(receiptToken), address(this), true);
 
-        uint256 compBalance = IERC20(COMP).balanceOf(address(this));
-        require(compBalance > 0, "No COMP rewards to claim");
-
-        return compBalance;
+        uint256 compBalanceAfter = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
+        require(compBalanceAfter > 0, "No rewards to claim");
+        emit RewardsClaimed(
+            address(this),
+            rewardsTokenAddress,
+            compBalanceAfter - compBalanceBefore
+        );
+        return compBalanceAfter - compBalanceBefore;
     }
 
     /**
-     * @notice Swaps COMP for USDC on Uniswap V3 (Polygon)
-     * @param amountIn Amount of COMP to swap
+     * @notice Swaps rewardsToken for USDC on Uniswap V3 (Polygon)
+     * @param amountIn Amount of rewardsToken to swap
      * @param slippageBps slippage
      * @return amountOut The amount of USDC received
      */
@@ -87,11 +92,15 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ) internal returns (uint256 amountOut) {
         require(amountIn > 0, "Amount must be greater than zero");
 
-        SafeERC20.safeTransfer(IERC20(COMP), swapHelperPolygon, amountIn);
+        SafeERC20.safeTransfer(
+            IERC20(rewardsTokenAddress),
+            swapHelper,
+            amountIn
+        );
         uint16 maxDeadline = uint16(block.timestamp + 1 hours); // Set a deadline for the swap
 
-        amountOut = ISwapHelper(swapHelperPolygon).swap(
-            COMP,
+        amountOut = ISwapHelper(swapHelper).swap(
+            rewardsTokenAddress,
             amountIn,
             address(inputToken),
             slippageBps,
@@ -103,7 +112,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         return amountOut;
     }
 
-    /// @notice Harvests COMP rewards and reinvests them into Compound
+    /// @notice Harvests rewards and reinvests them into Compound
     function harvest() public {
         uint256 compBalance = checkRewards();
         if (compBalance > 0) {

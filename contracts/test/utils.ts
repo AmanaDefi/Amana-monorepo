@@ -16,8 +16,17 @@ export async function setTokenBalance(
   tokenAddress: string,
   account: string,
   amount: BigNumber,
-  balanceSlot: number
+  balanceSlot: number,
+  isNative: boolean = false
 ) {
+  if (isNative) {
+    // If the token is native, use the hardhat_setBalance method
+    await ethers.provider.send("hardhat_setBalance", [
+      account,
+      amount.toHexString()
+    ]);
+    return;
+  }
   const normalizedAccount = ethers.utils.getAddress(account);
 
   // Format the amount as a 32-byte hex string
@@ -42,10 +51,6 @@ export async function setTokenBalance(
     slot,
     paddedValue,
   ]);
-
-  // Verify it worked (optional)
-  const token = await ethers.getContractAt("IERC20", tokenAddress);
-  const newBalance = await token.balanceOf(normalizedAccount);
 }
 
 
@@ -75,6 +80,11 @@ export async function simulateDepositCallFromVaultToStrategy(
     ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
     [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage]
   );
+  await network.provider.send("hardhat_setBalance", [
+    await gatewaySigner.getAddress(),
+    ethers.utils.parseEther("434").toHexString()
+  ]);
+  const balance = await ethers.provider.getBalance(await gatewaySigner.getAddress());
   await
     strategy.connect(gatewaySigner).onCall(
       {
@@ -144,7 +154,7 @@ export async function simulateSwitchCallFromVaultToStrategy(
     },
     switchMessage,
     {
-      gasPrice: ethers.utils.parseUnits("150", "gwei"),
+      gasPrice: ethers.utils.parseUnits("150", "gwei")
     }
   );
 }

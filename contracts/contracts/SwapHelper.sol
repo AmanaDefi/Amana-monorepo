@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IZRC20.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/IPriceOracle.sol";
-import "./interfaces/ICurvePool.sol";
+import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
@@ -43,9 +43,6 @@ contract SwapHelper {
     uint24 constant V3_FEE_TIER_HIGH = 3000;
 
     address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
-
-    address constant PRICE_ORACLE_ADDRESS =
-        0x0D313486083fe6f0A1868EAeEe07D46fed92E9f9; // mainnet only
 
     address constant ETH_ETH_ADDRESS =
         0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
@@ -93,6 +90,12 @@ contract SwapHelper {
 
     address constant CURVE_POOL_REGISTRY =
         0x5524124b8F36e682f3A23D069399247806e8B627; // mainnet only
+
+    address public immutable PRICE_ORACLE_ADDRESS;
+
+    constructor(address _priceOracle) {
+        PRICE_ORACLE_ADDRESS = _priceOracle;
+    }
 
     /**
      * @notice Returns the price feed ID for a given token address.
@@ -560,7 +563,7 @@ contract SwapHelper {
     ) public view returns (uint256) {
         // Assume Curve pools have at most 8 tokens
         for (uint256 i = 0; i < 8; i++) {
-            try ICurvePool(pool).coins(i) returns (address poolToken) {
+            try ICurvePoolDynamic(pool).coins(i) returns (address poolToken) {
                 if (poolToken == token) {
                     return i;
                 }
@@ -611,7 +614,7 @@ contract SwapHelper {
         uint256 j = getTokenIndex(outputToken, curvePool);
 
         // Fetch amount out from Curve pool
-        amountOut = ICurvePool(curvePool).get_dy(i, j, amount);
+        amountOut = ICurvePoolDynamic(curvePool).get_dy(i, j, amount);
     }
 
     function approveOrIncreaseAllowance(
@@ -683,7 +686,7 @@ contract SwapHelper {
         // if (curvePool != address(0)) {
         //     // Approve Curve pool to spend tokens
         //     IZRC20(zrc20).approve(curvePool, amount);
-        //     return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
+        //     return ICurvePoolDynamic(curvePool).exchange(i, j, amount, minimumOut);
         // } else {
         (
             address[] memory path,

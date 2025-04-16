@@ -17,6 +17,9 @@ import "../interfaces/IDistributor.sol";
 abstract contract StrategyParent is Ownable2Step, IErrors {
     using SafeERC20 for IERC20;
 
+    address constant GATEWAY_ADDRESS =
+        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
+
     string public name;
     address public amanaVault;
     address public withdrawHelper;
@@ -49,7 +52,16 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         uint256 executionNonce,
         bytes32 crossChainTxId
     );
-
+    event RewardsClaimed(
+        address indexed receiver,
+        address indexed rewardToken,
+        uint256 amount
+    );
+    event RewardsHarvested(
+        uint256 rewardsClaimed,
+        uint256 rewardsSwapped,
+        uint256 inputTokenReinvested
+    );
     address immutable _GATEWAY_ADDRESS;
 
     modifier onlyGateway() {
@@ -85,7 +97,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         ) {
             revert OnlyVault();
         }
-
         (
             address user,
             address receiver,

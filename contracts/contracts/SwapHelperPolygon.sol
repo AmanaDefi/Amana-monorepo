@@ -14,6 +14,7 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 
 // import "./CurvePoolRegistry.sol";
+// PriceOracle address: 0xd052F4383e5ae6A17d67DA5eC0c0cc679Ba04a77
 
 contract SwapHelperPolygon {
     address constant UNISWAP_V2_FACTORY =
@@ -30,9 +31,6 @@ contract SwapHelperPolygon {
 
     address constant WETH_TOKEN = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // Polygon
 
-    address constant PRICE_ORACLE_ADDRESS =
-        0xd052F4383e5ae6A17d67DA5eC0c0cc679Ba04a77; // Polygon
-
     address constant USDC_ADDRESS = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174; // mainnet only
     address constant USDT_ADDRESS = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F; // mainnet only
     address constant WMATIC_ADDRESS =
@@ -45,6 +43,12 @@ contract SwapHelperPolygon {
         0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472;
     bytes32 constant compUsdPriceFeedId =
         0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478;
+
+    address public immutable PRICE_ORACLE_ADDRESS;
+
+    constructor(address _priceOracle) {
+        PRICE_ORACLE_ADDRESS = _priceOracle;
+    }
 
     /**
      * @notice Returns the price feed ID for a given token address.

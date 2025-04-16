@@ -2,9 +2,10 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { PriceServiceConnection } from "@pythnetwork/price-service-client";
 
-const PYTH_CONTRACT_ADDRESS_ZETACHAIN = "0x2880aB155794e7179c9eE2e38200202908C17B43"; // Zetachain
-const PYTH_CONTRACT_ADDRESS_BASE = "0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a"; // Base
-const PYTH_CONTRACT_ADDRESS_POLYGON = "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C"; // Polygon
+const PYTH_CONTRACT_ADDRESS_ZETACHAIN = "0x2880aB155794e7179c9eE2e38200202908C17B43";
+const PYTH_CONTRACT_ADDRESS_BASE = "0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a";
+const PYTH_CONTRACT_ADDRESS_POLYGON = "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C";
+const PYTH_CONTRACT_ADDRESS_ETHEREUM = "0x4305FB66699C3B2702D4d05CF36551390A4c69C6";
 
 const priceIdsZetachain = [
   "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
@@ -26,6 +27,12 @@ const priceIdsPolygon = [
   "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478" // COMP/USD
 ];
 
+const priceIdsEthereum = [
+  "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8", // CRV/USD
+  "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
+  "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478" // COMP/USD
+];
+
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
 
@@ -36,6 +43,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_BASE;
   } else if (network === "polygon") {
     PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_POLYGON;
+  } else if (network === "ethereum") {
+    PYTH_CONTRACT_ADDRESS = PYTH_CONTRACT_ADDRESS_ETHEREUM;
   } else {
     throw new Error(
       `Unsupported network: ${network}. Supported networks are: zeta_mainnet, base, polygon.`
@@ -52,6 +61,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   } else if (network === "polygon") {
     console.log("Setting price feeds for Polygon...")
     priceIds = priceIdsPolygon;
+  } else if (network === "ethereum") {
+    console.log("Setting price feeds for Ethereum...")
+    priceIds = priceIdsEthereum;
   }
 
   if (!priceIds) {

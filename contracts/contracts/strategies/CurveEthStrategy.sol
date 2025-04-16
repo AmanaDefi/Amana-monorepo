@@ -4,31 +4,33 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./EthStrategyParent.sol";
-import "../interfaces/ICurvePool.sol";
+import "../interfaces/ICurvePoolFixed.sol";
 import "../interfaces/ICurveLiquidityGauge.sol";
 import "../interfaces/ISwapRouter.sol";
 import "../interfaces/IPriceOracle.sol";
 import "../interfaces/ISwapHelper.sol";
+import "../interfaces/IMinter.sol";
 
 // curve pool 0xa4c567c662349BeC3D0fB94C4e7f85bA95E208e4
 // liquidity gauge 0x4e227d29b33B77113F84bcC189a6F886755a1f24
 // input token WETH 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+// input token index
 
 /// @title ERC20_Curve_Strategy
 /// @notice Strategy contract for depositing WETH into a Curve pool on Ethereum.
 contract CurveEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePool public immutable receiptToken;
+    ICurvePoolFixed public immutable receiptToken;
     ICurveLiquidityGauge public immutable gauge;
 
     address public swapHelperEthereum;
-
+    IMinter constant minter =
+        IMinter(0xd061D61a4d941c39E5453435B6345Dc261C2fcE0);
     IWETH public immutable weth;
 
-    uint256 public constant WETH_INDEX = 0; // WETH's index in the Curve pool
-    address public constant CRV_ADDRESS =
-        0xD533a949740bb3306d119CC777fa900bA034cd52; // CRV token
+    uint256 public inputTokenIndex; // inputToken's index in the Curve pool
+    address public rewardsTokenAddress;
 
     bool public stakingEnabled = false;
     uint16 public harvestSwapSlippage = 500; // 5% slippage
@@ -36,23 +38,28 @@ contract CurveEthStrategy is EthStrategyParent {
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
     /// @param _amanaVault Address of the Amana vault.
-    /// @param _wethAddress Address of the input token (WETH).
+    /// @param _withdrawHelper Address of the withdraw helper contract.
+    /// @param _swapHelper Address of the swap helper contract.
     /// @param _receiptTokenAddress Address of the Curve pool.
-    /// @param _gateway Address of the ZetaChain Gateway.
+    /// @param _inputTokenAddress Address of the input token (WETH).
+    /// @param _liquidityGaugeAddress Address of the Curve liquidity gauge.
     constructor(
         string memory _name,
         address _amanaVault,
-        address _receiptTokenAddress,
-        address _liquidityGaugeAddress,
-        address _gateway,
-        address _wethAddress,
         address _withdrawHelper,
-        address _swapHelperEthereum
-    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
-        receiptToken = ICurvePool(_receiptTokenAddress);
+        address _swapHelper,
+        address _receiptTokenAddress,
+        address _inputTokenAddress, // weth
+        address _liquidityGaugeAddress,
+        address _rewardsTokenAddress,
+        uint256 _inputTokenIndex
+    ) StrategyParent(_name, _amanaVault, GATEWAY_ADDRESS, _withdrawHelper) {
+        swapHelperEthereum = _swapHelper;
+        weth = IWETH(_inputTokenAddress);
+        receiptToken = ICurvePoolFixed(_receiptTokenAddress);
         gauge = ICurveLiquidityGauge(_liquidityGaugeAddress);
-        swapHelperEthereum = _swapHelperEthereum;
-        weth = IWETH(_wethAddress);
+        rewardsTokenAddress = _rewardsTokenAddress;
+        inputTokenIndex = _inputTokenIndex;
     }
 
     /// @notice Allows the owner to enable or disable staking.
@@ -111,14 +118,14 @@ contract CurveEthStrategy is EthStrategyParent {
         require(amountIn > 0, "Amount must be greater than zero");
 
         SafeERC20.safeTransfer(
-            IERC20(CRV_ADDRESS),
+            IERC20(rewardsTokenAddress),
             swapHelperEthereum,
             amountIn
         );
         uint16 maxDeadline = uint16(block.timestamp + 1 hours); // Set a deadline for the swap
 
         amountOut = ISwapHelper(swapHelperEthereum).swap(
-            CRV_ADDRESS,
+            rewardsTokenAddress,
             amountIn,
             address(weth),
             slippageBps,
@@ -130,23 +137,35 @@ contract CurveEthStrategy is EthStrategyParent {
         return amountOut;
     }
 
+    function claimRewards() public returns (uint256) {
+        uint256 amountBefore = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
+        minter.mint(address(gauge));
+        uint256 amountAfter = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
+
+        emit RewardsClaimed(
+            address(this),
+            rewardsTokenAddress,
+            amountAfter - amountBefore
+        );
+        return amountAfter - amountBefore;
+    }
+
     /// @notice Harvests CRV rewards, swaps them to WETH, and redeposits into the Curve pool.
     function harvest() public {
         if (!stakingEnabled) return; // Skip if staking is disabled
 
         // Step 1: Check if there are claimable CRV rewards
-        uint256 claimableCRV = gauge.claimable_reward(
-            address(this),
-            CRV_ADDRESS
-        );
-
-        if (claimableCRV > 0) {
-            // Claim rewards only if there are claimable rewards
-            gauge.claim_rewards();
-        }
+        minter.mint(address(gauge));
 
         // Step 2: Check CRV balance after claiming
-        uint256 crvBalance = IERC20(CRV_ADDRESS).balanceOf(address(this));
+        uint256 crvBalance = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
+
         if (crvBalance == 0) {
             return; // Exit function gracefully if no CRV to swap
         }
@@ -154,8 +173,8 @@ contract CurveEthStrategy is EthStrategyParent {
         uint256 wethReceived = swapCrvForWeth(crvBalance, harvestSwapSlippage);
 
         // Step 5: Reinvest the received WETH back into the Curve pool
-        uint256[] memory amounts = new uint256[](2);
-        amounts[WETH_INDEX] = wethReceived; // Only deposit WETH
+        uint256[2] memory amounts;
+        amounts[inputTokenIndex] = wethReceived; // Only deposit WETH
         approveOrIncreaseAllowance(
             IERC20(weth),
             address(receiptToken),
@@ -170,6 +189,7 @@ contract CurveEthStrategy is EthStrategyParent {
             );
             gauge.deposit(shares);
         }
+        emit RewardsHarvested(crvBalance, crvBalance, wethReceived);
     }
 
     /// @notice Deposits WETH into the Curve pool.
@@ -180,12 +200,13 @@ contract CurveEthStrategy is EthStrategyParent {
         uint256 minimumOut
     ) internal override {
         weth.deposit{value: amount}();
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[WETH_INDEX] = amount; // Only deposit WETH
+        uint256[2] memory amounts;
+        amounts[inputTokenIndex] = amount; // Only deposit WETH
 
         approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
+        // IERC20(weth).approve(address(receiptToken), type(uint256).max);
         uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
+
         if (stakingEnabled) {
             approveOrIncreaseAllowance(
                 IERC20(receiptToken),
@@ -209,11 +230,14 @@ contract CurveEthStrategy is EthStrategyParent {
         );
         if (stakingEnabled) {
             harvest();
+            sharesToWithdraw = getStrategyWithdrawShareAmount(
+                fractionToWithdraw
+            );
             gauge.withdraw(sharesToWithdraw);
         }
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
             sharesToWithdraw,
-            int128(int256(WETH_INDEX)),
+            int128(int256(inputTokenIndex)),
             minAmountOut
         );
         weth.withdraw(amountWithdrawn);
@@ -237,7 +261,7 @@ contract CurveEthStrategy is EthStrategyParent {
 
         approveOrIncreaseAllowance(weth, newStrategy, withdrawnAmount);
 
-        IStrategy(newStrategy).depositFromOldStrategy(
+        IStrategy(newStrategy).depositFromOldStrategy{value: withdrawnAmount}(
             withdrawnAmount,
             minimumSharesOut,
             currentExecutionNonce,
@@ -284,7 +308,7 @@ contract CurveEthStrategy is EthStrategyParent {
         uint256 assetAmount
     ) public view override returns (uint256) {
         uint256[] memory amounts = new uint256[](2);
-        amounts[WETH_INDEX] = assetAmount; // Only withdraw WETH
+        amounts[inputTokenIndex] = assetAmount; // Only withdraw WETH
         uint256 shares = receiptToken.calc_token_amount(amounts, false);
         return shares;
     }
@@ -295,13 +319,13 @@ contract CurveEthStrategy is EthStrategyParent {
     ) public view override returns (uint256) {
         uint256 assets = receiptToken.calc_withdraw_one_coin(
             shares,
-            int128(int256(WETH_INDEX))
+            int128(int256(inputTokenIndex))
         );
         return assets;
     }
 
-    function checkRewards() public view returns (uint256) {
-        uint256 claimable = gauge.claimable_reward(msg.sender, CRV_ADDRESS);
+    function checkRewards() public returns (uint256) {
+        uint256 claimable = gauge.claimable_tokens(address(this));
         return claimable;
     }
 }

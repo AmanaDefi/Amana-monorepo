@@ -41,8 +41,12 @@ contract SwapHelperEthereum {
         0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
-    address constant PRICE_ORACLE_ADDRESS =
-        0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f; // on ethereum mainnet
+
+    address public immutable PRICE_ORACLE_ADDRESS;
+
+    constructor(address _priceOracle) {
+        PRICE_ORACLE_ADDRESS = _priceOracle;
+    }
 
     /**
      * @notice Returns the price feed ID for a given token address.
@@ -94,7 +98,6 @@ contract SwapHelperEthereum {
     ) internal view returns (uint256) {
         bytes32 inputPriceFeed = getPriceFeedId(inputToken);
         bytes32 outputPriceFeed = getPriceFeedId(outputToken);
-
         require(
             inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
             "Invalid input token"

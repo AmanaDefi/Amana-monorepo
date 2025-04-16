@@ -59,16 +59,20 @@ contract PriceOracle is Ownable {
             assembly {
                 selector := mload(add(lowLevelData, 32))
             }
-            if (selector == bytes4(keccak256("InvalidUpdateData()"))) {
+
+            if (
+                selector == bytes4(keccak256("InvalidUpdateData()")) ||
+                selector == bytes4(keccak256("StalePrice()"))
+            ) {
+                // Fallback to unsafe price
                 price = pyth.getPriceUnsafe(priceFeedId);
             } else {
                 revert("Failed to fetch price");
             }
         }
-        // Ensure the price is valid (greater than 0)
+
         require(price.price > 0, "Invalid price");
 
-        // Return the price in uint256 format
         return uint256(uint64(price.price));
     }
 }

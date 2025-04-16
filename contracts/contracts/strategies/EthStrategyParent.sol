@@ -22,7 +22,6 @@ abstract contract EthStrategyParent is StrategyParent {
         bytes32 _crossChainTxId
     ) internal override {
         if (msg.value == 0) revert NoFundsReceived();
-
         _depositFundsIntoYieldSource(msg.value, minimumOut);
 
         _sendInvestConfirmation(

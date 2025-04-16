@@ -4,6 +4,12 @@ import { Signer } from "ethers";
 import { StrategyTestConfig } from "../config/strategy.config";
 import { IERC20 } from "../../typechain";
 import { GATEWAY_ADDRESS, WITHDRAW_HELPER_ADDRESS, AMANA_VAULT_ADDRESS } from "../config/constants";
+import {
+  PYTH_CONTRACT_ADDRESS_ETHEREUM,
+  PYTH_CONTRACT_ADDRESS_BASE,
+  PYTH_CONTRACT_ADDRESS_ZETACHAIN,
+  PYTH_CONTRACT_ADDRESS_POLYGON
+} from "../../../constants";
 
 export interface StrategyTestContext {
   owner: Signer;
@@ -17,19 +23,43 @@ export interface StrategyTestContext {
   config: StrategyTestConfig;
 }
 
+function getRpcUrl(chainId: number): string {
+  return `https://${chainId}.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c`;
+}
+
+function getPythContractAddress(chainId: number): string {
+  switch (chainId) {
+    case 1:
+      return PYTH_CONTRACT_ADDRESS_ETHEREUM;
+    case 137:
+      return PYTH_CONTRACT_ADDRESS_POLYGON;
+    case 7000:
+      return PYTH_CONTRACT_ADDRESS_ZETACHAIN;
+    case 8453:
+      return PYTH_CONTRACT_ADDRESS_BASE;
+    default:
+      throw new Error(`Unsupported chainId: ${chainId}`);
+  }
+}
+
 export async function deployStrategyFixture(config: StrategyTestConfig): Promise<StrategyTestContext> {
   const {
-    rpcUrl,
     forkBlock,
     inputTokenAddress,
     receiptTokenAddress,
     rewardsContractAddress,
+    rewardsTokenAddress,
+    inputTokenIndexOrPlaceholder,
     strategyContractName,
     receiptTokenContractName,
     swapHelperContractName,
     rewardsContractName = "ICometRewards", //default, can be overridden in config file
+    strategyChainId
   } = config;
 
+  const rpcUrl = getRpcUrl(strategyChainId);
+  console.info(`Forking from ${rpcUrl} at block ${forkBlock}`);
+  const pythAddress = getPythContractAddress(strategyChainId);
 
   await network.provider.request({
     method: "hardhat_reset",
@@ -40,10 +70,13 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     method: "hardhat_impersonateAccount",
     params: [GATEWAY_ADDRESS]
   });
-  await network.provider.send("hardhat_setBalance", [
-    GATEWAY_ADDRESS,
-    ethers.utils.parseEther("10").toHexString()
-  ]);
+
+  // Fund the GATEWAY_ADDRESS with some ETH for gas
+  const fundAmount = ethers.utils.parseEther("1234");
+  await network.provider.request({
+    method: "hardhat_setBalance",
+    params: [GATEWAY_ADDRESS, fundAmount.toHexString()]
+  });
 
   const gatewaySigner = await ethers.getSigner(GATEWAY_ADDRESS);
   const [owner] = await ethers.getSigners();
@@ -54,21 +87,33 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     ? await ethers.getContractAt(rewardsContractName, rewardsContractAddress, gatewaySigner)
     : undefined;
 
+  const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
+  const priceOracle = await PriceOracleFactory.deploy(pythAddress); // Pyth contract address on Ethereum
+  await priceOracle.deployed();
+
   const SwapHelperFactory = await ethers.getContractFactory(swapHelperContractName);
-  const swapHelper = await SwapHelperFactory.deploy();
+  const swapHelper = await SwapHelperFactory.deploy(priceOracle.address);
   await swapHelper.deployed();
 
   const StrategyFactory = await ethers.getContractFactory(strategyContractName);
   const strategy = await StrategyFactory.deploy(
     config.name,
     AMANA_VAULT_ADDRESS,
-    inputTokenAddress,
-    receiptTokenAddress,
-    GATEWAY_ADDRESS,
     WITHDRAW_HELPER_ADDRESS,
-    swapHelper.address
+    swapHelper.address,
+    receiptTokenAddress,
+    inputTokenAddress,
+    rewardsContractAddress,
+    rewardsTokenAddress,
+    inputTokenIndexOrPlaceholder
   );
   await strategy.deployed();
+
+  if (config.strategyContractName === "CurveEthStrategy") {
+    if (config.stakingEnabled) {
+      await strategy.setStakingEnabled(true);
+    }
+  }
 
   return {
     owner,
@@ -80,4 +125,30 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     strategy,
     config
   };
+}
+
+// in test/helpers/setupStrategyTest.ts
+export async function deployStrategyFromConfig(config: StrategyTestConfig, swapHelper: any): Promise<any> {
+  const StrategyFactory = await ethers.getContractFactory(config.strategyContractName);
+
+  const args = [
+    config.name + " Clone", // Give it a distinguishable name
+    AMANA_VAULT_ADDRESS,
+    WITHDRAW_HELPER_ADDRESS,
+    swapHelper.address,
+    config.receiptTokenAddress,
+    config.inputTokenAddress,
+    config.rewardsContractAddress ?? ethers.constants.AddressZero,
+    config.rewardsTokenAddress ?? ethers.constants.AddressZero,
+    config.inputTokenIndexOrPlaceholder ?? 0
+  ];
+
+  const strategy = await StrategyFactory.deploy(...args);
+  await strategy.deployed();
+  if (config.strategyContractName === "CurveEthStrategy") {
+    if (config.stakingEnabled) {
+      await strategy.setStakingEnabled(true);
+    }
+  }
+  return strategy;
 }
