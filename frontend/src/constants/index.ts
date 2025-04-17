@@ -387,67 +387,67 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Venus is a lending protocol on BSC where users supply assets to earn interest and borrow against collateral. It features VAI, a stablecoin minted via overcollateralized loans. Risks include liquidity fluctuations, governance centralization, and smart contract vulnerabilities."
     },
   },
-  {
-    id: "0xEEE1F48cB753B8507f7Bfd14850f2EA79A5c9128",
-    name: "yUSD/USDC Pool",
-    des: "This strategy deposits USDC into the Curve yUSD/USDC pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
-    symbol: "aCurveUSDC",
-    imgURL: "/ETH.png",
-    depositFeePaidFromGasTank: true,
-    inputToken: {
-      symbol: "USDC.ETH",
-      decimals: 6,
-      address: ZC_USDC_ETH_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Curve",
-      strategyAddress: "0xf6CDBA75c81E1aF9a04fCA0f57A0e49b9B277Ba3",
-      gaugeAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
-      network: "Ethereum",
-      chainId: 1,
-      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-      imgURL: "/curve.png",
-      des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
-    },
-  },
-  {
-    id: "0x0190090f1C151655D340edb18953E92d8cA6E472",
-    name: "rswEth/ETH Pool",
-    des: "This strategy deposits ETH into the Curve uniETH/ETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
-    symbol: "aCurveETH",
-    imgURL: "/ETH.png",
-    depositFeePaidFromGasTank: true,
-    inputToken: {
-      symbol: "ETH.ETH",
-      decimals: 18,
-      address: ZC_ETH_ETH_ADDRESS,
-      imgURL: "/ETH.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Curve",
-      strategyAddress: "0x3E876f6Bfd132E50612a1d2958c560BF1631Dd56",
-      gaugeAddress: "0x55e5adb2cb00bfdb085440ca6a5ec628705b2e7f",
-      network: "Ethereum",
-      chainId: 1,
-      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-      imgURL: "/curve.png",
-      des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
-    },
-  },
+  // {
+  //   id: "0xEEE1F48cB753B8507f7Bfd14850f2EA79A5c9128",
+  //   name: "yUSD/USDC Pool",
+  //   des: "This strategy deposits USDC into the Curve yUSD/USDC pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+  //   symbol: "aCurveUSDC",
+  //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: true,
+  //   inputToken: {
+  //     symbol: "USDC.ETH",
+  //     decimals: 6,
+  //     address: ZC_USDC_ETH_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Curve",
+  //     strategyAddress: "0xf6CDBA75c81E1aF9a04fCA0f57A0e49b9B277Ba3",
+  //     gaugeAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
+  //     network: "Ethereum",
+  //     chainId: 1,
+  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+  //     imgURL: "/curve.png",
+  //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+  //   },
+  // },
+  // {
+  //   id: "0x0190090f1C151655D340edb18953E92d8cA6E472",
+  //   name: "rswEth/ETH Pool",
+  //   des: "This strategy deposits ETH into the Curve uniETH/ETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+  //   symbol: "aCurveETH",
+  //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: true,
+  //   inputToken: {
+  //     symbol: "ETH.ETH",
+  //     decimals: 18,
+  //     address: ZC_ETH_ETH_ADDRESS,
+  //     imgURL: "/ETH.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Curve",
+  //     strategyAddress: "0x3E876f6Bfd132E50612a1d2958c560BF1631Dd56",
+  //     gaugeAddress: "0x55e5adb2cb00bfdb085440ca6a5ec628705b2e7f",
+  //     network: "Ethereum",
+  //     chainId: 1,
+  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+  //     imgURL: "/curve.png",
+  //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+  //   },
+  // },
   {
     id: "0xd99C4B260DaE25feF005eDCe4066a5Fb91B1760e",
     name: "msEth/WETH Pool",
     des: "This strategy deposits ETH into the Curve msEth/WETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
     symbol: "aCurveETH",
     imgURL: "/ETH.png",
-    depositFeePaidFromGasTank: true,
+    depositFeePaidFromGasTank: false,
     inputToken: {
       symbol: "ETH.ETH",
       decimals: 18,
@@ -459,7 +459,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Curve",
-      strategyAddress: "0x02036BA750cdDBB7389a116110fc4aa58B3E40Be",
+      strategyAddress: "0x8106Ca539dC8D40dD448FFf3cad41C8eD8C57BFB",
       gaugeAddress: "0x4e227d29b33B77113F84bcC189a6F886755a1f24",
       network: "Ethereum",
       chainId: 1,

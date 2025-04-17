@@ -35,7 +35,7 @@ interface ICurvePoolFixed is IERC20 {
     function get_virtual_price() external view returns (uint256);
 
     function calc_token_amount(
-        uint256[] memory amounts,
+        uint256[2] memory amounts,
         bool is_deposit
     ) external view returns (uint256);
 

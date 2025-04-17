@@ -307,7 +307,7 @@ contract CurveEthStrategy is EthStrategyParent {
     function convertToShares(
         uint256 assetAmount
     ) public view override returns (uint256) {
-        uint256[] memory amounts = new uint256[](2);
+        uint256[2] memory amounts;
         amounts[inputTokenIndex] = assetAmount; // Only withdraw WETH
         uint256 shares = receiptToken.calc_token_amount(amounts, false);
         return shares;

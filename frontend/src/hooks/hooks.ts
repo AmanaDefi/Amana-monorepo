@@ -60,14 +60,14 @@ export const useUpdateVaultBalanceAndTotal = (
 
               const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
               const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
-              
+
               console.log({
                 vaultId: vault?.id || "unknown",
                 balance,
                 totalAssets: totalAssetsStr,
                 totalAssetsinToken: totalAssetsinTokenStr,
               });
-              
+
               return {
                 vaultId: vault?.id || "unknown",
                 balance,
@@ -205,7 +205,13 @@ export const useUpdateAPYs = (
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve") {
                 APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
-                RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+                if (crvTokenPrice > 0 && ethTokenPrice > 0) {
+                  RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+                } else {
+                  console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
+                }
+                console.log("RewardsAPY", RewardsAPY)
+                APY7d = APY7d + RewardsAPY;
               }
 
               return { vaultId: vault.id, APY7d };
@@ -222,12 +228,17 @@ export const useUpdateAPYs = (
       }
     };
 
-    // Trigger the function if vaults are available
-    if (vaults.length > 0) {
-      setLoading(true);  // Set loading state before fetching APYs
+    // Trigger the function if vaults and prices are available
+    if (
+      vaults.length > 0 &&
+      crvTokenPrice > 0 &&
+      ethTokenPrice > 0 &&
+      compTokenPrice > 0
+    ) {
+      setLoading(true);
       updateAPYs();
     }
-  }, []);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice]);
 };
 
 export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }: { vaultData: VaultData, activeChainId: number, strategyChainID: number, strategyAddress: string, contractWithdrawalReceiverAddress: string, isTransactionStarted: boolean }) => {
@@ -312,7 +323,7 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
 
     // Normalize the symbol format:
     // Convert "USDC (ETH)" to "USDC.ETH" format for price lookup
-    const normalizedSymbol = symbol.includes('(') ? 
+    const normalizedSymbol = symbol.includes('(') ?
       symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
 
     // Try to find price using normalized symbol first
@@ -323,8 +334,8 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
 
     // If full symbol price not found, check if it's a stablecoin by checking the base symbol
     // For both formats: "USDC (ETH)" -> "USDC" and "USDC.ETH" -> "USDC"
-    const baseSymbol = symbol.includes('(') ? 
-      symbol.split(' (')[0].toUpperCase() : 
+    const baseSymbol = symbol.includes('(') ?
+      symbol.split(' (')[0].toUpperCase() :
       getOnlyTokenSymbol(symbol).toUpperCase();
 
     if (baseSymbol === "USDC" || baseSymbol === "USDT") {

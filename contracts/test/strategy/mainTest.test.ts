@@ -840,6 +840,60 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(rewardsTokenBalanceAfter).to.be.gte(rewardsTokenBalanceBefore);
     });
 
+    it("should return 0 shares when calling convertToShares with 0 assets and no deposits", async function () {
+      const { strategy } = ctx;
+
+      const shares = await strategy.convertToShares(0);
+      expect(shares).to.equal(0);
+    });
+
+    it("should return 0 assets when calling convertToAssets with 0 shares and no deposits", async function () {
+      const { strategy } = ctx;
+
+      const assets = await strategy.convertToAssets(0);
+      expect(assets).to.equal(0);
+    });
+
+    it("should return correct shares and assets after deposit", async function () {
+      const {
+        gatewaySigner,
+        owner,
+        inputToken,
+        strategy,
+        receiptTokenContract,
+        config
+      } = ctx;
+
+      const depositAmount = config.depositAmount;
+      const minSharesOut = config.minSharesOut;
+      const slippage = config.slippage;
+
+      // Fund and approve
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      if (!config.isNative) {
+        await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
+      }
+
+      // Simulate deposit
+      await simulateDepositCallFromVaultToStrategy(
+        AMANA_VAULT_ADDRESS,
+        await owner.getAddress(),
+        gatewaySigner,
+        strategy,
+        depositAmount,
+        minSharesOut,
+        slippage,
+        config.originChainId,
+      );
+
+      // Run convertToShares
+      const expectedShares = await strategy.convertToShares(depositAmount);
+      expect(expectedShares).to.be.gt(0);
+
+      // Run convertToAssets
+      const expectedAssets = await strategy.convertToAssets(expectedShares);
+      expect(expectedAssets).to.be.closeTo(depositAmount, depositAmount.div(100)); // 1% tolerance
+    });
 
     // Add more shared tests here (or conditionally based on strategy type)
   });

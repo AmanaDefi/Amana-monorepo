@@ -246,45 +246,48 @@ export async function calculateCurveAPY(poolAddress: Address, strategyChain: Cha
 export async function calculateCurveRewardsAPY(gaugeAddress: Address, strategyChain: Chain, crvTokenPrice: number, ethTokenPrice: number) {
   console.log("Fetching Curve rewards APY...");
 
-  const gaugeContract = getContract({
-    client,
-    chain: strategyChain,
-    address: gaugeAddress,
-  });
-
-  // 3. Get reward rate (emission rate per second)
-  const [periodFinish, rate, lastUpdate] = await readContract({
-    contract: gaugeContract,
-    method: "function reward_data(address) view returns (uint256,uint256,uint256)",
-    params: ["0xD533a949740bb3306d119CC777fa900bA034cd52"],
-  });
-
-  const rewardRate = ethers.toBigInt(rate);
-
-  // 4. Get total staked LP tokens
-  const totalStaked = await readContract(
-    {
-      contract: gaugeContract,
-      method: "function totalSupply() view returns (uint256)",
-    }
-  )
-
-  if (totalStaked === 0n) {
-    console.warn("No LP tokens staked. Skipping APY calculation.");
-    return 0;
+  // 1. Fetch metadata from Curve's emissions API
+  const res = await fetch(
+    `https://prices.curve.fi/v1/dao/gauges/${gaugeAddress}/metadata`
+  );
+  const json = await res.json();
+  const data = json;
+  console.log("Curve data:", data);
+  if (
+    !data ||
+    data.emissions === undefined ||
+    data.pool?.tvl_usd === undefined
+  ) {
+    console.warn("⚠️ Missing emissions or TVL for gauge:", gaugeAddress);
+    return null;
   }
 
-  if (!crvTokenPrice || !ethTokenPrice) {
-    console.warn("Missing price data. Skipping APY calculation.");
-    return 0;
+  const emissionsPerWeek = parseFloat(data.emissions); // CRV per week
+  // const tvlUsd = parseFloat(data.pool.tvl_usd); // Total pool value in USD
+  let retries = 0;
+  let tvlUsd = parseFloat(data.pool.tvl_usd);
+  while (tvlUsd === 0 && retries < 2) {
+    await new Promise((res) => setTimeout(res, 1000)); // wait 1s
+    const refetch = await fetch(`https://prices.curve.fi/v1/dao/gauges/${gaugeAddress}/metadata`);
+    const refetchedData = await refetch.json();
+    tvlUsd = parseFloat(refetchedData.pool.tvl_usd);
+    retries++;
   }
+  console.log("crvTokenPrice", crvTokenPrice);
 
-  // 6. Calculate APY
-  const yearlyRewardsUSD = Number(rewardRate) * crvTokenPrice * 31536000; // Rewards per year in USD
-  const totalStakedUSD = Number(totalStaked) * ethTokenPrice; // Total staked value in USD
-  const apy = (yearlyRewardsUSD / totalStakedUSD) * 100;
+  // 2. Calculate APY
+  const crvRewardsPerWeekUsd = emissionsPerWeek * crvTokenPrice;
+  const weeklyApy = (crvRewardsPerWeekUsd / tvlUsd);
+  const annualApy = weeklyApy * 52;
 
-  return apy;
+  console.log({
+    crvApy: annualApy.toFixed(2) + "%",
+    emissionsPerWeek,
+    crvRewardsPerWeekUsd: crvRewardsPerWeekUsd.toFixed(2),
+    tvlUsd,
+  });
+
+  return annualApy;
 }
 
 export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
@@ -557,6 +560,7 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
 };
 
 const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transactionAmount: bigint, activeChain: Chain) => {
+  console.log("getMinSharesOut");
   const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
   let assetsConversionAmount: bigint = transactionAmount;
   if (inputTokenAddress !== vaultData.inputToken.address) {
@@ -568,11 +572,15 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
     chain: strategyChain,
     address: vaultData.protocol.strategyAddress
   });
+  console.log("About to make call to contract");
+  console.log("assetsConversionAmount", assetsConversionAmount);
+  console.log("assetsConversionAmount type", typeof assetsConversionAmount);
   const sharesOutForUnderlying = await readContract({
     contract,
     method: "function convertToShares(uint256) view returns (uint256)",
     params: [assetsConversionAmount]
   });
+  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   const minSharesOut = sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minSharesOut;
 }
@@ -609,14 +617,17 @@ const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strat
 }
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-
+  console.log("Executing Direct Deposit");
   const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
-
+  console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
     address: vaultData.id
   });
+  console.log("transactionAmount", transactionAmount);
+  console.log("activeAccount", activeAccount);
+  console.log("activeChain", activeChain);
   const supplyTx = prepareContractCall({
     contract,
     method:
