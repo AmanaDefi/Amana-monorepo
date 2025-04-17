@@ -32,10 +32,9 @@ export function BannersCarousel() {
                     <MaximizeEarningsBanner/>
                 </div>
                 <div className="embla__slide">
-                    <UnderAudit2Banner/>
-              <div className="embla__slide">
                     <LeaderboardBanner/>
-                 <div className="embla__slide">
+                </div>
+                <div className="embla__slide">
                     <ChainSwitcherBanner/>
                 </div>
             </div>
