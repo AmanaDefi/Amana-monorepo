@@ -1,23 +1,51 @@
-import { API_URL } from "@/config.ts/apiConfig";
+import { API_KEY, API_URL } from "@/config.ts/apiConfig";
 import { SearchParams } from "@/types/types";
 import axios, { AxiosInstance } from "axios";
 
 export default class BaseAPI {
-    public api: AxiosInstance;
-    constructor() {
-        this.api = axios.create({ baseURL: API_URL });
-    }
+  public api: AxiosInstance;
+  constructor() {
+    this.api = axios.create({ baseURL: API_URL });
+  }
 
-    async getLeaderboardData(searchParams: SearchParams) {
-        const {page, perPage, userAddress} = searchParams;
-        const from: number = (page - 1) * perPage;
-        const to: number = page * perPage;
-        try {
-            const res = await this.api.get(`/vaults/v1/leaderboard?start=${from}&limit=${to}&user_address=${userAddress}`);
-            return res.data
-        } catch (error) {
-            console.log(error);
-            return []
-        }
+  async getLeaderboardData(searchParams: SearchParams) {
+    const { page, perPage, userAddress } = searchParams;
+    const from: number = (page - 1) * perPage;
+    const to: number = page * perPage;
+    try {
+      const res = await this.api.get(
+        `/vaults/v1/leaderboard?start=${from}&limit=${to}&user_address=${userAddress}`
+      );
+      return res.data;
+    } catch (error) {
+      console.log(error);
+      return [];
     }
+  }
+
+  async getVaultData() {
+    try {
+      const res = await this.api.get(`/vaults/v1/collect-all-data`, {
+        headers: {
+          "API-KEY": API_KEY,
+        },
+      });
+      return res.data.data;
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async getDistinctLatestRecords() {
+    try {
+      const res = await this.api.get(`/vault/v1/get-distinct-latest-records`, {
+        headers: {
+          "API-KEY": API_KEY,
+        },
+      });
+      return res.data.data;
+    } catch (error) {
+      return [];
+    }
+  }
 }
