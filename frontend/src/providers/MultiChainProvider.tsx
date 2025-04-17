@@ -12,7 +12,11 @@ import {
 } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { CHAIN_ID, chainConfigs, SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import {
+  CHAIN_ID,
+  chainConfigs,
+  SUPPORTED_CHAINS,
+} from "@/constants/chainConfig";
 import {
   useActiveAccount,
   useActiveWallet,
@@ -48,6 +52,7 @@ interface MultiChainContextType {
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
   switchToChain: (chain: Chain) => Promise<void>;
+  refetchBalance: () => void;
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -75,7 +80,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const chain = useActiveWalletChain();
   const [activeChain, setActiveChain] = useState<Chain | null>(null);
 
-  const solanaBalance = useSolanaBalance();
+  const { balance: solanaBalance, refetch: refetchSolBalance } =
+    useSolanaBalance();
 
   const latestChainRef = useRef<number | null>(null);
 
@@ -83,12 +89,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (selectedChain == "solana") {
       setActiveChain(chainConfigs[CHAIN_ID.solana]);
       latestChainRef.current = CHAIN_ID.solana;
-      return
+      return;
     } else if (chain) {
       setActiveChain(chain);
       latestChainRef.current = chain.id;
-    }
-    else {
+    } else {
       setActiveChain(null);
       latestChainRef.current = null;
     }
@@ -102,7 +107,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         if (activeAccount) evmDisconnect(activeAccount);
       }
       setVisible(true);
-      setSelectedChain("solana")
+      setSelectedChain("solana");
     } catch (error) {
       console.error("Solana connection error:", error);
     }
@@ -140,19 +145,23 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const EOAaccount = useActiveAccount();
   const userAddress = EOAaccount?.address;
-  const { data } = useWalletBalance({
+  const { data, refetch: refetchEthBalance } = useWalletBalance({
     chain: chain,
     address: userAddress,
     client,
-  }, { refetchInterval: 2000 });
+  });
 
   const evmBalance: Balance = data
     ? {
-      value: data.value || 0n,
-      formatted: format(data.value, data.decimals),
-    }
+        value: data.value || 0n,
+        formatted: format(data.value, data.decimals),
+      }
     : EMPTY_BALANCE;
 
+  const refetchBalance = () => {
+    refetchSolBalance();
+    refetchEthBalance();
+  };
 
   useEffect(() => {
     if (!account && !publicKey) {
@@ -203,17 +212,23 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
               const checkChain = setInterval(() => {
                 checkAttempts++;
                 // Use the chain from thirdweb directly to verify the wallet's actual chain
-                console.log(`Checking chain switch: Wallet chain is ${chain?.id}, our ref is ${latestChainRef.current}`);
+                console.log(
+                  `Checking chain switch: Wallet chain is ${chain?.id}, our ref is ${latestChainRef.current}`
+                );
 
                 // Check BOTH the ref (our tracked value) and the thirdweb chain value
                 if (latestChainRef.current === chain.id) {
-                  console.log(`Chain switch successful: Now on chain ${chain.id}`);
+                  console.log(
+                    `Chain switch successful: Now on chain ${chain.id}`
+                  );
                   clearInterval(checkChain);
                   resolve();
                 } else if (checkAttempts >= maxAttempts) {
-                  console.error(`Chain switch timeout: Current ref shows chain ${latestChainRef.current}`);
+                  console.error(
+                    `Chain switch timeout: Current ref shows chain ${latestChainRef.current}`
+                  );
                   clearInterval(checkChain);
-                  reject(new Error('Chain switch timeout'));
+                  reject(new Error("Chain switch timeout"));
                 }
               }, 100);
             });
@@ -222,7 +237,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
             throw error;
           }
         } else {
-          throw new Error('No active wallet found');
+          throw new Error("No active wallet found");
         }
       }
     } catch (error) {
@@ -244,6 +259,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         isModalOpen,
         setIsModalOpen,
         switchToChain,
+        refetchBalance,
       }}
     >
       {children}

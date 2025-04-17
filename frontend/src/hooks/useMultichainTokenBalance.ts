@@ -16,6 +16,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
     walletAddress,
     activeChain,
     balance: nativeBalance,
+    refetchBalance: refetchNativeBalance,
   } = useMultiChain();
   const [balance, setBalance] = useState<Balance>({
     value: 0n,
@@ -30,6 +31,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const MAX_RETRIES = 3;
 
   const fetchBalance = useCallback(async () => {
+    refetchNativeBalance();
     try {
       if (!walletAddress || !token) {
         setBalance({
@@ -128,10 +130,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
 
     // Execute initial fetch
     fetchBalance();
-
-    const intervalFetch = setInterval(() => {
-      fetchBalance();
-    }, 2000);
 
     // If we have zero balance after a chain switch, retry with increasing delays
     if (

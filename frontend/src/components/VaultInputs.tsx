@@ -141,7 +141,7 @@ export default function VaultInputs({
   }, [activeChain, vaultData]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const { balance: tokenBalance } = useMultichainTokenBalance(inputToken);
+  const { balance: tokenBalance, fetchBalance } = useMultichainTokenBalance(inputToken);
 
   // Reset token when chain changes to prevent cross-chain token errors
   useEffect(() => {
@@ -799,6 +799,7 @@ export default function VaultInputs({
           setInputBalance={setInputBalance}
           errorMessage={errorMessage || outputBoxErrorMessage || ""}
           isDeposit={isDeposit}
+          refreshBalance={fetchBalance}
         />
       )}
     </>
