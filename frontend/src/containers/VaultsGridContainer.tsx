@@ -1,16 +1,22 @@
 import { useState } from "react";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
-import VaultsGrid from "../components/VaultsGrid";
-import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
+import { usePathname } from "next/navigation";
+import { 
+  VaultData, 
+  VaultAPY, 
+  UserVaultBalance, 
+  VaultTotalAssets, 
+  VaultTotalAssetsinToken 
+} from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { usePathname } from "next/navigation";
+import { useActiveAccount } from "thirdweb/react";
+import VaultsGrid from "../components/VaultsGrid";
 
+// Zero account for default value
 export const ZERO_ACCOUNT: Account = {
   address: "0x0000000000000000000000000000000000000000",
   sendTransaction: async () => {
@@ -24,12 +30,15 @@ export const ZERO_ACCOUNT: Account = {
   },
 };
 
-interface VaultsContainerProps {
+interface VaultsGridContainerProps {
   activeChain?: Chain; // Make activeChain optional
   defaultAccount?: Account; // Optional default account
 }
 
-const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultAccount = ZERO_ACCOUNT }) => {
+const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({ 
+  activeChain, 
+  defaultAccount = ZERO_ACCOUNT 
+}) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
@@ -41,24 +50,35 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
   const EOAaccount = useActiveAccount() || defaultAccount;
   const { walletAddress } = useMultiChain();
 
-  useUpdateVaultBalanceAndTotal(vaults, walletAddress, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken);
+  // Fetch vault balances and total values
+  useUpdateVaultBalanceAndTotal(
+    vaults, 
+    walletAddress, 
+    setUserVaultBalances, 
+    setVaultTotalAssets, 
+    setVaultTotalAssetsinToken
+  );
+  
+  // Fetch token prices for APY calculations
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
-  console.log("compTokenPrice: ", compTokenPrice)
-
+  
+  // Calculate APYs
   useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
 
   return (
-    <VaultsGrid
-      loading={loading}
-      vaults={vaults}
-      vaultAPYs={vaultAPYs}
-      userVaultBalances={userVaultBalances}
-      vaultTotalAssets={vaultTotalAssets}
-      vaultTotalAssetsinToken={vaultTotalAssetsinToken}
-    />
+    <div className="container mx-auto">
+      <VaultsGrid
+        loading={loading}
+        vaults={vaults}
+        vaultAPYs={vaultAPYs}
+        userVaultBalances={userVaultBalances}
+        vaultTotalAssets={vaultTotalAssets}
+        vaultTotalAssetsinToken={vaultTotalAssetsinToken}
+      />
+    </div>
   );
 };
 
-export default VaultsContainer;
+export default VaultsGridContainer; 
