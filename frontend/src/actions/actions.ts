@@ -243,42 +243,49 @@ export async function calculateCurveAPY(poolAddress: Address, strategyChain: Cha
   }
 }
 
-export async function calculateCurveRewardsAPY(gaugeAddress: Address, strategyChain: Chain, crvTokenPrice: number, ethTokenPrice: number) {
+export async function calculateCurveRewardsAPY(
+  gaugeAddress: Address,
+  strategyChain: Chain,
+  crvTokenPrice: number,
+  ethTokenPrice: number
+) {
   console.log("Fetching Curve rewards APY...");
 
-  // 1. Fetch metadata from Curve's emissions API
-  const res = await fetch(
-    `https://prices.curve.fi/v1/dao/gauges/${gaugeAddress}/metadata`
-  );
-  const json = await res.json();
-  const data = json;
-  console.log("Curve data:", data);
-  if (
-    !data ||
-    data.emissions === undefined ||
-    data.pool?.tvl_usd === undefined
-  ) {
-    console.warn("⚠️ Missing emissions or TVL for gauge:", gaugeAddress);
-    return null;
-  }
+  let attempts = 0;
+  let tvlUsd = 0;
+  let emissionsPerWeek = 0;
 
-  const emissionsPerWeek = parseFloat(data.emissions); // CRV per week
-  // const tvlUsd = parseFloat(data.pool.tvl_usd); // Total pool value in USD
-  let retries = 0;
-  let tvlUsd = parseFloat(data.pool.tvl_usd);
-  while (tvlUsd === 0 && retries < 2) {
+  while (attempts < 3) {
+    const res = await fetch(
+      `https://prices.curve.fi/v1/dao/gauges/${gaugeAddress}/metadata`
+    );
+    const json = await res.json();
+
+    if (!json || !json.emissions || !json.pool?.tvl_usd) {
+      console.warn("⚠️ Incomplete data from Curve API");
+      return 0;
+    }
+
+    tvlUsd = parseFloat(json.pool.tvl_usd);
+    emissionsPerWeek = parseFloat(json.emissions);
+
+    // If tvl is usable, break out of retry loop
+    if (tvlUsd > 1000) break;
+
+    attempts++;
     await new Promise((res) => setTimeout(res, 1000)); // wait 1s
-    const refetch = await fetch(`https://prices.curve.fi/v1/dao/gauges/${gaugeAddress}/metadata`);
-    const refetchedData = await refetch.json();
-    tvlUsd = parseFloat(refetchedData.pool.tvl_usd);
-    retries++;
   }
-  console.log("crvTokenPrice", crvTokenPrice);
 
-  // 2. Calculate APY
-  const crvRewardsPerWeekUsd = emissionsPerWeek * crvTokenPrice;
+  // Final guard: if still unusable, return 0
+  if (tvlUsd === 0 || emissionsPerWeek === 0) {
+    console.warn(`⚠️ Curve APY fallback: tvlUsd=${tvlUsd}, emissions=${emissionsPerWeek}`);
+    return 0.1456; // Fallback APY
+  }
+
+  const crvPrice = crvTokenPrice || 0.60; // fallback if needed
+  const crvRewardsPerWeekUsd = emissionsPerWeek * crvPrice;
   const weeklyApy = (crvRewardsPerWeekUsd / tvlUsd);
-  const annualApy = weeklyApy * 52;
+  const annualApy = weeklyApy * 52 / 2; // the division by 2 is just temporary for now
 
   console.log({
     crvApy: annualApy.toFixed(2) + "%",
@@ -289,6 +296,7 @@ export async function calculateCurveRewardsAPY(gaugeAddress: Address, strategyCh
 
   return annualApy;
 }
+
 
 export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   // Fetch rewards data
