@@ -919,7 +919,7 @@ function Interaction({
   completeTransactionProcess: (snapshot: TransactionStepMessages) => void;
   lastEventTxHash: string;
   setLastEventTxHash: (data: string) => void;
-  refreshBalance: () => void;
+  refreshBalance: Function;
 }): JSX.Element {
   const activeAccount = useActiveAccount();
   const walletContext = useWallet();
