@@ -7,15 +7,6 @@ import {
   formatBalance,
   formatCurrency,
 } from "@/utils/utils";
-import { client } from "@/utils/client";
-import { ethers } from "ethers";
-import {
-  useActiveAccount,
-  useActiveWalletChain,
-  useWalletBalance,
-} from "thirdweb/react";
-import { Address, Chain, getContract } from "thirdweb";
-import { getBalance } from "thirdweb/extensions/erc20";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
@@ -53,9 +44,11 @@ export default function VaultHeader({
 
   useEffect(() => {
     setdata1(formatBalance(Number(userVaultBalance)));
+    fetchBalance();
   }, [userVaultBalance]);
 
-  const { balance: walletTokenBalance } = useMultichainTokenBalance(inputToken);
+  const { balance: walletTokenBalance, fetchBalance } =
+    useMultichainTokenBalance(inputToken);
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);
