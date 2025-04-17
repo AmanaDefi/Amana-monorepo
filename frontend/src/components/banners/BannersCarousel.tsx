@@ -1,7 +1,7 @@
 import React from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
-import {UnderAuditBanner} from "@/components/banners/UnderAuditBanner";
+// import {UnderAuditBanner} from "@/components/banners/UnderAuditBanner";
 import {MaximizeEarningsBanner} from "@/components/banners/MaximizeEarningsBanner";
 import {UnderAudit2Banner} from "@/components/banners/UnderAudit2Banner";
 import {EffortlessStakingBanner} from "@/components/banners/EffortlessStakingBanner";
@@ -24,7 +24,7 @@ export function BannersCarousel() {
                     <EffortlessStakingBanner/>
                 </div>
                 <div className="embla__slide">
-                    <UnderAuditBanner/>
+                    <UnderAudit2Banner/>
                 </div>
                 <div className="embla__slide">
                     <MaximizeEarningsBanner/>

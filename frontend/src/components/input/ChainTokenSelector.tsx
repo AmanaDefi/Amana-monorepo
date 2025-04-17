@@ -40,9 +40,9 @@ export default function ChainTokenSelector({
   useEffect(() => {
     if (selectedToken) {
       // Check if it's a native token (address 0x0000000000000000000000000000000000000000)
-      const isNativeToken = selectedToken.address === "0x0000000000000000000000000000000000000000" || 
-                            selectedToken.address === "11111111111111111111111111111111"; // Solana native token
-      
+      const isNativeToken = selectedToken.address === "0x0000000000000000000000000000000000000000" ||
+        selectedToken.address === "11111111111111111111111111111111"; // Solana native token
+
       if (isNativeToken) {
         // For native tokens, extract chain name from the symbol
         // e.g., "ETH (ETH)" -> find in which chain this symbol exists
@@ -106,7 +106,7 @@ export default function ChainTokenSelector({
     // Prevent the event from bubbling up
     event.stopPropagation();
     event.preventDefault();
-    
+
     if (expandedChain === chainId) {
       setExpandedChain(null);
     } else {
@@ -118,7 +118,7 @@ export default function ChainTokenSelector({
     // Prevent the event from bubbling up
     event.stopPropagation();
     event.preventDefault();
-    
+
     console.log(`Selected token: ${token.symbol} from chain ${chain.id} (${chain.name})`);
     console.log(`Current active chain: ${activeChain?.id} (${activeChain?.name})`);
 
@@ -161,28 +161,28 @@ export default function ChainTokenSelector({
   // Enhanced token list to include vault asset tokens but ONLY in their own chains
   const getTokensForChain = useCallback((chain: Chain) => {
     // Only include tokens that belong to this specific chain
-    let chainTokens = [...(APPROVED_TOKENS[chain.id] || [])];
-    
+    let chainTokens: Token[] = [];
+
     const isZetaChain = chain.id === 7000 || chain.id === 7001;
-    
+
     // Only for ZetaChain, ensure the vault token is included if available
     if (isZetaChain && vaultData?.inputToken) {
-      const vaultTokenExists = chainTokens.some(token => 
+      const vaultTokenExists = chainTokens.some(token =>
         token.address === vaultData.inputToken.address
       );
-      
+
       if (!vaultTokenExists) {
         chainTokens.push(vaultData.inputToken);
       }
-    }
-    
+    } else chainTokens = [...(APPROVED_TOKENS[chain.id] || [])];
+
     // If this is NOT ZetaChain, remove the vault token if it exists in this chain
     if (!isZetaChain && vaultData?.inputToken) {
-      chainTokens = chainTokens.filter(token => 
+      chainTokens = chainTokens.filter(token =>
         token.address !== vaultData.inputToken.address
       );
     }
-    
+
     return chainTokens;
   }, [vaultData]);
 
@@ -191,7 +191,7 @@ export default function ChainTokenSelector({
 
     return SUPPORTED_CHAINS.filter(chain => {
       const chainTokens = getTokensForChain(chain);
-      const hasMatchingTokens = chainTokens.some(token => 
+      const hasMatchingTokens = chainTokens.some(token =>
         token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
       );
       return chain.name?.toLowerCase().includes(searchQuery.toLowerCase()) || hasMatchingTokens;
@@ -242,18 +242,18 @@ export default function ChainTokenSelector({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
+
           <div className="max-h-96 overflow-y-auto">
             {filteredChains.map((chain) => {
               const chainTokens = getTokensForChain(chain);
               const filteredTokens = searchQuery
-                ? chainTokens.filter(token => 
-                    token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
+                ? chainTokens.filter(token =>
+                  token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+                )
                 : chainTokens;
 
               if (searchQuery && filteredTokens.length === 0) return null;
-              
+
               // Don't show empty chains
               if (filteredTokens.length === 0) return null;
 
@@ -280,30 +280,29 @@ export default function ChainTokenSelector({
                         </span>
                       )}
                     </div>
-                    <ChevronDownIcon 
-                      className={`w-5 h-5 text-white transition-transform ${
-                        expandedChain === chain.id ? 'rotate-180' : ''
-                      }`} 
+                    <ChevronDownIcon
+                      className={`w-5 h-5 text-white transition-transform ${expandedChain === chain.id ? 'rotate-180' : ''
+                        }`}
                     />
                   </button>
-                  
+
                   {(expandedChain === chain.id || searchQuery) && filteredTokens.length > 0 && (
                     <div className="token-list">
                       {filteredTokens.map((token) => {
                         // Mark vault tokens with a highlight indicator
                         const isVaultToken = vaultData?.inputToken?.address === token.address;
-                        
+
                         // Special handling for native tokens (having zero address)
-                        const isNativeToken = token.address === "0x0000000000000000000000000000000000000000" || 
-                                             token.address === "11111111111111111111111111111111"; // Solana native
-                        
+                        const isNativeToken = token.address === "0x0000000000000000000000000000000000000000" ||
+                          token.address === "11111111111111111111111111111111"; // Solana native
+
                         // For native tokens, check both address and symbol
                         // For non-native tokens, just check the address
-                        const isSelectedToken = isNativeToken 
-                          ? (selectedToken?.address === token.address && 
-                             selectedToken?.symbol === token.symbol)
+                        const isSelectedToken = isNativeToken
+                          ? (selectedToken?.address === token.address &&
+                            selectedToken?.symbol === token.symbol)
                           : (selectedToken?.address === token.address);
-                        
+
                         return (
                           <button
                             key={token.address + token.symbol}
