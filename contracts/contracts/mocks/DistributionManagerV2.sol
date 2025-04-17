@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract DistributionManager {
+contract DistributionManagerV2 {
     struct Distribution {
         uint32 chainId;
         string protocolName;
@@ -10,6 +10,16 @@ contract DistributionManager {
     }
 
     Distribution[] private distributionList;
+
+    struct Rebalance {
+        uint32 chainId;
+        string protocolName;
+        address inputTokenAddress;
+        uint256 FractionOfStrategyToWithdraw;
+        uint256 FractionOfTotalWithdrawnAmountToDeposit;
+    }
+
+    Rebalance[] private rebalanceList;
 
     /// @notice Sets the entire distribution list at once
     /// @param _distributions Array of Distribution structs to replace the current list
@@ -34,10 +44,10 @@ contract DistributionManager {
 
     /// @notice Replaces the current distribution list with a new list
     /// @param _newList Array of Distribution structs to replace the current list
-    function updateDistributionList(Distribution[] calldata _newList) external {
-        delete distributionList;
+    function rebalance(Rebalance[] calldata _newList) external {
+        delete rebalanceList;
         for (uint i = 0; i < _newList.length; i++) {
-            distributionList.push(_newList[i]);
+            rebalanceList.push(_newList[i]);
         }
     }
 }
