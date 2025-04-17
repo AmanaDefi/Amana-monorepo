@@ -442,9 +442,9 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0x022F47Baf18990EF8C1A6fe7e9e9078B2F5D6015",
-    name: "uniEth/ETH Pool",
-    des: "This strategy deposits ETH into the Curve uniETH/ETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+    id: "0xd99C4B260DaE25feF005eDCe4066a5Fb91B1760e",
+    name: "msEth/WETH Pool",
+    des: "This strategy deposits ETH into the Curve msEth/WETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
     symbol: "aCurveETH",
     imgURL: "/ETH.png",
     depositFeePaidFromGasTank: true,
@@ -459,8 +459,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Curve",
-      strategyAddress: "0xe7cE888ae7e0e427a935caC1b616A77ac84EEAE6",
-      gaugeAddress: "0x8B859fb47b6377a84B61D3891774De462560742C",
+      strategyAddress: "0x02036BA750cdDBB7389a116110fc4aa58B3E40Be",
+      gaugeAddress: "0x4e227d29b33B77113F84bcC189a6F886755a1f24",
       network: "Ethereum",
       chainId: 1,
       netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",

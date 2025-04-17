@@ -25,6 +25,7 @@ import "./tasks/clearNonces";
 import "./tasks/deploySwapHelperPolygon";
 import "./tasks/deployERC20_Strategy_SwapHelper";
 import "./tasks/depositMultiple";
+import "./tasks/deploySwapHelperEthereum";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -43,7 +44,7 @@ dotenv.config();
 const config: HardhatUserConfig = {
   networks: {
     ...getHardhatConfigNetworks(),
-    ethereum: {
+    mainnet: {
       url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },

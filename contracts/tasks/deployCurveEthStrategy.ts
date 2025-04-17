@@ -18,10 +18,13 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const contractName = args.contract;
   const name = args.name;
   const vault = args.vault; // This should be passed as an argument
+  const withdrawHelper = args.withdrawHelper;
+  const swapHelper = args.swapHelper;
   const receiptToken = args.receiptToken;
-  const gauge = args.gauge;
-  const gateway = args.gateway;
   const weth = args.weth;
+  const gauge = args.gauge;
+  const tokenIndex = args.tokenIndex;
+  const rewardsTokenAddress = args.rewardsTokenAddress;
 
   if (!name) {
     throw new Error("🚨 Strategy name is required");
@@ -35,16 +38,14 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (!contractName) {
     throw new Error("🚨 Strategy contract name is required");
   }
-  if (!gateway) {
-    throw new Error("🚨 Gateway address is required");
-  }
+
   if (!weth) {
     throw new Error("🚨 WETH address is required");
   }
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, receiptToken, gauge, gateway, weth);
+  const contract = await factory.deploy(name, vault, withdrawHelper, swapHelper, receiptToken, weth, gauge, rewardsTokenAddress, tokenIndex);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for contract to be deployed before proceeding
@@ -60,7 +61,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, receiptToken, gauge, gateway, weth],
+        constructorArguments: [name, vault, withdrawHelper, swapHelper, receiptToken, weth, gauge, rewardsTokenAddress, tokenIndex],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -81,9 +82,12 @@ task("deploy-curve-eth-strategy", "Deploy a Strategy contract", main)
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
   .addParam("vault", "The address of the vault")
+  .addParam("withdrawHelper", "The address of the withdraw helper contract")
+  .addParam("swapHelper", "The address of the swap helper contract")
   .addParam("receiptToken", "The address of the receipt token")
+  .addParam("weth", "The address of the WETH contract")
   .addParam("gauge", "The address of the gauge contract")
-  .addParam("gateway", "The address of the gateway contract")
-  .addParam("weth", "The address of the WETH contract");
+  .addParam("rewardsTokenAddress", "The address of the rewards token contract")
+  .addParam("tokenIndex", "The index of the token in the gauge contract");
 
 export default {};
