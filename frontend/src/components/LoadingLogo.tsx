@@ -53,7 +53,7 @@ const LoadingLogo: React.FC = () => {
       </svg>
       
       <div className="ml-4 text-lg font-medium text-gray-100 animate-pulse">
-        Loading...
+        Loading Earning Oppurtunites...
       </div>
     </div>
   );
