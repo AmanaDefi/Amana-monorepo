@@ -639,8 +639,16 @@ export default function VaultInputs({
       setOutputBoxErrorMessage("");
       return;
     }
+
     checkSlippageExceedingLimit();
-  }, [conversionOutput]);
+
+    if (
+      inputBalance.value > 0n &&
+      Number(conversionOutput.outputAmountFormatted) == 0
+    ) {
+      setOutputBoxErrorMessage("Swap route not found");
+    }
+  }, [conversionOutput, inputBalance]);
 
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
@@ -665,7 +673,7 @@ export default function VaultInputs({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [initialConversionOutput, inputBalance]);
+  }, [inputBalance]);
 
   useEffect(() => {
     if (
@@ -808,7 +816,7 @@ export default function VaultInputs({
         </div>
       </div>
 
-      {inputToken && (
+      {inputToken && !loadingOutputToken && (
         <InteractionContainer
           step={step}
           setStep={setStep}

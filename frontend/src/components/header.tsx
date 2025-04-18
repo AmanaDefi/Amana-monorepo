@@ -79,7 +79,7 @@ const Header = () => {
             </span> */}
           </nav>
           {/* Select Network Modal */}
-          <ChainSwitcher/>
+          {/* <ChainSwitcher/> */}
           {/* <ConnectButton /> */}
           <ConnectButton wallets={wallets} chains={SUPPORTED_CHAINS} client={client} />
         </div>
