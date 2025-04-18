@@ -607,7 +607,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   1: [
     {
-      symbol: "ETH.ETH",
+      symbol: "ETH (ETH)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: TOKEN_LOGO_URLS.ETH,
@@ -617,7 +617,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
-      symbol: "USDC.ETH",
+      symbol: "USDC (ETH)",
       address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       decimals: 6,
       imgURL: TOKEN_LOGO_URLS.USDC,
@@ -627,7 +627,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a"],
     },
     {
-      symbol: "USDT.ETH",
+      symbol: "USDT (ETH)",
       address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
       decimals: 6,
       imgURL: TOKEN_LOGO_URLS.USDT,
