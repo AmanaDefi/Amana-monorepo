@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "./interfaces/IErrors.sol";
 import "./interfaces/IPriceOracle.sol";
-// import "./interfaces/ICurvePool.sol";
+import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
@@ -257,14 +257,10 @@ contract SwapHelperEthereum {
         }
 
         // UniswapV2 Direct Swap
-        if (
-            _existsPairPool(inputToken, WETH_TOKEN) &&
-            _existsPairPool(WETH_TOKEN, outputToken)
-        ) {
-            path = new address[](3);
+        if (_existsPairPool(inputToken, outputToken)) {
+            path = new address[](2);
             path[0] = inputToken;
-            path[1] = WETH_TOKEN;
-            path[2] = outputToken;
+            path[1] = outputToken;
             return (path);
         }
 
@@ -443,12 +439,56 @@ contract SwapHelperEthereum {
             : (reserve1, reserve0);
     }
 
+    /**
+     * @notice Finds the index of a token in a Curve pool.
+     * @param token The token to find in the pool.
+     * @param pool The Curve pool address.
+     * @return index The token index in the pool.
+     */
+    function getTokenIndex(
+        address token,
+        address pool
+    ) public view returns (uint256) {
+        // Assume Curve pools have at most 8 tokens
+        for (uint256 i = 0; i < 8; i++) {
+            try ICurvePoolDynamic(pool).coins(i) returns (address poolToken) {
+                if (poolToken == token) {
+                    return i;
+                }
+            } catch {
+                break; // Stop if out of range
+            }
+        }
+        revert("Token not found in Curve pool");
+    }
+
+    /**
+     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+     * @param inputToken The token being swapped from.
+     * @param outputToken The token being swapped to.
+     * @return curvePool The address of the curve pool to use.
+     */
+    function getCurvePool(
+        address inputToken,
+        address outputToken
+    ) public view returns (address curvePool, uint256 i, uint256 j) {
+        curvePool = 0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4;
+        // Find token indexes in the pool using getTokenIndex()
+        if (curvePool != address(0)) {
+            i = getTokenIndex(inputToken, curvePool);
+            j = getTokenIndex(outputToken, curvePool);
+        } else {
+            i = 0;
+            j = 0;
+        }
+    }
+
     function swap(
         address inputToken,
         uint256 amount,
         address outputToken,
         uint16 slippageBps,
-        address vault,
+        address strategy,
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut) {
@@ -463,6 +503,24 @@ contract SwapHelperEthereum {
             amount,
             slippageBps
         );
+        if (inputToken == CVX_ADDRESS) {
+            (address curvePool, uint256 i, uint256 j) = getCurvePool(
+                inputToken,
+                outputToken
+            );
+            // Approve Curve pool to spend tokens
+            IERC20(inputToken).approve(curvePool, amount);
+            uint256 amountOutCurve = ICurvePoolDynamic(curvePool).exchange(
+                i,
+                j,
+                amount,
+                minimumOut
+            );
+            // Transfer output token (e.g. WETH) back to the vault or strategy
+            IERC20(outputToken).transfer(strategy, amountOutCurve);
+            return amountOutCurve;
+        }
+
         (
             address[] memory path,
             uint24[] memory feeTiers,
@@ -475,7 +533,7 @@ contract SwapHelperEthereum {
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
                     path: encodedPath,
-                    recipient: vault,
+                    recipient: strategy,
                     deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
                     amountOutMinimum: minimumOut
@@ -491,7 +549,7 @@ contract SwapHelperEthereum {
                     amount,
                     minimumOut,
                     path,
-                    vault,
+                    strategy,
                     block.timestamp + maxDeadline
                 );
             amountOut = amounts[amounts.length - 1];
@@ -504,7 +562,7 @@ contract SwapHelperEthereum {
         uint256 amountOut,
         address outputToken,
         uint16 slippageBps,
-        address vault,
+        address strategy,
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountIn) {
@@ -530,7 +588,7 @@ contract SwapHelperEthereum {
             ISwapRouter.ExactOutputParams memory params = ISwapRouter
                 .ExactOutputParams({
                     path: encodedPath,
-                    recipient: vault,
+                    recipient: strategy,
                     deadline: block.timestamp,
                     amountOut: amountOut,
                     amountInMaximum: maxAmountIn
@@ -546,12 +604,12 @@ contract SwapHelperEthereum {
                     amountOut,
                     maxAmountIn,
                     path,
-                    vault,
+                    strategy,
                     block.timestamp + maxDeadline
                 );
             amountIn = amounts[0];
         }
-        IERC20(inputToken).transfer(vault, totalAmountAvailable - amountIn);
+        IERC20(inputToken).transfer(strategy, totalAmountAvailable - amountIn);
 
         return amountIn;
     }

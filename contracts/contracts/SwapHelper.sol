@@ -17,7 +17,6 @@ import "./interfaces/IAlgebraFactory.sol";
 import "./interfaces/IAlgebraPool.sol";
 
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 contract SwapHelper {
     enum SwapType {
@@ -311,17 +310,11 @@ contract SwapHelper {
         address tokenA,
         address tokenB
     ) internal view returns (bool exists) {
-        console.log("Checking Beam pool for tokens:", tokenA, tokenB);
         address pool = IAlgebraFactory(ALGEBRA_FACTORY_BEAM).poolByPair(
             tokenA,
             tokenB
         );
-        console.log("Pool address:", pool);
-        if (pool != address(0)) {
-            console.log("Pool liquidity:", IAlgebraPool(pool).liquidity());
-        }
         if (pool != address(0) && IAlgebraPool(pool).liquidity() > 0) {
-            console.log("Found valid Beam pool");
             return true; // Prioritize 0.05% fee pool
         }
         return false; // No valid V3 pool found
@@ -336,14 +329,10 @@ contract SwapHelper {
         }
 
         // UniswapV2 Direct Swap
-        if (
-            _existsV2PoolEddy(zrc20, USDC_ETH_ADDRESS) &&
-            _existsV2PoolEddy(USDC_ETH_ADDRESS, targetZRC20)
-        ) {
-            path = new address[](3);
+        if (_existsV2PoolEddy(zrc20, targetZRC20)) {
+            path = new address[](2);
             path[0] = zrc20;
-            path[1] = USDC_ETH_ADDRESS;
-            path[2] = targetZRC20;
+            path[1] = targetZRC20;
             return (path);
         }
 
@@ -707,8 +696,6 @@ contract SwapHelper {
                 });
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER_EDDY).exactInput(params);
         } else if (swapType == SwapType.Beam) {
-            console.log("Executing Beam swap");
-
             IZRC20(zrc20).approve(SWAPROUTER_BEAM, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
@@ -718,7 +705,6 @@ contract SwapHelper {
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
-            console.log("Beam swap executed");
             amountOut = ISwapRouter(SWAPROUTER_BEAM).exactInput(params);
         } else {
             // fallback to V2 or revert

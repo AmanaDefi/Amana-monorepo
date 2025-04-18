@@ -71,7 +71,6 @@ contract CurveEthStrategy is EthStrategyParent {
 
         SafeERC20.safeTransfer(IERC20(token), swapHelperEthereum, amountIn);
         uint16 maxDeadline = uint16(block.timestamp + 1 hours);
-
         amountOut = ISwapHelper(swapHelperEthereum).swap(
             token,
             amountIn,
@@ -80,6 +79,11 @@ contract CurveEthStrategy is EthStrategyParent {
             address(this),
             maxDeadline,
             ""
+        );
+
+        require(
+            amountOut > 0,
+            "Swap failed: Amount out must be greater than zero"
         );
 
         return amountOut;
@@ -130,7 +134,6 @@ contract CurveEthStrategy is EthStrategyParent {
             totalWeth
         );
         uint256 shares = receiptToken.add_liquidity(amounts, 0);
-
         if (stakingEnabled) {
             approveOrIncreaseAllowance(
                 IERC20(receiptToken),
@@ -251,6 +254,7 @@ contract CurveEthStrategy is EthStrategyParent {
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256) {
+        if (shares == 0) return 0;
         return
             receiptToken.calc_withdraw_one_coin(
                 shares,

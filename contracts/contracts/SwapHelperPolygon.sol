@@ -256,14 +256,10 @@ contract SwapHelperPolygon {
         }
 
         // UniswapV2 Direct Swap
-        if (
-            _existsPairPool(inputToken, WETH_TOKEN) &&
-            _existsPairPool(WETH_TOKEN, outputToken)
-        ) {
-            path = new address[](3);
+        if (_existsPairPool(inputToken, outputToken)) {
+            path = new address[](2);
             path[0] = inputToken;
-            path[1] = WETH_TOKEN;
-            path[2] = outputToken;
+            path[1] = outputToken;
             return (path);
         }
 
