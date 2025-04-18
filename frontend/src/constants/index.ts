@@ -124,7 +124,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     protocol: {
       name: "Compound",
       strategyAddress: "0x5E1613bB9d1A8838eD72BE8471326B4C05102757",
-      gaugeAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+      rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
       network: "Polygon",
       chainId: 137,
       netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
@@ -406,7 +406,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   protocol: {
   //     name: "Curve",
   //     strategyAddress: "0xf6CDBA75c81E1aF9a04fCA0f57A0e49b9B277Ba3",
-  //     gaugeAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
+  //     rewardsContractAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
   //     network: "Ethereum",
   //     chainId: 1,
   //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
@@ -433,7 +433,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   protocol: {
   //     name: "Curve",
   //     strategyAddress: "0x3E876f6Bfd132E50612a1d2958c560BF1631Dd56",
-  //     gaugeAddress: "0x55e5adb2cb00bfdb085440ca6a5ec628705b2e7f",
+  //     rewardsContractAddress: "0x55e5adb2cb00bfdb085440ca6a5ec628705b2e7f",
   //     network: "Ethereum",
   //     chainId: 1,
   //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
@@ -459,8 +459,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Curve",
-      strategyAddress: "0x8106Ca539dC8D40dD448FFf3cad41C8eD8C57BFB",
-      gaugeAddress: "0x4e227d29b33B77113F84bcC189a6F886755a1f24",
+      strategyAddress: "0xe00446C7Ee8c92C947c2CCb3F06dA0566eb3Ba39",
+      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
       network: "Ethereum",
       chainId: 1,
       netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",

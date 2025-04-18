@@ -36,7 +36,7 @@ export interface VaultData {
   protocol: {
     name: string;
     strategyAddress: string;
-    gaugeAddress?: string;
+    rewardsContractAddress?: string;
     network: string;
     chainId: number;
     netdes?: string;

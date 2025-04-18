@@ -22,9 +22,12 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const swapHelper = args.swapHelper;
   const receiptToken = args.receiptToken;
   const weth = args.weth;
-  const gauge = args.gauge;
   const tokenIndex = args.tokenIndex;
-  const rewardsTokenAddress = args.rewardsTokenAddress;
+  const cvxRewardsPool = args.cvxRewardsPool;
+  const crvToken = args.crvToken;
+  const convexPid = args.convexPid;
+  const boosterAddress = args.boosterAddress;
+  const cvxToken = args.cvxToken;
 
   if (!name) {
     throw new Error("🚨 Strategy name is required");
@@ -45,7 +48,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, withdrawHelper, swapHelper, receiptToken, weth, gauge, rewardsTokenAddress, tokenIndex);
+  const contract = await factory.deploy(name, vault, withdrawHelper, swapHelper, receiptToken, weth, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for contract to be deployed before proceeding
@@ -61,7 +64,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, withdrawHelper, swapHelper, receiptToken, weth, gauge, rewardsTokenAddress, tokenIndex],
+        constructorArguments: [name, vault, withdrawHelper, swapHelper, receiptToken, weth, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -86,8 +89,11 @@ task("deploy-curve-eth-strategy", "Deploy a Strategy contract", main)
   .addParam("swapHelper", "The address of the swap helper contract")
   .addParam("receiptToken", "The address of the receipt token")
   .addParam("weth", "The address of the WETH contract")
-  .addParam("gauge", "The address of the gauge contract")
-  .addParam("rewardsTokenAddress", "The address of the rewards token contract")
-  .addParam("tokenIndex", "The index of the token in the gauge contract");
+  .addParam("cvxRewardsPool", "The address of the CVX rewards pool")
+  .addParam("crvToken", "The address of the CRV token")
+  .addParam("tokenIndex", "The index of the token in the gauge contract")
+  .addParam("convexPid", "The Convex PID")
+  .addParam("boosterAddress", "The address of the Convex booster")
+  .addParam("cvxToken", "The address of the CVX token");
 
 export default {};
