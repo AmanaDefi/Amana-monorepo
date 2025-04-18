@@ -27,6 +27,9 @@ export interface StrategyTestConfig {
   withdrawAmount: BigNumber;
   minAmountOut: BigNumber;
   slippage: number;
+  convexBooster?: string,
+  cvxTokenAddress?: string,
+  convexPoolId?: number
 }
 
 export const strategyConfigs: StrategyTestConfig[] = [
@@ -61,11 +64,11 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "ICurvePoolFixed",
     swapHelperContractName: "SwapHelperEthereum",
     rewardsContractName: "ICurveLiquidityGauge",
-    forkBlock: 22274840,
+    forkBlock: 22289620,
     inputTokenAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     inputTokenIndexOrPlaceholder: 1,
     receiptTokenAddress: "0xa4c567c662349BeC3D0fB94C4e7f85bA95E208e4",
-    rewardsContractAddress: "0x4e227d29b33B77113F84bcC189a6F886755a1f24",
+    rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
     rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52",
     originChainId: 8453,
     withdrawZRC20: ZC_ETH_BASE_ADDRESS,
@@ -77,6 +80,9 @@ export const strategyConfigs: StrategyTestConfig[] = [
     minSharesOut: ethers.utils.parseUnits("0.9", 18),
     withdrawAmount: ethers.utils.parseUnits("1", 18),
     minAmountOut: ethers.utils.parseUnits("0.9", 18),
-    slippage: 10000
+    slippage: 10000,
+    convexBooster: "0xf403c135812408bfbe8713b5a23a04b3d48aae31",
+    cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
+    convexPoolId: 217
   }
 ];

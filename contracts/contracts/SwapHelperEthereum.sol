@@ -32,6 +32,8 @@ contract SwapHelperEthereum {
 
     address public constant CRV_ADDRESS =
         0xD533a949740bb3306d119CC777fa900bA034cd52; // CRV token
+    address public constant CVX_ADDRESS =
+        0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B; // CVX token
     address public constant USDC_ADDRESS =
         0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC token
     address public constant USDT_ADDRESS =
@@ -39,6 +41,8 @@ contract SwapHelperEthereum {
 
     bytes32 constant crvUsdPriceFeedId =
         0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
+    bytes32 constant cvxUsdPriceFeedId =
+        0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76;
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
 
@@ -58,6 +62,8 @@ contract SwapHelperEthereum {
             return ethUsdPriceFeedId;
         } else if (token == CRV_ADDRESS) {
             return crvUsdPriceFeedId;
+        } else if (token == CVX_ADDRESS) {
+            return cvxUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }

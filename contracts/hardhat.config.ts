@@ -26,6 +26,7 @@ import "./tasks/deploySwapHelperPolygon";
 import "./tasks/deployERC20_Strategy_SwapHelper";
 import "./tasks/depositMultiple";
 import "./tasks/deploySwapHelperEthereum";
+import "./tasks/findConvexPid";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";

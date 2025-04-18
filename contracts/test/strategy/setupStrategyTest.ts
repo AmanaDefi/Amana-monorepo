@@ -54,7 +54,10 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     receiptTokenContractName,
     swapHelperContractName,
     rewardsContractName = "ICometRewards", //default, can be overridden in config file
-    strategyChainId
+    strategyChainId,
+    convexBooster,
+    cvxTokenAddress,
+    convexPoolId
   } = config;
 
   const rpcUrl = getRpcUrl(strategyChainId);
@@ -96,16 +99,27 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
   await swapHelper.deployed();
 
   const StrategyFactory = await ethers.getContractFactory(strategyContractName);
-  const strategy = await StrategyFactory.deploy(
+  const args = [
     config.name,
     AMANA_VAULT_ADDRESS,
     WITHDRAW_HELPER_ADDRESS,
     swapHelper.address,
     receiptTokenAddress,
     inputTokenAddress,
-    rewardsContractAddress,
-    rewardsTokenAddress,
-    inputTokenIndexOrPlaceholder
+    rewardsContractAddress ?? ethers.constants.AddressZero,
+    rewardsTokenAddress ?? ethers.constants.AddressZero,
+    inputTokenIndexOrPlaceholder ?? 0
+  ];
+
+  if (strategyContractName === "CurveEthStrategy") {
+    if (!convexBooster || !cvxTokenAddress || !convexPoolId) {
+      throw new Error("Convex parameters are required for CurveEthStrategy");
+    }
+    args.push(convexPoolId, convexBooster, cvxTokenAddress);
+  }
+
+  const strategy = await StrategyFactory.deploy(
+    ...args
   );
   await strategy.deployed();
 
@@ -142,6 +156,13 @@ export async function deployStrategyFromConfig(config: StrategyTestConfig, swapH
     config.rewardsTokenAddress ?? ethers.constants.AddressZero,
     config.inputTokenIndexOrPlaceholder ?? 0
   ];
+
+  if (config.strategyContractName === "CurveEthStrategy") {
+    if (!config.convexBooster || !config.cvxTokenAddress || !config.convexPoolId) {
+      throw new Error("Convex parameters are required for CurveEthStrategy");
+    }
+    args.push(config.convexPoolId, config.convexBooster, config.cvxTokenAddress);
+  }
 
   const strategy = await StrategyFactory.deploy(...args);
   await strategy.deployed();

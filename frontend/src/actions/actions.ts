@@ -243,55 +243,59 @@ export async function calculateCurveAPY(poolAddress: Address, strategyChain: Cha
   }
 }
 
-export async function calculateCurveRewardsAPY(
-  gaugeAddress: Address,
+export async function calculateConvexRewardsAPY(
+  crvRewardsAddress: Address,
+  lpTokenAddress: Address,
   strategyChain: Chain,
-  crvTokenPrice: number,
-  ethTokenPrice: number
-) {
-  console.log("Fetching Curve rewards APY...");
+  crvTokenPrice: number
+): Promise<number> {
+  console.log("Fetching Convex rewards APY...");
 
-  let attempts = 0;
-  let tvlUsd = 0;
-  let emissionsPerWeek = 0;
+  const rewardsContract = getContract({
+    client,
+    chain: strategyChain,
+    address: crvRewardsAddress,
+  });
 
-  while (attempts < 3) {
-    const res = await fetch(
-      `https://prices.curve.fi/v1/dao/gauges/${gaugeAddress}/metadata`
-    );
-    const json = await res.json();
+  const lpTokenContract = getContract({
+    client,
+    chain: strategyChain,
+    address: lpTokenAddress,
+  });
 
-    if (!json || !json.emissions || !json.pool?.tvl_usd) {
-      console.warn("⚠️ Incomplete data from Curve API");
-      return 0;
-    }
+  // 1. Get CRV reward rate (per second)
+  const rewardRate: bigint = await readContract({
+    contract: rewardsContract,
+    method: "function rewardRate() view returns (uint256)",
+  });
 
-    tvlUsd = parseFloat(json.pool.tvl_usd);
-    emissionsPerWeek = parseFloat(json.emissions);
+  // 2. Get totalSupply of staked LP tokens
+  const totalSupply: bigint = await readContract({
+    contract: rewardsContract,
+    method: "function totalSupply() view returns (uint256)",
+  });
 
-    // If tvl is usable, break out of retry loop
-    if (tvlUsd > 1000) break;
+  // 3. Get LP token price in USD (you need to implement this!)
+  const lpTokenPriceUsd = await getLpTokenPriceUsd(lpTokenAddress, strategyChain);
+  const tvlUsd = Number(totalSupply) / 1e18 * lpTokenPriceUsd;
 
-    attempts++;
-    await new Promise((res) => setTimeout(res, 1000)); // wait 1s
+  if (!tvlUsd || tvlUsd < 1000) {
+    console.warn("⚠️ TVL too low or missing:", tvlUsd);
+    return 0.0;
   }
 
-  // Final guard: if still unusable, return 0
-  if (tvlUsd === 0 || emissionsPerWeek === 0) {
-    console.warn(`⚠️ Curve APY fallback: tvlUsd=${tvlUsd}, emissions=${emissionsPerWeek}`);
-    return 0.1456; // Fallback APY
-  }
+  const WEEK_IN_SECONDS = 604800n;
+  const emissionsPerWeek = Number((rewardRate * WEEK_IN_SECONDS) / 1e18n); // CRV tokens
+  const crvRewardsPerWeekUsd = emissionsPerWeek * crvTokenPrice;
 
-  const crvPrice = crvTokenPrice || 0.60; // fallback if needed
-  const crvRewardsPerWeekUsd = emissionsPerWeek * crvPrice;
-  const weeklyApy = (crvRewardsPerWeekUsd / tvlUsd);
-  const annualApy = weeklyApy * 52 / 2; // the division by 2 is just temporary for now
+  const weeklyApy = crvRewardsPerWeekUsd / tvlUsd;
+  const annualApy = weeklyApy * 52;
 
   console.log({
-    crvApy: annualApy.toFixed(2) + "%",
+    apy: annualApy.toFixed(2) + "%",
     emissionsPerWeek,
     crvRewardsPerWeekUsd: crvRewardsPerWeekUsd.toFixed(2),
-    tvlUsd,
+    tvlUsd: tvlUsd.toFixed(2),
   });
 
   return annualApy;

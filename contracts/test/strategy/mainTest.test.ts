@@ -294,15 +294,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await ethers.provider.send("evm_increaseTime", [timeToSimulate]); // Fast-forward time
       await ethers.provider.send("evm_mine", []); // Mine a new block
 
-
-
       // Step 5: Check Claimable Rewards
       let reward;
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         reward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         reward = reward.owed;
       } else {
-        reward = await rewardsContract.callStatic.claimable_tokens(strategy.address);
+        reward = await strategy.checkRewards();
       }
 
       // Step 6: Simulate Withdrawal
@@ -338,7 +336,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         finalClaimableRewards = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         finalClaimableRewards = finalClaimableRewards.owed;
       } else {
-        finalClaimableRewards = await rewardsContract.callStatic.claimable_tokens(strategy.address);
+        finalClaimableRewards = await strategy.checkRewards();
       }
       expect(finalClaimableRewards).to.be.lt(reward); // Rewards should have been claimed
     });
@@ -766,7 +764,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         preHarvestReward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         preHarvestReward = preHarvestReward.owed;
       } else {
-        preHarvestReward = await rewardsContract.callStatic.claimable_tokens(strategy.address);
+        preHarvestReward = await strategy.checkRewards();
       }
       expect(preHarvestReward).to.be.gt(0);
 
