@@ -808,7 +808,7 @@ export default function VaultInputs({
         </div>
       </div>
 
-      {inputToken && (
+      {inputToken && !loadingOutputToken && (
         <InteractionContainer
           step={step}
           setStep={setStep}
