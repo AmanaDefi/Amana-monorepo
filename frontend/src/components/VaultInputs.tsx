@@ -355,6 +355,7 @@ export default function VaultInputs({
     if (isDeposit) {
       // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
       setInputBalance(tokenBalance);
+      setDisplayValue(tokenBalance.formatted)
     } else {
       handleChangeInput({
         currentTarget: { value: vaultTotalAssetinToken?.toString() },
