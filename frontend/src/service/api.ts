@@ -23,14 +23,14 @@ export default class BaseAPI {
     }
   }
 
-  async getVaultData() {
+  async getVaultData(address: string) {
     try {
-      const res = await this.api.get(`/vaults/v1/collect-all-data`, {
+      const res = await this.api.get(`/vaults/v1/collect-data/${address}`, {
         headers: {
           "API-KEY": API_KEY,
         },
       });
-      return res.data.data;
+      return res.data.data[0];
     } catch (error) {
       return [];
     }
