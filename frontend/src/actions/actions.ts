@@ -902,16 +902,17 @@ const executeCrossChainWithdrawal = async (
   activeChain: Chain,
   withdrawShareAmount: bigint,
   withdrawERC20: Address,
-  withdrawZRC20: Address,
+  withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
   const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
-
+  console.log("minAmountOut", minAmountOut);
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount.address, activeChain);
-
+  console.log("transactionId", transactionId);
   const slippage = getCurrentSlippage();
+  console.log("slippage", slippage);
   let contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
@@ -919,14 +920,21 @@ const executeCrossChainWithdrawal = async (
   });
 
   const slippageValue = (slippage * 100).toFixed(0);
+  console.log("slippageValue", slippageValue);
   // Prepare payload (calldata to pass to the receiver)
+  console.log("withdrawZRC20", withdrawZRC20);
+  console.log("withdrawERC20", withdrawERC20);
+  console.log("withdrawShareAmount", withdrawShareAmount);
+  console.log("minAmountOut", minAmountOut);
+  console.log("slippageValue", slippageValue);
+  console.log("transactionId", transactionId);
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    [withdrawZRC20, withdrawERC20, withdrawShareAmount, minAmountOut, slippageValue, transactionId]
+    [withdrawZRC20.address, withdrawERC20, withdrawShareAmount, minAmountOut, slippage, transactionId]
   ) as `0x${string}`;
-
+  console.log("Payload created");
   const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainWithdrawFailed", transactionId, activeAccount.address]);
-
+  console.log("Revert message created");
   const revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
     false, // callOnRevert
@@ -934,7 +942,7 @@ const executeCrossChainWithdrawal = async (
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
   ] as const;
-
+  console.log("Revert options created");
   // const txOptions = {
   //   gasLimit: BigInt(1000000), // Example value, update as needed
   //   gasPrice: BigInt(100000), // This will have to change depending on the chain
@@ -946,7 +954,7 @@ const executeCrossChainWithdrawal = async (
     chain: activeChain,
     address: EVMGatewayAddress,
   });
-
+  console.log("About to withdraw");
   const withdrawTx = prepareContractCall({
     contract,
     method:
