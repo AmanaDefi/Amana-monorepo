@@ -1,6 +1,6 @@
 import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction, readContract, defineChain } from "thirdweb";
 import { client } from "../utils/client";
-import { CHAIN_ID, crossChainTxUrl, SUPPORTED_CHAINS, zeroSolAddress } from "../constants/chainConfig";
+import { CHAIN_ID, crossChainTxUrl, SUPPORTED_CHAINS, zeroSolAddress, EVM_GATEWAY_ADDRESSES } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { ethers, getBytes, JsonRpcProvider } from "ethers";
@@ -27,26 +27,16 @@ import axios from "axios";
 import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
 
-
-
 import type { IConnection } from 'codemelt-retro-api-sdk';
 
 dotenv.config();
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
 const provider_ethereum = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH);
 
-const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
-const EVMGatewayAddress = deployEnv === "testnet"
-  ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
-  : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
 const abiCoder = new AbiCoder();
 
 const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === 'testnet';
 const contractWithdrawalReceiverAddress = (isTestnet ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS) as `0x${string}`
-
-if (!EVMGatewayAddress) {
-  throw new Error(`EVM Gateway address is not defined for the ${deployEnv} environment.`);
-}
 
 export async function calculateEddyAPY(receiptTokenAddress: Address, strategyChain: Chain) {
   const receiptTokenContract = getContract({
@@ -538,7 +528,7 @@ export const Approvedeposit = async (vaultId: Address, inputToken: Address, acti
     if (activeChain.id === 7000 || activeChain.id === 7001) {
       spender = vaultId
     } else {
-      spender = EVMGatewayAddress
+      spender = EVM_GATEWAY_ADDRESSES[activeChain.id]
     }
     const approveTx = prepareContractCall({
       contract,
@@ -692,7 +682,7 @@ const executeCrossChainDeposit = async (
     contract = getContract({
       client,
       chain: activeChain,
-      address: EVMGatewayAddress,
+      address: EVM_GATEWAY_ADDRESSES[activeChain.id],
     });
     const depositTx = prepareContractCall({
       contract,
@@ -741,7 +731,7 @@ const executeCrossChainDeposit = async (
     contract = getContract({
       client,
       chain: activeChain,
-      address: EVMGatewayAddress,
+      address: EVM_GATEWAY_ADDRESSES[activeChain.id],
     });
     const depositTx = prepareContractCall({
       contract,
@@ -902,15 +892,13 @@ const executeCrossChainWithdrawal = async (
   activeChain: Chain,
   withdrawShareAmount: bigint,
   withdrawERC20: Address,
-  withdrawZRC20: Address,
+  withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
   const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
-
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(activeAccount.address, activeChain);
-
   const slippage = getCurrentSlippage();
   let contract = getContract({
     client,
@@ -922,11 +910,9 @@ const executeCrossChainWithdrawal = async (
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    [withdrawZRC20, withdrawERC20, withdrawShareAmount, minAmountOut, slippageValue, transactionId]
+    [withdrawZRC20.address, withdrawERC20, withdrawShareAmount, minAmountOut, slippage, transactionId]
   ) as `0x${string}`;
-
   const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainWithdrawFailed", transactionId, activeAccount.address]);
-
   const revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
     false, // callOnRevert
@@ -934,7 +920,6 @@ const executeCrossChainWithdrawal = async (
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
   ] as const;
-
   // const txOptions = {
   //   gasLimit: BigInt(1000000), // Example value, update as needed
   //   gasPrice: BigInt(100000), // This will have to change depending on the chain
@@ -944,9 +929,8 @@ const executeCrossChainWithdrawal = async (
   contract = getContract({
     client,
     chain: activeChain,
-    address: EVMGatewayAddress,
+    address: EVM_GATEWAY_ADDRESSES[activeChain.id],
   });
-
   const withdrawTx = prepareContractCall({
     contract,
     method:
@@ -961,7 +945,6 @@ const executeCrossChainWithdrawal = async (
       // ...txOptions,
     });
 
-    console.log("Withdrawal executed successfully");
     setcrossChainTxId(transactionId);
     return receipt;
 
