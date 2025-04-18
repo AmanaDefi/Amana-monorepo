@@ -949,3 +949,25 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   [CHAIN_ID.arbitrum]: "https://arbiscan.io",
   [CHAIN_ID.avalanche]: "https://snowtrace.io",
 }
+
+export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
+  // EVM Chains with unique gateway
+  43113: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Avalanche Testnet
+  43114: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Avalanche Mainnet
+  421613: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Arbitrum Testnet
+  42161: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Arbitrum Mainnet
+
+  // EVM Chains using the default gateway
+  1: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Ethereum Mainnet
+  11155111: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Ethereum Testnet
+  8453: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Base Mainnet
+  84532: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Base Testnet
+  137: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Polygon Mainnet
+  80001: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Polygon Testnet
+  56: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // BNB Mainnet
+  97: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // BNB Testnet
+
+  // Solana
+  900: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Mainnet
+  901: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Testnet
+};
