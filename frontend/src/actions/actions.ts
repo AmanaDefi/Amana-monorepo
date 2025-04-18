@@ -854,11 +854,11 @@ export const executeSolanaWithdrawal = async (
   return { transactionHash: txHash }
 }
 
-export const executeWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, walletContext: WalletContextState, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint, withdrawERC20: Address, withdrawZRC20: Address, setcrossChainTxId: Function) => {
+export const executeWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, walletContext: WalletContextState, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint, withdrawERC20: Address, withdrawZRC20: Token, setcrossChainTxId: Function) => {
   if (activeChain.id == CHAIN_ID.zetachain) { // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount);
   } else if (activeChain.id == CHAIN_ID.solana) {
-    return executeSolanaWithdrawal(vaultId, strategyAddress, strategyChainId, walletContext, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
+    return executeSolanaWithdrawal(vaultId, strategyAddress, strategyChainId, walletContext, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20.address as Address, setcrossChainTxId);
   } else {
     return executeCrossChainWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
   }

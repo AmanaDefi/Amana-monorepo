@@ -118,8 +118,7 @@ const handleWithdrawTransaction = async (
   setTransactionCompleted(false);
   let withdrawZRC20;
   if (activeChain.id === 7001 || activeChain.id === 7000) {
-    withdrawToken = vaultData.inputToken;
-    withdrawZRC20 = withdrawToken.address;
+    withdrawZRC20 = vaultData.inputToken;
   } else {
     withdrawZRC20 = withdrawToken.ZRC20equivalent;
   }
@@ -141,7 +140,7 @@ const handleWithdrawTransaction = async (
       activeChain,
       withdrawShareAmount,
       withdrawToken.address as Address,
-      withdrawZRC20 as Address,
+      withdrawZRC20 as Token,
       setcrossChainTxId
     );
     mixpanel.track("Withdraw Succeeded", {
