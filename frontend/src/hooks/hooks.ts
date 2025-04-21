@@ -187,7 +187,7 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
                 console.log("Fetching Compound Rewards APY")
-                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.gaugeAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
+                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
                 console.log("RewardsAPY", RewardsAPY)
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
@@ -206,7 +206,7 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Curve") {
                 APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
-                  RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+                  RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
                 } else {
                   console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
                 }
@@ -230,10 +230,12 @@ export const useUpdateAPYs = (
 
     // Trigger the function if vaults and prices are available
     if (
-      vaults.length > 0 &&
-      crvTokenPrice > 0 &&
-      ethTokenPrice > 0 &&
-      compTokenPrice > 0
+      vaults.length > 0
+      // &&
+      // crvTokenPrice > 0 &&
+      // ethTokenPrice > 0
+      // &&
+      // compTokenPrice > 0
     ) {
       setLoading(true);
       updateAPYs();
