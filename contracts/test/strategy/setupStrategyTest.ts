@@ -111,9 +111,9 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     inputTokenIndexOrPlaceholder ?? 0
   ];
 
-  if (strategyContractName === "CurveEthStrategy") {
+  if (strategyContractName === "ConvexEthStrategy") {
     if (!convexBooster || !cvxTokenAddress || !convexPoolId) {
-      throw new Error("Convex parameters are required for CurveEthStrategy");
+      throw new Error("Convex parameters are required for ConvexEthStrategy");
     }
     args.push(convexPoolId, convexBooster, cvxTokenAddress);
   }
@@ -122,12 +122,6 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     ...args
   );
   await strategy.deployed();
-
-  if (config.strategyContractName === "CurveEthStrategy") {
-    if (config.stakingEnabled) {
-      await strategy.setStakingEnabled(true);
-    }
-  }
 
   return {
     owner,
@@ -157,19 +151,15 @@ export async function deployStrategyFromConfig(config: StrategyTestConfig, swapH
     config.inputTokenIndexOrPlaceholder ?? 0
   ];
 
-  if (config.strategyContractName === "CurveEthStrategy") {
+  if (config.strategyContractName === "ConvexEthStrategy") {
     if (!config.convexBooster || !config.cvxTokenAddress || !config.convexPoolId) {
-      throw new Error("Convex parameters are required for CurveEthStrategy");
+      throw new Error("Convex parameters are required for ConvexEthStrategy");
     }
     args.push(config.convexPoolId, config.convexBooster, config.cvxTokenAddress);
   }
 
   const strategy = await StrategyFactory.deploy(...args);
   await strategy.deployed();
-  if (config.strategyContractName === "CurveEthStrategy") {
-    if (config.stakingEnabled) {
-      await strategy.setStakingEnabled(true);
-    }
-  }
+
   return strategy;
 }

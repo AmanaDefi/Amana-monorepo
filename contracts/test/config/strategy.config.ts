@@ -58,13 +58,13 @@ export const strategyConfigs: StrategyTestConfig[] = [
     slippage: 10000
   },
   {
-    name: "Curve ETH Strategy",
-    strategyContractName: "CurveEthStrategy",
+    name: "Convex ETH Strategy",
+    strategyContractName: "ConvexEthStrategy",
     strategyChainId: 1,
     receiptTokenContractName: "ICurvePoolFixed",
     swapHelperContractName: "SwapHelperEthereum",
-    rewardsContractName: "ICurveLiquidityGauge",
-    forkBlock: 22289620,
+    rewardsContractName: "IConvexRewardPool",
+    forkBlock: 22315281,
     inputTokenAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     inputTokenIndexOrPlaceholder: 1,
     receiptTokenAddress: "0xa4c567c662349BeC3D0fB94C4e7f85bA95E208e4",

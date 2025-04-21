@@ -11,7 +11,7 @@ import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBooster.sol";
 import "../interfaces/IConvexRewardPool.sol";
 
-contract CurveEthStrategy is EthStrategyParent {
+contract ConvexEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
     ICurvePoolFixed public immutable receiptToken;
@@ -26,7 +26,6 @@ contract CurveEthStrategy is EthStrategyParent {
     uint256 public inputTokenIndex;
     uint256 public convexPid;
 
-    bool public stakingEnabled = true;
     uint16 public harvestSwapSlippage = 500; // 5% slippage
 
     constructor(
@@ -54,12 +53,12 @@ contract CurveEthStrategy is EthStrategyParent {
         convexPid = _convexPid;
     }
 
-    function setStakingEnabled(bool _enabled) external onlyOwner {
-        stakingEnabled = _enabled;
-    }
-
     function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
         harvestSwapSlippage = _slippage;
+    }
+
+    function setSwapHelperEthereum(address _swapHelper) external onlyOwner {
+        swapHelperEthereum = _swapHelper;
     }
 
     function swapToWeth(
@@ -106,8 +105,6 @@ contract CurveEthStrategy is EthStrategyParent {
     }
 
     function harvest() public {
-        if (!stakingEnabled) return;
-
         rewardPool.getReward(address(this), true);
 
         uint256 crvBalance = IERC20(crvToken).balanceOf(address(this));
@@ -134,14 +131,13 @@ contract CurveEthStrategy is EthStrategyParent {
             totalWeth
         );
         uint256 shares = receiptToken.add_liquidity(amounts, 0);
-        if (stakingEnabled) {
-            approveOrIncreaseAllowance(
-                IERC20(receiptToken),
-                address(booster),
-                shares
-            );
-            booster.deposit(convexPid, shares, true);
-        }
+
+        approveOrIncreaseAllowance(
+            IERC20(receiptToken),
+            address(booster),
+            shares
+        );
+        booster.deposit(convexPid, shares, true);
 
         emit RewardsHarvested(crvBalance + cvxBalance, crvBalance, wethFromCrv);
     }
@@ -158,14 +154,12 @@ contract CurveEthStrategy is EthStrategyParent {
         approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
         uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
 
-        if (stakingEnabled) {
-            approveOrIncreaseAllowance(
-                IERC20(receiptToken),
-                address(booster),
-                shares
-            );
-            booster.deposit(convexPid, shares, true);
-        }
+        approveOrIncreaseAllowance(
+            IERC20(receiptToken),
+            address(booster),
+            shares
+        );
+        booster.deposit(convexPid, shares, true);
     }
 
     function _withdrawFundsFromYieldSource(
@@ -176,13 +170,9 @@ contract CurveEthStrategy is EthStrategyParent {
             fractionToWithdraw
         );
 
-        if (stakingEnabled) {
-            harvest();
-            sharesToWithdraw = getStrategyWithdrawShareAmount(
-                fractionToWithdraw
-            );
-            rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
-        }
+        harvest();
+        sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
+        rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
 
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
             sharesToWithdraw,

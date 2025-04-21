@@ -148,7 +148,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       }
 
       let strategyBalanceBefore;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         strategyBalanceBefore = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
@@ -166,7 +166,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       );
 
       let strategyBalanceAfter;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceAfter = await receiptTokenContract.balanceOf(strategy.address);
@@ -206,7 +206,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.originChainId,
       )
       let shares;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         shares = await rewardsContract.balanceOf(strategy.address);
       } else {
         shares = await receiptTokenContract.balanceOf(strategy.address);
@@ -233,11 +233,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
       let rewardsContractBalance;
-      if (config.strategyContractName === "CurveEthStrategy") {
-        if (config.stakingEnabled) {
-          rewardsContractBalance = await rewardsContract.balanceOf(strategy.address);
-          expect(rewardsContractBalance).to.equal(0);
-        }
+      if (config.strategyContractName === "ConvexEthStrategy") {
+        rewardsContractBalance = await rewardsContract.balanceOf(strategy.address);
+        expect(rewardsContractBalance).to.equal(0);
+
       }
       expect(strategyBalance).to.equal(0);
 
@@ -281,7 +280,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 3: Check Initial Shares in  Pool
       let initialShares;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         initialShares = await rewardsContract.balanceOf(strategy.address);
       } else {
         initialShares = await receiptTokenContract.balanceOf(strategy.address);
@@ -323,7 +322,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 7: Check Strategy Balance After Withdrawal
       let strategyBalance;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         strategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -684,7 +683,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.originChainId,
       );
       let oldStrategyInitialBalance;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         oldStrategyInitialBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyInitialBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -703,7 +702,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         .to.emit(newStrategy, "FundsInvested");
 
       let oldStrategyBalance;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         oldStrategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -712,7 +711,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(oldStrategyBalance).to.equal(0);
 
       let newStrategyBalance;
-      if (config.stakingEnabled) {
+      if (config.strategyContractName === "ConvexEthStrategy") {
         newStrategyBalance = await rewardsContract.balanceOf(newStrategy.address);
       } else {
         newStrategyBalance = await receiptTokenContract.balanceOf(newStrategy.address);
