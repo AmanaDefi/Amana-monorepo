@@ -25,6 +25,7 @@ import { getOnlyTokenSymbol, getSolanaEVMAddress, isSolanaAddress, isZetachain }
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -53,7 +54,7 @@ export const useUpdateVaultBalanceAndTotal = (
                   vault.id as Address
                 );
               } else {
-                balance = "Error"
+                balance = EMPTY_BALANCE
                 newTotalAssetsinToken = "Error"
               }
               const newTotalAssets = vault && vault.id ? await fetchTotalAssets(vault.id as Address) : "Error";

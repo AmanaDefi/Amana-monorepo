@@ -33,7 +33,6 @@ export type InputTokenWithErrorProps = {
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
   isDeposit: Boolean;
-  userVaultBalance?: string;
   isOutput?: boolean;
   loadingOutputToken?: boolean;
   conversionOutput: ConversionOutput;
@@ -53,7 +52,6 @@ export default function InputTokenWithError({
   inputMoreThanBalance,
   disabled = false,
   isDeposit,
-  userVaultBalance,
   isOutput,
   loadingOutputToken,
   conversionOutput,

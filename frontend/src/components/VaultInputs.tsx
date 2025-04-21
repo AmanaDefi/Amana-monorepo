@@ -39,7 +39,7 @@ import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 export interface VaultInputsProps {
   vaultData: VaultData;
   setTransactionCompleted: (value: boolean) => void;
-  userVaultBalance?: string;
+  userVaultBalance?: Balance;
   vaultTotalAssetinToken?: VaultTotalAssetsinToken;
   transactionCompleted: boolean;
 }
@@ -705,11 +705,6 @@ export default function VaultInputs({
         tokenList={isDeposit ? tokenList : []}
         disabled={false}
         isDeposit={isDeposit}
-        userVaultBalance={
-          isDeposit
-            ? userVaultBalance
-            : vaultTotalAssetinToken?.toString() ?? "0"
-        }
         loadingOutputToken={loadingOutputToken}
         conversionOutput={conversionOutput}
         isSlippageExceedingLimit={isSlippageExceedingLimit}
@@ -747,11 +742,6 @@ export default function VaultInputs({
         tokenList={isDeposit ? [] : tokenList}
         disabled={false}
         isDeposit={isDeposit}
-        userVaultBalance={
-          isDeposit
-            ? vaultTotalAssetinToken?.toString() ?? "0"
-            : userVaultBalance
-        }
         isOutput={true}
         loadingOutputToken={loadingOutputToken}
         conversionOutput={conversionOutput}

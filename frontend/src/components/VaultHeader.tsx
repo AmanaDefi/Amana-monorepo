@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { VaultData, VaultTotalAssets, VaultAPY, Token } from "@/types/types";
+import {
+  VaultData,
+  VaultTotalAssets,
+  VaultAPY,
+  Token,
+  Balance,
+} from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from "next/image";
 import {
@@ -19,7 +25,7 @@ export default function VaultHeader({
   transactionCompleted,
 }: {
   vaultData: VaultData;
-  userVaultBalance?: string;
+  userVaultBalance?: Balance;
   selectedVaultId: string;
   vaultTotalAsset?: VaultTotalAssets;
   vaultAPYs: VaultAPY[];
@@ -27,7 +33,6 @@ export default function VaultHeader({
 }): JSX.Element {
   const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
-  const [data1, setdata1] = useState("");
   // Step 1: Determine inputToken based on activeChain
   useEffect(() => {
     if (activeChain?.id === 7000 || activeChain?.id === 7001) {
@@ -41,11 +46,6 @@ export default function VaultHeader({
       );
     }
   }, [activeChain, vaultData]);
-
-  useEffect(() => {
-    setdata1(formatBalance(Number(userVaultBalance)));
-    fetchBalance();
-  }, [userVaultBalance]);
 
   const { balance: walletTokenBalance, fetchBalance } =
     useMultichainTokenBalance(inputToken);
@@ -103,11 +103,9 @@ export default function VaultHeader({
           <LargeCardStat
             id="deposits"
             label="Deposits"
-            value={`${formatBalance(Number(data1))} ${
-              vaultData.inputToken.symbol
-            }`}
+            value={`${userVaultBalance?.formatted} ${vaultData.inputToken.symbol}`}
             secondaryValue={`$ ${formatCurrency(
-              Number(data1) * vaultTokenPrice
+              Number(userVaultBalance?.formatted) * vaultTokenPrice
             )}`}
             tooltip="Value of your vault deposits"
           />

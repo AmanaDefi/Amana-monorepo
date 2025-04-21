@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
-import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token } from "@/types/types";
+import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token, Balance } from "@/types/types";
 import { VAULT_DATA } from "@/constants";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
@@ -25,7 +25,7 @@ const VaultsDetailContainer: React.FC<{
 
     const [loading, setLoading] = useState<boolean>(true);
     const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
-    const [userVaultBalance, setUserVaultBalance] = useState<string>();
+    const [userVaultBalance, setUserVaultBalance] = useState<Balance>();
     const [vaultTotalAsset, setVaultTotalAsset] = useState<VaultTotalAssets>();
     const [vaultTotalAssetinToken, setVaultTotalAssetinToken] = useState<VaultTotalAssetsinToken>();
     const [transactionCompleted, setTransactionCompleted] = useState(false);
