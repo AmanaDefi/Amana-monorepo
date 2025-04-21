@@ -150,7 +150,6 @@ export default function VaultInputs({
     // This prevents the app from attempting to use a token from the previous chain
     // which could cause AbiDecodingZeroDataError when fetching token balances
     if (activeChain?.id) {
-      setInputToken(undefined);
       setInputBalance(EMPTY_BALANCE);
     }
   }, [activeChain?.id]);
@@ -678,7 +677,6 @@ export default function VaultInputs({
     console.log("Selected withdraw token:", token);
     setInputToken(token);
   };
-
   return (
     <>
       <TabSelector
