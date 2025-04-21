@@ -5,6 +5,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IErrors.sol";
 import "./interfaces/IPriceOracle.sol";
@@ -15,7 +16,7 @@ import "./interfaces/ISwapRouter.sol";
 
 // import "./CurvePoolRegistry.sol";
 
-contract SwapHelperEthereum {
+contract SwapHelperEthereum is Ownable {
     address constant UNISWAP_V2_FACTORY =
         0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f; // Ethereum
     address constant UNISWAP_V2_ROUTER =
@@ -46,10 +47,14 @@ contract SwapHelperEthereum {
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
 
-    address public immutable PRICE_ORACLE_ADDRESS;
+    address public priceOracleAddress;
 
-    constructor(address _priceOracle) {
-        PRICE_ORACLE_ADDRESS = _priceOracle;
+    constructor(address _priceOracle) Ownable(msg.sender) {
+        priceOracleAddress = _priceOracle;
+    }
+
+    function setPriceOracleAddress(address _priceOracle) external onlyOwner {
+        priceOracleAddress = _priceOracle;
     }
 
     /**
