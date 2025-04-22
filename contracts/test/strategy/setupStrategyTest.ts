@@ -111,7 +111,7 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     inputTokenIndexOrPlaceholder ?? 0
   ];
 
-  if (strategyContractName === "ConvexEthStrategy") {
+  if (strategyContractName === "ConvexEthStrategy" || strategyContractName === "ConvexERC20Strategy") {
     if (!convexBooster || !cvxTokenAddress || !convexPoolId) {
       throw new Error("Convex parameters are required for ConvexEthStrategy");
     }
@@ -151,7 +151,7 @@ export async function deployStrategyFromConfig(config: StrategyTestConfig, swapH
     config.inputTokenIndexOrPlaceholder ?? 0
   ];
 
-  if (config.strategyContractName === "ConvexEthStrategy") {
+  if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
     if (!config.convexBooster || !config.cvxTokenAddress || !config.convexPoolId) {
       throw new Error("Convex parameters are required for ConvexEthStrategy");
     }

@@ -4,21 +4,20 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./EthStrategyParent.sol";
+import "./ERC20StrategyParent.sol";
 
-import "../interfaces/ICurvePoolFixed.sol";
+import "../interfaces/ICurvePoolDynamic.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBooster.sol";
 import "../interfaces/IConvexRewardPool.sol";
 
-contract ConvexEthStrategy is EthStrategyParent {
+contract ConvexERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePoolFixed public immutable receiptToken;
+    ICurvePoolDynamic public immutable receiptToken;
     IConvexBooster public immutable booster;
     IConvexRewardPool public immutable rewardPool;
 
-    IWETH public immutable weth;
     address public immutable cvxToken;
     address public immutable crvToken;
 
@@ -41,9 +40,11 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 _convexPid,
         address _boosterAddress,
         address _cvxToken
-    ) StrategyParent(_name, _amanaVault, GATEWAY_ADDRESS, _withdrawHelper) {
-        receiptToken = ICurvePoolFixed(_receiptTokenAddress);
-        weth = IWETH(_inputTokenAddress);
+    )
+        ERC20StrategyParent(_inputTokenAddress)
+        StrategyParent(_name, _amanaVault, GATEWAY_ADDRESS, _withdrawHelper)
+    {
+        receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
         swapHelperEthereum = _swapHelper;
         booster = IConvexBooster(_boosterAddress);
         rewardPool = IConvexRewardPool(_rewardPoolAddress);
@@ -61,7 +62,7 @@ contract ConvexEthStrategy is EthStrategyParent {
         swapHelperEthereum = _swapHelper;
     }
 
-    function swapToWeth(
+    function swapToInputToken(
         address token,
         uint256 amountIn,
         uint16 slippageBps
@@ -73,7 +74,7 @@ contract ConvexEthStrategy is EthStrategyParent {
         amountOut = ISwapHelper(swapHelperEthereum).swap(
             token,
             amountIn,
-            address(weth),
+            address(inputToken),
             slippageBps,
             address(this),
             maxDeadline,
@@ -117,27 +118,33 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 crvBalance = IERC20(crvToken).balanceOf(address(this));
         uint256 cvxBalance = IERC20(cvxToken).balanceOf(address(this));
         if (crvBalance == 0 && cvxBalance == 0) return;
-        uint256 wethFromCrv;
-        uint256 wethFromCvx;
+        uint256 inputTokenFromCrv;
+        uint256 inputTokenFromCvx;
         if (crvBalance > 0) {
-            wethFromCrv = swapToWeth(crvToken, crvBalance, harvestSwapSlippage);
+            inputTokenFromCrv = swapToInputToken(
+                crvToken,
+                crvBalance,
+                harvestSwapSlippage
+            );
         }
         if (cvxBalance > 0) {
-            wethFromCvx = swapToWeth(cvxToken, cvxBalance, harvestSwapSlippage);
+            inputTokenFromCvx = swapToInputToken(
+                cvxToken,
+                cvxBalance,
+                harvestSwapSlippage
+            );
         }
+        uint256 totalWeth = inputTokenFromCrv + inputTokenFromCvx;
 
-        uint256 totalWeth = wethFromCrv + wethFromCvx;
-
-        uint256[2] memory amounts;
+        uint256[] memory amounts = new uint256[](2);
         amounts[inputTokenIndex] = totalWeth;
 
         approveOrIncreaseAllowance(
-            IERC20(weth),
+            IERC20(inputToken),
             address(receiptToken),
             totalWeth
         );
         uint256 shares = receiptToken.add_liquidity(amounts, 0);
-
         approveOrIncreaseAllowance(
             IERC20(receiptToken),
             address(booster),
@@ -145,7 +152,11 @@ contract ConvexEthStrategy is EthStrategyParent {
         );
         booster.deposit(convexPid, shares, true);
 
-        emit RewardsHarvested(crvBalance + cvxBalance, crvBalance, wethFromCrv);
+        emit RewardsHarvested(
+            crvBalance + cvxBalance,
+            crvBalance,
+            inputTokenFromCrv
+        );
     }
 
     function _depositFundsIntoYieldSource(
@@ -153,19 +164,14 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 minimumOut
     ) internal override {
         harvest();
-        weth.deposit{value: amount}();
 
-        uint256[2] memory amounts;
+        uint256[] memory amounts = new uint256[](2);
         amounts[inputTokenIndex] = amount;
 
-        approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
-        uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
+        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
-        approveOrIncreaseAllowance(
-            IERC20(receiptToken),
-            address(booster),
-            shares
-        );
+        uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
+        approveOrIncreaseAllowance(receiptToken, address(booster), shares);
         booster.deposit(convexPid, shares, true);
     }
 
@@ -186,7 +192,6 @@ contract ConvexEthStrategy is EthStrategyParent {
             int128(int256(inputTokenIndex)),
             minAmountOut
         );
-        weth.withdraw(amountWithdrawn);
     }
 
     function _transferAssetsToNewStrategy(
@@ -235,7 +240,7 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
-    ) external payable override {
+    ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         executionNonce = currentExecutionNonce + 1;
@@ -278,7 +283,7 @@ contract ConvexEthStrategy is EthStrategyParent {
     function convertToShares(
         uint256 assetAmount
     ) public view override returns (uint256) {
-        uint256[2] memory amounts;
+        uint256[] memory amounts = new uint256[](2);
         amounts[inputTokenIndex] = assetAmount;
         return receiptToken.calc_token_amount(amounts, false);
     }

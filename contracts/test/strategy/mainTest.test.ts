@@ -38,7 +38,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const slippage = config.slippage;
       const minSharesOut = config.minSharesOut;
 
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
@@ -93,7 +93,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const invalidSenderAddress = await owner.getAddress();
 
       if (!config.isNative) {
-        await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+        await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
 
@@ -142,13 +142,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const minSharesOut = config.minSharesOut;
       const slippage = config.slippage;
 
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
 
       let strategyBalanceBefore;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         strategyBalanceBefore = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
@@ -166,7 +166,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       );
 
       let strategyBalanceAfter;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceAfter = await receiptTokenContract.balanceOf(strategy.address);
@@ -190,7 +190,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const minSharesOut = config.minSharesOut;
       const slippage = config.slippage;
 
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
@@ -206,7 +206,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.originChainId,
       )
       let shares;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         shares = await rewardsContract.balanceOf(strategy.address);
       } else {
         shares = await receiptTokenContract.balanceOf(strategy.address);
@@ -233,7 +233,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
       let rewardsContractBalance;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         rewardsContractBalance = await rewardsContract.balanceOf(strategy.address);
         expect(rewardsContractBalance).to.equal(0);
 
@@ -261,7 +261,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const slippage = config.slippage;
 
       // Step 1: Set Token Balance and Approve Strategy
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
@@ -280,7 +280,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 3: Check Initial Shares in  Pool
       let initialShares;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         initialShares = await rewardsContract.balanceOf(strategy.address);
       } else {
         initialShares = await receiptTokenContract.balanceOf(strategy.address);
@@ -322,7 +322,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 7: Check Strategy Balance After Withdrawal
       let strategyBalance;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         strategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -397,7 +397,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const withdrawPlusFee = config.depositAmount;
 
       // Fund the strategy contract with the required ERC20
-      await setTokenBalance(config.inputTokenAddress, strategy.address, withdrawPlusFee, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, strategy.address, withdrawPlusFee, config.inputTokenStorageSlot, config.isNative);
 
       const revertContext = {
         sender: strategy.address,
@@ -423,7 +423,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       const depositAmount = config.depositAmount;
 
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
@@ -619,7 +619,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         GATEWAY_ADDRESS
       );
 
-      await setTokenBalance(config.inputTokenAddress, strategy.address, ethers.utils.parseEther("1010"), 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, strategy.address, ethers.utils.parseEther("1010"), config.inputTokenStorageSlot, config.isNative);
       // if (!config.isNative) {
       //   await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       // }
@@ -667,7 +667,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const minSharesOut = config.minSharesOut;
       const slippage = config.slippage;
 
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
@@ -683,7 +683,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.originChainId,
       );
       let oldStrategyInitialBalance;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         oldStrategyInitialBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyInitialBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -699,10 +699,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         newStrategy.address
       )).to.emit(strategy, "AssetsTransferredToNewStrategy")
-        .to.emit(newStrategy, "FundsInvested");
+        .to.emit(newStrategy, "AssetsReceivedFromOldStrategy");
 
       let oldStrategyBalance;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         oldStrategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -711,7 +711,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(oldStrategyBalance).to.equal(0);
 
       let newStrategyBalance;
-      if (config.strategyContractName === "ConvexEthStrategy") {
+      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
         newStrategyBalance = await rewardsContract.balanceOf(newStrategy.address);
       } else {
         newStrategyBalance = await receiptTokenContract.balanceOf(newStrategy.address);
@@ -737,7 +737,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const minSharesOut = config.minSharesOut;
 
       // Step 1: Set Token Balance and Approve
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
@@ -803,7 +803,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const minSharesOut = config.minSharesOut;
 
       // Step 1: Set Token Balance and Approve
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
@@ -866,7 +866,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const slippage = config.slippage;
 
       // Fund and approve
-      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, 0, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, await gatewaySigner.getAddress(), depositAmount, config.inputTokenStorageSlot, config.isNative);
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }

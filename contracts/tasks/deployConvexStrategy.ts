@@ -21,7 +21,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const withdrawHelper = args.withdrawHelper;
   const swapHelper = args.swapHelper;
   const receiptToken = args.receiptToken;
-  const weth = args.weth;
+  const inputToken = args.inputToken;
   const tokenIndex = args.tokenIndex;
   const cvxRewardsPool = args.cvxRewardsPool;
   const crvToken = args.crvToken;
@@ -42,13 +42,13 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     throw new Error("🚨 Strategy contract name is required");
   }
 
-  if (!weth) {
+  if (!inputToken) {
     throw new Error("🚨 WETH address is required");
   }
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, withdrawHelper, swapHelper, receiptToken, weth, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken);
+  const contract = await factory.deploy(name, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for contract to be deployed before proceeding
@@ -64,7 +64,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, withdrawHelper, swapHelper, receiptToken, weth, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken],
+        constructorArguments: [name, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -80,7 +80,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 };
 
 // Define the Hardhat task for deployment
-task("deploy-curve-eth-strategy", "Deploy a Strategy contract", main)
+task("deploy-convex-strategy", "Deploy a Strategy contract", main)
   .addFlag("json", "Output in JSON")
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
@@ -88,7 +88,7 @@ task("deploy-curve-eth-strategy", "Deploy a Strategy contract", main)
   .addParam("withdrawHelper", "The address of the withdraw helper contract")
   .addParam("swapHelper", "The address of the swap helper contract")
   .addParam("receiptToken", "The address of the receipt token")
-  .addParam("weth", "The address of the WETH contract")
+  .addParam("inputToken", "The address of the WETH contract")
   .addParam("cvxRewardsPool", "The address of the CVX rewards pool")
   .addParam("crvToken", "The address of the CRV token")
   .addParam("tokenIndex", "The index of the token in the gauge contract")

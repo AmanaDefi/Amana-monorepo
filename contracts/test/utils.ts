@@ -212,6 +212,11 @@ export async function simulateDepositCallFromConnChain(
 
   // Set token balance for the vault
   await setTokenBalance(originChainZRC20Input, amanaVault.address, depositAmount, 3);
+  // check ZRC20 token balance of vault
+  const originChainZRC20InputContract = await ethers.getContractAt("IERC20", originChainZRC20Input);
+  console.log("depositAmount: ", depositAmount.toString());
+  console.log("Token balance of vault from user: ", (await originChainZRC20InputContract.balanceOf(amanaVault.address)).toString());
+
   const minSharesOut = 0 // depositAmount.mul(1000).div(1001);
   const slippage = 10000;
 

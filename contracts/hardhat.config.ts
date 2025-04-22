@@ -1,6 +1,6 @@
 import "./tasks/deployGeneric";
 import "./tasks/deployAaveEthStrategy";
-import "./tasks/deployCurveEthStrategy";
+import "./tasks/deployConvexStrategy";
 import "./tasks/deployAmanaConnectedChainVault";
 import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";
@@ -15,7 +15,7 @@ import "./tasks/deployPriceOracle";
 import "./tasks/deployWithdrawalReceiver";
 import "./tasks/deployZapContract";
 import "./tasks/deployCurveERC20_Strategy";
-import "./tasks/deployCurveEthStrategy";
+import "./tasks/deployConvexStrategy";
 import "./tasks/updatePythPrices";
 import "./tasks/deployAaveERC20Flash_Strategy";
 import "./tasks/deployWithdrawHelper";

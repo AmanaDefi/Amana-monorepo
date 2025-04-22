@@ -15,4 +15,10 @@ interface IConvexRewardPool {
     ) external returns (bool);
 
     function balanceOf(address _account) external view returns (uint256);
+
+    function stakeFor(address _for, uint256 _amount) external returns (bool);
+
+    function withdrawAll(bool claim) external;
+
+    function stakingToken() external view returns (address);
 }

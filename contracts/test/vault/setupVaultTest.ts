@@ -4,13 +4,16 @@ import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/Ga
 import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
 import { AmanaConnectedChainVault } from "../../typechain";
-import { vaultConfig, strategyConfig, txConfig } from "../config/testConfig";
+import { vaultTestMatrix } from "../config/vault.config";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43";
 
 export async function setupVaultFixture() {
-  const FORK_BLOCK_NUMBER = 7624477;
+  const config = vaultTestMatrix[0]; // ⬅️ use just the first config
+
+  const { vaultConfig, strategyConfig, txConfig } = config;
+  const FORK_BLOCK_NUMBER = 7997959;
   await network.provider.request({
     method: "hardhat_reset",
     params: [
@@ -22,6 +25,7 @@ export async function setupVaultFixture() {
       },
     ]
   });
+
   const [owner, user1, user2] = await ethers.getSigners();
 
   const otherZRC20 = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
@@ -42,7 +46,8 @@ export async function setupVaultFixture() {
 
   const treasury = await deployAndLog("Treasury", [owner.address]);
   const withdrawalReceiver = await deployAndLog("WithdrawalReceiver", [])
-  const swapHelper = await deployAndLog("SwapHelper", []);
+  const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS]);
+  const swapHelper = await deployAndLog("SwapHelper", [priceOracle.address], owner);
   const gasTank = await deployAndLog("GasTank", []);
   const withdrawHelper = await deployAndLog("WithdrawHelper", [ZEVM_GATEWAY_ADDRESS]);
   const zapContract = await deployAndLog("ZapContract", [swapHelper.address], owner);
@@ -60,14 +65,14 @@ export async function setupVaultFixture() {
   const amanaVault: AmanaConnectedChainVault = await upgrades.deployProxy(
     Vault,
     [
-      "AaveV3EthVault",
-      "AVU",
+      vaultConfig.name,
+      vaultConfig.symbol,
       vaultConfig.asset,
       amanaRegistry.address,
       vaultConfig.feeRate,
       vaultConfig.gasLimitWithdrawAndCall,
       vaultConfig.gasLimitCall,
-      true,
+      vaultConfig.gasPaidFromTank,
     ],
     {
       initializer: "initialize",
@@ -110,7 +115,10 @@ export async function setupVaultFixture() {
     rewardToken,
     otherZRC20,
     pythContract,
-    gatewayZEVM
+    gatewayZEVM,
+    vaultConfig,
+    strategyConfig,
+    txConfig,
   };
 }
 

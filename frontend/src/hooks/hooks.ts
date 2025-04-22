@@ -16,7 +16,7 @@ import {
   calculateCompoundRewardsAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
-import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
+import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { CHAIN_ID, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -159,6 +159,7 @@ export const useUpdateAPYs = (
   setVaultAPYs: (vaultAPYs: { vaultId: string, APY7d: number }[]) => void,
   setLoading: (loading: boolean) => void,
   crvTokenPrice: number,
+  cvxTokenPrice: number,
   ethTokenPrice: number,
   compTokenPrice: number
 ) => {
@@ -206,7 +207,7 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Curve") {
                 APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
-                  RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+                  RewardsAPY = await calculateCurveRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
                 } else {
                   console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
                 }
@@ -231,11 +232,13 @@ export const useUpdateAPYs = (
     // Trigger the function if vaults and prices are available
     if (
       vaults.length > 0
-      // &&
-      // crvTokenPrice > 0 &&
-      // ethTokenPrice > 0
-      // &&
-      // compTokenPrice > 0
+      &&
+      crvTokenPrice > 0 &&
+      cvxTokenPrice > 0
+      &&
+      ethTokenPrice > 0
+      &&
+      compTokenPrice > 0
     ) {
       setLoading(true);
       updateAPYs();

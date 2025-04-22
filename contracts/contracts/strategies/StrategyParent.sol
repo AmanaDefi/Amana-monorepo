@@ -52,6 +52,12 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         uint256 executionNonce,
         bytes32 crossChainTxId
     );
+    event AssetsReceivedFromOldStrategy(
+        address indexed oldStrategy,
+        uint256 totalAssetsTransferrred,
+        uint256 executionNonce,
+        bytes32 crossChainTxId
+    );
     event RewardsClaimed(
         address indexed receiver,
         address indexed rewardToken,

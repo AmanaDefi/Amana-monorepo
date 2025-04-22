@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
+import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -438,6 +439,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
+        console.log("amount in deposit", assets);
         // Generate a unique crossChainTxId
         bytes32 crossChainTxId = keccak256(
             abi.encodePacked(
@@ -484,6 +486,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
+        console.log("amount in investAssets", amount);
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),

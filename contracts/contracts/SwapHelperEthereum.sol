@@ -13,8 +13,8 @@ import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
-
-// import "./CurvePoolRegistry.sol";
+import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/ICurveRouterNG.sol";
 
 contract SwapHelperEthereum is Ownable {
     address constant UNISWAP_V2_FACTORY =
@@ -25,6 +25,10 @@ contract SwapHelperEthereum is Ownable {
         0x1F98431c8aD98523631AE4a59f267346ea31F984; // Ethereum
     address public constant UNISWAP_V3_ROUTER =
         0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Ethereum
+    address public constant CURVE_REGISTRY =
+        0xF98B45FA17DE75FB1aD0e7aFD971b0ca00e379fC; // Curve Registry on Ethereum
+    address public constant ROUTER_NG =
+        0x16C6521Dff6baB339122a0FE25a9116693265353; // Curve Router NG on Ethereum
 
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
@@ -121,10 +125,10 @@ contract SwapHelperEthereum is Ownable {
         // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
         uint256 inputPrice = isStablecoin(inputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(inputPriceFeed);
         uint256 outputPrice = isStablecoin(outputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(outputPriceFeed);
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
         // Get token decimals dynamically
@@ -171,10 +175,10 @@ contract SwapHelperEthereum is Ownable {
         // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
         uint256 inputPrice = isStablecoin(inputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(inputPriceFeed);
         uint256 outputPrice = isStablecoin(outputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(outputPriceFeed);
 
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
@@ -477,15 +481,66 @@ contract SwapHelperEthereum is Ownable {
         address inputToken,
         address outputToken
     ) public view returns (address curvePool, uint256 i, uint256 j) {
-        curvePool = 0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4;
+        curvePool = ICurveRegistry(CURVE_REGISTRY).find_pool_for_coins(
+            inputToken,
+            outputToken
+        );
+        // curvePool = 0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4;
         // Find token indexes in the pool using getTokenIndex()
         if (curvePool != address(0)) {
             i = getTokenIndex(inputToken, curvePool);
             j = getTokenIndex(outputToken, curvePool);
         } else {
-            i = 0;
-            j = 0;
+            revert("Curve: No pool found for token pair");
         }
+    }
+
+    function _swapCVXtoUSDC(
+        uint256 amount,
+        uint256 minOut
+    ) internal returns (uint256 amountOut) {
+        address[11] memory route = [
+            CVX_ADDRESS, // CVX
+            0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4, // CVX/WETH pool
+            WETH_TOKEN, // WETH
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // Tricrypto pool
+            USDC_ADDRESS, // USDC
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0)
+        ];
+
+        uint256[5][5] memory swapParams = [
+            [uint256(1), 0, 1, 2, 2],
+            [uint256(2), 0, 1, 3, 3],
+            [uint256(0), 0, 0, 0, 0],
+            [uint256(0), 0, 0, 0, 0],
+            [uint256(0), 0, 0, 0, 0]
+        ];
+
+        address[5] memory pools = [
+            0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4,
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B,
+            address(0),
+            address(0),
+            address(0)
+        ];
+
+        IERC20(CVX_ADDRESS).approve(ROUTER_NG, amount);
+
+        amountOut = ICurveRouterNG(ROUTER_NG).exchange(
+            route,
+            swapParams,
+            amount,
+            minOut,
+            pools,
+            msg.sender
+        );
+
+        return amountOut;
     }
 
     function swap(
@@ -509,20 +564,24 @@ contract SwapHelperEthereum is Ownable {
             slippageBps
         );
         if (inputToken == CVX_ADDRESS) {
-            (address curvePool, uint256 i, uint256 j) = getCurvePool(
-                inputToken,
-                outputToken
-            );
-            // Approve Curve pool to spend tokens
-            IERC20(inputToken).approve(curvePool, amount);
-            uint256 amountOutCurve = ICurvePoolDynamic(curvePool).exchange(
-                i,
-                j,
-                amount,
-                minimumOut
-            );
-            // Transfer output token (e.g. WETH) back to the vault or strategy
-            IERC20(outputToken).transfer(strategy, amountOutCurve);
+            uint256 amountOutCurve = 0;
+            if (outputToken == WETH_TOKEN) {
+                address curvePool = 0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4;
+                uint256 i = getTokenIndex(inputToken, curvePool);
+                uint256 j = getTokenIndex(outputToken, curvePool);
+                // Approve Curve pool to spend tokens
+                IERC20(inputToken).approve(curvePool, amount);
+                amountOutCurve = ICurvePoolDynamic(curvePool).exchange(
+                    i,
+                    j,
+                    amount,
+                    minimumOut
+                );
+                IERC20(outputToken).transfer(strategy, amountOutCurve);
+            } else if (outputToken == USDC_ADDRESS) {
+                amountOutCurve = _swapCVXtoUSDC(amount, minimumOut);
+            }
+
             return amountOutCurve;
         }
 
