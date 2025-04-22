@@ -27,7 +27,7 @@ export default class BaseAPI {
     try {
       const res = await this.api.get(`/vaults/v1/collect-data/${address}`, {
         headers: {
-          "API-KEY": API_KEY,
+          "API_KEY": API_KEY,
         },
       });
       return res.data.data[0];
@@ -40,7 +40,7 @@ export default class BaseAPI {
     try {
       const res = await this.api.get(`/vault/v1/get-distinct-latest-records`, {
         headers: {
-          "API-KEY": API_KEY,
+          "API_KEY": API_KEY,
         },
       });
       return res.data.data;
