@@ -141,7 +141,8 @@ export default function VaultInputs({
   }, [activeChain, vaultData]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
-  const { balance: tokenBalance, fetchBalance } = useMultichainTokenBalance(inputToken);
+  const { balance: tokenBalance, fetchBalance } =
+    useMultichainTokenBalance(inputToken);
 
   // Reset token when chain changes to prevent cross-chain token errors
   useEffect(() => {
@@ -614,8 +615,16 @@ export default function VaultInputs({
       setOutputBoxErrorMessage("");
       return;
     }
+
     checkSlippageExceedingLimit();
-  }, [conversionOutput]);
+
+    if (
+      inputBalance.value > 0n &&
+      Number(conversionOutput.outputAmountFormatted) == 0
+    ) {
+      setOutputBoxErrorMessage("Swap route not found");
+    }
+  }, [conversionOutput, inputBalance]);
 
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
@@ -640,7 +649,7 @@ export default function VaultInputs({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [initialConversionOutput, inputBalance]);
+  }, [inputBalance]);
 
   useEffect(() => {
     if (
@@ -783,7 +792,7 @@ export default function VaultInputs({
         </div>
       </div>
 
-      {inputToken && (
+      {inputToken && !loadingOutputToken && (
         <InteractionContainer
           step={step}
           setStep={setStep}

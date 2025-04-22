@@ -607,7 +607,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   ],
   1: [
     {
-      symbol: "ETH.ETH",
+      symbol: "ETH (ETH)",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       imgURL: TOKEN_LOGO_URLS.ETH,
@@ -617,7 +617,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
-      symbol: "USDC.ETH",
+      symbol: "USDC (ETH)",
       address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       decimals: 6,
       imgURL: TOKEN_LOGO_URLS.USDC,
@@ -627,7 +627,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a"],
     },
     {
-      symbol: "USDT.ETH",
+      symbol: "USDT (ETH)",
       address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
       decimals: 6,
       imgURL: TOKEN_LOGO_URLS.USDT,
@@ -949,3 +949,25 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   [CHAIN_ID.arbitrum]: "https://arbiscan.io",
   [CHAIN_ID.avalanche]: "https://snowtrace.io",
 }
+
+export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
+  // EVM Chains with unique gateway
+  43113: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Avalanche Testnet
+  43114: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Avalanche Mainnet
+  421613: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Arbitrum Testnet
+  42161: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Arbitrum Mainnet
+
+  // EVM Chains using the default gateway
+  1: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Ethereum Mainnet
+  11155111: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Ethereum Testnet
+  8453: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Base Mainnet
+  84532: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Base Testnet
+  137: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Polygon Mainnet
+  80001: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Polygon Testnet
+  56: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // BNB Mainnet
+  97: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // BNB Testnet
+
+  // Solana
+  900: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Mainnet
+  901: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Testnet
+};
