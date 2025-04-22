@@ -17,7 +17,6 @@ import "./interfaces/IZRC20.sol";
 import "./interfaces/IWithdrawHelper.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaRegistry.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -297,9 +296,6 @@ abstract contract AmanaVaultBase is
                 userChainId
             );
         }
-        console.log("amount", assets);
-        console.log("zrc20source", zrc20source);
-        console.log("asset", address(asset()));
         uint256 outputAmount = zrc20source == address(asset())
             ? assets
             : swap(
@@ -310,7 +306,6 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        console.log("outputAmount", outputAmount);
         _investAssets(
             outputAmount,
             minimumOut,
