@@ -35,6 +35,7 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -42,6 +43,7 @@ export interface VaultInputsProps {
   userVaultBalance?: string;
   vaultTotalAssetinToken?: VaultTotalAssetsinToken;
   transactionCompleted: boolean;
+  initialIsDeposit?: boolean;
 }
 
 export type ConversionOutput = {
@@ -57,19 +59,47 @@ export default function VaultInputs({
   userVaultBalance,
   vaultTotalAssetinToken,
   transactionCompleted,
+  initialIsDeposit = true,
 }: VaultInputsProps): JSX.Element {
+  const router = useRouter();
+  const pathname = usePathname();
   const [inputToken, setInputToken] = useState<Token>();
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
   const [debouncedInputBalance, setDebouncedInputBalance] =
     useState<Balance>(EMPTY_BALANCE);
   const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
-  const [isDeposit, setIsDeposit] = useState<boolean>(true);
+  const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [isSlippageExceedingLimit, setIsSlippageExceedingLimit] =
     useState<boolean>(true);
   const [outputBoxErrorMessage, setOutputBoxErrorMessage] =
     useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
+
+  // Use searchParams to directly determine tab state
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  // Update isDeposit when URL tab parameter changes
+  useEffect(() => {
+    const shouldBeDeposit = tabParam !== 'withdraw';
+    
+    // Only update if the state is different from what it should be
+    if (isDeposit !== shouldBeDeposit) {
+      setIsDeposit(shouldBeDeposit);
+    }
+  }, [tabParam, searchParams]);
+
+  // // Check if user has balance for withdrawal if tab=withdraw
+  // useEffect(() => {
+  //   // Only redirect if we're explicitly on withdraw tab AND there's no balance
+  //   if (tabParam === 'withdraw' && 
+  //       userVaultBalance !== undefined && 
+  //       Number(userVaultBalance) === 0) {
+  //     // If no balance for withdrawal, redirect to deposit tab
+  //     router.push(`${pathname}?tab=deposit`);
+  //   }
+  // }, [tabParam, userVaultBalance, pathname, router]);
 
   const [steps, setSteps] = useState<Action[]>([]);
   const [step, setStep] = useState<number>(0);
@@ -248,46 +278,12 @@ export default function VaultInputs({
   };
 
   const switchTokens = async () => {
-    setInputBalance(EMPTY_BALANCE);
-
-    // Remove condition requiring inputToken to switch between deposit and withdrawal modes
-    if (isDeposit) {
-      // Switch to Withdraw
-      setIsDeposit(false);
-
-      // Only attempt to set steps if we have a token and chain
-      if (inputToken && activeChain) {
-        const newAction = SmartVaultActionType.Withdrawal;
-        setSteps(
-          await selectActions(
-            newAction,
-            vaultData,
-            activeChain,
-            walletAddress as any,
-            inputBalance,
-            inputToken
-          )
-        );
-      }
-    } else {
-      // Switch to Deposit
-      setIsDeposit(true);
-
-      // Only attempt to set steps if we have a token and chain
-      if (inputToken && activeChain) {
-        const newAction = SmartVaultActionType.Deposit;
-        setSteps(
-          await selectActions(
-            newAction,
-            vaultData,
-            activeChain,
-            walletAddress as any,
-            inputBalance,
-            inputToken
-          )
-        );
-      }
-    }
+    // Get the opposite tab of what's currently in the URL
+    const currentTabFromURL = tabParam !== 'withdraw' ? 'deposit' : 'withdraw';
+    const newTab = currentTabFromURL === 'deposit' ? 'withdraw' : 'deposit';
+    
+    // Update URL - React will handle state update via the useEffect
+    router.push(`${pathname}?tab=${newTab}`);
   };
 
   const handleChangeInput = useCallback(
@@ -679,13 +675,43 @@ export default function VaultInputs({
     setInputToken(token);
   };
 
+  // Handle tab selection from TabSelector
+  const handleTabChange = (tab: string) => {
+    const newIsDeposit = tab === "Deposit";
+    
+    // Update URL first to ensure consistency
+    router.push(`${pathname}?tab=${newIsDeposit ? 'deposit' : 'withdraw'}`);
+    
+    // Reset input balance
+    setInputBalance(EMPTY_BALANCE);
+    
+    // Only attempt to set steps if we have a token and chain
+    if (inputToken && activeChain) {
+      const fetchSteps = async () => {
+        const newAction = newIsDeposit
+          ? SmartVaultActionType.Deposit
+          : SmartVaultActionType.Withdrawal;
+        const steps = await selectActions(
+          newAction,
+          vaultData,
+          activeChain,
+          walletAddress as any,
+          inputBalance,
+          inputToken
+        );
+        setSteps(steps);
+      };
+      fetchSteps();
+    }
+  };
+
   return (
     <>
       <TabSelector
         className="mb-5"
         availableTabs={["Deposit", "Withdraw"]}
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
-        setActiveTab={switchTokens}
+        setActiveTab={handleTabChange}
       />
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}

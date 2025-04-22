@@ -5,7 +5,6 @@
   --primary-color: #06afbc;
   --success-color: #06afbc;
   --primary-gradient: linear-gradient(to bottom, #262830, #06afbc);
-  --flow-transition-time: 0.6s;
 }
 
 .chain-token-selector .dropdown-container {
@@ -136,41 +135,4 @@
 
 .chain-token-selector .max-h-96::-webkit-scrollbar-thumb:hover {
   background: #06afbc;
-}
-
-/* Flowing water effect for the main selector button */
-.chain-token-selector .selector-main-button {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(to right, #262830, #06afbc);
-  transition: all 0.3s ease;
-}
-
-/* The flowing overlay element */
-.chain-token-selector .selector-main-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 100%; /* Start from right (hidden) */
-  background: #262830; /* The color that will flow in */
-  z-index: 0;
-  transition: left var(--flow-transition-time) cubic-bezier(0.4, 0, 0.2, 1); /* Water-like easing */
-}
-
-/* On hover, make the color flow in from right to left */
-.chain-token-selector .selector-main-button:hover::before {
-  left: 0;
-}
-
-/* Keep content visible above the flowing background */
-.chain-token-selector .selector-main-button > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Add a subtle pulsing shadow on hover for more water-like effect */
-.chain-token-selector .selector-main-button:hover {
-  box-shadow: 0 0 10px rgba(6, 175, 188, 0.5);
 }

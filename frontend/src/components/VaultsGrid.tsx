@@ -8,7 +8,7 @@ import {
   VaultTotalAssetsinToken, 
   UserVaultBalance 
 } from '@/types/types';
-import { formatNumberWithSuffix, getOnlyTokenSymbol } from '@/utils/utils';
+import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
 
 // Risk levels mapping
@@ -362,7 +362,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 </div>
                 
                 {/* APY and TVL */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-2 p-3">
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
                     <p className="text-cyan-400 font-bold text-xl">
@@ -379,7 +379,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 
                 {/* Capacity Bar */}
                 <div className="mb-4">
-                  <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  {/* <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>Capacity</span>
                     <span>{capacityPercentage.toFixed(0)}%</span>
                   </div>
@@ -388,29 +388,50 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       className="bg-gradient-to-r from-[#262830] to-[#06afbc] h-2 rounded-full" 
                       style={{ width: `${capacityPercentage}%` }}
                     ></div>
-                  </div>
+                  </div> */}
+
+                  {/* User Deposits */}
+                  {
+                    userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
+                    // Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && 
+                    (
+                      <div className="mt-2 px-3">
+                        <div className="flex justify-around text-xs mb-1">
+                          <span className="text-gray-400">Your Deposits:</span>
+                          <span className="text-white font-medium">
+                            {formatBalance(Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  }
                 </div>
                 
                 {/* Buttons */}
                 <div className="flex gap-2">
                   <button 
-                    className="flex-1 bg-gradient-to-r from-[#262830] to-[#06afbc] hover:bg-gradient-to-l text-white py-2 px-4 rounded-md transition-all"
+                    className="flex-1 fluid-hover-button text-white py-2 px-4 rounded-md transition-all"
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent card click
-                      router.push(`/vaults/${vault.id}`);
+                      router.push(`/vaults/${vault.id}?tab=deposit`);
                     }}
                   >
-                    Deposit
+                    <span className="relative z-2">Deposit</span>
                   </button>
-                  <button 
-                    className="flex-1 border border-customNeutral100 hover:border-cyan-400 text-white py-2 px-4 rounded-md transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent card click
-                      router.push(`/vaults/${vault.id}`);
-                    }}
-                  >
-                    Details
-                  </button>
+                  {
+                    userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
+                    Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && (
+                      <button 
+                        className="flex-1 border border-customNeutral100 hover:border-cyan-400 text-white py-2 px-4 rounded-md transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent card click
+                          router.push(`/vaults/${vault.id}?tab=withdraw`);
+                        }}
+                      >
+                        Withdraw
+                      </button>
+                    )
+                  }
                 </div>
               </div>
             </div>
@@ -424,9 +445,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           <p className="text-white text-lg">No vaults found matching your filters</p>
           <button 
             onClick={clearAllFilters}
-            className="mt-4 bg-gradient-to-r from-[#262830] to-[#06afbc] text-white py-2 px-4 rounded-md"
+            className="mt-4 fluid-hover-button text-white py-2 px-4 rounded-md"
           >
-            Clear Filters
+            <span className="relative z-2">Clear Filters</span>
           </button>
         </div>
       )}
