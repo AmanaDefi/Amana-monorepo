@@ -18,6 +18,7 @@ import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "thirdweb";
+import { formatTokenBalance } from "@/utils/utils";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -95,6 +96,12 @@ export default function InputTokenWithError({
     // Always show token selector if there are tokens available
     return tokenList && tokenList.length > 0;
   }, [tokenList]);
+
+  // Format the balance with the appropriate number of decimal places
+  const formattedTokenBalance = useMemo(() => {
+    if (!inputTokenbalance || !selectedToken?.symbol) return "0";
+    return formatTokenBalance(inputTokenbalance, selectedToken.symbol);
+  }, [inputTokenbalance, selectedToken?.symbol]);
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
@@ -183,9 +190,7 @@ export default function InputTokenWithError({
                     allowInput && !isOutput ? "group-hover/max:text-white" : ""
                   }`}
                 >
-                  {inputTokenbalance
-                    ? Number(Number(inputTokenbalance).toFixed(5))
-                    : "0"}
+                  {inputTokenbalance ? formattedTokenBalance : "0"}
                 </p>
               }
             </div>

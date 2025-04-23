@@ -8,8 +8,9 @@ import {
   VaultTotalAssetsinToken, 
   UserVaultBalance 
 } from '@/types/types';
-import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance } from '@/utils/utils';
+import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
+// import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
 const RISK_LEVELS: Record<number, { level: string; color: string }> = {
@@ -396,10 +397,13 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     // Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && 
                     (
                       <div className="mt-2 px-3">
-                        <div className="flex justify-around text-xs mb-1">
+                        <div className="flex justify-around text-[16px] mb-1">
                           <span className="text-gray-400">Your Deposits:</span>
                           <span className="text-white font-medium">
-                            {formatBalance(Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance))} {vault.inputToken.symbol}
+                            {formatTokenBalance(
+                              userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance || 0, 
+                              vault.inputToken.symbol
+                            )} {vault.inputToken.symbol}
                           </span>
                         </div>
                       </div>

@@ -10,6 +10,8 @@ import {
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
+import { formatTokenBalance } from "@/utils/utils";
+
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -62,6 +64,9 @@ export default function VaultHeader({
   const price = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
 
+  // Format wallet balance according to token type
+  const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
+
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
       <div className="w-full mb-12 flex flex-row items-center">
@@ -111,7 +116,7 @@ export default function VaultHeader({
           <LargeCardStat
             id="deposits"
             label="Deposits"
-            value={`${formatBalance(Number(data1))} ${
+            value={`${formatTokenBalance(data1, vaultData.inputToken.symbol)} ${
               vaultData.inputToken.symbol
             }`}
             secondaryValue={`$ ${formatCurrency(
@@ -122,7 +127,7 @@ export default function VaultHeader({
           <LargeCardStat
             id="wallet"
             label="Your Wallet"
-            value={`${walletTokenBalance.formatted} ${symbol}`}
+            value={`${formattedWalletBalance} ${symbol}`}
             secondaryValue={`$ ${formatCurrency(
               Number(walletTokenBalance.formatted) * price
             )}`}

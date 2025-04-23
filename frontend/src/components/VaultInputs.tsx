@@ -37,6 +37,18 @@ import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
+// Helper function for formatting token balances based on token type
+const formatTokenBalance = (balance: string | number, symbol: string): string => {
+  const num = Number(balance);
+  // Check if token is a stablecoin
+  const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') || 
+                    symbol?.includes('USDT') || symbol?.includes('USDC') ||
+                    symbol?.includes('BUSD');
+  // Format with 2 decimal places for stablecoins, 4 for others
+  const decimals = isStablecoin ? 2 : 4;
+  return num.toFixed(decimals);
+};
+
 export interface VaultInputsProps {
   vaultData: VaultData;
   setTransactionCompleted: (value: boolean) => void;
@@ -425,12 +437,18 @@ export default function VaultInputs({
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
+        // Use formatTokenBalance for the output amount formatting
+        const formattedOutputAmount = formatTokenBalance(
+          tokenConversionFromWei,
+          inputToken?.symbol || ""
+        );
+
         console.log("Double Box - Conversion Output:", {
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
           finalConvertedAmountInUSDFormatted: formatCurrency(
             assetsConversionInUSD
           ).toString(),
-          outputAmountFormatted: tokenConversionFromWei.toString(),
+          outputAmountFormatted: formattedOutputAmount,
           outputAmountInUSDFormatted:
             formatCurrency(tokenConversionInUSD).toString(),
         });
@@ -439,7 +457,7 @@ export default function VaultInputs({
           finalConvertedAmountInUSDFormatted: formatCurrency(
             assetsConversionInUSD
           ).toString(),
-          outputAmountFormatted: tokenConversionFromWei.toString(),
+          outputAmountFormatted: formattedOutputAmount,
           outputAmountInUSDFormatted:
             formatCurrency(tokenConversionInUSD).toString(),
         });
@@ -452,6 +470,7 @@ export default function VaultInputs({
       inputToken?.ZRC20equivalent,
       inputToken?.address,
       inputToken?.decimals,
+      inputToken?.symbol,
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
@@ -538,9 +557,15 @@ export default function VaultInputs({
         gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
       });
 
-      const sharesAmountFormatted = await getSharesFromDeposit(
+      const sharesAmountRaw = await getSharesFromDeposit(
         finalConvertedAmount,
         vaultData
+      );
+      
+      // Use formatTokenBalance for the output amount formatting
+      const sharesAmountFormatted = formatTokenBalance(
+        sharesAmountRaw, 
+        vaultData.symbol
       );
 
       console.log("Double Box - Shares calculation:", {
