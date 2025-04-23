@@ -17,9 +17,6 @@ import "../interfaces/IDistributor.sol";
 abstract contract StrategyParent is Ownable2Step, IErrors {
     using SafeERC20 for IERC20;
 
-    address constant GATEWAY_ADDRESS =
-        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
-
     string public name;
     address public amanaVault;
     address public withdrawHelper;
@@ -333,6 +330,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             ),
             uint256(1000000)
         );
+
         IGatewayEVM(_GATEWAY_ADDRESS).call(
             amanaVault,
             outgoingMessage,

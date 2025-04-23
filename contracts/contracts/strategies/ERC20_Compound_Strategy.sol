@@ -30,6 +30,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /// @notice Initializes the strategy contract.
     constructor(
         string memory _name,
+        address _gatewayAddress,
         address _amanaVault,
         address _withdrawHelper,
         address _swapHelper,
@@ -39,7 +40,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         address _rewardsTokenAddress,
         uint256
     )
-        StrategyParent(_name, _amanaVault, GATEWAY_ADDRESS, _withdrawHelper)
+        StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
         swapHelper = _swapHelper;

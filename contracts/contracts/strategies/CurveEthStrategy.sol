@@ -31,6 +31,7 @@ contract CurveEthStrategy is EthStrategyParent {
 
     constructor(
         string memory _name,
+        address _gatewayAddress,
         address _amanaVault,
         address _withdrawHelper,
         address _swapHelper,
@@ -42,7 +43,7 @@ contract CurveEthStrategy is EthStrategyParent {
         uint256 _convexPid,
         address _boosterAddress,
         address _cvxToken
-    ) StrategyParent(_name, _amanaVault, GATEWAY_ADDRESS, _withdrawHelper) {
+    ) StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper) {
         receiptToken = ICurvePoolFixed(_receiptTokenAddress);
         weth = IWETH(_inputTokenAddress);
         swapHelperEthereum = _swapHelper;

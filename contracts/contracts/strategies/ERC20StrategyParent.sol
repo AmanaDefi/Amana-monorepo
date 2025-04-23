@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./StrategyParent.sol";
+import "hardhat/console.sol";
 
 /// @title ERC20StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -34,12 +35,22 @@ abstract contract ERC20StrategyParent is StrategyParent {
             amount
         );
         _depositFundsIntoYieldSource(amount, minimumOut);
+        console.log("Investing %s into yield source", amount);
+        console.log("recieverAddress: %s", receiverAddress);
+        console.log("minimumOut: %s", minimumOut);
+        console.log("executionNonce: %s", _executionNonce);
+        // console.log("crossChainTxId: %s", _crossChainTxId);
         _sendInvestConfirmation(
             receiverAddress,
             amount,
             totalUnderlyingAssets(),
             _executionNonce,
             _crossChainTxId
+        );
+        console.log(
+            "Invested %s into yield source, total underlying assets: %s",
+            amount,
+            totalUnderlyingAssets()
         );
         emit FundsInvested(_crossChainTxId, receiverAddress, amount);
     }

@@ -3,13 +3,15 @@ import { ethers, network } from "hardhat";
 import { Signer } from "ethers";
 import { StrategyTestConfig } from "../config/strategy.config";
 import { IERC20 } from "../../typechain";
-import { GATEWAY_ADDRESS, WITHDRAW_HELPER_ADDRESS, AMANA_VAULT_ADDRESS } from "../config/constants";
+import { WITHDRAW_HELPER_ADDRESS, AMANA_VAULT_ADDRESS } from "../config/constants";
 import {
   PYTH_CONTRACT_ADDRESS_ETHEREUM,
   PYTH_CONTRACT_ADDRESS_BASE,
   PYTH_CONTRACT_ADDRESS_ZETACHAIN,
-  PYTH_CONTRACT_ADDRESS_POLYGON
+  PYTH_CONTRACT_ADDRESS_POLYGON,
+  PYTH_CONTRACT_ADDRESS_ARBITRUM
 } from "../../../constants";
+import { isConvexStrategy } from "../utils";
 
 export interface StrategyTestContext {
   owner: Signer;
@@ -37,6 +39,8 @@ function getPythContractAddress(chainId: number): string {
       return PYTH_CONTRACT_ADDRESS_ZETACHAIN;
     case 8453:
       return PYTH_CONTRACT_ADDRESS_BASE;
+    case 42161:
+      return PYTH_CONTRACT_ADDRESS_ARBITRUM;
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
@@ -71,17 +75,17 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
 
   await network.provider.request({
     method: "hardhat_impersonateAccount",
-    params: [GATEWAY_ADDRESS]
+    params: [config.gatewayAddress]
   });
 
-  // Fund the GATEWAY_ADDRESS with some ETH for gas
+  // Fund the config.gatewayAddress with some ETH for gas
   const fundAmount = ethers.utils.parseEther("1234");
   await network.provider.request({
     method: "hardhat_setBalance",
-    params: [GATEWAY_ADDRESS, fundAmount.toHexString()]
+    params: [config.gatewayAddress, fundAmount.toHexString()]
   });
 
-  const gatewaySigner = await ethers.getSigner(GATEWAY_ADDRESS);
+  const gatewaySigner = await ethers.getSigner(config.gatewayAddress);
   const [owner] = await ethers.getSigners();
 
   const inputToken = await ethers.getContractAt("IERC20", inputTokenAddress, gatewaySigner);
@@ -91,7 +95,7 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     : undefined;
 
   const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
-  const priceOracle = await PriceOracleFactory.deploy(pythAddress); // Pyth contract address on Ethereum
+  const priceOracle = await PriceOracleFactory.deploy(pythAddress); // Pyth contract address on specified chain
   await priceOracle.deployed();
 
   const SwapHelperFactory = await ethers.getContractFactory(swapHelperContractName);
@@ -101,6 +105,7 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
   const StrategyFactory = await ethers.getContractFactory(strategyContractName);
   const args = [
     config.name,
+    config.gatewayAddress,
     AMANA_VAULT_ADDRESS,
     WITHDRAW_HELPER_ADDRESS,
     swapHelper.address,
@@ -111,7 +116,7 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     inputTokenIndexOrPlaceholder ?? 0
   ];
 
-  if (strategyContractName === "ConvexEthStrategy" || strategyContractName === "ConvexERC20Strategy") {
+  if (isConvexStrategy(config.strategyContractName)) {
     if (!convexBooster || !cvxTokenAddress || !convexPoolId) {
       throw new Error("Convex parameters are required for ConvexEthStrategy");
     }
@@ -141,6 +146,7 @@ export async function deployStrategyFromConfig(config: StrategyTestConfig, swapH
 
   const args = [
     config.name + " Clone", // Give it a distinguishable name
+    config.gatewayAddress,
     AMANA_VAULT_ADDRESS,
     WITHDRAW_HELPER_ADDRESS,
     swapHelper.address,
@@ -151,7 +157,7 @@ export async function deployStrategyFromConfig(config: StrategyTestConfig, swapH
     config.inputTokenIndexOrPlaceholder ?? 0
   ];
 
-  if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+  if (isConvexStrategy(config.strategyContractName)) {
     if (!config.convexBooster || !config.cvxTokenAddress || !config.convexPoolId) {
       throw new Error("Convex parameters are required for ConvexEthStrategy");
     }

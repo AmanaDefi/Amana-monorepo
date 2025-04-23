@@ -10,6 +10,7 @@ import "../interfaces/ICurvePoolDynamic.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBooster.sol";
 import "../interfaces/IConvexRewardPool.sol";
+import "hardhat/console.sol";
 
 contract ConvexERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -29,6 +30,7 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
 
     constructor(
         string memory _name,
+        address _gatewayAddress,
         address _amanaVault,
         address _withdrawHelper,
         address _swapHelper,
@@ -42,7 +44,7 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
         address _cvxToken
     )
         ERC20StrategyParent(_inputTokenAddress)
-        StrategyParent(_name, _amanaVault, GATEWAY_ADDRESS, _withdrawHelper)
+        StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper)
     {
         receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
         swapHelperEthereum = _swapHelper;
@@ -90,19 +92,21 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
     }
 
     function claimRewards() public returns (uint256) {
+        console.log("Claiming rewards");
         uint256 earnedCrv = IConvexRewardPool(rewardPool).earned(address(this));
+        console.log("Earned CRV: ", earnedCrv);
         if (earnedCrv < 1e15) {
             return 0; // Skip claiming if there's too little to claim
         }
         // Get the balance of CRV before claiming
         uint256 amountBefore = IERC20(crvToken).balanceOf(address(this));
-
+        console.log("CRV balance before claim: ", amountBefore);
         // Call Convex rewards contract to claim CRV + extras
         IConvexRewardPool(rewardPool).getReward(address(this), true);
-
+        console.log("Claimed CRV");
         // Get the balance of CRV after claiming
         uint256 amountAfter = IERC20(crvToken).balanceOf(address(this));
-
+        console.log("CRV balance after claim: ", amountAfter);
         uint256 claimed = amountAfter - amountBefore;
 
         emit RewardsClaimed(address(this), crvToken, claimed);
@@ -134,15 +138,15 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
                 harvestSwapSlippage
             );
         }
-        uint256 totalWeth = inputTokenFromCrv + inputTokenFromCvx;
+        uint256 totalInputToken = inputTokenFromCrv + inputTokenFromCvx;
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[inputTokenIndex] = totalWeth;
+        amounts[inputTokenIndex] = totalInputToken;
 
         approveOrIncreaseAllowance(
             IERC20(inputToken),
             address(receiptToken),
-            totalWeth
+            totalInputToken
         );
         uint256 shares = receiptToken.add_liquidity(amounts, 0);
         approveOrIncreaseAllowance(

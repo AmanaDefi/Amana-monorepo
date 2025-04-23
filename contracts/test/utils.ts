@@ -512,4 +512,10 @@ export async function simulateConfirmRedeemToAnyToken(
   );
 }
 
-
+export function isConvexStrategy(name: string): boolean {
+  return [
+    "ConvexEthStrategy",
+    "ConvexERC20Strategy",
+    "ConvexERC20StrategyArbitrum",
+  ].includes(name);
+}

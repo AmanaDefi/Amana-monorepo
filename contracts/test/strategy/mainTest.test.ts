@@ -4,8 +4,8 @@ import { ethers, network } from "hardhat";
 import { strategyConfigs, StrategyTestConfig } from "../config/strategy.config";
 import { deployStrategyFixture, StrategyTestContext, deployStrategyFromConfig } from "./setupStrategyTest";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy } from "../utils";
-import { GATEWAY_ADDRESS, WITHDRAW_HELPER_ADDRESS, AMANA_VAULT_ADDRESS } from "../config/constants";
+import { setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy } from "../utils";
+import { AMANA_VAULT_ADDRESS } from "../config/constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import type { Event } from "ethers";
@@ -148,7 +148,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       }
 
       let strategyBalanceBefore;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         strategyBalanceBefore = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
@@ -166,7 +166,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       );
 
       let strategyBalanceAfter;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceAfter = await receiptTokenContract.balanceOf(strategy.address);
@@ -206,7 +206,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.originChainId,
       )
       let shares;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         shares = await rewardsContract.balanceOf(strategy.address);
       } else {
         shares = await receiptTokenContract.balanceOf(strategy.address);
@@ -233,7 +233,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
       let rewardsContractBalance;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         rewardsContractBalance = await rewardsContract.balanceOf(strategy.address);
         expect(rewardsContractBalance).to.equal(0);
 
@@ -280,7 +280,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 3: Check Initial Shares in  Pool
       let initialShares;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         initialShares = await rewardsContract.balanceOf(strategy.address);
       } else {
         initialShares = await receiptTokenContract.balanceOf(strategy.address);
@@ -298,6 +298,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         reward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         reward = reward.owed;
+      } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
+        reward = await rewardsContract.callStatic.earned(strategy.address);
+        console.log("Reward: ", reward);
+        console.log("Reward variable type: ", typeof reward);
       } else {
         reward = await strategy.checkRewards();
       }
@@ -322,7 +326,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 7: Check Strategy Balance After Withdrawal
       let strategyBalance;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         strategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -334,6 +338,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         finalClaimableRewards = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         finalClaimableRewards = finalClaimableRewards.owed;
+      } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
+        finalClaimableRewards = await rewardsContract.callStatic.earned(strategy.address);
       } else {
         finalClaimableRewards = await strategy.checkRewards();
       }
@@ -528,7 +534,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       const gatewayEVM = await ethers.getContractAt(
         GatewayEVMABI.abi,
-        GATEWAY_ADDRESS
+        config.gatewayAddress
       );
 
       // Call the function as the owner
@@ -616,7 +622,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       const gatewayEVM = await ethers.getContractAt(
         GatewayEVMABI.abi,
-        GATEWAY_ADDRESS
+        config.gatewayAddress
       );
 
       await setTokenBalance(config.inputTokenAddress, strategy.address, ethers.utils.parseEther("1010"), config.inputTokenStorageSlot, config.isNative);
@@ -683,12 +689,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.originChainId,
       );
       let oldStrategyInitialBalance;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         oldStrategyInitialBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyInitialBalance = await receiptTokenContract.balanceOf(strategy.address);
       }
-
+      console.log("oldStrategyInitialBalance: ", oldStrategyInitialBalance.toString());
       const newStrategy = await deployStrategyFromConfig(config, swapHelper);
 
       await newStrategy.connect(owner).setOldStrategy(strategy.address);
@@ -700,9 +706,9 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         newStrategy.address
       )).to.emit(strategy, "AssetsTransferredToNewStrategy")
         .to.emit(newStrategy, "AssetsReceivedFromOldStrategy");
-
+      console.log("Made switch call");
       let oldStrategyBalance;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         oldStrategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -711,7 +717,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(oldStrategyBalance).to.equal(0);
 
       let newStrategyBalance;
-      if (config.strategyContractName === "ConvexEthStrategy" || config.strategyContractName === "ConvexERC20Strategy") {
+      if (isConvexStrategy(config.strategyContractName)) {
         newStrategyBalance = await rewardsContract.balanceOf(newStrategy.address);
       } else {
         newStrategyBalance = await receiptTokenContract.balanceOf(newStrategy.address);
@@ -762,6 +768,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         preHarvestReward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         preHarvestReward = preHarvestReward.owed;
+      } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
+        preHarvestReward = await rewardsContract.callStatic.earned(strategy.address);
       } else {
         preHarvestReward = await strategy.checkRewards();
       }
