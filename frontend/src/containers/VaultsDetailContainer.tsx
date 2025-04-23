@@ -32,6 +32,7 @@ const VaultsDetailContainer: React.FC<{
     const [vaultTotalAsset, setVaultTotalAsset] = useState<VaultTotalAssets>();
     const [vaultTotalAssetinToken, setVaultTotalAssetinToken] = useState<VaultTotalAssetsinToken>();
     const [transactionCompleted, setTransactionCompleted] = useState(false);
+    const [selectedToken, setSelectedToken] = useState<Token | undefined>();
 
     const vaults: VaultData[] =  VAULT_DATA;
     const backPath: string = pathname.includes("old-vaults") ? "/old-vaults" : "/";
@@ -78,6 +79,7 @@ const VaultsDetailContainer: React.FC<{
             vaultTotalAsset={vaultTotalAsset}
             vaultAPYs={vaultAPYs}
             transactionCompleted={transactionCompleted}
+            selectedToken={selectedToken}
           />
 
           <section className="w-full flex flex-col lg:flex-row gap-4 my-4 ">
@@ -91,6 +93,7 @@ const VaultsDetailContainer: React.FC<{
                     vaultTotalAssetinToken={vaultTotalAssetinToken}
                     transactionCompleted={transactionCompleted}
                     initialIsDeposit={initialIsDeposit}
+                    onTokenSelect={setSelectedToken}
                   />
                 </div>
               </div>

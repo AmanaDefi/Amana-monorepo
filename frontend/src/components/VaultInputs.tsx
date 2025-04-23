@@ -44,6 +44,7 @@ export interface VaultInputsProps {
   vaultTotalAssetinToken?: VaultTotalAssetsinToken;
   transactionCompleted: boolean;
   initialIsDeposit?: boolean;
+  onTokenSelect?: (token: Token) => void;
 }
 
 export type ConversionOutput = {
@@ -60,6 +61,7 @@ export default function VaultInputs({
   vaultTotalAssetinToken,
   transactionCompleted,
   initialIsDeposit = true,
+  onTokenSelect,
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -269,12 +271,16 @@ export default function VaultInputs({
       console.log("Selected vault token directly");
       setInputToken(selectedToken);
       setAllowInput(true);
-      return;
+    } else {
+      // Otherwise, use the token as selected
+      setInputToken(selectedToken);
+      setAllowInput(true);
     }
 
-    // Otherwise, use the token as selected
-    setInputToken(selectedToken);
-    setAllowInput(true);
+    // Notify parent component about token selection
+    if (onTokenSelect) {
+      onTokenSelect(selectedToken);
+    }
   };
 
   const switchTokens = async () => {
@@ -673,6 +679,11 @@ export default function VaultInputs({
     // This ensures proper token selection in both modes
     console.log("Selected withdraw token:", token);
     setInputToken(token);
+    
+    // Notify parent component about token selection
+    if (onTokenSelect) {
+      onTokenSelect(token);
+    }
   };
 
   // Handle tab selection from TabSelector

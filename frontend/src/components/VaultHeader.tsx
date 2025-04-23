@@ -17,6 +17,7 @@ export default function VaultHeader({
   vaultTotalAsset,
   vaultAPYs,
   transactionCompleted,
+  selectedToken,
 }: {
   vaultData: VaultData;
   userVaultBalance?: string;
@@ -24,15 +25,22 @@ export default function VaultHeader({
   vaultTotalAsset?: VaultTotalAssets;
   vaultAPYs: VaultAPY[];
   transactionCompleted: boolean;
+  selectedToken?: Token;
 }): JSX.Element {
   const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [data1, setdata1] = useState("");
-  // Step 1: Determine inputToken based on activeChain
+  
+  // Determine input token based on user selection or active chain
   useEffect(() => {
-    if (activeChain?.id === 7000 || activeChain?.id === 7001) {
+    if (selectedToken) {
+      // If there's a user-selected token, use it
+      setInputToken(selectedToken);
+    } else if (activeChain?.id === 7000 || activeChain?.id === 7001) {
+      // Fallback: If on ZetaChain, use vault input token
       setInputToken(vaultData.inputToken);
     } else {
+      // Fallback: For other chains, determine the appropriate token
       setInputToken(
         determineVaultTokenFromApprovedTokens(
           activeChain?.id as number,
@@ -40,7 +48,7 @@ export default function VaultHeader({
         )
       );
     }
-  }, [activeChain, vaultData]);
+  }, [activeChain, vaultData, selectedToken]);
 
   useEffect(() => {
     setdata1(formatBalance(Number(userVaultBalance)));
