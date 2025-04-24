@@ -1,5 +1,7 @@
 # Bugfix: "Cannot read properties of undefined (reading 'id')" Error
 
+## Author: Rohit Kumar Suman
+
 ## Problem
 
 An error was occurring when the application tried to access properties of undefined objects:
