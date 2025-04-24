@@ -62,7 +62,7 @@ const BLOCK_TIME: { [chainId: number]: number } = {
   1: 12,     // Ethereum
   137: 2,    // Polygon
   8453: 2,   // Base
-  42161: 12, // Arbitrum
+  42161: 0.250, // Arbitrum
 };
 
 export async function calculateEddyAPY(receiptTokenAddress: Address, strategyChain: Chain) {
@@ -549,7 +549,7 @@ export async function calculateConvexArbitrumRewardsAPY(
       : lpPriceInInput;
     console.log("lpPriceInUSD", lpPriceInUSD);
     console.log("crvTokenPrice", crvTokenPrice);
-    const crvApy = (Number(annualCrvPerToken) / 1e18) * crvTokenPrice / lpPriceInUSD;
+    const crvApy = (Number(annualCrvPerToken) / 1e20) * crvTokenPrice / lpPriceInUSD;
     return crvApy;
   } catch (err) {
     console.error("CRV APY calculation failed:", err);
