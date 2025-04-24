@@ -498,8 +498,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   {
     id: "0xAf89d0c83C5abF11bb4f26E8B86c3773f352CDC9",
     name: "eUSD/USDC Pool",
-    des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
-    symbol: "aConvexUsdcArb",
+    des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum to earn trading fees and yield. CRV rewards are staked on Convex to maximize returns. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.", symbol: "aConvexUsdcArb",
     imgURL: "/arbitrum-arb-logo.png",
     depositFeePaidFromGasTank: true,
     inputToken: {
@@ -512,13 +511,13 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       isNative: false
     },
     protocol: {
-      name: "Curve",
+      name: "Convex",
       strategyAddress: "0x1EbA5A0bEd1C82E031dF76101dbA146632b44972",
       rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
       network: "Arbitrum",
       chainId: 42161,
       netdes: "TBC",
-      imgURL: "/curve.png",
+      imgURL: "/convex.png",
       des: "Curve is a decentralized exchange and liquidity protocol optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
     },
   },

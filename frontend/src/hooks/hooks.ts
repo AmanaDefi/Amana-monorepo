@@ -213,7 +213,7 @@ export const useUpdateAPYs = (
                   if (strategyChain.id === 1) {
                     RewardsAPY = await calculateConvexEthereumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
                   } else if (strategyChain.id === 42161) {
-                    RewardsAPY = await calculateConvexArbitrumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                    RewardsAPY = await calculateConvexArbitrumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
                   }
                 } else {
                   console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
