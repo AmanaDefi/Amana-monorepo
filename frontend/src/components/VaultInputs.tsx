@@ -60,9 +60,10 @@ export default function VaultInputs({
 }: VaultInputsProps): JSX.Element {
   const [inputToken, setInputToken] = useState<Token>();
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
+  const [displayValue, setDisplayValue] = useState<string>("");
   const [debouncedInputBalance, setDebouncedInputBalance] =
     useState<Balance>(EMPTY_BALANCE);
-  const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
+  // const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
   const [isDeposit, setIsDeposit] = useState<boolean>(true);
   const [isSlippageExceedingLimit, setIsSlippageExceedingLimit] =
     useState<boolean>(true);
@@ -155,20 +156,16 @@ export default function VaultInputs({
     }
   }, [activeChain?.id]);
 
-  // Watch action type change
-  useEffect(() => {
-    if (inputToken) {
-      // Set the inputTokenBalance separately to track balance as a string
-      setInputTokenBalance(tokenBalance!.formatted);
-    }
-  }, [tokenBalance, isDeposit]);
-
   // Trigger error message handling
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {
       if (isDeposit) {
         setErrorMessage(
-          getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, steps)
+          getVaultErrorMessage(
+            inputBalance.value.toString(),
+            tokenBalance.value.toString(),
+            steps
+          )
         );
       } else {
         setErrorMessage(
@@ -184,7 +181,6 @@ export default function VaultInputs({
     inputToken,
     inputBalance.formatted,
     isDeposit,
-    inputTokenBalance,
     vaultData.id,
     action,
     vaultTotalAssetinToken,
@@ -249,6 +245,7 @@ export default function VaultInputs({
 
   const switchTokens = async () => {
     setInputBalance(EMPTY_BALANCE);
+    setDisplayValue("");
 
     // Remove condition requiring inputToken to switch between deposit and withdrawal modes
     if (isDeposit) {
@@ -295,6 +292,28 @@ export default function VaultInputs({
       if (!inputToken) return;
       let value = e.currentTarget.value;
 
+      // Special case for empty input
+      if (value === "") {
+        setInputBalance({
+          value: 0n,
+          formatted: "0",
+          formattedUSD: "0",
+        });
+        setDisplayValue("");
+        return;
+      }
+
+      // Special case for "0." - keep the leading zero for decimal inputs
+      if (value === "0.") {
+        setInputBalance({
+          value: 0n,
+          formatted: "0",
+          formattedUSD: "0",
+        });
+        setDisplayValue("0.");
+        return;
+      }
+
       // Format the number properly
       if (!value.includes(".")) {
         value = String(Number(value));
@@ -314,6 +333,9 @@ export default function VaultInputs({
         inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
       }
 
+      if (isNaN(Number(inputAmt))) {
+        return;
+      }
       // convert string amt to bigint
       const newAmt = parseUnits(inputAmt, decimalsNumber);
 
@@ -322,6 +344,8 @@ export default function VaultInputs({
         formatted: inputAmt,
         formattedUSD: String(Number(inputAmt) * inputTokenPrice),
       });
+
+      setDisplayValue(inputAmt);
     },
     [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals]
   );
@@ -331,6 +355,7 @@ export default function VaultInputs({
     if (isDeposit) {
       // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
       setInputBalance(tokenBalance);
+      setDisplayValue(tokenBalance.formatted)
     } else {
       handleChangeInput({
         currentTarget: { value: vaultTotalAssetinToken?.toString() },
@@ -693,12 +718,12 @@ export default function VaultInputs({
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={handleMaxClick}
-        value={inputBalance.formatted}
+        value={displayValue}
         onChange={handleChangeInput}
         selectedToken={isDeposit ? inputToken : vaultToken}
         inputTokenbalance={
           isDeposit
-            ? inputTokenBalance
+            ? tokenBalance.formatted
             : vaultTotalAssetinToken?.toString() ?? "0"
         }
         errorMessage={errorMessage}
@@ -741,7 +766,7 @@ export default function VaultInputs({
         inputTokenbalance={
           isDeposit
             ? vaultTotalAssetinToken?.toString() ?? "0"
-            : inputTokenBalance
+            : tokenBalance.formatted
         }
         errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
         tokenList={isDeposit ? [] : tokenList}
