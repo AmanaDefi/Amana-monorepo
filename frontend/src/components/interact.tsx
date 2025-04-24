@@ -290,9 +290,10 @@ export default function InteractionContainer({
     console.log("crossChainTxId: ", crossChainTxId);
     if (
       cctxData?.CrossChainTxs &&
-      cctxData.CrossChainTxs[0].inbound_params.status != "SUCCESS"
+      cctxData.CrossChainTxs[0].cctx_status.status != "SUCCESS"
     ) {
-      if (action == Action.crosschainInvest) {
+      console.log({ action, actions });
+      if (action == Action.depositConfirmed) {
         const nextStep = actions.findIndex(
           (el) => el == Action.CrossChainDepositFailed
         );
