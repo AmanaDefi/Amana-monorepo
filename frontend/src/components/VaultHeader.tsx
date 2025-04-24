@@ -16,6 +16,8 @@ import {
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
+import { formatTokenBalance } from "@/utils/utils";
+
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -23,6 +25,7 @@ export default function VaultHeader({
   vaultTotalAsset,
   vaultAPYs,
   transactionCompleted,
+  selectedToken,
 }: {
   vaultData: VaultData;
   userVaultBalance?: Balance;
@@ -30,14 +33,22 @@ export default function VaultHeader({
   vaultTotalAsset?: VaultTotalAssets;
   vaultAPYs: VaultAPY[];
   transactionCompleted: boolean;
+  selectedToken?: Token;
 }): JSX.Element {
   const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
-  // Step 1: Determine inputToken based on activeChain
+  const [data1, setdata1] = useState("");
+  
+  // Determine input token based on user selection or active chain
   useEffect(() => {
-    if (activeChain?.id === 7000 || activeChain?.id === 7001) {
+    if (selectedToken) {
+      // If there's a user-selected token, use it
+      setInputToken(selectedToken);
+    } else if (activeChain?.id === 7000 || activeChain?.id === 7001) {
+      // Fallback: If on ZetaChain, use vault input token
       setInputToken(vaultData.inputToken);
     } else {
+      // Fallback: For other chains, determine the appropriate token
       setInputToken(
         determineVaultTokenFromApprovedTokens(
           activeChain?.id as number,
@@ -45,7 +56,7 @@ export default function VaultHeader({
         )
       );
     }
-  }, [activeChain, vaultData]);
+  }, [activeChain, vaultData, selectedToken]);
 
   const { balance: walletTokenBalance, fetchBalance } =
     useMultichainTokenBalance(inputToken);
@@ -53,6 +64,9 @@ export default function VaultHeader({
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
+
+  // Format wallet balance according to token type
+  const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
 
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
@@ -103,7 +117,9 @@ export default function VaultHeader({
           <LargeCardStat
             id="deposits"
             label="Deposits"
-            value={`${userVaultBalance?.formatted} ${vaultData.inputToken.symbol}`}
+            value={`${formatTokenBalance(data1, vaultData.inputToken.symbol)} ${
+              vaultData.inputToken.symbol
+            }`}
             secondaryValue={`$ ${formatCurrency(
               Number(userVaultBalance?.formatted) * vaultTokenPrice
             )}`}
@@ -112,7 +128,7 @@ export default function VaultHeader({
           <LargeCardStat
             id="wallet"
             label="Your Wallet"
-            value={`${walletTokenBalance.formatted} ${symbol}`}
+            value={`${formattedWalletBalance} ${symbol}`}
             secondaryValue={`$ ${formatCurrency(
               Number(walletTokenBalance.formatted) * price
             )}`}

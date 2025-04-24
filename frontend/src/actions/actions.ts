@@ -22,6 +22,7 @@ import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
 import curvePoolABI from "../../abis/curvePoolABI.json";
+import convexRewardPoolABI from "../../abis/convexRewardPoolABI.json";
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
 import { keccak256 } from "thirdweb";
@@ -45,7 +46,8 @@ import axios from "axios";
 import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
 
-import type { IConnection } from "codemelt-retro-api-sdk";
+import type { IConnection } from 'codemelt-retro-api-sdk';
+import { read } from "fs";
 
 dotenv.config();
 const provider = new JsonRpcProvider(
@@ -57,12 +59,16 @@ const provider_ethereum = new JsonRpcProvider(
 
 const abiCoder = new AbiCoder();
 
-const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === "testnet";
-const contractWithdrawalReceiverAddress = (
-  isTestnet
-    ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET
-    : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS
-) as `0x${string}`;
+const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === 'testnet';
+const contractWithdrawalReceiverAddress = (isTestnet ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS) as `0x${string}`
+
+// To do - move this to chainConfig
+const BLOCK_TIME: { [chainId: number]: number } = {
+  1: 12,     // Ethereum
+  137: 2,    // Polygon
+  8453: 2,   // Base
+  42161: 12, // Arbitrum
+};
 
 export async function calculateEddyAPY(
   receiptTokenAddress: Address,
@@ -256,13 +262,12 @@ export async function calculateAaveFlashAPY(
   return leveragedAPY;
 }
 
-export async function calculateCurveAPY(
-  poolAddress: Address,
-  strategyChain: Chain
-) {
+export async function calculateCurveAPY(poolAddress: Address, strategyChain: Chain) {
   let relevant_provider = provider;
   if (strategyChain.id === 1) {
     relevant_provider = provider_ethereum;
+  } else if (strategyChain.id === 42161) {
+    relevant_provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE);
   }
   const curvePool = new ethers.Contract(
     poolAddress,
@@ -275,7 +280,7 @@ export async function calculateCurveAPY(
     const currentPrice = ethers.toBigInt(await curvePool.get_virtual_price());
     // Fetch the current block number and determine the number of blocks for 7 days
     const currentBlockNumber = await relevant_provider.getBlockNumber();
-    const averageBlockTimeInSeconds = 12; // Adjust based on the Curve pool's chain
+    const averageBlockTimeInSeconds = BLOCK_TIME[strategyChain.id] ?? 12;
     const secondsIn7Days = 7 * 24 * 60 * 60;
     const blocksIn7Days = Math.floor(
       secondsIn7Days / averageBlockTimeInSeconds
@@ -300,52 +305,264 @@ export async function calculateCurveAPY(
   }
 }
 
-export async function calculateCurveRewardsAPY(
-  gaugeAddress: Address,
+// export async function calculateConvexEthereumRewardsAPY(
+//   poolAddress: Address,
+//   inputToken: Token,
+//   convexRewardPool: Address,
+//   strategyChain: Chain,
+//   crvTokenPrice: number,
+//   cvxTokenPrice: number,
+//   ethTokenPrice: number
+// ): Promise<number> {
+//   console.log("Fetching Curve rewards APY...");
+//   const secondsPerYear = 365 * 24 * 60 * 60;
+//   const secondsPerWeek = 7 * 24 * 60 * 60;
+//   if (strategyChain.id === 1) {
+//     const rewardPoolContract = getContract({
+//       client,
+//       address: convexRewardPool,
+//       chain: strategyChain,
+//     });
+
+//     // Step 1: Get CRV reward rate and total supply
+//     const crvRewardRate: bigint = await readContract({
+//       contract: rewardPoolContract,
+//       method: "function rewardRate() view returns (uint256)",
+//     });
+//     console.log("crvRewardRate", crvRewardRate);
+//     const totalSupply: bigint = await readContract({
+//       contract: rewardPoolContract,
+//       method: "function totalSupply() view returns (uint256)",
+//     });
+//     console.log("totalSupply", totalSupply);
+//     // Step 2: Get extra reward token (CVX) address from extraRewards(0)
+//     let cvxPerTokenPerYear = 0;
+
+//     const extraRewardAddress: string = await readContract({
+//       contract: rewardPoolContract,
+//       method: "function extraRewards(uint256) view returns (address)",
+//       params: [BigInt(0)],
+//     });
+
+//     const extraRewardContract = getContract({
+//       client,
+//       address: extraRewardAddress,
+//       chain: strategyChain,
+//     });
+
+//     const cvxRewardRate: bigint = await readContract({
+//       contract: extraRewardContract,
+//       method: "function rewardRate() view returns (uint256)",
+//     });
+//     cvxPerTokenPerYear = Number(cvxRewardRate) / Number(totalSupply) * secondsPerYear;
+//   } else if (strategyChain.id === 42161) {
+//     const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE);
+//     const convexRewardsPoolArbitrum = new ethers.Contract(poolAddress, curvePoolABI, provider);
+
+//     try {
+//       // Fetch the current virtual price
+//       const rewardsRemainingNow = ethers.toBigInt(await convexRewardsPoolArbitrum.rewards());
+//       // Fetch the current block number and determine the number of blocks for 7 days
+//       const currentBlockNumber = await provider.getBlockNumber();
+//       const averageBlockTimeInSeconds = BLOCK_TIME[strategyChain.id] ?? 12;
+//       const secondsIn7Days = 7 * 24 * 60 * 60;
+//       const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+//       const pastBlockNumber = currentBlockNumber - blocksIn7Days;
+
+//       // Fetch the virtual price from 7 days ago
+//       const rewardsRemainingWeekAgo = ethers.toBigInt(
+//         await convexRewardsPoolArbitrum.rewards()({ blockTag: pastBlockNumber })
+//       );
+//       const rewardsThisWeek = Number(rewardsRemainingWeekAgo - rewardsRemainingNow);
+//       const weeklyRewardRate = rewardsThisWeek / secondsPerWeek;
+//       const crvPerTokenPerYear =
+//         (weeklyRewardRate * secondsPerYear) / Number(totalSupply);
+
+//       const rewardsAPY = (crvPerTokenPerYear * crvTokenPrice) / lpTokenPriceInUSD;
+
+//       return depositAPY;
+
+
+//     } catch (error) {
+//       console.error("Error calculating APY for Curve:", error);
+//       return 0;
+//     }
+//   }
+//   // Step 4: Get virtual price (value of 1 LP token in underlying asset)
+//   const curvePoolContract = getContract({
+//     client,
+//     chain: strategyChain,
+//     address: poolAddress,
+//   });
+
+//   const virtualPrice: bigint = await readContract({
+//     contract: curvePoolContract,
+//     method: "function get_virtual_price() view returns (uint256)",
+//   });
+
+//   // Virtual price is in 18 decimals, so divide by 1e18
+//   const lpTokenPriceInInputToken = Number(virtualPrice) / 1e18;
+//   let lpTokenPriceInUSD = lpTokenPriceInInputToken;
+//   if (inputToken.symbol === "ETH.ETH") {
+//     lpTokenPriceInUSD = lpTokenPriceInInputToken * ethTokenPrice;
+//   }
+
+//   // Step 3: Compute annualized CRV + CVX per staked token
+//   const crvPerTokenPerYear = Number(crvRewardRate) / Number(totalSupply) * secondsPerYear;
+
+//   // Step 4: Convert to USD APY
+//   const crvApy = crvPerTokenPerYear * crvTokenPrice;
+//   const cvxApy = cvxPerTokenPerYear * cvxTokenPrice;
+
+//   const annualApy = (crvApy + cvxApy) / lpTokenPriceInUSD;
+//   return annualApy;
+// }
+
+export async function calculateConvexEthereumRewardsAPY(
+  poolAddress: Address,
+  inputToken: Token,
+  convexRewardPool: Address,
+  strategyChain: Chain,
+  crvTokenPrice: number,
+  cvxTokenPrice: number,
+  ethTokenPrice: number
+): Promise<number> {
+  const secondsPerYear = 365 * 24 * 60 * 60;
+  const rewardPoolContract = getContract({
+    client,
+    address: convexRewardPool,
+    chain: strategyChain,
+  });
+
+  try {
+    // Step 1: CRV rewards
+    const crvRewardRate: bigint = await readContract({
+      contract: rewardPoolContract,
+      method: "function rewardRate() view returns (uint256)",
+    });
+
+    const totalSupply: bigint = await readContract({
+      contract: rewardPoolContract,
+      method: "function totalSupply() view returns (uint256)",
+    });
+
+    const crvPerLpPerYear =
+      (Number(crvRewardRate) / Number(totalSupply)) * secondsPerYear;
+
+    // Step 2: CVX rewards via extraRewards
+    let cvxPerTokenPerYear = 0;
+    try {
+      const extraRewardAddress: string = await readContract({
+        contract: rewardPoolContract,
+        method: "function extraRewards(uint256) view returns (address)",
+        params: [BigInt(0)],
+      });
+
+      const extraRewardContract = getContract({
+        client,
+        address: extraRewardAddress,
+        chain: strategyChain,
+      });
+
+      const cvxRewardRate: bigint = await readContract({
+        contract: extraRewardContract,
+        method: "function rewardRate() view returns (uint256)",
+      });
+
+      cvxPerTokenPerYear =
+        (Number(cvxRewardRate) / Number(totalSupply)) * secondsPerYear;
+    } catch (e) {
+      console.warn("No CVX reward info found or failed to fetch extraRewards");
+    }
+
+    // Step 3: LP token price
+    const curvePool = getContract({
+      client,
+      chain: strategyChain,
+      address: poolAddress,
+    });
+
+    const virtualPrice: bigint = await readContract({
+      contract: curvePool,
+      method: "function get_virtual_price() view returns (uint256)",
+    });
+
+    const lpPriceInInput = Number(virtualPrice) / 1e18;
+    const lpPriceInUSD =
+      inputToken.symbol === "ETH.ETH"
+        ? lpPriceInInput * ethTokenPrice
+        : lpPriceInInput;
+
+    // Step 4: APY Calculation
+    const crvApy = (crvPerLpPerYear * crvTokenPrice) / lpPriceInUSD;
+    const cvxApy = (cvxPerTokenPerYear * cvxTokenPrice) / lpPriceInUSD;
+
+    const annualApy = crvApy + cvxApy;
+    return annualApy;
+  } catch (error) {
+    console.error("calculateConvexEthereumRewardsAPY failed:", error);
+    return 0;
+  }
+}
+
+
+export async function calculateConvexArbitrumRewardsAPY(
+  poolAddress: Address,
+  inputToken: Token,
+  convexRewardPool: Address,
   strategyChain: Chain,
   crvTokenPrice: number,
   ethTokenPrice: number
-) {
-  console.log("Fetching Curve rewards APY...");
+): Promise<number> {
+  const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE);
 
-  const gaugeContract = getContract({
-    client,
-    chain: strategyChain,
-    address: gaugeAddress,
-  });
+  const rewardPool = new ethers.Contract(convexRewardPool, convexRewardPoolABI, provider);
 
-  // 3. Get reward rate (emission rate per second)
-  const [periodFinish, rate, lastUpdate] = await readContract({
-    contract: gaugeContract,
-    method:
-      "function reward_data(address) view returns (uint256,uint256,uint256)",
-    params: ["0xD533a949740bb3306d119CC777fa900bA034cd52"],
-  });
+  try {
+    // Fetch the current virtual price
+    const currentRewards = await rewardPool.rewards(0);
+    const currentRewardsRemaining: bigint = ethers.toBigInt(currentRewards.reward_remaining);
+    console.log("currentRewardsRemaining", currentRewardsRemaining);
+    // Fetch the current block number and determine the number of blocks for 7 days
+    const currentBlockNumber = await provider.getBlockNumber();
+    const averageBlockTimeInSeconds = BLOCK_TIME[strategyChain.id] ?? 12;
+    const secondsIn7Days = 7 * 24 * 60 * 60;
+    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const pastBlockNumber = currentBlockNumber - blocksIn7Days;
 
-  const rewardRate = ethers.toBigInt(rate);
+    const pastRewards = await rewardPool.rewards(0, { blockTag: pastBlockNumber });
+    const pastRewardsRemaining: bigint = ethers.toBigInt(pastRewards.reward_remaining);
+    console.log("pastRewardsRemaining", pastRewardsRemaining);
 
-  // 4. Get total staked LP tokens
-  const totalStaked = await readContract({
-    contract: gaugeContract,
-    method: "function totalSupply() view returns (uint256)",
-  });
+    const totalSupply = ethers.toBigInt(await rewardPool.totalSupply());
+    const curvePool = getContract({
+      client,
+      chain: strategyChain,
+      address: poolAddress,
+    });
+    const virtualPrice = await readContract({
+      contract: curvePool,
+      method: "function get_virtual_price() view returns (uint256)",
+    });
 
-  if (totalStaked === 0n) {
-    console.warn("No LP tokens staked. Skipping APY calculation.");
+    const earnedInPeriod = pastRewardsRemaining - currentRewardsRemaining;
+    const secondsPerWeek = 7 * 24 * 60 * 60;
+    const secondsPerYear = 365 * 24 * 60 * 60;
+
+    const ratePerSecond = Number(earnedInPeriod) / secondsPerWeek;
+    const annualCrvPerToken = (ratePerSecond * secondsPerYear) / Number(totalSupply);
+    console.log("annualCrvPerToken", annualCrvPerToken);
+    const lpPriceInInput = Number(virtualPrice) / 1e18;
+    const lpPriceInUSD = inputToken.symbol === "ETH.ETH"
+      ? lpPriceInInput * ethTokenPrice
+      : lpPriceInInput;
+
+    const crvApy = (annualCrvPerToken * crvTokenPrice) / lpPriceInUSD;
+    return crvApy * 100;
+  } catch (err) {
+    console.error("CRV APY calculation failed:", err);
     return 0;
   }
-
-  if (!crvTokenPrice || !ethTokenPrice) {
-    console.warn("Missing price data. Skipping APY calculation.");
-    return 0;
-  }
-
-  // 6. Calculate APY
-  const yearlyRewardsUSD = Number(rewardRate) * crvTokenPrice * 31536000; // Rewards per year in USD
-  const totalStakedUSD = Number(totalStaked) * ethTokenPrice; // Total staked value in USD
-  const apy = (yearlyRewardsUSD / totalStakedUSD) * 100;
-
-  return apy;
 }
 
 export async function calculateAaveRewardsAPY(
@@ -680,15 +897,9 @@ export const Approvedeposit = async (
   }
 };
 
-const getMinSharesOut = async (
-  vaultData: VaultData,
-  inputToken: Token,
-  transactionAmount: bigint,
-  activeChain: Chain
-) => {
-  const inputTokenAddress = isZetachain(activeChain.id)
-    ? inputToken?.address
-    : inputToken?.ZRC20equivalent;
+const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transactionAmount: bigint, activeChain: Chain) => {
+  console.log("getMinSharesOut");
+  const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
   let assetsConversionAmount: bigint = transactionAmount;
   if (inputTokenAddress !== vaultData.inputToken.address) {
     assetsConversionAmount = await getAmountOutFromSwap(
@@ -704,14 +915,16 @@ const getMinSharesOut = async (
     chain: strategyChain,
     address: vaultData.protocol.strategyAddress,
   });
+  console.log("About to make call to contract");
+  console.log("assetsConversionAmount", assetsConversionAmount);
+  console.log("assetsConversionAmount type", typeof assetsConversionAmount);
   const sharesOutForUnderlying = await readContract({
     contract,
     method: "function convertToShares(uint256) view returns (uint256)",
     params: [assetsConversionAmount],
   });
-  const minSharesOut =
-    (sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100)) /
-    BigInt(10000);
+  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
+  const minSharesOut = sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minSharesOut;
 };
 
@@ -755,35 +968,30 @@ const getMinAmountOut = async (
   return minAmountOut;
 };
 
-const executeDirectDeposit = async (
-  vaultData: VaultData,
-  inputToken: Token,
-  activeAccount: Account,
-  activeChain: Chain,
-  transactionAmount: bigint
-) => {
-  const minSharesOut: bigint = await getMinSharesOut(
-    vaultData,
-    inputToken,
-    transactionAmount,
-    activeChain
-  );
-
+const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("Executing Direct Deposit");
+  const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
+  console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
     address: vaultData.id,
   });
+  console.log("transactionAmount", transactionAmount);
+  console.log("activeAccount", activeAccount);
+  console.log("activeChain", activeChain);
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
     params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
+  console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx,
   });
+  console.log("receipt", receipt);
   return receipt;
 };
 
@@ -1485,4 +1693,4 @@ export const getPerformanceFee = async (vaultId: Address) => {
   return perfFee;
 };
 
-export const updatePythPrices = async () => {};
+export const updatePythPrices = async () => { };

@@ -1371,7 +1371,7 @@ function Interaction({
         if (isZetachain(vaultData.protocol.chainId)) {
           description = "Deposit in progress";
         } else {
-          description = `Initial deposit transaction on ${activeChain.name?.toLowerCase()} in progress`;
+          description = `Initial deposit transaction on ${activeChain.name} in progress`;
         }
       } else {
         description = "Initial deposit transaction on local chain in progress";
