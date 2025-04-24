@@ -35,6 +35,19 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+
+// Helper function for formatting token balances based on token type
+const formatTokenBalance = (balance: string | number, symbol: string): string => {
+  const num = Number(balance);
+  // Check if token is a stablecoin
+  const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') || 
+                    symbol?.includes('USDT') || symbol?.includes('USDC') ||
+                    symbol?.includes('BUSD');
+  // Format with 2 decimal places for stablecoins, 4 for others
+  const decimals = isStablecoin ? 2 : 4;
+  return num.toFixed(decimals);
+};
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -42,6 +55,8 @@ export interface VaultInputsProps {
   userVaultBalance?: string;
   vaultTotalAssetinToken?: VaultTotalAssetsinToken;
   transactionCompleted: boolean;
+  initialIsDeposit?: boolean;
+  onTokenSelect?: (token: Token) => void;
 }
 
 export type ConversionOutput = {
@@ -57,19 +72,49 @@ export default function VaultInputs({
   userVaultBalance,
   vaultTotalAssetinToken,
   transactionCompleted,
+  initialIsDeposit = true,
+  onTokenSelect,
 }: VaultInputsProps): JSX.Element {
+  const router = useRouter();
+  const pathname = usePathname();
   const [inputToken, setInputToken] = useState<Token>();
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
+  const [displayValue, setDisplayValue] = useState<string>("");
   const [debouncedInputBalance, setDebouncedInputBalance] =
     useState<Balance>(EMPTY_BALANCE);
   const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
-  const [isDeposit, setIsDeposit] = useState<boolean>(true);
+  const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [isSlippageExceedingLimit, setIsSlippageExceedingLimit] =
     useState<boolean>(true);
   const [outputBoxErrorMessage, setOutputBoxErrorMessage] =
     useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
+
+  // Use searchParams to directly determine tab state
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  // Update isDeposit when URL tab parameter changes
+  useEffect(() => {
+    const shouldBeDeposit = tabParam !== 'withdraw';
+    
+    // Only update if the state is different from what it should be
+    if (isDeposit !== shouldBeDeposit) {
+      setIsDeposit(shouldBeDeposit);
+    }
+  }, [tabParam, searchParams]);
+
+  // // Check if user has balance for withdrawal if tab=withdraw
+  // useEffect(() => {
+  //   // Only redirect if we're explicitly on withdraw tab AND there's no balance
+  //   if (tabParam === 'withdraw' && 
+  //       userVaultBalance !== undefined && 
+  //       Number(userVaultBalance) === 0) {
+  //     // If no balance for withdrawal, redirect to deposit tab
+  //     router.push(`${pathname}?tab=deposit`);
+  //   }
+  // }, [tabParam, userVaultBalance, pathname, router]);
 
   const [steps, setSteps] = useState<Action[]>([]);
   const [step, setStep] = useState<number>(0);
@@ -150,25 +195,20 @@ export default function VaultInputs({
     // This prevents the app from attempting to use a token from the previous chain
     // which could cause AbiDecodingZeroDataError when fetching token balances
     if (activeChain?.id) {
-      setInputToken(undefined);
       setInputBalance(EMPTY_BALANCE);
     }
   }, [activeChain?.id]);
-
-  // Watch action type change
-  useEffect(() => {
-    if (inputToken) {
-      // Set the inputTokenBalance separately to track balance as a string
-      setInputTokenBalance(tokenBalance!.formatted);
-    }
-  }, [tokenBalance, isDeposit]);
 
   // Trigger error message handling
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {
       if (isDeposit) {
         setErrorMessage(
-          getVaultErrorMessage(inputBalance.formatted, inputTokenBalance, steps)
+          getVaultErrorMessage(
+            inputBalance.value.toString(),
+            tokenBalance.value.toString(),
+            steps
+          )
         );
       } else {
         setErrorMessage(
@@ -184,7 +224,6 @@ export default function VaultInputs({
     inputToken,
     inputBalance.formatted,
     isDeposit,
-    inputTokenBalance,
     vaultData.id,
     action,
     vaultTotalAssetinToken,
@@ -239,61 +278,53 @@ export default function VaultInputs({
       console.log("Selected vault token directly");
       setInputToken(selectedToken);
       setAllowInput(true);
-      return;
+    } else {
+      // Otherwise, use the token as selected
+      setInputToken(selectedToken);
+      setAllowInput(true);
     }
 
-    // Otherwise, use the token as selected
-    setInputToken(selectedToken);
-    setAllowInput(true);
+    // Notify parent component about token selection
+    if (onTokenSelect) {
+      onTokenSelect(selectedToken);
+    }
   };
 
   const switchTokens = async () => {
-    setInputBalance(EMPTY_BALANCE);
-
-    // Remove condition requiring inputToken to switch between deposit and withdrawal modes
-    if (isDeposit) {
-      // Switch to Withdraw
-      setIsDeposit(false);
-
-      // Only attempt to set steps if we have a token and chain
-      if (inputToken && activeChain) {
-        const newAction = SmartVaultActionType.Withdrawal;
-        setSteps(
-          await selectActions(
-            newAction,
-            vaultData,
-            activeChain,
-            walletAddress as any,
-            inputBalance,
-            inputToken
-          )
-        );
-      }
-    } else {
-      // Switch to Deposit
-      setIsDeposit(true);
-
-      // Only attempt to set steps if we have a token and chain
-      if (inputToken && activeChain) {
-        const newAction = SmartVaultActionType.Deposit;
-        setSteps(
-          await selectActions(
-            newAction,
-            vaultData,
-            activeChain,
-            walletAddress as any,
-            inputBalance,
-            inputToken
-          )
-        );
-      }
-    }
+    // Get the opposite tab of what's currently in the URL
+    const currentTabFromURL = tabParam !== 'withdraw' ? 'deposit' : 'withdraw';
+    const newTab = currentTabFromURL === 'deposit' ? 'withdraw' : 'deposit';
+    
+    // Update URL - React will handle state update via the useEffect
+    router.push(`${pathname}?tab=${newTab}`);
   };
 
   const handleChangeInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!inputToken) return;
       let value = e.currentTarget.value;
+
+      // Special case for empty input
+      if (value === "") {
+        setInputBalance({
+          value: 0n,
+          formatted: "0",
+          formattedUSD: "0",
+        });
+        setDisplayValue("");
+        return;
+      }
+
+      // Special case for "0." - keep the leading zero for decimal inputs
+      if (value === "0.") {
+        setInputBalance({
+          value: 0n,
+          formatted: "0",
+          formattedUSD: "0",
+        });
+        setDisplayValue("0.");
+        return;
+      }
 
       // Format the number properly
       if (!value.includes(".")) {
@@ -314,6 +345,9 @@ export default function VaultInputs({
         inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
       }
 
+      if (isNaN(Number(inputAmt))) {
+        return;
+      }
       // convert string amt to bigint
       const newAmt = parseUnits(inputAmt, decimalsNumber);
 
@@ -322,6 +356,8 @@ export default function VaultInputs({
         formatted: inputAmt,
         formattedUSD: String(Number(inputAmt) * inputTokenPrice),
       });
+
+      setDisplayValue(inputAmt);
     },
     [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals]
   );
@@ -331,6 +367,7 @@ export default function VaultInputs({
     if (isDeposit) {
       // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
       setInputBalance(tokenBalance);
+      setDisplayValue(tokenBalance.formatted)
     } else {
       handleChangeInput({
         currentTarget: { value: vaultTotalAssetinToken?.toString() },
@@ -423,12 +460,18 @@ export default function VaultInputs({
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
+        // Use formatTokenBalance for the output amount formatting
+        const formattedOutputAmount = formatTokenBalance(
+          tokenConversionFromWei,
+          inputToken?.symbol || ""
+        );
+
         console.log("Double Box - Conversion Output:", {
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
           finalConvertedAmountInUSDFormatted: formatCurrency(
             assetsConversionInUSD
           ).toString(),
-          outputAmountFormatted: tokenConversionFromWei.toString(),
+          outputAmountFormatted: formattedOutputAmount,
           outputAmountInUSDFormatted:
             formatCurrency(tokenConversionInUSD).toString(),
         });
@@ -437,7 +480,7 @@ export default function VaultInputs({
           finalConvertedAmountInUSDFormatted: formatCurrency(
             assetsConversionInUSD
           ).toString(),
-          outputAmountFormatted: tokenConversionFromWei.toString(),
+          outputAmountFormatted: formattedOutputAmount,
           outputAmountInUSDFormatted:
             formatCurrency(tokenConversionInUSD).toString(),
         });
@@ -450,6 +493,7 @@ export default function VaultInputs({
       inputToken?.ZRC20equivalent,
       inputToken?.address,
       inputToken?.decimals,
+      inputToken?.symbol,
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
@@ -536,9 +580,15 @@ export default function VaultInputs({
         gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
       });
 
-      const sharesAmountFormatted = await getSharesFromDeposit(
+      const sharesAmountRaw = await getSharesFromDeposit(
         finalConvertedAmount,
         vaultData
+      );
+      
+      // Use formatTokenBalance for the output amount formatting
+      const sharesAmountFormatted = formatTokenBalance(
+        sharesAmountRaw, 
+        vaultData.symbol
       );
 
       console.log("Double Box - Shares calculation:", {
@@ -677,15 +727,49 @@ export default function VaultInputs({
     // This ensures proper token selection in both modes
     console.log("Selected withdraw token:", token);
     setInputToken(token);
+    
+    // Notify parent component about token selection
+    if (onTokenSelect) {
+      onTokenSelect(token);
+    }
   };
 
+  // Handle tab selection from TabSelector
+  const handleTabChange = (tab: string) => {
+    const newIsDeposit = tab === "Deposit";
+    
+    // Update URL first to ensure consistency
+    router.push(`${pathname}?tab=${newIsDeposit ? 'deposit' : 'withdraw'}`);
+    
+    // Reset input balance
+    setInputBalance(EMPTY_BALANCE);
+    
+    // Only attempt to set steps if we have a token and chain
+    if (inputToken && activeChain) {
+      const fetchSteps = async () => {
+        const newAction = newIsDeposit
+          ? SmartVaultActionType.Deposit
+          : SmartVaultActionType.Withdrawal;
+        const steps = await selectActions(
+          newAction,
+          vaultData,
+          activeChain,
+          walletAddress as any,
+          inputBalance,
+          inputToken
+        );
+        setSteps(steps);
+      };
+      fetchSteps();
+    }
+  };
   return (
     <>
       <TabSelector
         className="mb-5"
         availableTabs={["Deposit", "Withdraw"]}
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
-        setActiveTab={switchTokens}
+        setActiveTab={handleTabChange}
       />
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
@@ -693,12 +777,12 @@ export default function VaultInputs({
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={handleMaxClick}
-        value={inputBalance.formatted}
+        value={displayValue}
         onChange={handleChangeInput}
         selectedToken={isDeposit ? inputToken : vaultToken}
         inputTokenbalance={
           isDeposit
-            ? inputTokenBalance
+            ? tokenBalance.formatted
             : vaultTotalAssetinToken?.toString() ?? "0"
         }
         errorMessage={errorMessage}
@@ -741,7 +825,7 @@ export default function VaultInputs({
         inputTokenbalance={
           isDeposit
             ? vaultTotalAssetinToken?.toString() ?? "0"
-            : inputTokenBalance
+            : tokenBalance.formatted
         }
         errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
         tokenList={isDeposit ? [] : tokenList}

@@ -12,11 +12,12 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
-  calculateCurveRewardsAPY,
-  calculateCompoundRewardsAPY
+  calculateConvexEthereumRewardsAPY,
+  calculateCompoundRewardsAPY,
+  calculateConvexArbitrumRewardsAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
-import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
+import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { CHAIN_ID, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -60,14 +61,14 @@ export const useUpdateVaultBalanceAndTotal = (
 
               const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
               const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
-              
+
               console.log({
                 vaultId: vault?.id || "unknown",
                 balance,
                 totalAssets: totalAssetsStr,
                 totalAssetsinToken: totalAssetsinTokenStr,
               });
-              
+
               return {
                 vaultId: vault?.id || "unknown",
                 balance,
@@ -159,6 +160,7 @@ export const useUpdateAPYs = (
   setVaultAPYs: (vaultAPYs: { vaultId: string, APY7d: number }[]) => void,
   setLoading: (loading: boolean) => void,
   crvTokenPrice: number,
+  cvxTokenPrice: number,
   ethTokenPrice: number,
   compTokenPrice: number
 ) => {
@@ -169,11 +171,13 @@ export const useUpdateAPYs = (
           vaults.map(async (vault) => {
             try {
               const strategyChain = defineChain(vault.protocol.chainId);
+              console.log("strategyChain", strategyChain)
               const strategyContract = getContract({
                 client,
                 chain: strategyChain,
                 address: vault.protocol.strategyAddress,
               });
+              console.log("strategyContract", strategyContract)
               const receiptTokenAddress = await readContract({
                 contract: strategyContract,
                 method: "function receiptToken() view returns (address)",
@@ -187,7 +191,7 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
                 console.log("Fetching Compound Rewards APY")
-                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.gaugeAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
+                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
                 console.log("RewardsAPY", RewardsAPY)
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
@@ -205,7 +209,17 @@ export const useUpdateAPYs = (
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve") {
                 APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
-                RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+                if (crvTokenPrice > 0 && ethTokenPrice > 0) {
+                  if (strategyChain.id === 1) {
+                    RewardsAPY = await calculateConvexEthereumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                  } else if (strategyChain.id === 42161) {
+                    RewardsAPY = await calculateConvexArbitrumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                  }
+                } else {
+                  console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
+                }
+                console.log("RewardsAPY", RewardsAPY)
+                APY7d = APY7d + RewardsAPY;
               }
 
               return { vaultId: vault.id, APY7d };
@@ -222,12 +236,21 @@ export const useUpdateAPYs = (
       }
     };
 
-    // Trigger the function if vaults are available
-    if (vaults.length > 0) {
-      setLoading(true);  // Set loading state before fetching APYs
+    // Trigger the function if vaults and prices are available
+    if (
+      vaults.length > 0
+      &&
+      crvTokenPrice > 0 &&
+      cvxTokenPrice > 0
+      &&
+      ethTokenPrice > 0
+      &&
+      compTokenPrice > 0
+    ) {
+      setLoading(true);
       updateAPYs();
     }
-  }, []);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice]);
 };
 
 export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }: { vaultData: VaultData, activeChainId: number, strategyChainID: number, strategyAddress: string, contractWithdrawalReceiverAddress: string, isTransactionStarted: boolean }) => {
@@ -312,7 +335,7 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
 
     // Normalize the symbol format:
     // Convert "USDC (ETH)" to "USDC.ETH" format for price lookup
-    const normalizedSymbol = symbol.includes('(') ? 
+    const normalizedSymbol = symbol.includes('(') ?
       symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
 
     // Try to find price using normalized symbol first
@@ -323,8 +346,8 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
 
     // If full symbol price not found, check if it's a stablecoin by checking the base symbol
     // For both formats: "USDC (ETH)" -> "USDC" and "USDC.ETH" -> "USDC"
-    const baseSymbol = symbol.includes('(') ? 
-      symbol.split(' (')[0].toUpperCase() : 
+    const baseSymbol = symbol.includes('(') ?
+      symbol.split(' (')[0].toUpperCase() :
       getOnlyTokenSymbol(symbol).toUpperCase();
 
     if (baseSymbol === "USDC" || baseSymbol === "USDT") {

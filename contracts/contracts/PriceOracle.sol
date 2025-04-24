@@ -53,22 +53,13 @@ contract PriceOracle is Ownable {
             PythStructs.Price memory result
         ) {
             price = result;
-        } catch (bytes memory lowLevelData) {
-            // Decode and inspect error selector
-            bytes4 selector;
-            assembly {
-                selector := mload(add(lowLevelData, 32))
-            }
-            if (selector == bytes4(keccak256("InvalidUpdateData()"))) {
-                price = pyth.getPriceUnsafe(priceFeedId);
-            } else {
-                revert("Failed to fetch price");
-            }
+        } catch {
+            // Fallback to unsafe price for any kind of error
+            price = pyth.getPriceUnsafe(priceFeedId);
         }
-        // Ensure the price is valid (greater than 0)
+
         require(price.price > 0, "Invalid price");
 
-        // Return the price in uint256 format
         return uint256(uint64(price.price));
     }
 }

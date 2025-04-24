@@ -10,6 +10,7 @@ import "./interfaces/IZRC20.sol";
 import "./interfaces/IAmanaRegistry.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ISwapHelper.sol";
+import "hardhat/console.sol";
 
 contract WithdrawHelper {
     using SafeERC20 for IERC20;
@@ -186,6 +187,8 @@ contract WithdrawHelper {
     ) external {
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
+        console.log("amount", amount);
+        console.log("gasFee", gasFee);
         uint256 amountToDeduct = gasFee;
 
         if (gas_zrc20 != tokenToTransfer) {

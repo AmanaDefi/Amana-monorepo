@@ -22,13 +22,13 @@ interface ISwapRouter {
     }
 
     struct ExactOutputSingleParams {
-        address tokenIn; // The token being swapped in
-        address tokenOut; // The token being swapped out
-        uint256 amountOut; // The desired amount of output tokens
-        uint256 amountInMaximum; // The maximum amount of input tokens
-        uint160 limitSqrtPrice; // The price limit for the swap
-        address recipient; // The recipient of the output tokens
-        uint256 deadline; // The deadline for the swap to be executed
+        address tokenIn;
+        address tokenOut;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+        uint160 limitSqrtPrice;
     }
 
     struct ExactOutputParams {

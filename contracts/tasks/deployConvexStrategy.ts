@@ -17,11 +17,18 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   // Fetch the vault address argument required for the BaseAaveStrategy constructor
   const contractName = args.contract;
   const name = args.name;
+  const gatewayAddress = args.gateway; // This should be passed as an argument
   const vault = args.vault; // This should be passed as an argument
+  const withdrawHelper = args.withdrawHelper;
+  const swapHelper = args.swapHelper;
   const receiptToken = args.receiptToken;
-  const gauge = args.gauge;
-  const gateway = args.gateway;
-  const weth = args.weth;
+  const inputToken = args.inputToken;
+  const tokenIndex = args.tokenIndex;
+  const cvxRewardsPool = args.cvxRewardsPool;
+  const crvToken = args.crvToken;
+  const convexPid = args.convexPid;
+  const boosterAddress = args.boosterAddress;
+  const cvxToken = args.cvxToken;
 
   if (!name) {
     throw new Error("🚨 Strategy name is required");
@@ -35,16 +42,14 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (!contractName) {
     throw new Error("🚨 Strategy contract name is required");
   }
-  if (!gateway) {
-    throw new Error("🚨 Gateway address is required");
-  }
-  if (!weth) {
+
+  if (!inputToken) {
     throw new Error("🚨 WETH address is required");
   }
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, receiptToken, gauge, gateway, weth);
+  const contract = await factory.deploy(name, gatewayAddress, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for contract to be deployed before proceeding
@@ -60,7 +65,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, receiptToken, gauge, gateway, weth],
+        constructorArguments: [name, gatewayAddress, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -76,14 +81,21 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 };
 
 // Define the Hardhat task for deployment
-task("deploy-curve-eth-strategy", "Deploy a Strategy contract", main)
+task("deploy-convex-strategy", "Deploy a Strategy contract", main)
   .addFlag("json", "Output in JSON")
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
-  .addParam("vault", "The address of the vault")
-  .addParam("receiptToken", "The address of the receipt token")
-  .addParam("gauge", "The address of the gauge contract")
   .addParam("gateway", "The address of the gateway contract")
-  .addParam("weth", "The address of the WETH contract");
+  .addParam("vault", "The address of the vault")
+  .addParam("withdrawHelper", "The address of the withdraw helper contract")
+  .addParam("swapHelper", "The address of the swap helper contract")
+  .addParam("receiptToken", "The address of the receipt token")
+  .addParam("inputToken", "The address of the WETH contract")
+  .addParam("cvxRewardsPool", "The address of the CVX rewards pool")
+  .addParam("crvToken", "The address of the CRV token")
+  .addParam("tokenIndex", "The index of the token in the gauge contract")
+  .addParam("convexPid", "The Convex PID")
+  .addParam("boosterAddress", "The address of the Convex booster")
+  .addParam("cvxToken", "The address of the CVX token");
 
 export default {};

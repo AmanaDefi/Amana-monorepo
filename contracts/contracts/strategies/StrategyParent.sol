@@ -49,6 +49,28 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         uint256 executionNonce,
         bytes32 crossChainTxId
     );
+    event AssetsReceivedFromOldStrategy(
+        address indexed oldStrategy,
+        uint256 totalAssetsTransferrred,
+        uint256 executionNonce,
+        bytes32 crossChainTxId
+    );
+    event RewardsClaimed(
+        address indexed strategy,
+        address indexed rewardToken,
+        uint256 amount
+    );
+    event RewardsHarvested(
+        address indexed rewardToken,
+        uint256 rewardAmount,
+        uint256 inputTokenReceived
+    );
+    event RewardClaimFailed(string reason);
+    event SwapFailed(
+        address indexed rewardToken,
+        uint256 amount,
+        string reason
+    );
 
     address immutable _GATEWAY_ADDRESS;
 
@@ -85,7 +107,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         ) {
             revert OnlyVault();
         }
-
         (
             address user,
             address receiver,
@@ -316,6 +337,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             ),
             uint256(1000000)
         );
+
         IGatewayEVM(_GATEWAY_ADDRESS).call(
             amanaVault,
             outgoingMessage,

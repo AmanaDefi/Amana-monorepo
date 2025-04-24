@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface ICurvePool is IERC20 {
+interface ICurvePoolFixed is IERC20 {
     function exchange(
         uint256 i,
         uint256 j,
@@ -20,7 +20,7 @@ interface ICurvePool is IERC20 {
     ) external view returns (uint256);
 
     function add_liquidity(
-        uint256[] memory amounts,
+        uint256[2] memory amounts,
         uint256 min_mint_amount
     ) external returns (uint256);
 
@@ -35,7 +35,7 @@ interface ICurvePool is IERC20 {
     function get_virtual_price() external view returns (uint256);
 
     function calc_token_amount(
-        uint256[] memory amounts,
+        uint256[2] memory amounts,
         bool is_deposit
     ) external view returns (uint256);
 
