@@ -80,7 +80,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         uint256 minimumOut,
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
-    ) external {
+    ) external virtual {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         if (amount == 0) revert NoFundsReceived();

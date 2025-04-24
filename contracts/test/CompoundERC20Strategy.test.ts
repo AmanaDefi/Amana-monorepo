@@ -287,7 +287,6 @@ describe("ERC20_Compound_Strategy - Full Coverage", function () {
     expect(reward.owed).to.be.gt(0); // Ensure rewards were received
 
     // Step 5: Check Claimable Rewards
-    console.log(`Claimable Rewards: ${ethers.utils.formatUnits(reward.owed, 18)} COMP`);
     expect(reward.owed).to.be.gt(0); // Ensure some rewards have accrued
 
     // Step 6: Simulate Withdrawal
@@ -316,7 +315,6 @@ describe("ERC20_Compound_Strategy - Full Coverage", function () {
 
     // Step 8: Check that Rewards Were Claimed (Optional)
     const finalClaimableRewards = await cometRewardsContract.callStatic.getRewardOwed(RECEIPT_TOKEN_ADDRESS, strategy.address);
-    console.log(`Final Claimable Rewards: ${ethers.utils.formatUnits(finalClaimableRewards.owed, 18)} COMP`);
     expect(finalClaimableRewards.owed).to.be.lt(reward.owed); // Rewards should have been claimed
   });
 
@@ -684,8 +682,6 @@ describe("ERC20_Compound_Strategy - Full Coverage", function () {
     }
 
     const [compAmount, , usdcReceived] = event.args!;
-    console.log("COMP harvested:", ethers.utils.formatEther(compAmount));
-    console.log("USDC reinvested:", ethers.utils.formatUnits(usdcReceived, 6));
 
     expect(compAmount).to.be.gt(0);
     expect(usdcReceived).to.be.gt(0);
@@ -722,7 +718,6 @@ describe("ERC20_Compound_Strategy - Full Coverage", function () {
 
     // Step 4: Call claimRewards externally
     const claimedAmount = await strategy.connect(gatewaySigner).callStatic.claimRewards();
-    console.log("Claimed COMP amount:", ethers.utils.formatEther(claimedAmount));
     expect(claimedAmount).to.be.gt(0);
 
     // Step 5: Execute for real and verify COMP balance
