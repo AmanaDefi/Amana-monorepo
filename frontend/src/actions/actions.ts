@@ -497,7 +497,6 @@ export async function calculateConvexEthereumRewardsAPY(
   }
 }
 
-
 export async function calculateConvexArbitrumRewardsAPY(
   poolAddress: Address,
   inputToken: Token,
@@ -513,8 +512,8 @@ export async function calculateConvexArbitrumRewardsAPY(
   try {
     // Fetch the current virtual price
     const currentRewards = await rewardPool.rewards(0);
-    const currentRewardsRemaining: bigint = ethers.toBigInt(currentRewards.reward_remaining);
-    console.log("currentRewardsRemaining", currentRewardsRemaining);
+    const currentRewardsIntegral: bigint = ethers.toBigInt(currentRewards.reward_integral);
+    console.log("currentRewardsIntegral", currentRewardsIntegral);
     // Fetch the current block number and determine the number of blocks for 7 days
     const currentBlockNumber = await provider.getBlockNumber();
     const averageBlockTimeInSeconds = BLOCK_TIME[strategyChain.id] ?? 12;
@@ -523,10 +522,9 @@ export async function calculateConvexArbitrumRewardsAPY(
     const pastBlockNumber = currentBlockNumber - blocksIn7Days;
 
     const pastRewards = await rewardPool.rewards(0, { blockTag: pastBlockNumber });
-    const pastRewardsRemaining: bigint = ethers.toBigInt(pastRewards.reward_remaining);
-    console.log("pastRewardsRemaining", pastRewardsRemaining);
+    const pastRewardsIntegral: bigint = ethers.toBigInt(pastRewards.reward_integral);
+    console.log("pastRewardsIntegral", pastRewardsIntegral);
 
-    const totalSupply = ethers.toBigInt(await rewardPool.totalSupply());
     const curvePool = getContract({
       client,
       chain: strategyChain,
@@ -537,20 +535,22 @@ export async function calculateConvexArbitrumRewardsAPY(
       method: "function get_virtual_price() view returns (uint256)",
     });
 
-    const earnedInPeriod = pastRewardsRemaining - currentRewardsRemaining;
+    const rewardsPerToken7Days = currentRewardsIntegral - pastRewardsIntegral;
+    console.log("rewardsPerToken7Days", rewardsPerToken7Days);
     const secondsPerWeek = 7 * 24 * 60 * 60;
     const secondsPerYear = 365 * 24 * 60 * 60;
 
-    const ratePerSecond = Number(earnedInPeriod) / secondsPerWeek;
-    const annualCrvPerToken = (ratePerSecond * secondsPerYear) / Number(totalSupply);
+    const ratePerSecond = Number(rewardsPerToken7Days) / secondsPerWeek;
+    const annualCrvPerToken = ratePerSecond * secondsPerYear;
     console.log("annualCrvPerToken", annualCrvPerToken);
     const lpPriceInInput = Number(virtualPrice) / 1e18;
     const lpPriceInUSD = inputToken.symbol === "ETH.ETH"
       ? lpPriceInInput * ethTokenPrice
       : lpPriceInInput;
-
-    const crvApy = (annualCrvPerToken * crvTokenPrice) / lpPriceInUSD;
-    return crvApy * 100;
+    console.log("lpPriceInUSD", lpPriceInUSD);
+    console.log("crvTokenPrice", crvTokenPrice);
+    const crvApy = (Number(annualCrvPerToken) / 1e18) * crvTokenPrice / lpPriceInUSD;
+    return crvApy;
   } catch (err) {
     console.error("CRV APY calculation failed:", err);
     return 0;

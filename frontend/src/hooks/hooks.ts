@@ -208,7 +208,7 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve") {
-                APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
+                // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
                   if (strategyChain.id === 1) {
                     RewardsAPY = await calculateConvexEthereumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
@@ -219,7 +219,7 @@ export const useUpdateAPYs = (
                   console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
                 }
                 console.log("RewardsAPY", RewardsAPY)
-                APY7d = APY7d + RewardsAPY;
+                APY7d = RewardsAPY;
               }
 
               return { vaultId: vault.id, APY7d };
