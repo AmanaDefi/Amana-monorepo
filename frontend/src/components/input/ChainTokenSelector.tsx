@@ -29,6 +29,62 @@ export default function ChainTokenSelector({
   const isInitialRender = useRef(true);
   const [selectedTokenChain, setSelectedTokenChain] = useState<number | null>(null);
 
+  // Find the closest token to vault token on current chain
+  const findClosestToken = useCallback(() => {
+    if (!vaultData?.inputToken || !activeChain) {
+      return null;
+    }
+
+    // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
+    const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0];
+    const currentChainTokens = APPROVED_TOKENS[activeChain.id] || [];
+    
+    // First, try to find exact symbol match (non-native tokens prioritized)
+    const exactMatches = currentChainTokens.filter(token => {
+      // Extract token base symbol (e.g., "USDT" from "USDT (POL)")
+      const tokenBaseSymbol = token.symbol.split(' ')[0];
+      return tokenBaseSymbol === vaultTokenSymbol;
+    });
+
+    // If we have exact matches, prioritize non-native tokens
+    if (exactMatches.length > 0) {
+      // First try to find a non-native token with matching symbol
+      const nonNativeMatch = exactMatches.find(token => 
+        token.address !== "0x0000000000000000000000000000000000000000" &&
+        token.address !== "11111111111111111111111111111111" // Solana native
+      );
+      
+      if (nonNativeMatch) {
+        return nonNativeMatch;
+      }
+      
+      // If no non-native match, return the first match (could be native)
+      return exactMatches[0];
+    }
+    
+    // If no exact symbol match, return null
+    return null;
+  }, [vaultData?.inputToken, activeChain]);
+
+  // Set default token on component mount and when dependencies change
+  useEffect(() => {
+    if (vaultData?.inputToken && activeChain && walletAddress) {
+      const closestToken = findClosestToken();
+      
+      // Only select if no token is selected yet OR if current selection is native token and we have a better match
+      const isCurrentNativeToken = selectedToken?.address === "0x0000000000000000000000000000000000000000" || 
+                                  selectedToken?.address === "11111111111111111111111111111111";
+      
+      if (!selectedToken || (isCurrentNativeToken && closestToken && closestToken.address !== selectedToken.address)) {
+        console.log("Auto-selecting closest token:", closestToken?.symbol);
+        if (closestToken) {
+          const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
+          onSelectToken(closestToken, chain);
+        }
+      }
+    }
+  }, [vaultData?.inputToken, activeChain, walletAddress, selectedToken, findClosestToken, onSelectToken]);
+
   // Auto-expand the active chain when opening the dropdown
   useEffect(() => {
     if (isOpen && activeChain) {
@@ -198,6 +254,47 @@ export default function ChainTokenSelector({
     });
   }, [searchQuery, getTokensForChain]);
 
+  // Decide what to display in the selector button
+  const displayContent = useMemo(() => {
+    console.log("selectedToken", selectedToken);
+    console.log("findClosestToken", findClosestToken());
+    
+    if (selectedToken) {
+      return (
+        <>
+          <Image
+            src={selectedToken.imgURL}
+            alt={selectedToken.symbol}
+            width={24}
+            height={24}
+            className="rounded-full"
+          />
+          <span className="text-white">{selectedToken.symbol}</span>
+        </>
+      );
+    } else if (!walletAddress) {
+      return <span className="text-white">Select Token</span>;
+    } else {
+      const defaultToken = findClosestToken();
+      if (defaultToken) {
+        return (
+          <>
+            <Image
+              src={defaultToken.imgURL}
+              alt={defaultToken.symbol}
+              width={24}
+              height={24}
+              className="rounded-full"
+            />
+            <span className="text-white">{defaultToken.symbol}</span>
+          </>
+        );
+      } else {
+        return <span className="text-white">Select Token</span>;
+      }
+    }
+  }, [selectedToken, walletAddress, findClosestToken]);
+
   return (
     <div className="chain-token-selector relative" ref={dropdownRef}>
       <button
@@ -207,23 +304,7 @@ export default function ChainTokenSelector({
         }}
         className={`fluid-hover-button flex items-center space-x-2 rounded-lg px-4 py-2 ${className}`}
       >
-        {selectedToken ? (
-          <>
-            <Image
-              src={selectedToken.imgURL}
-              alt={selectedToken.symbol}
-              width={24}
-              height={24}
-              className="rounded-full"
-            />
-            <span className="text-white">{selectedToken.symbol}</span>
-          </>
-        ) : (
-          <div className="flex items-center space-x-2">
-            {/* <Image src="/tokens_white.png" alt="Logo" width={24} height={24} className="rounded-full" /> */}
-            <span className="text-white">Select Token</span>
-          </div>
-        )}
+        {displayContent}
         <ChevronDownIcon className={`w-5 h-5 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 

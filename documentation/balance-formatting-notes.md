@@ -2,6 +2,8 @@
 
 ## Overview
 
+## Author: Rohit Kumar Suman
+
 This document summarizes the fixes and new features applied in this session to:
 1. Propagate user-selected tokens into the "Your Wallet" and "Deposits" sections.
 2. Introduce conditional precision formatting for token balances (stablecoins vs. native tokens).
