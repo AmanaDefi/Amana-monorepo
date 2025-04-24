@@ -253,7 +253,7 @@ export default function InteractionContainer({
       isTransactionStarted,
     });
 
-  const cctxData = useInboundToCctxData(crosschainInvestHash);
+  const cctxData = useInboundToCctxData(crosschainInvestHash, action);
 
   function completeTransactionProcess(
     feedbackSnapshot: TransactionStepMessages
