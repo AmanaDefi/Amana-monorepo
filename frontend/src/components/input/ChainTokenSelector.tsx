@@ -205,7 +205,7 @@ export default function ChainTokenSelector({
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className={`selector-main-button flex items-center space-x-2 rounded-lg px-4 py-2 ${className}`}
+        className={`fluid-hover-button flex items-center space-x-2 rounded-lg px-4 py-2 ${className}`}
       >
         {selectedToken ? (
           <>

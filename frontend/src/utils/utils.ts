@@ -580,3 +580,15 @@ export function formatNumberWithSuffix(num: number): string {
   
   return num.toFixed(2);
 }
+
+// Add the formatTokenBalance function 
+export const formatTokenBalance = (balance: string | number, symbol: string): string => {
+  const num = Number(balance);
+  // Check if token is a stablecoin
+  const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') || 
+                     symbol?.includes('USDT') || symbol?.includes('USDC') ||
+                     symbol?.includes('BUSD');
+  // Format with 2 decimal places for stablecoins, 4 for others
+  const decimals = isStablecoin ? 2 : 4;
+  return num.toFixed(decimals);
+};
