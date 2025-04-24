@@ -41,6 +41,7 @@ import {
 import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useInboundToCctxData } from "@/hooks/useInboundToCctxData";
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -252,6 +253,8 @@ export default function InteractionContainer({
       isTransactionStarted,
     });
 
+  const cctxData = useInboundToCctxData(crosschainInvestHash);
+
   function completeTransactionProcess(
     feedbackSnapshot: TransactionStepMessages
   ) {
@@ -285,6 +288,19 @@ export default function InteractionContainer({
     console.log("event1: ", vaultEvents);
     console.log("crosschainInvestHash: ", crosschainInvestHash);
     console.log("crossChainTxId: ", crossChainTxId);
+    if (
+      cctxData?.CrossChainTxs &&
+      cctxData.CrossChainTxs[0].inbound_params.status != "SUCCESS"
+    ) {
+      if (action == Action.crosschainInvest) {
+        const nextStep = actions.findIndex(
+          (el) => el == Action.CrossChainDepositFailed
+        );
+        setAction(actions[nextStep]);
+        setStep(nextStep);
+        return;
+      }
+    }
     if (vaultEvents && vaultEvents.length > 0 && crosschainInvestHash != "") {
       const newEvents = vaultEvents.filter((event) => {
         const eventKey = `${event.transactionHash}-${event.logIndex}`;
@@ -522,7 +538,7 @@ export default function InteractionContainer({
         }
       }
     }
-  }, [vaultEvents, crosschainInvestHash]);
+  }, [vaultEvents, crosschainInvestHash, cctxData]);
 
   useEffect(() => {
     if (
