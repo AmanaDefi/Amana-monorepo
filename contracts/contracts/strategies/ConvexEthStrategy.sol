@@ -3,15 +3,15 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "./EthStrategyParent.sol";
+
 import "../interfaces/ICurvePoolFixed.sol";
-import "../interfaces/ISwapRouter.sol";
-import "../interfaces/IPriceOracle.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBooster.sol";
 import "../interfaces/IConvexRewardPool.sol";
 
-contract CurveEthStrategy is EthStrategyParent {
+contract ConvexEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
     ICurvePoolFixed public immutable receiptToken;
@@ -26,7 +26,6 @@ contract CurveEthStrategy is EthStrategyParent {
     uint256 public inputTokenIndex;
     uint256 public convexPid;
 
-    bool public stakingEnabled = true;
     uint16 public harvestSwapSlippage = 500; // 5% slippage
 
     constructor(
@@ -55,12 +54,12 @@ contract CurveEthStrategy is EthStrategyParent {
         convexPid = _convexPid;
     }
 
-    function setStakingEnabled(bool _enabled) external onlyOwner {
-        stakingEnabled = _enabled;
-    }
-
     function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
         harvestSwapSlippage = _slippage;
+    }
+
+    function setSwapHelperEthereum(address _swapHelper) external onlyOwner {
+        swapHelperEthereum = _swapHelper;
     }
 
     function swapToWeth(
@@ -90,20 +89,38 @@ contract CurveEthStrategy is EthStrategyParent {
         return amountOut;
     }
 
-    function claimRewards() public returns (uint256) {
-        // Get the balance of CRV before claiming
-        uint256 amountBefore = IERC20(crvToken).balanceOf(address(this));
+    function claimRewards() public returns (uint256 totalClaimed) {
+        // Track balances before
+        uint256 crvBefore = IERC20(crvToken).balanceOf(address(this));
+        uint256 cvxBefore = IERC20(cvxToken).balanceOf(address(this));
 
-        // Call Convex rewards contract to claim CRV + extras
-        IConvexRewardPool(rewardPool).getReward(address(this), true);
+        try IConvexRewardPool(rewardPool).getReward(address(this), true) {
+            // Track balances after
+            uint256 crvAfter = IERC20(crvToken).balanceOf(address(this));
+            uint256 cvxAfter = IERC20(cvxToken).balanceOf(address(this));
 
-        // Get the balance of CRV after claiming
-        uint256 amountAfter = IERC20(crvToken).balanceOf(address(this));
+            uint256 claimedCrv = crvAfter > crvBefore
+                ? crvAfter - crvBefore
+                : 0;
+            uint256 claimedCvx = cvxAfter > cvxBefore
+                ? cvxAfter - cvxBefore
+                : 0;
 
-        uint256 claimed = amountAfter - amountBefore;
+            if (claimedCrv > 0) {
+                emit RewardsClaimed(address(this), crvToken, claimedCrv);
+            }
+            if (claimedCvx > 0) {
+                emit RewardsClaimed(address(this), cvxToken, claimedCvx);
+            }
 
-        emit RewardsClaimed(address(this), crvToken, claimed);
-        return claimed;
+            totalClaimed = claimedCrv + claimedCvx;
+        } catch Error(string memory reason) {
+            emit RewardClaimFailed(reason);
+        } catch {
+            emit RewardClaimFailed("Unknown error");
+        }
+
+        return totalClaimed;
     }
 
     function harvest() public {
@@ -112,60 +129,54 @@ contract CurveEthStrategy is EthStrategyParent {
     }
 
     function _reinvestRewards() internal {
-        uint256 totalWeth = 0;
+        address[] memory rewardContracts = new address[](
+            1 + rewardPool.extraRewardsLength()
+        );
+        rewardContracts[0] = address(rewardPool);
 
-        // Primary reward (CRV)
-        address mainRewardToken = rewardPool.rewardToken();
-        uint256 crvBalance = IERC20(mainRewardToken).balanceOf(address(this));
-        if (crvBalance > 0) {
-            uint256 wethFromCrv = swapToWeth(
-                mainRewardToken,
-                crvBalance,
-                harvestSwapSlippage
+        for (uint256 i = 0; i < rewardContracts.length - 1; i++) {
+            rewardContracts[i + 1] = IConvexRewardPool(rewardPool).extraRewards(
+                i
             );
-            emit RewardsHarvested(mainRewardToken, crvBalance, wethFromCrv);
-            totalWeth += wethFromCrv;
         }
 
-        // Extra rewards (e.g. CVX)
-        uint256 extraRewardCount = rewardPool.extraRewardsLength();
-        for (uint256 i = 0; i < extraRewardCount; i++) {
-            address extraRewardPool = rewardPool.extraRewards(i);
-            if (extraRewardPool == address(0)) continue;
-
-            address rewardToken = IConvexRewardPool(extraRewardPool)
+        for (uint256 i = 0; i < rewardContracts.length; i++) {
+            address rewardToken = IConvexRewardPool(rewardContracts[i])
                 .rewardToken();
-            uint256 balance = IERC20(rewardToken).balanceOf(address(this));
-            if (balance == 0) continue;
-
-            uint256 wethReceived = swapToWeth(
-                rewardToken,
-                balance,
-                harvestSwapSlippage
+            uint256 rewardBalance = IERC20(rewardToken).balanceOf(
+                address(this)
             );
-            emit RewardsHarvested(rewardToken, balance, wethReceived);
-            totalWeth += wethReceived;
-        }
 
-        // Add WETH liquidity to Curve and stake if enabled
-        if (totalWeth > 0) {
-            uint256[2] memory amounts;
-            amounts[inputTokenIndex] = totalWeth;
-
-            approveOrIncreaseAllowance(
-                IERC20(weth),
-                address(receiptToken),
-                totalWeth
-            );
-            uint256 shares = receiptToken.add_liquidity(amounts, 0);
-
-            if (stakingEnabled) {
-                approveOrIncreaseAllowance(
-                    IERC20(receiptToken),
-                    address(booster),
-                    shares
+            if (rewardBalance > 0) {
+                uint256 receivedInputToken = swapToWeth(
+                    rewardToken,
+                    rewardBalance,
+                    harvestSwapSlippage
                 );
-                booster.deposit(convexPid, shares, true);
+
+                if (receivedInputToken > 0) {
+                    emit RewardsHarvested(
+                        rewardToken,
+                        rewardBalance,
+                        receivedInputToken
+                    );
+
+                    uint256[2] memory amounts;
+                    amounts[inputTokenIndex] = receivedInputToken;
+
+                    approveOrIncreaseAllowance(
+                        weth,
+                        address(receiptToken),
+                        receivedInputToken
+                    );
+                    uint256 shares = receiptToken.add_liquidity(amounts, 0);
+                    approveOrIncreaseAllowance(
+                        receiptToken,
+                        address(booster),
+                        shares
+                    );
+                    booster.deposit(convexPid, shares, true);
+                }
             }
         }
     }
@@ -174,6 +185,7 @@ contract CurveEthStrategy is EthStrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
+        harvest();
         weth.deposit{value: amount}();
 
         uint256[2] memory amounts;
@@ -182,14 +194,12 @@ contract CurveEthStrategy is EthStrategyParent {
         approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
         uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
 
-        if (stakingEnabled) {
-            approveOrIncreaseAllowance(
-                IERC20(receiptToken),
-                address(booster),
-                shares
-            );
-            booster.deposit(convexPid, shares, true);
-        }
+        approveOrIncreaseAllowance(
+            IERC20(receiptToken),
+            address(booster),
+            shares
+        );
+        booster.deposit(convexPid, shares, true);
     }
 
     function _withdrawFundsFromYieldSource(
@@ -200,13 +210,9 @@ contract CurveEthStrategy is EthStrategyParent {
             fractionToWithdraw
         );
 
-        if (stakingEnabled) {
-            harvest();
-            sharesToWithdraw = getStrategyWithdrawShareAmount(
-                fractionToWithdraw
-            );
-            rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
-        }
+        harvest();
+        sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
+        rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
 
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
             sharesToWithdraw,
@@ -225,26 +231,61 @@ contract CurveEthStrategy is EthStrategyParent {
     ) internal override {
         if (IStrategy(newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
+        harvest();
 
-        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
-            1e18,
-            minAmountOut
+        rewardPool.withdrawAll(false);
+        uint256 withdrawnAmount = IERC20(rewardPool.stakingToken()).balanceOf(
+            address(this)
         );
-        approveOrIncreaseAllowance(weth, newStrategy, withdrawnAmount);
-
-        IStrategy(newStrategy).depositFromOldStrategy{value: withdrawnAmount}(
+        approveOrIncreaseAllowance(
+            IERC20(rewardPool.stakingToken()),
+            address(rewardPool),
+            withdrawnAmount
+        );
+        rewardPool.stakeFor(newStrategy, withdrawnAmount);
+        IStrategy(newStrategy).depositFromOldStrategy(
             withdrawnAmount,
             minimumSharesOut,
             currentExecutionNonce,
             _crossChainTxId
         );
-
         emit AssetsTransferredToNewStrategy(
             newStrategy,
             withdrawnAmount,
             currentExecutionNonce,
             _crossChainTxId
         );
+    }
+
+    /**
+     * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
+     *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
+     * @param currentExecutionNonce The current execution nonce from the old strategy.
+     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
+     */
+    function depositFromOldStrategy(
+        uint256 amount,
+        uint256,
+        uint256 currentExecutionNonce,
+        bytes32 _crossChainTxId
+    ) external payable override {
+        if (oldStrategy == address(0)) revert OldStrategyNotSet();
+        if (msg.sender != oldStrategy) revert NotAuthorized();
+        executionNonce = currentExecutionNonce + 1;
+        _sendInvestConfirmation(
+            address(0),
+            amount,
+            totalUnderlyingAssets(),
+            currentExecutionNonce,
+            _crossChainTxId
+        );
+        emit AssetsReceivedFromOldStrategy(
+            oldStrategy,
+            amount,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
+        oldStrategy = address(0);
     }
 
     function totalUnderlyingAssets() public view override returns (uint256) {

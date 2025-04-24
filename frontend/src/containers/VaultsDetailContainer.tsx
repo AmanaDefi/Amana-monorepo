@@ -54,9 +54,11 @@ const VaultsDetailContainer: React.FC<{
     useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
+    const cvxTokenPrice = useTokenPriceBySymbol("CVX");
+    console.log("cvxTokenPrice: ", cvxTokenPrice)
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
-    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
+    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
     return (
 
       vaultData ? (

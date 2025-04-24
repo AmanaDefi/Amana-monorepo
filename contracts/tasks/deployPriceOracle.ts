@@ -25,6 +25,20 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   console.log(`✅ Successfully deployed PriceOracle on ${network}`);
   console.log(`📜 Contract address: ${contract.address}`);
 
+  // ✅ Verify the contract on Etherscan
+  if (network !== "hardhat") {
+    console.log("🔍 Verifying contract...");
+    try {
+      await hre.run("verify:verify", {
+        address: contract.address,
+        constructorArguments: [args.pythContractAddress],
+      });
+      console.log("✅ Contract verified on Etherscan");
+    } catch (err) {
+      console.error("❌ Verification failed:", err);
+    }
+  }
+
   if (args.json) {
     console.log(JSON.stringify({ contractAddress: contract.address }));
   }

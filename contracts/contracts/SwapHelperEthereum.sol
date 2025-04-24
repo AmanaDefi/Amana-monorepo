@@ -5,49 +5,60 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IErrors.sol";
 import "./interfaces/IPriceOracle.sol";
-// import "./interfaces/ICurvePool.sol";
+import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
+import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/ICurveRouterNG.sol";
 
-// import "./CurvePoolRegistry.sol";
-// PriceOracle address: 0xd052F4383e5ae6A17d67DA5eC0c0cc679Ba04a77
-
-contract SwapHelperPolygon {
+contract SwapHelperEthereum is Ownable {
     address constant UNISWAP_V2_FACTORY =
-        0x9e5A52f57b3038F1B8EeE45F28b3C1967e22799C; // Polygon
+        0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f; // Ethereum
     address constant UNISWAP_V2_ROUTER =
-        0xedf6066a2b290C185783862C7F4776A2C8077AD1; // Polygon
+        0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D; // Ethereum
     address constant UNISWAP_V3_FACTORY =
-        0x1F98431c8aD98523631AE4a59f267346ea31F984; // Polygon
+        0x1F98431c8aD98523631AE4a59f267346ea31F984; // Ethereum
     address public constant UNISWAP_V3_ROUTER =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Polygon
+        0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Ethereum
+    address public constant CURVE_REGISTRY =
+        0xF98B45FA17DE75FB1aD0e7aFD971b0ca00e379fC; // Curve Registry on Ethereum
+    address public constant ROUTER_NG =
+        0x16C6521Dff6baB339122a0FE25a9116693265353; // Curve Router NG on Ethereum
 
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
 
-    address constant WETH_TOKEN = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // Polygon
+    address constant WETH_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // Ethereum
 
-    address constant USDC_ADDRESS = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174; // mainnet only
-    address constant USDT_ADDRESS = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F; // mainnet only
-    address constant WMATIC_ADDRESS =
-        0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
-    address constant COMP_ADDRESS = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c; // COMP on Polygon
+    address public constant CRV_ADDRESS =
+        0xD533a949740bb3306d119CC777fa900bA034cd52; // CRV token
+    address public constant CVX_ADDRESS =
+        0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B; // CVX token
+    address public constant USDC_ADDRESS =
+        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC token
+    address public constant USDT_ADDRESS =
+        0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT token
 
+    bytes32 constant crvUsdPriceFeedId =
+        0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
+    bytes32 constant cvxUsdPriceFeedId =
+        0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76;
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
-    bytes32 constant polUsdPriceFeedId =
-        0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472;
-    bytes32 constant compUsdPriceFeedId =
-        0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478;
 
-    address public immutable PRICE_ORACLE_ADDRESS;
+    address public priceOracleAddress;
 
-    constructor(address _priceOracle) {
-        PRICE_ORACLE_ADDRESS = _priceOracle;
+    constructor(address _priceOracle) Ownable(msg.sender) {
+        priceOracleAddress = _priceOracle;
+    }
+
+    function setPriceOracleAddress(address _priceOracle) external onlyOwner {
+        priceOracleAddress = _priceOracle;
     }
 
     /**
@@ -58,10 +69,10 @@ contract SwapHelperPolygon {
     function getPriceFeedId(address token) internal pure returns (bytes32) {
         if (token == WETH_TOKEN) {
             return ethUsdPriceFeedId;
-        } else if (token == WMATIC_ADDRESS) {
-            return polUsdPriceFeedId;
-        } else if (token == COMP_ADDRESS) {
-            return compUsdPriceFeedId;
+        } else if (token == CRV_ADDRESS) {
+            return crvUsdPriceFeedId;
+        } else if (token == CVX_ADDRESS) {
+            return cvxUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -102,7 +113,6 @@ contract SwapHelperPolygon {
     ) internal view returns (uint256) {
         bytes32 inputPriceFeed = getPriceFeedId(inputToken);
         bytes32 outputPriceFeed = getPriceFeedId(outputToken);
-
         require(
             inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
             "Invalid input token"
@@ -115,10 +125,10 @@ contract SwapHelperPolygon {
         // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
         uint256 inputPrice = isStablecoin(inputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(inputPriceFeed);
         uint256 outputPrice = isStablecoin(outputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(outputPriceFeed);
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
         // Get token decimals dynamically
@@ -165,10 +175,10 @@ contract SwapHelperPolygon {
         // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
         uint256 inputPrice = isStablecoin(inputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(inputPriceFeed);
         uint256 outputPrice = isStablecoin(outputToken)
             ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
+            : IPriceOracle(priceOracleAddress).fetchPrice(outputPriceFeed);
 
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
@@ -438,12 +448,107 @@ contract SwapHelperPolygon {
             : (reserve1, reserve0);
     }
 
+    /**
+     * @notice Finds the index of a token in a Curve pool.
+     * @param token The token to find in the pool.
+     * @param pool The Curve pool address.
+     * @return index The token index in the pool.
+     */
+    function getTokenIndex(
+        address token,
+        address pool
+    ) public view returns (uint256) {
+        // Assume Curve pools have at most 8 tokens
+        for (uint256 i = 0; i < 8; i++) {
+            try ICurvePoolDynamic(pool).coins(i) returns (address poolToken) {
+                if (poolToken == token) {
+                    return i;
+                }
+            } catch {
+                break; // Stop if out of range
+            }
+        }
+        revert("Token not found in Curve pool");
+    }
+
+    /**
+     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+     * @param inputToken The token being swapped from.
+     * @param outputToken The token being swapped to.
+     * @return curvePool The address of the curve pool to use.
+     */
+    function getCurvePool(
+        address inputToken,
+        address outputToken
+    ) public view returns (address curvePool, uint256 i, uint256 j) {
+        curvePool = ICurveRegistry(CURVE_REGISTRY).find_pool_for_coins(
+            inputToken,
+            outputToken
+        );
+        // curvePool = 0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4;
+        // Find token indexes in the pool using getTokenIndex()
+        if (curvePool != address(0)) {
+            i = getTokenIndex(inputToken, curvePool);
+            j = getTokenIndex(outputToken, curvePool);
+        } else {
+            revert("Curve: No pool found for token pair");
+        }
+    }
+
+    function _swapCVXtoUSDC(
+        uint256 amount,
+        uint256 minOut
+    ) internal returns (uint256 amountOut) {
+        address[11] memory route = [
+            CVX_ADDRESS, // CVX
+            0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4, // CVX/WETH pool
+            WETH_TOKEN, // WETH
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // Tricrypto pool
+            USDC_ADDRESS, // USDC
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0)
+        ];
+
+        uint256[5][5] memory swapParams = [
+            [uint256(1), 0, 1, 2, 2],
+            [uint256(2), 0, 1, 3, 3],
+            [uint256(0), 0, 0, 0, 0],
+            [uint256(0), 0, 0, 0, 0],
+            [uint256(0), 0, 0, 0, 0]
+        ];
+
+        address[5] memory pools = [
+            0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4,
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B,
+            address(0),
+            address(0),
+            address(0)
+        ];
+
+        IERC20(CVX_ADDRESS).approve(ROUTER_NG, amount);
+
+        amountOut = ICurveRouterNG(ROUTER_NG).exchange(
+            route,
+            swapParams,
+            amount,
+            minOut,
+            pools,
+            msg.sender
+        );
+
+        return amountOut;
+    }
+
     function swap(
         address inputToken,
         uint256 amount,
         address outputToken,
         uint16 slippageBps,
-        address vault,
+        address strategy,
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut) {
@@ -458,6 +563,28 @@ contract SwapHelperPolygon {
             amount,
             slippageBps
         );
+        if (inputToken == CVX_ADDRESS) {
+            uint256 amountOutCurve = 0;
+            if (outputToken == WETH_TOKEN) {
+                address curvePool = 0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4;
+                uint256 i = getTokenIndex(inputToken, curvePool);
+                uint256 j = getTokenIndex(outputToken, curvePool);
+                // Approve Curve pool to spend tokens
+                IERC20(inputToken).approve(curvePool, amount);
+                amountOutCurve = ICurvePoolDynamic(curvePool).exchange(
+                    i,
+                    j,
+                    amount,
+                    minimumOut
+                );
+                IERC20(outputToken).transfer(strategy, amountOutCurve);
+            } else if (outputToken == USDC_ADDRESS) {
+                amountOutCurve = _swapCVXtoUSDC(amount, minimumOut);
+            }
+
+            return amountOutCurve;
+        }
+
         (
             address[] memory path,
             uint24[] memory feeTiers,
@@ -470,7 +597,7 @@ contract SwapHelperPolygon {
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
                     path: encodedPath,
-                    recipient: vault,
+                    recipient: strategy,
                     deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
                     amountOutMinimum: minimumOut
@@ -486,7 +613,7 @@ contract SwapHelperPolygon {
                     amount,
                     minimumOut,
                     path,
-                    vault,
+                    strategy,
                     block.timestamp + maxDeadline
                 );
             amountOut = amounts[amounts.length - 1];
@@ -499,7 +626,7 @@ contract SwapHelperPolygon {
         uint256 amountOut,
         address outputToken,
         uint16 slippageBps,
-        address vault,
+        address strategy,
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountIn) {
@@ -525,7 +652,7 @@ contract SwapHelperPolygon {
             ISwapRouter.ExactOutputParams memory params = ISwapRouter
                 .ExactOutputParams({
                     path: encodedPath,
-                    recipient: vault,
+                    recipient: strategy,
                     deadline: block.timestamp,
                     amountOut: amountOut,
                     amountInMaximum: maxAmountIn
@@ -541,12 +668,12 @@ contract SwapHelperPolygon {
                     amountOut,
                     maxAmountIn,
                     path,
-                    vault,
+                    strategy,
                     block.timestamp + maxDeadline
                 );
             amountIn = amounts[0];
         }
-        IERC20(inputToken).transfer(vault, totalAmountAvailable - amountIn);
+        IERC20(inputToken).transfer(strategy, totalAmountAvailable - amountIn);
 
         return amountIn;
     }

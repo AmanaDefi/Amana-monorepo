@@ -53,12 +53,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
 
     address constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
 
-    event RewardsHarvested(
-        uint256 wellClaimed,
-        uint256 morphoClaimed,
-        uint256 usdcReceived
-    );
-
     constructor(
         string memory _name,
         address _amanaVault,
