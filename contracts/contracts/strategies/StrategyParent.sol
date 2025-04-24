@@ -56,15 +56,22 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         bytes32 crossChainTxId
     );
     event RewardsClaimed(
-        address indexed receiver,
+        address indexed strategy,
         address indexed rewardToken,
         uint256 amount
     );
     event RewardsHarvested(
-        uint256 rewardsClaimed,
-        uint256 rewardsSwapped,
-        uint256 inputTokenReinvested
+        address indexed rewardToken,
+        uint256 rewardAmount,
+        uint256 inputTokenReceived
     );
+    event RewardClaimFailed(string reason);
+    event SwapFailed(
+        address indexed rewardToken,
+        uint256 amount,
+        string reason
+    );
+
     address immutable _GATEWAY_ADDRESS;
 
     modifier onlyGateway() {

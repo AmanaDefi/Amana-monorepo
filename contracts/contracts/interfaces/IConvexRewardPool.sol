@@ -2,23 +2,33 @@
 pragma solidity 0.8.26;
 
 interface IConvexRewardPool {
+    function rewardToken() external view returns (address);
+
+    function earned(address account) external view returns (uint256);
+
     function getReward(
-        address _account,
-        bool _claimExtras
+        address account,
+        bool claimExtras
     ) external returns (bool);
 
-    function earned(address _account) external view returns (uint256);
+    function extraRewardsLength() external view returns (uint256);
+
+    function extraRewards(uint256 index) external view returns (address);
 
     function withdrawAndUnwrap(
-        uint256 _amount,
-        bool _claim
+        uint256 amount,
+        bool claim
     ) external returns (bool);
 
-    function balanceOf(address _account) external view returns (uint256);
+    function withdrawAllAndUnwrap(bool claim) external;
 
-    function stakeFor(address _for, uint256 _amount) external returns (bool);
+    function withdraw(uint256 amount, bool claim) external returns (bool);
 
     function withdrawAll(bool claim) external;
 
+    function balanceOf(address account) external view returns (uint256);
+
     function stakingToken() external view returns (address);
+
+    function stakeFor(address account, uint256 amount) external returns (bool);
 }

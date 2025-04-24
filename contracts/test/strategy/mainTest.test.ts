@@ -299,9 +299,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         reward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         reward = reward.owed;
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
-        reward = await rewardsContract.callStatic.earned(strategy.address);
-        console.log("Reward: ", reward);
-        console.log("Reward variable type: ", typeof reward);
+        await rewardsContract.earned(strategy.address);
+        // This is needed to update the internal state of the contract
+        // before calling claimable_reward
+        reward = await rewardsContract.claimable_reward(config.rewardsTokenAddress, strategy.address);
       } else {
         reward = await strategy.checkRewards();
       }
@@ -339,7 +340,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         finalClaimableRewards = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         finalClaimableRewards = finalClaimableRewards.owed;
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
-        finalClaimableRewards = await rewardsContract.callStatic.earned(strategy.address);
+        await rewardsContract.earned(strategy.address);
+        // This is needed to update the internal state of the contract
+        // before calling claimable_reward
+        finalClaimableRewards = await rewardsContract.claimable_reward(config.rewardsTokenAddress, strategy.address);
       } else {
         finalClaimableRewards = await strategy.checkRewards();
       }
@@ -694,7 +698,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         oldStrategyInitialBalance = await receiptTokenContract.balanceOf(strategy.address);
       }
-      console.log("oldStrategyInitialBalance: ", oldStrategyInitialBalance.toString());
       const newStrategy = await deployStrategyFromConfig(config, swapHelper);
 
       await newStrategy.connect(owner).setOldStrategy(strategy.address);
@@ -706,7 +709,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         newStrategy.address
       )).to.emit(strategy, "AssetsTransferredToNewStrategy")
         .to.emit(newStrategy, "AssetsReceivedFromOldStrategy");
-      console.log("Made switch call");
       let oldStrategyBalance;
       if (isConvexStrategy(config.strategyContractName)) {
         oldStrategyBalance = await rewardsContract.balanceOf(strategy.address);
@@ -769,7 +771,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         preHarvestReward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         preHarvestReward = preHarvestReward.owed;
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
-        preHarvestReward = await rewardsContract.callStatic.earned(strategy.address);
+        await rewardsContract.earned(strategy.address);
+        // This is needed to update the internal state of the contract
+        // before calling claimable_reward
+        preHarvestReward = await rewardsContract.claimable_reward(config.rewardsTokenAddress, strategy.address);
       } else {
         preHarvestReward = await strategy.checkRewards();
       }
@@ -788,9 +793,9 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         throw new Error("Event not found");
       }
 
-      const [compAmount, , usdcReceived] = event.args!;
+      const [, claimedAmount, usdcReceived] = event.args!;
 
-      expect(compAmount).to.be.gt(0);
+      expect(claimedAmount).to.be.gt(0);
       expect(usdcReceived).to.be.gt(0);
     });
 

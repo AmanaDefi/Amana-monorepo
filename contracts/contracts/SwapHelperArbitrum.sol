@@ -15,7 +15,6 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurveRouterNG.sol";
-import "hardhat/console.sol";
 
 contract SwapHelperArbitrum is Ownable {
     address constant UNISWAP_V2_FACTORY =
@@ -516,16 +515,13 @@ contract SwapHelperArbitrum is Ownable {
             amount,
             slippageBps
         );
-        console.log("Minimum out amount: %s", minimumOut);
         (
             address[] memory path,
             uint24[] memory feeTiers,
             bytes memory encodedPath
         ) = getPathV3(inputToken, outputToken);
-        console.log("path[0]: %s", path[0]);
-        console.log("path[1]: %s", path[1]);
+
         if (encodedPath.length > 0) {
-            console.log("Swapping via Uniswap V3");
             // Uniswap V3 Swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
@@ -540,7 +536,6 @@ contract SwapHelperArbitrum is Ownable {
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else {
             // Uniswap V2 Swap
-            console.log("Swapping via Uniswap V2");
             path = getPathV2(inputToken, outputToken);
             IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
             uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)

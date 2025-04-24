@@ -69,47 +69,57 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
         uint256 amountIn,
         uint16 slippageBps
     ) internal returns (uint256 amountOut) {
-        require(amountIn > 0, "Amount must be greater than zero");
+        if (amountIn == 0) return 0;
 
         SafeERC20.safeTransfer(IERC20(token), swapHelperEthereum, amountIn);
         uint16 maxDeadline = uint16(block.timestamp + 1 hours);
-        amountOut = ISwapHelper(swapHelperEthereum).swap(
-            token,
-            amountIn,
-            address(inputToken),
-            slippageBps,
-            address(this),
-            maxDeadline,
-            ""
-        );
 
-        require(
-            amountOut > 0,
-            "Swap failed: Amount out must be greater than zero"
-        );
+        try
+            ISwapHelper(swapHelperEthereum).swap(
+                token,
+                amountIn,
+                address(inputToken),
+                slippageBps,
+                address(this),
+                maxDeadline,
+                ""
+            )
+        returns (uint256 result) {
+            amountOut = result;
+            emit RewardsHarvested(token, amountIn, amountOut);
+        } catch Error(string memory reason) {
+            emit SwapFailed(token, amountIn, reason);
+            amountOut = 0;
+        } catch {
+            emit SwapFailed(token, amountIn, "Unknown error");
+            amountOut = 0;
+        }
 
         return amountOut;
     }
 
     function claimRewards() public returns (uint256) {
-        console.log("Claiming rewards");
         uint256 earnedCrv = IConvexRewardPool(rewardPool).earned(address(this));
-        console.log("Earned CRV: ", earnedCrv);
         if (earnedCrv < 1e15) {
             return 0; // Skip claiming if there's too little to claim
         }
-        // Get the balance of CRV before claiming
         uint256 amountBefore = IERC20(crvToken).balanceOf(address(this));
-        console.log("CRV balance before claim: ", amountBefore);
-        // Call Convex rewards contract to claim CRV + extras
-        IConvexRewardPool(rewardPool).getReward(address(this), true);
-        console.log("Claimed CRV");
-        // Get the balance of CRV after claiming
-        uint256 amountAfter = IERC20(crvToken).balanceOf(address(this));
-        console.log("CRV balance after claim: ", amountAfter);
-        uint256 claimed = amountAfter - amountBefore;
+        uint256 amountAfter;
+        uint256 claimed;
+        try IConvexRewardPool(rewardPool).getReward(address(this), true) {
+            amountAfter = IERC20(crvToken).balanceOf(address(this));
+            claimed = amountAfter > amountBefore
+                ? amountAfter - amountBefore
+                : 0;
+            emit RewardsClaimed(address(this), crvToken, claimed);
+        } catch Error(string memory reason) {
+            emit RewardClaimFailed(reason);
+            claimed = 0;
+        } catch {
+            emit RewardClaimFailed("Unknown error");
+            claimed = 0;
+        }
 
-        emit RewardsClaimed(address(this), crvToken, claimed);
         return claimed;
     }
 
@@ -119,48 +129,68 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
     }
 
     function _reinvestRewards() internal {
-        uint256 crvBalance = IERC20(crvToken).balanceOf(address(this));
-        uint256 cvxBalance = IERC20(cvxToken).balanceOf(address(this));
-        if (crvBalance == 0 && cvxBalance == 0) return;
-        uint256 inputTokenFromCrv;
-        uint256 inputTokenFromCvx;
-        if (crvBalance > 0) {
-            inputTokenFromCrv = swapToInputToken(
-                crvToken,
-                crvBalance,
+        address mainRewardToken = rewardPool.rewardToken();
+        uint256 inputAmount = swapToInputToken(
+            mainRewardToken,
+            IERC20(mainRewardToken).balanceOf(address(this)),
+            harvestSwapSlippage
+        );
+
+        if (inputAmount > 0) {
+            uint256[] memory amounts = new uint256[](2);
+            amounts[inputTokenIndex] = inputAmount;
+
+            approveOrIncreaseAllowance(
+                IERC20(inputToken),
+                address(receiptToken),
+                inputAmount
+            );
+            uint256 shares = receiptToken.add_liquidity(amounts, 0);
+            approveOrIncreaseAllowance(
+                IERC20(receiptToken),
+                address(booster),
+                shares
+            );
+            booster.deposit(convexPid, shares, true);
+        }
+
+        uint256 extraRewardCount = rewardPool.extraRewardsLength();
+        for (uint256 i = 0; i < extraRewardCount; i++) {
+            address extraRewardPool = rewardPool.extraRewards(i);
+            if (extraRewardPool == address(0)) continue;
+
+            address extraRewardToken = IConvexRewardPool(extraRewardPool)
+                .rewardToken();
+            uint256 balance = IERC20(extraRewardToken).balanceOf(address(this));
+            if (balance == 0) continue;
+
+            uint256 extraInput = swapToInputToken(
+                extraRewardToken,
+                balance,
                 harvestSwapSlippage
             );
+
+            if (extraInput > 0) {
+                uint256[] memory extraAmounts = new uint256[](2);
+                extraAmounts[inputTokenIndex] = extraInput;
+
+                approveOrIncreaseAllowance(
+                    IERC20(inputToken),
+                    address(receiptToken),
+                    extraInput
+                );
+                uint256 extraShares = receiptToken.add_liquidity(
+                    extraAmounts,
+                    0
+                );
+                approveOrIncreaseAllowance(
+                    IERC20(receiptToken),
+                    address(booster),
+                    extraShares
+                );
+                booster.deposit(convexPid, extraShares, true);
+            }
         }
-        if (cvxBalance > 0) {
-            inputTokenFromCvx = swapToInputToken(
-                cvxToken,
-                cvxBalance,
-                harvestSwapSlippage
-            );
-        }
-        uint256 totalInputToken = inputTokenFromCrv + inputTokenFromCvx;
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[inputTokenIndex] = totalInputToken;
-
-        approveOrIncreaseAllowance(
-            IERC20(inputToken),
-            address(receiptToken),
-            totalInputToken
-        );
-        uint256 shares = receiptToken.add_liquidity(amounts, 0);
-        approveOrIncreaseAllowance(
-            IERC20(receiptToken),
-            address(booster),
-            shares
-        );
-        booster.deposit(convexPid, shares, true);
-
-        emit RewardsHarvested(
-            crvBalance + cvxBalance,
-            crvBalance,
-            inputTokenFromCrv
-        );
     }
 
     function _depositFundsIntoYieldSource(

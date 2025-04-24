@@ -17,6 +17,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   // Fetch the vault address argument required for the BaseAaveStrategy constructor
   const contractName = args.contract;
   const name = args.name;
+  const gatewayAddress = args.gateway; // This should be passed as an argument
   const vault = args.vault; // This should be passed as an argument
   const withdrawHelper = args.withdrawHelper;
   const swapHelper = args.swapHelper;
@@ -48,7 +49,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken);
+  const contract = await factory.deploy(name, gatewayAddress, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken);
   console.log("Contract deployed, waiting for confirmations...");
 
   // Wait for contract to be deployed before proceeding
@@ -64,7 +65,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken],
+        constructorArguments: [name, gatewayAddress, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -84,6 +85,7 @@ task("deploy-convex-strategy", "Deploy a Strategy contract", main)
   .addFlag("json", "Output in JSON")
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
+  .addParam("gateway", "The address of the gateway contract")
   .addParam("vault", "The address of the vault")
   .addParam("withdrawHelper", "The address of the withdraw helper contract")
   .addParam("swapHelper", "The address of the swap helper contract")

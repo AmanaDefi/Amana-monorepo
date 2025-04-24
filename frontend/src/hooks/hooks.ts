@@ -12,8 +12,9 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
-  calculateCurveRewardsAPY,
-  calculateCompoundRewardsAPY
+  calculateConvexEthereumRewardsAPY,
+  calculateCompoundRewardsAPY,
+  calculateConvexArbitrumRewardsAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
@@ -170,11 +171,13 @@ export const useUpdateAPYs = (
           vaults.map(async (vault) => {
             try {
               const strategyChain = defineChain(vault.protocol.chainId);
+              console.log("strategyChain", strategyChain)
               const strategyContract = getContract({
                 client,
                 chain: strategyChain,
                 address: vault.protocol.strategyAddress,
               });
+              console.log("strategyContract", strategyContract)
               const receiptTokenAddress = await readContract({
                 contract: strategyContract,
                 method: "function receiptToken() view returns (address)",
@@ -207,7 +210,11 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Curve") {
                 APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
-                  RewardsAPY = await calculateCurveRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                  if (strategyChain.id === 1) {
+                    RewardsAPY = await calculateConvexEthereumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                  } else if (strategyChain.id === 42161) {
+                    RewardsAPY = await calculateConvexArbitrumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                  }
                 } else {
                   console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
                 }

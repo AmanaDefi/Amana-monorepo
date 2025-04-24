@@ -107,44 +107,67 @@ contract CurveEthStrategy is EthStrategyParent {
     }
 
     function harvest() public {
-        if (!stakingEnabled) return;
+        claimRewards();
+        _reinvestRewards();
+    }
 
-        rewardPool.getReward(address(this), true);
+    function _reinvestRewards() internal {
+        uint256 totalWeth = 0;
 
-        uint256 crvBalance = IERC20(crvToken).balanceOf(address(this));
-        uint256 cvxBalance = IERC20(cvxToken).balanceOf(address(this));
-
-        uint256 wethFromCrv = swapToWeth(
-            crvToken,
-            crvBalance,
-            harvestSwapSlippage
-        );
-        uint256 wethFromCvx = swapToWeth(
-            cvxToken,
-            cvxBalance,
-            harvestSwapSlippage
-        );
-
-        uint256 totalWeth = wethFromCrv + wethFromCvx;
-        uint256[2] memory amounts;
-        amounts[inputTokenIndex] = totalWeth;
-
-        approveOrIncreaseAllowance(
-            IERC20(weth),
-            address(receiptToken),
-            totalWeth
-        );
-        uint256 shares = receiptToken.add_liquidity(amounts, 0);
-        if (stakingEnabled) {
-            approveOrIncreaseAllowance(
-                IERC20(receiptToken),
-                address(booster),
-                shares
+        // Primary reward (CRV)
+        address mainRewardToken = rewardPool.rewardToken();
+        uint256 crvBalance = IERC20(mainRewardToken).balanceOf(address(this));
+        if (crvBalance > 0) {
+            uint256 wethFromCrv = swapToWeth(
+                mainRewardToken,
+                crvBalance,
+                harvestSwapSlippage
             );
-            booster.deposit(convexPid, shares, true);
+            emit RewardsHarvested(mainRewardToken, crvBalance, wethFromCrv);
+            totalWeth += wethFromCrv;
         }
 
-        emit RewardsHarvested(crvBalance + cvxBalance, crvBalance, wethFromCrv);
+        // Extra rewards (e.g. CVX)
+        uint256 extraRewardCount = rewardPool.extraRewardsLength();
+        for (uint256 i = 0; i < extraRewardCount; i++) {
+            address extraRewardPool = rewardPool.extraRewards(i);
+            if (extraRewardPool == address(0)) continue;
+
+            address rewardToken = IConvexRewardPool(extraRewardPool)
+                .rewardToken();
+            uint256 balance = IERC20(rewardToken).balanceOf(address(this));
+            if (balance == 0) continue;
+
+            uint256 wethReceived = swapToWeth(
+                rewardToken,
+                balance,
+                harvestSwapSlippage
+            );
+            emit RewardsHarvested(rewardToken, balance, wethReceived);
+            totalWeth += wethReceived;
+        }
+
+        // Add WETH liquidity to Curve and stake if enabled
+        if (totalWeth > 0) {
+            uint256[2] memory amounts;
+            amounts[inputTokenIndex] = totalWeth;
+
+            approveOrIncreaseAllowance(
+                IERC20(weth),
+                address(receiptToken),
+                totalWeth
+            );
+            uint256 shares = receiptToken.add_liquidity(amounts, 0);
+
+            if (stakingEnabled) {
+                approveOrIncreaseAllowance(
+                    IERC20(receiptToken),
+                    address(booster),
+                    shares
+                );
+                booster.deposit(convexPid, shares, true);
+            }
+        }
     }
 
     function _depositFundsIntoYieldSource(

@@ -123,7 +123,11 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
                 harvestSwapSlippage
             );
             _depositFundsIntoYieldSource(usdcReceived, 0);
-            emit RewardsHarvested(compBalance, compBalance, usdcReceived);
+            emit RewardsHarvested(
+                rewardsTokenAddress,
+                compBalance,
+                usdcReceived
+            );
         }
     }
 
