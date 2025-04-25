@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  VaultData,
-  VaultTotalAssets,
-  VaultAPY,
-  Token,
-  Balance,
-} from "@/types/types";
+import { VaultData, VaultTotalAssets, VaultAPY, Token, Balance } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from "next/image";
 import {
@@ -68,6 +62,11 @@ export default function VaultHeader({
   // Format wallet balance according to token type
   const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
 
+  useEffect(() => {
+    // Update data1 whenever the vault balance changes, using the formatted string
+    setdata1(userVaultBalance?.formatted || "0");
+  }, [userVaultBalance]);
+
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
       <div className="w-full mb-12 flex flex-row items-center">
@@ -121,7 +120,7 @@ export default function VaultHeader({
               vaultData.inputToken.symbol
             }`}
             secondaryValue={`$ ${formatCurrency(
-              Number(userVaultBalance?.formatted) * vaultTokenPrice
+              Number(data1) * vaultTokenPrice
             )}`}
             tooltip="Value of your vault deposits"
           />
