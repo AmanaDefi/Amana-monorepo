@@ -355,7 +355,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     className="rounded-full"
                   />
                   <div>
-                    <span className="text-gray-400 text-xs">Lending Pool</span>
+                    <span className="text-gray-400 text-xs">{vault.type}</span>
                     <h3 className="text-white font-bold">{vault.name}</h3>
                     {/* <p className="text-gray-400 text-xs">{getOnlyTokenSymbol(vault.inputToken.symbol)}</p> */}
                   </div>
