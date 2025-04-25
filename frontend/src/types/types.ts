@@ -28,6 +28,7 @@ export interface Rate {
 export interface VaultData {
   id: string;
   name: string;
+  type: string;
   symbol: string;
   des?: string;
   imgURL?: string;

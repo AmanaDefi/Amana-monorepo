@@ -1,6 +1,20 @@
-import { Address, getContract, prepareContractCall, sendAndConfirmTransaction, sendTransaction, readContract, defineChain } from "thirdweb";
+import {
+  Address,
+  getContract,
+  prepareContractCall,
+  sendAndConfirmTransaction,
+  sendTransaction,
+  readContract,
+  defineChain,
+} from "thirdweb";
 import { client } from "../utils/client";
-import { CHAIN_ID, crossChainTxUrl, SUPPORTED_CHAINS, zeroSolAddress, EVM_GATEWAY_ADDRESSES } from "../constants/chainConfig";
+import {
+  CHAIN_ID,
+  crossChainTxUrl,
+  SUPPORTED_CHAINS,
+  zeroSolAddress,
+  EVM_GATEWAY_ADDRESSES,
+} from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { ethers, getBytes, JsonRpcProvider } from "ethers";
@@ -15,7 +29,11 @@ import { keccak256 } from "thirdweb";
 const Nori = require("nori-sdk").Nori;
 const sdk = new Nori();
 import { formatUnits } from "viem";
-import { getCurrentSlippage, isZetachain, getSolanaEVMAddress } from "@/utils/utils";
+import {
+  getCurrentSlippage,
+  isZetachain,
+  getSolanaEVMAddress,
+} from "@/utils/utils";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -29,11 +47,16 @@ import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
 
 import type { IConnection } from 'codemelt-retro-api-sdk';
+import { ApiService } from "@/service";
 import { read } from "fs";
 
 dotenv.config();
-const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
-const provider_ethereum = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH);
+const provider = new JsonRpcProvider(
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE
+);
+const provider_ethereum = new JsonRpcProvider(
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH
+);
 
 const abiCoder = new AbiCoder();
 
@@ -45,10 +68,13 @@ const BLOCK_TIME: { [chainId: number]: number } = {
   1: 12,     // Ethereum
   137: 2,    // Polygon
   8453: 2,   // Base
-  42161: 12, // Arbitrum
+  42161: 0.250, // Arbitrum
 };
 
-export async function calculateEddyAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+export async function calculateEddyAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
   const receiptTokenContract = getContract({
     client,
     chain: strategyChain,
@@ -58,17 +84,25 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
     contract: receiptTokenContract,
     method: "function minter() view returns (address)",
   });
-  const eddyFinancePool = new ethers.Contract(poolAddress, fourPoolABI, provider);
+  const eddyFinancePool = new ethers.Contract(
+    poolAddress,
+    fourPoolABI,
+    provider
+  );
 
   try {
     // Fetch the current virtual price
-    const currentPrice = ethers.toBigInt(await eddyFinancePool.get_virtual_price());
+    const currentPrice = ethers.toBigInt(
+      await eddyFinancePool.get_virtual_price()
+    );
 
     // Fetch the block number and determine the number of seconds in the past (e.g., 7 days)
     const currentBlockNumber = await provider.getBlockNumber();
     const averageBlockTimeInSeconds = 5; // Adjust this based on the average block time for Eddy Finance
     const secondsIn7Days = 7 * 24 * 60 * 60;
-    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const blocksIn7Days = Math.floor(
+      secondsIn7Days / averageBlockTimeInSeconds
+    );
     const pastBlockNumber = currentBlockNumber - blocksIn7Days;
 
     // Fetch the virtual price from 7 days ago
@@ -77,7 +111,7 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
     );
 
     // Calculate the rate of change in the virtual price over 7 days
-    const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+    const rateOfChange = ((currentPrice - pastPrice) * 10n ** 18n) / pastPrice;
     const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
 
     // Calculate the annualized APY based on the 7-day change
@@ -90,18 +124,29 @@ export async function calculateEddyAPY(receiptTokenAddress: Address, strategyCha
   }
 }
 
-export async function calculateBeefyAPY(receiptTokenAddress: Address, strategyChain: Chain) {
-  const beefyVault = new ethers.Contract(receiptTokenAddress, beefyVaultABI, provider);
+export async function calculateBeefyAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
+  const beefyVault = new ethers.Contract(
+    receiptTokenAddress,
+    beefyVaultABI,
+    provider
+  );
 
   try {
     // Fetch the current virtual price
-    const currentPrice = ethers.toBigInt(await beefyVault.getPricePerFullShare());
+    const currentPrice = ethers.toBigInt(
+      await beefyVault.getPricePerFullShare()
+    );
 
     // Fetch the block number and determine the number of seconds in the past (e.g., 7 days)
     const currentBlockNumber = await provider.getBlockNumber();
     const averageBlockTimeInSeconds = 2; // Adjust this based on the average block time for Eddy Finance
     const secondsIn7Days = 7 * 24 * 60 * 60;
-    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const blocksIn7Days = Math.floor(
+      secondsIn7Days / averageBlockTimeInSeconds
+    );
     const pastBlockNumber = currentBlockNumber - blocksIn7Days;
 
     // Fetch the virtual price from 7 days ago
@@ -110,7 +155,7 @@ export async function calculateBeefyAPY(receiptTokenAddress: Address, strategyCh
     );
 
     // Calculate the rate of change in the virtual price over 7 days
-    const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+    const rateOfChange = ((currentPrice - pastPrice) * 10n ** 18n) / pastPrice;
     const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
 
     // Calculate the annualized APY based on the 7-day change
@@ -123,7 +168,10 @@ export async function calculateBeefyAPY(receiptTokenAddress: Address, strategyCh
   }
 }
 
-export async function calculateAaveAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+export async function calculateAaveAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
   const receiptTokenContract = getContract({
     client,
     chain: strategyChain,
@@ -140,13 +188,14 @@ export async function calculateAaveAPY(receiptTokenAddress: Address, strategyCha
   const aaveLendingPool = getContract({
     client,
     chain: strategyChain,
-    address: poolAddress
+    address: poolAddress,
   });
 
   const reserveData = await readContract({
     contract: aaveLendingPool,
-    method: "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
-    params: [underlyingAssetAddress as Address]
+    method:
+      "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
+    params: [underlyingAssetAddress as Address],
   });
 
   const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
@@ -155,12 +204,16 @@ export async function calculateAaveAPY(receiptTokenAddress: Address, strategyCha
   const liquidityRate = reserveData[2]; // Assuming this is the correct index for liquidity rate in reserveData
   const depositAPR = Number(liquidityRate) / 1e27;
   // Calculate APY using compounding
-  const depositAPY = (Math.pow(1 + (depositAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
+  const depositAPY =
+    Math.pow(1 + depositAPR / SECONDS_IN_YEAR, SECONDS_IN_YEAR) - 1;
 
   return depositAPY;
 }
 
-export async function calculateAaveFlashAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+export async function calculateAaveFlashAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
   const receiptTokenContract = getContract({
     client,
     chain: strategyChain,
@@ -180,13 +233,14 @@ export async function calculateAaveFlashAPY(receiptTokenAddress: Address, strate
   const aaveLendingPool = getContract({
     client,
     chain: strategyChain,
-    address: poolAddress
+    address: poolAddress,
   });
 
   const reserveData = await readContract({
     contract: aaveLendingPool,
-    method: "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
-    params: [underlyingAssetAddress as Address]
+    method:
+      "function getReserveData(address) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, uint16, address, address, address, address, uint128, uint128, uint128)",
+    params: [underlyingAssetAddress as Address],
   });
 
   const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
@@ -194,15 +248,17 @@ export async function calculateAaveFlashAPY(receiptTokenAddress: Address, strate
   // Get the liquidity rate (in Ray) and normalize it
   const liquidityRate = Number(reserveData[2]); // Supply rate (Ray format)
   const depositAPR = liquidityRate / 1e27;
-  const depositAPY = (Math.pow(1 + (depositAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
+  const depositAPY =
+    Math.pow(1 + depositAPR / SECONDS_IN_YEAR, SECONDS_IN_YEAR) - 1;
 
   // Get the variable borrow rate (Ray format)
   const variableBorrowRate = Number(reserveData[4]); // Borrow rate (Ray format)
   const borrowAPR = variableBorrowRate / 1e27;
-  const borrowAPY = (Math.pow(1 + (borrowAPR / SECONDS_IN_YEAR), SECONDS_IN_YEAR) - 1);
+  const borrowAPY =
+    Math.pow(1 + borrowAPR / SECONDS_IN_YEAR, SECONDS_IN_YEAR) - 1;
 
   // Flash Loan Strategy: Using 5x leverage (borrowing $4 and using a $1 deposit)
-  const leveragedAPY = (5 * depositAPY) - (4 * borrowAPY);
+  const leveragedAPY = 5 * depositAPY - 4 * borrowAPY;
 
   return leveragedAPY;
 }
@@ -214,7 +270,11 @@ export async function calculateCurveAPY(poolAddress: Address, strategyChain: Cha
   } else if (strategyChain.id === 42161) {
     relevant_provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE);
   }
-  const curvePool = new ethers.Contract(poolAddress, curvePoolABI, relevant_provider);
+  const curvePool = new ethers.Contract(
+    poolAddress,
+    curvePoolABI,
+    relevant_provider
+  );
 
   try {
     // Fetch the current virtual price
@@ -223,7 +283,9 @@ export async function calculateCurveAPY(poolAddress: Address, strategyChain: Cha
     const currentBlockNumber = await relevant_provider.getBlockNumber();
     const averageBlockTimeInSeconds = BLOCK_TIME[strategyChain.id] ?? 12;
     const secondsIn7Days = 7 * 24 * 60 * 60;
-    const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
+    const blocksIn7Days = Math.floor(
+      secondsIn7Days / averageBlockTimeInSeconds
+    );
     const pastBlockNumber = currentBlockNumber - blocksIn7Days;
 
     // Fetch the virtual price from 7 days ago
@@ -231,7 +293,7 @@ export async function calculateCurveAPY(poolAddress: Address, strategyChain: Cha
       await curvePool.get_virtual_price({ blockTag: pastBlockNumber })
     );
     // Calculate the rate of change in the virtual price over 7 days
-    const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+    const rateOfChange = ((currentPrice - pastPrice) * 10n ** 18n) / pastPrice;
     const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
 
     // Calculate the annualized APY based on the 7-day change
@@ -243,119 +305,6 @@ export async function calculateCurveAPY(poolAddress: Address, strategyChain: Cha
     return 0;
   }
 }
-
-// export async function calculateConvexEthereumRewardsAPY(
-//   poolAddress: Address,
-//   inputToken: Token,
-//   convexRewardPool: Address,
-//   strategyChain: Chain,
-//   crvTokenPrice: number,
-//   cvxTokenPrice: number,
-//   ethTokenPrice: number
-// ): Promise<number> {
-//   console.log("Fetching Curve rewards APY...");
-//   const secondsPerYear = 365 * 24 * 60 * 60;
-//   const secondsPerWeek = 7 * 24 * 60 * 60;
-//   if (strategyChain.id === 1) {
-//     const rewardPoolContract = getContract({
-//       client,
-//       address: convexRewardPool,
-//       chain: strategyChain,
-//     });
-
-//     // Step 1: Get CRV reward rate and total supply
-//     const crvRewardRate: bigint = await readContract({
-//       contract: rewardPoolContract,
-//       method: "function rewardRate() view returns (uint256)",
-//     });
-//     console.log("crvRewardRate", crvRewardRate);
-//     const totalSupply: bigint = await readContract({
-//       contract: rewardPoolContract,
-//       method: "function totalSupply() view returns (uint256)",
-//     });
-//     console.log("totalSupply", totalSupply);
-//     // Step 2: Get extra reward token (CVX) address from extraRewards(0)
-//     let cvxPerTokenPerYear = 0;
-
-//     const extraRewardAddress: string = await readContract({
-//       contract: rewardPoolContract,
-//       method: "function extraRewards(uint256) view returns (address)",
-//       params: [BigInt(0)],
-//     });
-
-//     const extraRewardContract = getContract({
-//       client,
-//       address: extraRewardAddress,
-//       chain: strategyChain,
-//     });
-
-//     const cvxRewardRate: bigint = await readContract({
-//       contract: extraRewardContract,
-//       method: "function rewardRate() view returns (uint256)",
-//     });
-//     cvxPerTokenPerYear = Number(cvxRewardRate) / Number(totalSupply) * secondsPerYear;
-//   } else if (strategyChain.id === 42161) {
-//     const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE);
-//     const convexRewardsPoolArbitrum = new ethers.Contract(poolAddress, curvePoolABI, provider);
-
-//     try {
-//       // Fetch the current virtual price
-//       const rewardsRemainingNow = ethers.toBigInt(await convexRewardsPoolArbitrum.rewards());
-//       // Fetch the current block number and determine the number of blocks for 7 days
-//       const currentBlockNumber = await provider.getBlockNumber();
-//       const averageBlockTimeInSeconds = BLOCK_TIME[strategyChain.id] ?? 12;
-//       const secondsIn7Days = 7 * 24 * 60 * 60;
-//       const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
-//       const pastBlockNumber = currentBlockNumber - blocksIn7Days;
-
-//       // Fetch the virtual price from 7 days ago
-//       const rewardsRemainingWeekAgo = ethers.toBigInt(
-//         await convexRewardsPoolArbitrum.rewards()({ blockTag: pastBlockNumber })
-//       );
-//       const rewardsThisWeek = Number(rewardsRemainingWeekAgo - rewardsRemainingNow);
-//       const weeklyRewardRate = rewardsThisWeek / secondsPerWeek;
-//       const crvPerTokenPerYear =
-//         (weeklyRewardRate * secondsPerYear) / Number(totalSupply);
-
-//       const rewardsAPY = (crvPerTokenPerYear * crvTokenPrice) / lpTokenPriceInUSD;
-
-//       return depositAPY;
-
-
-//     } catch (error) {
-//       console.error("Error calculating APY for Curve:", error);
-//       return 0;
-//     }
-//   }
-//   // Step 4: Get virtual price (value of 1 LP token in underlying asset)
-//   const curvePoolContract = getContract({
-//     client,
-//     chain: strategyChain,
-//     address: poolAddress,
-//   });
-
-//   const virtualPrice: bigint = await readContract({
-//     contract: curvePoolContract,
-//     method: "function get_virtual_price() view returns (uint256)",
-//   });
-
-//   // Virtual price is in 18 decimals, so divide by 1e18
-//   const lpTokenPriceInInputToken = Number(virtualPrice) / 1e18;
-//   let lpTokenPriceInUSD = lpTokenPriceInInputToken;
-//   if (inputToken.symbol === "ETH.ETH") {
-//     lpTokenPriceInUSD = lpTokenPriceInInputToken * ethTokenPrice;
-//   }
-
-//   // Step 3: Compute annualized CRV + CVX per staked token
-//   const crvPerTokenPerYear = Number(crvRewardRate) / Number(totalSupply) * secondsPerYear;
-
-//   // Step 4: Convert to USD APY
-//   const crvApy = crvPerTokenPerYear * crvTokenPrice;
-//   const cvxApy = cvxPerTokenPerYear * cvxTokenPrice;
-
-//   const annualApy = (crvApy + cvxApy) / lpTokenPriceInUSD;
-//   return annualApy;
-// }
 
 export async function calculateConvexEthereumRewardsAPY(
   poolAddress: Address,
@@ -444,7 +393,6 @@ export async function calculateConvexEthereumRewardsAPY(
   }
 }
 
-
 export async function calculateConvexArbitrumRewardsAPY(
   poolAddress: Address,
   inputToken: Token,
@@ -458,10 +406,8 @@ export async function calculateConvexArbitrumRewardsAPY(
   const rewardPool = new ethers.Contract(convexRewardPool, convexRewardPoolABI, provider);
 
   try {
-    // Fetch the current virtual price
     const currentRewards = await rewardPool.rewards(0);
-    const currentRewardsRemaining: bigint = ethers.toBigInt(currentRewards.reward_remaining);
-    console.log("currentRewardsRemaining", currentRewardsRemaining);
+    const currentRewardsIntegral: bigint = ethers.toBigInt(currentRewards.reward_integral);
     // Fetch the current block number and determine the number of blocks for 7 days
     const currentBlockNumber = await provider.getBlockNumber();
     const averageBlockTimeInSeconds = BLOCK_TIME[strategyChain.id] ?? 12;
@@ -470,10 +416,8 @@ export async function calculateConvexArbitrumRewardsAPY(
     const pastBlockNumber = currentBlockNumber - blocksIn7Days;
 
     const pastRewards = await rewardPool.rewards(0, { blockTag: pastBlockNumber });
-    const pastRewardsRemaining: bigint = ethers.toBigInt(pastRewards.reward_remaining);
-    console.log("pastRewardsRemaining", pastRewardsRemaining);
+    const pastRewardsIntegral: bigint = ethers.toBigInt(pastRewards.reward_integral);
 
-    const totalSupply = ethers.toBigInt(await rewardPool.totalSupply());
     const curvePool = getContract({
       client,
       chain: strategyChain,
@@ -484,27 +428,29 @@ export async function calculateConvexArbitrumRewardsAPY(
       method: "function get_virtual_price() view returns (uint256)",
     });
 
-    const earnedInPeriod = pastRewardsRemaining - currentRewardsRemaining;
+    const rewardsPerToken7Days = currentRewardsIntegral - pastRewardsIntegral;
     const secondsPerWeek = 7 * 24 * 60 * 60;
     const secondsPerYear = 365 * 24 * 60 * 60;
 
-    const ratePerSecond = Number(earnedInPeriod) / secondsPerWeek;
-    const annualCrvPerToken = (ratePerSecond * secondsPerYear) / Number(totalSupply);
-    console.log("annualCrvPerToken", annualCrvPerToken);
+    const ratePerSecond = Number(rewardsPerToken7Days) / secondsPerWeek;
+    const annualCrvPerToken = ratePerSecond * secondsPerYear;
     const lpPriceInInput = Number(virtualPrice) / 1e18;
     const lpPriceInUSD = inputToken.symbol === "ETH.ETH"
       ? lpPriceInInput * ethTokenPrice
       : lpPriceInInput;
 
-    const crvApy = (annualCrvPerToken * crvTokenPrice) / lpPriceInUSD;
-    return crvApy * 100;
+    const crvApy = (Number(annualCrvPerToken) / 1e20) * crvTokenPrice / lpPriceInUSD;
+    return crvApy;
   } catch (err) {
     console.error("CRV APY calculation failed:", err);
     return 0;
   }
 }
 
-export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+export async function calculateAaveRewardsAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
   // Fetch rewards data
   // const receiptTokenContract = getContract({
   //   client,
@@ -554,12 +500,19 @@ export async function calculateAaveRewardsAPY(receiptTokenAddress: Address, stra
   // });
 
   // const rewardsAPY = annualRewardsValue / Number(totalLiquidity);
-  const rewardsAPY = 5
+  const rewardsAPY = 5;
   return rewardsAPY;
 }
 
-export async function calculateMoonwellAPY(receiptTokenAddress: Address, strategyChain: Chain) {
-  const moonwellVault = new ethers.Contract(receiptTokenAddress, moonwellVaultABI, provider);
+export async function calculateMoonwellAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
+  const moonwellVault = new ethers.Contract(
+    receiptTokenAddress,
+    moonwellVaultABI,
+    provider
+  );
   const averageBlockTimeInSeconds = 2;
   const secondsInADay = 24 * 60 * 60;
   const secondsIn7Days = 7 * secondsInADay;
@@ -567,29 +520,38 @@ export async function calculateMoonwellAPY(receiptTokenAddress: Address, strateg
   const currentBlockNumber = await provider.getBlockNumber();
   const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
   const pastBlockNumber = BigInt(currentBlockNumber - blocksIn7Days);
-  const currentPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18)));
-  const pastPrice = ethers.toBigInt(await moonwellVault.convertToAssets(BigInt(1e18), { blockTag: pastBlockNumber }));
-  const rateOfChange = (currentPrice - pastPrice) * 10n ** 18n / pastPrice;
+  const currentPrice = ethers.toBigInt(
+    await moonwellVault.convertToAssets(BigInt(1e18))
+  );
+  const pastPrice = ethers.toBigInt(
+    await moonwellVault.convertToAssets(BigInt(1e18), {
+      blockTag: pastBlockNumber,
+    })
+  );
+  const rateOfChange = ((currentPrice - pastPrice) * 10n ** 18n) / pastPrice;
   const normalizedRateOfChange = Number(rateOfChange) / Number(10n ** 18n);
   return Math.pow(1 + normalizedRateOfChange, 365 / 7) - 1;
 }
 
-export async function calculateCompoundAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+export async function calculateCompoundAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
   const compoundVault = getContract({
     client,
     chain: strategyChain,
-    address: receiptTokenAddress
+    address: receiptTokenAddress,
   });
 
   const secondsInAYear = 365 * 24 * 60 * 60;
   const currentUtilization = await readContract({
     contract: compoundVault,
-    method: "function getUtilization() view returns (uint256)"
+    method: "function getUtilization() view returns (uint256)",
   });
   const currentSupplyRate = await readContract({
     contract: compoundVault,
     method: "function getSupplyRate(uint256) view returns (uint256)",
-    params: [currentUtilization]
+    params: [currentUtilization],
   });
 
   const currentSupplyRateScaled = Number(currentSupplyRate) / Number(1e18);
@@ -615,12 +577,12 @@ export async function calculateCompoundRewardsAPY(
     client,
     chain: strategyChain,
     address: cometAddress,
-  })
+  });
 
   let baseTrackingSupplySpeed = await readContract({
     contract: cometContract,
-    method: "function baseTrackingSupplySpeed() view returns (uint256)"
-  })
+    method: "function baseTrackingSupplySpeed() view returns (uint256)",
+  });
 
   // Get the CometRewards contract
   const rewardsContract = getContract({
@@ -633,11 +595,12 @@ export async function calculateCompoundRewardsAPY(
   // Fetch COMP reward emission per second
   const rewardConfig = await readContract({
     contract: rewardsContract,
-    method: "function rewardConfig(address) view returns (address token, uint64 rescaleFactor, bool shouldUpscale)",
+    method:
+      "function rewardConfig(address) view returns (address token, uint64 rescaleFactor, bool shouldUpscale)",
     params: [cometAddress],
   });
-  const rescaleFactor = rewardConfig[1]
-  const shouldUpscale = rewardConfig[2]
+  const rescaleFactor = rewardConfig[1];
+  const shouldUpscale = rewardConfig[2];
   // if (shouldUpscale) {
   //   baseTrackingSupplySpeed *= rescaleFactor
   // } else {
@@ -676,35 +639,70 @@ export async function calculateCompoundRewardsAPY(
   return Number(0.02); // TODO replace with proper value
 }
 
-export async function calculateVenusAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+export async function calculateVenusAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
   const vToken = getContract({
     client,
     chain: strategyChain,
-    address: receiptTokenAddress
+    address: receiptTokenAddress,
   });
   const blocksPerYear = 10512000;
   const supplyRatePerBlock = await readContract({
     contract: vToken,
-    method: "function supplyRatePerBlock() view returns (uint256)"
+    method: "function supplyRatePerBlock() view returns (uint256)",
   });
   const ratePerBlock = Number(supplyRatePerBlock) / 1e18;
   const currentAPY = (1 + ratePerBlock) ** blocksPerYear - 1;
   return Number(currentAPY);
 }
 
-export async function calculateVenusRewardsAPY(receiptTokenAddress: Address, strategyChain: Chain) {
+export async function calculateVenusRewardsAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+) {
   // It looks like this is an XVS reward, but you have to stake >1000 XVS in order to qualify for it
   // It also looks like there's a 90 day lockup period for the rewards
   return Number(0.067);
 }
 
-export const executeDeposit = async (vaultData: VaultData, inputToken: Token, walletContext: WalletContextState | undefined, activeAccount: Account, activeChain: Chain, transactionAmount: bigint, setcrossChainTxId: Function) => {
-  if (activeChain.id === CHAIN_ID.zetachain) { // if active chain is Zetachain (main or testnet)
-    return executeDirectDeposit(vaultData, inputToken, activeAccount, activeChain, transactionAmount);
+export const executeDeposit = async (
+  vaultData: VaultData,
+  inputToken: Token,
+  walletContext: WalletContextState | undefined,
+  activeAccount: Account,
+  activeChain: Chain,
+  transactionAmount: bigint,
+  setcrossChainTxId: Function
+) => {
+  if (activeChain.id === CHAIN_ID.zetachain) {
+    // if active chain is Zetachain (main or testnet)
+    return executeDirectDeposit(
+      vaultData,
+      inputToken,
+      activeAccount,
+      activeChain,
+      transactionAmount
+    );
   } else if (activeChain.id === CHAIN_ID.solana) {
-    return executeSolanaDeposit(vaultData, inputToken, walletContext!, activeChain, transactionAmount, setcrossChainTxId)
+    return executeSolanaDeposit(
+      vaultData,
+      inputToken,
+      walletContext!,
+      activeChain,
+      transactionAmount,
+      setcrossChainTxId
+    );
   } else {
-    return executeCrossChainDeposit(vaultData, inputToken, activeAccount, activeChain, transactionAmount, setcrossChainTxId);
+    return executeCrossChainDeposit(
+      vaultData,
+      inputToken,
+      activeAccount,
+      activeChain,
+      transactionAmount,
+      setcrossChainTxId
+    );
   }
 };
 
@@ -712,7 +710,7 @@ export const waitForReceiptSol = async (txHash: string) => {
   const promise = new Promise<any>((resolve, reject) => {
     // Track attempts to avoid infinite loops
     let attempts = 0;
-    const maxAttempts = 10000;  // Set a reasonable max
+    const maxAttempts = 10000; // Set a reasonable max
 
     const fetchCrossTx = async () => {
       try {
@@ -722,7 +720,11 @@ export const waitForReceiptSol = async (txHash: string) => {
         if (res.data.CrossChainTxs) {
           resolve(res.data);
         } else if (attempts >= maxAttempts) {
-          reject(new Error(`Failed to get CrossChainTxs after ${maxAttempts} attempts`));
+          reject(
+            new Error(
+              `Failed to get CrossChainTxs after ${maxAttempts} attempts`
+            )
+          );
         }
       } catch (error) {
         if (attempts >= maxAttempts) {
@@ -740,31 +742,35 @@ export const waitForReceiptSol = async (txHash: string) => {
   return promise;
 };
 
-
-
-export const Approvedeposit = async (vaultId: Address, inputToken: Address, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+export const Approvedeposit = async (
+  vaultId: Address,
+  inputToken: Address,
+  activeAccount: Account,
+  activeChain: Chain,
+  transactionAmount: bigint
+) => {
   console.log("Executing DepositApprove");
 
   try {
     let contract = getContract({
       client,
       chain: activeChain,
-      address: inputToken
+      address: inputToken,
     });
     let spender;
     if (activeChain.id === 7000 || activeChain.id === 7001) {
-      spender = vaultId
+      spender = vaultId;
     } else {
-      spender = EVM_GATEWAY_ADDRESSES[activeChain.id]
+      spender = EVM_GATEWAY_ADDRESSES[activeChain.id];
     }
     const approveTx = prepareContractCall({
       contract,
       method: "function approve(address to, uint256 value)",
-      params: [spender, transactionAmount]
+      params: [spender, transactionAmount],
     });
     await sendAndConfirmTransaction({
       account: activeAccount,
-      transaction: approveTx
+      transaction: approveTx,
     });
     console.log("Approval confirmed");
     return true;
@@ -778,13 +784,18 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
   let assetsConversionAmount: bigint = transactionAmount;
   if (inputTokenAddress !== vaultData.inputToken.address) {
-    assetsConversionAmount = await getAmountOutFromSwap(transactionAmount, inputToken, vaultData.inputToken, vaultData.id as Address);
+    assetsConversionAmount = await getAmountOutFromSwap(
+      transactionAmount,
+      inputToken,
+      vaultData.inputToken,
+      vaultData.id as Address
+    );
   }
   const strategyChain = defineChain(vaultData.protocol.chainId);
   const contract = getContract({
     client,
     chain: strategyChain,
-    address: vaultData.protocol.strategyAddress
+    address: vaultData.protocol.strategyAddress,
   });
   console.log("About to make call to contract");
   console.log("assetsConversionAmount", assetsConversionAmount);
@@ -792,43 +803,52 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   const sharesOutForUnderlying = await readContract({
     contract,
     method: "function convertToShares(uint256) view returns (uint256)",
-    params: [assetsConversionAmount]
+    params: [assetsConversionAmount],
   });
   console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   const minSharesOut = sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minSharesOut;
-}
+};
 
-const getMinAmountOut = async (vaultId: string, transactionAmount: bigint, strategyAddress: Address, strategyChainId: number) => {
+const getMinAmountOut = async (
+  vaultId: string,
+  transactionAmount: bigint,
+  strategyAddress: Address,
+  strategyChainId: number
+) => {
   const vaultContract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // Zetachain
-    address: vaultId
+    address: vaultId,
   });
   const vaultTotalSupply = await readContract({
     contract: vaultContract,
-    method: "function totalSupply() view returns (uint256)"
+    method: "function totalSupply() view returns (uint256)",
   });
-  const fractionOfTotalShares = transactionAmount * ethers.parseEther("1") / vaultTotalSupply;
+  const fractionOfTotalShares =
+    (transactionAmount * ethers.parseEther("1")) / vaultTotalSupply;
   const strategyChain = defineChain(strategyChainId);
   const contract = getContract({
     client,
     chain: strategyChain,
-    address: strategyAddress
+    address: strategyAddress,
   });
   const strategyWithdrawShareAmount = await readContract({
     contract,
-    method: "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
-    params: [fractionOfTotalShares]
+    method:
+      "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
+    params: [fractionOfTotalShares],
   });
   const amountOutForShares = await readContract({
     contract,
     method: "function convertToAssets(uint256) view returns (uint256)",
-    params: [strategyWithdrawShareAmount]
+    params: [strategyWithdrawShareAmount],
   });
-  const minAmountOut = amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
+  const minAmountOut =
+    (amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100)) /
+    BigInt(10000);
   return minAmountOut;
-}
+};
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Direct Deposit");
@@ -837,7 +857,7 @@ const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, act
   let contract = getContract({
     client,
     chain: activeChain,
-    address: vaultData.id
+    address: vaultData.id,
   });
   console.log("transactionAmount", transactionAmount);
   console.log("activeAccount", activeAccount);
@@ -851,7 +871,7 @@ const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, act
   console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
-    transaction: supplyTx
+    transaction: supplyTx,
   });
   console.log("receipt", receipt);
   return receipt;
@@ -877,11 +897,18 @@ const executeCrossChainDeposit = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
-  const minSharesOut = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
-
+  const minSharesOut = await getMinSharesOut(
+    vaultData,
+    inputToken,
+    transactionAmount,
+    activeChain
+  );
 
   // Generate a unique transaction ID
-  const transactionId = generateTransactionId(activeAccount.address, activeChain);
+  const transactionId = generateTransactionId(
+    activeAccount.address,
+    activeChain
+  );
 
   // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
   const isNativeToken = inputToken.address === ZeroAddress;
@@ -897,7 +924,10 @@ const executeCrossChainDeposit = async (
     [inputToken.address, minSharesOut, slippageValue, transactionId]
   ) as `0x${string}`;
 
-  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainDepositFailed", transactionId, activeAccount.address]);
+  const revertMessage = abiCoder.encode(
+    ["string", "bytes32", "address"],
+    ["_crossChainDepositFailed", transactionId, activeAccount.address]
+  );
 
   // Prepare revertOptions
   revertOptions = [
@@ -935,9 +965,8 @@ const executeCrossChainDeposit = async (
       // ...txOptions,
     });
     console.log("Deposit executed");
-    setcrossChainTxId(transactionId)
+    setcrossChainTxId(transactionId);
     return receipt;
-
   } else {
     // Case 2: ERC20 token
     console.log("ERC20 token deposit detected");
@@ -991,9 +1020,8 @@ const executeCrossChainDeposit = async (
       });
 
       console.log("Deposit executed");
-      setcrossChainTxId(transactionId)
+      setcrossChainTxId(transactionId);
       return receipt;
-
     } catch (error) {
       console.error("Transaction failed:", error);
       throw error; // Rethrow the error to allow upstream handling if needed
@@ -1010,7 +1038,12 @@ const executeSolanaDeposit = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Deposit");
-  const minSharesOut = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
+  const minSharesOut = await getMinSharesOut(
+    vaultData,
+    inputToken,
+    transactionAmount,
+    activeChain
+  );
 
   const walletAddress = walletContext.publicKey!.toBase58();
 
@@ -1022,34 +1055,48 @@ const executeSolanaDeposit = async (
   const wallet = {
     publicKey: walletContext.publicKey,
     signTransaction: walletContext.signTransaction,
-    signAllTransactions: walletContext.signAllTransactions
-  } as Wallet
+    signAllTransactions: walletContext.signAllTransactions,
+  } as Wallet;
   const client = new SolanaZetaClient(wallet);
 
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
     const args = {
       types: ["address", "uint256", "uint16", "bytes32"],
-      values: [getSolanaEVMAddress(inputToken.address), minSharesOut, slippageValue, transactionId]
-    }
-    const txHash = await client.solanaDepositAndCall(Number(transactionAmount), vaultData.id, args);
+      values: [
+        getSolanaEVMAddress(inputToken.address),
+        minSharesOut,
+        slippageValue,
+        transactionId,
+      ],
+    };
+    const txHash = await client.solanaDepositAndCall(
+      Number(transactionAmount),
+      vaultData.id,
+      args
+    );
     console.log("Deposit executed");
-    setcrossChainTxId(transactionId)
-    return { transactionHash: txHash }
+    setcrossChainTxId(transactionId);
+    return { transactionHash: txHash };
   } else {
     // Case 2: SPL token
-    const evmAddress = getSolanaEVMAddress(inputToken.address)
+    const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
       types: ["address", "uint256", "uint16", "bytes32"],
-      values: [evmAddress, minSharesOut, slippageValue, transactionId]
-    }
+      values: [evmAddress, minSharesOut, slippageValue, transactionId],
+    };
     console.log("SPL token deposit detected");
-    const txHash = await client.depositSplTokenAndCall(inputToken.address, Number(transactionAmount), vaultData.id, args)
+    const txHash = await client.depositSplTokenAndCall(
+      inputToken.address,
+      Number(transactionAmount),
+      vaultData.id,
+      args
+    );
     console.log("Deposit executed");
-    setcrossChainTxId(transactionId)
-    return { transactionHash: txHash }
+    setcrossChainTxId(transactionId);
+    return { transactionHash: txHash };
   }
-}
+};
 
 export const executeSolanaWithdrawal = async (
   vaultId: Address,
@@ -1063,10 +1110,18 @@ export const executeSolanaWithdrawal = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
+  const minAmountOut = await getMinAmountOut(
+    vaultId,
+    withdrawShareAmount,
+    strategyAddress,
+    strategyChainId
+  );
 
   // Generate a unique transaction ID
-  const transactionId = generateTransactionId(walletContext.publicKey!.toBase58(), activeChain);
+  const transactionId = generateTransactionId(
+    walletContext.publicKey!.toBase58(),
+    activeChain
+  );
 
   const slippage = getCurrentSlippage();
 
@@ -1075,48 +1130,112 @@ export const executeSolanaWithdrawal = async (
   const wallet = {
     publicKey: walletContext.publicKey,
     signTransaction: walletContext.signTransaction,
-    signAllTransactions: walletContext.signAllTransactions
-  } as Wallet
+    signAllTransactions: walletContext.signAllTransactions,
+  } as Wallet;
   const client = new SolanaZetaClient(wallet);
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
     types: ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    values: [withdrawZRC20, getSolanaEVMAddress(splMint), withdrawShareAmount, minAmountOut, slippageValue, transactionId]
-  }
+    values: [
+      withdrawZRC20,
+      getSolanaEVMAddress(splMint),
+      withdrawShareAmount,
+      minAmountOut,
+      slippageValue,
+      transactionId,
+    ],
+  };
 
   const txHash = await client.solanaWithdrawal(vaultId, args);
   console.log("Withdrawal executed");
-  setcrossChainTxId(transactionId)
-  return { transactionHash: txHash }
-}
+  setcrossChainTxId(transactionId);
+  return { transactionHash: txHash };
+};
 
-export const executeWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, walletContext: WalletContextState, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint, withdrawERC20: Address, withdrawZRC20: Token, setcrossChainTxId: Function) => {
-  if (activeChain.id == CHAIN_ID.zetachain) { // if active chain is Zetachain (main or testnet)
-    return executeDirectWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount);
+export const executeWithdrawal = async (
+  vaultId: Address,
+  strategyAddress: Address,
+  strategyChainId: number,
+  walletContext: WalletContextState,
+  activeAccount: Account,
+  activeChain: Chain,
+  withdrawShareAmount: bigint,
+  withdrawERC20: Address,
+  withdrawZRC20: Token,
+  setcrossChainTxId: Function
+) => {
+  if (activeChain.id == CHAIN_ID.zetachain) {
+    // if active chain is Zetachain (main or testnet)
+    return executeDirectWithdrawal(
+      vaultId,
+      strategyAddress,
+      strategyChainId,
+      activeAccount,
+      activeChain,
+      withdrawShareAmount
+    );
   } else if (activeChain.id == CHAIN_ID.solana) {
-    return executeSolanaWithdrawal(vaultId, strategyAddress, strategyChainId, walletContext, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20.address as Address, setcrossChainTxId);
+    return executeSolanaWithdrawal(
+      vaultId,
+      strategyAddress,
+      strategyChainId,
+      walletContext,
+      activeChain,
+      withdrawShareAmount,
+      withdrawERC20,
+      withdrawZRC20.address as Address,
+      setcrossChainTxId
+    );
   } else {
-    return executeCrossChainWithdrawal(vaultId, strategyAddress, strategyChainId, activeAccount, activeChain, withdrawShareAmount, withdrawERC20, withdrawZRC20, setcrossChainTxId);
+    return executeCrossChainWithdrawal(
+      vaultId,
+      strategyAddress,
+      strategyChainId,
+      activeAccount,
+      activeChain,
+      withdrawShareAmount,
+      withdrawERC20,
+      withdrawZRC20,
+      setcrossChainTxId
+    );
   }
 };
 
-const executeDirectWithdrawal = async (vaultId: Address, strategyAddress: Address, strategyChainId: number, activeAccount: Account, activeChain: Chain, withdrawShareAmount: bigint) => { //vaultId: string
-  const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
+const executeDirectWithdrawal = async (
+  vaultId: Address,
+  strategyAddress: Address,
+  strategyChainId: number,
+  activeAccount: Account,
+  activeChain: Chain,
+  withdrawShareAmount: bigint
+) => {
+  //vaultId: string
+  const minAmountOut = await getMinAmountOut(
+    vaultId,
+    withdrawShareAmount,
+    strategyAddress,
+    strategyChainId
+  );
   let contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
-    address: vaultId
+    address: vaultId,
   });
   const withdrawTx = prepareContractCall({
     contract,
     method:
       "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
-    params: [withdrawShareAmount, minAmountOut, activeAccount?.address, activeAccount?.address],
+    params: [
+      withdrawShareAmount,
+      minAmountOut,
+      activeAccount?.address,
+      activeAccount?.address,
+    ],
   });
   const receipt = await sendTransaction({
     account: activeAccount,
-    transaction: withdrawTx
+    transaction: withdrawTx,
   });
   return receipt;
 };
@@ -1133,23 +1252,41 @@ const executeCrossChainWithdrawal = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(vaultId, withdrawShareAmount, strategyAddress, strategyChainId);
+  const minAmountOut = await getMinAmountOut(
+    vaultId,
+    withdrawShareAmount,
+    strategyAddress,
+    strategyChainId
+  );
   // Generate a unique transaction ID
-  const transactionId = generateTransactionId(activeAccount.address, activeChain);
+  const transactionId = generateTransactionId(
+    activeAccount.address,
+    activeChain
+  );
   const slippage = getCurrentSlippage();
   let contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
-    address: vaultId
+    address: vaultId,
   });
 
   const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    [withdrawZRC20.address, withdrawERC20, withdrawShareAmount, minAmountOut, slippage, transactionId]
+    [
+      withdrawZRC20.address,
+      withdrawERC20,
+      withdrawShareAmount,
+      minAmountOut,
+      slippageValue,
+      transactionId,
+    ]
   ) as `0x${string}`;
-  const revertMessage = abiCoder.encode(["string", "bytes32", "address"], ["_crossChainWithdrawFailed", transactionId, activeAccount.address]);
+  const revertMessage = abiCoder.encode(
+    ["string", "bytes32", "address"],
+    ["_crossChainWithdrawFailed", transactionId, activeAccount.address]
+  );
   const revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
     false, // callOnRevert
@@ -1184,72 +1321,77 @@ const executeCrossChainWithdrawal = async (
 
     setcrossChainTxId(transactionId);
     return receipt;
-
   } catch (error) {
     console.error("Transaction failed:", error);
     throw error; // Rethrow the error for upstream handling
   }
 };
 
-export const fetchUserVaultBalance = async (userAddress: Address, vaultAddress: Address) => {
+export const fetchUserVaultBalance = async (
+  userAddress: Address,
+  vaultAddress: Address
+) => {
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
-    address: vaultAddress
+    address: vaultAddress,
   });
   const { value: shares, decimals } = await getBalance({
     contract,
-    address: userAddress
+    address: userAddress,
   });
   const balance = await readContract({
     contract,
     method: "function convertToAssets(uint256) view returns (uint256)",
-    params: [shares]
+    params: [shares],
   });
   return formatUnits(balance, decimals);
-}
+};
 
-
-export const fetchUserVaultMaxRedeem = async (decimals: number, userAddress: Address, vaultAddress: Address) => {
+export const fetchUserVaultMaxRedeem = async (
+  decimals: number,
+  userAddress: Address,
+  vaultAddress: Address
+) => {
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // Always Zetachain
-    address: vaultAddress
+    address: vaultAddress,
   });
 
   const maxRedeem = await readContract({
     contract,
     method: "function maxRedeem(address) view returns (uint256)",
-    params: [userAddress]
+    params: [userAddress],
   });
 
   // Use formatUnits instead of Number conversion
   return formatUnits(maxRedeem, decimals);
 };
 
-
 export const fetchTotalAssets = async (vaultAddress: Address) => {
-
-  const contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
-    address: vaultAddress
-  });
-  const balance = await readContract({
-    contract,
-    method: "function totalAssets() view returns (uint256)"
-  });
-  const decimals = await readContract({
-    contract,
-    method: "function decimals() view returns (uint8)"
-  });
-  return formatUnits(balance, decimals);
-}
+  const vaultData = await new ApiService().api.getVaultData(vaultAddress);
+  return vaultData.total_assets;
+  // const contract = getContract({
+  //   client,
+  //   chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
+  //   address: vaultAddress,
+  // });
+  // const balance = await readContract({
+  //   contract,
+  //   method: "function totalAssets() view returns (uint256)",
+  // });
+  // const decimals = await readContract({
+  //   contract,
+  //   method: "function decimals() view returns (uint8)",
+  // });
+  // return formatUnits(balance, decimals);
+};
 
 const beamConnection: IConnection = {
-  host: 'https://public-beam-backend-mainnet.codemelt.codes', // Replace with actual Beam API host
+  host: "https://public-beam-backend-mainnet.codemelt.codes", // Replace with actual Beam API host
   headers: {
-    'x-api-key': process.env.NEXT_PUBLIC_BEAM_API_KEY!,
+    "x-api-key": process.env.NEXT_PUBLIC_BEAM_API_KEY!,
   },
 };
 
@@ -1257,7 +1399,10 @@ export const getBeamTokenId = async (
   tokenAddress: string
 ): Promise<number | null> => {
   try {
-    const response = await api.functional.api.currency.partners.getPartners(beamConnection, "7000"); // hardcoded for ZC
+    const response = await api.functional.api.currency.partners.getPartners(
+      beamConnection,
+      "7000"
+    ); // hardcoded for ZC
 
     const data = response.data as {
       data: { address: string; id: number }[];
@@ -1272,9 +1417,6 @@ export const getBeamTokenId = async (
     return null;
   }
 };
-
-
-
 
 export const getAmountOutFromSwap = async (
   amount: bigint,
@@ -1295,38 +1437,53 @@ export const getAmountOutFromSwap = async (
     getBeamTokenId(outputTokenAddress),
   ]);
 
-
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
     slippage: 500,
     amount: Number(amount) / 10 ** inputToken.decimals,
     sender: userAddress,
-    recipient: userAddress
+    recipient: userAddress,
   };
   // Step 2: If both token IDs are found, try Beam API first
   if (inputTokenId && outputTokenId) {
     try {
       console.log("🚀 Getting quote from Beam API...");
-      const beamQuote = await swap.native.getSwapData(beamConnection, swapDetails);
+      const beamQuote = await swap.native.getSwapData(
+        beamConnection,
+        swapDetails
+      );
 
       if (!beamQuote.success) {
         console.warn("⚠️ Beam quote unsuccessful, falling back to Eddy");
-      } else if (!beamQuote.data || !beamQuote.data.status || !beamQuote.data.data) {
-        console.warn("⚠️ Beam quote returned invalid structure:", beamQuote.data?.message || "Unknown error");
+      } else if (
+        !beamQuote.data ||
+        !beamQuote.data.status ||
+        !beamQuote.data.data
+      ) {
+        console.warn(
+          "⚠️ Beam quote returned invalid structure:",
+          beamQuote.data?.message || "Unknown error"
+        );
       } else {
         const quoteAmount = beamQuote.data.data.expectedAmountOut;
 
         if (quoteAmount > 0) {
           console.log("✅ Beam quote found");
-          const quoteAmountRaw = (quoteAmount * 10 ** outputToken.decimals).toFixed(0);
+          const quoteAmountRaw = (
+            quoteAmount *
+            10 ** outputToken.decimals
+          ).toFixed(0);
           return BigInt(quoteAmountRaw);
         }
 
         console.warn("⚠️ Beam quote returned zero amount");
       }
     } catch (e: any) {
-      console.warn("⚠️ Beam quote threw error, falling back to Eddy:", e.message || e);
+      console.warn(
+        "⚠️ Beam quote threw error, falling back to Eddy:",
+        e.message || e
+      );
     }
 
     // Step 3: Fallback to Eddy
@@ -1349,53 +1506,62 @@ export const getAmountOutFromSwap = async (
     }
   }
   // 🛠️ Final catch-all return
-  console.warn("❌ Could not get Beam token IDs or all fallback methods failed");
+  console.warn(
+    "❌ Could not get Beam token IDs or all fallback methods failed"
+  );
   return BigInt(0);
 };
 
-export const getSharesFromDeposit = async (amount: bigint, vaultData: VaultData) => {
+export const getSharesFromDeposit = async (
+  amount: bigint,
+  vaultData: VaultData
+) => {
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0],
-    address: vaultData.id as Address
+    address: vaultData.id as Address,
   });
 
   try {
     const shares = await readContract({
       contract,
       method: "function previewDeposit(uint assets) view returns (uint shares)",
-      params: [amount]
+      params: [amount],
     });
-    const formattedShares = Number(shares) / 10 ** vaultData.inputToken.decimals;
+    const formattedShares =
+      Number(shares) / 10 ** vaultData.inputToken.decimals;
     return formattedShares.toString();
   } catch (e) {
-    return "0"
+    return "0";
   }
-}
+};
 
-export const getAssetsFromShares = async (amount: bigint, vaultData: VaultData) => {
+export const getAssetsFromShares = async (
+  amount: bigint,
+  vaultData: VaultData
+) => {
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0],
-    address: vaultData.id as Address
+    address: vaultData.id as Address,
   });
 
   try {
     return await readContract({
       contract,
       method: "function previewRedeem(uint shares) view returns (uint assets)",
-      params: [amount]
+      params: [amount],
     });
   } catch (e) {
-    return BigInt('0')
+    return BigInt("0");
   }
-}
+};
 
 export const getPerformanceFee = async (vaultId: Address) => {
   let contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // Zetachain
-    address: vaultId
+    address: vaultId,
   });
 
   const perfFee = await readContract({
@@ -1406,5 +1572,4 @@ export const getPerformanceFee = async (vaultId: Address) => {
   return perfFee;
 };
 
-export const updatePythPrices = async () => { }
-
+export const updatePythPrices = async () => { };

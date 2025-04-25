@@ -912,4 +912,55 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             revert("Revert not handled");
         }
     }
+
+    function onAbort(AbortContext calldata context) external onlyGateway {
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            uint256 amount,
+            address receiverOrOldStrategy,
+            address userZRC20,
+            address userERC20,
+            uint32 userChainId
+        ) = abi.decode(
+                context.revertMessage,
+                (string, bytes32, uint256, address, address, address, uint32)
+            );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_crossChainInvestFailed"))
+        ) {
+            uint16 slippage = 1000;
+            _returnFundsToUser(
+                context.amount,
+                userChainId,
+                receiverOrOldStrategy,
+                userZRC20,
+                userERC20,
+                _crossChainTxId,
+                slippage
+            );
+            emit CrossChainInvestFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_divestConnectedChainStrategyFailed"))
+        ) {
+            pendingWithdrawals[receiverOrOldStrategy] -= amount;
+            emit DivestFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsToUserFailed"))
+        ) {
+            emit ReturnFundsToUserFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_switchStrategyFailed"))
+        ) {
+            strategyAddress = receiverOrOldStrategy;
+            emit SwitchStrategyFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
+        }
+    }
 }

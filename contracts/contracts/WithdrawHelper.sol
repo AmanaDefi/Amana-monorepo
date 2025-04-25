@@ -213,7 +213,9 @@ contract WithdrawHelper {
                     "" // empty bytes param for future-proofing
                 );
         }
-
+        if (amountToDeduct > amount) {
+            revert("AmountTooLowToPayForGas");
+        }
         if (gas_zrc20 == tokenToTransfer) {
             approveOrIncreaseAllowance(
                 IERC20(tokenToTransfer),
