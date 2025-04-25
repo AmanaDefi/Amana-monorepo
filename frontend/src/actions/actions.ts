@@ -1372,20 +1372,20 @@ export const fetchUserVaultMaxRedeem = async (
 export const fetchTotalAssets = async (vaultAddress: Address) => {
   const vaultData = await new ApiService().api.getVaultData(vaultAddress);
   return vaultData.total_assets;
-  const contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
-    address: vaultAddress,
-  });
-  const balance = await readContract({
-    contract,
-    method: "function totalAssets() view returns (uint256)",
-  });
-  const decimals = await readContract({
-    contract,
-    method: "function decimals() view returns (uint8)",
-  });
-  return formatUnits(balance, decimals);
+  // const contract = getContract({
+  //   client,
+  //   chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
+  //   address: vaultAddress,
+  // });
+  // const balance = await readContract({
+  //   contract,
+  //   method: "function totalAssets() view returns (uint256)",
+  // });
+  // const decimals = await readContract({
+  //   contract,
+  //   method: "function decimals() view returns (uint8)",
+  // });
+  // return formatUnits(balance, decimals);
 };
 
 const beamConnection: IConnection = {
