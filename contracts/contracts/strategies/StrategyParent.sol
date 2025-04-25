@@ -661,4 +661,47 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             revert("Revert not handled");
         }
     }
+
+    /// @notice Handles reverts from the Gateway.
+    /// @param context Context of the revert.
+    function onAbort(
+        AbortContext calldata context
+    ) external virtual onlyGateway {
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            uint256 _executionNonce,
+            uint256 amount,
+            address userOrReceiver,
+            uint256 vaultSharesToBeBurnt
+        ) = abi.decode(
+                context.revertMessage,
+                (string, bytes32, uint256, uint256, address, uint256)
+            );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_investConfirmFailed"))
+        ) {
+            emit InvestConfirmFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsFromStrategyFailed"))
+        ) {
+            // _depositFundsIntoYieldSource(context.amount, 0);
+            _sendUpdateToVault(
+                userOrReceiver,
+                vaultSharesToBeBurnt,
+                _executionNonce
+            );
+            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
+        ) {
+            emit SendTotalUnderlyingAssetsFailed();
+        } else {
+            revert("Revert not handled");
+        }
+    }
 }
