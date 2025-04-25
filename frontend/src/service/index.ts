@@ -1,5 +1,5 @@
 import { SearchParams } from "@/types/types";
-import BaseAPI from "./api";
+import BaseAPI from "./baseApi";
 import Blockpi from "./blockpi";
 
 export class ApiService {
