@@ -1279,7 +1279,7 @@ const executeCrossChainWithdrawal = async (
       withdrawERC20,
       withdrawShareAmount,
       minAmountOut,
-      slippage,
+      slippageValue,
       transactionId,
     ]
   ) as `0x${string}`;
