@@ -7,15 +7,6 @@ import {
   readContract,
   defineChain,
 } from "thirdweb";
-import {
-  Address,
-  getContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-  sendTransaction,
-  readContract,
-  defineChain,
-} from "thirdweb";
 import { client } from "../utils/client";
 import {
   CHAIN_ID,
