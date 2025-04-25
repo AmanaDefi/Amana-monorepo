@@ -141,7 +141,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
                 if (rewardToken == address(0)) continue;
 
                 uint256 balance = IERC20(rewardToken).balanceOf(address(this));
-                if (balance == 0) continue;
+                if (balance < 1e17) continue;
 
                 uint256 converted = swapToInputToken(
                     rewardToken,
@@ -158,7 +158,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             emit RewardClaimFailed("Failed during rewardLength iteration");
         }
 
-        if (totalConverted > 0) {
+        if (totalConverted > 1e17) {
             uint256[] memory amounts = new uint256[](2);
             amounts[inputTokenIndex] = totalConverted;
 
@@ -177,8 +177,6 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        harvest();
-
         uint256[] memory amounts = new uint256[](2);
         amounts[inputTokenIndex] = amount;
 
@@ -192,12 +190,10 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         uint256 fractionToWithdraw,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
+        harvest();
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
             fractionToWithdraw
         );
-
-        harvest();
-        sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
         rewardPool.withdraw(sharesToWithdraw, false);
 
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
