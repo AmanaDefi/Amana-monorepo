@@ -206,6 +206,7 @@ export async function simulateDepositCallFromConnChain(
   originChainZRC20Input: string,
   inputToken: string,
   originChainId: number,
+  slippage: number,
 ): Promise<`0x${string}`> {
   // Update Pyth prices
   // await updatePythPrices(pythContract, user);
@@ -214,7 +215,6 @@ export async function simulateDepositCallFromConnChain(
   await setTokenBalance(originChainZRC20Input, amanaVault.address, depositAmount, 3);
 
   const minSharesOut = 0 // depositAmount.mul(1000).div(1001);
-  const slippage = 10000;
 
   // Generate a transaction ID using your generateTransactionId function
   const transactionId = generateTransactionId(await user.getAddress(), 8453);
@@ -342,7 +342,7 @@ export async function simulateWithdrawCallFromConnChain(
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
   const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
-  const slippage = 10000;
+  const slippage = 0;
   const transactionId = generateTransactionId(await user.getAddress(), 8453)
 
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
@@ -377,7 +377,8 @@ export async function simulateConfirmWithdrawToConnChain(
   vaultAsset: string,
   strategyAddress: string,
   strategyChainId: number,
-  strategyGasToken: string
+  strategyGasToken: string,
+  slippage: number,
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
@@ -393,7 +394,7 @@ export async function simulateConfirmWithdrawToConnChain(
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
       crossChainTxId,
-      10000
+      slippage
     ]
   );
 
