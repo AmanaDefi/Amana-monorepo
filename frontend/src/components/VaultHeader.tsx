@@ -22,7 +22,7 @@ export default function VaultHeader({
   selectedToken,
 }: {
   vaultData: VaultData;
-  userVaultBalance?: Balance;
+  userVaultBalance?: Balance | string;
   selectedVaultId: string;
   vaultTotalAsset?: VaultTotalAssets;
   vaultAPYs: VaultAPY[];
@@ -31,7 +31,10 @@ export default function VaultHeader({
 }): JSX.Element {
   const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
-  const [data1, setdata1] = useState("");
+  const [depositAmount, setDepositAmount] = useState("0");
+  
+  // Debug full userVaultBalance object
+  console.log("Full userVaultBalance:", userVaultBalance);
   
   // Determine input token based on user selection or active chain
   useEffect(() => {
@@ -57,16 +60,41 @@ export default function VaultHeader({
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);
-  const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
+  const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol) || 0;
 
   // Format wallet balance according to token type
   const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
 
   useEffect(() => {
-    // Update data1 whenever the vault balance changes, using the formatted string
-    setdata1(userVaultBalance?.formatted || "0");
-  }, [userVaultBalance]);
+    // Update deposit amount whenever the vault balance changes
+    if (userVaultBalance) {
+      console.log("User vault balance type:", typeof userVaultBalance);
+      
+      // Handle when userVaultBalance is a simple string (direct from fetchUserVaultBalance)
+      if (typeof userVaultBalance === 'string') {
+        console.log("Using string balance:", userVaultBalance);
+        setDepositAmount(userVaultBalance);
+      } 
+      // Handle when userVaultBalance is a Balance object
+      else if (typeof userVaultBalance === 'object') {
+        console.log("userVaultBalance keys:", Object.keys(userVaultBalance));
+        
+        if (userVaultBalance.formatted) {
+          console.log("Using formatted value:", userVaultBalance.formatted);
+          setDepositAmount(userVaultBalance.formatted);
+        } else if ('value' in userVaultBalance && userVaultBalance.value) {
+          console.log("Using value property:", userVaultBalance.value);
+          setDepositAmount(userVaultBalance.value.toString());
+        }
+      }
+    } else {
+      setDepositAmount("0");
+    }
+  }, [userVaultBalance, transactionCompleted]);
 
+  // Parse the deposit amount to a number for calculations
+  const depositAmountNumber = parseFloat(depositAmount) || 0;
+  
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
       <div className="w-full mb-12 flex flex-row items-center">
@@ -116,11 +144,11 @@ export default function VaultHeader({
           <LargeCardStat
             id="deposits"
             label="Deposits"
-            value={`${formatTokenBalance(data1, vaultData.inputToken.symbol)} ${
+            value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
               vaultData.inputToken.symbol
             }`}
             secondaryValue={`$ ${formatCurrency(
-              Number(data1) * vaultTokenPrice
+              depositAmountNumber * vaultTokenPrice
             )}`}
             tooltip="Value of your vault deposits"
           />
