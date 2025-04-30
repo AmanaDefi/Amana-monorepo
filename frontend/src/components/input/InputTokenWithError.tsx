@@ -207,10 +207,29 @@ export default function InputTokenWithError({
               ) : loadingOutputToken ? (
                 <PendingDots />
               ) : (
-                "$ " +
-                (isOutput
-                  ? conversionOutput.outputAmountInUSDFormatted
-                  : conversionOutput.finalConvertedAmountInUSDFormatted)
+                <div className="flex items-center">
+                  {"$ " +
+                  (isOutput
+                    ? conversionOutput.outputAmountInUSDFormatted
+                    : conversionOutput.finalConvertedAmountInUSDFormatted)}
+                  
+                  {/* Add gas fee indicator for non-gas tank deposits */}
+                  {isOutput && isDeposit && !vaultData.depositFeePaidFromGasTank && conversionOutput?.gasFeeInVaultAsset && Number(conversionOutput.gasFeeInVaultAsset) > 0 && (
+                    <>
+                      <button id="gas-fee-button" className="group ml-2">
+                        <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+                      </button>
+                      <ResponsiveTooltip
+                        id={"gas-fee-button"}
+                        content={
+<p className="w-48">
+  This output includes a deposit gas fee of {conversionOutput.gasFeeInETH} ETH (~${conversionOutput.gasFeeInUSD}) which will be deducted from your deposit.
+                          </p>
+                        }
+                      />
+                    </>
+                  )}
+                </div>
               )}
             </p>
             <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">

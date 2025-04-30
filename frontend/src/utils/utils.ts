@@ -22,6 +22,7 @@ import { ChainOptions } from "thirdweb/chains";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { keccak_256 } from 'js-sha3';
 
+
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
   return value.toLocaleString("en-US", {
@@ -592,3 +593,14 @@ export const formatTokenBalance = (balance: string | number, symbol: string): st
   const decimals = isStablecoin ? 2 : 4;
   return num.toFixed(decimals);
 };
+
+export function convertUsdToEth(
+  usdAmount: number,
+  ethPriceUsd: number
+): { ethAmount: number; ethFormatted: string } {
+  if (!usdAmount || !ethPriceUsd) {
+    return { ethAmount: 0, ethFormatted: "0" };
+  }
+  const ethAmount = usdAmount / ethPriceUsd;
+  return { ethAmount, ethFormatted: ethAmount.toFixed(6) };
+}
