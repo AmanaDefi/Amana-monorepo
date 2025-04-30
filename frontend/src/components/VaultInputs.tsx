@@ -71,6 +71,7 @@ export type ConversionOutput = {
   gasFeeInUSD?: string;
   gasFeeInETH?: string;
   netDepositToVaultUSD?: string;
+  inputAmountInUSDFormatted?: string;
 };
 
 export default function VaultInputs({
@@ -619,6 +620,7 @@ export default function VaultInputs({
       const inputAmountValueInUSD =
         (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
         inputTokenPrice;
+      const inputAmountInUSDFormatted = formatCurrency(inputAmountValueInUSD);
       const finalConvertedAmountInUSD =
         (Number(finalConvertedAmount) / 10 ** vaultData.inputToken.decimals) *
         vaultTokenPrice;
@@ -645,6 +647,7 @@ export default function VaultInputs({
           gasFeeInUSD,
           gasFeeInETH,
           netDepositToVaultUSD,
+          inputAmountInUSDFormatted,
         });
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
@@ -655,6 +658,7 @@ export default function VaultInputs({
           gasFeeInUSD,
           gasFeeInETH,
           netDepositToVaultUSD,
+          inputAmountInUSDFormatted,
         });
       }
       setLoadingOutputToken(false);
@@ -907,13 +911,24 @@ export default function VaultInputs({
           </div>
         )}
         
-        {/* Add Net Deposit to Vault display */}
+        {/* Add Net Deposit to Vault display with tooltip */}
         {isDeposit && 
          !vaultData.depositFeePaidFromGasTank && 
          conversionOutput.netDepositToVaultUSD && 
          Number(debouncedInputBalance.value) > 0 && (
-          <p className="text-white font-bold mb-2 text-start">
-            Net Deposit to Vault: ${conversionOutput.netDepositToVaultUSD}
+          <p className="text-white font-bold mb-2 text-start flex items-center">
+            <span>Net Deposit to Vault: ${conversionOutput.netDepositToVaultUSD}</span>
+            <button id="net-deposit-breakdown" className="group ml-2">
+              <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+            </button>
+            <ResponsiveTooltip
+              id={"net-deposit-breakdown"}
+              content={
+                <p className="w-60">
+                  Input amount (${conversionOutput.inputAmountInUSDFormatted}) - Gas fee (${conversionOutput.gasFeeInUSD}) = Net deposit (${conversionOutput.netDepositToVaultUSD})
+                </p>
+              }
+            />
           </p>
         )}
         
