@@ -214,7 +214,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         });
 
         // Attempt to process confirmations
-        _processBufferedConfirmations();
+        uint256 nextNonce = lastProcessedNonce + 1;
+
+        _processBufferedConfirmations(nextNonce, true);
     }
 
     /**
@@ -239,15 +241,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsAfter,
         uint256 executionNonce,
         bytes32 _crossChainTxId,
-        uint16 _slippage
+        uint16 _slippage,
+        bool processEntireBuffer
     ) external onlyOwner {
         // Ensure no duplicate processing
         // if (
         //     pendingConfirmations[executionNonce].amount != 0 &&
         //     pendingConfirmations[executionNonce].totalAssetsAfter != 0
         // ) revert ConfirmationAlreadyProcessed();
-        // I don't think the check above is useful - we may need to overwrite a confirmation that's
-        // already in the buffer but won't succeed
         // Store the confirmation in the buffer
         pendingConfirmations[executionNonce] = Confirmation({
             user: user,
@@ -264,7 +265,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         });
 
         // Attempt to process confirmations
-        _processSingleConfirmation(executionNonce);
+        _processBufferedConfirmations(executionNonce, processEntireBuffer);
     }
 
     /**
@@ -272,70 +273,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
      *      Once a confirmation is processed, it is removed from the buffer.
      */
-    function _processSingleConfirmation(uint256 _executionNonce) internal {
-        if (_executionNonce != lastProcessedNonce + 1)
-            revert("Nonce out of sequence");
-        Confirmation memory confirmation = pendingConfirmations[
-            _executionNonce
-        ];
-        // If there's no confirmation for the next nonce, revert
-        if (confirmation.totalAssetsAfter == 0 && confirmation.amount == 0) {
-            revert("No nonce to process");
-        }
-        // Process the confirmation
-        if (confirmation.crossChainTxId == 0) {
-            if (confirmation.vaultSharesToBeBurnt > 0) {
-                pendingWithdrawals[confirmation.user] -= confirmation
-                    .vaultSharesToBeBurnt;
-            }
-            // update total assets
-            latestTotalAssetsUpdateFromStrategy = confirmation.totalAssetsAfter;
-            emit TotalAssetsUpdated(confirmation.totalAssetsAfter);
-        } else if (
-            confirmation.user == address(0) &&
-            confirmation.receiver == address(0)
-        ) {
-            strategyAddress = confirmation.withdrawZRC20;
-            emit StrategyUpdated(strategyAddress);
-        } else if (confirmation.isDeposit) {
-            _confirmDepositAndMint(
-                confirmation.receiver,
-                confirmation.amount,
-                confirmation.totalAssetsAfter,
-                confirmation.crossChainTxId
-            );
-        } else {
-            _confirmWithdrawAndBurn(
-                confirmation.user,
-                confirmation.receiver,
-                confirmation.withdrawZRC20,
-                confirmation.withdrawERC20,
-                confirmation.amount,
-                confirmation.vaultSharesToBeBurnt,
-                confirmation.withdrawChainId,
-                confirmation.totalAssetsAfter,
-                confirmation.crossChainTxId,
-                confirmation.slippage
-            );
-        }
-
-        // Mark this nonce as processed
-        lastProcessedNonce = _executionNonce;
-        delete pendingConfirmations[_executionNonce];
-    }
-
-    function processBufferedConfirmations() external onlyOwner {
-        _processBufferedConfirmations();
-    }
-
-    /**
-     * @dev Processes all buffered confirmations sequentially based on their execution nonce.
-     *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
-     *      Once a confirmation is processed, it is removed from the buffer.
-     */
-    function _processBufferedConfirmations() internal {
+    function _processBufferedConfirmations(
+        uint256 _executionNonce,
+        bool processEntireBuffer
+    ) internal {
         while (true) {
-            uint256 nextNonce = lastProcessedNonce + 1;
+            uint256 nextNonce = _executionNonce;
+
             Confirmation memory confirmation = pendingConfirmations[nextNonce];
             //     // If there's no confirmation for the next nonce, stop processing
             if (
@@ -343,49 +287,53 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             ) {
                 break;
             }
-            _processSingleConfirmation(nextNonce);
 
-            //     // Process the confirmation
-            //     if (confirmation.crossChainTxId == 0) {
-            //         if (confirmation.vaultSharesToBeBurnt > 0) {
-            //             pendingWithdrawals[confirmation.user] -= confirmation
-            //                 .vaultSharesToBeBurnt;
-            //         }
-            //         // update total assets
-            //         latestTotalAssetsUpdateFromStrategy = confirmation
-            //             .totalAssetsAfter;
-            //         emit TotalAssetsUpdated(confirmation.totalAssetsAfter);
-            //     } else if (
-            //         confirmation.user == address(0) &&
-            //         confirmation.receiver == address(0)
-            //     ) {
-            //         strategyAddress = confirmation.withdrawZRC20;
-            //         emit StrategyUpdated(strategyAddress);
-            //     } else if (confirmation.isDeposit) {
-            //         _confirmDepositAndMint(
-            //             confirmation.receiver,
-            //             confirmation.amount,
-            //             confirmation.totalAssetsAfter,
-            //             confirmation.crossChainTxId
-            //         );
-            //     } else {
-            //         _confirmWithdrawAndBurn(
-            //             confirmation.user,
-            //             confirmation.receiver,
-            //             confirmation.withdrawZRC20,
-            //             confirmation.withdrawERC20,
-            //             confirmation.amount,
-            //             confirmation.vaultSharesToBeBurnt,
-            //             confirmation.withdrawChainId,
-            //             confirmation.totalAssetsAfter,
-            //             confirmation.crossChainTxId,
-            //             confirmation.slippage
-            //         );
-            //     }
+            // Process the confirmation
+            if (confirmation.crossChainTxId == 0) {
+                if (confirmation.vaultSharesToBeBurnt > 0) {
+                    pendingWithdrawals[confirmation.user] -= confirmation
+                        .vaultSharesToBeBurnt;
+                }
+                // update total assets
+                latestTotalAssetsUpdateFromStrategy = confirmation
+                    .totalAssetsAfter;
+                emit TotalAssetsUpdated(confirmation.totalAssetsAfter);
+            } else if (
+                confirmation.user == address(0) &&
+                confirmation.receiver == address(0)
+            ) {
+                strategyAddress = confirmation.withdrawZRC20;
+                emit StrategyUpdated(strategyAddress);
+            } else if (confirmation.isDeposit) {
+                _confirmDepositAndMint(
+                    confirmation.receiver,
+                    confirmation.amount,
+                    confirmation.totalAssetsAfter,
+                    confirmation.crossChainTxId
+                );
+            } else {
+                _confirmWithdrawAndBurn(
+                    confirmation.user,
+                    confirmation.receiver,
+                    confirmation.withdrawZRC20,
+                    confirmation.withdrawERC20,
+                    confirmation.amount,
+                    confirmation.vaultSharesToBeBurnt,
+                    confirmation.withdrawChainId,
+                    confirmation.totalAssetsAfter,
+                    confirmation.crossChainTxId,
+                    confirmation.slippage
+                );
+            }
 
-            //     // Mark this nonce as processed
-            //     lastProcessedNonce = nextNonce;
-            //     delete pendingConfirmations[nextNonce];
+            // Mark this nonce as processed
+            unchecked {
+                lastProcessedNonce = nextNonce;
+            }
+            delete pendingConfirmations[nextNonce];
+            if (!processEntireBuffer) {
+                break; // Stop processing if not in processEntireBuffer mode
+            }
         }
     }
 
