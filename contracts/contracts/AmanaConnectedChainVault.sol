@@ -214,9 +214,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         });
 
         // Attempt to process confirmations
-        uint256 nextNonce = lastProcessedNonce + 1;
+        // uint256 nextNonce = lastProcessedNonce + 1;
 
-        _processBufferedConfirmations(nextNonce, true);
+        _processBufferedConfirmations(true);
     }
 
     /**
@@ -265,7 +265,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         });
 
         // Attempt to process confirmations
-        _processBufferedConfirmations(executionNonce, processEntireBuffer);
+        _processBufferedConfirmations(processEntireBuffer);
     }
 
     /**
@@ -274,11 +274,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      Once a confirmation is processed, it is removed from the buffer.
      */
     function _processBufferedConfirmations(
-        uint256 _executionNonce,
+        // uint256 _executionNonce,
         bool processEntireBuffer
     ) internal {
         while (true) {
-            uint256 nextNonce = _executionNonce;
+            uint256 nextNonce = lastProcessedNonce + 1;
 
             Confirmation memory confirmation = pendingConfirmations[nextNonce];
             //     // If there's no confirmation for the next nonce, stop processing
@@ -327,9 +327,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             }
 
             // Mark this nonce as processed
-            unchecked {
-                lastProcessedNonce = nextNonce;
-            }
+            lastProcessedNonce = nextNonce;
             delete pendingConfirmations[nextNonce];
             if (!processEntireBuffer) {
                 break; // Stop processing if not in processEntireBuffer mode
