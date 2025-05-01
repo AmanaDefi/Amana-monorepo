@@ -748,7 +748,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit CrossChainInvestFailed(
                 _crossChainTxId,
                 receiverOrOldStrategy,
-                amount
+                context.amount
             );
         } else if (
             keccak256(bytes(revertMessage)) ==

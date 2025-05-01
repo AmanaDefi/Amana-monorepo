@@ -357,16 +357,16 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
 
     // the revert will send back some vault asset
-    await setTokenBalance(vaultConfig.asset, amanaVault.address, txConfig.crossChainDepositAmount1.mul(95).div(100), 3);
-
+    await setTokenBalance(vaultConfig.asset, amanaVault.address, txConfig.crossChainDepositAmount1, 3);
+    console.log("Amount sent back to vault: ", txConfig.crossChainDepositAmount1.mul(95).div(100).toString());
     await expect(
       amanaVault.connect(gatewaySigner).onRevert({
         sender: strategyConfig.address,
         asset: vaultConfig.asset,
         revertMessage: mockRevertMessage,
-        amount: 95000000n,
+        amount: txConfig.crossChainDepositAmount1,
       })
-    ).to.emit(amanaVault, "CrossChainInvestFailed").withArgs(txId);
+    ).to.emit(amanaVault, "CrossChainInvestFailed").withArgs(txId, await user1.getAddress(), txConfig.crossChainDepositAmount1);
   });
 
   it("should reject unauthorized registry updates", async function () {
