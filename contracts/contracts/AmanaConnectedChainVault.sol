@@ -28,7 +28,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
-    mapping(address => uint256) pendingWithdrawals;
+    mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
 
     event CrossChainInvestSent(
@@ -181,6 +181,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 revert InvalidMessage();
             }
         }
+    }
+
+    function clearPendingWithdrawals(address user) external onlyOwner {
+        pendingWithdrawals[user] = 0;
     }
 
     /**
