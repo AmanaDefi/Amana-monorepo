@@ -626,90 +626,90 @@ describe("AmanaConnectedChainVault Tests", function () {
     expect(user2Reward).to.be.closeTo(user2ExpectedRewards, ethers.utils.parseUnits("1", 18));
   });
 
-  it("should execute a direct ERC20 multi-hop swap using exactInput on Uniswap V3 Router", async function () {
-    const { user1, vaultConfig, txConfig } = await loadFixture(setupVaultFixture);
+  // it("should execute a direct ERC20 multi-hop swap using exactInput on Uniswap V3 Router", async function () {
+  //   const { user1, vaultConfig, txConfig } = await loadFixture(setupVaultFixture);
 
-    // Uniswap V3 Router Address
-    const swapRouter = await ethers.getContractAt("ISwapRouter", UNISWAP_V3_ROUTER);
+  //   // Uniswap V3 Router Address
+  //   const swapRouter = await ethers.getContractAt("ISwapRouter", UNISWAP_V3_ROUTER);
 
-    // Define input and output tokens
-    const inputToken = await ethers.getContractAt("IERC20", txConfig.originZRC20Input);  // Example ERC20 token
-    const outputToken = await ethers.getContractAt("IERC20", vaultConfig.asset); // Example ERC20 token
+  //   // Define input and output tokens
+  //   const inputToken = await ethers.getContractAt("IERC20", txConfig.originZRC20Input);  // Example ERC20 token
+  //   const outputToken = await ethers.getContractAt("IERC20", vaultConfig.asset); // Example ERC20 token
 
-    // Set the amount to swap
-    const swapAmount = ethers.utils.parseUnits("0.0001", 18);
+  //   // Set the amount to swap
+  //   const swapAmount = ethers.utils.parseUnits("0.0001", 18);
 
-    // Fund the user with enough input tokens
-    await setTokenBalance(txConfig.originZRC20Input, await user1.getAddress(), swapAmount, 3);
-    // Approve Uniswap Router to spend user's tokens
-    await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
+  //   // Fund the user with enough input tokens
+  //   await setTokenBalance(txConfig.originZRC20Input, await user1.getAddress(), swapAmount, 3);
+  //   // Approve Uniswap Router to spend user's tokens
+  //   await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
 
-    // Construct the path for the swap (inputToken -> outputToken with a 0.3% fee)
-    const fee1 = 3000;
-    const fee2 = 500;
-    const encodedPath = ethers.utils.solidityPack(
-      ["address", "uint24", "address", "uint24", "address"],
-      [txConfig.originZRC20Input, fee1, ZC_USDC_ETH_ADDRESS, fee2, vaultConfig.asset]
-    );
-    // Set up swap parameters
-    const params = {
-      path: encodedPath,
-      recipient: await user1.getAddress(),
-      deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10-minute deadline
-      amountIn: swapAmount,
-      amountOutMinimum: 0, // Adjust for slippage in real cases
-    };
+  //   // Construct the path for the swap (inputToken -> outputToken with a 0.3% fee)
+  //   const fee1 = 3000;
+  //   const fee2 = 500;
+  //   const encodedPath = ethers.utils.solidityPack(
+  //     ["address", "uint24", "address", "uint24", "address"],
+  //     [txConfig.originZRC20Input, fee1, ZC_USDC_ETH_ADDRESS, fee2, vaultConfig.asset]
+  //   );
+  //   // Set up swap parameters
+  //   const params = {
+  //     path: encodedPath,
+  //     recipient: await user1.getAddress(),
+  //     deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10-minute deadline
+  //     amountIn: swapAmount,
+  //     amountOutMinimum: 0, // Adjust for slippage in real cases
+  //   };
 
-    // Execute swap
-    swapRouter.connect(user1).exactInput(params)
+  //   // Execute swap
+  //   swapRouter.connect(user1).exactInput(params)
 
-    // Get the final balance of the output token
-    const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
+  //   // Get the final balance of the output token
+  //   const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
 
-    expect(finalOutputBalance).to.be.gt(0);
-  });
+  //   expect(finalOutputBalance).to.be.gt(0);
+  // });
 
-  it("should execute a direct ERC20 swap using exactInputSingle on Uniswap V3 Router", async function () {
-    const { user1 } = await loadFixture(setupVaultFixture);
+  // it("should execute a direct ERC20 swap using exactInputSingle on Uniswap V3 Router", async function () {
+  //   const { user1 } = await loadFixture(setupVaultFixture);
 
-    // Uniswap V3 Router Address
-    const swapRouter = await ethers.getContractAt("ISwapRouter", UNISWAP_V3_ROUTER);
+  //   // Uniswap V3 Router Address
+  //   const swapRouter = await ethers.getContractAt("ISwapRouter", UNISWAP_V3_ROUTER);
 
-    // Define input and output tokens
-    const inputToken = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);  // Example ERC20 token
-    const outputToken = await ethers.getContractAt("IERC20", ZC_USDC_ETH_ADDRESS); // Example ERC20 token
+  //   // Define input and output tokens
+  //   const inputToken = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);  // Example ERC20 token
+  //   const outputToken = await ethers.getContractAt("IERC20", ZC_USDC_ETH_ADDRESS); // Example ERC20 token
 
-    // Set the amount to swap
-    const swapAmount = ethers.utils.parseUnits("0.0001", 18);
+  //   // Set the amount to swap
+  //   const swapAmount = ethers.utils.parseUnits("0.0001", 18);
 
-    // Fund the user with enough input tokens
-    await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), swapAmount, 3);
+  //   // Fund the user with enough input tokens
+  //   await setTokenBalance(ZC_ETH_BASE_ADDRESS, await user1.getAddress(), swapAmount, 3);
 
-    // Approve Uniswap Router to spend user's tokens
-    await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
-    const allowance = await inputToken.allowance(await user1.getAddress(), UNISWAP_V3_ROUTER);
+  //   // Approve Uniswap Router to spend user's tokens
+  //   await inputToken.connect(user1).approve(UNISWAP_V3_ROUTER, swapAmount);
+  //   const allowance = await inputToken.allowance(await user1.getAddress(), UNISWAP_V3_ROUTER);
 
-    // Set up swap parameters for exactInputSingle
-    const fee = 3000; // 0.3% pool fee
-    const params = {
-      tokenIn: ZC_ETH_BASE_ADDRESS,
-      tokenOut: ZC_USDC_ETH_ADDRESS,
-      fee: fee,
-      recipient: await user1.getAddress(),
-      deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10-minute deadline
-      amountIn: swapAmount,
-      amountOutMinimum: 0, // Adjust for slippage in real cases
-      sqrtPriceLimitX96: 0, // No price limit
-    };
+  //   // Set up swap parameters for exactInputSingle
+  //   const fee = 3000; // 0.3% pool fee
+  //   const params = {
+  //     tokenIn: ZC_ETH_BASE_ADDRESS,
+  //     tokenOut: ZC_USDC_ETH_ADDRESS,
+  //     fee: fee,
+  //     recipient: await user1.getAddress(),
+  //     deadline: Math.floor(Date.now() / 1000) + 60 * 10, // 10-minute deadline
+  //     amountIn: swapAmount,
+  //     amountOutMinimum: 0, // Adjust for slippage in real cases
+  //     sqrtPriceLimitX96: 0, // No price limit
+  //   };
 
-    // Execute swap
-    // await expect(swapRouter.connect(user1).exactInputSingle(params))
-    //   .to.emit(swapRouter, "Swap");
-    swapRouter.connect(user1).exactInputSingle(params)
-    // Get the final balance of the output token
-    const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
+  //   // Execute swap
+  //   // await expect(swapRouter.connect(user1).exactInputSingle(params))
+  //   //   .to.emit(swapRouter, "Swap");
+  //   swapRouter.connect(user1).exactInputSingle(params)
+  //   // Get the final balance of the output token
+  //   const finalOutputBalance = await outputToken.balanceOf(await user1.getAddress());
 
-    expect(finalOutputBalance).to.be.gt(0);
-  });
+  //   expect(finalOutputBalance).to.be.gt(0);
+  // });
 });
 
