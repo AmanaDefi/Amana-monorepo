@@ -230,8 +230,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         });
 
         // Attempt to process confirmations
-        // uint256 nextNonce = lastProcessedNonce + 1;
-
         _processBufferedConfirmations(true);
     }
 
@@ -260,11 +258,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint16 _slippage,
         bool processEntireBuffer
     ) external onlyOwner {
-        // Ensure no duplicate processing
-        // if (
-        //     pendingConfirmations[executionNonce].amount != 0 &&
-        //     pendingConfirmations[executionNonce].totalAssetsAfter != 0
-        // ) revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
         pendingConfirmations[executionNonce] = Confirmation({
             user: user,
@@ -289,15 +282,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
      *      Once a confirmation is processed, it is removed from the buffer.
      */
-    function _processBufferedConfirmations(
-        // uint256 _executionNonce,
-        bool processEntireBuffer
-    ) internal {
+    function _processBufferedConfirmations(bool processEntireBuffer) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
 
             Confirmation memory confirmation = pendingConfirmations[nextNonce];
-            //     // If there's no confirmation for the next nonce, stop processing
+            // If there's no confirmation for the next nonce, stop processing
             if (
                 confirmation.totalAssetsAfter == 0 && confirmation.amount == 0
             ) {
