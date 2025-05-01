@@ -2,17 +2,17 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {AmanaConnectedChainVaultV1} from "../contracts/AmanaConnectedChainVaultV1.sol";
+import {AmanaConnectedChainVault} from "../contracts/AmanaConnectedChainVault.sol";
 import {console} from "forge-std/console.sol";
 
 contract UpgradeVault is Script {
     function run() external {
         // ✅ Hardcoded proxy address to upgrade
-        address proxyAddress = 0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69;
+        address proxyAddress = 0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE;
         // address newImpl = 0x1a4810A0Dc61FF4d3D46Cb8Ac89612Cc286Ca11C; // <- older version with old switchStrategy function
         // address newImpl = 0x198938Cb9429D35562569AC567f063654166c636; // <- final version with updated switchStrategy function and toggleDepositFeePaidFromGasTank
         // address newImpl = 0xcB4b1936df6B44967Ca44A28BbC63cF1e886d06D;
-        address newImpl = 0x70774742d4065792AFeb16709acaD3a1630f3141;
+        address newImpl = 0x68f5607315F66E31d907661656Fd7018B0E2d2A4; // AmanaConnectedChainVault: 0x502881c6f25340e62757a7be556b0e8ccbdb195d
 
         // ✅ Fetch the PRIVATE_KEY from environment and ensure it starts with "0x"
         string memory rawPrivateKey = vm.envString("PRIVATE_KEY");

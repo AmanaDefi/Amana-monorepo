@@ -445,34 +445,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
   //   },
   // },
-  // {
-  //   id: "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE",
-  //   name: "msETH/WETH Pool",
-  //   type: "Liquidity Pool",
-  //   des: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
-  //   symbol: "aCurveETH",
-  //   imgURL: "/ETH.png",
-  //   depositFeePaidFromGasTank: false,
-  //   inputToken: {
-  //     symbol: "ETH.ETH",
-  //     decimals: 18,
-  //     address: ZC_ETH_ETH_ADDRESS,
-  //     imgURL: "/ETH.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Curve",
-  //     strategyAddress: "0x6faC704cdfF7D3AbE3a6671FAe7f6Ade296c516b",
-  //     rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
-  //     network: "Ethereum",
-  //     chainId: 1,
-  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-  //     imgURL: "/curve.png",
-  //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
-  //   },
-  // },
+  {
+    id: "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE",
+    name: "msETH/WETH Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+    symbol: "aCurveETH",
+    imgURL: "/ETH.png",
+    depositFeePaidFromGasTank: false,
+    inputToken: {
+      symbol: "ETH.ETH",
+      decimals: 18,
+      address: ZC_ETH_ETH_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve",
+      strategyAddress: "0x6faC704cdfF7D3AbE3a6671FAe7f6Ade296c516b",
+      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/curve.png",
+      des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+    },
+  },
   // {
   //   id: "0x5224a42F612064a4334b9A528C64D54eF593e3C1",
   //   name: "eUSD/USDC Pool",
@@ -501,34 +501,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
   //   },
   // },
-  // {
-  //   id: "0xAf89d0c83C5abF11bb4f26E8B86c3773f352CDC9",
-  //   name: "eUSD/USDC Pool",
-  //   type: "Liquidity Pool",
-  //   des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum to earn trading fees and yield. CRV rewards are staked on Convex to maximize returns. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
-  //   symbol: "aConvexUsdcArb",
-  //   imgURL: "/arbitrum-arb-logo.png",
-  //   depositFeePaidFromGasTank: true,
-  //   inputToken: {
-  //     symbol: "USDC.ARB",
-  //     decimals: 6,
-  //     address: ZC_USDC_ARB_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Convex",
-  //     strategyAddress: "0x1EbA5A0bEd1C82E031dF76101dbA146632b44972",
-  //     rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
-  //     network: "Arbitrum",
-  //     chainId: 42161,
-  //     netdes: "TBC",
-  //     imgURL: "/convex.png",
-  //     des: "Curve is a decentralized exchange and liquidity protocol optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
-  //   },
-  // },
+  {
+    id: "0x32fECdEf376E2aD74C53663BDE933116C09408f3",
+    name: "eUSD/USDC Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum to earn trading fees and yield. CRV rewards are staked on Convex to maximize returns. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+    symbol: "aConvexUsdcArb",
+    imgURL: "/arbitrum-arb-logo.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDC.ARB",
+      decimals: 6,
+      address: ZC_USDC_ARB_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Convex",
+      strategyAddress: "0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
+      rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
+      network: "Arbitrum",
+      chainId: 42161,
+      netdes: "TBC",
+      imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange and liquidity protocol optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+    },
+  },
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [
