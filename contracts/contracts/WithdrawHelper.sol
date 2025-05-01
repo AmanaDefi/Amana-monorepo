@@ -201,17 +201,38 @@ contract WithdrawHelper {
                 amount
             );
 
-            amountToDeduct = ISwapHelper(IAmanaRegistry(registry).swapHelper())
-                .swapExactOut(
+            try
+                ISwapHelper(IAmanaRegistry(registry).swapHelper()).swapExactOut(
                     amount,
                     tokenToTransfer,
                     gasFee,
                     gas_zrc20,
-                    500, // TODO remove the hardcoding of no slippage here!
+                    250, // first attempt slippage
                     address(this),
-                    200, //deadline
-                    "" // empty bytes param for future-proofing
-                );
+                    200, // deadline
+                    "" // future-proofing param
+                )
+            returns (uint256 result) {
+                amountToDeduct = result;
+            } catch {
+                try
+                    ISwapHelper(IAmanaRegistry(registry).swapHelper())
+                        .swapExactOut(
+                            amount,
+                            tokenToTransfer,
+                            gasFee,
+                            gas_zrc20,
+                            750, // fallback slippage
+                            address(this),
+                            200, // deadline
+                            ""
+                        )
+                returns (uint256 result) {
+                    amountToDeduct = result;
+                } catch {
+                    revert("Swap failed at both slippage levels");
+                }
+            }
         }
         if (amountToDeduct > amount) {
             revert("AmountTooLowToPayForGas");
