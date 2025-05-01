@@ -6,16 +6,19 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol";
 
-import "./SwapHelper.sol";
+// import "./SwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
-import "./interfaces/ISwapRouter.sol";
+import "./interfaces/ISwapHelper.sol";
+import "./interfaces/IAmanaRegistry.sol";
+import "./interfaces/IErrors.sol";
+import "hardhat/console.sol";
 
 contract ZapContract {
     using Address for address payable;
     using SafeERC20 for IERC20;
 
     address public owner;
-    address public swapHelper;
+    address public registry;
 
     IWETH9 constant wZeta = IWETH9(0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf);
 
@@ -32,31 +35,28 @@ contract ZapContract {
         _;
     }
 
-    constructor(address _swapHelper) {
-        swapHelper = _swapHelper;
+    constructor() {
         owner = msg.sender;
     }
 
     /**
      * @dev Updates the swap helper address for the vault. Can only be called by the owner.
-     * @param _swapHelper The address of the new swap helper.
+     * @param _registry The address of the new swap helper.
      * @notice Reverts if the swap helper address is zero.
      */
-    function updateSwapHelperAddress(address _swapHelper) external onlyOwner {
-        if (_swapHelper == address(0)) revert IErrors.InvalidAddress();
-        swapHelper = _swapHelper;
+    function updateRegistryAddress(address _registry) external onlyOwner {
+        if (_registry == address(0)) revert IErrors.InvalidAddress();
+        registry = _registry;
     }
 
     /**
-     * @notice Swaps a specific amount of tokens for another token.
-     * @dev Determines the swap path and uses Uniswap V2 to execute the swap.
-     * @param zrc20 The address of the input token.
-     * @param amount The amount of input tokens to swap.
-     * @param targetZRC20 The address of the output token.
-     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
-     * @param maxDeadline The maximum deadline for the swap to complete.
-     * @return amountOut The amount of output tokens received.
-     * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
+     * @dev Swaps tokens using the swap helper contract.
+     * @param zrc20 The address of the token to swap from.
+     * @param amount The amount of tokens to swap.
+     * @param targetZRC20 The address of the token to swap to.
+     * @param slippageBps The slippage in basis points (100 bps = 1%).
+     * @param maxDeadline The maximum deadline for the swap.
+     * @return amountOut The amount of tokens received after the swap.
      */
     function swap(
         address zrc20,
@@ -65,8 +65,16 @@ contract ZapContract {
         uint16 slippageBps,
         uint16 maxDeadline
     ) internal returns (uint256 amountOut) {
-        bytes memory data = abi.encodeWithSignature(
-            "swap(address,uint256,address,uint16,address,uint16,bytes)",
+        if (IAmanaRegistry(registry).swapHelper() == address(0))
+            revert IErrors.InvalidAddress();
+        // Step 1: Transfer tokens to the helper contract
+        SafeERC20.safeTransfer(
+            IERC20(zrc20),
+            IAmanaRegistry(registry).swapHelper(),
+            amount
+        );
+
+        amountOut = ISwapHelper(IAmanaRegistry(registry).swapHelper()).swap(
             zrc20,
             amount,
             targetZRC20,
@@ -75,17 +83,6 @@ contract ZapContract {
             maxDeadline,
             "" // empty bytes param for future-proofing
         );
-        amountOut = _delegateCall(swapHelper, data);
-    }
-
-    // Internal function for delegatecall
-    function _delegateCall(
-        address logicContract,
-        bytes memory data
-    ) internal returns (uint256) {
-        (bool success, bytes memory result) = logicContract.delegatecall(data);
-        require(success, "Delegatecall failed");
-        return abi.decode(result, (uint256));
     }
 
     // Function to zap tokens into the vault
@@ -105,7 +102,7 @@ contract ZapContract {
                 require(msg.value == amount, "Incorrect ZETA amount sent");
                 wZeta.deposit{value: msg.value}();
                 swappedAmount = swap(
-                    inputToken,
+                    address(wZeta),
                     amount,
                     vaultAsset,
                     slippage,

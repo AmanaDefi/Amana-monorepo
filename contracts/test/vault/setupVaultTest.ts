@@ -3,7 +3,7 @@ import { Signer } from "ethers";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
-import { AmanaConnectedChainVault } from "../../typechain";
+import { AmanaConnectedChainVaultV1 } from "../../typechain";
 import { vaultTestMatrix } from "../config/vault.config";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
@@ -28,7 +28,7 @@ export async function setupVaultFixture() {
 
   const [owner, user1, user2] = await ethers.getSigners();
 
-  const otherZRC20 = await ethers.getContractAt("IERC20", ZC_ETH_BASE_ADDRESS);
+  const otherZRC20 = await ethers.getContractAt("IERC20", txConfig.otherZRC20Input);
   const vaultAsset = await ethers.getContractAt("IERC20", vaultConfig.asset);
   const rewardToken = await ethers.getContractAt("IERC20", vaultConfig.rewardToken);
 
@@ -50,7 +50,7 @@ export async function setupVaultFixture() {
   const swapHelper = await deployAndLog("SwapHelper", [priceOracle.address], owner);
   const gasTank = await deployAndLog("GasTank", []);
   const withdrawHelper = await deployAndLog("WithdrawHelper", [ZEVM_GATEWAY_ADDRESS]);
-  const zapContract = await deployAndLog("ZapContract", [swapHelper.address], owner);
+  const zapContract = await deployAndLog("ZapContract", [], owner);
   const amanaRegistry = await deployAndLog("AmanaRegistry", [
     gasTank.address,
     treasury.address,
@@ -59,10 +59,11 @@ export async function setupVaultFixture() {
     swapHelper.address,
     zapContract.address,
   ]);
+  await zapContract.updateRegistryAddress(amanaRegistry.address);
 
-  const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
+  const Vault = await ethers.getContractFactory("AmanaConnectedChainVaultV1", owner);
   console.log("About to deploy vault");
-  const amanaVault: AmanaConnectedChainVault = await upgrades.deployProxy(
+  const amanaVault: AmanaConnectedChainVaultV1 = await upgrades.deployProxy(
     Vault,
     [
       vaultConfig.name,
@@ -81,7 +82,7 @@ export async function setupVaultFixture() {
   );
   console.log("Vault deployed, waiting for confirmation");
   await amanaVault.deployed();
-  console.log(`AmanaConnectedChainVault deployed at: ${amanaVault.address}`);
+  console.log(`AmanaConnectedChainVaultV1 deployed at: ${amanaVault.address}`);
 
   await gasTank.authorizeVault(amanaVault.address);
   console.log(`Vault authorized with GasTank.`);
