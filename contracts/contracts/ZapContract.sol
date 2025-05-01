@@ -67,18 +67,6 @@ contract ZapContract {
     ) internal returns (uint256 amountOut) {
         if (IAmanaRegistry(registry).swapHelper() == address(0))
             revert IErrors.InvalidAddress();
-        console.log(
-            "SwapHelper address: ",
-            IAmanaRegistry(registry).swapHelper()
-        );
-        console.log("Registry address: ", registry);
-        console.log("ZRC20 address: ", zrc20);
-        if (zrc20 == address(0)) {
-            zrc20 = address(wZeta);
-        }
-        if (targetZRC20 == address(0)) {
-            targetZRC20 = address(wZeta);
-        }
         // Step 1: Transfer tokens to the helper contract
         SafeERC20.safeTransfer(
             IERC20(zrc20),

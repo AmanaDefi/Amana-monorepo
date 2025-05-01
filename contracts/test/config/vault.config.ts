@@ -48,7 +48,7 @@ export const vaultTestMatrix = [
       minSharesOut1: 0,
       directDepositAmount2: ethers.utils.parseUnits("50", 6),
       minSharesOut2: 0,
-      directDepositAmount3: ethers.utils.parseUnits("1", 6),
+      directDepositAmount3: ethers.utils.parseUnits("1", 18), // used for ZETA deposit test
       minSharesOut3: 0,
     },
   },
