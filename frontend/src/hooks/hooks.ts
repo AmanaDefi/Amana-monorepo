@@ -258,15 +258,15 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
   // events
   const events = useMemo(() => ({
     vault: [
-      prepareEvent({ signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
       prepareEvent({ signature: "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)" }),
       prepareEvent({ signature: "event Deposit(address indexed sender,address indexed owner,uint256 assets,uint256 shares)" }),
-      prepareEvent({ signature: "event DivestSent(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event DivestSent(bytes32 indexed crossChainTxId, address user, uint256 shares)" }),
       prepareEvent({ signature: "event Withdraw(address indexed sender,address indexed receiver,address indexed owner,uint256 assets,uint256 shares)" }),
-      prepareEvent({ signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event DivestFailed(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId)" })
+      prepareEvent({ signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
+      prepareEvent({ signature: "event DivestFailed(bytes32 indexed crossChainTxId, address user, uint256 shares)" }),
+      prepareEvent({ signature: "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
+      prepareEvent({ signature: "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" })
     ],
     strategy: [
       prepareEvent({ signature: "event FundsInvested(bytes32 indexed crossChainTxId,address user,uint256 amount)" }),
