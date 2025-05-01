@@ -19,7 +19,6 @@ describe("AmanaConnectedChainVault Tests", function () {
   const PRICE_FEED_ID = "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"; // ETH/USD price feed ID
   const HERMES_ENDPOINT = `https://hermes.pyth.network/api/latest_vaas?ids[]=${PRICE_FEED_ID}`;
 
-  const OTHER_ZRC20 = ZC_ETH_BASE_ADDRESS;
   const UNISWAP_V3_ROUTER = "0x9b30cfbacd3504252f82263f72d6acf62bf733c2";
   const ERROR_MARGIN = ethers.utils.parseUnits("0.00015", 18);
 
@@ -58,10 +57,10 @@ describe("AmanaConnectedChainVault Tests", function () {
 
   it("should execute a ZapContract deposit with ERC20", async function () {
     const { user1, amanaVault, otherZRC20, zapContract, gatewaySigner, vaultConfig, txConfig, strategyConfig } = await loadFixture(setupVaultFixture);
-    await setTokenBalance(OTHER_ZRC20, await user1.getAddress(), txConfig.directDepositAmount3, 3);
+    await setTokenBalance(txConfig.otherZRC20Input, await user1.getAddress(), txConfig.directDepositAmount3, 3);
 
     await otherZRC20.connect(user1).approve(zapContract.address, txConfig.directDepositAmount3);
-    await expect(zapContract.connect(user1).zapDeposit(OTHER_ZRC20, amanaVault.address, vaultConfig.asset, txConfig.directDepositAmount3, txConfig.minSharesOut3, await user1.getAddress(), 10000))
+    await expect(zapContract.connect(user1).zapDeposit(txConfig.otherZRC20Input, amanaVault.address, vaultConfig.asset, txConfig.directDepositAmount3, txConfig.minSharesOut3, await user1.getAddress(), 10000))
       .to.emit(amanaVault, "CrossChainInvestSent");
 
     await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, txConfig.directDepositAmount3, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
@@ -315,26 +314,26 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should handle emergency withdrawal by the owner", async function () {
-    const { amanaVault, owner, otherZRC20 } = await loadFixture(setupVaultFixture);
+    const { amanaVault, owner, otherZRC20, txConfig } = await loadFixture(setupVaultFixture);
 
     const depositAmount = ethers.utils.parseUnits("0.1", 18);
-    await setTokenBalance(OTHER_ZRC20, amanaVault.address, depositAmount, 3);
+    await setTokenBalance(txConfig.otherZRC20Input, amanaVault.address, depositAmount, 3);
 
     const balanceBefore = await otherZRC20.balanceOf(await owner.getAddress());
-    await amanaVault.connect(owner).emergencyWithdraw(OTHER_ZRC20);
+    await amanaVault.connect(owner).emergencyWithdraw(txConfig.otherZRC20Input);
 
     const balanceAfter = await otherZRC20.balanceOf(await owner.getAddress());
     expect(balanceAfter.sub(balanceBefore)).to.equal(depositAmount);
   });
 
   it("should reject unauthorized emergency withdrawal", async function () {
-    const { amanaVault, user1 } = await loadFixture(setupVaultFixture);
+    const { amanaVault, user1, txConfig } = await loadFixture(setupVaultFixture);
 
     const depositAmount = ethers.utils.parseUnits("0.1", 18);
-    await setTokenBalance(OTHER_ZRC20, amanaVault.address, depositAmount, 3);
+    await setTokenBalance(txConfig.otherZRC20Input, amanaVault.address, depositAmount, 3);
 
     await expect(
-      amanaVault.connect(user1).emergencyWithdraw(OTHER_ZRC20)
+      amanaVault.connect(user1).emergencyWithdraw(txConfig.otherZRC20Input)
     ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount").withArgs(await user1.getAddress());
   });
 

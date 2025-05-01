@@ -7,6 +7,7 @@ import {
   ZC_ETH_BASE_ADDRESS,
   ZC_ETH_ARB_ADDRESS,
   ZC_USDC_ARB_ADDRESS,
+  ZC_USDC_POL_ADDRESS
 } from "../../../constants";
 
 export const vaultTestMatrix = [
@@ -34,6 +35,9 @@ export const vaultTestMatrix = [
       originGasToken: ZC_ETH_ETH_ADDRESS,
       originERC20Input: ethers.constants.AddressZero,
       originZRC20Input: ZC_USDC_ETH_ADDRESS, // cross chain deposit will use this
+
+      otherZRC20Input: ZC_USDC_POL_ADDRESS,
+
 
       crossChainDepositAmount1: ethers.utils.parseUnits("3", 6),
       crossChainDepositAmount2: ethers.utils.parseUnits("5", 6),
