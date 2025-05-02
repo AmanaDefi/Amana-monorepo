@@ -13,6 +13,7 @@ import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import Information from "@/components/Information";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -64,7 +65,7 @@ const VaultsDetailContainer: React.FC<{
       vaultData ? (
         <div className="overflow-x-auto">
           <button
-            className="fluid-hover-button rounded-lg flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0"
+            className="fluid-hover-button rounded-lg flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0 mb-6"
             type="button"
             onClick={() => router.push(backPath)}
           >
@@ -84,10 +85,11 @@ const VaultsDetailContainer: React.FC<{
             selectedToken={selectedToken}
           />
 
-          <section className="w-full flex flex-col lg:flex-row gap-4 my-4 ">
-            <div className="w-full ">
-              <div className="bg-customNeutral200 p-6 rounded-lg">
-                <div className="bg-customNeutral300 px-6 py-6 rounded-lg">
+          <section className="w-full flex flex-col lg:flex-row gap-4 my-8">
+            <div className="w-full">
+              <div className="bg-gradient-to-br from-customNeutral300 to-customNeutral200 p-6 rounded-lg shadow-md border border-customNeutral100">
+                <h2 className="text-xl font-bold text-teal-400 mb-4">Deposit & Withdraw</h2>
+                <div className="bg-customNeutral200 px-6 py-6 rounded-lg border border-customNeutral100">
                   <VaultInputs
                     vaultData={vaultData}
                     setTransactionCompleted={setTransactionCompleted}
@@ -100,35 +102,10 @@ const VaultsDetailContainer: React.FC<{
                 </div>
               </div>
             </div>
-            <div className="w-full mt-8 md:mt-0 space-y-4">
-              <div className="bg-customNeutral200 p-6 rounded-lg">
-                <p className="text-white text-2xl font-bold">Information</p>
-                <div className="md:flex md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4 mt-4">
-                  <div className="w-full md:w-10/12 border border-customNeutral100 rounded-lg p-4">
-                    <p className="text-white font-bold">{vaultData.name}</p>
-                    <p className="text-white font-normal mt-1">{vaultData.des}</p>
-                    <p className="text-white font-bold mt-5">{vaultData.protocol.name}</p>
-                    <p className="text-white font-normal mt-1">{vaultData.protocol.des}</p>
-                    <p className="text-white font-bold mt-5">{vaultData.protocol.network}</p>
-                    <p className="text-white font-normal mt-1">{vaultData.protocol.netdes}</p>
-                    <p className="text-white font-bold mt-5">Vault Address</p>
-                    <Link href={`${vaultExplorerBaseUrl}/address/${vaultData.id}`}
-                      className='flex items-center gap-1 group text-white underline-offset-2 hover:underline'
-                      target='_blank' rel="noopener noreferrer">
-                      <p className="font-normal mt-1">{vaultData.id}</p>
-                      <ArrowTopRightOnSquareIcon width='20' height='20' className='size-5' />
-                    </Link>
-                    <p className="text-white font-bold mt-5">Strategy Address</p>
-                    <Link href={`${strategyExplorerBaseUrl}/address/${vaultData.protocol.strategyAddress}`}
-                      className='flex items-center gap-1 group text-white underline-offset-2 hover:underline'
-                      target='_blank' rel="noopener noreferrer">
-                      <p className="font-normal mt-1">{vaultData.protocol.strategyAddress}</p>
-                      <ArrowTopRightOnSquareIcon width='20' height='20' className='size-5' />
-                    </Link>
-                    <p className="text-white font-bold mt-5">Input Token</p>
-                    <p className="text-white font-normal mt-1">{vaultData.inputToken.symbol}</p>
-                  </div>
-                </div>
+            <div className="w-full mt-8 lg:mt-0 space-y-4">
+              <div className="bg-gradient-to-br from-customNeutral300 to-customNeutral200 p-6 rounded-lg shadow-md border border-customNeutral100">
+                <h2 className="text-xl font-bold text-teal-400 mb-4">Information</h2>
+                <Information vaultData={vaultData} />
               </div>
             </div>
           </section>

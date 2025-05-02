@@ -43,14 +43,21 @@ import ResponsiveTooltip from "@/components/common/Tooltip";
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (balance: string | number, symbol: string): string => {
   const num = Number(balance);
+  // Ensure non-negative values
+  const positiveNum = Math.max(0, num);
   // Check if token is a stablecoin
   const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') || 
                     symbol?.includes('USDT') || symbol?.includes('USDC') ||
                     symbol?.includes('BUSD');
   // Format with 2 decimal places for stablecoins, 4 for others
   const decimals = isStablecoin ? 2 : 4;
-  return num.toFixed(decimals);
+  return positiveNum.toFixed(decimals);
 };
+
+// When displaying USD value for outputs or net deposits, ensure it's never negative
+const formatUSDValue = (value: number): string => {
+  return formatCurrency(Math.max(0, value));
+}
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -280,6 +287,13 @@ export default function VaultInputs({
   // Replace the handleTokenSelect function with this improved version
   const handleTokenSelect = (selectedToken: Token) => {
     console.log("Selected token:", selectedToken);
+
+    // If the selected token is different than current, reset input values
+    if (inputToken?.address !== selectedToken.address) {
+      // Reset input balance
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+    }
 
     // If the selected token is the vault token but from a different chain,
     // we should still use it directly without trying to find an equivalent
@@ -629,7 +643,9 @@ export default function VaultInputs({
       ).toString();
       
       // Calculate net deposit amount for display
-      netDepositToVaultUSD = finalConvertedAmountInUSDFormatted;
+      netDepositToVaultUSD = formatCurrency(
+        Math.max(0, finalConvertedAmountInUSD)
+      ).toString();
 
       // Calculate actual slippage by excluding the gas fee from the calculation
       const slippageActualValue = Math.max(
@@ -651,14 +667,14 @@ export default function VaultInputs({
         });
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
-          finalConvertedAmountInUSDFormatted,
+          finalConvertedAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
           outputAmountFormatted: sharesAmountFormatted,
-          outputAmountInUSDFormatted: finalConvertedAmountInUSDFormatted,
+          outputAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
           gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
           gasFeeInUSD,
           gasFeeInETH,
-          netDepositToVaultUSD,
-          inputAmountInUSDFormatted,
+          netDepositToVaultUSD: formatUSDValue(finalConvertedAmountInUSD),
+          inputAmountInUSDFormatted: formatUSDValue(inputAmountValueInUSD),
         });
       }
       setLoadingOutputToken(false);
@@ -685,7 +701,11 @@ export default function VaultInputs({
     if (
       userSlippage &&
       actualSlippage !== null &&
-      userSlippage < actualSlippage
+      userSlippage < actualSlippage && !(isDeposit && 
+        !vaultData.depositFeePaidFromGasTank && 
+        conversionOutput.gasFeeInVaultAsset && 
+        debouncedInputBalance.value > 0n &&
+        debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset))
     ) {
       setIsSlippageExceedingLimit(true);
       setOutputBoxErrorMessage(
@@ -709,13 +729,20 @@ export default function VaultInputs({
 
     checkSlippageExceedingLimit();
 
+    // Only show "Swap route not found" error if there's a positive input amount,
+    // output amount is 0, and we're not in the case of deposit being too low for gas fee
     if (
       inputBalance.value > 0n &&
-      Number(conversionOutput.outputAmountFormatted) == 0
+      Number(conversionOutput.outputAmountFormatted) == 0 &&
+      !(isDeposit && 
+        !vaultData.depositFeePaidFromGasTank && 
+        conversionOutput.gasFeeInVaultAsset && 
+        debouncedInputBalance.value > 0n &&
+        debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset))
     ) {
       setOutputBoxErrorMessage("Swap route not found");
     }
-  }, [conversionOutput, inputBalance]);
+  }, [conversionOutput, inputBalance, debouncedInputBalance, isDeposit, vaultData.depositFeePaidFromGasTank, conversionOutput.gasFeeInVaultAsset]);
 
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
@@ -762,6 +789,24 @@ export default function VaultInputs({
     handleTokenSelect(token);
   };
 
+  // Reset form state when transaction completes or fails
+  useEffect(() => {
+    if (transactionCompleted) {
+      // Reset input balance and clear input field
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+      
+      // Reset action steps
+      setStep(0);
+      setSteps([]);
+      
+      // Reset transaction completed flag to allow new transactions
+      setTimeout(() => {
+        setTransactionCompleted(false);
+      }, 100);
+    }
+  }, [transactionCompleted, setTransactionCompleted, setInputBalance, setDisplayValue, setStep, setSteps]);
+
   // Create an adapter function for InputTokenWithError in Withdraw mode
   const handleWithdrawTokenSelect = (token: Token) => {
     // In withdraw mode, we still want to update the input token
@@ -779,29 +824,24 @@ export default function VaultInputs({
   const handleTabChange = (tab: string) => {
     const newIsDeposit = tab === "Deposit";
     
-    // Update URL first to ensure consistency
-    router.push(`${pathname}?tab=${newIsDeposit ? 'deposit' : 'withdraw'}`);
-    
-    // Reset input balance
-    setInputBalance(EMPTY_BALANCE);
-    
-    // Only attempt to set steps if we have a token and chain
-    if (inputToken && activeChain) {
-      const fetchSteps = async () => {
-        const newAction = newIsDeposit
-          ? SmartVaultActionType.Deposit
-          : SmartVaultActionType.Withdrawal;
-        const steps = await selectActions(
-          newAction,
-          vaultData,
-          activeChain,
-          walletAddress as any,
-          inputBalance,
-          inputToken
-        );
-        setSteps(steps);
-      };
-      fetchSteps();
+    // Only reset if we're actually changing tabs
+    if (newIsDeposit !== isDeposit) {
+      // Update URL first to ensure consistency
+      router.push(`${pathname}?tab=${newIsDeposit ? 'deposit' : 'withdraw'}`);
+      
+      // Reset input balance and display
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+      
+      // Reset conversion output
+      setConversionOutput(initialConversionOutput);
+      
+      // Set deposit state
+      setIsDeposit(newIsDeposit);
+      
+      // Reset steps
+      setStep(0);
+      setSteps([]);
     }
   };
   return (
@@ -810,8 +850,8 @@ export default function VaultInputs({
       {isDeposit && !vaultData.depositFeePaidFromGasTank && (
         <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5">
           <p className="text-yellow-400 flex items-center">
-            <InformationCircleIcon className="w-5 h-5 mr-2" />
-            <span className="font-normal">Important Update: For Ethereum Vaults, deposit gas fees are deducted directly from your deposit amount and are not covered by Amana.</span>
+            {/* <InformationCircleIcon className="w-5 h-5 mr-2" /> */}
+            <span className="font-normal">For Ethereum Vaults, Ethereum gas fees are deducted directly from your deposit amount and are not covered by Amana.</span>
           </p>
         </div>
       )}
@@ -883,7 +923,14 @@ export default function VaultInputs({
         setInputBalance={setInputBalance}
       />
       <div className="mt-4">
-        {conversionOutput.slippageActualValue !== null && (
+        {conversionOutput.slippageActualValue !== null && 
+         conversionOutput.slippageActualValue <= 100 &&
+         // Don't show slippage warning when deposit is too low to cover gas
+         !(isDeposit && 
+           !vaultData.depositFeePaidFromGasTank && 
+           conversionOutput.gasFeeInVaultAsset && 
+           debouncedInputBalance.value > 0n &&
+           debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)) && (
           <p className="text-white font-bold mb-2 text-start">
             Estimated slippage value:
             <span
@@ -906,12 +953,12 @@ export default function VaultInputs({
          debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset) && (
           <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
             <p className="text-red-400 font-medium">
-              Warning: Your deposit amount is too low to cover the cross-chain gas fee.
+              Your deposit amount is too low to cover the deposit gas fee.
             </p>
           </div>
         )}
         
-        {/* Add Net Deposit to Vault display with tooltip */}
+        {/* Net Deposit to Vault display with tooltip */}
         {isDeposit && 
          !vaultData.depositFeePaidFromGasTank && 
          conversionOutput.netDepositToVaultUSD && 
@@ -934,6 +981,7 @@ export default function VaultInputs({
         
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
         <div className="bg-customNeutral200 py-2 px-4 rounded-lg">
+          {/* Deposit Fee For Non-Ethereum Vaults*/}
           {isDeposit && 
            vaultData.depositFeePaidFromGasTank && (
             <span className="flex flex-row items-center justify-between text-white py-1">
@@ -943,7 +991,7 @@ export default function VaultInputs({
            )
           }
           
-          {/* Updated gas fee display to show both ETH and USD */}
+          {/* Deposit Fee For Ethereum Vaults*/}
           {isDeposit && 
            !vaultData.depositFeePaidFromGasTank && 
            conversionOutput.gasFeeInVaultAsset && 
@@ -969,6 +1017,7 @@ export default function VaultInputs({
             </span>
           )}
           
+          {/* Withdrawal Fee */}
           {
             !isDeposit && (<span className="flex flex-row items-center justify-between text-white py-1">
               <p>Withdrawal Fee</p>
@@ -976,12 +1025,26 @@ export default function VaultInputs({
             </span>)
           }
           
-          <span className="flex flex-row items-center justify-between text-white py-1">
+          {/* <span className="flex flex-row items-center justify-between text-white py-1">
             <p>Management Fee</p>
             <span className="font-bold">0%</span>
-          </span>
+          </span> */}
+          {/* Performance Fee */}
           <span className="flex flex-row items-center justify-between text-white py-1">
-            <p>Performance Fee</p>
+            <div className="flex items-center">
+                <p>Performance Fee (deducted upon withdrawal)</p>
+                <button id="performance-fee-info" className="group ml-2">
+                  <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+                </button>
+                <ResponsiveTooltip
+                  id={"performance-fee-info"}
+                  content={
+                    <p className="w-60">
+                      15% deducted from the profit earned in the vault
+                    </p>
+                  }
+                />
+              </div>
             <span className="font-bold">{performanceFee}%</span>
           </span>
         </div>

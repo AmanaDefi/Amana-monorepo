@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { VaultData, VaultTotalAssets, VaultAPY, Token, Balance } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from "next/image";
@@ -11,6 +11,8 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance } from "@/utils/utils";
+import ResponsiveTooltip from "@/components/common/Tooltip";
+import { InformationCircleIcon } from "@heroicons/react/24/solid";
 
 export default function VaultHeader({
   vaultData,
@@ -61,6 +63,17 @@ export default function VaultHeader({
 
   // Format wallet balance according to token type
   const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
+
+  // Fix APY display in Key Metrics
+  const apy = useMemo(() => {
+    const vaultApy = vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d;
+    return Number.isNaN(Number(vaultApy)) ? 0 : Number(vaultApy) * 100;
+  }, [vaultAPYs, selectedVaultId]);
+
+  // Update data1usd calculation to ensure it's accurate
+  const data1usd = userVaultBalance?.formattedUSD 
+    ? formatCurrency(Number(userVaultBalance.formattedUSD)) 
+    : formatCurrency(Number(userVaultBalance?.formatted || 0) * vaultTokenPrice);
 
   useEffect(() => {
     // Update data1 whenever the vault balance changes, using the formatted string
@@ -153,6 +166,58 @@ export default function VaultHeader({
             }
             tooltip="APY for the last 7 days"
           />
+        </div>
+      </div>
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-white mb-4">Key Metrics</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-customNeutral300 py-4 px-5 rounded-lg border border-customNeutral100">
+            <div className="flex items-center gap-2">
+              <p className="text-gray-400 text-sm">APY (7d)</p>
+              <button id="apy-info" className="group">
+                <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+              </button>
+              <ResponsiveTooltip
+                id={"apy-info"}
+                content={
+                  <p className="w-60">
+                    Annual Percentage Yield based on the last 7 days of performance
+                  </p>
+                }
+              />
+            </div>
+            <p className="text-white text-xl font-bold mt-1">{apy.toFixed(2)}%</p>
+          </div>
+          
+          <div className="bg-customNeutral300 py-4 px-5 rounded-lg border border-customNeutral100">
+            <div className="flex items-center gap-2">
+              <p className="text-gray-400 text-sm">Total Value Locked</p>
+              <button id="tvl-info" className="group">
+                <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+              </button>
+              <ResponsiveTooltip
+                id={"tvl-info"}
+                content={
+                  <p className="w-60">
+                    Total value of assets currently locked in this vault
+                  </p>
+                }
+              />
+            </div>
+            <p className="text-white text-xl font-bold mt-1">${vaultTotalAsset?.totalAssets ? formatCurrency(Number(vaultTotalAsset.totalAssets)) : "0"}</p>
+          </div>
+          
+          <div className="bg-customNeutral300 py-4 px-5 rounded-lg border border-customNeutral100">
+            <p className="text-gray-400 text-sm">Your Vault Deposits</p>
+            <p className="text-white text-xl font-bold mt-1">${data1usd}</p>
+          </div>
+          
+          <div className="bg-customNeutral300 py-4 px-5 rounded-lg border border-customNeutral100">
+            <p className="text-gray-400 text-sm">Your Wallet</p>
+            <p className="text-white text-xl font-bold mt-1">
+              {formattedWalletBalance} {symbol}
+            </p>
+          </div>
         </div>
       </div>
     </section>
