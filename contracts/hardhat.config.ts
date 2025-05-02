@@ -28,6 +28,7 @@ import "./tasks/depositMultiple";
 import "./tasks/deploySwapHelperEthereum";
 import "./tasks/deploySwapHelperArbitrum";
 import "./tasks/findConvexPid";
+import "./tasks/updateWithdrawHelperOnStrats";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";

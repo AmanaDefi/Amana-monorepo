@@ -7,6 +7,7 @@ import {
   ZC_ETH_BASE_ADDRESS,
   ZC_ETH_ARB_ADDRESS,
   ZC_USDC_ARB_ADDRESS,
+  ZC_USDC_POL_ADDRESS
 } from "../../../constants";
 
 export const vaultTestMatrix = [
@@ -35,6 +36,9 @@ export const vaultTestMatrix = [
       originERC20Input: ethers.constants.AddressZero,
       originZRC20Input: ZC_USDC_ETH_ADDRESS, // cross chain deposit will use this
 
+      otherZRC20Input: ZC_USDC_POL_ADDRESS,
+
+
       crossChainDepositAmount1: ethers.utils.parseUnits("3", 6),
       crossChainDepositAmount2: ethers.utils.parseUnits("5", 6),
       slippage: 500,
@@ -44,7 +48,7 @@ export const vaultTestMatrix = [
       minSharesOut1: 0,
       directDepositAmount2: ethers.utils.parseUnits("50", 6),
       minSharesOut2: 0,
-      directDepositAmount3: ethers.utils.parseUnits("1", 6),
+      directDepositAmount3: ethers.utils.parseUnits("1", 18), // used for ZETA deposit test
       minSharesOut3: 0,
     },
   },

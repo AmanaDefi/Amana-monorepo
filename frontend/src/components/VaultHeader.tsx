@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { VaultData, VaultTotalAssets, VaultAPY, Token, Balance } from "@/types/types";
-import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from "next/image";
 import {
   determineVaultTokenFromApprovedTokens,
@@ -13,6 +12,9 @@ import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance } from "@/utils/utils";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
+import { fetchTotalAssets, fetchUserVaultBalance } from "@/actions/actions";
+import { Address } from "thirdweb";
+import { ApiService } from "@/service";
 
 export default function VaultHeader({
   vaultData,
@@ -31,10 +33,11 @@ export default function VaultHeader({
   transactionCompleted: boolean;
   selectedToken?: Token;
 }): JSX.Element {
-  const { activeChain } = useMultiChain();
+  const { activeChain, walletAddress } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
-  const [data1, setdata1] = useState("");
   const [isTvlLoading, setIsTvlLoading] = useState<boolean>(true);
+  const [tvlValue, setTvlValue] = useState<string>("0");
+  const [depositAmount, setDepositAmount] = useState<string>("0");
   
   // Determine input token based on user selection or active chain
   useEffect(() => {
@@ -55,64 +58,82 @@ export default function VaultHeader({
     }
   }, [activeChain, vaultData, selectedToken]);
 
-  const { balance: walletTokenBalance, fetchBalance } =
-    useMultichainTokenBalance(inputToken);
+  const { balance: walletTokenBalance } = useMultichainTokenBalance(inputToken);
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);
-  const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
+  const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol) || 0;
 
   // Format wallet balance according to token type
   const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
 
+  // Calculate APY from the vaultAPYs array
   const apy = useMemo(() => {
     const vaultApy = vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d;
     return Number.isNaN(Number(vaultApy)) ? 0 : Number(vaultApy) * 100;
   }, [vaultAPYs, selectedVaultId]);
 
-  // // Update data1usd calculation to ensure it's accurate
-  // const data1 = userVaultBalance?.formattedUSD 
-  //   ? formatCurrency(Number(userVaultBalance.formattedUSD)) 
-  //   : formatCurrency(Number(userVaultBalance?.formatted || 0) * vaultTokenPrice);
-
+  // Fetch TVL directly using the API service
   useEffect(() => {
-    // Update data1 whenever the vault balance changes, using the formatted string
-    setdata1(userVaultBalance?.formattedUSD 
-      ? formatCurrency(Number(userVaultBalance.formattedUSD)) 
-      : formatCurrency(Number(userVaultBalance?.formatted || 0) * vaultTokenPrice));
-  }, [userVaultBalance, vaultTokenPrice]);
-
-  // Handle TVL loading state
-  useEffect(() => {
-    // Set loading state when vaultTotalAsset changes or is undefined
-    setIsTvlLoading(!vaultTotalAsset || !vaultTotalAsset.totalAssets);
-    
-    // If we've received vaultTotalAsset but totalAssets is 0 or missing, retry after 3 seconds
-    if (vaultTotalAsset && (!vaultTotalAsset.totalAssets || Number(vaultTotalAsset.totalAssets) === 0)) {
-      const retryTimer = setTimeout(() => {
-        // This will trigger another data fetch cycle through the parent component
-        if (transactionCompleted !== undefined) {
-          setIsTvlLoading(true);
+    async function fetchTVLData() {
+      try {
+        setIsTvlLoading(true);
+        const data = await new ApiService().api.getVaultData(vaultData.id as string);
+        if (data && data.total_assets) {
+          setTvlValue(data.total_assets);
+          setIsTvlLoading(false);
+        } else {
+          // If API returns empty data, retry after a delay
+          setTimeout(fetchTVLData, 3000);
         }
-      }, 3000);
-      
-      return () => clearTimeout(retryTimer);
+      } catch (error) {
+        console.error("Error fetching TVL:", error);
+        // On error, retry after a delay
+        setTimeout(fetchTVLData, 3000);
+      }
     }
-  }, [vaultTotalAsset, transactionCompleted]);
+    
+    fetchTVLData();
+  }, [vaultData.id, transactionCompleted]);
 
-  // Format TVL value with proper handling of loading and empty states
+  // Fetch user vault balance directly
+  useEffect(() => {
+    async function fetchUserDeposit() {
+      if (!walletAddress) {
+        setDepositAmount("0");
+        return;
+      }
+      
+      try {
+        const balance = await fetchUserVaultBalance(
+          walletAddress as Address,
+          vaultData.id as Address
+        );
+        
+        setDepositAmount(balance);
+      } catch (error) {
+        console.error("Error fetching user deposit:", error);
+        setDepositAmount("0");
+      }
+    }
+    
+    fetchUserDeposit();
+  }, [vaultData.id, walletAddress, transactionCompleted]);
+
+  // Calculate deposit value in USD
+  const depositAmountNumber = parseFloat(depositAmount) || 0;
+  const depositValueUSD = formatCurrency(depositAmountNumber * vaultTokenPrice);
+  
+  // Format TVL with proper handling of loading state
   const formattedTVL = useMemo(() => {
     if (isTvlLoading) {
       return "Loading...";
     }
-    console.log("vaultTotalAsset", vaultTotalAsset);
-    console.log("vaultTotalAsset.totalAssets", vaultTotalAsset?.totalAssets);
-    if (!vaultTotalAsset || !vaultTotalAsset.totalAssets) {
-      return "0";
-    }
     
-    return formatCurrency(Number(vaultTotalAsset.totalAssets));
-  }, [vaultTotalAsset, isTvlLoading]);
+    // Use either the directly fetched TVL or the one from props
+    const tvlToUse = tvlValue || (vaultTotalAsset?.totalAssets ? vaultTotalAsset.totalAssets : "0");
+    return formatCurrency(Number(tvlToUse));
+  }, [tvlValue, vaultTotalAsset, isTvlLoading]);
 
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
@@ -165,11 +186,11 @@ export default function VaultHeader({
           <LargeCardStat
             id="deposits"
             label="Deposits"
-            value={`${formatTokenBalance(data1, vaultData.inputToken.symbol)} ${
+            value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
               vaultData.inputToken.symbol
             }`}
             secondaryValue={`$ ${formatCurrency(
-              Number(data1) * vaultTokenPrice
+              depositAmountNumber * vaultTokenPrice
             )}`}
             tooltip="Value of your vault deposits"
           />
@@ -265,7 +286,7 @@ export default function VaultHeader({
                 }
               />
             </div>
-            <p className="text-white text-xl font-bold mt-1">${data1}</p>
+            <p className="text-white text-xl font-bold mt-1">${depositValueUSD}</p>
           </div>
           
           <div className="bg-customNeutral300 py-4 px-5 rounded-lg border border-customNeutral100">
