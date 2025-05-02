@@ -826,8 +826,13 @@ export default function VaultInputs({
     
     // Only reset if we're actually changing tabs
     if (newIsDeposit !== isDeposit) {
-      // Update URL first to ensure consistency
-      router.push(`${pathname}?tab=${newIsDeposit ? 'deposit' : 'withdraw'}`);
+      // Save current scroll position
+      const scrollPosition = window.scrollY;
+      
+      // Update URL with scroll preservation option
+      router.push(`${pathname}?tab=${newIsDeposit ? 'deposit' : 'withdraw'}`, { 
+        scroll: false // Prevent automatic scrolling
+      });
       
       // Reset input balance and display
       setInputBalance(EMPTY_BALANCE);
@@ -842,6 +847,11 @@ export default function VaultInputs({
       // Reset steps
       setStep(0);
       setSteps([]);
+
+      // Restore scroll position after state updates
+      setTimeout(() => {
+        window.scrollTo(0, scrollPosition);
+      }, 0);
     }
   };
   return (

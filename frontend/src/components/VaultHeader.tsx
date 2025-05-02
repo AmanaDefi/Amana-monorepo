@@ -34,6 +34,7 @@ export default function VaultHeader({
   const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [data1, setdata1] = useState("");
+  const [isTvlLoading, setIsTvlLoading] = useState<boolean>(true);
   
   // Determine input token based on user selection or active chain
   useEffect(() => {
@@ -64,21 +65,54 @@ export default function VaultHeader({
   // Format wallet balance according to token type
   const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
 
-  // Fix APY display in Key Metrics
   const apy = useMemo(() => {
     const vaultApy = vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d;
     return Number.isNaN(Number(vaultApy)) ? 0 : Number(vaultApy) * 100;
   }, [vaultAPYs, selectedVaultId]);
 
-  // Update data1usd calculation to ensure it's accurate
-  const data1usd = userVaultBalance?.formattedUSD 
-    ? formatCurrency(Number(userVaultBalance.formattedUSD)) 
-    : formatCurrency(Number(userVaultBalance?.formatted || 0) * vaultTokenPrice);
+  // // Update data1usd calculation to ensure it's accurate
+  // const data1 = userVaultBalance?.formattedUSD 
+  //   ? formatCurrency(Number(userVaultBalance.formattedUSD)) 
+  //   : formatCurrency(Number(userVaultBalance?.formatted || 0) * vaultTokenPrice);
 
   useEffect(() => {
     // Update data1 whenever the vault balance changes, using the formatted string
-    setdata1(userVaultBalance?.formatted || "0");
-  }, [userVaultBalance]);
+    setdata1(userVaultBalance?.formattedUSD 
+      ? formatCurrency(Number(userVaultBalance.formattedUSD)) 
+      : formatCurrency(Number(userVaultBalance?.formatted || 0) * vaultTokenPrice));
+  }, [userVaultBalance, vaultTokenPrice]);
+
+  // Handle TVL loading state
+  useEffect(() => {
+    // Set loading state when vaultTotalAsset changes or is undefined
+    setIsTvlLoading(!vaultTotalAsset || !vaultTotalAsset.totalAssets);
+    
+    // If we've received vaultTotalAsset but totalAssets is 0 or missing, retry after 3 seconds
+    if (vaultTotalAsset && (!vaultTotalAsset.totalAssets || Number(vaultTotalAsset.totalAssets) === 0)) {
+      const retryTimer = setTimeout(() => {
+        // This will trigger another data fetch cycle through the parent component
+        if (transactionCompleted !== undefined) {
+          setIsTvlLoading(true);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(retryTimer);
+    }
+  }, [vaultTotalAsset, transactionCompleted]);
+
+  // Format TVL value with proper handling of loading and empty states
+  const formattedTVL = useMemo(() => {
+    if (isTvlLoading) {
+      return "Loading...";
+    }
+    console.log("vaultTotalAsset", vaultTotalAsset);
+    console.log("vaultTotalAsset.totalAssets", vaultTotalAsset?.totalAssets);
+    if (!vaultTotalAsset || !vaultTotalAsset.totalAssets) {
+      return "0";
+    }
+    
+    return formatCurrency(Number(vaultTotalAsset.totalAssets));
+  }, [vaultTotalAsset, isTvlLoading]);
 
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
@@ -124,7 +158,9 @@ export default function VaultHeader({
           </div>
         </div>
       </div>
-      <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
+      {/* I'm currently commenting out the large card stats and using the small card stat instead for a custom design but later I'll refactor the large card stats for our new design that's why I'm not changing anything in the large card stats */}
+      {/* Key Metrics in Large Card Stat */}
+      {/* <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
         <div className="grid grid-cols-1 sm:grid-cols-3 md:pr-10 gap-4 md:gap-20">
           <LargeCardStat
             id="deposits"
@@ -167,7 +203,8 @@ export default function VaultHeader({
             tooltip="APY for the last 7 days"
           />
         </div>
-      </div>
+      </div> */}
+      {/* Key Metrics in Small Card Stat */}
       <div className="mt-8">
         <h2 className="text-xl font-bold text-white mb-4">Key Metrics</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -204,16 +241,49 @@ export default function VaultHeader({
                 }
               />
             </div>
-            <p className="text-white text-xl font-bold mt-1">${vaultTotalAsset?.totalAssets ? formatCurrency(Number(vaultTotalAsset.totalAssets)) : "0"}</p>
+            <p className="text-white text-xl font-bold mt-1">
+              {isTvlLoading ? (
+                <span className="inline-block animate-pulse">Loading...</span>
+              ) : (
+                `$${formattedTVL}`
+              )}
+            </p>
           </div>
           
           <div className="bg-customNeutral300 py-4 px-5 rounded-lg border border-customNeutral100">
-            <p className="text-gray-400 text-sm">Your Vault Deposits</p>
-            <p className="text-white text-xl font-bold mt-1">${data1usd}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-gray-400 text-sm">Your Vault Deposits</p>
+              <button id="deposits-info" className="group">
+                <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+              </button>
+              <ResponsiveTooltip
+                id="deposits-info"
+                content={
+                  <p className="w-60">
+                    Shows how much you&apos;ve deposited into this vault (in USD), including all earnings to date.
+                  </p>
+                }
+              />
+            </div>
+            <p className="text-white text-xl font-bold mt-1">${data1}</p>
           </div>
           
           <div className="bg-customNeutral300 py-4 px-5 rounded-lg border border-customNeutral100">
+           
+          <div className="flex items-center gap-2">
             <p className="text-gray-400 text-sm">Your Wallet</p>
+            <button id="wallet-info" className="group">
+                <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+              </button>
+              <ResponsiveTooltip
+                id="wallet-info"
+                content={
+                  <p className="w-60">
+                    This is the total amount of {symbol} in your connected wallet, available for deposit.
+                  </p>
+                }
+              />
+            </div>
             <p className="text-white text-xl font-bold mt-1">
               {formattedWalletBalance} {symbol}
             </p>

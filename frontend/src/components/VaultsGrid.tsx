@@ -10,6 +10,7 @@ import {
 } from '@/types/types';
 import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
+import { useMultiChain } from '@/providers/MultiChainProvider';
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -64,6 +65,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const { activeChain, walletAddress } = useMultiChain();
   const itemsPerPage = 6;
   
   // Extract unique chains and protocols for filters
@@ -392,7 +394,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   </div> */}
 
                   {/* User Deposits */}
-                  {
+                  {walletAddress &&
                     userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
                     // Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && 
                     (
@@ -422,7 +424,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   >
                     <span className="relative z-2">Deposit</span>
                   </button>
-                  {
+                  {walletAddress &&
                     userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
                     Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && (
                       <button 
