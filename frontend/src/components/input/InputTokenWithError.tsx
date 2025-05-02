@@ -13,12 +13,12 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
 import TokenIcon from "@/components/common/TokenIcon";
 import PendingDots from "@/components/PendingDots";
-import { ConversionOutput } from "@/components/VaultInputs";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "thirdweb";
 import { formatTokenBalance } from "@/utils/utils";
+import { ConversionOutput } from "@/components/VaultInputs";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;

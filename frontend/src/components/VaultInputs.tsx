@@ -121,17 +121,6 @@ export default function VaultInputs({
     }
   }, [tabParam, searchParams]);
 
-  // // Check if user has balance for withdrawal if tab=withdraw
-  // useEffect(() => {
-  //   // Only redirect if we're explicitly on withdraw tab AND there's no balance
-  //   if (tabParam === 'withdraw' && 
-  //       userVaultBalance !== undefined && 
-  //       Number(userVaultBalance) === 0) {
-  //     // If no balance for withdrawal, redirect to deposit tab
-  //     router.push(`${pathname}?tab=deposit`);
-  //   }
-  // }, [tabParam, userVaultBalance, pathname, router]);
-
   const [steps, setSteps] = useState<Action[]>([]);
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
@@ -183,27 +172,66 @@ export default function VaultInputs({
     };
   }, [vaultData.id, vaultData.inputToken.decimals, vaultData.symbol]);
 
+  // Get token balance from hook
+  const { balance: tokenBalance, fetchBalance } = useMultichainTokenBalance(inputToken);
+
+  // Track the last vault ID to reset token selection when changing vaults
+  const lastVaultIdRef = useRef<string | null>(null);
+
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
+    const vaultId = vaultData.id as string;
+    const isNewVault = vaultId !== lastVaultIdRef.current;
+    
+    // Force token selection reset when vault changes
+    if (isNewVault) {
+      console.log("VaultInputs: New vault detected, resetting token selection");
+      // Reset input field data
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+    }
+    
     if (activeChain?.id === 7001 || activeChain?.id === 7000) {
       // If on ZetaChain testnet, set inputToken to the vault token
       setInputToken(vaultData.inputToken);
-    } else {
+      console.log("VaultInputs: Setting input token to vault token on ZetaChain:", vaultData.inputToken.symbol);
+    } else if (activeChain) {
+      // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
+      const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0].split(' ')[0];
+      
+      // Check if vault token is a native token
+      const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+      
       // On other chains, use APPROVED_TOKENS to set available tokens
-      setInputToken(
-        determineVaultTokenFromApprovedTokens(
-          activeChain?.id as number,
-          vaultData.inputToken
-        )
-      ); // Set to the first approved token as a default
+      const determinedToken = determineVaultTokenFromApprovedTokens(
+        activeChain.id as number,
+        vaultData.inputToken
+      );
+      
+      console.log(`VaultInputs: Determined token for chain ${activeChain.id}: ${determinedToken?.symbol} (vault token is ${isNativeVaultToken ? 'native' : 'non-native'})`);
+      setInputToken(determinedToken);
+      
+      // Ensure parent components know about the token selection
+      if (determinedToken && onTokenSelect) {
+        onTokenSelect(determinedToken);
+      }
     }
 
+    // Update the last vault ID reference
+    lastVaultIdRef.current = vaultId;
     setAllowInput(true);
-  }, [activeChain, vaultData]);
+  }, [activeChain?.id, vaultData.id, vaultData.inputToken, onTokenSelect]);
 
-  // Update inputTokenBalance state when useTokenBalance returns a new value
-  const { balance: tokenBalance, fetchBalance } =
-    useMultichainTokenBalance(inputToken);
+  // Force refresh token balance when token or chain changes
+  useEffect(() => {
+    if (inputToken && activeChain) {
+      console.log("VaultInputs: Refreshing balance for", inputToken.symbol, "on chain", activeChain.id);
+      fetchBalance();
+      // Reset input field when token changes
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+    }
+  }, [inputToken?.address, activeChain?.id, fetchBalance]);
 
   // Reset token when chain changes to prevent cross-chain token errors
   useEffect(() => {
@@ -295,17 +323,9 @@ export default function VaultInputs({
       setDisplayValue("");
     }
 
-    // If the selected token is the vault token but from a different chain,
-    // we should still use it directly without trying to find an equivalent
-    if (selectedToken.address === vaultData.inputToken.address) {
-      console.log("Selected vault token directly");
-      setInputToken(selectedToken);
-      setAllowInput(true);
-    } else {
-      // Otherwise, use the token as selected
-      setInputToken(selectedToken);
-      setAllowInput(true);
-    }
+    // Set the selected token regardless of type (native, stablecoin, etc.)
+    setInputToken(selectedToken);
+    setAllowInput(true);
 
     // Notify parent component about token selection
     if (onTokenSelect) {
@@ -769,6 +789,49 @@ export default function VaultInputs({
     };
   }, [inputBalance]);
 
+  // Watch for slippage changes and recalculate output amount if input exists
+  const currentSlippage = getCurrentSlippage();
+  useEffect(() => {
+    // Only recalculate if we already have an input value
+    if (
+      debouncedInputBalance.formatted && 
+      Number(debouncedInputBalance.formatted) > 0
+    ) {
+      setLoadingOutputToken(true);
+      if (isDeposit) {
+        getDepositOutputAmount(debouncedInputBalance.value);
+      } else {
+        getWithdrawOutputAmount(debouncedInputBalance.value);
+      }
+    }
+  }, [currentSlippage, debouncedInputBalance, isDeposit, getDepositOutputAmount, getWithdrawOutputAmount]);
+
+  // Add event listener for slippage changes
+  useEffect(() => {
+    // Handler function to recalculate when slippage changes
+    const handleSlippageChange = () => {
+      if (
+        debouncedInputBalance.formatted && 
+        Number(debouncedInputBalance.formatted) > 0
+      ) {
+        setLoadingOutputToken(true);
+        if (isDeposit) {
+          getDepositOutputAmount(debouncedInputBalance.value);
+        } else {
+          getWithdrawOutputAmount(debouncedInputBalance.value);
+        }
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('slippageChanged', handleSlippageChange);
+    
+    // Clean up the event listener when component unmounts
+    return () => {
+      window.removeEventListener('slippageChanged', handleSlippageChange);
+    };
+  }, [debouncedInputBalance, isDeposit, getDepositOutputAmount, getWithdrawOutputAmount]);
+
   useEffect(() => {
     if (
       !debouncedInputBalance.formatted ||
@@ -789,6 +852,13 @@ export default function VaultInputs({
     handleTokenSelect(token);
   };
 
+  // Create an adapter function for InputTokenWithError in Withdraw mode
+  const handleWithdrawTokenSelect = (token: Token) => {
+    // In withdraw mode, use the same token selection logic as deposit
+    // to ensure consistent behavior
+    handleTokenSelect(token);
+  };
+
   // Reset form state when transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
@@ -806,19 +876,6 @@ export default function VaultInputs({
       }, 100);
     }
   }, [transactionCompleted, setTransactionCompleted, setInputBalance, setDisplayValue, setStep, setSteps]);
-
-  // Create an adapter function for InputTokenWithError in Withdraw mode
-  const handleWithdrawTokenSelect = (token: Token) => {
-    // In withdraw mode, we still want to update the input token
-    // This ensures proper token selection in both modes
-    console.log("Selected withdraw token:", token);
-    setInputToken(token);
-    
-    // Notify parent component about token selection
-    if (onTokenSelect) {
-      onTokenSelect(token);
-    }
-  };
 
   // Handle tab selection from TabSelector
   const handleTabChange = (tab: string) => {
@@ -874,7 +931,7 @@ export default function VaultInputs({
       />
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
-        onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
+        onSelectToken={isDeposit ? handleDepositTokenSelect : handleWithdrawTokenSelect}
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={handleMaxClick}
@@ -911,7 +968,7 @@ export default function VaultInputs({
       </div>
       <InputTokenWithError
         captionText={"Output amount"}
-        onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
+        onSelectToken={isDeposit ? handleDepositTokenSelect : handleWithdrawTokenSelect}
         allowInput={allowInput}
         vaultData={vaultData}
         onMaxClick={() => {}}
@@ -1060,24 +1117,31 @@ export default function VaultInputs({
         </div>
       </div>
 
+      {/* Only show InteractionContainer if the deposit is valid or if it's a withdrawal */}
       {inputToken && !loadingOutputToken && (
-        <InteractionContainer
-          step={step}
-          setStep={setStep}
-          action={action}
-          setAction={setAction}
-          _inputToken={inputToken}
-          _inputBalance={inputBalance}
-          vaultData={vaultData}
-          setTransactionCompleted={setTransactionCompleted}
-          activeChain={activeChain as Chain}
-          _action={steps[0]}
-          actions={steps}
-          setInputBalance={setInputBalance}
-          errorMessage={errorMessage || outputBoxErrorMessage || ""}
-          isDeposit={isDeposit}
-          refreshBalance={fetchBalance}
-        />
+        !(isDeposit && 
+          !vaultData.depositFeePaidFromGasTank && 
+          conversionOutput.gasFeeInVaultAsset && 
+          debouncedInputBalance.value > 0n &&
+          debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)) && (
+            <InteractionContainer
+              step={step}
+              setStep={setStep}
+              action={action}
+              setAction={setAction}
+              _inputToken={inputToken}
+              _inputBalance={inputBalance}
+              vaultData={vaultData}
+              setTransactionCompleted={setTransactionCompleted}
+              activeChain={activeChain as Chain}
+              _action={steps[0]}
+              actions={steps}
+              setInputBalance={setInputBalance}
+              errorMessage={errorMessage || outputBoxErrorMessage || ""}
+              isDeposit={isDeposit}
+              refreshBalance={fetchBalance}
+            />
+          )
       )}
     </>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { VaultData, VaultTotalAssets, VaultAPY, Token, Balance } from "@/types/types";
 import Image from "next/image";
 import {
@@ -39,26 +39,58 @@ export default function VaultHeader({
   const [tvlValue, setTvlValue] = useState<string>("0");
   const [depositAmount, setDepositAmount] = useState<string>("0");
   
+  // Track the last vault ID to detect vault changes
+  const lastVaultIdRef = useRef<string | null>(null);
+  
   // Determine input token based on user selection or active chain
   useEffect(() => {
+    const vaultId = vaultData.id as string;
+    const isNewVault = vaultId !== lastVaultIdRef.current;
+    
+    // Always log vault changes
+    if (isNewVault) {
+      console.log("VaultHeader: New vault detected:", vaultId);
+    }
+    
+    // Extract base symbol from vault token
+    const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0].split(' ')[0];
+    
+    // Check if vault token is a native token
+    const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+    
+    // Ensure we always update the input token when any of these dependencies change
     if (selectedToken) {
       // If there's a user-selected token, use it
+      console.log("VaultHeader: Using user-selected token:", selectedToken.symbol);
       setInputToken(selectedToken);
     } else if (activeChain?.id === 7000 || activeChain?.id === 7001) {
       // Fallback: If on ZetaChain, use vault input token
+      console.log("VaultHeader: Using vault input token on ZetaChain:", vaultData.inputToken.symbol);
       setInputToken(vaultData.inputToken);
-    } else {
+    } else if (activeChain) {
       // Fallback: For other chains, determine the appropriate token
-      setInputToken(
-        determineVaultTokenFromApprovedTokens(
-          activeChain?.id as number,
-          vaultData.inputToken
-        )
+      const determinedToken = determineVaultTokenFromApprovedTokens(
+        activeChain.id as number,
+        vaultData.inputToken
       );
+      console.log(`VaultHeader: Determined token for chain ${activeChain.id}: ${determinedToken?.symbol} (vault token is ${isNativeVaultToken ? 'native' : 'non-native'})`);
+      setInputToken(determinedToken);
     }
-  }, [activeChain, vaultData, selectedToken]);
+    
+    // Update the last vault ID reference
+    lastVaultIdRef.current = vaultId;
+  }, [activeChain, vaultData.id, vaultData.inputToken, selectedToken]);
 
-  const { balance: walletTokenBalance } = useMultichainTokenBalance(inputToken);
+  // Force wallet balance refresh when chain or token changes
+  const { balance: walletTokenBalance, fetchBalance } = useMultichainTokenBalance(inputToken);
+  
+  useEffect(() => {
+    // Refresh the balance when network or token changes
+    if (inputToken && activeChain) {
+      console.log("VaultHeader: Refreshing balance for", inputToken.symbol, "on chain", activeChain.id);
+      fetchBalance();
+    }
+  }, [activeChain?.id, inputToken?.address, fetchBalance]);
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);

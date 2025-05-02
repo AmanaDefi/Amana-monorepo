@@ -43,6 +43,19 @@ import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useInboundToCctxData } from "@/hooks/useInboundToCctxData";
 
+// Define ConversionOutput type here
+type ConversionOutput = {
+  slippageActualValue: number | null;
+  finalConvertedAmountInUSDFormatted: string;
+  outputAmountFormatted: string;
+  outputAmountInUSDFormatted: string;
+  gasFeeInVaultAsset?: string;
+  gasFeeInUSD?: string;
+  gasFeeInETH?: string;
+  netDepositToVaultUSD?: string;
+  inputAmountInUSDFormatted?: string;
+};
+
 const handleDepositTransaction = async (
   vaultData: VaultData,
   inputBalance: Balance,
@@ -190,6 +203,7 @@ export default function InteractionContainer({
   errorMessage,
   isDeposit,
   refreshBalance,
+  conversionOutput,
 }: {
   step: number;
   setStep: Function;
@@ -206,6 +220,7 @@ export default function InteractionContainer({
   errorMessage: string;
   isDeposit: boolean;
   refreshBalance: Function;
+  conversionOutput?: ConversionOutput;
 }): JSX.Element {
   const [label, setLabel] = useState("");
   const [disabled, setDisabled] = useState(true);
@@ -675,6 +690,8 @@ export default function InteractionContainer({
       console.log("New withdrawalReceiver events: ", newEvents);
       for (let i = 0; i < newEvents.length; i++) {
         const last_event = newEvents[i];
+        
+        // Handle FundsReturned on deposit
         if (
           last_event.eventName == "FundsReturned" &&
           action == Action.CrossChainInvestFailed
@@ -702,7 +719,10 @@ export default function InteractionContainer({
             setStep(nextStep);
             return;
           }
-        } else if (
+        }
+        
+        // Handle FundsReturned on withdraw
+        if (
           last_event.eventName == "FundsReturned" &&
           action == Action.ReturnFundsToUserSent
         ) {
@@ -727,7 +747,10 @@ export default function InteractionContainer({
             setStep(nextStep);
             return;
           }
-        } else if (
+        }
+        
+        // Handle CrossChainDepositFailed
+        if (
           last_event.eventName == "CrossChainDepositFailed" &&
           action == Action.depositConfirmed
         ) {
@@ -754,7 +777,10 @@ export default function InteractionContainer({
             setStep(nextStep);
             return;
           }
-        } else if (
+        }
+        
+        // Handle CrossChainWithdrawFailed
+        if (
           last_event.eventName == "CrossChainWithdrawFailed" &&
           action == Action.withdrawconfirmed
         ) {
@@ -860,6 +886,7 @@ export default function InteractionContainer({
         lastEventTxHash={lastEventTxHash}
         setLastEventTxHash={setLastEventTxHash}
         refreshBalance={refreshBalance}
+        conversionOutput={conversionOutput}
       />
     </div>
   );
@@ -897,6 +924,7 @@ function Interaction({
   lastEventTxHash,
   setLastEventTxHash,
   refreshBalance,
+  conversionOutput,
 }: {
   setStep: Function;
   setAction: Function;
@@ -936,6 +964,7 @@ function Interaction({
   lastEventTxHash: string;
   setLastEventTxHash: (data: string) => void;
   refreshBalance: Function;
+  conversionOutput?: ConversionOutput;
 }): JSX.Element {
   const activeAccount = useActiveAccount();
   const walletContext = useWallet();
@@ -1445,6 +1474,17 @@ function Interaction({
     refreshBalance();
   }
 
+  // Helper function to check if deposit amount is too low to cover gas fee
+  const isDepositTooLowForGas = () => {
+    return (
+      action === Action.deposit &&
+      !vaultData.depositFeePaidFromGasTank &&
+      inputBalance.value > 0n &&
+      conversionOutput?.gasFeeInVaultAsset &&
+      inputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)
+    );
+  };
+
   return (
     <>
       {((Number(inputBalance.formatted) > 0 && actions.length) ||
@@ -1533,11 +1573,14 @@ function Interaction({
             {finishedTransaction ? (
               <MainActionButton label="Done" handleClick={handleDone} />
             ) : (
-              <MainActionButton
-                disabled={isTransactionProcessing}
-                label={label}
-                handleClick={handleMainAction}
-              />
+              /* Hide deposit button when the amount is too low to cover gas fee */
+              !isDepositTooLowForGas() && (
+                <MainActionButton
+                  disabled={isTransactionProcessing}
+                  label={label}
+                  handleClick={handleMainAction}
+                />
+              )
             )}
           </>
         )}

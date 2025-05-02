@@ -6,15 +6,23 @@ import ResponsiveTooltip from "@/components/common/Tooltip";
 import {useSlippage} from "@/hooks/hooks";
 import {EMPTY_BALANCE} from "@/utils/helpers";
 
+// Create a custom event for slippage changes
+export const triggerSlippageChange = () => {
+    const event = new Event('slippageChanged');
+    window.dispatchEvent(event);
+};
+
 export default function SlippageSettingsModal({setInputBalance} : { setInputBalance: Function }) {
     const { slippageValue, isAuto, setSlippage, toggleAuto } = useSlippage();
     const [openSlippageModal, setOpenSlippageModal] = useState(false);
     const [inputValue, setInputValue] = useState(slippageValue?.toString());
 
+    // Update the input value when slippage value changes
     useEffect(() => {
         setInputValue(slippageValue?.toString());
-        setInputBalance(EMPTY_BALANCE);
-    }, [setInputBalance, slippageValue]);
+        // Instead of resetting input to empty, trigger the recalculation
+        triggerSlippageChange();
+    }, [slippageValue]);
 
     const handleInputChange = (value: string) => {
         if (value === '') {
@@ -51,6 +59,15 @@ export default function SlippageSettingsModal({setInputBalance} : { setInputBala
         }
     };
 
+    // Handle toggling between Auto and Manual slippage
+    const handleToggleAuto = () => {
+        toggleAuto();
+        // Trigger recalculation after auto is toggled
+        setTimeout(() => {
+            triggerSlippageChange();
+        }, 0);
+    };
+
     return (
         <>
             <button onClick={() => setOpenSlippageModal(!openSlippageModal)} className='group'>
@@ -74,8 +91,9 @@ export default function SlippageSettingsModal({setInputBalance} : { setInputBala
                         />
                     </div>
                     <div className='rounded-5xl border border-customGray600 px-3 py-1.5 flex md:items-center justify-between'>
-                        <button onClick={toggleAuto}
-                                className={`group rounded-5xl px-4 py-1 bg-cyan-300/10 flex-center border border-transparent [&.selected]:bg-java-600 [&.selected]:border-java-600 transition-colors ${isAuto ? 'selected' : ''}`}
+                        <button 
+                            onClick={handleToggleAuto}
+                            className={`group rounded-5xl px-4 py-1 bg-cyan-300/10 flex-center border border-transparent [&.selected]:bg-java-600 [&.selected]:border-java-600 transition-colors ${isAuto ? 'selected' : ''}`}
                         >
                             <span className='text-white text-sm group-[.selected]:text-white font-normal transition-colors'>Auto</span>
                         </button>
