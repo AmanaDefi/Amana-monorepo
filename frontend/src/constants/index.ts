@@ -463,13 +463,13 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       isNative: false
     },
     protocol: {
-      name: "Curve",
+      name: "Convex",
       strategyAddress: "0x6faC704cdfF7D3AbE3a6671FAe7f6Ade296c516b",
       rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
       network: "Ethereum",
       chainId: 1,
       netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-      imgURL: "/curve.png",
+      imgURL: "/convex.png",
       des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
     },
   },

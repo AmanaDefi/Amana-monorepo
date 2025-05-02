@@ -63,13 +63,6 @@ export const useUpdateVaultBalanceAndTotal = (
               const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
               const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
 
-              console.log({
-                vaultId: vault?.id || "unknown",
-                balance,
-                totalAssets: totalAssetsStr,
-                totalAssetsinToken: totalAssetsinTokenStr,
-              });
-
               return {
                 vaultId: vault?.id || "unknown",
                 balance,
@@ -172,13 +165,11 @@ export const useUpdateAPYs = (
           vaults.map(async (vault) => {
             try {
               const strategyChain = defineChain(vault.protocol.chainId);
-              console.log("strategyChain", strategyChain)
               const strategyContract = getContract({
                 client,
                 chain: strategyChain,
                 address: vault.protocol.strategyAddress,
               });
-              console.log("strategyContract", strategyContract)
               const receiptTokenAddress = await readContract({
                 contract: strategyContract,
                 method: "function receiptToken() view returns (address)",
@@ -191,9 +182,7 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
-                console.log("Fetching Compound Rewards APY")
                 RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
-                console.log("RewardsAPY", RewardsAPY)
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
                 // TO DO This only works for Base right now - it's hardcoded
@@ -208,7 +197,7 @@ export const useUpdateAPYs = (
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
-              } else if (vault.protocol.name === "Curve") {
+              } else if (vault.protocol.name === "Convex") {
                 // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
                   if (strategyChain.id === 1) {
@@ -219,7 +208,6 @@ export const useUpdateAPYs = (
                 } else {
                   console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
                 }
-                console.log("RewardsAPY", RewardsAPY)
                 APY7d = RewardsAPY;
               }
 

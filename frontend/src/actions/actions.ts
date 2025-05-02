@@ -440,6 +440,7 @@ export async function calculateConvexArbitrumRewardsAPY(
       : lpPriceInInput;
 
     const crvApy = (Number(annualCrvPerToken) / 1e20) * crvTokenPrice / lpPriceInUSD;
+    console.log("CRV APY:", crvApy);
     return crvApy;
   } catch (err) {
     console.error("CRV APY calculation failed:", err);
@@ -634,8 +635,6 @@ export async function calculateCompoundRewardsAPY(
   // Convert APR to APY using continuous compounding
   const rewardsAPY = Math.exp(apr) - 1;
 
-  console.log("APR:", apr);
-  console.log("APY:", rewardsAPY);
   return Number(0.02); // TODO replace with proper value
 }
 
@@ -780,7 +779,6 @@ export const Approvedeposit = async (
 };
 
 const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transactionAmount: bigint, activeChain: Chain) => {
-  console.log("getMinSharesOut");
   const inputTokenAddress = isZetachain(activeChain.id) ? inputToken?.address : inputToken?.ZRC20equivalent;
   let assetsConversionAmount: bigint = transactionAmount;
   if (inputTokenAddress !== vaultData.inputToken.address) {
@@ -797,15 +795,11 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
     chain: strategyChain,
     address: vaultData.protocol.strategyAddress,
   });
-  console.log("About to make call to contract");
-  console.log("assetsConversionAmount", assetsConversionAmount);
-  console.log("assetsConversionAmount type", typeof assetsConversionAmount);
   const sharesOutForUnderlying = await readContract({
     contract,
     method: "function convertToShares(uint256) view returns (uint256)",
     params: [assetsConversionAmount],
   });
-  console.log("sharesOutForUnderlying", sharesOutForUnderlying);
   const minSharesOut = sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100) / BigInt(10000);
   return minSharesOut;
 };
@@ -853,27 +847,21 @@ const getMinAmountOut = async (
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Direct Deposit");
   const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
-  console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
     address: vaultData.id,
   });
-  console.log("transactionAmount", transactionAmount);
-  console.log("activeAccount", activeAccount);
-  console.log("activeChain", activeChain);
   const supplyTx = prepareContractCall({
     contract,
     method:
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
     params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
-  console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx,
   });
-  console.log("receipt", receipt);
   return receipt;
 };
 
@@ -1011,7 +999,6 @@ const executeCrossChainDeposit = async (
         revertOptions,
       ],
     });
-    console.log("depositTx", depositTx);
     try {
       const receipt = await sendAndConfirmTransaction({
         account: activeAccount,
