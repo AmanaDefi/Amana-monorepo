@@ -185,9 +185,12 @@ export default function InputTokenWithError({
                 ) : (
                   <div className="flex items-center">
                     {"$ " +
-                    (isOutput
-                      ? conversionOutput.outputAmountInUSDFormatted
-                      : formatCurrency(Number(props.value || 0) * selectedTokenPrice))}
+                      (isOutput
+                        ? conversionOutput.outputAmountInUSDFormatted
+                        : !isDeposit
+                          ? conversionOutput.finalConvertedAmountInUSDFormatted || "0"
+                          : formatCurrency(Number(props.value || 0) * selectedTokenPrice)
+                      )}
                     
                     {/* Add gas fee indicator for non-gas tank deposits */}
                     {isOutput && isDeposit && !vaultData.depositFeePaidFromGasTank && conversionOutput?.gasFeeInVaultAsset && Number(conversionOutput.gasFeeInVaultAsset) > 0 && (
