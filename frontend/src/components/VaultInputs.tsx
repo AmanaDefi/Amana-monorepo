@@ -726,7 +726,7 @@ export default function VaultInputs({
         !vaultData.depositFeePaidFromGasTank && 
         conversionOutput.gasFeeInVaultAsset && 
         debouncedInputBalance.value > 0n &&
-        debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset))
+        Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')))
     ) {
       setIsSlippageExceedingLimit(true);
       setOutputBoxErrorMessage(
@@ -765,7 +765,7 @@ export default function VaultInputs({
         !vaultData.depositFeePaidFromGasTank && 
         conversionOutput.gasFeeInVaultAsset && 
         debouncedInputBalance.value > 0n &&
-        debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset))
+        Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')))
     ) {
       setOutputBoxErrorMessage("Swap route not found");
     } else {
@@ -1006,7 +1006,7 @@ export default function VaultInputs({
            !vaultData.depositFeePaidFromGasTank && 
            conversionOutput.gasFeeInVaultAsset && 
            debouncedInputBalance.value > 0n &&
-           debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)) && (
+           Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ''))) && (
           <p className="text-white font-bold mb-2 text-start">
             Estimated slippage value:
             <span
@@ -1026,7 +1026,7 @@ export default function VaultInputs({
          conversionOutput.gasFeeInVaultAsset && 
          Number(conversionOutput.gasFeeInVaultAsset) > 0 && 
          debouncedInputBalance.value > 0n &&
-         debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset) && (
+         Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')) && (
           <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
             <p className="text-red-400 font-medium">
               Your deposit amount is too low to cover the deposit gas fee.
@@ -1132,7 +1132,7 @@ export default function VaultInputs({
           !vaultData.depositFeePaidFromGasTank && 
           conversionOutput.gasFeeInVaultAsset && 
           debouncedInputBalance.value > 0n &&
-          debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)) && (
+          Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ''))) && (
             <InteractionContainer
               step={step}
               setStep={setStep}
