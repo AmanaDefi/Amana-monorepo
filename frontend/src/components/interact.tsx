@@ -204,7 +204,6 @@ export default function InteractionContainer({
   isDeposit,
   refreshBalance,
   conversionOutput,
-  setIsProcessing,
 }: {
   step: number;
   setStep: Function;
@@ -222,7 +221,6 @@ export default function InteractionContainer({
   isDeposit: boolean;
   refreshBalance: Function;
   conversionOutput?: ConversionOutput;
-  setIsProcessing?: (isProcessing: boolean) => void;
 }): JSX.Element {
   const [label, setLabel] = useState("");
   const [disabled, setDisabled] = useState(true);
@@ -275,17 +273,14 @@ export default function InteractionContainer({
   function completeTransactionProcess(
     feedbackSnapshot: TransactionStepMessages
   ) {
-    // Set transaction as completed
+    setIsTransactionStarted(false);
+    if (finishedTransaction) return;
+    setIsTransactionProcessing(false);
     setLastTransactionStepFeedback(feedbackSnapshot);
+    setFinishedTransaction(true);
     setTransactionStepFeedback({});
 
-    // Clear UI states
-    setIsTransactionStarted(false);
-    setIsTransactionProcessing(false);
-    setFinishedTransaction(true);
     setTransactionCompleted(true);
-    
-    // Reset the input balance
     setInputBalance({
       value: 0,
       formatted: "0",
@@ -857,13 +852,6 @@ export default function InteractionContainer({
 
   // END
 
-  // Add a hook to report the processing state to the parent
-  useEffect(() => {
-    if (setIsProcessing) {
-      setIsProcessing(isTransactionProcessing);
-    }
-  }, [isTransactionProcessing, setIsProcessing]);
-
   return (
     <div className="w-full flex flex-col mt-5">
       <Interaction
@@ -1354,38 +1342,30 @@ function Interaction({
 
   async function interactionPostHook(success: boolean) {
     if (success) {
-      const nextStepIndex = step + 1;
-      
-      // Make sure the next step exists in the actions array
-      if (nextStepIndex < actions.length) {
-        if (actions[nextStepIndex] === Action.depositApproveConfirmed) {
-          setAction(actions[nextStepIndex]);
-          setStep(nextStepIndex);
-          
-          // Only check for nextStepIndex+1 if it exists
-          if (nextStepIndex + 1 < actions.length) {
-            setTimeout(() => {
-              setAction(actions[nextStepIndex + 1]);
-              setStep(nextStepIndex + 1);
-            }, 100);
-          }
-        }
-        
-        if (
-          action === Action.deposit &&
-          actions[nextStepIndex] === Action.depositConfirmed
-        ) {
-          setAction(actions[nextStepIndex]);
-          setStep(nextStepIndex);
-        }
-        
-        if (
-          action === Action.withdraw &&
-          actions[nextStepIndex] === Action.withdrawconfirmed
-        ) {
-          setAction(actions[nextStepIndex]);
-          setStep(nextStepIndex);
-        }
+      if (actions[step + 1] == Action.depositApproveConfirmed) {
+        const nextStep = step + 1;
+        setAction(actions[nextStep]);
+        setStep(nextStep);
+        setTimeout(() => {
+          setAction(actions[nextStep + 1]);
+          setStep(nextStep + 1);
+        }, 100);
+      }
+      if (
+        action == Action.deposit &&
+        actions[step + 1] == Action.depositConfirmed
+      ) {
+        const nextStep = step + 1;
+        setAction(actions[nextStep]);
+        setStep(nextStep);
+      }
+      if (
+        action == Action.withdraw &&
+        actions[step + 1] == Action.withdrawconfirmed
+      ) {
+        const nextStep = step + 1;
+        setAction(actions[nextStep]);
+        setStep(nextStep);
       }
     } else {
       if (action == Action.depositApprove) {
@@ -1420,13 +1400,9 @@ function Interaction({
 
   const handleMainAction = async () => {
     if (isTransactionProcessing) return;
-    
-    // Set transaction processing to true immediately to update parent component
     setIsTransactionProcessing(true);
-    
     if (action == Action.depositApprove) {
       updateTransactionStepFeedback(action, {
-        label: "Approve",
         status: TransactionStepStatus.processing,
         description: "Approval in progress",
       });
@@ -1435,7 +1411,6 @@ function Interaction({
       // This marks event listeners as enabled
       setIsTransactionStarted(true);
     }
-    
     if (action == Action.deposit) {
       let description;
       if (isZetachain(activeChain.id)) {
@@ -1453,7 +1428,6 @@ function Interaction({
         status: TransactionStepStatus.processing,
       });
     }
-    
     if (action == Action.withdraw) {
       let description;
       if (isZetachain(vaultData.protocol.chainId)) {
@@ -1472,34 +1446,21 @@ function Interaction({
       });
     }
 
-    try {
-      const success = await handleInteraction(
-        vaultData,
-        inputBalance,
-        inputToken,
-        activeAccount!,
-        walletContext,
-        setTransactionCompleted,
-        activeChain,
-        action,
-        setCrosschainInvestHash,
-        setcrossChainTxId,
-        setInputBalance,
-        setLastEventTxHash
-      )();
-      await interactionPostHook(!!success);
-    } catch (error) {
-      // If we have an error, make sure to properly reset the processing state
-      console.error("Transaction failed:", error);
-      
-      // Only reset processing state if no feedback is showing processing
-      if (!Object.values(transactionStepFeedback).some(
-        feedback => feedback && feedback.status === TransactionStepStatus.processing
-      )) {
-        setIsTransactionProcessing(false);
-        setIsTransactionStarted(false);
-      }
-    }
+    const success = await handleInteraction(
+      vaultData,
+      inputBalance,
+      inputToken,
+      activeAccount!,
+      walletContext,
+      setTransactionCompleted,
+      activeChain,
+      action,
+      setCrosschainInvestHash,
+      setcrossChainTxId,
+      setInputBalance,
+      setLastEventTxHash
+    )();
+    await interactionPostHook(!!success);
   };
 
   useEffect(() => {
@@ -1612,16 +1573,10 @@ function Interaction({
             {finishedTransaction ? (
               <MainActionButton label="Done" handleClick={handleDone} />
             ) : (
-              /* Hide the button when:
-                 1. Amount is too low to cover gas fee
-                 2. A transaction is processing (but only if it's for current action) 
-                 3. Waiting for wallet confirmation */
-              !isDepositTooLowForGas() && 
-              !isTransactionProcessing &&
-              !Object.values(transactionStepFeedback).some(feedback => 
-                feedback && feedback.status === TransactionStepStatus.processing
-              ) && (
+              /* Hide deposit button when the amount is too low to cover gas fee */
+              !isDepositTooLowForGas() && (
                 <MainActionButton
+                  disabled={isTransactionProcessing}
                   label={label}
                   handleClick={handleMainAction}
                 />

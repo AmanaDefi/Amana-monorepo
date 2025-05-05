@@ -125,7 +125,6 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
   const [performanceFee, setPerformanceFee] = useState<number>(0);
-  const [isTransactionProcessing, setIsTransactionProcessing] = useState<boolean>(false);
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -731,7 +730,7 @@ export default function VaultInputs({
     ) {
       setIsSlippageExceedingLimit(true);
       setOutputBoxErrorMessage(
-        `Slippage of ${actualSlippage}% exceeds your maximum slippage setting of ${userSlippage}%. Increase the slippage value (in transaction settings) to proceed with your Deposit`
+        `Slippage of ${actualSlippage}% exceeds your maximum slippage setting of ${userSlippage}%`
       );
     } else {
       setIsSlippageExceedingLimit(false);
@@ -749,15 +748,19 @@ export default function VaultInputs({
       return;
     }
 
+    // Hide swap-route-not-found during calculation
+    if (loadingOutputToken) {
+      setOutputBoxErrorMessage("");
+      return;
+    }
+
     checkSlippageExceedingLimit();
 
     // Only show "Swap route not found" error if there's a positive input amount,
     // output amount is 0, and we're not in the case of deposit being too low for gas fee
-    // AND we're not still loading the output token
     if (
       inputBalance.value > 0n &&
       Number(conversionOutput.outputAmountFormatted) == 0 &&
-      !loadingOutputToken &&
       !(isDeposit && 
         !vaultData.depositFeePaidFromGasTank && 
         conversionOutput.gasFeeInVaultAsset && 
@@ -765,6 +768,8 @@ export default function VaultInputs({
         debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset))
     ) {
       setOutputBoxErrorMessage("Swap route not found");
+    } else {
+      setOutputBoxErrorMessage("");
     }
   }, [conversionOutput, inputBalance, debouncedInputBalance, isDeposit, vaultData.depositFeePaidFromGasTank, conversionOutput.gasFeeInVaultAsset, loadingOutputToken]);
 
@@ -866,25 +871,18 @@ export default function VaultInputs({
   // Reset form state when transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
-      // Don't immediately reset steps and action state
-      // This allows the InteractionContainer to display the completion state
-
       // Reset input balance and clear input field
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
       
-      // Reset transaction status
-      setIsTransactionProcessing(false);
+      // Reset action steps
+      setStep(0);
+      setSteps([]);
       
-      // Delay resetting steps to allow "Done" button to be visible
+      // Reset transaction completed flag to allow new transactions
       setTimeout(() => {
-        // Reset action steps after showing completion state
-        setStep(0);
-        setSteps([]);
-        
-        // Reset transaction completed flag to allow new transactions
         setTransactionCompleted(false);
-      }, 2000); // Allow 2 seconds for user to see completion state
+      }, 100);
     }
   }, [transactionCompleted, setTransactionCompleted, setInputBalance, setDisplayValue, setStep, setSteps]);
 
@@ -1008,13 +1006,7 @@ export default function VaultInputs({
            !vaultData.depositFeePaidFromGasTank && 
            conversionOutput.gasFeeInVaultAsset && 
            debouncedInputBalance.value > 0n &&
-           ((inputToken?.symbol?.includes('USD') || 
-           inputToken?.symbol?.includes('DAI') || 
-           inputToken?.symbol?.includes('USDT') || 
-           inputToken?.symbol?.includes('USDC') || 
-           inputToken?.symbol?.includes('BUSD')) ? 
-           (Number(inputBalance.formattedUSD) <= Number(conversionOutput.gasFeeInUSD?.replace('$', ''))) :
-           (debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)))) && (
+           debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)) && (
           <p className="text-white font-bold mb-2 text-start">
             Estimated slippage value:
             <span
@@ -1034,16 +1026,7 @@ export default function VaultInputs({
          conversionOutput.gasFeeInVaultAsset && 
          Number(conversionOutput.gasFeeInVaultAsset) > 0 && 
          debouncedInputBalance.value > 0n &&
-         // For stablecoins, compare in USD value rather than token value directly
-         ((inputToken?.symbol?.includes('USD') || 
-           inputToken?.symbol?.includes('DAI') || 
-           inputToken?.symbol?.includes('USDT') || 
-           inputToken?.symbol?.includes('USDC') || 
-           inputToken?.symbol?.includes('BUSD')) ? 
-           // For stablecoins, compare USD values
-           (Number(inputBalance.formattedUSD) <= Number(conversionOutput.gasFeeInUSD?.replace('$', ''))) :
-           // For non-stablecoins use bigint comparison
-           (debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset))) && (
+         debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset) && (
           <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
             <p className="text-red-400 font-medium">
               Your deposit amount is too low to cover the deposit gas fee.
@@ -1143,22 +1126,13 @@ export default function VaultInputs({
         </div>
       </div>
 
-      {/* Always show InteractionContainer if we have valid input and conditions,
-          which will internally manage when to show/hide the action button */}
-      {inputToken && 
-       !loadingOutputToken && 
-       !transactionCompleted && (
+      {/* Only show InteractionContainer if the deposit is valid or if it's a withdrawal */}
+      {inputToken && !loadingOutputToken && (
         !(isDeposit && 
           !vaultData.depositFeePaidFromGasTank && 
           conversionOutput.gasFeeInVaultAsset && 
           debouncedInputBalance.value > 0n &&
-          ((inputToken?.symbol?.includes('USD') || 
-          inputToken?.symbol?.includes('DAI') || 
-          inputToken?.symbol?.includes('USDT') || 
-          inputToken?.symbol?.includes('USDC') || 
-          inputToken?.symbol?.includes('BUSD')) ? 
-          (Number(inputBalance.formattedUSD) <= Number(conversionOutput.gasFeeInUSD?.replace('$', ''))) :
-          (debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)))) && (
+          debouncedInputBalance.value <= BigInt(conversionOutput.gasFeeInVaultAsset)) && (
             <InteractionContainer
               step={step}
               setStep={setStep}
@@ -1175,8 +1149,6 @@ export default function VaultInputs({
               errorMessage={errorMessage || outputBoxErrorMessage || ""}
               isDeposit={isDeposit}
               refreshBalance={fetchBalance}
-              conversionOutput={conversionOutput}
-              setIsProcessing={setIsTransactionProcessing}
             />
           )
       )}
