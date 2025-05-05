@@ -866,21 +866,25 @@ export default function VaultInputs({
   // Reset form state when transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
+      // Don't immediately reset steps and action state
+      // This allows the InteractionContainer to display the completion state
+
       // Reset input balance and clear input field
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
       
-      // Reset action steps
-      setStep(0);
-      setSteps([]);
-      
       // Reset transaction status
       setIsTransactionProcessing(false);
       
-      // Reset transaction completed flag to allow new transactions
+      // Delay resetting steps to allow "Done" button to be visible
       setTimeout(() => {
+        // Reset action steps after showing completion state
+        setStep(0);
+        setSteps([]);
+        
+        // Reset transaction completed flag to allow new transactions
         setTransactionCompleted(false);
-      }, 100);
+      }, 2000); // Allow 2 seconds for user to see completion state
     }
   }, [transactionCompleted, setTransactionCompleted, setInputBalance, setDisplayValue, setStep, setSteps]);
 
