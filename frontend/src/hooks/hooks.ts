@@ -197,7 +197,7 @@ export const useUpdateAPYs = (
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
-              } else if (vault.protocol.name === "Convex") {
+              } else if (vault.protocol.name === "Curve-Convex") {
                 // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
                   if (strategyChain.id === 1) {
