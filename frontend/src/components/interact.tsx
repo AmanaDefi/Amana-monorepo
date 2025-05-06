@@ -42,6 +42,7 @@ import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useInboundToCctxData } from "@/hooks/useInboundToCctxData";
+import { decimals } from "thirdweb/extensions/erc20";
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -72,7 +73,8 @@ const handleDepositTransaction = async (
 
     mixpanel.track("Deposit Submitted", {
       vault: vaultData.id.toString(),
-      amount: depositAmount.toString(),
+      vaultSymbol: vaultData.symbol,
+      amount: (depositAmount/BigInt(inputToken.decimals)).toString(),
     });
 
     if (activeChain.id === CHAIN_ID.solana) {
@@ -97,6 +99,7 @@ const handleDepositTransaction = async (
   } catch (error: any) {
     if (!error.message.includes("User denied transaction")) {
       mixpanel.track("Deposit Failed", {
+        vaultSymbol: vaultData.symbol,
         vault: vaultData.id.toString(),
       });
     }
@@ -129,6 +132,7 @@ const handleWithdrawTransaction = async (
   try {
     const withdrawShareAmount = inputBalance.value;
     mixpanel.track("Withdraw Submitted", {
+      vaultSymbol: vaultData.symbol,
       vault: vaultData.id.toString(),
       amount: withdrawShareAmount.toString(),
     });
@@ -146,6 +150,7 @@ const handleWithdrawTransaction = async (
     );
     mixpanel.track("Withdraw Succeeded", {
       vault: vaultData.id.toString(),
+      vaultSymbol: vaultData.symbol,
       amount: withdrawShareAmount.toString(),
     });
 
@@ -170,6 +175,7 @@ const handleWithdrawTransaction = async (
   } catch (error) {
     mixpanel.track("Withdraw Failed", {
       vault: vaultData.id.toString(),
+      vaultSymbol: vaultData.symbol,
     });
   }
 };
