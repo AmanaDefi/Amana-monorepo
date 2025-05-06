@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
-import { CurveERC20Strategy, IERC20, ICurvePool, IERC20Custody } from "../typechain";
+import { CurveERC20Strategy, IERC20, ICurvePoolDynamic, IERC20Custody } from "../typechain";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../constants";
 import { simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, setTokenBalance } from "./utils";
@@ -47,7 +47,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
   let owner: Signer;
   let inputToken: IERC20;
   let gatewaySigner: Signer;
-  let curvePool: ICurvePool;
+  let curvePool: ICurvePoolDynamic;
   let gaugePool: IERC20;
   let stakingEnabled: boolean;
 
@@ -71,7 +71,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     [owner] = await ethers.getSigners();
 
     inputToken = await ethers.getContractAt("IERC20", INPUT_TOKEN_ADDRESS, gatewaySigner);
-    curvePool = await ethers.getContractAt("ICurvePool", RECEIPT_TOKEN_ADDRESS, gatewaySigner);
+    curvePool = await ethers.getContractAt("ICurvePoolDynamic", RECEIPT_TOKEN_ADDRESS, gatewaySigner);
     gaugePool = await ethers.getContractAt("IERC20", GAUGE_ADDRESS, gatewaySigner);
 
     const StrategyFactory = await ethers.getContractFactory("CurveERC20Strategy");
@@ -650,4 +650,39 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     const newStrategyBalance = await curvePool.balanceOf(newStrategy.address);
     expect(newStrategyBalance).to.be.closeTo(oldStrategyInitialBalance, ethers.utils.parseUnits("0.001", 18));
   });
+
+  it("should emit TotalUnderlyingAssetsSent with value 0", async () => {
+    const tx = await strategy.sendTotalUnderlyingAssetsToVault();
+    const receipt = await tx.wait();
+
+    const event = receipt.events?.find((e: any) => e.event === "TotalUnderlyingAssetsSent");
+
+    expect(event).to.not.be.undefined;
+    if (!event) {
+      throw new Error("Event not found");
+    }
+    if (!event.args) {
+      throw new Error("Event args not found");
+    }
+    expect(event.args[1]).to.equal(0); // totalUnderlyingAssets
+  });
+
+  // it("should emit TotalUnderlyingAssetsSent with value > 0 after deposit", async () => {
+  //   // Simulate a deposit that increases underlying assets
+  //   const depositAmount = ethers.utils.parseEther("10");
+  //   const mockToken = await ethers.getContractAt("IERC20", await strategy.asset());
+  //   await mockToken.transfer(strategy.address, depositAmount); // simulate underlying asset transfer
+
+  //   const totalAssets = await strategy.totalUnderlyingAssets();
+  //   expect(totalAssets).to.equal(depositAmount);
+
+  //   const tx = await strategy.sendTotalUnderlyingAssetsToVault();
+  //   const receipt = await tx.wait();
+
+  //   const event = receipt.events?.find((e: any) => e.event === "TotalUnderlyingAssetsSent");
+
+  //   expect(event).to.not.be.undefined;
+  //   expect(event.args[1]).to.equal(depositAmount);
+  // });
+
 });

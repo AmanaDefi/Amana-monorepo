@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { ZC_ETH_ETH_ADDRESS, ZC_USDT_POL_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_USDC_ARB_ADDRESS, ZC_ETH_ETH_ADDRESS, ZC_USDT_POL_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -27,91 +27,15 @@ export const tokens: Token[] = [
   },
 ]
 
-const OLD_VAULT_DATA: VaultData[] = [
-  {
-    id: "0xe1e40a368e11B0cE6B16745984c26b19AD9B8D31",
-    name: "USDT Lend Pool - Deposits Paused",
-    des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
-    symbol: "aPolUSDT",
-    imgURL: "/polygon_logo.png",
-    inputToken: {
-      symbol: "USDT.POL",
-      decimals: 6,
-      address: ZC_USDT_POL_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Compound",
-      strategyAddress: "0xfb8ae3096bbE8da1B910D193e029F3dFefa4A618",
-      gaugeAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
-      network: "Polygon",
-      chainId: 137,
-      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
-      imgURL: "/compound.png",
-      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
-    },
-  },
-  {
-    id: "0xcE6bF4B9C0BFEfdB2A030163683141224E2F1a84", // Aave USDT on BNB
-    name: "USDT Lend Pool V2 - Deposits Paused",
-    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
-    symbol: "aAaveUSDT",
-    imgURL: "/bnb_logo.png",
-    inputToken: {
-      symbol: "USDT.BNB",
-      decimals: 18,
-      address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x1aaA558F422dFA7BF0E643A1543959B2bf9Ba812",
-      network: "BNB",
-      chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-      imgURL: "/aave.png",
-      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
-    },
-  },
-  {
-    id: "0xb1d9b596799aC5fe6Ac7510392EC037B5Df04724", // Aave USDT on BNB
-    name: "USDT Lend Pool - Deposits paused",
-    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
-    symbol: "aAaveUSDT",
-    imgURL: "/bnb_logo.png",
-    inputToken: {
-      symbol: "USDT.BNB",
-      decimals: 18,
-      address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x0AebE2977E81Da0A241A2c7359f8727BB3618437",
-      network: "BNB",
-      chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-      imgURL: "/aave.png",
-      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
-    },
-  },
-];
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
     id: "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e", // Base ZeroLend USDC Vault
     name: "USDC Lend Pool",
-    des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters..",
+    type: "Lending Pool",
+    des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters.",
     symbol: "aZeroLendUSDC",
     imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
     inputToken: {
       symbol: "USDC.BASE",
       decimals: 6,
@@ -159,9 +83,11 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   {
     id: "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69",
     name: "USDC Lend Pool",
+    type: "Lending Pool",
     des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
     symbol: "aFluidUSDC",
     imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
     inputToken: {
       symbol: "USDC.BASE",
       decimals: 6,
@@ -181,8 +107,62 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
     },
   },
+  {
+    id: "0x622E956626Cc6aBa655E3d92a3629b04cB038E80",
+    name: "USDT Lend Pool",
+    type: "Lending Pool",
+    des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+    symbol: "aPolUSDT",
+    imgURL: "/polygon_logo.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDT.POL",
+      decimals: 6,
+      address: ZC_USDT_POL_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Compound",
+      strategyAddress: "0x5E1613bB9d1A8838eD72BE8471326B4C05102757",
+      rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+      network: "Polygon",
+      chainId: 137,
+      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
+      imgURL: "/compound.png",
+      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
+    },
+  },
 
-  // 
+  {
+    id: "0xe5fa0E4BA13D516908c5313b3375b7Ede24BFe7a", // Aave USDT on BNB
+    name: "USDT Lend Pool",
+    type: "Lending Pool",
+    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
+    symbol: "aAaveUSDT",
+    imgURL: "/bnb_logo.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDT.BNB",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x21e92Bc73c0215Dbb695fba5654C2331044DbBD7",
+      network: "BNB",
+      chainId: 56,
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      imgURL: "/aave.png",
+      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
+    },
+  },
 
   // {
   //   id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
@@ -190,6 +170,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
   //   symbol: "aAaveETH",
   //   imgURL: "/base.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "ETH.BASE",
   //     decimals: 18,
@@ -215,6 +196,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: " This vault invests POL into a simple strategy which deposits the funds as collateral into an Aave POL pool, which earns interest every block.",
   //   symbol: "aAavePOL",
   //   imgURL: "/polygon_logo.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "POL.POL",
   //     decimals: 18,
@@ -240,6 +222,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: " This vault invests USDC into a simple strategy which deposits the funds as collateral into a Euler USDC pool, which earns interest every block.",
   //   symbol: "aEulerUSDC",
   //   imgURL: "/base.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "USDC.BASE",
   //     decimals: 6,
@@ -265,6 +248,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: " This vault invests USDC into a strategy which deposits the funds into the Moonwell Flagship USDC vault.",
   //   symbol: "aMoonwellUSDC",
   //   imgURL: "/base.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "USDC.BASE",
   //     decimals: 6,
@@ -290,6 +274,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: " This vault invests ETH into a strategy which deposits the funds into the Moonwell Eth vault.",
   //   symbol: "aMoonwellEth",
   //   imgURL: "/base.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "ETH.BASE",
   //     decimals: 18,
@@ -315,6 +300,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
   //   symbol: "aMockUSDC",
   //   imgURL: "/ZetaChain.jpeg",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "USDC.ETH",
   //     decimals: 6,
@@ -359,6 +345,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: "This strategy deposits the USDC into Beefy, which in turn deposits it into Morpho and farms for more USDC. The earned USDC is then deposited back into the Morpho farm. The transaction cost required to do all this is socialized among the vault's users.",
   //   symbol: "aBeefyUSDC",
   //   imgURL: "/base.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "USDC.BASE",
   //     decimals: 6,
@@ -384,6 +371,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: "This strategy deposits USDT into a Venus USDT pool as collateral to earn interest. It benefits from BSC’s low fees but carries risks such as interest rate changes, liquidation, and protocol security.",
   //   symbol: "aVenusUSDT",
   //   imgURL: "/bnb_logo.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "USDT.BSC",
   //     decimals: 18,
@@ -409,6 +397,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: "This strategy deposits USDC into the Curve yUSD/USDC pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
   //   symbol: "aCurveUSDC",
   //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "USDC.ETH",
   //     decimals: 6,
@@ -421,7 +410,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   protocol: {
   //     name: "Curve",
   //     strategyAddress: "0xf6CDBA75c81E1aF9a04fCA0f57A0e49b9B277Ba3",
-  //     gaugeAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
+  //     rewardsContractAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
   //     network: "Ethereum",
   //     chainId: 1,
   //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
@@ -435,6 +424,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   des: "This strategy deposits ETH into the Curve uniETH/ETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
   //   symbol: "aCurveETH",
   //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: true,
   //   inputToken: {
   //     symbol: "ETH.ETH",
   //     decimals: 18,
@@ -447,7 +437,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   protocol: {
   //     name: "Curve",
   //     strategyAddress: "0x3E876f6Bfd132E50612a1d2958c560BF1631Dd56",
-  //     gaugeAddress: "0x55e5adb2cb00bfdb085440ca6a5ec628705b2e7f",
+  //     rewardsContractAddress: "0x55e5adb2cb00bfdb085440ca6a5ec628705b2e7f",
   //     network: "Ethereum",
   //     chainId: 1,
   //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
@@ -455,165 +445,222 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
   //   },
   // },
-  // {
-  //   id: "0x022F47Baf18990EF8C1A6fe7e9e9078B2F5D6015",
-  //   name: "uniEth/ETH Pool",
-  //   des: "This strategy deposits ETH into the Curve uniETH/ETH pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
-  //   symbol: "aCurveETH",
-  //   imgURL: "/ETH.png",
-  //   inputToken: {
-  //     symbol: "ETH.ETH",
-  //     decimals: 18,
-  //     address: ZC_ETH_ETH_ADDRESS,
-  //     imgURL: "/ETH.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Curve",
-  //     strategyAddress: "0xe7cE888ae7e0e427a935caC1b616A77ac84EEAE6",
-  //     gaugeAddress: "0x8B859fb47b6377a84B61D3891774De462560742C",
-  //     network: "Ethereum",
-  //     chainId: 1,
-  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-  //     imgURL: "/curve.png",
-  //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
-  //   },
-  // },
-];
-
-const TESTNET_VAULT_DATA: VaultData[] = [
   {
-    id: "0x237B655eB18823C78042Da4CB366BA8093efDe04", // Base Sepolia ETH Vault
-    name: "AaveV3 ETH",
-    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-    symbol: "aAaveETH",
-    imgURL: "/base.png",
+    id: "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE",
+    name: "msETH/WETH Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since msETH and WETH are pegged to the same underlying asset (ETH), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+    symbol: "aCurveETH",
+    imgURL: "/ETH.png",
+    depositFeePaidFromGasTank: false,
     inputToken: {
-      symbol: "ETH",
+      symbol: "ETH.ETH",
       decimals: 18,
-      address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+      address: ZC_ETH_ETH_ADDRESS,
       imgURL: "/ETH.png",
-      price: ethPrice,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x48326BdEa7CAF701cEee64f08faE899e90c110A1",
-      chainId: 84532,
-      network: "Base Sepolia",
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-      imgURL: "/aave.png",
-      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    },
-  },
-  {
-    id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Aave strategy on Eth Sepolia
-    name: "AaveV3 ETH",
-    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-    symbol: "aAaveETH",
-    imgURL: "/Ethsepolia.png",
-    inputToken: {
-      symbol: "sETH",
-      decimals: 18,
-      address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-      imgURL: "/ETH.png",
-      price: ethPrice,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aave",
-      strategyAddress: "0x1aea20C27c3b0f34172aC416419994d39512887A",
-      chainId: 11155111,
-      network: "Eth Sepolia",
-      netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
-      imgURL: "/aave.png",
-      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-    },
-  },
-
-  {
-    id: "0xf18635c0e127Ac010dd484ba2EA123D8bc58a7E7", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
-    name: "Mock USDC",
-    des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
-    symbol: "aMockUSDC",
-    imgURL: "/ZetaChain.jpeg",
-    inputToken: {
-      symbol: "USDC.SEPOLIA",
-      decimals: 6,
-      address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
-      imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false
     },
     protocol: {
-      name: "Mock",
-      strategyAddress: "0x1d0dBa968A26c1D8834B600EDAF9182E0A71FFe4",
-      network: "Zetachain Athens",
-      chainId: 7001,
-      netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
-      imgURL: "/aave.png",
-      des: "This is a mock strategy for testing purposes."
+      name: "Curve-Convex",
+      strategyAddress: "0x6faC704cdfF7D3AbE3a6671FAe7f6Ade296c516b",
+      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
     },
   },
   // {
-  //   id: "0x7a351114F9C2637da09f177b62A3f8736dfAa130", // Polygon Amoy POL Vault (POL is new name for MATIC)
-  //   name: "Mock POL",
-  //   des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
-  //   symbol: "aMockPOL",
-  //   imgURL: "/polygon_logo.png",
+  //   id: "0x5224a42F612064a4334b9A528C64D54eF593e3C1",
+  //   name: "eUSD/USDC Pool",
+  //   type: "Liquidity Pool",
+  //   des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+  //   symbol: "aConvexUsdcEth",
+  //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: false,
   //   inputToken: {
-  //     symbol: "MATIC.AMOY",
-  //     decimals: 18,
-  //     address: ZC_TEST_MATIC_AMOY_ADDRESS,
-  //     imgURL: "/polygon_logo.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Mock",
-  //     strategyAddress: "0x8AD0bD606B1820bb2a4e569EFC48501c5e0735E6",
-  //     chainId: 80002,
-  //     network: "Polygon Amoy",
-  //     netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
-  //     imgURL: "/polygon_logo.png",
-  //     des: "This is a mock strategy for testing purposes."
-  //   },
-  // },
-  // {
-  //   id: "0xc01f344A7eAd2D06A196D1b2aC93be78A16bD876", // BSC USDC Vault
-  //   name: "Mock USDC",
-  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
-  //   symbol: "aMockUSDC",
-  //   imgURL: "/bscnet.jpg",
-  //   inputToken: {
-  //     symbol: "USDC",
-  //     decimals: 18,
-  //     address: ZC_TEST_USDC_BSC_ADDRESS,
+  //     symbol: "USDC.ETH",
+  //     decimals: 6,
+  //     address: ZC_USDC_ETH_ADDRESS,
   //     imgURL: "/USDC.png",
   //     price: 1,
   //     balance: EMPTY_BALANCE,
   //     isNative: false
   //   },
   //   protocol: {
-  //     name: "Mock",
-  //     strategyAddress: "0x99aDf091C5d6ad042F763018C3e43D622a22Cc24",
-  //     chainId: 97,
-  //     network: "BSC Testnet",
-  //     netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
-  //     imgURL: "/bnb_logo.png",
-  //     des: "This is a mock strategy for testing purposes."
+  //     name: "Curve-Convex",
+  //     strategyAddress: "0x9acBD1c2386cd6661429BD5d7C86667258553AFC",
+  //     rewardsContractAddress: "0xdD2642EBD57A6e8BF9644040Ef15A39Ad568feC9",
+  //     network: "Ethereum",
+  //     chainId: 1,
+  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+  //     imgURL: "/curve.png",
+  //     des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
   //   },
   // },
+  {
+    id: "0x32fECdEf376E2aD74C53663BDE933116C09408f3",
+    name: "eUSD/USDC Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+    symbol: "aConvexUsdcArb",
+    imgURL: "/arbitrum-arb-logo.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDC.ARB",
+      decimals: 6,
+      address: ZC_USDC_ARB_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve-Convex",
+      strategyAddress: "0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
+      rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
+      network: "Arbitrum",
+      chainId: 42161,
+      netdes: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
+      imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+    },
+  },
+];
+
+const TESTNET_VAULT_DATA: VaultData[] = [
+  //   {
+  //     id: "0x237B655eB18823C78042Da4CB366BA8093efDe04", // Base Sepolia ETH Vault
+  //     name: "AaveV3 ETH",
+  //     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+  //     symbol: "aAaveETH",
+  //     imgURL: "/base.png",
+  //     inputToken: {
+  //       symbol: "ETH",
+  //       decimals: 18,
+  //       address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+  //       imgURL: "/ETH.png",
+  //       price: ethPrice,
+  //       balance: EMPTY_BALANCE,
+  //       isNative: false
+  //     },
+  //     protocol: {
+  //       name: "Aave",
+  //       strategyAddress: "0x48326BdEa7CAF701cEee64f08faE899e90c110A1",
+  //       chainId: 84532,
+  //       network: "Base Sepolia",
+  //       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //       imgURL: "/aave.png",
+  //       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //     },
+  //   },
+  //   {
+  //     id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Aave strategy on Eth Sepolia
+  //     name: "AaveV3 ETH",
+  //     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+  //     symbol: "aAaveETH",
+  //     imgURL: "/Ethsepolia.png",
+  //     inputToken: {
+  //       symbol: "sETH",
+  //       decimals: 18,
+  //       address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
+  //       imgURL: "/ETH.png",
+  //       price: ethPrice,
+  //       balance: EMPTY_BALANCE,
+  //       isNative: false
+  //     },
+  //     protocol: {
+  //       name: "Aave",
+  //       strategyAddress: "0x1aea20C27c3b0f34172aC416419994d39512887A",
+  //       chainId: 11155111,
+  //       network: "Eth Sepolia",
+  //       netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
+  //       imgURL: "/aave.png",
+  //       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //     },
+  //   },
+
+  //   {
+  //     id: "0xf18635c0e127Ac010dd484ba2EA123D8bc58a7E7", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+  //     name: "Mock USDC",
+  //     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+  //     symbol: "aMockUSDC",
+  //     imgURL: "/ZetaChain.jpeg",
+  //     inputToken: {
+  //       symbol: "USDC.SEPOLIA",
+  //       decimals: 6,
+  //       address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
+  //       imgURL: "/USDC.png",
+  //       price: 1,
+  //       balance: EMPTY_BALANCE,
+  //       isNative: false
+  //     },
+  //     protocol: {
+  //       name: "Mock",
+  //       strategyAddress: "0x1d0dBa968A26c1D8834B600EDAF9182E0A71FFe4",
+  //       network: "Zetachain Athens",
+  //       chainId: 7001,
+  //       netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+  //       imgURL: "/aave.png",
+  //       des: "This is a mock strategy for testing purposes."
+  //     },
+  //   },
+  //   // {
+  //   //   id: "0x7a351114F9C2637da09f177b62A3f8736dfAa130", // Polygon Amoy POL Vault (POL is new name for MATIC)
+  //   //   name: "Mock POL",
+  //   //   des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+  //   //   symbol: "aMockPOL",
+  //   //   imgURL: "/polygon_logo.png",
+  //   //   inputToken: {
+  //   //     symbol: "MATIC.AMOY",
+  //   //     decimals: 18,
+  //   //     address: ZC_TEST_MATIC_AMOY_ADDRESS,
+  //   //     imgURL: "/polygon_logo.png",
+  //   //     price: 1,
+  //   //     balance: EMPTY_BALANCE,
+  //   //     isNative: false
+  //   //   },
+  //   //   protocol: {
+  //   //     name: "Mock",
+  //   //     strategyAddress: "0x8AD0bD606B1820bb2a4e569EFC48501c5e0735E6",
+  //   //     chainId: 80002,
+  //   //     network: "Polygon Amoy",
+  //   //     netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
+  //   //     imgURL: "/polygon_logo.png",
+  //   //     des: "This is a mock strategy for testing purposes."
+  //   //   },
+  //   // },
+  //   // {
+  //   //   id: "0xc01f344A7eAd2D06A196D1b2aC93be78A16bD876", // BSC USDC Vault
+  //   //   name: "Mock USDC",
+  //   //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+  //   //   symbol: "aMockUSDC",
+  //   //   imgURL: "/bscnet.jpg",
+  //   //   inputToken: {
+  //   //     symbol: "USDC",
+  //   //     decimals: 18,
+  //   //     address: ZC_TEST_USDC_BSC_ADDRESS,
+  //   //     imgURL: "/USDC.png",
+  //   //     price: 1,
+  //   //     balance: EMPTY_BALANCE,
+  //   //     isNative: false
+  //   //   },
+  //   //   protocol: {
+  //   //     name: "Mock",
+  //   //     strategyAddress: "0x99aDf091C5d6ad042F763018C3e43D622a22Cc24",
+  //   //     chainId: 97,
+  //   //     network: "BSC Testnet",
+  //   //     netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
+  //   //     imgURL: "/bnb_logo.png",
+  //   //     des: "This is a mock strategy for testing purposes."
+  //   //   },
+  //   // },
 ];
 
 // Export the appropriate vault data based on DEPLOY_ENV
 export const VAULT_DATA = deployEnv === "testnet" ? TESTNET_VAULT_DATA : MAINNET_VAULT_DATA;
-export const DEPRECATED_VAULT_DATA = deployEnv === "testnet" ? TESTNET_VAULT_DATA : OLD_VAULT_DATA;
 
 export const USER_SETTINGS_LOCAL_STORAGE_KEY = 'user_settings';

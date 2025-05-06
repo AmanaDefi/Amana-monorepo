@@ -28,14 +28,16 @@ export interface Rate {
 export interface VaultData {
   id: string;
   name: string;
+  type: string;
   symbol: string;
   des?: string;
   imgURL?: string;
+  depositFeePaidFromGasTank: boolean;
   inputToken: Token;
   protocol: {
     name: string;
     strategyAddress: string;
-    gaugeAddress?: string;
+    rewardsContractAddress?: string;
     network: string;
     chainId: number;
     netdes?: string;
@@ -92,7 +94,7 @@ export interface Token {
   price: number;
   balance: Balance;
   isNative: boolean;
-  ZRC20equivalent?: Address;
+  ZRC20equivalent?: Token;
 }
 
 export interface TokenByAddress {

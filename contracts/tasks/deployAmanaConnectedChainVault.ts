@@ -18,6 +18,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const gasLimitWithdrawAndCall = args.gasLimitWithdrawAndCall;
   const gasLimitCall = args.gasLimitCall;
   const performanceFeeRate = args.performanceFeeRate ?? 1500;
+  const depositFeePaid = args.depositFeePaid === "true";
 
   if (!asset || !registry) {
     throw new Error("🚨 Asset and registry addresses are required.");
@@ -37,6 +38,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       performanceFeeRate,
       gasLimitWithdrawAndCall,
       gasLimitCall,
+      depositFeePaid
     ],
     {
       initializer: "initialize",
@@ -91,6 +93,7 @@ task("deploy-amana-connected-chain-vault", "Deploy the AmanaConnectedChainVault 
   .addParam("registry", "The address of the registry")
   .addParam("gasLimitWithdrawAndCall", "Gas limit for withdrawAndCall function")
   .addParam("gasLimitCall", "Gas limit for Call function")
+  .addParam("depositFeePaid", "Deposit fee paid from gas tank")
   .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)");
 
 export default {};

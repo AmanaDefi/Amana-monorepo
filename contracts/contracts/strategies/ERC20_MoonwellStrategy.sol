@@ -10,7 +10,6 @@ import "../interfaces/IPriceOracle.sol";
 import "../interfaces/IAerodromeRouter.sol";
 
 import "./ERC20StrategyParent.sol";
-import "hardhat/console.sol";
 
 contract ERC20_MoonwellStrategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -54,12 +53,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
 
     address constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
 
-    event RewardsHarvested(
-        uint256 wellClaimed,
-        uint256 morphoClaimed,
-        uint256 usdcReceived
-    );
-
     constructor(
         string memory _name,
         address _amanaVault,
@@ -82,15 +75,8 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
 
     function _swapTokenForInputToken(address token, uint256 amountIn) internal {
         if (amountIn == 0) return;
-        console.log("first got here");
         address targetAddress = address(this);
         uint16 deadline = uint16(block.timestamp + 60);
-        console.log("token", token);
-        console.log("amountIn", amountIn);
-        console.log("inputToken", address(inputToken));
-        console.log("slippageBps", slippageBps);
-        console.log("targetAddress", targetAddress);
-        console.log("deadline", deadline);
         swap(
             token,
             amountIn,
@@ -100,41 +86,12 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
             deadline,
             ""
         );
-        // bytes memory data = abi.encodeWithSignature(
-        //     "swap(address,uint256,address,uint16,address,uint16,bytes)",
-        //     token,
-        //     amountIn,
-        //     address(inputToken),
-        //     100,
-        //     targetAddress,
-        //     deadline,
-        //     "" // empty bytes param for future-proofing
-        // );
-        // console.log("about to delegate call");
-        // _delegateCall(swapHelperOnBase, data);
-    }
-
-    // Internal function for delegatecall
-    function _delegateCall(
-        address logicContract,
-        bytes memory data
-    ) internal returns (uint256) {
-        console.log("logic contract", logicContract);
-        (bool success, bytes memory result) = logicContract.delegatecall(data);
-        if (!success) {
-            console.logBytes(result); // Print the failure reason
-            revert(string(result)); // Revert with the error message
-        }
-        return abi.decode(result, (uint256));
     }
 
     function _swapAllRewards() internal {
         uint256 wellBalance = IERC20(WELL_TOKEN).balanceOf(address(this));
-        console.log("well balance", wellBalance);
         uint256 morphoBalance = IERC20(MORPHO_TOKEN).balanceOf(address(this));
-        console.log("morpho balance", morphoBalance);
         uint256 usdcBalance = IERC20(USDC_TOKEN).balanceOf(address(this));
-        console.log("usdc balance", usdcBalance);
         if (morphoBalance > 0)
             _swapTokenForInputToken(MORPHO_TOKEN, morphoBalance);
         if (wellBalance > 0) _swapTokenForInputToken(WELL_TOKEN, wellBalance);
@@ -160,7 +117,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        console.log("starting deposit");
         _swapAllRewards();
         uint256 totalDeposit = IERC20(inputToken).balanceOf(address(this));
         if (totalDeposit > 0) {
@@ -227,6 +183,9 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         _swapAndReinvest();
 
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
@@ -285,7 +244,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
             amount,
             slippage
         );
-        console.log("Minimum out: %d", minimumOut);
         IERC20(tokenIn).approve(AERODROME_ROUTER, amount);
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](
             1
@@ -307,7 +265,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
             );
 
         amountOut = amounts[1]; // Output amount after swap
-        console.log("swapped");
     }
 
     /**
@@ -325,7 +282,6 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
     ) internal view returns (uint256) {
         bytes32 inputPriceFeed = getPriceFeedId(inputToken);
         bytes32 outputPriceFeed = getPriceFeedId(outputToken);
-        console.log("got inside calcminout");
         require(
             inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
             "Invalid input token"
@@ -334,16 +290,13 @@ contract ERC20_MoonwellStrategy is ERC20StrategyParent {
             outputPriceFeed != bytes32(0) || isStablecoin(outputToken),
             "Invalid output token"
         );
-        console.log("2");
         // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
         uint256 inputPrice = isStablecoin(inputToken)
             ? 1e8
             : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
-        console.log("inputPrice");
         uint256 outputPrice = isStablecoin(outputToken)
             ? 1e8
             : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
-        console.log("3");
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
 
         // Get token decimals dynamically

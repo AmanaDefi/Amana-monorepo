@@ -1,8 +1,13 @@
-import React, { HTMLProps } from "react";
+import React, { HTMLProps, useMemo } from "react";
 import { Token, VaultData } from "@/types/types";
-import SelectToken from "@/components/input/SelectToken";
+import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
-import { formatCurrency, formatBalance, getOnlyTokenSymbol, isZetachain } from "@/utils/utils";
+import {
+  formatCurrency,
+  formatBalance,
+  getOnlyTokenSymbol,
+  isZetachain,
+} from "@/utils/utils";
 import { useState, useEffect } from "react";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
@@ -11,7 +16,9 @@ import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-import { useActiveWalletChain } from "thirdweb/react";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { Chain } from "thirdweb";
+import { formatTokenBalance } from "@/utils/utils";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -27,11 +34,10 @@ export type InputTokenWithErrorProps = {
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
   isDeposit: Boolean;
-  userVaultBalance?: string;
-  isOutput?: boolean
-  loadingOutputToken?: boolean,
-  conversionOutput: ConversionOutput
-}
+  isOutput?: boolean;
+  loadingOutputToken?: boolean;
+  conversionOutput: ConversionOutput;
+};
 
 export default function InputTokenWithError({
   tokenList,
@@ -47,7 +53,6 @@ export default function InputTokenWithError({
   inputMoreThanBalance,
   disabled = false,
   isDeposit,
-  userVaultBalance,
   isOutput,
   loadingOutputToken,
   conversionOutput,
@@ -70,77 +75,98 @@ export default function InputTokenWithError({
   disabled?: boolean;
   isDeposit: Boolean;
   userVaultBalance?: string;
-  isOutput?: boolean
-  loadingOutputToken?: boolean,
-  conversionOutput: ConversionOutput,
-  isSlippageExceedingLimit?: boolean
+  isOutput?: boolean;
+  loadingOutputToken?: boolean;
+  conversionOutput: ConversionOutput;
+  isSlippageExceedingLimit?: boolean;
 } & HTMLProps<HTMLInputElement>): JSX.Element {
-
-
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
+  const { activeChain } = useMultiChain();
+
+  // Function to handle token selection with chain switching
+  const handleTokenSelection = (token: Token, chain: Chain) => {
+    console.log("Selected token:", token.symbol, "on chain:", chain.name);
+    onSelectToken(token);
+  };
+
+  // Determine if token selection should be available
+  const showTokenSelector = useMemo(() => {
+    // Always show token selector if there are tokens available
+    return tokenList && tokenList.length > 0;
+  }, [tokenList]);
+
+  // Format the balance with the appropriate number of decimal places
+  const formattedTokenBalance = useMemo(() => {
+    if (!inputTokenbalance || !selectedToken?.symbol) return "0";
+    return formatTokenBalance(inputTokenbalance, selectedToken.symbol);
+  }, [inputTokenbalance, selectedToken?.symbol]);
+
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
-      <div className='flex items-center justify-between mb-3'>
+      <div className="flex items-center justify-between mb-3">
         {captionText && (
           <div className="text-white text-start flex items-center gap-2">
             {captionText}
-            {
-              isOutput &&
+            {isOutput && (
               <>
-                <button id='output-amount-button' className='group'>
-                  <InformationCircleIcon
-                    className='w-5 h-5 text-customGray300 group-hover:text-white group-hover:transition-colors' />
+                <button id="output-amount-button" className="group">
+                  <InformationCircleIcon className="w-5 h-5 text-customGray300 group-hover:text-white group-hover:transition-colors" />
                 </button>
                 <ResponsiveTooltip
-                  id={'output-amount-button'}
-                  content={<p
-                    className="w-48">{'This is an estimated output amount. Actual amount may vary during transaction execution.'}</p>}
+                  id={"output-amount-button"}
+                  content={
+                    <p className="w-48">
+                      {
+                        "This is an estimated output amount. Actual amount may vary during transaction execution."
+                      }
+                    </p>
+                  }
                 />
               </>
-            }
+            )}
             {inputMoreThanBalance && (
               <span className="text-red-500 ml-2">Input More than Balance</span>
             )}
           </div>
         )}
-        <div className='flex items-center gap-2'>
-          {
-            !isOutput && isSlippageExceedingLimit &&
-            <p className='hidden lg:block'>Transaction settings</p>
-          }
-          {
-            !isOutput &&
+        <div className="flex items-center gap-2">
+          {!isOutput && isSlippageExceedingLimit && (
+            <p className="hidden lg:block">Transaction settings</p>
+          )}
+          {!isOutput && (
             <SlippageSettingsModal setInputBalance={setInputBalance} />
-          }
+          )}
         </div>
       </div>
       <div className="relative flex w-full flex-col">
         <div
-          className={`w-full px-5 pt-4 pb-3 rounded-lg border ${errorMessage ? "border-red-500" : "border-customGray100"
-            }`}
+          className={`w-full px-5 pt-4 pb-3 rounded-lg border ${
+            errorMessage ? "border-red-500" : "border-customGray100"
+          }`}
         >
           <div className="flex items-center justify-between ">
             <div className="xs:w-full xs:border-r xs:border-customGray500 xs:pr-4 smmd:p-0 smmd:border-none smmd:w-1/2">
-              {
-                isOutput ?
-                  (
-                    <span className='text-customGray100 text-2xl'>
-                      {
-                        loadingOutputToken ? <PendingDots /> : props.value || '0.0'
-                      }
-                    </span>
-                  ) :
-                  <InputNumber {...props} disabled={disabled} />
-              }
+              {isOutput ? (
+                <span className="text-customGray100 text-2xl">
+                  {loadingOutputToken ? <PendingDots /> : props.value || "0.0"}
+                </span>
+              ) : (
+                <InputNumber {...props} disabled={disabled} />
+              )}
             </div>
             <div
-              className={`flex items-center ml-1 gap-2 group/max text-customGray300 ${allowInput && !isOutput
-                ? "group-hover/max:text-white cursor-pointer "
-                : ""
-                }`}
-              onClick={allowInput ? onMaxClick : () => { }}
+              className={`flex items-center ml-1 gap-2 group/max text-customGray300 ${
+                allowInput && !isOutput
+                  ? "group-hover/max:text-white cursor-pointer "
+                  : ""
+              }`}
+              onClick={allowInput ? onMaxClick : () => {}}
             >
-              <div className={`mb-1 ${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
+              <div
+                className={`mb-1 ${
+                  allowInput && !isOutput ? "group-hover/max:text-white" : ""
+                }`}
+              >
                 <svg
                   width="16"
                   height="16"
@@ -157,38 +183,43 @@ export default function InputTokenWithError({
                 </svg>
               </div>
               {
-                <p className={`${allowInput && !isOutput ? "group-hover/max:text-white" : ""}`}>
-                  {inputTokenbalance
-                    ? inputTokenbalance
-                    : "0"}
+                <p
+                  className={`${
+                    allowInput && !isOutput ? "group-hover/max:text-white" : ""
+                  }`}
+                >
+                  {inputTokenbalance ? formattedTokenBalance : "0"}
                 </p>
               }
             </div>
           </div>
           <div className="flex justify-between items-center mt-3 w-full text-customGray300">
             <p className="group-hover/max:text-white">
-              {
-                (isDeposit && !isOutput) ?
-                  (
-                    "$ " + (selectedToken ?
-                      formatCurrency((Number(props.value) * selectedTokenPrice)).toString()
-                      : "0")
-                  ) :
-                  (
-                    loadingOutputToken ?
-                      <PendingDots /> :
-                      (
-                        "$ " + (isOutput ? conversionOutput.outputAmountInUSDFormatted : conversionOutput.finalConvertedAmountInUSDFormatted)
-                      )
-                  )
-              }
+              {isDeposit && !isOutput ? (
+                "$ " +
+                (selectedToken
+                  ? // Removed the unnecessary .toString() call since formatCurrency already returns a string
+                    // Changed the default value from "0" to "0.00" to maintain consistent decimal formatting
+                    formatCurrency(
+                      Number(props.value || 0) * selectedTokenPrice
+                    )
+                  : "0.00")
+              ) : loadingOutputToken ? (
+                <PendingDots />
+              ) : (
+                "$ " +
+                (isOutput
+                  ? conversionOutput.outputAmountInUSDFormatted
+                  : conversionOutput.finalConvertedAmountInUSDFormatted)
+              )}
             </p>
             <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
-              {tokenList.length > 1 ? (
-                <SelectToken
-                  selectedToken={selectedToken!}
-                  options={tokenList}
-                  selectToken={onSelectToken}
+              {showTokenSelector ? (
+                <ChainTokenSelector
+                  selectedToken={selectedToken}
+                  onSelectToken={handleTokenSelection}
+                  className="w-full justify-end"
+                  vaultData={vaultData}
                 />
               ) : (
                 <div className="flex items-center">
@@ -208,7 +239,14 @@ export default function InputTokenWithError({
           </div>
         </div>
         {errorMessage && (
-          <p className={`${!isOutput && 'absolute bottom-0 left-0 translate-y-full lg:translate-y-full'} pt-0.5 lg:pt-1 text-red-500 leading-6`}>{errorMessage}</p>
+          <p
+            className={`${
+              !isOutput &&
+              "absolute bottom-0 left-0 translate-y-full lg:translate-y-full"
+            } pt-0.5 lg:pt-1 text-red-500 leading-6`}
+          >
+            {errorMessage}
+          </p>
         )}
       </div>
     </div>

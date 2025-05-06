@@ -71,13 +71,13 @@ const Header = () => {
             >
               Roadmap
             </span>
-            <span
+            {/* <span
               className={`cursor-pointer ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
                 }`}
               onClick={() => router.push("/old-vaults")}
             >
               Old Vaults
-            </span>
+            </span> */}
           </nav>
           {/* Select Network Modal */}
           <ChainSwitcher/>

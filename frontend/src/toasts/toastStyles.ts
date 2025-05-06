@@ -76,8 +76,6 @@ export const warningToast = (message: string) => {
   toast.warning(message, {
     style: {
       ...defaultToastStyle,
-      border: "1px solid #FFD60A",
-      color: "#FFD60A",
     },
     ...commonToastConfig,
     progressStyle: {

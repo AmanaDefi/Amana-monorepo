@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ERC20StrategyParent.sol";
-import "../interfaces/ICurvePool.sol";
+import "../interfaces/ICurvePoolDynamic.sol";
 import "../interfaces/ICurveLiquidityGauge.sol";
 import "../interfaces/ISwapRouter.sol";
 import "../interfaces/IPriceOracle.sol";
@@ -19,7 +19,7 @@ import "../interfaces/IPriceOracle.sol";
 contract CurveERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePool public immutable receiptToken;
+    ICurvePoolDynamic public immutable receiptToken;
     ICurveLiquidityGauge public immutable gauge;
     ISwapRouter public immutable uniswapRouter;
 
@@ -33,7 +33,7 @@ contract CurveERC20Strategy is ERC20StrategyParent {
     address constant PRICE_ORACLE_ADDRESS =
         0xFFcB9E833403c311f99d4f2E32Cdf61d4Eb0695f; // on ethereum mainnet
 
-    bool public stakingEnabled = false;
+    bool public stakingEnabled = true;
     uint32 public harvestSlippage = 500; // 5% slippage
 
     /// @notice Initializes the strategy contract.
@@ -54,7 +54,7 @@ contract CurveERC20Strategy is ERC20StrategyParent {
         StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
         ERC20StrategyParent(_inputTokenAddress)
     {
-        receiptToken = ICurvePool(_receiptTokenAddress);
+        receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
         gauge = ICurveLiquidityGauge(_liquidityGaugeAddress);
         uniswapRouter = ISwapRouter(UNISWAP_ROUTER);
     }
@@ -212,6 +212,9 @@ contract CurveERC20Strategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
             1e18, // Withdraw all
             minAmountOut

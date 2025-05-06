@@ -9,13 +9,14 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IZRC20.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/IPriceOracle.sol";
-import "./interfaces/ICurvePool.sol";
+import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IUniswapV3Factory.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./interfaces/ISwapRouter.sol";
 
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
+
+// PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
 contract SwapHelperOnBase {
     address constant WELL = 0xA88594D404727625A9437C3f886C7643872296AE;
@@ -25,9 +26,6 @@ contract SwapHelperOnBase {
         0x2626664c2603336E57B271c5C0b26F421741e481;
     address constant UNISWAP_V3_FACTORY =
         0x33128a8fC17869897dcE68Ed026d694621f6FDfD; // mainnet and testnet
-
-    address constant PRICE_ORACLE_ADDRESS =
-        0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c; // Base mainnet price oracle
 
     bytes32 constant wellUsdPriceFeedId =
         0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
@@ -43,6 +41,12 @@ contract SwapHelperOnBase {
 
     address constant CURVE_POOL_REGISTRY =
         0x5524124b8F36e682f3A23D069399247806e8B627; // mainnet only
+
+    address public immutable PRICE_ORACLE_ADDRESS;
+
+    constructor(address _priceOracle) {
+        PRICE_ORACLE_ADDRESS = _priceOracle;
+    }
 
     /**
      * @notice Returns the price feed ID for a given token address.
@@ -289,7 +293,7 @@ contract SwapHelperOnBase {
     ) public view returns (uint256) {
         // Assume Curve pools have at most 8 tokens
         for (uint256 i = 0; i < 8; i++) {
-            try ICurvePool(pool).coins(i) returns (address poolToken) {
+            try ICurvePoolDynamic(pool).coins(i) returns (address poolToken) {
                 if (poolToken == token) {
                     return i;
                 }
@@ -340,7 +344,7 @@ contract SwapHelperOnBase {
         uint256 j = getTokenIndex(outputToken, curvePool);
 
         // Fetch amount out from Curve pool
-        amountOut = ICurvePool(curvePool).get_dy(i, j, amount);
+        amountOut = ICurvePoolDynamic(curvePool).get_dy(i, j, amount);
     }
 
     function approveOrIncreaseAllowance(
@@ -400,7 +404,6 @@ contract SwapHelperOnBase {
         //     amount,
         //     slippageBps
         // );
-        // console.log("Minimum out: %d", minimumOut);
         // (address curvePool, uint256 i, uint256 j) = getCurvePool(
         //     zrc20,
         //     targetZRC20
@@ -408,7 +411,7 @@ contract SwapHelperOnBase {
         // if (curvePool != address(0)) {
         //     // Approve Curve pool to spend tokens
         //     IZRC20(zrc20).approve(curvePool, amount);
-        //     return ICurvePool(curvePool).exchange(i, j, amount, minimumOut);
+        //     return ICurvePoolDynamic(curvePool).exchange(i, j, amount, minimumOut);
         // } else {
         // (
         //     address[] memory path,

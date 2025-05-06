@@ -28,13 +28,29 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     }
 
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
-    mapping(address => uint256) pendingWithdrawals;
+    mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
 
-    event CrossChainInvestSent(bytes32 indexed crossChainTxId);
-    event CrossChainInvestFailed(bytes32 indexed crossChainTxId);
-    event DivestSent(bytes32 indexed crossChainTxId);
-    event DivestFailed(bytes32 indexed crossChainTxId);
+    event CrossChainInvestSent(
+        bytes32 indexed crossChainTxId,
+        address receiver,
+        uint256 amount
+    );
+    event CrossChainInvestFailed(
+        bytes32 indexed crossChainTxId,
+        address receiver,
+        uint256 amount
+    );
+    event DivestSent(
+        bytes32 indexed crossChainTxId,
+        address user,
+        uint256 shares
+    );
+    event DivestFailed(
+        bytes32 indexed crossChainTxId,
+        address user,
+        uint256 shares
+    );
     event TotalAssetsUpdated(uint256 totalAssets);
     event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
 
@@ -49,10 +65,6 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         uint32 gasLimitCall_,
         bool depositFeePaidFromGasTank_
     ) external initializer {
-        // __ERC20_init(name, symbol);
-        // __Ownable_init(msg.sender);
-        // __ERC4626_init(asset);
-        // __UUPSUpgradeable_init();
         __AmanaVaultBase_init(
             name,
             symbol,
@@ -63,7 +75,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             gasLimitWithdrawAndCall_,
             gasLimitCall_
         );
-        depositFeePaidFromGasTank_;
+        depositFeePaidFromGasTank = depositFeePaidFromGasTank_;
     }
 
     /**
@@ -171,6 +183,10 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         }
     }
 
+    function clearPendingWithdrawals(address user) external onlyOwner {
+        pendingWithdrawals[user] = 0;
+    }
+
     /**
      * @dev Processes a confirmation message from the strategy.
      *      This function validates and stores the confirmation details for deposit, withdrawal or totalAsset update actions
@@ -218,7 +234,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         });
 
         // Attempt to process confirmations
-        _processBufferedConfirmations();
+        _processBufferedConfirmations(true);
     }
 
     /**
@@ -243,13 +259,9 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         uint256 totalAssetsAfter,
         uint256 executionNonce,
         bytes32 _crossChainTxId,
-        uint16 _slippage
+        uint16 _slippage,
+        bool processEntireBuffer
     ) external onlyOwner {
-        // Ensure no duplicate processing
-        if (
-            pendingConfirmations[executionNonce].amount != 0 &&
-            pendingConfirmations[executionNonce].totalAssetsAfter != 0
-        ) revert ConfirmationAlreadyProcessed();
         // Store the confirmation in the buffer
         pendingConfirmations[executionNonce] = Confirmation({
             user: user,
@@ -266,7 +278,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         });
 
         // Attempt to process confirmations
-        _processBufferedConfirmations();
+        _processBufferedConfirmations(processEntireBuffer);
     }
 
     /**
@@ -274,9 +286,10 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
      *      Once a confirmation is processed, it is removed from the buffer.
      */
-    function _processBufferedConfirmations() internal {
+    function _processBufferedConfirmations(bool processEntireBuffer) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
+
             Confirmation memory confirmation = pendingConfirmations[nextNonce];
             // If there's no confirmation for the next nonce, stop processing
             if (
@@ -284,6 +297,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             ) {
                 break;
             }
+
             // Process the confirmation
             if (confirmation.crossChainTxId == 0) {
                 if (confirmation.vaultSharesToBeBurnt > 0) {
@@ -325,6 +339,9 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             // Mark this nonce as processed
             lastProcessedNonce = nextNonce;
             delete pendingConfirmations[nextNonce];
+            if (!processEntireBuffer) {
+                break; // Stop processing if not in processEntireBuffer mode
+            }
         }
     }
 
@@ -348,61 +365,18 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             emit StrategyUpdated(newStrategyAddress);
             return;
         }
-        _handleGasFee(gasLimitForCall + gasLimitForWithdrawAndCall); // we combine these two limits as this tx involves a divest and an invest
-
-        bytes memory recipient = abi.encodePacked(strategyAddress);
-
-        // Generate a unique crossChainTxId
-        bytes32 crossChainTxId = keccak256(
-            abi.encodePacked(
+        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+            .handleSwitchCallToStrategy(
                 strategyAddress,
                 newStrategyAddress,
-                block.timestamp, // Current timestamp
-                block.number // Current block number
-            )
-        );
-        bytes memory outgoingMessage = abi.encode(
-            address(0),
-            address(0),
-            newStrategyAddress,
-            address(0),
-            0,
-            minAmountOut,
-            minSharesOut,
-            0, // chain ID
-            false,
-            crossChainTxId,
-            0 // slippage
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                "_switchStrategyFailed",
-                crossChainTxId,
-                0,
-                strategyAddress,
-                newStrategyAddress,
-                address(0),
-                0
-            ),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
-        );
+                gasLimitForCall,
+                gasLimitForWithdrawAndCall,
+                address(asset()),
+                registry,
+                minAmountOut,
+                minSharesOut
+            );
         strategyAddress = newStrategyAddress;
-
-        CallOptions memory callOptions = CallOptions(
-            gasLimitForCall + gasLimitForWithdrawAndCall,
-            false
-        );
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(asset()),
-            outgoingMessage,
-            callOptions,
-            revertOptions
-        );
     }
 
     function toggleDepositFeePaidFromGasTank() external onlyOwner {
@@ -442,7 +416,6 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-
         // Generate a unique crossChainTxId
         bytes32 crossChainTxId = keccak256(
             abi.encodePacked(
@@ -453,14 +426,12 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 block.number // Current block number
             )
         );
-
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
             address(this),
             assets
         );
-
         _investAssets(
             assets,
             minimumOut,
@@ -491,7 +462,6 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
-
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
@@ -528,7 +498,7 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                     registry
                 );
         }
-        emit CrossChainInvestSent(crossChainTxId);
+        emit CrossChainInvestSent(crossChainTxId, receiver, amount);
     }
 
     /**
@@ -601,17 +571,24 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
             )
         );
 
-        _divestFromStrategy(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawZRC20,
-            shares,
-            minimumOut,
-            uint32(block.chainid),
-            slippage,
-            crossChainTxId
-        );
+        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+            .handleDivestCallToStrategy(
+                strategyAddress,
+                gasLimitForCall,
+                totalSupply(),
+                address(asset()),
+                registry,
+                user,
+                receiver,
+                withdrawZRC20,
+                withdrawZRC20,
+                shares,
+                minimumOut,
+                uint32(block.chainid),
+                slippage,
+                crossChainTxId
+            );
+        emit DivestSent(crossChainTxId, user, shares);
     }
 
     /**
@@ -646,86 +623,24 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
 
         pendingWithdrawals[user] += vaultSharesToBeBurnt;
 
-        _divestFromStrategy(
-            user,
-            user,
-            withdrawZRC20,
-            withdrawERC20,
-            vaultSharesToBeBurnt,
-            minimumOut,
-            userChainId,
-            slippage,
-            crossChainTxId
-        );
-    }
-
-    /**
-     * @dev Initiates the process to divest assets from the strategy on a connected chain.
-     * @param user The address of the user requesting the withdrawal.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param vaultSharesToBeBurnt The amount of assets to be withdrawn.
-     * @param withdrawChainId The chain ID of the chain where the withdrawal is taking place.
-     * @notice Sends a cross-chain call to the strategy to initiate divestment, ensuring gas fees are handled appropriately.
-     */
-    function _divestFromStrategy(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 vaultSharesToBeBurnt,
-        uint256 minimumOut,
-        uint32 withdrawChainId,
-        uint16 slippage,
-        bytes32 crossChainTxId
-    ) internal {
-        _handleGasFee(gasLimitForCall);
-
-        bytes memory recipient = abi.encodePacked(strategyAddress);
-
-        uint256 fractionOfTotalShares = (vaultSharesToBeBurnt *
-            1e18 +
-            totalSupply() /
-            2) / totalSupply(); // // we add totalSupply() / 2 to prevent truncation errors
-
-        bytes memory outgoingMessage = abi.encode(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
-            vaultSharesToBeBurnt,
-            fractionOfTotalShares,
-            minimumOut,
-            withdrawChainId,
-            false,
-            crossChainTxId,
-            slippage
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                "_divestConnectedChainStrategyFailed",
-                crossChainTxId,
-                vaultSharesToBeBurnt,
+        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+            .handleDivestCallToStrategy(
+                strategyAddress,
+                gasLimitForCall,
+                totalSupply(),
+                address(asset()),
+                registry,
+                user,
                 user,
                 withdrawZRC20,
                 withdrawERC20,
-                withdrawChainId
-            ),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
-        );
-
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(asset()),
-            outgoingMessage,
-            callOptions,
-            revertOptions
-        );
-        emit DivestSent(crossChainTxId);
+                vaultSharesToBeBurnt,
+                minimumOut,
+                userChainId,
+                slippage,
+                crossChainTxId
+            );
+        emit DivestSent(crossChainTxId, user, vaultSharesToBeBurnt);
     }
 
     /**
@@ -790,80 +705,6 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     }
 
     /**
-     * @dev Handles gas fee calculation and approval for cross-chain operations.
-     *      This function retrieves the gas fee for the given gas limit, ensures the required amount is available,
-     *      and approves the gateway to use the gas fee.
-     * @param gasLimit The maximum amount of gas to be used for the transaction.
-     * @return gasZRC20 The address of the ZRC20 token representing the gas fee.
-     * @return gasFee The amount of gas fee required for the transaction.
-     **/
-    function _handleGasFee(
-        uint256 gasLimit
-    ) private returns (address gasZRC20, uint256 gasFee) {
-        (gasZRC20, gasFee) = IZRC20(address(asset()))
-            .withdrawGasFeeWithGasLimit(gasLimit);
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
-        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
-    }
-
-    // This function makes a manual call to the withdrawal receiver.
-    // It is used to handle cases where the cross-chain transaction fails or needs to be retried.
-    // It allows the owner to specify the receiver, asset, target chain ZRC20, amount, and cross-chain transaction ID.
-    // The function retrieves the gas fee for the specified target chain ZRC20 and approves it for the gateway.
-    // It then constructs the outgoing message with the provided parameters and calls the gateway to send the message.
-    // The function also includes revert options to handle any potential failures during the call.
-    // The revert options specify the address to revert to, whether to call on revert, the abort address,
-    // the revert message, and the gas limit for the revert.
-    // The function emits an event indicating the manual call to the withdrawal receiver.
-    // @param receiver The address of the receiver to send the funds to.
-    // @param asset The address of the asset to be sent.
-    // @param targetChainZRC20 The address of the target chain ZRC20 token.
-    // @param amount The amount of the asset to be sent.
-    // @param crossChainTxId The ID of the cross-chain transaction.
-    // @notice This function is only callable by the owner of the contract.
-    function manualCallWithdrawalReceiver(
-        address receiver,
-        address asset,
-        address targetChainZRC20,
-        uint256 amount,
-        bytes32 crossChainTxId
-    ) external onlyOwner {
-        (address gasZRC20, uint256 gasFee) = IZRC20(targetChainZRC20)
-            .withdrawGasFeeWithGasLimit(gasLimitForCall);
-
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
-        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
-
-        bytes memory recipient = abi.encodePacked(
-            IAmanaRegistry(registry).withdrawalReceiver()
-        );
-
-        bytes memory outgoingMessage = abi.encode(
-            receiver,
-            asset,
-            amount,
-            crossChainTxId
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode("_manualCallFailed", crossChainTxId),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
-        );
-
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(targetChainZRC20),
-            outgoingMessage,
-            callOptions,
-            revertOptions
-        );
-    }
-
-    /**
      * @dev Handles revert scenarios during cross-chain operations.
      * @param context The revert context containing details about the revert scenario.
      * @notice Executes appropriate recovery steps based on the revert message.
@@ -898,18 +739,85 @@ contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
                 _crossChainTxId,
                 slippage
             );
-            emit CrossChainInvestFailed(_crossChainTxId);
+            emit CrossChainInvestFailed(
+                _crossChainTxId,
+                receiverOrOldStrategy,
+                context.amount
+            );
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_divestConnectedChainStrategyFailed"))
         ) {
             pendingWithdrawals[receiverOrOldStrategy] -= amount;
-            emit DivestFailed(_crossChainTxId);
+            emit DivestFailed(_crossChainTxId, receiverOrOldStrategy, amount);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsToUserFailed"))
         ) {
-            emit ReturnFundsToUserFailed(_crossChainTxId);
+            emit ReturnFundsToUserFailed(
+                _crossChainTxId,
+                receiverOrOldStrategy,
+                context.amount
+            );
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_switchStrategyFailed"))
+        ) {
+            strategyAddress = receiverOrOldStrategy;
+            emit SwitchStrategyFailed(_crossChainTxId);
+        } else {
+            revert("Revert not handled");
+        }
+    }
+
+    function onAbort(AbortContext calldata context) external onlyGateway {
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            uint256 amount,
+            address receiverOrOldStrategy,
+            address userZRC20,
+            address userERC20,
+            uint32 userChainId
+        ) = abi.decode(
+                context.revertMessage,
+                (string, bytes32, uint256, address, address, address, uint32)
+            );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_crossChainInvestFailed"))
+        ) {
+            uint16 slippage = 1000;
+            _returnFundsToUser(
+                context.amount,
+                userChainId,
+                receiverOrOldStrategy,
+                userZRC20,
+                userERC20,
+                _crossChainTxId,
+                slippage
+            );
+            emit CrossChainInvestFailed(
+                _crossChainTxId,
+                receiverOrOldStrategy,
+                amount
+            );
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_divestConnectedChainStrategyFailed"))
+        ) {
+            pendingWithdrawals[receiverOrOldStrategy] -= amount;
+            emit DivestFailed(_crossChainTxId, receiverOrOldStrategy, amount);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsToUserFailed"))
+        ) {
+            emit ReturnFundsToUserFailed(
+                _crossChainTxId,
+                receiverOrOldStrategy,
+                context.amount
+            );
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_switchStrategyFailed"))

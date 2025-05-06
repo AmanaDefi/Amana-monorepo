@@ -17,4 +17,8 @@ interface IStrategy {
     ) external payable;
 
     function totalUnderlyingAssets() external view returns (uint256);
+
+    function amanaVault() external view returns (address);
+
+    function checkRewards() external view returns (uint256);
 }

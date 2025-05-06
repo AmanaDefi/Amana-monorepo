@@ -7,8 +7,13 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   console.log(`🔑 Deploying SwapHelper with signer: ${signer.address}`);
 
+  const priceOracleAddress = args.priceOracle;
+  if (!priceOracleAddress) {
+    throw new Error("🚨 Price oracle address is required")
+  };
+
   const SwapHelper = await hre.ethers.getContractFactory("SwapHelper", signer);
-  const swapHelper = await SwapHelper.deploy();
+  const swapHelper = await SwapHelper.deploy(priceOracleAddress);
   await swapHelper.deployed();
 
   console.log(`✅ SwapHelper deployed at: ${swapHelper.address}`);
@@ -19,7 +24,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: swapHelper.address, // Updated from contract.target
-        constructorArguments: [],
+        constructorArguments: [priceOracleAddress],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -30,5 +35,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-task("deploy-swap-helper", "Deploys the SwapHelper contract", main);
+task("deploy-swap-helper", "Deploys the SwapHelper contract", main)
+  .addParam("priceOracle", "The address of the price oracle contract");
+
 export default {};

@@ -70,8 +70,16 @@ abstract contract AmanaVaultBase is
     event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
     event GasTankUpdated(address indexed newGasTank);
 
-    event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
-    event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
+    event ReturnFundsToUserSent(
+        bytes32 indexed crossChainTxId,
+        address receiver,
+        uint256 amount
+    );
+    event ReturnFundsToUserFailed(
+        bytes32 indexed crossChainTxId,
+        address receiver,
+        uint256 amount
+    );
 
     event Deposited(
         address indexed user,
@@ -153,8 +161,7 @@ abstract contract AmanaVaultBase is
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function setStrategy(address _strategyAddress) external onlyOwner {
-        if (_strategyAddress == address(0) || strategyAddress != address(0))
-            revert InvalidAddress();
+        if (_strategyAddress == address(0)) revert InvalidAddress();
         strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
     }
@@ -497,8 +504,7 @@ abstract contract AmanaVaultBase is
                     registry
                 );
         }
-
-        emit ReturnFundsToUserSent(_crossChainTxId);
+        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
     }
 
     /**

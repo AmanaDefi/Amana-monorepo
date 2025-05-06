@@ -68,8 +68,16 @@ abstract contract AmanaVaultBaseV1 is
     event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
     event GasTankUpdated(address indexed newGasTank);
 
-    event ReturnFundsToUserSent(bytes32 indexed crossChainTxId);
-    event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId);
+    event ReturnFundsToUserSent(
+        bytes32 indexed crossChainTxId,
+        address receiver,
+        uint256 amount
+    );
+    event ReturnFundsToUserFailed(
+        bytes32 indexed crossChainTxId,
+        address receiver,
+        uint256 amount
+    );
 
     event Deposited(
         address indexed user,
@@ -151,8 +159,7 @@ abstract contract AmanaVaultBaseV1 is
      * @notice Emits a `StrategyUpdated` event upon success.
      */
     function setStrategy(address _strategyAddress) external onlyOwner {
-        if (_strategyAddress == address(0) || strategyAddress != address(0))
-            revert InvalidAddress();
+        if (_strategyAddress == address(0)) revert InvalidAddress();
         strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
     }
@@ -495,7 +502,7 @@ abstract contract AmanaVaultBaseV1 is
                     registry
                 );
         }
-        emit ReturnFundsToUserSent(_crossChainTxId);
+        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
     }
 
     /**
@@ -507,7 +514,7 @@ abstract contract AmanaVaultBaseV1 is
      * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
      * @param vault The address where the swapped tokens will be sent.
      * @param maxDeadline The maximum deadline for the swap to complete.
-     * @return The amount of output tokens received.
+     * @return amountOut The amount of output tokens received.
      * @custom:reverts InsufficientLiquidity if no valid liquidity pool exists for the token pair.
      */
     function swap(
@@ -517,7 +524,7 @@ abstract contract AmanaVaultBaseV1 is
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline
-    ) internal returns (uint256) {
+    ) internal returns (uint256 amountOut) {
         if (IAmanaRegistry(registry).swapHelper() == address(0))
             revert InvalidAddress();
 
@@ -528,17 +535,15 @@ abstract contract AmanaVaultBaseV1 is
             amount
         );
 
-        uint256 amountOut = ISwapHelper(IAmanaRegistry(registry).swapHelper())
-            .swap(
-                zrc20,
-                amount,
-                targetZRC20,
-                slippageBps,
-                vault,
-                maxDeadline,
-                "" // empty bytes param for future-proofing
-            );
-        return amountOut;
+        amountOut = ISwapHelper(IAmanaRegistry(registry).swapHelper()).swap(
+            zrc20,
+            amount,
+            targetZRC20,
+            slippageBps,
+            vault,
+            maxDeadline,
+            "" // empty bytes param for future-proofing
+        );
     }
 
     /**

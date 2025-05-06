@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { VaultData, VaultTotalAssets, VaultAPY, Token } from "@/types/types";
+import { VaultData, VaultTotalAssets, VaultAPY, Token, Balance } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from "next/image";
 import {
@@ -7,18 +7,11 @@ import {
   formatBalance,
   formatCurrency,
 } from "@/utils/utils";
-import { client } from "@/utils/client";
-import { ethers } from "ethers";
-import {
-  useActiveAccount,
-  useActiveWalletChain,
-  useWalletBalance,
-} from "thirdweb/react";
-import { Address, Chain, getContract } from "thirdweb";
-import { getBalance } from "thirdweb/extensions/erc20";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
+import { formatTokenBalance } from "@/utils/utils";
+
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -26,22 +19,33 @@ export default function VaultHeader({
   vaultTotalAsset,
   vaultAPYs,
   transactionCompleted,
+  selectedToken,
 }: {
   vaultData: VaultData;
-  userVaultBalance?: string;
+  userVaultBalance?: Balance | string;
   selectedVaultId: string;
   vaultTotalAsset?: VaultTotalAssets;
   vaultAPYs: VaultAPY[];
   transactionCompleted: boolean;
+  selectedToken?: Token;
 }): JSX.Element {
   const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
-  const [data1, setdata1] = useState("");
-  // Step 1: Determine inputToken based on activeChain
+  const [depositAmount, setDepositAmount] = useState("0");
+  
+  // Debug full userVaultBalance object
+  console.log("Full userVaultBalance:", userVaultBalance);
+  
+  // Determine input token based on user selection or active chain
   useEffect(() => {
-    if (activeChain?.id === 7000 || activeChain?.id === 7001) {
+    if (selectedToken) {
+      // If there's a user-selected token, use it
+      setInputToken(selectedToken);
+    } else if (activeChain?.id === 7000 || activeChain?.id === 7001) {
+      // Fallback: If on ZetaChain, use vault input token
       setInputToken(vaultData.inputToken);
     } else {
+      // Fallback: For other chains, determine the appropriate token
       setInputToken(
         determineVaultTokenFromApprovedTokens(
           activeChain?.id as number,
@@ -49,18 +53,48 @@ export default function VaultHeader({
         )
       );
     }
-  }, [activeChain, vaultData]);
+  }, [activeChain, vaultData, selectedToken]);
 
-  useEffect(() => {
-    setdata1(formatBalance(Number(userVaultBalance)));
-  }, [userVaultBalance]);
-
-  const walletTokenBalance = useMultichainTokenBalance(inputToken);
+  const { balance: walletTokenBalance, fetchBalance } =
+    useMultichainTokenBalance(inputToken);
 
   const symbol = inputToken?.symbol || "";
   const price = useTokenPriceBySymbol(inputToken?.symbol);
-  const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
+  const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol) || 0;
 
+  // Format wallet balance according to token type
+  const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
+
+  useEffect(() => {
+    // Update deposit amount whenever the vault balance changes
+    if (userVaultBalance) {
+      console.log("User vault balance type:", typeof userVaultBalance);
+      
+      // Handle when userVaultBalance is a simple string (direct from fetchUserVaultBalance)
+      if (typeof userVaultBalance === 'string') {
+        console.log("Using string balance:", userVaultBalance);
+        setDepositAmount(userVaultBalance);
+      } 
+      // Handle when userVaultBalance is a Balance object
+      else if (typeof userVaultBalance === 'object') {
+        console.log("userVaultBalance keys:", Object.keys(userVaultBalance));
+        
+        if (userVaultBalance.formatted) {
+          console.log("Using formatted value:", userVaultBalance.formatted);
+          setDepositAmount(userVaultBalance.formatted);
+        } else if ('value' in userVaultBalance && userVaultBalance.value) {
+          console.log("Using value property:", userVaultBalance.value);
+          setDepositAmount(userVaultBalance.value.toString());
+        }
+      }
+    } else {
+      setDepositAmount("0");
+    }
+  }, [userVaultBalance, transactionCompleted]);
+
+  // Parse the deposit amount to a number for calculations
+  const depositAmountNumber = parseFloat(depositAmount) || 0;
+  
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
       <div className="w-full mb-12 flex flex-row items-center">
@@ -110,19 +144,21 @@ export default function VaultHeader({
           <LargeCardStat
             id="deposits"
             label="Deposits"
-            value={`${formatBalance(Number(data1))} ${
+            value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
               vaultData.inputToken.symbol
             }`}
             secondaryValue={`$ ${formatCurrency(
-              Number(data1) * vaultTokenPrice
+              depositAmountNumber * vaultTokenPrice
             )}`}
             tooltip="Value of your vault deposits"
           />
           <LargeCardStat
             id="wallet"
             label="Your Wallet"
-            value={`${walletTokenBalance.formatted} ${symbol}`}
-            secondaryValue={`$ ${formatCurrency(Number(walletTokenBalance.formatted) * price)}`}
+            value={`${formattedWalletBalance} ${symbol}`}
+            secondaryValue={`$ ${formatCurrency(
+              Number(walletTokenBalance.formatted) * price
+            )}`}
             tooltip="Value of deposit assets held in your wallet"
           />
           <LargeCardStat
@@ -133,7 +169,7 @@ export default function VaultHeader({
                 Number(
                   vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
                     ?.APY7d
-                ) * 100
+                )
               )
                 ? "0%"
                 : `${(

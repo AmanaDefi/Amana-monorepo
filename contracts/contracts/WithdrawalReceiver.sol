@@ -12,7 +12,7 @@ import "./interfaces/IErrors.sol";
 contract WithdrawalReceiver is Revertable, Ownable {
     using SafeERC20 for IERC20;
 
-    address public constant _GATEWAY_ADDRESS =
+    address public _GATEWAY_ADDRESS =
         0x48B9AACC350b20147001f88821d31731Ba4C30ed;
 
     event FundsReturned(
@@ -32,7 +32,7 @@ contract WithdrawalReceiver is Revertable, Ownable {
         _;
     }
 
-    constructor() Ownable(msg.sender) {}
+    constructor(address _owner) Ownable(_owner) {}
 
     /**
      * @notice Handles calls from the ZetaChain gateway to return funds to users.
@@ -56,6 +56,17 @@ contract WithdrawalReceiver is Revertable, Ownable {
         _returnFundsToUser(amount, receiver, asset, crossChainTxId);
 
         return abi.encode(true);
+    }
+
+    /**
+     * @notice Allows the owner to update the gateway address.
+     * @param newGatewayAddress The new gateway address.
+     */
+    function updateGatewayAddress(
+        address newGatewayAddress
+    ) external onlyOwner {
+        require(newGatewayAddress != address(0), "Invalid address");
+        _GATEWAY_ADDRESS = newGatewayAddress;
     }
 
     /**

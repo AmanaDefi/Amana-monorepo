@@ -18,7 +18,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     using SafeERC20 for IERC20;
 
     string public name;
-    address public immutable amanaVault;
+    address public amanaVault;
     address public withdrawHelper;
     uint256 public executionNonce = 1;
     address public oldStrategy;
@@ -48,6 +48,28 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         uint256 totalAssetsTransferrred,
         uint256 executionNonce,
         bytes32 crossChainTxId
+    );
+    event AssetsReceivedFromOldStrategy(
+        address indexed oldStrategy,
+        uint256 totalAssetsTransferrred,
+        uint256 executionNonce,
+        bytes32 crossChainTxId
+    );
+    event RewardsClaimed(
+        address indexed strategy,
+        address indexed rewardToken,
+        uint256 amount
+    );
+    event RewardsHarvested(
+        address indexed rewardToken,
+        uint256 rewardAmount,
+        uint256 inputTokenReceived
+    );
+    event RewardClaimFailed(string reason);
+    event SwapFailed(
+        address indexed rewardToken,
+        uint256 amount,
+        string reason
     );
 
     address immutable _GATEWAY_ADDRESS;
@@ -85,7 +107,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         ) {
             revert OnlyVault();
         }
-
         (
             address user,
             address receiver,
@@ -157,6 +178,11 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {
         if (_withdrawHelper == address(0)) revert InvalidAddress();
         withdrawHelper = _withdrawHelper;
+    }
+
+    function updateVault(address _amanaVault) external onlyOwner {
+        if (_amanaVault == address(0)) revert InvalidAddress();
+        amanaVault = _amanaVault;
     }
 
     /**
@@ -620,6 +646,49 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 0);
+            _sendUpdateToVault(
+                userOrReceiver,
+                vaultSharesToBeBurnt,
+                _executionNonce
+            );
+            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
+        ) {
+            emit SendTotalUnderlyingAssetsFailed();
+        } else {
+            revert("Revert not handled");
+        }
+    }
+
+    /// @notice Handles reverts from the Gateway.
+    /// @param context Context of the revert.
+    function onAbort(
+        AbortContext calldata context
+    ) external virtual onlyGateway {
+        (
+            string memory revertMessage,
+            bytes32 _crossChainTxId,
+            uint256 _executionNonce,
+            uint256 amount,
+            address userOrReceiver,
+            uint256 vaultSharesToBeBurnt
+        ) = abi.decode(
+                context.revertMessage,
+                (string, bytes32, uint256, uint256, address, uint256)
+            );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_investConfirmFailed"))
+        ) {
+            emit InvestConfirmFailed(_crossChainTxId);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsFromStrategyFailed"))
+        ) {
+            // _depositFundsIntoYieldSource(context.amount, 0);
             _sendUpdateToVault(
                 userOrReceiver,
                 vaultSharesToBeBurnt,

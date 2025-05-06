@@ -21,7 +21,8 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     /// @param _amanaVault Address of the Amana vault.
     /// @param _receiptTokenAddress Address of the Aave receipt token.
     /// @param _gateway Address of the ZetaChain Gateway.
-
+    /// @param _withdrawHelper Address of the withdraw helper contract.
+    /// @param _inputTokenAddress Address of the input token (e.g., USDC).
     constructor(
         string memory _name,
         address _amanaVault,
@@ -88,7 +89,9 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         uint256 currentExecutionNonce,
         bytes32 _crossChainTxId
     ) internal override {
-        // uint256 strategyTotalBalance = receiptToken.balanceOf(address(this));
+        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             1e18,
             minAmountOut

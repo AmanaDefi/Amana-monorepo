@@ -2,6 +2,34 @@
 pragma solidity 0.8.26;
 
 interface IWithdrawHelper {
+    function handleDivestCallToStrategy(
+        address strategyAddress,
+        uint256 gasLimitForCall,
+        uint256 totalSupply,
+        address vaultAsset,
+        address registry,
+        address user,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        uint256 vaultSharesToBeBurnt,
+        uint256 minimumOut,
+        uint32 withdrawChainId,
+        uint16 slippage,
+        bytes32 crossChainTxId
+    ) external;
+
+    function handleSwitchCallToStrategy(
+        address strategyAddress,
+        address newStrategyAddress,
+        uint256 gasLimitForCall,
+        uint256 gasLimitForWithdrawAndCall,
+        address vaultAsset,
+        address registry,
+        uint256 minAmountOut,
+        uint256 minSharesOut
+    ) external;
+
     function handleWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,

@@ -12,11 +12,12 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
-  calculateCurveRewardsAPY,
-  calculateCompoundRewardsAPY
+  calculateConvexEthereumRewardsAPY,
+  calculateCompoundRewardsAPY,
+  calculateConvexArbitrumRewardsAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
-import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
+import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { CHAIN_ID, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -25,6 +26,7 @@ import { getOnlyTokenSymbol, getSolanaEVMAddress, isSolanaAddress, isZetachain }
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -43,7 +45,7 @@ export const useUpdateVaultBalanceAndTotal = (
             try {
               let balance: any;
               let newTotalAssetsinToken: any;
-              if (address) {
+              if (address && vault && vault.id) {
                 balance = await fetchUserVaultBalance(
                   address as Address,
                   vault.id as Address
@@ -54,29 +56,24 @@ export const useUpdateVaultBalanceAndTotal = (
                   vault.id as Address
                 );
               } else {
-                balance = "Error"
+                balance = EMPTY_BALANCE
                 newTotalAssetsinToken = "Error"
               }
-              const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+              const newTotalAssets = vault && vault.id ? await fetchTotalAssets(vault.id as Address) : "Error";
 
-              // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
+              const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
+              const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
 
-              console.log({
-                vaultId: vault.id,
-                balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
-              })
               return {
-                vaultId: vault.id,
+                vaultId: vault?.id || "unknown",
                 balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
+                totalAssets: totalAssetsStr,
+                totalAssetsinToken: totalAssetsinTokenStr,
               };
             } catch (error) {
-              console.error(`Error fetching user balance or total assets for vault ${vault.id}:`, error);
+              console.error(`Error fetching user balance or total assets for vault ${vault?.id || "unknown"}:`, error);
               return {
-                vaultId: vault.id,
+                vaultId: vault?.id || "unknown",
                 balance: "Error",
                 totalAssets: "Error",
                 totalAssetsinToken: "Error"
@@ -125,7 +122,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
       const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
       // const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
       try {
-        if (vault.id) {
+        if (vault && vault.id) {
           const balance = await fetchUserVaultBalance(
             address as Address,
             vault.id as Address
@@ -148,7 +145,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         console.error("Error updating vault balances and total assets:", error);
       }
     };
-    if (userAddress) {
+    if (userAddress && vault) {
       updateVaultBalanceAndTotal();
     }
   }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
@@ -159,6 +156,7 @@ export const useUpdateAPYs = (
   setVaultAPYs: (vaultAPYs: { vaultId: string, APY7d: number }[]) => void,
   setLoading: (loading: boolean) => void,
   crvTokenPrice: number,
+  cvxTokenPrice: number,
   ethTokenPrice: number,
   compTokenPrice: number
 ) => {
@@ -186,9 +184,7 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
-                console.log("Fetching Compound Rewards APY")
-                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.gaugeAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
-                console.log("RewardsAPY", RewardsAPY)
+                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
                 // TO DO This only works for Base right now - it's hardcoded
@@ -203,9 +199,18 @@ export const useUpdateAPYs = (
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
-              } else if (vault.protocol.name === "Curve") {
-                APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
-                RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+              } else if (vault.protocol.name === "Curve-Convex") {
+                // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
+                if (crvTokenPrice > 0 && ethTokenPrice > 0) {
+                  if (strategyChain.id === 1) {
+                    RewardsAPY = await calculateConvexEthereumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                  } else if (strategyChain.id === 42161) {
+                    RewardsAPY = await calculateConvexArbitrumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+                  }
+                } else {
+                  console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
+                }
+                APY7d = RewardsAPY;
               }
 
               return { vaultId: vault.id, APY7d };
@@ -222,27 +227,36 @@ export const useUpdateAPYs = (
       }
     };
 
-    // Trigger the function if vaults are available
-    if (vaults.length > 0) {
-      setLoading(true);  // Set loading state before fetching APYs
+    // Trigger the function if vaults and prices are available
+    if (
+      vaults.length > 0
+      &&
+      crvTokenPrice > 0 &&
+      cvxTokenPrice > 0
+      &&
+      ethTokenPrice > 0
+      &&
+      compTokenPrice > 0
+    ) {
+      setLoading(true);
       updateAPYs();
     }
-  }, []);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice]);
 };
 
 export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }: { vaultData: VaultData, activeChainId: number, strategyChainID: number, strategyAddress: string, contractWithdrawalReceiverAddress: string, isTransactionStarted: boolean }) => {
   // events
   const events = useMemo(() => ({
     vault: [
-      prepareEvent({ signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
       prepareEvent({ signature: "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)" }),
       prepareEvent({ signature: "event Deposit(address indexed sender,address indexed owner,uint256 assets,uint256 shares)" }),
-      prepareEvent({ signature: "event DivestSent(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event DivestSent(bytes32 indexed crossChainTxId, address user, uint256 shares)" }),
       prepareEvent({ signature: "event Withdraw(address indexed sender,address indexed receiver,address indexed owner,uint256 assets,uint256 shares)" }),
-      prepareEvent({ signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event DivestFailed(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId)" })
+      prepareEvent({ signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
+      prepareEvent({ signature: "event DivestFailed(bytes32 indexed crossChainTxId, address user, uint256 shares)" }),
+      prepareEvent({ signature: "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
+      prepareEvent({ signature: "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" })
     ],
     strategy: [
       prepareEvent({ signature: "event FundsInvested(bytes32 indexed crossChainTxId,address user,uint256 amount)" }),
@@ -310,8 +324,29 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    const tokenSymbol = getOnlyTokenSymbol(symbol).toUpperCase()
-    return priceContext.prices?.[tokenSymbol] ?? 0;
+    // Normalize the symbol format:
+    // Convert "USDC (ETH)" to "USDC.ETH" format for price lookup
+    const normalizedSymbol = symbol.includes('(') ?
+      symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
+
+    // Try to find price using normalized symbol first
+    const fullSymbolPrice = priceContext.prices?.[normalizedSymbol.toUpperCase()];
+    if (fullSymbolPrice !== undefined) {
+      return fullSymbolPrice;
+    }
+
+    // If full symbol price not found, check if it's a stablecoin by checking the base symbol
+    // For both formats: "USDC (ETH)" -> "USDC" and "USDC.ETH" -> "USDC"
+    const baseSymbol = symbol.includes('(') ?
+      symbol.split(' (')[0].toUpperCase() :
+      getOnlyTokenSymbol(symbol).toUpperCase();
+
+    if (baseSymbol === "USDC" || baseSymbol === "USDT") {
+      return 1;
+    }
+
+    // Fallback to base symbol if full symbol price not found
+    return priceContext.prices?.[baseSymbol] ?? 0;
   }, [priceContext, symbol]);
 }
 
@@ -361,3 +396,4 @@ export function useSlippage() {
     toggleAuto
   };
 }
+

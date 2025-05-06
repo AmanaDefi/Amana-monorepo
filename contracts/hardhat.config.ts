@@ -1,6 +1,6 @@
 import "./tasks/deployGeneric";
 import "./tasks/deployAaveEthStrategy";
-import "./tasks/deployCurveEthStrategy";
+import "./tasks/deployConvexStrategy";
 import "./tasks/deployAmanaConnectedChainVault";
 import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";
@@ -15,13 +15,20 @@ import "./tasks/deployPriceOracle";
 import "./tasks/deployWithdrawalReceiver";
 import "./tasks/deployZapContract";
 import "./tasks/deployCurveERC20_Strategy";
-import "./tasks/deployCurveEthStrategy";
+import "./tasks/deployConvexStrategy";
 import "./tasks/updatePythPrices";
 import "./tasks/deployAaveERC20Flash_Strategy";
 import "./tasks/deployWithdrawHelper";
 import "./tasks/deployERC20_MoonwellStrategy";
 import "./tasks/deployAmanaRegistry";
 import "./tasks/clearNonces";
+import "./tasks/deploySwapHelperPolygon";
+import "./tasks/deployERC20_Strategy_SwapHelper";
+import "./tasks/depositMultiple";
+import "./tasks/deploySwapHelperEthereum";
+import "./tasks/deploySwapHelperArbitrum";
+import "./tasks/findConvexPid";
+import "./tasks/updateWithdrawHelperOnStrats";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -40,7 +47,7 @@ dotenv.config();
 const config: HardhatUserConfig = {
   networks: {
     ...getHardhatConfigNetworks(),
-    ethereum: {
+    mainnet: {
       url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
@@ -74,6 +81,10 @@ const config: HardhatUserConfig = {
     },
     base_sepolia: {
       url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    avalanche: {
+      url: `https://avalanche-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
     // hardhat: {
@@ -166,6 +177,7 @@ const config: HardhatUserConfig = {
       polygon_amoy: process.env.POLYGONSCAN_API_KEY || "",
       bsc: process.env.BSCSCAN_API_KEY || "",
       bsc_testnet: process.env.BSCSCAN_API_KEY || "",
+      avalanche: process.env.AVALANCHE_API_KEY || "",
     },
     customChains: [
       {
@@ -238,6 +250,22 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-testnet.bscscan.com/api",
           browserURL: "https://testnet.bscscan.com",
+        },
+      },
+      {
+        network: "arbitrumOne",
+        chainId: 42161,
+        urls: {
+          apiURL: "https://api.arbiscan.io/api",
+          browserURL: "https://arbiscan.io",
+        },
+      },
+      {
+        network: "avalanche",
+        chainId: 43114,
+        urls: {
+          apiURL: "https://api.snowtrace.io/api",
+          browserURL: "https://snowtrace.io",
         },
       },
     ],

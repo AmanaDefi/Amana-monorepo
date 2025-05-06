@@ -3,20 +3,7 @@ pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-interface ICometRewards {
-    function getRewardOwed(
-        address comet,
-        address account
-    ) external view returns (uint256, uint256);
-
-    function claimTo(
-        address comet,
-        address src,
-        address to,
-        bool shouldAccrue
-    ) external;
-}
+import ".//interfaces/ICometRewards.sol";
 
 interface IStrategy {
     function totalShares() external view returns (uint256);
@@ -130,12 +117,12 @@ contract RewardsClaimer is Ownable {
      * @dev Fetches the latest rewards from Compound and updates the global rewards tracker.
      */
     function _updateRewards() internal returns (uint256) {
-        (uint256 rewardsOwed, ) = cometRewards.getRewardOwed(
+        ICometRewards.RewardOwed memory reward = cometRewards.getRewardOwed(
             comet,
-            address(strategy)
+            address(this)
         );
-        uint256 newRewards = rewardsOwed - lastRecordedRewards;
-        lastRecordedRewards = rewardsOwed;
+        uint256 newRewards = reward.owed - lastRecordedRewards;
+        lastRecordedRewards = reward.owed;
         return newRewards;
     }
 
