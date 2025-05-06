@@ -113,14 +113,11 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
 
   useEffect(() => {
     // Detect if chain has changed
-    const hasChainSwitched = 
-      prevChainRef.current && 
-      activeChain && 
+    const hasChainSwitched =
+      prevChainRef.current &&
+      activeChain &&
       prevChainRef.current.id !== activeChain.id;
 
-    // Always log the current chain state for debugging
-    console.log(`Token balance check: ${token?.symbol || 'no token'} on chain ${activeChain?.id || 'no chain'}`);
-    
     // Update the previous chain reference
     if (activeChain) {
       prevChainRef.current = { ...activeChain };

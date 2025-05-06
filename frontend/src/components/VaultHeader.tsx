@@ -46,11 +46,7 @@ export default function VaultHeader({
   useEffect(() => {
     const vaultId = vaultData.id as string;
     const isNewVault = vaultId !== lastVaultIdRef.current;
-    
-    // Always log vault changes
-    if (isNewVault) {
-      console.log("VaultHeader: New vault detected:", vaultId);
-    }
+  
     
     // Extract base symbol from vault token
     const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0].split(' ')[0];
@@ -61,11 +57,9 @@ export default function VaultHeader({
     // Ensure we always update the input token when any of these dependencies change
     if (selectedToken) {
       // If there's a user-selected token, use it
-      console.log("VaultHeader: Using user-selected token:", selectedToken.symbol);
       setInputToken(selectedToken);
     } else if (activeChain?.id === 7000 || activeChain?.id === 7001) {
       // Fallback: If on ZetaChain, use vault input token
-      console.log("VaultHeader: Using vault input token on ZetaChain:", vaultData.inputToken.symbol);
       setInputToken(vaultData.inputToken);
     } else if (activeChain) {
       // Fallback: For other chains, determine the appropriate token
@@ -73,7 +67,6 @@ export default function VaultHeader({
         activeChain.id as number,
         vaultData.inputToken
       );
-      console.log(`VaultHeader: Determined token for chain ${activeChain.id}: ${determinedToken?.symbol} (vault token is ${isNativeVaultToken ? 'native' : 'non-native'})`);
       setInputToken(determinedToken);
     }
     
@@ -87,7 +80,6 @@ export default function VaultHeader({
   useEffect(() => {
     // Refresh the balance when network or token changes
     if (inputToken && activeChain) {
-      console.log("VaultHeader: Refreshing balance for", inputToken.symbol, "on chain", activeChain.id);
       fetchBalance();
     }
   }, [activeChain?.id, inputToken?.address, fetchBalance]);

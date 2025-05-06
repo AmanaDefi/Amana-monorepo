@@ -185,7 +185,6 @@ export default function VaultInputs({
     
     // Force token selection reset when vault changes
     if (isNewVault) {
-      console.log("VaultInputs: New vault detected, resetting token selection");
       // Reset input field data
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
@@ -194,7 +193,6 @@ export default function VaultInputs({
     if (activeChain?.id === 7001 || activeChain?.id === 7000) {
       // If on ZetaChain testnet, set inputToken to the vault token
       setInputToken(vaultData.inputToken);
-      console.log("VaultInputs: Setting input token to vault token on ZetaChain:", vaultData.inputToken.symbol);
     } else if (activeChain) {
       // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
       const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0].split(' ')[0];
@@ -208,7 +206,6 @@ export default function VaultInputs({
         vaultData.inputToken
       );
       
-      console.log(`VaultInputs: Determined token for chain ${activeChain.id}: ${determinedToken?.symbol} (vault token is ${isNativeVaultToken ? 'native' : 'non-native'})`);
       setInputToken(determinedToken);
       
       // Ensure parent components know about the token selection
@@ -225,7 +222,6 @@ export default function VaultInputs({
   // Force refresh token balance when token or chain changes
   useEffect(() => {
     if (inputToken && activeChain) {
-      console.log("VaultInputs: Refreshing balance for", inputToken.symbol, "on chain", activeChain.id);
       fetchBalance();
       // Reset input field when token changes
       setInputBalance(EMPTY_BALANCE);
