@@ -119,41 +119,37 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       prevChainRef.current.id !== activeChain.id;
 
     // Update the previous chain reference
-    prevChainRef.current = activeChain;
-
-    if (hasChainSwitched) {
-      console.log(
-        `Chain switched from ${prevChainRef.current?.id} to ${activeChain?.id}. Resetting retry count.`
-      );
-      retryCountRef.current = 0;
+    if (activeChain) {
+      prevChainRef.current = { ...activeChain };
     }
 
-    // Execute initial fetch
+    // Always fetch when dependencies change, not just on chain switch
     fetchBalance();
 
-    // If we have zero balance after a chain switch, retry with increasing delays
+    // If we have zero balance or switched chains, retry with increasing delays
     if (
-      (hasChainSwitched || retryCountRef.current > 0) &&
-      balance.value === 0n &&
+      (hasChainSwitched || balance.value === 0n) &&
+      token && // Ensure we have a token
+      walletAddress && // Ensure wallet is connected
       retryCountRef.current < MAX_RETRIES
     ) {
       const retryDelay = 1000 * (retryCountRef.current + 1); // Increasing delay: 1s, 2s, 3s...
       retryCountRef.current += 1;
 
       console.log(
-        `Scheduling retry #${retryCountRef.current} for token balance fetch in ${retryDelay}ms`
+        `Scheduling retry #${retryCountRef.current} for ${token.symbol} balance fetch in ${retryDelay}ms`
       );
 
       const timeoutId = setTimeout(() => {
         console.log(
-          `Executing retry #${retryCountRef.current} for token balance fetch`
+          `Executing retry #${retryCountRef.current} for ${token.symbol} balance fetch`
         );
         fetchBalance();
       }, retryDelay);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [token, walletAddress, activeChain, nativeBalance, balance.value]);
+  }, [token?.address, walletAddress, activeChain?.id, fetchBalance]);
 
   return { balance, fetchBalance };
 };

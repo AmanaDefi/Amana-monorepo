@@ -13,12 +13,12 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
 import TokenIcon from "@/components/common/TokenIcon";
 import PendingDots from "@/components/PendingDots";
-import { ConversionOutput } from "@/components/VaultInputs";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "thirdweb";
 import { formatTokenBalance } from "@/utils/utils";
+import { ConversionOutput } from "@/components/VaultInputs";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -101,12 +101,23 @@ export default function InputTokenWithError({
     return formatTokenBalance(inputTokenbalance, selectedToken.symbol);
   }, [inputTokenbalance, selectedToken?.symbol]);
 
+  // Add prettifyBalance function at the top
+  const prettifyBalance = (balance: string): string => {
+    const num = parseFloat(balance);
+    if (isNaN(num)) return "0";
+    
+    // Format with appropriate decimals
+    if (num >= 1000) return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    if (num >= 1) return num.toLocaleString('en-US', { maximumFractionDigits: 4 });
+    return num.toLocaleString('en-US', { maximumFractionDigits: 6 });
+  };
+
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         {captionText && (
           <div className="text-white text-start flex items-center gap-2">
-            {captionText}
+            <p className="text-lg font-semibold">{captionText}</p>
             {isOutput && (
               <>
                 <button id="output-amount-button" className="group">
@@ -138,97 +149,98 @@ export default function InputTokenWithError({
           )}
         </div>
       </div>
-      <div className="relative flex w-full flex-col">
-        <div
-          className={`w-full px-5 pt-4 pb-3 rounded-lg border ${
-            errorMessage ? "border-red-500" : "border-customGray100"
-          }`}
-        >
-          <div className="flex items-center justify-between ">
-            <div className="xs:w-full xs:border-r xs:border-customGray500 xs:pr-4 smmd:p-0 smmd:border-none smmd:w-1/2">
-              {isOutput ? (
-                <span className="text-customGray100 text-2xl">
+
+      <div className="bg-customNeutral300 rounded-lg border border-customNeutral100 focus-within:border-teal-500 transition-colors shadow-sm hover:border-gray-500">
+        <div className="flex items-stretch">
+          <div className="flex-grow">
+            <div className="text-sm text-gray-400 px-4 pt-3">
+              Balance: {prettifyBalance(inputTokenbalance || "0")}
+            </div>
+            {isOutput ? (
+              <div className="px-4 py-3">
+                <span className="text-white text-lg font-medium">
                   {loadingOutputToken ? <PendingDots /> : props.value || "0.0"}
                 </span>
-              ) : (
-                <InputNumber {...props} disabled={disabled} />
-              )}
-            </div>
-            <div
-              className={`flex items-center ml-1 gap-2 group/max text-customGray300 ${
-                allowInput && !isOutput
-                  ? "group-hover/max:text-white cursor-pointer "
-                  : ""
-              }`}
-              onClick={allowInput ? onMaxClick : () => {}}
-            >
-              <div
-                className={`mb-1 ${
-                  allowInput && !isOutput ? "group-hover/max:text-white" : ""
-                }`}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 21 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M9.99929 19.9977C7.84068 19.9977 5.68201 20.0029 3.52339 19.996C1.82427 19.9907 0.443415 18.8903 0.0821254 17.2519C0.0186932 16.9643 0.00456488 16.661 0.00421603 16.365C-0.000609699 12.2367 -0.00281898 8.10843 0.00607664 3.98016C0.00706504 3.51172 0.0148559 3.02723 0.128987 2.57803C0.522023 1.03031 1.89381 0.00765945 3.52479 0.00312443C5.56712 -0.00257342 7.60945 0.00167092 9.65178 0.00167092C11.7668 0.00167092 13.8818 -0.00286406 15.9969 0.00300821C17.9471 0.00841535 19.521 1.27758 19.9168 3.16584C19.9743 3.44044 19.9887 3.72818 19.9879 4.00976C19.9869 4.36058 19.7042 4.61629 19.3342 4.64088C18.996 4.66338 18.6816 4.42902 18.6241 4.09645C18.5772 3.82545 18.5738 3.54474 18.5058 3.28003C18.2299 2.20575 17.2639 1.43462 16.1572 1.40311C15.5763 1.3866 14.9944 1.39741 14.413 1.39735C10.808 1.39706 7.20304 1.39642 3.59805 1.3977C2.60325 1.39805 1.84224 1.90196 1.52525 2.76269C1.04134 4.07645 1.96899 5.48556 3.36711 5.55951C3.4831 5.56562 3.5995 5.56818 3.71567 5.56818C6.79733 5.56864 9.87905 5.56713 12.9607 5.56928C14.1379 5.5701 15.3152 5.57556 16.4924 5.58486C18.4709 5.6005 19.9845 7.10212 19.9939 9.08154C20.0055 11.5527 20.0051 14.0239 19.9941 16.495C19.9853 18.4846 18.4698 19.9883 16.4752 19.9958C14.3166 20.004 12.1579 19.9977 9.99929 19.9977ZM15.5834 14.1858C16.3528 14.1848 16.9794 13.5537 16.9761 12.783C16.9727 12.0222 16.3505 11.3995 15.5898 11.3958C14.8187 11.3921 14.1877 12.0177 14.1863 12.7875C14.1849 13.5576 14.8135 14.1868 15.5834 14.1858Z"
-                    fill="currentColor"
-                  />
-                </svg>
               </div>
-              {
-                <p
-                  className={`${
-                    allowInput && !isOutput ? "group-hover/max:text-white" : ""
-                  }`}
+            ) : (
+              <div className="mx-4 my-2 w-4/5">
+                <InputNumber
+                  disabled={disabled || !allowInput || isOutput}
+                  value={props.value}
+                  onChange={props.onChange}
+                  {...props}
+                  className="bg-transparent text-white text-lg font-medium py-3 px-4 focus:outline-none"
+                />
+              </div>
+            )}
+            
+              {/* USD Equivalent for Input Amount */}
+            <div className="flex justify-between items-center px-4 pb-3">
+              <div className="text-gray-400 text-sm">
+                {isOutput && loadingOutputToken ? (
+                  <div className="flex items-center font-medium gap-1">
+                    <p className="text-customGray400 text-sm">Calculating</p>
+                    <PendingDots />
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    {"$ " +
+                      (isOutput
+                        ? conversionOutput.outputAmountInUSDFormatted
+                        : !isDeposit
+                          ? conversionOutput.finalConvertedAmountInUSDFormatted || "0"
+                          : formatCurrency(Number(props.value || 0) * selectedTokenPrice)
+                      )}
+                    
+                    {/* Add gas fee indicator for non-gas tank deposits */}
+                    {isOutput && isDeposit && !vaultData.depositFeePaidFromGasTank && conversionOutput?.gasFeeInVaultAsset && Number(conversionOutput.gasFeeInVaultAsset) > 0 && (
+                      <>
+                        <button id="gas-fee-button" className="group ml-2">
+                          <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+                        </button>
+                        <ResponsiveTooltip
+                          id={"gas-fee-button"}
+                          content={
+                            <p className="w-48">
+                              This output includes a deposit gas fee of {conversionOutput.gasFeeInETH} ETH (~${conversionOutput.gasFeeInUSD}) which will be deducted from your deposit.
+                            </p>
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+              {!isOutput && (
+                <button
+                  type="button"
+                  onClick={onMaxClick}
+                  disabled={disabled}
+                  className="text-xs px-2 py-1 bg-gradient-to-r from-teal-700 to-teal-500 text-white rounded hover:from-teal-600 hover:to-teal-400 active:from-teal-700 active:to-teal-500 transition-colors focus:outline-none disabled:opacity-50"
                 >
-                  {inputTokenbalance ? formattedTokenBalance : "0"}
-                </p>
-              }
+                  MAX
+                </button>
+              )}
+             
             </div>
           </div>
-          <div className="flex justify-between items-center mt-3 w-full text-customGray300">
-            <p className="group-hover/max:text-white">
-              {isDeposit && !isOutput ? (
-                "$ " +
-                (selectedToken
-                  ? // Removed the unnecessary .toString() call since formatCurrency already returns a string
-                    // Changed the default value from "0" to "0.00" to maintain consistent decimal formatting
-                    formatCurrency(
-                      Number(props.value || 0) * selectedTokenPrice
-                    )
-                  : "0.00")
-              ) : loadingOutputToken ? (
-                <PendingDots />
-              ) : (
-                "$ " +
-                (isOutput
-                  ? conversionOutput.outputAmountInUSDFormatted
-                  : conversionOutput.finalConvertedAmountInUSDFormatted)
-              )}
-            </p>
-            <div className="xs:w-fit xs:pl-4 smmd:p-0 smmd:w-1/2">
+         
+            <div className="border-l border-customNeutral100 flex items-center flex-col justify-center px-2 gap-2">
               {showTokenSelector ? (
-                <ChainTokenSelector
+                <><span className="text-white text-lg font-bold">
+Select Token
+              </span><ChainTokenSelector
                   selectedToken={selectedToken}
                   onSelectToken={handleTokenSelection}
                   className="w-full justify-end"
-                  vaultData={vaultData}
-                />
+                  vaultData={vaultData} /></>
               ) : (
-                <div className="flex items-center">
+                    <div className="flex items-center bg-[#7c7a85] p-2 rounded-lg m-2">
                   <div className="md:mr-2 relative flex-none w-5 h-5">
                     <TokenIcon
                       token={selectedToken as Token}
                       icon={selectedToken?.imgURL}
-                      imageSize="w-5 h-5"
-                    />
+                      imageSize="w-5 h-5" />
                   </div>
                   <p className="font-medium text-lg leading-none text-white">
                     {selectedToken?.symbol}
@@ -236,19 +248,10 @@ export default function InputTokenWithError({
                 </div>
               )}
             </div>
-          </div>
         </div>
-        {errorMessage && (
-          <p
-            className={`${
-              !isOutput &&
-              "absolute bottom-0 left-0 translate-y-full lg:translate-y-full"
-            } pt-0.5 lg:pt-1 text-red-500 leading-6`}
-          >
-            {errorMessage}
-          </p>
-        )}
       </div>
+
+      {errorMessage && <p className="text-red-500 text-sm mt-1">{errorMessage}</p>}
     </div>
   );
 }

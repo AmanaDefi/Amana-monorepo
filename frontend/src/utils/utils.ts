@@ -22,6 +22,7 @@ import { ChainOptions } from "thirdweb/chains";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { keccak_256 } from 'js-sha3';
 
+
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
   return value.toLocaleString("en-US", {
@@ -332,11 +333,109 @@ export const selectActions = async (
 export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
   const approvedTokens = APPROVED_TOKENS[chainId];
   if (!approvedTokens?.length) return undefined;
-  const vaultTokenSymbol = vaultToken.symbol.split('.')[0];
-  return approvedTokens.find(el => {
-    const approvedTokenSymbol = el.symbol.split('.')[0];
-    return approvedTokenSymbol.toLowerCase() === vaultTokenSymbol.toLowerCase()
-  }) ?? approvedTokens[0];
+  
+  // Extract the base symbol (e.g., "USDT" from "USDT.POL")
+  const vaultTokenSymbol = vaultToken.symbol.split('.')[0].split(' ')[0];
+  
+  // Check if vault token is a native token (ETH, BNB, AVAX, etc.)
+  const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+  
+  // If it's a native vault token, prefer returning the native token of the current chain
+  if (isNativeVaultToken) {
+    // Find the native token from the current chain (address 0x0000...)
+    const nativeToken = approvedTokens.find(token => 
+      token.address === "0x0000000000000000000000000000000000000000" ||
+      token.address === "11111111111111111111111111111111" // Solana native
+    );
+    
+    if (nativeToken) {
+      console.log(`Found native token ${nativeToken.symbol} for native vault token ${vaultTokenSymbol}`);
+      return nativeToken;
+    }
+  }
+  
+  // If it's not a native vault token or we couldn't find a native token, continue with the existing logic
+  
+  // 1. First, try to find an exact match by symbol (prioritizing non-native tokens for stables)
+  const exactMatches = approvedTokens.filter(token => {
+    const tokenSymbol = token.symbol.split('.')[0].split(' ')[0];
+    return tokenSymbol.toLowerCase() === vaultTokenSymbol.toLowerCase();
+  });
+  
+  if (exactMatches.length > 0) {
+    // For non-native vault tokens (like stablecoins), prioritize non-native tokens over native ones
+    if (!isNativeVaultToken) {
+      const nonNativeMatch = exactMatches.find(token => 
+        token.address !== "0x0000000000000000000000000000000000000000" &&
+        token.address !== "11111111111111111111111111111111" // Solana native
+      );
+      
+      if (nonNativeMatch) {
+        return nonNativeMatch;
+      }
+    }
+    
+    // If no non-native match or it's a native vault token, return the first match
+    return exactMatches[0];
+  }
+  
+  // 2. Check if vault token is a stablecoin and try to find a stablecoin on current chain
+  const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD'].includes(vaultTokenSymbol.toUpperCase());
+  
+  if (isStablecoin) {
+    // Look for any stablecoin on the current chain
+    const stablecoins = approvedTokens.filter(token => {
+      const tokenSymbol = token.symbol.split('.')[0].split(' ')[0].toUpperCase();
+      return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD'].includes(tokenSymbol);
+    });
+    
+    // First try to find the same type of stablecoin
+    const sameTypeStable = stablecoins.find(token => 
+      token.symbol.split('.')[0].split(' ')[0].toUpperCase() === vaultTokenSymbol.toUpperCase()
+    );
+    
+    if (sameTypeStable) {
+      return sameTypeStable;
+    }
+    
+    // Otherwise return any stablecoin (non-native preferred)
+    if (stablecoins.length > 0) {
+      const nonNativeStable = stablecoins.find(token => 
+        token.address !== "0x0000000000000000000000000000000000000000" &&
+        token.address !== "11111111111111111111111111111111"
+      );
+      
+      return nonNativeStable || stablecoins[0];
+    }
+  }
+  
+  // 3. Try other token types (BTC-like, ETH-like)
+  if (['ETH', 'WETH'].includes(vaultTokenSymbol.toUpperCase())) {
+    const ethLike = approvedTokens.find(token => 
+      ['ETH', 'WETH'].includes(token.symbol.split(' ')[0].split('.')[0].toUpperCase())
+    );
+    if (ethLike) return ethLike;
+  }
+  
+  if (['BTC', 'WBTC', 'BTCB'].includes(vaultTokenSymbol.toUpperCase())) {
+    const btcLike = approvedTokens.find(token => 
+      ['BTC', 'WBTC', 'BTCB'].includes(token.symbol.split(' ')[0].split('.')[0].toUpperCase())
+    );
+    if (btcLike) return btcLike;
+  }
+  
+  // 4. Last resort: Return the first non-native token if available
+  const nonNativeTokens = approvedTokens.filter(token => 
+    token.address !== "0x0000000000000000000000000000000000000000" &&
+    token.address !== "11111111111111111111111111111111"
+  );
+  
+  if (nonNativeTokens.length > 0) {
+    return nonNativeTokens[0];
+  }
+  
+  // 5. If we got here and still have no match, use the first token as fallback
+  return approvedTokens[0];
 }
 
 export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
@@ -592,3 +691,14 @@ export const formatTokenBalance = (balance: string | number, symbol: string): st
   const decimals = isStablecoin ? 2 : 4;
   return num.toFixed(decimals);
 };
+
+export function convertUsdToEth(
+  usdAmount: number,
+  ethPriceUsd: number
+): { ethAmount: number; ethFormatted: string } {
+  if (!usdAmount || !ethPriceUsd) {
+    return { ethAmount: 0, ethFormatted: "0" };
+  }
+  const ethAmount = usdAmount / ethPriceUsd;
+  return { ethAmount, ethFormatted: ethAmount.toFixed(6) };
+}

@@ -440,7 +440,6 @@ export async function calculateConvexArbitrumRewardsAPY(
       : lpPriceInInput;
 
     const crvApy = (Number(annualCrvPerToken) / 1e20) * crvTokenPrice / lpPriceInUSD;
-    console.log("CRV APY:", crvApy);
     return crvApy;
   } catch (err) {
     console.error("CRV APY calculation failed:", err);
