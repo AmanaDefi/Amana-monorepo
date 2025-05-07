@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { VaultData, VaultTotalAssets, VaultAPY, Token, Balance } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from "next/image";
@@ -32,28 +32,59 @@ export default function VaultHeader({
   const { activeChain } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [depositAmount, setDepositAmount] = useState("0");
+  const lastVaultIdRef = useRef<string | null>(null);
+  const lastActiveChainRef = useRef<number | null>(null);
   
   // Debug full userVaultBalance object
   console.log("Full userVaultBalance:", userVaultBalance);
   
   // Determine input token based on user selection or active chain
   useEffect(() => {
+    const vaultId = vaultData.id as string;
+    const isNewVault = vaultId !== lastVaultIdRef.current;
+    const isChainChanged = activeChain?.id !== lastActiveChainRef.current;
+    
+    // Always log vault changes
+    if (isNewVault) {
+      console.log("VaultHeader: New vault detected:", vaultId);
+    }
+    
+    if (isChainChanged) {
+      console.log(`VaultHeader: Chain changed from ${lastActiveChainRef.current} to ${activeChain?.id}`);
+    }
+    
+    // Extract base symbol from vault token
+    const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0].split(' ')[0];
+    
+    // Check if vault token is a native token
+    const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+    
+    // Ensure we always update the input token when any of these dependencies change
     if (selectedToken) {
       // If there's a user-selected token, use it
+      console.log("VaultHeader: Using user-selected token:", selectedToken.symbol);
       setInputToken(selectedToken);
     } else if (activeChain?.id === 7000 || activeChain?.id === 7001) {
       // Fallback: If on ZetaChain, use vault input token
+      console.log("VaultHeader: Using vault input token on ZetaChain:", vaultData.inputToken.symbol);
       setInputToken(vaultData.inputToken);
-    } else {
+    } else if (activeChain) {
       // Fallback: For other chains, determine the appropriate token
-      setInputToken(
-        determineVaultTokenFromApprovedTokens(
-          activeChain?.id as number,
-          vaultData.inputToken
-        )
+      const determinedToken = determineVaultTokenFromApprovedTokens(
+        activeChain.id as number,
+        vaultData.inputToken
       );
+      console.log(`VaultHeader: Determined token for chain ${activeChain.id}: ${determinedToken?.symbol} (vault token is ${isNativeVaultToken ? 'native' : 'non-native'})`);
+      setInputToken(determinedToken);
     }
-  }, [activeChain, vaultData, selectedToken]);
+    
+    // Update the last vault ID reference
+    lastVaultIdRef.current = vaultId;
+    // Update the last active chain reference
+    if (activeChain) {
+      lastActiveChainRef.current = activeChain.id;
+    }
+  }, [activeChain, vaultData.id, vaultData.inputToken, selectedToken]);
 
   const { balance: walletTokenBalance, fetchBalance } =
     useMultichainTokenBalance(inputToken);
@@ -64,6 +95,13 @@ export default function VaultHeader({
 
   // Format wallet balance according to token type
   const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
+
+  // Refresh wallet balance when input token changes
+  useEffect(() => {
+    if (inputToken) {
+      fetchBalance();
+    }
+  }, [inputToken, fetchBalance]);
 
   useEffect(() => {
     // Update deposit amount whenever the vault balance changes
