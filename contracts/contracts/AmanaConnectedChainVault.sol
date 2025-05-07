@@ -281,6 +281,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _processBufferedConfirmations(processEntireBuffer);
     }
 
+    function processExistingConfirmation(
+        uint256 executionNonce
+    ) external onlyOwner {
+        // Ensure the confirmation exists
+        if (pendingConfirmations[executionNonce].amount == 0) {
+            revert ConfirmationAlreadyProcessed();
+        }
+
+        // Attempt to process confirmations
+        _processBufferedConfirmations(false);
+    }
+
     /**
      * @dev Processes all buffered confirmations sequentially based on their execution nonce.
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
