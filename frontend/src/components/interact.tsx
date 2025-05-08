@@ -60,6 +60,11 @@ const handleDepositTransaction = async (
 
   try {
     const depositAmount = inputBalance.value;
+    // Debug log for USD amount of deposit
+    console.log("[Deposit Debug] vault=", vaultData.id.toString(), 
+      "tokenAmount=", depositAmount.toString(), 
+      "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2)
+    );
     const receipt = await executeDeposit(
       vaultData,
       inputToken,
@@ -73,6 +78,7 @@ const handleDepositTransaction = async (
     mixpanel.track("Deposit Submitted", {
       vault: vaultData.id.toString(),
       amount: depositAmount.toString(),
+      amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
     });
 
     if (activeChain.id === CHAIN_ID.solana) {
@@ -98,6 +104,8 @@ const handleDepositTransaction = async (
     if (!error.message.includes("User denied transaction")) {
       mixpanel.track("Deposit Failed", {
         vault: vaultData.id.toString(),
+        amount: inputBalance.value.toString(),
+        amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
       });
     }
   }
@@ -128,9 +136,15 @@ const handleWithdrawTransaction = async (
   }
   try {
     const withdrawShareAmount = inputBalance.value;
+    // Debug log for USD amount of withdrawal
+    console.log("[Withdraw Debug] vault=", vaultData.id.toString(), 
+      "tokenAmount=", withdrawShareAmount.toString(), 
+      "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2)
+    );
     mixpanel.track("Withdraw Submitted", {
       vault: vaultData.id.toString(),
       amount: withdrawShareAmount.toString(),
+      amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2),
     });
     const receipt = await executeWithdrawal(
       vaultData.id as Address,
@@ -147,6 +161,7 @@ const handleWithdrawTransaction = async (
     mixpanel.track("Withdraw Succeeded", {
       vault: vaultData.id.toString(),
       amount: withdrawShareAmount.toString(),
+      amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2),
     });
 
     if (activeChain.id === CHAIN_ID.solana) {
@@ -170,6 +185,8 @@ const handleWithdrawTransaction = async (
   } catch (error) {
     mixpanel.track("Withdraw Failed", {
       vault: vaultData.id.toString(),
+      amount: inputBalance.value.toString(),
+      amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2),
     });
   }
 };
@@ -725,58 +742,58 @@ export default function InteractionContainer({
             const nextStep = actions.findIndex((el) => el == Action.withdrew);
             setAction(actions[nextStep]);
             setStep(nextStep);
-            return;
-          }
-        } else if (
-          last_event.eventName == "CrossChainDepositFailed" &&
-          action == Action.depositConfirmed
-        ) {
-          console.log(
-            "EVENT CrossChainDepositFailed on deposit: ",
-            last_event,
-            action,
-            step
-          );
-          if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+            return;}
+          } else if (
+            last_event.eventName == "CrossChainDepositFailed" &&
+            action == Action.depositConfirmed
+          ) {
             console.log(
-              "PASSED EVENT CrossChainDepositFailed on deposit: ",
+              "EVENT CrossChainDepositFailed on deposit: ",
               last_event,
               action,
               step
             );
-            setLastEventTxHash(
-              `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}`
-            );
-            const nextStep = actions.findIndex(
-              (el) => el == Action.CrossChainDepositFailed
-            );
-            setAction(actions[nextStep]);
-            setStep(nextStep);
-            return;
-          }
-        } else if (
-          last_event.eventName == "CrossChainWithdrawFailed" &&
-          action == Action.withdrawconfirmed
-        ) {
-          console.log(
-            "EVENT CrossChainWithdrawFailed on withdraw: ",
-            last_event,
-            action,
-            step
-          );
-          if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+            if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+              console.log(
+                "PASSED EVENT CrossChainDepositFailed on deposit: ",
+                last_event,
+                action,
+                step
+              );
+              setLastEventTxHash(
+                `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}`
+              );
+              const nextStep = actions.findIndex(
+                (el) => el == Action.CrossChainDepositFailed
+              );
+              setAction(actions[nextStep]);
+              setStep(nextStep);
+              return;
+            }
+          } else if (
+            last_event.eventName == "CrossChainWithdrawFailed" &&
+            action == Action.withdrawconfirmed
+          ) {
             console.log(
-              "PASSED EVENT CrossChainWithdrawFailed on withdraw: ",
+              "EVENT CrossChainWithdrawFailed on withdraw: ",
               last_event,
               action,
               step
             );
-            const nextStep = actions.findIndex(
-              (el) => el == Action.CrossChainWithdrawFailed
-            );
-            setAction(actions[nextStep]);
-            setStep(nextStep);
-            return;
+            if (last_event.args.crossChainTxId.toString() == crossChainTxId) {
+              console.log(
+                "PASSED EVENT CrossChainWithdrawFailed on withdraw: ",
+                last_event,
+                action,
+                step
+              );
+              const nextStep = actions.findIndex(
+                (el) => el == Action.CrossChainWithdrawFailed
+              );
+              setAction(actions[nextStep]);
+              setStep(nextStep);
+              return;
+            
           }
         }
       }

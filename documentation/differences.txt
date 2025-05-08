@@ -1,0 +1,57 @@
+4. Vault-ID reset effect
++ Add above your chain/token‐selection effect:
+  const lastVaultIdRef = useRef<string|null>(null);
+  useEffect(() => {
+    if (vaultData.id !== lastVaultIdRef.current) {
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+    }
+    // …existing token-determine logic…
+    lastVaultIdRef.current = vaultData.id as string;
+    setAllowInput(true);
+  }, [activeChain?.id, vaultData.id, vaultData.inputToken]);
+
+5. onSelectToken everywhere
+- Some `InputTokenWithError` still pass `() => {}` for withdraw/deposit.
++ Change both to use `handleTokenSelect`, e.g.:
+    onSelectToken={handleTokenSelect}
+
+7. Slippage change listener
++ Add after your debounced output useEffect:
+  useEffect(() => {
+    const handleSlippageChange = () => {
+      if (
+        debouncedInputBalance.formatted &&
+        Number(debouncedInputBalance.formatted) > 0
+      ) {
+        setLoadingOutputToken(true);
+        if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
+        else getWithdrawOutputAmount(debouncedInputBalance.value);
+      }
+    };
+    window.addEventListener('slippageChanged', handleSlippageChange);
+    return () => {
+      window.removeEventListener('slippageChanged', handleSlippageChange);
+    };
+  }, [debouncedInputBalance, isDeposit, getDepositOutputAmount, getWithdrawOutputAmount]);
+
+8. handleTabChange overhaul
+- Replace your current handler with the fix.txt version that:
+  • Saves `scrollPosition = window.scrollY`  
+  • `router.push(..., { scroll: false })`  
+  • `setInputBalance(EMPTY_BALANCE); setDisplayValue(""); setConversionOutput(initialConversionOutput); setIsDeposit(newIsDeposit); setStep(0); setSteps([]);`  
+  • `setTimeout(() => window.scrollTo(0, scrollPosition), 0);`
+
+9. Banner & Tab order
+- Move the gas-banner *above* `<TabSelector>` and switch to yellow classes:
+    bg-yellow-900/30 border-yellow-500 py-3 px-4 rounded-lg mb-5
+  instead of your current amber block.
+
+10. Net-deposit icon sizing
+- Change the `<InformationCircleIcon>` inside the net-deposit tooltip to:
+    className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors"
+
+11. Fee Breakdown styling
+- Make sure the “Deposit Fee (deducted from your deposit)” block and its tooltip follow fix.txt spacing, icon sizing, and text:
+    • `className="ml-2 group"` on the button  
+    • icon: `className="w-4 h-4 …"`  

@@ -449,7 +449,14 @@ export function getStoredSettings(): UserSettings {
 
 
 export function getCurrentSlippage(): number {
-  return getStoredSettings().slippage.value;
+  const settings = getStoredSettings();
+  return settings.slippage.value;
+}
+
+// Converts a USD amount to ETH based on current ETH price
+export function convertUsdToEth(usdAmount: number, ethPrice: number): number {
+  if (!ethPrice || ethPrice <= 0) return 0;
+  return usdAmount / ethPrice;
 }
 
 /**
