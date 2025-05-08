@@ -22,7 +22,7 @@ import { client } from "@/utils/client";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { isZetachain } from "@/utils/utils";
-import { useInteractionEvents } from "@/hooks/hooks";
+import { useInteractionEvents, useTokenPriceBySymbol } from "@/hooks/hooks";
 import { determineVaultTokenFromApprovedTokens } from "@/utils/utils";
 import {
   APPROVED_TOKENS,
@@ -42,6 +42,10 @@ import { SolanaZetaClient } from "@/lib/solanaGateway/cli/scripts";
 import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useInboundToCctxData } from "@/hooks/useInboundToCctxData";
+import { decimals } from "thirdweb/extensions/erc20";
+import { trackEvent } from "@/utils/trackEvent";
+import { getAssetsFromShares } from "@/actions/actions";
+import { amount } from "codemelt-retro-api-sdk/functional/api/venft/upgrade";
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -60,6 +64,11 @@ const handleDepositTransaction = async (
 
   try {
     const depositAmount = inputBalance.value;
+    // Debug log for USD amount of deposit
+    console.log("[Deposit Debug] vault=", vaultData.id.toString(), 
+      "tokenAmount=", depositAmount.toString(), 
+      "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2)
+    );
     const receipt = await executeDeposit(
       vaultData,
       inputToken,
@@ -70,9 +79,14 @@ const handleDepositTransaction = async (
       setcrossChainTxId
     );
 
-    mixpanel.track("Deposit Submitted", {
+    trackEvent("Deposit Initiated", {
+      vaultSymbol: vaultData.symbol,
       vault: vaultData.id.toString(),
       amount: depositAmount.toString(),
+      inputToken: inputToken.symbol,
+      amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
+      user: activeAccount.address,
+      chain: activeChain.id,
     });
 
     if (activeChain.id === CHAIN_ID.solana) {
@@ -96,7 +110,8 @@ const handleDepositTransaction = async (
     return true;
   } catch (error: any) {
     if (!error.message.includes("User denied transaction")) {
-      mixpanel.track("Deposit Failed", {
+      trackEvent("Deposit Failed", {
+        vaultSymbol: vaultData.symbol,
         vault: vaultData.id.toString(),
       });
     }
@@ -128,9 +143,18 @@ const handleWithdrawTransaction = async (
   }
   try {
     const withdrawShareAmount = inputBalance.value;
-    mixpanel.track("Withdraw Submitted", {
+    const assetsOut = await getAssetsFromShares(withdrawShareAmount, vaultData);
+    const withdrawAmountFormatted = Number(assetsOut) / 10 ** withdrawToken.decimals;
+    const amountUSD = (withdrawAmountFormatted * (withdrawToken.price || 0)).toFixed(2);
+
+    trackEvent("Withdraw Submitted", {
+      vaultSymbol: vaultData.symbol,
       vault: vaultData.id.toString(),
       amount: withdrawShareAmount.toString(),
+      amountUSD: amountUSD,
+      withdrawToken: withdrawToken.symbol,
+      user: activeAccount.address,
+      chain: activeChain.id,
     });
     const receipt = await executeWithdrawal(
       vaultData.id as Address,
@@ -144,10 +168,6 @@ const handleWithdrawTransaction = async (
       withdrawZRC20 as Token,
       setcrossChainTxId
     );
-    mixpanel.track("Withdraw Succeeded", {
-      vault: vaultData.id.toString(),
-      amount: withdrawShareAmount.toString(),
-    });
 
     if (activeChain.id === CHAIN_ID.solana) {
       // await waitForReceiptSol(receipt.transactionHash)
@@ -168,8 +188,9 @@ const handleWithdrawTransaction = async (
     setCrosschainInvestHash(receipt.transactionHash);
     return true;
   } catch (error) {
-    mixpanel.track("Withdraw Failed", {
+    trackEvent("Withdraw Failed", {
       vault: vaultData.id.toString(),
+      vaultSymbol: vaultData.symbol,
     });
   }
 };
@@ -1060,6 +1081,10 @@ function Interaction({
         }));
         break;
       case Action.deposited:
+        trackEvent("Deposit Crosschain Complete", {
+          vaultSymbol: vaultData.symbol,
+          vault: vaultData.id,
+        });
         if (isZetachain(vaultData.protocol.chainId)) {
           if (isZetachain(activeChain.id)) {
             newTransactionStepFeedback = {
@@ -1373,6 +1398,10 @@ function Interaction({
     if (isTransactionProcessing) return;
     setIsTransactionProcessing(true);
     if (action == Action.depositApprove) {
+      trackEvent("Approve Clicked", {
+        vaultSymbol: vaultData.symbol,
+        token: inputToken.symbol,
+      });
       updateTransactionStepFeedback(action, {
         status: TransactionStepStatus.processing,
         description: "Approval in progress",
@@ -1383,6 +1412,10 @@ function Interaction({
       setIsTransactionStarted(true);
     }
     if (action == Action.deposit) {
+      trackEvent("Deposit Clicked", {
+        vaultSymbol: vaultData.symbol,
+        amount: inputBalance.formatted,
+      });
       let description;
       if (isZetachain(activeChain.id)) {
         if (isZetachain(vaultData.protocol.chainId)) {

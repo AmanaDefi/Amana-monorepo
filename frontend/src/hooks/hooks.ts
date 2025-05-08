@@ -305,8 +305,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     enabled: isTransactionStarted && !(isZetachain(strategyChainID) && isZetachain(activeChainId)),
   });
 
-  // console.log({ vaultEvents, strategyEvents, withdrawalReceiverEvents }, { vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }, "HHHHHHHHHHHHHHHH");
-
   return {
     vaultEvents,
     strategyEvents,
@@ -316,7 +314,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
 
 export function useTokenPriceBySymbol(symbol: string | undefined) {
   const priceContext = useTokenPrices();
-
   return useMemo(() => {
     if (!priceContext || !symbol) {
       return 0;
@@ -358,7 +355,6 @@ export function useUserSettings() {
     if (saved) {
       setUserSettings(JSON.parse(saved));
     }
-    window.addEventListener('storage', () => console.log("EXECUTED UPDATE STORAGEEEEE!!!"));
   }, []);
 
   const updateSettings = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {

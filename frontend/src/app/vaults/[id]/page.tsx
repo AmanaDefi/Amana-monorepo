@@ -1,22 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { trackEvent } from "@/utils/trackEvent";
 
 function Index({}) {
   const account = useActiveAccount();
   const { id } = useParams();
   const wallet = useWallet();
+  const [vaultSymbol, setVaultSymbol] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (id && typeof id === "string" && vaultSymbol) {
+      trackEvent("Vault Page Viewed", {
+        vaultAddress: id,
+        vaultSymbol,
+      });
+    }
+  }, [id, vaultSymbol]);
+  
 
   return (
     <>
       {(account || wallet) && (
         <div className="flex-1 flex flex-col w-full justify-between py-20 pl-6">
           <div className="flex-1">
-            <VaultsDetailContainer vaultID={id} />
+            <VaultsDetailContainer vaultID={id} setVaultSymbol={setVaultSymbol} />
           </div>
         </div>
       )}

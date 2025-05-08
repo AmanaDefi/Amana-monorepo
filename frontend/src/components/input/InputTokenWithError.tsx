@@ -85,7 +85,6 @@ export default function InputTokenWithError({
 
   // Function to handle token selection with chain switching
   const handleTokenSelection = (token: Token, chain: Chain) => {
-    console.log("Selected token:", token.symbol, "on chain:", chain.name);
     onSelectToken(token);
   };
 

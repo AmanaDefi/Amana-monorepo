@@ -49,6 +49,7 @@ import api from "codemelt-retro-api-sdk";
 import type { IConnection } from 'codemelt-retro-api-sdk';
 import { ApiService } from "@/service";
 import { read } from "fs";
+import { trackEvent } from "@/utils/trackEvent";
 
 dotenv.config();
 const provider = new JsonRpcProvider(
@@ -770,6 +771,12 @@ export const Approvedeposit = async (
     await sendAndConfirmTransaction({
       account: activeAccount,
       transaction: approveTx,
+    });
+    trackEvent("Approve Confirmed", {
+      vaultId,
+      activeChain,
+      transactionAmount,
+      inputToken,
     });
     console.log("Approval confirmed");
     return true;
