@@ -28,6 +28,8 @@ export default function ChainTokenSelector({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isInitialRender = useRef(true);
   const [selectedTokenChain, setSelectedTokenChain] = useState<number | null>(null);
+  const lastActiveChainRef = useRef<number | null>(null);
+  const lastVaultIdRef = useRef<string | null>(null);
 
   // Find the closest token to vault token on current chain
   const findClosestToken = useCallback(() => {
@@ -36,51 +38,149 @@ export default function ChainTokenSelector({
     }
 
     // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
-    const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0];
+    const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0].split(' ')[0];
     const currentChainTokens = APPROVED_TOKENS[activeChain.id] || [];
     
-    // First, try to find exact symbol match (non-native tokens prioritized)
+    // Check if vault token is a native token (ETH, BNB, etc.)
+    const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+    
+    // Check if vault token is a stablecoin
+    const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
+    
+    console.log(`Finding closest token for vault token ${vaultTokenSymbol} on chain ${activeChain.id} (Native: ${isNativeVaultToken}, Stablecoin: ${isStablecoin})`);
+    
+    // PRIORITY 1: First try to find exact symbol match
     const exactMatches = currentChainTokens.filter(token => {
       // Extract token base symbol (e.g., "USDT" from "USDT (POL)")
-      const tokenBaseSymbol = token.symbol.split(' ')[0];
-      return tokenBaseSymbol === vaultTokenSymbol;
+      const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+      return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
     });
 
-    // If we have exact matches, prioritize non-native tokens
+    // If we have exact matches, handle based on vault token type
     if (exactMatches.length > 0) {
-      // First try to find a non-native token with matching symbol
-      const nonNativeMatch = exactMatches.find(token => 
-        token.address !== "0x0000000000000000000000000000000000000000" &&
-        token.address !== "11111111111111111111111111111111" // Solana native
-      );
-      
-      if (nonNativeMatch) {
-        return nonNativeMatch;
+      // For stablecoin vaults, prioritize non-native tokens
+      if (isStablecoin) {
+        const nonNativeMatch = exactMatches.find(token => 
+          token.address !== "0x0000000000000000000000000000000000000000" &&
+          token.address !== "11111111111111111111111111111111" // Solana native
+        );
+        
+        if (nonNativeMatch) {
+          console.log(`Found non-native exact match: ${nonNativeMatch.symbol}`);
+          return nonNativeMatch;
+        }
       }
       
-      // If no non-native match, return the first match (could be native)
+      console.log(`Found exact match: ${exactMatches[0].symbol}`);
       return exactMatches[0];
     }
     
-    // If no exact symbol match, return null
+    // PRIORITY 2: For stablecoin vaults, try to find any stablecoin
+    if (isStablecoin) {
+      const stablecoinMatch = currentChainTokens.find(token => {
+        const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+        return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(tokenBaseSymbol.toUpperCase());
+      });
+      
+      if (stablecoinMatch) {
+        console.log(`Found stablecoin match: ${stablecoinMatch.symbol}`);
+        return stablecoinMatch;
+      }
+    }
+    
+    // PRIORITY 3: For native token vaults, prioritize native token
+    if (isNativeVaultToken) {
+      const nativeToken = currentChainTokens.find(token => 
+        token.address === "0x0000000000000000000000000000000000000000" ||
+        token.address === "11111111111111111111111111111111" // Solana native
+      );
+      
+      if (nativeToken) {
+        console.log(`Found native token match: ${nativeToken.symbol}`);
+        return nativeToken;
+      }
+    }
+    
+    // PRIORITY 4: Default to first token in the list for this chain
+    if (currentChainTokens.length > 0) {
+      console.log(`Defaulting to first available token: ${currentChainTokens[0].symbol}`);
+      return currentChainTokens[0];
+    }
+    
     return null;
   }, [vaultData?.inputToken, activeChain]);
 
-  // Set default token on component mount and when dependencies change
+  // Handle vault changes - reset token selection when vault changes
   useEffect(() => {
-    if (vaultData?.inputToken && activeChain && walletAddress) {
-      const closestToken = findClosestToken();
+    if (vaultData?.id && lastVaultIdRef.current !== vaultData.id) {
+      console.log(`Vault changed from ${lastVaultIdRef.current} to ${vaultData.id}`);
+      lastVaultIdRef.current = vaultData.id;
       
-      // Only select if no token is selected yet OR if current selection is native token and we have a better match
-      const isCurrentNativeToken = selectedToken?.address === "0x0000000000000000000000000000000000000000" || 
-                                  selectedToken?.address === "11111111111111111111111111111111";
-      
-      if (!selectedToken || (isCurrentNativeToken && closestToken && closestToken.address !== selectedToken.address)) {
-        console.log("Auto-selecting closest token:", closestToken?.symbol);
+      // Reset selected token when vault changes
+      if (activeChain && walletAddress) {
+        const closestToken = findClosestToken();
         if (closestToken) {
+          console.log(`Auto-selecting token for new vault: ${closestToken.symbol}`);
           const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
           onSelectToken(closestToken, chain);
         }
+      }
+    }
+  }, [vaultData?.id, activeChain, walletAddress, findClosestToken, onSelectToken]);
+
+  // Handle network changes - update token selection when network changes
+  useEffect(() => {
+    if (activeChain && lastActiveChainRef.current !== null && lastActiveChainRef.current !== activeChain.id && walletAddress) {
+      console.log(`Network changed from ${lastActiveChainRef.current} to ${activeChain.id}`);
+      
+      // Find the closest token on the new chain
+      const closestToken = findClosestToken();
+      
+      if (closestToken) {
+        console.log(`Selecting closest token on new chain: ${closestToken.symbol}`);
+        const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
+        onSelectToken(closestToken, chain);
+      } else if (selectedToken) {
+        // If we have a selected token from another chain, try to find the same token on this chain
+        const currentChainTokens = APPROVED_TOKENS[activeChain.id] || [];
+        const selectedTokenBaseSymbol = selectedToken.symbol.split(' ')[0].split('.')[0];
+        
+        // Look for matching token by base symbol
+        const matchingToken = currentChainTokens.find(token => {
+          const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+          return tokenBaseSymbol.toUpperCase() === selectedTokenBaseSymbol.toUpperCase();
+        });
+        
+        if (matchingToken) {
+          console.log(`Found matching token ${matchingToken.symbol} on new chain`);
+          const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
+          onSelectToken(matchingToken, chain);
+        } else {
+          // If we can't find a matching token, just select the first available
+          if (currentChainTokens.length > 0) {
+            console.log(`No matching token found, selecting first available: ${currentChainTokens[0].symbol}`);
+            const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
+            onSelectToken(currentChainTokens[0], chain);
+          }
+        }
+      }
+    }
+    
+    // Update the last active chain reference
+    if (activeChain) {
+      lastActiveChainRef.current = activeChain.id;
+    }
+  }, [activeChain?.id, walletAddress, findClosestToken, onSelectToken, selectedToken]);
+
+  // Set default token on component mount and when dependencies change
+  useEffect(() => {
+    if (vaultData?.inputToken && activeChain && walletAddress && !selectedToken) {
+      const closestToken = findClosestToken();
+      
+      if (closestToken) {
+        console.log("Auto-selecting closest token:", closestToken.symbol);
+        const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
+        onSelectToken(closestToken, chain);
       }
     }
   }, [vaultData?.inputToken, activeChain, walletAddress, selectedToken, findClosestToken, onSelectToken]);
