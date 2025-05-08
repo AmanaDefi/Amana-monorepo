@@ -647,6 +647,23 @@ export default function VaultInputs({
         0,
         100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD
       );
+
+      // === LOGGING FOR DEBUGGING ===
+      if (!vaultData.depositFeePaidFromGasTank) {
+        const slippageFeeUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
+        const slippageFeeETH = convertUsdToEth(slippageFeeUSD, ethPriceUsd);
+        const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ''));
+        const gasFeeETH = parseFloat(gasFeeInETH);
+        console.log("==== FEE BREAKDOWN ====");
+        console.log("Gas Fee (ETH):", gasFeeETH);
+        console.log("Gas Fee (USD):", gasFeeUSD);
+        console.log("Slippage Fee (USD):", slippageFeeUSD.toFixed(5));
+        console.log("Slippage Fee (ETH):", slippageFeeETH.toFixed(5));
+        console.log("Difference (Gas Fee USD - Slippage Fee USD):", (gasFeeUSD - slippageFeeUSD).toFixed(5));
+        console.log("Difference (Gas Fee ETH - Slippage Fee ETH):", (gasFeeETH - slippageFeeETH).toFixed(5));
+        console.log("=======================");
+      }
+
       if (inputAmountValue === debouncedInputBalance.value) {
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
@@ -693,7 +710,6 @@ export default function VaultInputs({
       userSlippage < conversionOutput.slippageActualValue &&
       !(isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
-        conversionOutput.gasFeeInVaultAsset &&
         debouncedInputBalance.value > 0n &&
         Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) <
           Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')))
@@ -727,7 +743,6 @@ export default function VaultInputs({
       Number(conversionOutput.outputAmountFormatted) == 0 &&
       !(isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
-        conversionOutput.gasFeeInVaultAsset &&
         debouncedInputBalance.value > 0n &&
         Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) <
           Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')))
@@ -913,7 +928,7 @@ export default function VaultInputs({
         setInputBalance={setInputBalance}
       />
       <div className="mt-4">
-        {conversionOutput.slippageActualValue !== null && conversionOutput.slippageActualValue <= 100 && (
+        {conversionOutput.slippageActualValue !== null && conversionOutput.slippageActualValue < 100 && (
           <p className="text-white font-bold mb-2 text-start">
             Estimated slippage value:
             <span
@@ -948,19 +963,18 @@ export default function VaultInputs({
           </p>
         )}
 
- {/* Display gas fee warning for Ethereum vaults if deposit is too low */}
- {isDeposit && 
-         !vaultData.depositFeePaidFromGasTank && 
-         conversionOutput.gasFeeInVaultAsset && 
-         Number(conversionOutput.gasFeeInVaultAsset) > 0 && 
-         debouncedInputBalance.value > 0n &&
-          (
-          <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
-            <p className="text-red-400 font-medium">
-              Your deposit amount is too low to cover the deposit gas fee.
-            </p>
-          </div>
-        )}
+ {/* Display gas fee warning for Ethereum vaults if deposit is too low in USD */}
+ {isDeposit &&
+   !vaultData.depositFeePaidFromGasTank &&
+   debouncedInputBalance.value > 0n &&
+   Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) <
+     Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')) && (
+    <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
+      <p className="text-red-400 font-medium">
+        Your deposit amount is too low to cover the deposit gas fee.
+      </p>
+    </div>
+  )}
           
 
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
@@ -1037,23 +1051,30 @@ export default function VaultInputs({
 
 
       {inputToken && !loadingOutputToken && (
-        <InteractionContainer
-          step={step}
-          setStep={setStep}
-          action={action}
-          setAction={setAction}
-          _inputToken={inputToken}
-          _inputBalance={inputBalance}
-          vaultData={vaultData}
-          setTransactionCompleted={setTransactionCompleted}
-          activeChain={activeChain as Chain}
-          _action={steps[0]}
-          actions={steps}
-          setInputBalance={setInputBalance}
-          errorMessage={errorMessage || outputBoxErrorMessage || ""}
-          isDeposit={isDeposit}
-          refreshBalance={fetchBalance}
-        />
+        !(isDeposit &&
+          !vaultData.depositFeePaidFromGasTank &&
+          conversionOutput.gasFeeInVaultAsset &&
+          debouncedInputBalance.value > 0n &&
+          Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ''))
+        ) && (
+          <InteractionContainer
+            step={step}
+            setStep={setStep}
+            action={action}
+            setAction={setAction}
+            _inputToken={inputToken}
+            _inputBalance={inputBalance}
+            vaultData={vaultData}
+            setTransactionCompleted={setTransactionCompleted}
+            activeChain={activeChain as Chain}
+            _action={steps[0]}
+            actions={steps}
+            setInputBalance={setInputBalance}
+            errorMessage={errorMessage || outputBoxErrorMessage || ""}
+            isDeposit={isDeposit}
+            refreshBalance={fetchBalance}
+          />
+        )
       )}
     </>
   );
