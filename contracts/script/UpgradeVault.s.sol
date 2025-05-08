@@ -8,7 +8,7 @@ import {console} from "forge-std/console.sol";
 contract UpgradeVault is Script {
     function run() external {
         // ✅ Hardcoded proxy address to upgrade
-        address proxyAddress = 0x622E956626Cc6aBa655E3d92a3629b04cB038E80;
+        address proxyAddress = 0x32fECdEf376E2aD74C53663BDE933116C09408f3;
         // address newImpl = 0x1a4810A0Dc61FF4d3D46Cb8Ac89612Cc286Ca11C; // <- older version with old switchStrategy function
         // address newImpl = 0x198938Cb9429D35562569AC567f063654166c636; // <- final version with updated switchStrategy function and toggleDepositFeePaidFromGasTank
         // address newImpl = 0xcB4b1936df6B44967Ca44A28BbC63cF1e886d06D;
