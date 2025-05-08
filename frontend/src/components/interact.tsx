@@ -22,7 +22,7 @@ import { client } from "@/utils/client";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { isZetachain } from "@/utils/utils";
-import { useInteractionEvents } from "@/hooks/hooks";
+import { useInteractionEvents, useTokenPriceBySymbol } from "@/hooks/hooks";
 import { determineVaultTokenFromApprovedTokens } from "@/utils/utils";
 import {
   APPROVED_TOKENS,
@@ -70,11 +70,13 @@ const handleDepositTransaction = async (
       depositAmount,
       setcrossChainTxId
     );
-
+    const tokenPrice = useTokenPriceBySymbol(inputToken.symbol)
+    console.log("tokenPrice: ", tokenPrice)
+    console.log((Number(depositAmount/BigInt(inputToken.decimals))*tokenPrice).toString())
     mixpanel.track("Deposit Submitted", {
       vault: vaultData.id.toString(),
       vaultSymbol: vaultData.symbol,
-      amount: (depositAmount/BigInt(inputToken.decimals)).toString(),
+      amount: (Number(depositAmount/BigInt(inputToken.decimals))*tokenPrice).toString(),
     });
 
     if (activeChain.id === CHAIN_ID.solana) {
