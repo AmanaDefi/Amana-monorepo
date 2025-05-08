@@ -61,6 +61,11 @@ const handleDepositTransaction = async (
 
   try {
     const depositAmount = inputBalance.value;
+    // Debug log for USD amount of deposit
+    console.log("[Deposit Debug] vault=", vaultData.id.toString(), 
+      "tokenAmount=", depositAmount.toString(), 
+      "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2)
+    );
     const receipt = await executeDeposit(
       vaultData,
       inputToken,
@@ -70,14 +75,11 @@ const handleDepositTransaction = async (
       depositAmount,
       setcrossChainTxId
     );
-    console.log("fetching token price");
-    const tokenPrice = useTokenPriceBySymbol(inputToken.symbol)
-    console.log("tokenPrice: ", tokenPrice)
-    console.log((Number(depositAmount/BigInt(inputToken.decimals))*tokenPrice).toString())
+
     mixpanel.track("Deposit Submitted", {
       vault: vaultData.id.toString(),
-      vaultSymbol: vaultData.symbol,
-      amount: (Number(depositAmount/BigInt(inputToken.decimals))*tokenPrice).toString(),
+      amount: depositAmount.toString(),
+      amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
     });
 
     if (activeChain.id === CHAIN_ID.solana) {
