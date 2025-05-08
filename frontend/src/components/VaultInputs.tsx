@@ -837,21 +837,20 @@ export default function VaultInputs({
   };
   return (
     <>
+      {/* Add prominent message about gas fees for Ethereum vaults */}
+      {isDeposit && !vaultData.depositFeePaidFromGasTank && (
+        <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5">
+          <p className="text-yellow-400 flex items-center">
+            <span className="font-normal">For Ethereum Vaults, Ethereum gas fees are deducted directly from your deposit amount and are not covered by Amana.</span>
+          </p>
+        </div>
+      )}
       <TabSelector
         className="mb-5"
         availableTabs={["Deposit", "Withdraw"]}
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
-      
-      {/* Add prominent message about gas fees for Ethereum vaults */}
-      {isDeposit && !vaultData.depositFeePaidFromGasTank && (
-        <div className="bg-amber-900/30 border border-amber-600 text-amber-200 rounded-lg p-3 mb-4">
-          <p className="text-sm">
-          For Ethereum Vaults, Ethereum gas fees are deducted directly from your deposit amount and are not covered by Amana.
-          </p>
-        </div>
-      )}
       
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
@@ -936,7 +935,7 @@ export default function VaultInputs({
           <p className="text-white font-bold mb-2 text-start flex items-center">
             <span>Net Deposit to Vault: ${conversionOutput.netDepositToVaultUSD}</span>
             <button id="net-deposit-breakdown" className="group ml-2">
-              <InformationCircleIcon className="w-5 h-5 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+              <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors" />
             </button>
             <ResponsiveTooltip
               id={"net-deposit-breakdown"}
@@ -973,8 +972,8 @@ export default function VaultInputs({
             <span className="flex flex-row items-center justify-between text-white py-1">
               <div className="flex items-center">
                 <p>Deposit Fee (deducted from your deposit)</p>
-                <button id="gas-fee-info" className="ml-1 group">
-                  <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+                <button id="gas-fee-info" className="ml-2 group">
+                  <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors" />
                 </button>
                 <ResponsiveTooltip
                   id="gas-fee-info"

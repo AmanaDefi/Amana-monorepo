@@ -42,16 +42,6 @@
   • `setInputBalance(EMPTY_BALANCE); setDisplayValue(""); setConversionOutput(initialConversionOutput); setIsDeposit(newIsDeposit); setStep(0); setSteps([]);`  
   • `setTimeout(() => window.scrollTo(0, scrollPosition), 0);`
 
-9. Banner & Tab order
-- Move the gas-banner *above* `<TabSelector>` and switch to yellow classes:
-    bg-yellow-900/30 border-yellow-500 py-3 px-4 rounded-lg mb-5
-  instead of your current amber block.
 
-10. Net-deposit icon sizing
-- Change the `<InformationCircleIcon>` inside the net-deposit tooltip to:
-    className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors"
 
-11. Fee Breakdown styling
-- Make sure the “Deposit Fee (deducted from your deposit)” block and its tooltip follow fix.txt spacing, icon sizing, and text:
-    • `className="ml-2 group"` on the button  
-    • icon: `className="w-4 h-4 …"`  
+
