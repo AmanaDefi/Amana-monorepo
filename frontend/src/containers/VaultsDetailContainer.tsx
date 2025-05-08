@@ -16,9 +16,8 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
-}> = ({
-  vaultID,
-}) => {
+  setVaultSymbol?: (symbol: string) => void;    
+}> = ({ vaultID, setVaultSymbol }) => {
     const [vaultData, setVaultData] = useState<VaultData>();
     const router = useRouter();
     const pathname = usePathname();
@@ -40,8 +39,12 @@ const VaultsDetailContainer: React.FC<{
 
     useEffect(() => {
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
-      setVaultData(foundVault)
-    }, []);
+      setVaultData(foundVault);
+    
+      if (foundVault?.symbol && setVaultSymbol) {
+        setVaultSymbol(foundVault.symbol); // ✅ only call if defined
+      }
+    }, [vaultID, setVaultSymbol]);
 
     const strategyExplorerBaseUrl = useMemo(() => {
       if (!vaultData?.protocol?.chainId) return "";

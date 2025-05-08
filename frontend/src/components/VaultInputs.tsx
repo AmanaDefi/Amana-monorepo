@@ -36,6 +36,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { trackEvent } from "@/utils/trackEvent";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (balance: string | number, symbol: string): string => {
@@ -762,7 +763,28 @@ export default function VaultInputs({
       };
       fetchSteps();
     }
+
   };
+
+  useEffect(() => {
+    if (
+      !loadingOutputToken &&
+      conversionOutput.outputAmountFormatted !== "0" &&
+      Number(debouncedInputBalance.value) > 0n
+    ) {
+      trackEvent("Estimated Output Calculated", {
+        isDeposit,
+        inputAmount: inputBalance.formatted,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        outputAmountUSD: conversionOutput.outputAmountInUSDFormatted,
+        slippagePercent: conversionOutput.slippageActualValue,
+        inputToken: inputToken?.symbol,
+        outputToken: isDeposit ? vaultData.symbol : inputToken?.symbol,
+        vaultAddress: vaultData.id,
+      });
+    }
+  }, [loadingOutputToken, conversionOutput, debouncedInputBalance]);
+
   return (
     <>
       <TabSelector

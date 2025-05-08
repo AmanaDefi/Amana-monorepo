@@ -1,3 +1,5 @@
+"use client";
+
 import React, { PropsWithChildren, useEffect, useState } from "react";
 import mixpanel from "mixpanel-browser";
 import {
@@ -9,6 +11,7 @@ import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "../utils/client";
 import { usePathname } from "next/navigation";
+import { trackEvent } from "@/utils/trackEvent";
 
 // Explicitly type the shared configuration for ConnectButton and connect
 export const connectModalConfig: {
@@ -39,6 +42,7 @@ export default function AccountProvider({ children }: PropsWithChildren) {
   const [initialCheckCount, setInitialCheckCount] = useState(0);
   const [isThirdwebReady, setIsThirdwebReady] = useState(false);
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
+  const [hasIdentified, setHasIdentified] = useState(false); // Track identification status
 
   const route = usePathname();
 
@@ -48,8 +52,13 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     }
   }, [initialCheckCount]);
 
+  // 🔄 Reset page tracking when route changes
   useEffect(() => {
-    // Skip tracking until thirdweb is ready
+    setHasTrackedPage(false);
+  }, [route]);
+
+  // ✅ Track page views + wallet connect
+  useEffect(() => {
     if (initialCheckCount < 2) {
       setInitialCheckCount((prev) => prev + 1);
       return;
@@ -57,7 +66,7 @@ export default function AccountProvider({ children }: PropsWithChildren) {
 
     if (!isThirdwebReady) return;
 
-    // Initialize Mixpanel once
+    // ✅ Initialize Mixpanel (only once)
     if (!(mixpanel as any).__initialized) {
       mixpanel.init("1f01d05893463c7ba9d4ac7280821010", {
         debug: true,
@@ -66,18 +75,35 @@ export default function AccountProvider({ children }: PropsWithChildren) {
       (mixpanel as any).__initialized = true;
     }
 
-    // Identify the user if wallet is connected
-    if (account?.address) {
+    // ✅ Identify user only once when wallet is connected
+    if (account?.address && !hasIdentified) {
       mixpanel.identify(account.address);
       mixpanel.people.set({
         wallet_address: account.address,
       });
+      setHasIdentified(true); // Set identified to true after tracking
     }
 
-    // Track page view once per route
+    // ✅ Track "Wallet Connected" explicitly
+    if (connectionStatus === "connected" && account?.address && !hasIdentified) {
+      trackEvent("Wallet Connected", {
+        walletAddress: account.address,
+      });
+    }
+
+    // ✅ Define human-readable page name
+    const page =
+      route === "/" ? "Vaults List" :
+      route.startsWith("/vaults/") ? "Vault Details" :
+      route === "/about" ? "About" :
+      route === "/leaderboard" ? "Leaderboard" :
+      route === "/roadmap" ? "Roadmap" :
+      route;
+
+    // ✅ Track page view once per route
     if (!hasTrackedPage) {
-      mixpanel.track("Page Viewed", {
-        page: "Vaults List",
+      trackEvent("Page Viewed", {
+        page,
         route,
         isWalletConnected: !!account?.address,
         walletAddress: account?.address || null,
@@ -93,12 +119,8 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     isConnecting,
     isThirdwebReady,
     hasTrackedPage,
+    hasIdentified, // Include hasIdentified to prevent multiple wallet connect events
   ]);
-
-  // Reset page tracking on route change
-  useEffect(() => {
-    setHasTrackedPage(false);
-  }, [route]);
 
   return <>{children}</>;
 }
