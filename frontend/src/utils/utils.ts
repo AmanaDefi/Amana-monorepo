@@ -332,11 +332,71 @@ export const selectActions = async (
 export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
   const approvedTokens = APPROVED_TOKENS[chainId];
   if (!approvedTokens?.length) return undefined;
-  const vaultTokenSymbol = vaultToken.symbol.split('.')[0];
-  return approvedTokens.find(el => {
-    const approvedTokenSymbol = el.symbol.split('.')[0];
-    return approvedTokenSymbol.toLowerCase() === vaultTokenSymbol.toLowerCase()
-  }) ?? approvedTokens[0];
+  
+  // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
+  const vaultTokenSymbol = vaultToken.symbol.split('.')[0].split(' ')[0];
+  
+  // Check if vault token is a native token (ETH, BNB, etc.)
+  const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+  
+  // Check if vault token is a stablecoin
+  const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
+  
+  console.log(`Determining token for vault token ${vaultTokenSymbol} on chain ${chainId} (Native: ${isNativeVaultToken}, Stablecoin: ${isStablecoin})`);
+  
+  // PRIORITY 1: Look for exact symbol match (non-native tokens prioritized for stablecoins)
+  const exactMatches = approvedTokens.filter(token => {
+    const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+    return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
+  });
+  
+  if (exactMatches.length > 0) {
+    // For stablecoin vaults, prioritize non-native tokens
+    if (isStablecoin) {
+      const nonNativeMatch = exactMatches.find(token => 
+        token.address !== "0x0000000000000000000000000000000000000000" &&
+        token.address !== "11111111111111111111111111111111" // Solana native
+      );
+      
+      if (nonNativeMatch) {
+        console.log(`Found non-native exact match: ${nonNativeMatch.symbol}`);
+        return nonNativeMatch;
+      }
+    }
+    
+    console.log(`Found exact match: ${exactMatches[0].symbol}`);
+    return exactMatches[0];
+  }
+  
+  // PRIORITY 2: For stablecoin vaults, try to find any stablecoin
+  if (isStablecoin) {
+    const stablecoinMatch = approvedTokens.find(token => {
+      const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+      return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(tokenBaseSymbol.toUpperCase());
+    });
+    
+    if (stablecoinMatch) {
+      console.log(`Found stablecoin match: ${stablecoinMatch.symbol}`);
+      return stablecoinMatch;
+    }
+  }
+  
+  // PRIORITY 3: For native token vaults, prioritize native token
+  if (isNativeVaultToken) {
+    const nativeToken = approvedTokens.find(token => 
+      token.address === "0x0000000000000000000000000000000000000000" ||
+      token.address === "11111111111111111111111111111111" // Solana native
+    );
+    
+    if (nativeToken) {
+      console.log(`Found native token match: ${nativeToken.symbol}`);
+      return nativeToken;
+    }
+  }
+  
+  // PRIORITY 4: Default to first approved token if nothing else matched
+  console.log(`No specific match found, defaulting to: ${approvedTokens[0].symbol}`);
+  return approvedTokens[0];
 }
 
 export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
