@@ -315,8 +315,9 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
 };
 
 export function useTokenPriceBySymbol(symbol: string | undefined) {
+  console.log("useTokenPriceBySymbol", symbol);
   const priceContext = useTokenPrices();
-
+  console.log("2")
   return useMemo(() => {
     if (!priceContext || !symbol) {
       return 0;
@@ -340,10 +341,12 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       getOnlyTokenSymbol(symbol).toUpperCase();
 
     if (baseSymbol === "USDC" || baseSymbol === "USDT") {
+      console.log("returning 1 for stablecoin", baseSymbol);
       return 1;
     }
 
     // Fallback to base symbol if full symbol price not found
+    console.log("price:", priceContext.prices?.[baseSymbol], baseSymbol);
     return priceContext.prices?.[baseSymbol] ?? 0;
   }, [priceContext, symbol]);
 }

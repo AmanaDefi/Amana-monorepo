@@ -70,6 +70,7 @@ const handleDepositTransaction = async (
       depositAmount,
       setcrossChainTxId
     );
+    console.log("fetching token price");
     const tokenPrice = useTokenPriceBySymbol(inputToken.symbol)
     console.log("tokenPrice: ", tokenPrice)
     console.log((Number(depositAmount/BigInt(inputToken.decimals))*tokenPrice).toString())
