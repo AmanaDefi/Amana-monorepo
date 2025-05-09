@@ -11,6 +11,7 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance } from "@/utils/utils";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 export default function VaultHeader({
   vaultData,
@@ -36,7 +37,6 @@ export default function VaultHeader({
   const lastActiveChainRef = useRef<number | null>(null);
   
   // Debug full userVaultBalance object
-  console.log("Full userVaultBalance:", userVaultBalance);
   
   // Determine input token based on user selection or active chain
   useEffect(() => {
@@ -46,36 +46,95 @@ export default function VaultHeader({
     
     // Always log vault changes
     if (isNewVault) {
-      console.log("VaultHeader: New vault detected:", vaultId);
     }
     
     if (isChainChanged) {
-      console.log(`VaultHeader: Chain changed from ${lastActiveChainRef.current} to ${activeChain?.id}`);
     }
     
-    // Extract base symbol from vault token
-    const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0].split(' ')[0];
-    
-    // Check if vault token is a native token
-    const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
-    
-    // Ensure we always update the input token when any of these dependencies change
+    // First priority: If there's a user-selected token from parent component, use it
     if (selectedToken) {
-      // If there's a user-selected token, use it
-      console.log("VaultHeader: Using user-selected token:", selectedToken.symbol);
       setInputToken(selectedToken);
-    } else if (activeChain?.id === 7000 || activeChain?.id === 7001) {
-      // Fallback: If on ZetaChain, use vault input token
-      console.log("VaultHeader: Using vault input token on ZetaChain:", vaultData.inputToken.symbol);
-      setInputToken(vaultData.inputToken);
-    } else if (activeChain) {
-      // Fallback: For other chains, determine the appropriate token
-      const determinedToken = determineVaultTokenFromApprovedTokens(
-        activeChain.id as number,
-        vaultData.inputToken
-      );
-      console.log(`VaultHeader: Determined token for chain ${activeChain.id}: ${determinedToken?.symbol} (vault token is ${isNativeVaultToken ? 'native' : 'non-native'})`);
-      setInputToken(determinedToken);
+    } 
+    // Only auto-select if there's no token already selected or if we have a new vault/chain
+    else if (!inputToken || isNewVault || isChainChanged) {
+      const isZetaChain = activeChain?.id === 7000 || activeChain?.id === 7001;
+      
+      if (isZetaChain) {
+        // Special handling for ZetaChain - prioritize tokens from the connected chain
+        const vaultTokenSymbol = vaultData.inputToken.symbol.split('.')[0];
+        const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
+        
+        if (isStablecoin && APPROVED_TOKENS[7000]) {
+          // Look for chain-specific stablecoin tokens (e.g., USDC.ARB vs USDC.ETH)
+          const chainSpecificTokens = APPROVED_TOKENS[7000].filter((token: Token) => {
+            const tokenParts = token.symbol.split('.');
+            if (tokenParts.length === 2) {
+              const tokenBaseSymbol = tokenParts[0];
+              return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
+            }
+            return false;
+          });
+          
+          if (chainSpecificTokens.length > 0) {
+            // Get user's connected chain suffix if possible
+            let connectedChainSuffix = "";
+            
+            // Check if we can determine a chain suffix from the active wallet connection
+            if (activeChain?.id) {
+              // These are mappings of chain IDs to their suffix in token symbols
+              const chainIdToSuffix: Record<number, string> = {
+                1: "ETH",   // Ethereum
+                8453: "BASE", // Base
+                137: "POL",   // Polygon
+                42161: "ARB",  // Arbitrum
+                43114: "AVAX", // Avalanche
+                56: "BSC"     // BNB Chain
+              };
+              
+              connectedChainSuffix = chainIdToSuffix[activeChain.id] || "";
+            }
+            
+            // Extract the vault token's chain suffix if it has one
+            const vaultTokenParts = vaultData?.inputToken?.symbol.split('.') || [];
+            const vaultTokenSuffix = vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
+            
+            
+            // Sort by our prioritization logic
+            const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
+              const aSuffix = a.symbol.split('.')[1] || '';
+              const bSuffix = b.symbol.split('.')[1] || '';
+              
+              // If one token matches the current chain, it wins
+              if (aSuffix === connectedChainSuffix && bSuffix !== connectedChainSuffix) return -1;
+              if (bSuffix === connectedChainSuffix && aSuffix !== connectedChainSuffix) return 1;
+              
+              // If one token matches the vault token's original suffix, it comes next
+              if (vaultTokenSuffix) {
+                if (aSuffix === vaultTokenSuffix && bSuffix !== vaultTokenSuffix) return -1;
+                if (bSuffix === vaultTokenSuffix && aSuffix !== vaultTokenSuffix) return 1;
+              }
+              
+              // Otherwise, alphabetical order
+              return aSuffix.localeCompare(bSuffix);
+            });
+            
+            setInputToken(sortedTokens[0]);
+          } else {
+            // Fallback to vault input token
+            setInputToken(vaultData.inputToken);
+          }
+        } else {
+          // Non-stablecoin or no tokens available - use vault input token
+          setInputToken(vaultData.inputToken);
+        }
+      } else if (activeChain) {
+        // For other chains, determine the appropriate token using existing helper
+        const determinedToken = determineVaultTokenFromApprovedTokens(
+          activeChain.id as number,
+          vaultData.inputToken
+        );
+        setInputToken(determinedToken);
+      }
     }
     
     // Update the last vault ID reference
@@ -84,7 +143,7 @@ export default function VaultHeader({
     if (activeChain) {
       lastActiveChainRef.current = activeChain.id;
     }
-  }, [activeChain, vaultData.id, vaultData.inputToken, selectedToken]);
+  }, [activeChain, vaultData.id, vaultData.inputToken, selectedToken, inputToken]);
 
   const { balance: walletTokenBalance, fetchBalance } =
     useMultichainTokenBalance(inputToken);
@@ -106,22 +165,17 @@ export default function VaultHeader({
   useEffect(() => {
     // Update deposit amount whenever the vault balance changes
     if (userVaultBalance) {
-      console.log("User vault balance type:", typeof userVaultBalance);
       
       // Handle when userVaultBalance is a simple string (direct from fetchUserVaultBalance)
       if (typeof userVaultBalance === 'string') {
-        console.log("Using string balance:", userVaultBalance);
         setDepositAmount(userVaultBalance);
       } 
       // Handle when userVaultBalance is a Balance object
       else if (typeof userVaultBalance === 'object') {
-        console.log("userVaultBalance keys:", Object.keys(userVaultBalance));
         
         if (userVaultBalance.formatted) {
-          console.log("Using formatted value:", userVaultBalance.formatted);
           setDepositAmount(userVaultBalance.formatted);
         } else if ('value' in userVaultBalance && userVaultBalance.value) {
-          console.log("Using value property:", userVaultBalance.value);
           setDepositAmount(userVaultBalance.value.toString());
         }
       }
