@@ -106,7 +106,8 @@ contract WithdrawHelper {
         uint32 userChainId,
         bytes32 _crossChainTxId,
         uint32 gasLimitForWithdrawAndCall,
-        address registry
+        address registry,
+        uint256 vaultNonce
     ) external {
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
@@ -142,7 +143,8 @@ contract WithdrawHelper {
             0, // chain ID
             true,
             _crossChainTxId,
-            0 // slippage
+            0, // slippage
+            vaultNonce
         );
 
         bytes memory recipient = abi.encodePacked(targetAddress);
@@ -183,7 +185,8 @@ contract WithdrawHelper {
         uint32 userChainId,
         bytes32 _crossChainTxId,
         uint32 gasLimitForWithdrawAndCall,
-        address registry
+        address registry,
+        uint256 vaultNonce
     ) external {
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
@@ -267,7 +270,8 @@ contract WithdrawHelper {
             0, // chain ID
             true,
             _crossChainTxId,
-            0 // slippage
+            0, // slippage
+            vaultNonce
         );
 
         bytes memory recipient = abi.encodePacked(targetAddress);
@@ -312,7 +316,8 @@ contract WithdrawHelper {
         uint256 minimumOut,
         uint32 withdrawChainId,
         uint16 slippage,
-        bytes32 crossChainTxId
+        bytes32 crossChainTxId,
+        uint256 vaultNonce
     ) external {
         _handleGasFee(gasLimitForCall, vaultAsset, registry);
 
@@ -334,7 +339,8 @@ contract WithdrawHelper {
             withdrawChainId,
             false,
             crossChainTxId,
-            slippage
+            slippage,
+            vaultNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -371,7 +377,8 @@ contract WithdrawHelper {
         address vaultAsset,
         address registry,
         uint256 minAmountOut,
-        uint256 minSharesOut
+        uint256 minSharesOut,
+        uint256 vaultNonce
     ) external {
         _handleGasFee(
             gasLimitForCall + gasLimitForWithdrawAndCall,
@@ -401,7 +408,8 @@ contract WithdrawHelper {
             0, // chain ID
             false,
             crossChainTxId,
-            0 // slippage
+            0, // slippage
+            vaultNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(

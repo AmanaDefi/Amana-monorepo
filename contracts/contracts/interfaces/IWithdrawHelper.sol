@@ -16,7 +16,8 @@ interface IWithdrawHelper {
         uint256 minimumOut,
         uint32 withdrawChainId,
         uint16 slippage,
-        bytes32 crossChainTxId
+        bytes32 crossChainTxId,
+        uint256 vaultNonce
     ) external;
 
     function handleSwitchCallToStrategy(
@@ -27,7 +28,8 @@ interface IWithdrawHelper {
         address vaultAsset,
         address registry,
         uint256 minAmountOut,
-        uint256 minSharesOut
+        uint256 minSharesOut,
+        uint256 vaultNonce
     ) external;
 
     function handleWithdrawAndCallToStrategy(
@@ -41,7 +43,8 @@ interface IWithdrawHelper {
         uint32 userChainId,
         bytes32 crossChainTxId,
         uint32 gasLimitForWithdrawAndCall,
-        address registry
+        address registry,
+        uint256 vaultNonce
     ) external;
 
     function handleGasFeeAndWithdrawAndCallToStrategy(
@@ -55,7 +58,8 @@ interface IWithdrawHelper {
         uint32 userChainId,
         bytes32 crossChainTxId,
         uint32 gasLimitForWithdrawAndCall,
-        address registry
+        address registry,
+        uint256 vaultNonce
     ) external;
 
     function handleGasFeeAndWithdrawAndCallToReceiver(

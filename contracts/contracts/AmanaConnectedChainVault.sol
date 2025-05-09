@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./AmanaVaultBase.sol";
+import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -30,6 +31,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
     mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
+    int256 public pendingShareChange;
+    uint256 public vaultNonce = 0;
 
     event CrossChainInvestSent(
         bytes32 indexed crossChainTxId,
@@ -386,8 +389,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 address(asset()),
                 registry,
                 minAmountOut,
-                minSharesOut
+                minSharesOut,
+                vaultNonce
             );
+        vaultNonce++;
         strategyAddress = newStrategyAddress;
     }
 
@@ -492,7 +497,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     userChainId,
                     crossChainTxId,
                     gasLimitForWithdrawAndCall,
-                    registry
+                    registry,
+                    vaultNonce
                 );
         } else {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
@@ -507,9 +513,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     userChainId,
                     crossChainTxId,
                     gasLimitForWithdrawAndCall,
-                    registry
+                    registry,
+                    vaultNonce
                 );
         }
+        vaultNonce++;
+
+        // TODO is this in the right place?
+        console.log("pendingShareChange", previewDeposit(amount));
+        uint256 previewedShares = previewDeposit(amount);
+        require(previewedShares <= uint256(type(int256).max), "Overflow");
+
+        pendingShareChange += int256(previewedShares);
         emit CrossChainInvestSent(crossChainTxId, receiver, amount);
     }
 
@@ -541,7 +556,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _mint(receiver, shares);
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterDeposit;
-
+        console.log("shares", shares);
+        pendingShareChange -= shares;
         emit Deposited(receiver, depositAmount, shares, _crossChainTxId);
     }
 
@@ -598,8 +614,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 minimumOut,
                 uint32(block.chainid),
                 slippage,
-                crossChainTxId
+                crossChainTxId,
+                vaultNonce
             );
+        vaultNonce++;
+        console.log("pendingShareChange", shares);
+        pendingShareChange -= shares;
         emit DivestSent(crossChainTxId, user, shares);
     }
 
@@ -650,8 +670,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 minimumOut,
                 userChainId,
                 slippage,
-                crossChainTxId
+                crossChainTxId,
+                vaultNonce
             );
+        vaultNonce++;
         emit DivestSent(crossChainTxId, user, vaultSharesToBeBurnt);
     }
 
@@ -714,6 +736,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             vaultSharesToBeBurnt,
             _crossChainTxId
         );
+    }
+
+    function safeUintToInt(uint256 x) internal pure returns (int256) {
+        require(x <= uint256(type(int256).max), "safeUintToInt: overflow");
+        return int256(x);
     }
 
     /**
