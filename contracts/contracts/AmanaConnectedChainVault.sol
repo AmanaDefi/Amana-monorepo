@@ -32,7 +32,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
     int256 public pendingShareChange;
-    uint256 public vaultNonce = 0;
+    uint256 public vaultNonce;
 
     event CrossChainInvestSent(
         bytes32 indexed crossChainTxId,
