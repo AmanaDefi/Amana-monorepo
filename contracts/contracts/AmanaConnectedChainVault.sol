@@ -520,7 +520,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         vaultNonce++;
 
         // TODO is this in the right place?
-        console.log("pendingShareChange", previewDeposit(amount));
+        console.log(
+            "pendingShareChange from previewDeposit",
+            previewDeposit(amount)
+        );
         uint256 previewedShares = previewDeposit(amount);
         require(previewedShares <= uint256(type(int256).max), "Overflow");
 
@@ -556,7 +559,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         _mint(receiver, shares);
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterDeposit;
-        console.log("shares", shares);
+        console.log("Actual shares minted in confirm deposit", shares);
         require(shares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange -= int256(shares);
@@ -601,11 +604,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             )
         );
 
+        uint256 amendedTotalSupply = pendingShareChange >= 0
+            ? totalSupply() + uint256(pendingShareChange)
+            : totalSupply() - uint256(-pendingShareChange);
+
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleDivestCallToStrategy(
                 strategyAddress,
                 gasLimitForCall,
-                totalSupply(),
+                amendedTotalSupply,
                 address(asset()),
                 registry,
                 user,
@@ -620,7 +627,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 vaultNonce
             );
         vaultNonce++;
-        console.log("pendingShareChange", shares);
+        console.log("pendingShareChange in _withdraw", shares);
         require(shares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange -= int256(shares);
@@ -659,11 +666,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         pendingWithdrawals[user] += vaultSharesToBeBurnt;
 
+        uint256 amendedTotalSupply = pendingShareChange >= 0
+            ? totalSupply() + uint256(pendingShareChange)
+            : totalSupply() - uint256(-pendingShareChange);
+
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleDivestCallToStrategy(
                 strategyAddress,
                 gasLimitForCall,
-                totalSupply(),
+                amendedTotalSupply,
                 address(asset()),
                 registry,
                 user,
@@ -677,6 +688,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 crossChainTxId,
                 vaultNonce
             );
+        console.log("pendingShareChange in _withdraw", vaultSharesToBeBurnt);
+        require(vaultSharesToBeBurnt <= uint256(type(int256).max), "Overflow");
+
+        pendingShareChange -= int256(vaultSharesToBeBurnt);
         vaultNonce++;
         emit DivestSent(crossChainTxId, user, vaultSharesToBeBurnt);
     }
@@ -724,6 +739,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(user, vaultSharesToBeBurnt);
+        console.log(
+            "pendingShareChange in _confirmWithdrawAndBurn",
+            vaultSharesToBeBurnt
+        );
+        require(vaultSharesToBeBurnt <= uint256(type(int256).max), "Overflow");
+        pendingShareChange += int256(vaultSharesToBeBurnt);
         _returnFundsToUser(
             amountWithdrawn - feeToWithdraw,
             userChainId,
