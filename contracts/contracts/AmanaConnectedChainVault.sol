@@ -557,7 +557,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterDeposit;
         console.log("shares", shares);
-        pendingShareChange -= shares;
+        require(shares <= uint256(type(int256).max), "Overflow");
+
+        pendingShareChange -= int256(shares);
         emit Deposited(receiver, depositAmount, shares, _crossChainTxId);
     }
 
@@ -619,7 +621,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             );
         vaultNonce++;
         console.log("pendingShareChange", shares);
-        pendingShareChange -= shares;
+        require(shares <= uint256(type(int256).max), "Overflow");
+
+        pendingShareChange -= int256(shares);
         emit DivestSent(crossChainTxId, user, shares);
     }
 
