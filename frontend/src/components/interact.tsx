@@ -8,7 +8,6 @@ import {
   TransactionStepStatus,
   VaultData,
 } from "@/types/types";
-import mixpanel from "mixpanel-browser";
 import {
   Approvedeposit,
   executeDeposit,
@@ -173,6 +172,7 @@ const handleWithdrawTransaction = async (
 
     if (activeChain.id === CHAIN_ID.solana) {
       // await waitForReceiptSol(receipt.transactionHash)
+      return true;
     } else {
       // Create an object to pass to waitForReceipt with the required fields
       const receiptObject = {
@@ -193,7 +193,10 @@ const handleWithdrawTransaction = async (
     trackEvent("Withdraw Failed", {
       vault: vaultData.id.toString(),
       vaultSymbol: vaultData.symbol,
+      activeChain: activeChain.id,
+      error: error instanceof Error ? error.message : String(error),
     });
+    return false;
   }
 };
 
