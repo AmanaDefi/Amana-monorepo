@@ -520,10 +520,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         vaultNonce++;
 
         // TODO is this in the right place?
+        console.log("totalAssets from previewDeposit", totalAssets());
+        console.log("totalSupply from previewDeposit", totalSupply());
+        console.log("amount from previewDeposit", amount);
         console.log(
             "pendingShareChange from previewDeposit",
             previewDeposit(amount)
         );
+
         uint256 previewedShares = previewDeposit(amount);
         require(previewedShares <= uint256(type(int256).max), "Overflow");
 
@@ -554,7 +558,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         } else {
             latestTotalAssetsUpdateFromStrategy = 0;
         }
-
+        console.log("totalAssetsAfterDeposit", totalAssetsAfterDeposit);
+        console.log("totalAssets", totalAssets());
+        console.log("totalSupply", totalSupply());
+        // console.log("depositAmount in confirm step", depositAmount);
         uint256 shares = previewDeposit(depositAmount);
         _mint(receiver, shares);
 
@@ -717,6 +724,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
+        // console.log("Confirming withdraw and burn");
+        // console.log("amountWithdrawn", amountWithdrawn);
+        // console.log("vaultSharesToBeBurnt", vaultSharesToBeBurnt);
+        // console.log("totalAssetsAfterWithdraw", totalAssetsAfterWithdraw);
         uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
             balanceOf(user);
         uint256 principalWithdrawn = (fractionOfUserShares *

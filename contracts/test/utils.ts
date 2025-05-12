@@ -207,7 +207,7 @@ export async function simulateDepositCallFromConnChain(
   inputToken: string,
   originChainId: number,
   slippage: number,
-): Promise<`0x${string}`> {
+): Promise<any> {
   // Update Pyth prices
   // await updatePythPrices(pythContract, user);
 
@@ -225,7 +225,7 @@ export async function simulateDepositCallFromConnChain(
     [inputToken, minSharesOut, slippage, transactionId]
   );
   // Execute the onCall function to simulate a deposit
-  await amanaVault.connect(gatewaySigner).onCall(
+  const tx = await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
       sender: await user.getAddress(),
@@ -237,7 +237,7 @@ export async function simulateDepositCallFromConnChain(
   );
 
   // Return the transaction ID
-  return transactionId;
+  return tx;
 }
 
 
