@@ -10,6 +10,7 @@ import "../interfaces/I4626Vault.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IDistributor.sol";
+import "hardhat/console.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -20,7 +21,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     string public name;
     address public amanaVault;
     address public withdrawHelper;
-    uint256 public executionNonce = 1;
+    // uint256 public executionNonce = 1;
     address public oldStrategy;
     address public rewardsDistributor;
 
@@ -74,6 +75,15 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     address immutable _GATEWAY_ADDRESS;
 
+    uint256 public lastProcessedNonce;
+
+    struct PendingTx {
+        bytes message;
+        bool exists;
+    }
+
+    mapping(uint256 => PendingTx) public pendingByNonce;
+
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) {
             revert OnlyGateway();
@@ -101,12 +111,14 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         MessageContext calldata context,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory result) {
+        console.log("oncall");
         if (
             context.sender != address(amanaVault) &&
             context.sender != withdrawHelper
         ) {
             revert OnlyVault();
         }
+
         (
             address user,
             address receiver,
@@ -118,7 +130,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             uint32 withdrawChainId,
             bool isDeposit,
             bytes32 crossChainTxId,
-            uint16 slippage
+            uint16 slippage,
+            uint256 vaultNonce
         ) = abi.decode(
                 message,
                 (
@@ -132,31 +145,73 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                     uint32,
                     bool,
                     bytes32,
-                    uint16
+                    uint16,
+                    uint256
                 )
             );
+        console.log("message received");
+        console.log("vaultNonce: ", vaultNonce);
+        console.log("lastProcessedNonce: ", lastProcessedNonce);
+        // Store or process based on nonce order
+        if (vaultNonce == lastProcessedNonce + 1) {
+            console.log("Processing");
+            _process(message);
+            lastProcessedNonce = vaultNonce;
 
-        uint256 currentExecutionNonce = executionNonce;
-        executionNonce++;
+            // Try processing buffered messages
+            _processBufferedConfirmations();
+        } else {
+            pendingByNonce[vaultNonce] = PendingTx({
+                message: message,
+                exists: true
+            });
+        }
+
+        return abi.encode(true);
+    }
+
+    function _process(bytes memory message) internal {
+        (
+            address user,
+            address receiver,
+            address ZRC20AddressOrNewStrategy,
+            address withdrawERC20,
+            uint256 amount,
+            uint256 fraction,
+            uint256 minimumOut,
+            uint32 withdrawChainId,
+            bool isDeposit,
+            bytes32 crossChainTxId,
+            uint16 slippage,
+            uint256 vaultNonce
+        ) = abi.decode(
+                message,
+                (
+                    address,
+                    address,
+                    address,
+                    address,
+                    uint256,
+                    uint256,
+                    uint256,
+                    uint32,
+                    bool,
+                    bytes32,
+                    uint16,
+                    uint256
+                )
+            );
 
         if (user == address(0) && receiver == address(0)) {
             _transferAssetsToNewStrategy(
                 fraction,
                 minimumOut,
                 ZRC20AddressOrNewStrategy,
-                currentExecutionNonce,
+                vaultNonce,
                 crossChainTxId
             );
-            return abi.encode(true);
         } else if (isDeposit) {
-            _invest(
-                receiver,
-                amount,
-                minimumOut,
-                currentExecutionNonce,
-                crossChainTxId
-            );
-            return abi.encode(true);
+            _invest(receiver, amount, minimumOut, vaultNonce, crossChainTxId);
         } else {
             _divest(
                 user,
@@ -167,11 +222,23 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
                 fraction,
                 minimumOut,
                 withdrawChainId,
-                currentExecutionNonce,
+                vaultNonce,
                 crossChainTxId,
                 slippage
             );
-            return abi.encode(true);
+        }
+    }
+
+    function _processBufferedConfirmations() internal {
+        while (true) {
+            uint256 nextNonce = lastProcessedNonce + 1;
+            PendingTx storage pending = pendingByNonce[nextNonce];
+
+            if (!pending.exists) break;
+
+            _process(pending.message);
+            delete pendingByNonce[nextNonce];
+            lastProcessedNonce = nextNonce;
         }
     }
 
@@ -195,9 +262,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         oldStrategy = _oldStrategy;
     }
 
-    function setExecutionNonce(uint256 _executionNonce) external onlyOwner {
-        executionNonce = _executionNonce;
-    }
+    // function setExecutionNonce(uint256 _executionNonce) external onlyOwner {
+    //     executionNonce = _executionNonce;
+    // }
 
     /**
      * @notice Sets the address of the Merkl rewards distributor contract.
@@ -545,10 +612,10 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        uint256 nonceToUse = executionNonce;
+        uint256 nonceToUse = lastProcessedNonce;
         address user = address(0);
         uint256 vaultSharesToBeBurnt = 0;
-        executionNonce++;
+        lastProcessedNonce++;
         _sendUpdateToVault(user, vaultSharesToBeBurnt, nonceToUse);
     }
 

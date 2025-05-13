@@ -74,11 +74,11 @@ export async function simulateDepositCallFromVaultToStrategy(
   minSharesOut: BigNumber,
   slippage: number,
   ORIGIN_CHAIN_ID: number,
+  vaultNonce: number
 ) {
-  // Attempt deposit from a non-gateway address
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage]
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16", "uint256"],
+    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage, BigNumber.from(vaultNonce)]
   );
   await network.provider.send("hardhat_setBalance", [
     await gatewaySigner.getAddress(),
@@ -108,11 +108,12 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   fractionOfTotalShares: BigNumber,
   minAmountOut: BigNumber,
   slippage: number,
-  ORIGIN_CHAIN_ID: number
+  ORIGIN_CHAIN_ID: number,
+  vaultNonce: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, vaultSharesToBeBurnt, fractionOfTotalShares, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16", "uint256"],
+    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, vaultSharesToBeBurnt, fractionOfTotalShares, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage, BigNumber.from(vaultNonce)]
   );
   await
     strategy.connect(gatewaySigner).onCall(
@@ -130,10 +131,11 @@ export async function simulateSwitchCallFromVaultToStrategy(
   vaultAddress: string,
   gatewaySigner: Signer,
   strategy: any,
-  newStrategyAddress: any
+  newStrategyAddress: any,
+  vaultNonce: number
 ) {
   const switchMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
+    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16", "uint256"],
     [
       ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
       ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
@@ -145,7 +147,8 @@ export async function simulateSwitchCallFromVaultToStrategy(
       0, // withdrawChainId
       false, // isDeposit
       0, //ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId
-      0
+      0,
+      BigNumber.from(vaultNonce)
     ]
   );
   return await strategy.connect(gatewaySigner).onCall(
@@ -206,7 +209,7 @@ export async function simulateDepositCallFromConnChain(
   originChainZRC20Input: string,
   inputToken: string,
   originChainId: number,
-  slippage: number,
+  slippage: number
 ): Promise<any> {
   // Update Pyth prices
   // await updatePythPrices(pythContract, user);

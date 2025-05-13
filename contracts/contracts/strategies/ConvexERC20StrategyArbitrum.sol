@@ -247,7 +247,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
 
-        executionNonce = currentExecutionNonce + 1;
+        lastProcessedNonce = currentExecutionNonce;
 
         // Stake the LP tokens into Convex (Arbitrum)
         IERC20(receiptToken).approve(address(booster), amount);

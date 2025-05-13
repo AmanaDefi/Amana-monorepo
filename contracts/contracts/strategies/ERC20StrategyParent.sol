@@ -84,7 +84,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         if (amount == 0) revert NoFundsReceived();
-        executionNonce = currentExecutionNonce + 1;
+        lastProcessedNonce = currentExecutionNonce;
         _invest(
             address(0),
             amount,

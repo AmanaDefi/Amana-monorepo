@@ -42,7 +42,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
-
+      console.log("1")
       await expect(simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
@@ -52,8 +52,9 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
-
+      console.log("2")
       // Attempt withdraw from a non-gateway address
       const withdrawAmountInShares = config.withdrawAmount;
       const minAmountOut = config.minAmountOut;
@@ -72,7 +73,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
     });
 
@@ -106,6 +108,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
 
       // Attempt a withdrawal from a non-vault sender
@@ -123,7 +126,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
     });
 
@@ -163,6 +167,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
 
       let strategyBalanceAfter;
@@ -204,6 +209,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       )
       let shares;
       if (isConvexStrategy(config.strategyContractName)) {
@@ -227,7 +233,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       );
       let strategyBalance;
 
@@ -276,6 +283,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
 
       // Step 3: Check Initial Shares in  Pool
@@ -322,7 +330,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       );
 
       // Step 7: Check Strategy Balance After Withdrawal
@@ -450,6 +459,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
       // Call the function
       const tx = await strategy.sendTotalUnderlyingAssetsToVault();
@@ -691,6 +701,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
       let oldStrategyInitialBalance;
       if (isConvexStrategy(config.strategyContractName)) {
@@ -706,7 +717,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
         strategy,
-        newStrategy.address
+        newStrategy.address,
+        2
       )).to.emit(strategy, "AssetsTransferredToNewStrategy")
         .to.emit(newStrategy, "AssetsReceivedFromOldStrategy");
       let oldStrategyBalance;
@@ -759,7 +771,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         depositAmount,
         minSharesOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        1
       );
 
       // Step 3: Accumulate Rewards
@@ -786,6 +799,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 5: Confirm Rewards Harvested Event
       const receipt = await tx.wait();
+      console.log("receipt", receipt);
       const event = receipt.events?.find((e: Event) => e.event === "RewardsHarvested");
       expect(event).to.not.be.undefined;
 
@@ -830,7 +844,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         depositAmount,
         minSharesOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        1
       );
       // Step 3: Accumulate Rewards
       const timeToSimulate = 7 * 24 * 60 * 60;
@@ -894,6 +909,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
 
       // Run convertToShares

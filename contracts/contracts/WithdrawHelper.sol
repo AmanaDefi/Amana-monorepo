@@ -102,6 +102,7 @@ contract WithdrawHelper {
         address withdrawERC20,
         address tokenToTransfer,
         uint256 amount,
+        uint256 previewedShares,
         uint256 minimumOut,
         uint32 userChainId,
         bytes32 _crossChainTxId,
@@ -138,7 +139,7 @@ contract WithdrawHelper {
             address(0),
             address(0),
             amount,
-            0, // on withdrawals this is used for fractionOfTotalShares
+            previewedShares, // on withdrawals this is used for fractionOfTotalShares
             minimumOut,
             0, // chain ID
             true,
@@ -181,6 +182,7 @@ contract WithdrawHelper {
         address withdrawERC20,
         address tokenToTransfer,
         uint256 amount,
+        uint256 previewedShares,
         uint256 minimumOut,
         uint32 userChainId,
         bytes32 _crossChainTxId,
@@ -265,7 +267,7 @@ contract WithdrawHelper {
             address(0),
             address(0),
             amount - amountToDeduct,
-            0, // on withdrawals this is used for fractionOfTotalShares
+            previewedShares, // on withdrawals this is used for fractionOfTotalShares
             minimumOut,
             0, // chain ID
             true,
@@ -305,7 +307,7 @@ contract WithdrawHelper {
     function handleDivestCallToStrategy(
         address strategyAddress,
         uint256 gasLimitForCall,
-        uint256 totalSupply,
+        uint256 adjustedTotalSupply,
         address vaultAsset,
         address registry,
         address user,
@@ -323,30 +325,45 @@ contract WithdrawHelper {
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
-        uint256 fractionOfTotalShares = (vaultSharesToBeBurnt *
+        uint256 numerator = vaultSharesToBeBurnt *
             1e18 +
-            totalSupply /
-            2) / totalSupply; // // we add totalSupply() / 2 to prevent truncation errors
+            adjustedTotalSupply /
+            2;
+        uint256 fractionOfTotalShares = numerator / adjustedTotalSupply;
+
+        // PRECOMPUTE all abi.encode arguments to avoid stack overflow
+        address _user = user;
+        address _receiver = receiver;
+        address _withdrawZRC20 = withdrawZRC20;
+        address _withdrawERC20 = withdrawERC20;
+        uint256 _vaultSharesToBeBurnt = vaultSharesToBeBurnt;
+        uint256 _fractionOfTotalShares = fractionOfTotalShares;
+        uint256 _minimumOut = minimumOut;
+        uint32 _withdrawChainId = withdrawChainId;
+        bool _isDeposit = false;
+        bytes32 _crossChainTxId = crossChainTxId;
+        uint16 _slippage = slippage;
+        uint256 _vaultNonce = vaultNonce;
 
         bytes memory outgoingMessage = abi.encode(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
-            vaultSharesToBeBurnt,
-            fractionOfTotalShares,
-            minimumOut,
-            withdrawChainId,
-            false,
-            crossChainTxId,
-            slippage,
-            vaultNonce
+            _user,
+            _receiver,
+            _withdrawZRC20,
+            _withdrawERC20,
+            _vaultSharesToBeBurnt,
+            _fractionOfTotalShares,
+            _minimumOut,
+            _withdrawChainId,
+            _isDeposit,
+            _crossChainTxId,
+            _slippage,
+            _vaultNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
-            msg.sender, // revert address
-            true, // callOnRevert
-            msg.sender, // abortAddress
+            msg.sender,
+            true,
+            msg.sender,
             abi.encode(
                 "_divestConnectedChainStrategyFailed",
                 crossChainTxId,
@@ -356,7 +373,7 @@ contract WithdrawHelper {
                 withdrawERC20,
                 withdrawChainId
             ),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
+            uint256(0)
         );
 
         CallOptions memory callOptions = CallOptions(gasLimitForCall, false);

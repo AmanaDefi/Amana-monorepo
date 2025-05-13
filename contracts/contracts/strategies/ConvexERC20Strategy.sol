@@ -277,7 +277,7 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
     ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
-        executionNonce = currentExecutionNonce + 1;
+        lastProcessedNonce = currentExecutionNonce;
         _sendInvestConfirmation(
             address(0),
             amount,

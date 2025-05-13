@@ -333,6 +333,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 _confirmDepositAndMint(
                     confirmation.receiver,
                     confirmation.amount,
+                    confirmation.vaultSharesToBeBurnt,
                     confirmation.totalAssetsAfter,
                     confirmation.crossChainTxId
                 );
@@ -484,6 +485,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             IAmanaRegistry(registry).withdrawHelper(),
             amount
         );
+        uint256 previewedShares = previewDeposit(amount);
+        require(previewedShares <= uint256(type(int256).max), "Overflow");
+
+        pendingShareChange += int256(previewedShares);
         if (depositFeePaidFromGasTank) {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
@@ -493,6 +498,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     userERC20,
                     address(asset()),
                     amount,
+                    previewedShares,
                     minimumOut,
                     userChainId,
                     crossChainTxId,
@@ -509,6 +515,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     userERC20,
                     address(asset()),
                     amount,
+                    previewedShares,
                     minimumOut,
                     userChainId,
                     crossChainTxId,
@@ -519,19 +526,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
         vaultNonce++;
 
-        // TODO is this in the right place?
-        console.log("totalAssets from previewDeposit", totalAssets());
-        console.log("totalSupply from previewDeposit", totalSupply());
-        console.log("amount from previewDeposit", amount);
-        console.log(
-            "pendingShareChange from previewDeposit",
-            previewDeposit(amount)
-        );
-
-        uint256 previewedShares = previewDeposit(amount);
-        require(previewedShares <= uint256(type(int256).max), "Overflow");
-
-        pendingShareChange += int256(previewedShares);
         emit CrossChainInvestSent(crossChainTxId, receiver, amount);
     }
 
@@ -545,9 +539,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function _confirmDepositAndMint(
         address receiver,
         uint256 depositAmount,
+        uint256 previewedShares,
         uint256 totalAssetsAfterDeposit,
         bytes32 _crossChainTxId
     ) internal {
+        pendingShareChange -= int256(previewedShares);
+        // TODO -- insert a check here - is previewedShares approx equal to shares?
         userPrincipal[receiver] += depositAmount;
         totalPrincipal += depositAmount;
 
@@ -728,6 +725,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         // console.log("amountWithdrawn", amountWithdrawn);
         // console.log("vaultSharesToBeBurnt", vaultSharesToBeBurnt);
         // console.log("totalAssetsAfterWithdraw", totalAssetsAfterWithdraw);
+        pendingShareChange += int256(vaultSharesToBeBurnt); // TODO - is this the right place for this?
         uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
             balanceOf(user);
         uint256 principalWithdrawn = (fractionOfUserShares *

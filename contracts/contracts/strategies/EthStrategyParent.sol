@@ -70,7 +70,7 @@ abstract contract EthStrategyParent is StrategyParent {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         if (msg.value == 0) revert NoFundsReceived();
-        executionNonce = currentExecutionNonce + 1;
+        lastProcessedNonce = currentExecutionNonce;
         _invest(
             address(0),
             msg.value,
