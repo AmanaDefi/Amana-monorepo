@@ -45,7 +45,7 @@ export async function setupVaultFixture() {
   console.info("🔧 Starting Deployments...");
 
   const treasury = await deployAndLog("Treasury", [owner.address]);
-  const withdrawalReceiver = await deployAndLog("WithdrawalReceiver", [])
+  const withdrawalReceiver = await deployAndLog("WithdrawalReceiver", [owner.address])
   const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS]);
   const swapHelper = await deployAndLog("SwapHelper", [priceOracle.address], owner);
   const gasTank = await deployAndLog("GasTank", []);

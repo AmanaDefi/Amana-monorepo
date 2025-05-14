@@ -95,6 +95,62 @@ contract WithdrawHelper {
         );
     }
 
+    function handleGasFeeAndWithdrawToUser(
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        address tokenToTransfer,
+        uint256 amount,
+        uint32 userChainId,
+        bytes32 _crossChainTxId,
+        address registry
+    ) external {
+        // Request gas
+        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
+            .withdrawGasFeeWithGasLimit(IZRC20(tokenToTransfer).GAS_LIMIT());
+        console.log("gasFee", gasFee);
+        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
+
+        approveOrIncreaseAllowance(
+            IERC20(tokenToTransfer),
+            GATEWAY_ADDRESS,
+            amount + gasFee
+        );
+
+        if (gas_zrc20 != tokenToTransfer) {
+            approveOrIncreaseAllowance(
+                IERC20(gas_zrc20),
+                GATEWAY_ADDRESS,
+                gasFee
+            );
+        }
+
+        bytes memory recipient = abi.encodePacked(receiver);
+
+        RevertOptions memory revertOptions = RevertOptions({
+            revertAddress: msg.sender,
+            callOnRevert: true,
+            abortAddress: msg.sender,
+            revertMessage: abi.encode(
+                "_returnFundsToUserFailed",
+                _crossChainTxId,
+                amount,
+                receiver,
+                withdrawZRC20,
+                withdrawERC20,
+                userChainId
+            ),
+            onRevertGasLimit: 0
+        });
+
+        IGatewayZEVM(GATEWAY_ADDRESS).withdraw(
+            recipient,
+            amount,
+            tokenToTransfer,
+            revertOptions
+        );
+    }
+
     function handleGasFeeAndWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,

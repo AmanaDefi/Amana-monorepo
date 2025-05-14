@@ -66,9 +66,6 @@ abstract contract AmanaVaultBase is
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint16 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event TreasuryUpdated(address indexed newTreasury);
-    event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
-    event GasTankUpdated(address indexed newGasTank);
 
     event ReturnFundsToUserSent(
         bytes32 indexed crossChainTxId,
@@ -492,8 +489,7 @@ abstract contract AmanaVaultBase is
 
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
-                .handleGasFeeAndWithdrawAndCallToReceiver(
-                    IAmanaRegistry(registry).withdrawalReceiver(),
+                .handleGasFeeAndWithdrawToUser(
                     receiver,
                     withdrawZRC20,
                     withdrawERC20,
