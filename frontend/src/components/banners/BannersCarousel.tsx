@@ -16,66 +16,66 @@ import TelegramLogo from "@public/logo/telegram.svg"
 import Link from "next/link";
 import Image from 'next/image';
 import ResponsiveTooltip, { WithTooltip } from "@/components/common/Tooltip";
+import { FaTrophy } from 'react-icons/fa';
 
-// Create a static banner component with adjusted content
+// Community Banner
 const StaticBanner1 = () => {
     return (
         <div
-            className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 lg:pl-6 lg:pr-6 flex items-center w-full h-full bg-[linear-gradient(155deg,rgba(96,65,187,0.6)_0%,rgba(0,0,0,0.4)_25%,rgba(0,0,0,0.4)_50%,rgba(96,65,187,0.6)_78%,rgba(31,79,255,1)_110%)]'>
-            <div className='w-3/5 flex flex-col gap-1'>
+className='relative pl-6 pr-4 py-4 flex items-center justify-between w-full h-full bg-[linear-gradient(155deg,_rgb(31_79_255_/85%)_5%,_rgb(0_0_0_/40%)_25%,_rgb(96_65_139_/60%)_70%,_rgb(31_79_255)_100%)]'>
+            <div className='flex flex-col justify-center'>
                 <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-lg'>
-                    <span className='inline'>Join our Community</span>
+                    Join our growing<br/>
+                    Community today!
                 </h2>
-                <div className='flex items-center gap-3 lg:gap-4 mt-1'>
-                    <Link href='https://x.com/Amana_DeFi' target='_blank' className='hover:opacity-80 transition-opacity'>
-                        <XLogo className='w-auto h-3 xs:h-4 lg:h-5'/>
-                    </Link>
-                    <Link href='https://t.me/+QTiXW9N9CdAzMjA0' target='_blank' className='hover:opacity-80 transition-opacity'>
-                        <TelegramLogo className='w-auto h-3 xs:h-4 lg:h-5'/>
-                    </Link>
-                    <Link href='https://discord.gg/kG3Gfn3B9V' target='_blank' className='hover:opacity-80 transition-opacity'>
-                        <DiscordLogo className='w-auto h-3 xs:h-4 lg:h-5'/>
-                    </Link>
-                </div>
             </div>
-            {/* Chain logos */}
-            <div className='flex-center w-2/5 h-full'>
-                <div className='relative h-full w-fit flex-center'>
-                    <div className='relative h-full w-auto'>
-                        <Image src="/banners/Ethereum_3D.png" alt="Ethereum" fill className="object-contain translate-x-[30%]" priority />
-                    </div>
-                    <div className='relative h-full w-auto'>
-                        <Image src="/banners/Polygon_3D.png" alt="Polygon" fill className="object-contain" priority />
-                    </div>
-                    <div className='relative h-full w-auto'>
-                        <Image src="/banners/USD%20Coin_3D.png" alt="USD Coin" fill className="object-contain -translate-x-[30%]" priority />
-                    </div>
+            <div className='relative flex items-center'>
+                <div className='absolute -top-12 right-12 text-white'>
+                    <p className='text-[10px] xs:text-xs sm:text-sm font-bold mb-0 mr-1'>
+                      <span className="inline-block text-[13px] relative -top-[0.1rem]">*</span>
+                      <span className="italic" style={{ fontFamily: 'Inter, sans-serif' }}>Clickable</span>*
+                    </p>
+                    <svg width="60" height="40" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M30 5 C50 5, 65 30, 50 55" stroke="white" strokeWidth="2" fill="none"/>
+                        <path d="M45 45 L50 55 L60 50" stroke="white" strokeWidth="2" fill="none"/>
+                    </svg>
+                </div>
+                <div className='flex items-center gap-5'>
+                    <Link href='https://x.com/Amana_DeFi' target='_blank' className='bg-black rounded-full w-12 h-12 flex items-center justify-center transition-transform duration-300 ease-in-out hover:scale-110 hover:opacity-80'>
+                        <XLogo className='w-6 h-6'/>
+                    </Link>
+                    <Link href='https://t.me/+QTiXW9N9CdAzMjA0' target='_blank' className='bg-black rounded-full w-12 h-12 flex items-center justify-center transition-transform duration-300 ease-in-out hover:scale-110 hover:opacity-80'>
+                        <TelegramLogo className='w-6 h-6'/>
+                    </Link>
+                    <Link href='https://discord.gg/kG3Gfn3B9V' target='_blank' className='bg-black rounded-full w-12 h-12 flex items-center justify-center transition-transform duration-300 ease-in-out hover:scale-110 hover:opacity-80'>
+                        <DiscordLogo className='w-6 h-6'/>
+                    </Link>
                 </div>
             </div>
         </div>
     )
 }
 
-// Create another static banner component with adjusted content
+// Supported Chains Banner
 const StaticBanner2 = () => {
     const tooltipId = "deposit-chain-tooltip";
     return (
         <div
-            className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 lg:pl-6 lg:pr-6 flex items-center w-full h-full bg-[linear-gradient(155deg,rgba(40,116,105,0.6)_0%,rgba(0,0,0,0.4)_25%,rgba(0,0,0,0.4)_50%,rgba(40,116,105,0.6)_78%,rgba(209,107,39,1)_110%)]'>
-            <div className='w-3/5 flex flex-col gap-1'>
-                <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-lg'>
+            className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 lg:pl-6 lg:pr-6 flex items-center w-full h-full bg-[linear-gradient(155deg,rgba(209_107_39_/70%)_5%,rgba(0_0_0_/40%)_20%,rgba(40_116_105_/60%)_60%,#d16b27_100%)]'>
+            <div className=' flex flex-col gap-1'>
+                <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-xl'>
                     <span className='inline'>Deposit from any connected chain</span>
                 </h2>
-                <div className="flex items-center">
+                {/* <div className="flex items-center">
                     <WithTooltip content="Select token from the chain you want to deposit from, and deposit, it's that easy!">
                         <p className='text-white text-[10px] xs:text-xs sm:text-sm cursor-help'>
-                            Cross-chain deposits made simple ⓘ
+                        Simply choose the token of your preferred chain ⓘ
                         </p>
                     </WithTooltip>
-                </div>
+                </div> */}
             </div>
             {/* Chain logos */}
-            <div className='flex-center w-[40%] h-full'>
+            <div className='flex-center h-full'>
                 <div className='flex flex-wrap items-center justify-center gap-2'>
                     <Image src="/ZetaChain.webp" alt="ZetaChain" width={32} height={32} className="object-contain" />
                     <Image src="/ETH.png" alt="Ethereum" width={32} height={32} className="object-contain" />
@@ -90,57 +90,135 @@ const StaticBanner2 = () => {
     )
 }
 
-// Modified banner components with adjusted sizes for carousel
+// Leaderboard Banner
 const CarouselBanner1 = () => (
-    <div className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 lg:pl-6 lg:pr-6 flex items-center w-full h-full bg-[linear-gradient(155deg,rgba(106,66,146,0.6)_0%,rgba(0,0,0,0)_25%,rgba(0,0,0,0)_50%,rgba(106,66,146,0.6)_78%,rgba(50,185,79,1)_110%)]'>
-        <div className='w-3/5 flex flex-col gap-1'>
-            <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-lg'>
-                <span className='inline'>Join the Leaderboard</span>
-            </h2>
-            <p className='text-white text-[10px] xs:text-xs sm:text-sm'>
-                Deposit now to earn points and rewards
-            </p>
-        </div>
-        <div className='flex-center w-2/5 h-full'>
-            <MaximizeEarnings className='h-full w-auto max-h-[30px] xs:max-h-[40px] lg:max-h-[60px]'/>
-        </div>
+<div className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 flex items-center w-full h-full bg-[linear-gradient(155deg,rgb(50_185_79_/85%)_5%,rgba(0_0_0_/40%)_20%,rgb(106_66_146_/60%)_60%,#32B94F_100%)]'>
+    <div className='w-7/12 flex flex-col gap-3'>
+      <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-lg leading-snug'>
+        Earn Points. Climb<br/>
+        the Leaderboard.<br/>
+        Secure Your Airdrop.
+      </h2>
+      <a
+        href='#' // TODO: Replace with actual collect link
+        className='mt-2 w-fit px-4 py-1 rounded bg-[#14ca3cbf] text-white font-semibold text-sm xs:text-base shadow hover:bg-[#1dbe40b6] transition-colors duration-200'
+      >
+        Collect points
+      </a>
     </div>
+    <div className='w-2/5 flex flex-col justify-center gap-2 mr-3'>
+      <div className='flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-2'>
+          <FaTrophy className='w-5 h-5 text-yellow-400' />
+          <span className='text-white font-bold text-base'>1</span>
+        </div>
+        <div className='bg-black/50 border border-gray-700 rounded-lg px-2 py-1 flex flex-col items-end'>
+          <span className='text-[#00ff37] font-bold text-xs xs:text-sm sm:text-base w-max'>1651M Points</span>
+          <span className='text-white text-[10px]'>0xA99C...4f91</span>
+        </div>
+      </div>
+      <div className='flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-2'>
+          <FaTrophy className='w-5 h-5 text-gray-400' />
+          <span className='text-white font-bold text-base'>2</span>
+        </div>
+        <div className='bg-black/50 border border-gray-700 rounded-lg px-2 py-1 flex flex-col items-end'>
+          <span className='text-[#00ff37] font-bold text-xs xs:text-sm sm:text-base w-max'>335M Points</span>
+          <span className='text-white text-[10px]'>0x7696...C5A7</span>
+        </div>
+      </div>
+      <div className='flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-2'>
+          <FaTrophy className='w-5 h-5 text-orange-500' />
+          <span className='text-white font-bold text-base'>3</span>
+        </div>
+        <div className='bg-black/50 border border-gray-700 rounded-lg px-2 py-1 flex flex-col items-end'>
+          <span className='text-[#00ff37] font-bold text-xs xs:text-sm sm:text-base w-max'>204M Points</span>
+          <span className='text-white text-[10px]'>0xDe28...1cdE</span>
+        </div>
+      </div>
+    </div>
+  </div>
 )
 
+// Audit Banner
 const CarouselBanner2 = () => (
-    <div className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 lg:pl-6 lg:pr-6 flex items-center w-full h-full bg-[linear-gradient(155deg,rgba(40,116,105,0.6)_0%,rgba(0,0,0,0.4)_25%,rgba(0,0,0,0.4)_50%,rgba(40,116,105,0.6)_78%,rgba(209,107,39,1)_110%)]'>
-        <div className='w-3/5 flex flex-col gap-1'>
-            <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-lg'>
-                <span className='inline'>Secure Your Crypto</span>
+    <div className='p-4 lg:p-6 flex flex-col items-start justify-between w-full h-full bg-[linear-gradient(155deg,_rgb(31_79_255_/85%)_5%,_rgb(0_0_0_/40%)_25%,_rgb(96_65_139_/60%)_70%,_rgb(31_79_255)_100%)]'>
+        <div className='w-full flex flex-col gap-2'>
+            <h2 className='text-white font-fustat font-bold text-base xs:text-lg sm:text-xl leading-tight'>
+                <span className='inline'>Amana DeFi</span> <span className='inline'>Successfully</span><br/>
+                <span className='inline'>Audited by</span> <span className='inline font-normal'><LinumLabs className='inline-block h-6 w-auto align-middle ml-2'/></span>
             </h2>
-            <p className='text-white text-[10px] xs:text-xs sm:text-sm'>
-                Fully audited and secure platform
-            </p>
         </div>
-        <div className='flex-center w-[30%] h-full'>
-            <LinumLabs className='h-full w-auto max-h-[25px] xs:max-h-[30px] lg:max-h-[40px]'/>
+        <div className='w-full flex justify-between items-end mt-2'>
+            <a
+                href='#' // TODO: Replace with actual audit link
+                className='mb-2 px-5 py-2 rounded bg-[#3D91FF] text-white font-semibold text-sm hover:bg-[#2D81EF] transition-colors duration-200'
+            >
+                Check Audit
+            </a>
+            <div className='flex items-center -space-x-2'>
+                <div className='relative w-16 h-16 z-30'>
+                    <Image
+                        src='/banners/Ethereum_3D.png'
+                        alt='Ethereum'
+                        fill
+                        className='object-contain rounded-full'
+                    />
+                </div>
+                <div className='relative w-16 h-16 z-20'>
+                    <Image
+                        src='/banners/Polygon_3D.png'
+                        alt='Polygon'
+                        fill
+                        className='object-contain rounded-full'
+                    />
+                </div>
+                <div className='relative w-16 h-16 z-10'>
+                    <Image
+                        src='/banners/USD_Coin_3D.png'
+                        alt='USDC'
+                        fill
+                        className='object-contain rounded-full'
+                    />
+                </div>
+            </div>
         </div>
     </div>
 )
 
+// Avalanche & Arbitrum Integration Banner
 const CarouselBanner3 = () => (
-    <div className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 lg:pl-6 lg:pr-6 flex items-center w-full h-full bg-[linear-gradient(155deg,rgba(96,65,187,0.6)_0%,rgba(0,0,0,0.4)_25%,rgba(0,0,0,0.4)_50%,rgba(96,65,187,0.6)_78%,rgba(31,79,255,1)_110%)]'>
-        <div className='w-3/5 flex flex-col gap-1'>
-            <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-lg'>
-                <span className='inline'>Multiple Chains</span>
+<div className='pl-4 pr-4 py-2 xs:pl-6 xs:pr-6 xs:py-4 flex items-center w-full h-full bg-[linear-gradient(155deg,rgb(232_65_66_/85%)_5%,rgba(0_0_0_/40%)_20%,rgb(31_79_255_/60%)_60%,#E84142_100%)]'>
+        <div className='w-3/5 flex flex-col gap-3'>
+            <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-xl'>
+                <span className='text-white'>Now Live:</span> <span className='text-white font-normal'>Avalanche &amp; Arbitrum Integration</span>
             </h2>
-            <p className='text-white text-[10px] xs:text-xs sm:text-sm'>
-                Support for Ethereum, Arbitrum and Base
-            </p>
+            <a
+                href='#' // TODO: Replace with actual deposit link
+                className='mt-2 w-fit px-5 py-2 rounded bg-[#F44B4B] text-white font-semibold text-[14px] shadow hover:bg-[#d13c3c] transition-colors duration-200'
+            >
+                Deposit now
+            </a>
         </div>
-        <div className='flex-center w-2/5 h-full'>
-            <div className='relative h-full w-fit flex-center'>
-                <div className='relative z-[3] translate-x-[20%] h-full w-auto max-h-[30px] xs:max-h-[40px] lg:max-h-[60px]'>
-                    <Image src="/banners/Ethereum_3D.png" alt="Ethereum" fill className="object-contain" priority />
-                </div>
-                <div className='relative z-[2] h-full w-auto max-h-[30px] xs:max-h-[40px] lg:max-h-[60px]'>
-                    <Image src="/banners/Polygon_3D.png" alt="Polygon" fill className="object-contain" priority />
-                </div>
+        <div className='flex items-center justify-end w-2/5 gap-5 mt-16'>
+            <div className='relative w-14 h-14'>
+                <Image
+                    src='/avalanche-avax-logo.png'
+                    alt='Avalanche'
+                    fill
+                    className='object-contain'
+                    priority
+                />
+            </div>
+            <div className='relative w-14 h-14'>
+                <Image
+                    src='/arbitrum-arb-logo.png'
+                    alt='Arbitrum'
+                    fill
+                    className='object-contain'
+                    priority
+                />
             </div>
         </div>
     </div>
