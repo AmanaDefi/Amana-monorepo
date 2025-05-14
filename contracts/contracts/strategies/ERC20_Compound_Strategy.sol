@@ -25,7 +25,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     address public swapHelper;
     uint16 harvestSwapSlippage = 500; // 1% slippage
     address public rewardsTokenAddress;
-    address public rewardsContractAddress;
     uint256 public minClaimableComp = 5 * 10 ** 15; // Default: 0.005 COMP
 
     /// @notice Initializes the strategy contract.
