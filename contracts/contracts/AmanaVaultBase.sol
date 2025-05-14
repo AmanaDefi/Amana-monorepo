@@ -486,7 +486,12 @@ abstract contract AmanaVaultBase is
                 IAmanaRegistry(registry).withdrawHelper(),
                 outputAmount
             );
-
+            console.log(
+                "Transferring",
+                outputAmount,
+                "to withdrawHelper",
+                IAmanaRegistry(registry).withdrawHelper()
+            );
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawToUser(

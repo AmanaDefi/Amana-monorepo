@@ -3,7 +3,7 @@ import { Signer } from "ethers";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
-import { AmanaConnectedChainVaultV1 } from "../../typechain";
+import { AmanaConnectedChainVault } from "../../typechain";
 import { vaultTestMatrix } from "../config/vault.config";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
@@ -61,9 +61,9 @@ export async function setupVaultFixture() {
   ]);
   await zapContract.updateRegistryAddress(amanaRegistry.address);
 
-  const Vault = await ethers.getContractFactory("AmanaConnectedChainVaultV1", owner);
+  const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
   console.log("About to deploy vault");
-  const amanaVault: AmanaConnectedChainVaultV1 = await upgrades.deployProxy(
+  const amanaVault: AmanaConnectedChainVault = await upgrades.deployProxy(
     Vault,
     [
       vaultConfig.name,
@@ -82,7 +82,7 @@ export async function setupVaultFixture() {
   );
   console.log("Vault deployed, waiting for confirmation");
   await amanaVault.deployed();
-  console.log(`AmanaConnectedChainVaultV1 deployed at: ${amanaVault.address}`);
+  console.log(`AmanaConnectedChainVault deployed at: ${amanaVault.address}`);
 
   await gasTank.authorizeVault(amanaVault.address);
   console.log(`Vault authorized with GasTank.`);
