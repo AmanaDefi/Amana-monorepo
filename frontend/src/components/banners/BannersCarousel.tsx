@@ -1,21 +1,12 @@
 import React from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
-// import {UnderAuditBanner} from "@/components/banners/UnderAuditBanner";
-import {MaximizeEarningsBanner} from "@/components/banners/MaximizeEarningsBanner";
-import {UnderAudit2Banner} from "@/components/banners/UnderAudit2Banner";
-import {EffortlessStakingBanner} from "@/components/banners/EffortlessStakingBanner";
-import Fire from "@public/banners/fire-icon.svg";
-import Vault from "@public/banners/vault.svg";
 import LinumLabs from "@public/banners/linum-labs.svg";
-import MaximizeEarnings from "@public/banners/maximize-earnings.svg";
-// Import social media icons
 import DiscordLogo from "@public/logo/discord.svg"
 import XLogo from "@public/logo/x.svg"
 import TelegramLogo from "@public/logo/telegram.svg"
 import Link from "next/link";
 import Image from 'next/image';
-import ResponsiveTooltip, { WithTooltip } from "@/components/common/Tooltip";
 import { FaTrophy } from 'react-icons/fa';
 
 // Community Banner
