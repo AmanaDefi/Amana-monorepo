@@ -102,7 +102,6 @@ contract WithdrawHelper {
         address withdrawERC20,
         address tokenToTransfer,
         uint256 amount,
-        uint256 previewedShares,
         uint256 minimumOut,
         uint32 userChainId,
         bytes32 _crossChainTxId,
@@ -134,17 +133,11 @@ contract WithdrawHelper {
         }
 
         bytes memory outgoingMessage = abi.encode(
-            address(0),
             receiver,
-            address(0),
-            address(0),
             amount,
-            previewedShares, // on withdrawals this is used for fractionOfTotalShares
             minimumOut,
-            0, // chain ID
             true,
             _crossChainTxId,
-            0, // slippage
             vaultNonce
         );
 
@@ -182,7 +175,6 @@ contract WithdrawHelper {
         address withdrawERC20,
         address tokenToTransfer,
         uint256 amount,
-        uint256 previewedShares,
         uint256 minimumOut,
         uint32 userChainId,
         bytes32 _crossChainTxId,
@@ -242,6 +234,7 @@ contract WithdrawHelper {
         if (amountToDeduct > amount) {
             revert("AmountTooLowToPayForGas");
         }
+        // TODO call back to vault here to decrease pendingShareChange by amountToDeduct?
         if (gas_zrc20 == tokenToTransfer) {
             approveOrIncreaseAllowance(
                 IERC20(tokenToTransfer),
@@ -262,17 +255,11 @@ contract WithdrawHelper {
         }
 
         bytes memory outgoingMessage = abi.encode(
-            address(0),
-            receiver,
-            address(0),
-            address(0),
+            receiver, // or address(0)?
             amount - amountToDeduct,
-            previewedShares, // on withdrawals this is used for fractionOfTotalShares
             minimumOut,
-            0, // chain ID
             true,
             _crossChainTxId,
-            0, // slippage
             vaultNonce
         );
 
@@ -311,13 +298,11 @@ contract WithdrawHelper {
         address vaultAsset,
         address registry,
         address user,
-        address receiver,
         address withdrawZRC20,
         address withdrawERC20,
         uint256 vaultSharesToBeBurnt,
         uint256 minimumOut,
         uint32 withdrawChainId,
-        uint16 slippage,
         bytes32 crossChainTxId,
         uint256 vaultNonce
     ) external {
@@ -332,31 +317,20 @@ contract WithdrawHelper {
         uint256 fractionOfTotalShares = numerator / adjustedTotalSupply;
 
         // PRECOMPUTE all abi.encode arguments to avoid stack overflow
-        address _user = user;
-        address _receiver = receiver;
+
         address _withdrawZRC20 = withdrawZRC20;
-        address _withdrawERC20 = withdrawERC20;
-        uint256 _vaultSharesToBeBurnt = vaultSharesToBeBurnt;
         uint256 _fractionOfTotalShares = fractionOfTotalShares;
         uint256 _minimumOut = minimumOut;
-        uint32 _withdrawChainId = withdrawChainId;
         bool _isDeposit = false;
         bytes32 _crossChainTxId = crossChainTxId;
-        uint16 _slippage = slippage;
         uint256 _vaultNonce = vaultNonce;
 
         bytes memory outgoingMessage = abi.encode(
-            _user,
-            _receiver,
-            _withdrawZRC20,
-            _withdrawERC20,
-            _vaultSharesToBeBurnt,
+            _withdrawZRC20, // not really needed!
             _fractionOfTotalShares,
             _minimumOut,
-            _withdrawChainId,
             _isDeposit,
             _crossChainTxId,
-            _slippage,
             _vaultNonce
         );
 
@@ -415,17 +389,11 @@ contract WithdrawHelper {
             )
         );
         bytes memory outgoingMessage = abi.encode(
-            address(0),
-            address(0),
             newStrategyAddress,
-            address(0),
-            0,
             minAmountOut,
             minSharesOut,
-            0, // chain ID
             false,
             crossChainTxId,
-            0, // slippage
             vaultNonce
         );
 

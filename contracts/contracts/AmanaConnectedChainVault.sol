@@ -32,7 +32,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
     int256 public pendingShareChange;
-    uint256 public vaultNonce;
+    uint256 public vaultNonce; // TODO need to initialize this to 1!
 
     event CrossChainInvestSent(
         bytes32 indexed crossChainTxId,
@@ -489,6 +489,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         require(previewedShares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange += int256(previewedShares);
+        pendingConfirmations[vaultNonce] = Confirmation({
+            user: receiver,
+            receiver: receiver,
+            withdrawZRC20: userZRC20,
+            withdrawERC20: userERC20,
+            amount: amount,
+            vaultSharesToBeBurnt: previewedShares,
+            withdrawChainId: userChainId,
+            isDeposit: true,
+            totalAssetsAfter: 0,
+            crossChainTxId: crossChainTxId,
+            slippage: 0
+        });
         if (depositFeePaidFromGasTank) {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
