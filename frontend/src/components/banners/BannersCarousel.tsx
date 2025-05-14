@@ -25,8 +25,7 @@ const StaticBanner1 = () => {
 className='relative pl-6 pr-4 py-4 flex items-center justify-between w-full h-full bg-[linear-gradient(155deg,_rgb(31_79_255_/85%)_5%,_rgb(0_0_0_/40%)_25%,_rgb(96_65_139_/60%)_70%,_rgb(31_79_255)_100%)]'>
             <div className='flex flex-col justify-center'>
                 <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-lg'>
-                    Join our growing<br/>
-                    Community today!
+                    Join Our Community For a Chance To Win $200 USDT!
                 </h2>
             </div>
             <div className='relative flex items-center'>
@@ -64,7 +63,7 @@ const StaticBanner2 = () => {
             className='pl-3 pr-2 py-1 xs:pl-4 xs:pr-3 xs:py-2 lg:pl-6 lg:pr-6 flex items-center w-full h-full bg-[linear-gradient(155deg,rgba(209_107_39_/70%)_5%,rgba(0_0_0_/40%)_20%,rgba(40_116_105_/60%)_60%,#d16b27_100%)]'>
             <div className=' flex flex-col gap-1'>
                 <h2 className='text-white font-fustat font-bold text-xs xs:text-sm sm:text-base lg:text-xl'>
-                    <span className='inline'>Deposit from any connected chain</span>
+                    <span className='inline'>Deposit From Any Supported Chain</span>
                 </h2>
                 {/* <div className="flex items-center">
                     <WithTooltip content="Select token from the chain you want to deposit from, and deposit, it's that easy!">
