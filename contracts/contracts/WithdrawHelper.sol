@@ -213,6 +213,7 @@ contract WithdrawHelper is Revertable {
         uint256 vaultNonce
     ) external {
         // Request gas
+        console.log("got into handleGasFeeAndWithdrawAndCallToStrategy");
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
         IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);

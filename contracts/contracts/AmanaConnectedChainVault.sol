@@ -436,6 +436,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             address(this),
             assets
         );
+        console.log(
+            "Depositing %s assets from %s to %s",
+            assets,
+            caller,
+            receiver
+        );
+        console.log("minimumOut(): %s", minimumOut);
+        console.log("userChainId(): %s", uint32(block.chainid));
+        console.log("asset(): %s", asset());
         _investAssets(
             assets,
             minimumOut,
@@ -466,15 +475,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
+        console.log("passed first check");
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
             amount
         );
+        console.log("passed second check");
         uint256 previewedShares = previewDeposit(amount);
+        console.log("previewedShares: %s", previewedShares);
         require(previewedShares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange += int256(previewedShares);
+
         pendingConfirmations[vaultNonce] = Confirmation({
             user: receiver,
             receiver: receiver,
@@ -488,7 +501,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             crossChainTxId: crossChainTxId,
             slippage: 0
         });
+        console.log("passed third check");
         if (depositFeePaidFromGasTank) {
+            console.log(
+                "About to call handleGasFeeAndDepositAndCallToStrategy"
+            );
+            console.log("address(asset()): %s", address(asset()));
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
@@ -523,6 +541,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     vaultNonce
                 );
         }
+        console.log("passed fourth check");
         vaultNonce++;
     }
 
@@ -552,15 +571,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         } else {
             latestTotalAssetsUpdateFromStrategy = 0;
         }
-        console.log("totalAssetsAfterDeposit", totalAssetsAfterDeposit);
-        console.log("totalAssets", totalAssets());
-        console.log("totalSupply", totalSupply());
-        // console.log("depositAmount in confirm step", depositAmount);
+
         uint256 shares = previewDeposit(depositAmount);
         _mint(receiver, shares);
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterDeposit;
-        console.log("Actual shares minted in confirm deposit", shares);
         require(shares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange -= int256(shares);
@@ -628,7 +643,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 vaultNonce
             );
         vaultNonce++;
-        console.log("pendingShareChange in _withdraw", shares);
         require(shares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange -= int256(shares);
@@ -688,7 +702,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 crossChainTxId,
                 vaultNonce
             );
-        console.log("pendingShareChange in _withdraw", vaultSharesToBeBurnt);
         require(vaultSharesToBeBurnt <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange -= int256(vaultSharesToBeBurnt);
@@ -739,10 +752,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
         _burn(user, vaultSharesToBeBurnt);
-        console.log(
-            "pendingShareChange in _confirmWithdrawAndBurn",
-            vaultSharesToBeBurnt
-        );
+
         require(vaultSharesToBeBurnt <= uint256(type(int256).max), "Overflow");
         pendingShareChange += int256(vaultSharesToBeBurnt);
         _returnFundsToUser(
