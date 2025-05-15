@@ -47,9 +47,73 @@ export default function ChainTokenSelector({
     // Check if vault token is a stablecoin
     const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
     
-    console.log(`Finding closest token for vault token ${vaultTokenSymbol} on chain ${activeChain.id} (Native: ${isNativeVaultToken}, Stablecoin: ${isStablecoin})`);
+
+    const isZetaChain = activeChain.id === 7000 || activeChain.id === 7001;
     
-    // PRIORITY 1: First try to find exact symbol match
+    // PRIORITY 1: For ZetaChain, prioritize tokens specific to the connected chain first
+    if (isZetaChain && isStablecoin) {
+      // Look for a token with the current chain in its symbol (e.g., "USDC.ARB" on ZetaChain)
+      const chainSpecificTokens = currentChainTokens.filter(token => {
+        // Check if the token has a chain suffix that matches the active chain
+        const tokenParts = token.symbol.split('.');
+        if (tokenParts.length === 2) {
+          const tokenBaseSymbol = tokenParts[0];
+          // Check if it's the right base symbol (USDC, USDT, etc)
+          return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
+        }
+        return false;
+      });
+      
+      // Sort tokens to prioritize chain-specific ones based on the chain we're connected to
+      // This helps ensure USDC.ARB is chosen over USDC.ETH when on ZetaChain
+      if (chainSpecificTokens.length > 0) {
+        // Get user's connected chain suffix if possible
+        let connectedChainSuffix = "";
+        
+        // Check if we can determine a chain suffix from the active wallet connection
+        if (activeChain?.id) {
+          // These are mappings of chain IDs to their suffix in token symbols
+          const chainIdToSuffix: Record<number, string> = {
+            1: "ETH",   // Ethereum
+            8453: "BASE", // Base
+            137: "POL",   // Polygon
+            42161: "ARB",  // Arbitrum
+            43114: "AVAX", // Avalanche
+            56: "BSC"     // BNB Chain
+          };
+          
+          connectedChainSuffix = chainIdToSuffix[activeChain.id] || "";
+        }
+        
+        // Extract the vault token's chain suffix if it has one
+        const vaultTokenParts = vaultData?.inputToken?.symbol.split('.') || [];
+        const vaultTokenSuffix = vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
+        
+        
+        // Sort by our prioritization logic
+        const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
+          const aSuffix = a.symbol.split('.')[1] || '';
+          const bSuffix = b.symbol.split('.')[1] || '';
+          
+          // If one token matches the current chain, it wins
+          if (aSuffix === connectedChainSuffix && bSuffix !== connectedChainSuffix) return -1;
+          if (bSuffix === connectedChainSuffix && aSuffix !== connectedChainSuffix) return 1;
+          
+          // If one token matches the vault token's original suffix, it comes next
+          if (vaultTokenSuffix) {
+            if (aSuffix === vaultTokenSuffix && bSuffix !== vaultTokenSuffix) return -1;
+            if (bSuffix === vaultTokenSuffix && aSuffix !== vaultTokenSuffix) return 1;
+          }
+          
+          // Otherwise, alphabetical order
+          return aSuffix.localeCompare(bSuffix);
+        });
+        
+        return sortedTokens[0];
+      }
+    }
+    
+    // PRIORITY 2: First try to find exact symbol match (original logic)
     const exactMatches = currentChainTokens.filter(token => {
       // Extract token base symbol (e.g., "USDT" from "USDT (POL)")
       const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
@@ -66,16 +130,14 @@ export default function ChainTokenSelector({
         );
         
         if (nonNativeMatch) {
-          console.log(`Found non-native exact match: ${nonNativeMatch.symbol}`);
           return nonNativeMatch;
         }
       }
       
-      console.log(`Found exact match: ${exactMatches[0].symbol}`);
       return exactMatches[0];
     }
     
-    // PRIORITY 2: For stablecoin vaults, try to find any stablecoin
+    // PRIORITY 3: For stablecoin vaults, try to find any stablecoin
     if (isStablecoin) {
       const stablecoinMatch = currentChainTokens.find(token => {
         const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
@@ -83,12 +145,11 @@ export default function ChainTokenSelector({
       });
       
       if (stablecoinMatch) {
-        console.log(`Found stablecoin match: ${stablecoinMatch.symbol}`);
         return stablecoinMatch;
       }
     }
     
-    // PRIORITY 3: For native token vaults, prioritize native token
+    // PRIORITY 4: For native token vaults, prioritize native token
     if (isNativeVaultToken) {
       const nativeToken = currentChainTokens.find(token => 
         token.address === "0x0000000000000000000000000000000000000000" ||
@@ -96,14 +157,12 @@ export default function ChainTokenSelector({
       );
       
       if (nativeToken) {
-        console.log(`Found native token match: ${nativeToken.symbol}`);
         return nativeToken;
       }
     }
     
-    // PRIORITY 4: Default to first token in the list for this chain
+    // PRIORITY 5: Default to first token in the list for this chain
     if (currentChainTokens.length > 0) {
-      console.log(`Defaulting to first available token: ${currentChainTokens[0].symbol}`);
       return currentChainTokens[0];
     }
     
@@ -113,14 +172,12 @@ export default function ChainTokenSelector({
   // Handle vault changes - reset token selection when vault changes
   useEffect(() => {
     if (vaultData?.id && lastVaultIdRef.current !== vaultData.id) {
-      console.log(`Vault changed from ${lastVaultIdRef.current} to ${vaultData.id}`);
       lastVaultIdRef.current = vaultData.id;
       
       // Reset selected token when vault changes
       if (activeChain && walletAddress) {
         const closestToken = findClosestToken();
         if (closestToken) {
-          console.log(`Auto-selecting token for new vault: ${closestToken.symbol}`);
           const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
           onSelectToken(closestToken, chain);
         }
@@ -131,37 +188,87 @@ export default function ChainTokenSelector({
   // Handle network changes - update token selection when network changes
   useEffect(() => {
     if (activeChain && lastActiveChainRef.current !== null && lastActiveChainRef.current !== activeChain.id && walletAddress) {
-      console.log(`Network changed from ${lastActiveChainRef.current} to ${activeChain.id}`);
       
       // Find the closest token on the new chain
       const closestToken = findClosestToken();
       
       if (closestToken) {
-        console.log(`Selecting closest token on new chain: ${closestToken.symbol}`);
         const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
         onSelectToken(closestToken, chain);
       } else if (selectedToken) {
         // If we have a selected token from another chain, try to find the same token on this chain
         const currentChainTokens = APPROVED_TOKENS[activeChain.id] || [];
-        const selectedTokenBaseSymbol = selectedToken.symbol.split(' ')[0].split('.')[0];
+        const selectedTokenBaseSymbol = selectedToken.symbol.split('.')[0].split(' ')[0];
         
-        // Look for matching token by base symbol
+        // Define a mapping of chain IDs to token symbol suffixes
+        const chainIdToSuffix: Record<number, string> = {
+          1: "ETH",   // Ethereum
+          8453: "BASE", // Base
+          137: "POL",   // Polygon
+          42161: "ARB", // Arbitrum
+          43114: "AVAX", // Avalanche
+          56: "BSC"     // BNB Chain
+        };
+        
+        // Get the current chain's preferred suffix if it exists
+        const preferredSuffix = chainIdToSuffix[activeChain.id] || "";
+        
+        // Extract the selected token's base symbol and original suffix
+        const selectedTokenParts = selectedToken.symbol.split('.');
+        const selectedTokenSuffix = selectedTokenParts.length === 2 ? selectedTokenParts[1] : "";
+        
+        // Try to find tokens matching the base symbol with any supported chain suffix
+        const chainSpecificTokens = currentChainTokens.filter(token => {
+          const tokenParts = token.symbol.split('.');
+          if (tokenParts.length === 2) {
+            const tokenBaseSymbol = tokenParts[0];
+            return tokenBaseSymbol.toUpperCase() === selectedTokenBaseSymbol.toUpperCase();
+          }
+          return false;
+        });
+        
+        // If we found any, sort and select based on our prioritization logic
+        if (chainSpecificTokens.length > 0) {
+          // Sort by our prioritization logic
+          const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
+            const aSuffix = a.symbol.split('.')[1] || '';
+            const bSuffix = b.symbol.split('.')[1] || '';
+            
+            // If one token matches the current chain, it wins
+            if (aSuffix === preferredSuffix && bSuffix !== preferredSuffix) return -1;
+            if (bSuffix === preferredSuffix && aSuffix !== preferredSuffix) return 1;
+            
+            // If one token matches the selected token's original suffix, it comes next
+            if (selectedTokenSuffix) {
+              if (aSuffix === selectedTokenSuffix && bSuffix !== selectedTokenSuffix) return -1;
+              if (bSuffix === selectedTokenSuffix && aSuffix !== selectedTokenSuffix) return 1;
+            }
+            
+            // Otherwise, alphabetical order
+            return aSuffix.localeCompare(bSuffix);
+          });
+          
+          const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
+          onSelectToken(sortedTokens[0], chain);
+          return;
+        }
+        
+        // If no chain-specific tokens were found, look for any matching token by base symbol as fallback
         const matchingToken = currentChainTokens.find(token => {
           const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
           return tokenBaseSymbol.toUpperCase() === selectedTokenBaseSymbol.toUpperCase();
         });
         
         if (matchingToken) {
-          console.log(`Found matching token ${matchingToken.symbol} on new chain`);
           const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
           onSelectToken(matchingToken, chain);
-        } else {
-          // If we can't find a matching token, just select the first available
-          if (currentChainTokens.length > 0) {
-            console.log(`No matching token found, selecting first available: ${currentChainTokens[0].symbol}`);
-            const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
-            onSelectToken(currentChainTokens[0], chain);
-          }
+          return;
+        }
+        
+        // If we can't find a matching token, just select the first available
+        if (currentChainTokens.length > 0) {
+          const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
+          onSelectToken(currentChainTokens[0], chain);
         }
       }
     }
@@ -178,7 +285,6 @@ export default function ChainTokenSelector({
       const closestToken = findClosestToken();
       
       if (closestToken) {
-        console.log("Auto-selecting closest token:", closestToken.symbol);
         const chain = SUPPORTED_CHAINS.find(c => c.id === activeChain.id) || activeChain;
         onSelectToken(closestToken, chain);
       }
@@ -275,8 +381,6 @@ export default function ChainTokenSelector({
     event.stopPropagation();
     event.preventDefault();
 
-    console.log(`Selected token: ${token.symbol} from chain ${chain.id} (${chain.name})`);
-    console.log(`Current active chain: ${activeChain?.id} (${activeChain?.name})`);
 
     // Check if wallet is connected
     if (!walletAddress) {
@@ -291,24 +395,20 @@ export default function ChainTokenSelector({
     }
 
     if (activeChain?.id !== chain.id) {
-      console.log(`Attempting to switch from chain ${activeChain?.id} to ${chain.id}`);
       try {
         // Call switchToChain and await its completion
         await switchToChain(chain);
-        console.log(`Chain switch completed for ${chain.id} (${chain.name})`);
       } catch (error) {
         console.error('Failed to switch chain:', error);
         return; // Don't proceed if chain switch failed
       }
     } else {
-      console.log(`Already on chain ${chain.id} (${chain.name}), no switch needed`);
     }
 
     // Update the selected token chain
     setSelectedTokenChain(chain.id);
 
     // Now that we're on the right chain, select the token
-    console.log(`Selecting token ${token.symbol} on chain ${chain.id}`);
     onSelectToken(token, chain);
     setIsOpen(false);
     setExpandedChain(null);
@@ -356,8 +456,6 @@ export default function ChainTokenSelector({
 
   // Decide what to display in the selector button
   const displayContent = useMemo(() => {
-    console.log("selectedToken", selectedToken);
-    console.log("findClosestToken", findClosestToken());
     
     if (selectedToken) {
       return (

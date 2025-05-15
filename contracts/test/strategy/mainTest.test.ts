@@ -783,6 +783,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         preHarvestReward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         preHarvestReward = preHarvestReward.owed;
+        console.log("preHarvestReward", preHarvestReward.toString());
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
         await rewardsContract.earned(strategy.address);
         // This is needed to update the internal state of the contract

@@ -78,6 +78,12 @@ abstract contract EthStrategyParent is StrategyParent {
             currentExecutionNonce,
             _crossChainTxId
         );
+        emit AssetsReceivedFromOldStrategy(
+            oldStrategy,
+            msg.value,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
         oldStrategy = address(0);
     }
 

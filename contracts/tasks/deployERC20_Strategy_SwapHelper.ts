@@ -25,6 +25,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const gateway = args.gateway;
   const withdrawHelper = args.withdrawHelper;
   const swapHelper = args.swapHelperStrategyChain;
+  const rewardsContract = args.rewardsContract;
+  const rewardsToken = args.rewardsToken;
+
   if (!swapHelper) {
     throw new Error("🚨 SwapHelper address is required");
   }
@@ -49,7 +52,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   // Deploy the BaseAaveStrategy contract
   const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway, withdrawHelper, swapHelper);
+  const contract = await factory.deploy(name, gateway, vault, withdrawHelper, swapHelper, receiptToken, inputToken, rewardsContract, rewardsToken, 0);
   console.log("Contract deployed, waiting for confirmations...");
   console.log(`📦 Deploy tx sent with nonce: ${contract.deployTransaction.nonce}`);
 
@@ -66,7 +69,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     try {
       await hre.run("verify:verify", {
         address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, inputToken, receiptToken, gateway, withdrawHelper, swapHelper],
+        constructorArguments: [name, gateway, vault, withdrawHelper, swapHelper, receiptToken, inputToken, rewardsContract, rewardsToken, 0],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -91,6 +94,8 @@ task("deploy-erc20-strategy-swaphelper", "Deploy a Strategy contract", main)
   .addParam("receiptToken", "The address of the receipt token")
   .addParam("gateway", "The address of the gateway contract")
   .addParam("withdrawHelper", "The address of the WithdrawHelper contract")
-  .addParam("swapHelperStrategyChain", "The address of the SwapHelper contract");
+  .addParam("swapHelperStrategyChain", "The address of the SwapHelper contract")
+  .addParam("rewardsContract", "The address of the rewards contract")
+  .addParam("rewardsToken", "The address of the rewards token");
 
 export default {};

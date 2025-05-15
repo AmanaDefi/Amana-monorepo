@@ -34,28 +34,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     int256 public pendingShareChange;
     uint256 public vaultNonce; // TODO need to initialize this to 1!
 
-    event CrossChainInvestSent(
-        bytes32 indexed crossChainTxId,
-        address receiver,
-        uint256 amount
-    );
-    event CrossChainInvestFailed(
-        bytes32 indexed crossChainTxId,
-        address receiver,
-        uint256 amount
-    );
-    event DivestSent(
-        bytes32 indexed crossChainTxId,
-        address user,
-        uint256 shares
-    );
-    event DivestFailed(
-        bytes32 indexed crossChainTxId,
-        address user,
-        uint256 shares
-    );
     event TotalAssetsUpdated(uint256 totalAssets);
-    event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
 
     /// @dev Initializer instead of constructor for upgradeability
     function initialize(
@@ -188,6 +167,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     function clearPendingWithdrawals(address user) external onlyOwner {
         pendingWithdrawals[user] = 0;
+    }
+
+    function decreasePendingWithdrawals(
+        address user,
+        uint256 amount
+    ) external onlyOwnerOrWithdrawHelper {
+        pendingWithdrawals[user] -= amount;
     }
 
     /**
@@ -538,8 +524,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 );
         }
         vaultNonce++;
-
-        emit CrossChainInvestSent(crossChainTxId, receiver, amount);
     }
 
     /**
@@ -648,7 +632,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         require(shares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange -= int256(shares);
-        emit DivestSent(crossChainTxId, user, shares);
     }
 
     /**
@@ -710,7 +693,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         pendingShareChange -= int256(vaultSharesToBeBurnt);
         vaultNonce++;
-        emit DivestSent(crossChainTxId, user, vaultSharesToBeBurnt);
     }
 
     /**
@@ -734,10 +716,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes32 _crossChainTxId,
         uint16 slippage
     ) internal {
-        // console.log("Confirming withdraw and burn");
-        // console.log("amountWithdrawn", amountWithdrawn);
-        // console.log("vaultSharesToBeBurnt", vaultSharesToBeBurnt);
-        // console.log("totalAssetsAfterWithdraw", totalAssetsAfterWithdraw);
         pendingShareChange += int256(vaultSharesToBeBurnt); // TODO - is this the right place for this?
         uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
             balanceOf(user);
@@ -788,130 +766,5 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function safeUintToInt(uint256 x) internal pure returns (int256) {
         require(x <= uint256(type(int256).max), "safeUintToInt: overflow");
         return int256(x);
-    }
-
-    /**
-     * @dev Handles revert scenarios during cross-chain operations.
-     * @param context The revert context containing details about the revert scenario.
-     * @notice Executes appropriate recovery steps based on the revert message.
-     */
-    function onRevert(
-        RevertContext calldata context
-    ) external override onlyGateway {
-        (
-            string memory revertMessage,
-            bytes32 _crossChainTxId,
-            uint256 amount,
-            address receiverOrOldStrategy,
-            address userZRC20,
-            address userERC20,
-            uint32 userChainId
-        ) = abi.decode(
-                context.revertMessage,
-                (string, bytes32, uint256, address, address, address, uint32)
-            );
-
-        if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_crossChainInvestFailed"))
-        ) {
-            uint16 slippage = 1000;
-            _returnFundsToUser(
-                context.amount,
-                userChainId,
-                receiverOrOldStrategy,
-                userZRC20,
-                userERC20,
-                _crossChainTxId,
-                slippage
-            );
-            emit CrossChainInvestFailed(
-                _crossChainTxId,
-                receiverOrOldStrategy,
-                context.amount
-            );
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_divestConnectedChainStrategyFailed"))
-        ) {
-            pendingWithdrawals[receiverOrOldStrategy] -= amount;
-            emit DivestFailed(_crossChainTxId, receiverOrOldStrategy, amount);
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_returnFundsToUserFailed"))
-        ) {
-            emit ReturnFundsToUserFailed(
-                _crossChainTxId,
-                receiverOrOldStrategy,
-                context.amount
-            );
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_switchStrategyFailed"))
-        ) {
-            strategyAddress = receiverOrOldStrategy;
-            emit SwitchStrategyFailed(_crossChainTxId);
-        } else {
-            revert("Revert not handled");
-        }
-    }
-
-    function onAbort(AbortContext calldata context) external onlyGateway {
-        (
-            string memory revertMessage,
-            bytes32 _crossChainTxId,
-            uint256 amount,
-            address receiverOrOldStrategy,
-            address userZRC20,
-            address userERC20,
-            uint32 userChainId
-        ) = abi.decode(
-                context.revertMessage,
-                (string, bytes32, uint256, address, address, address, uint32)
-            );
-
-        if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_crossChainInvestFailed"))
-        ) {
-            uint16 slippage = 1000;
-            _returnFundsToUser(
-                context.amount,
-                userChainId,
-                receiverOrOldStrategy,
-                userZRC20,
-                userERC20,
-                _crossChainTxId,
-                slippage
-            );
-            emit CrossChainInvestFailed(
-                _crossChainTxId,
-                receiverOrOldStrategy,
-                amount
-            );
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_divestConnectedChainStrategyFailed"))
-        ) {
-            pendingWithdrawals[receiverOrOldStrategy] -= amount;
-            emit DivestFailed(_crossChainTxId, receiverOrOldStrategy, amount);
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_returnFundsToUserFailed"))
-        ) {
-            emit ReturnFundsToUserFailed(
-                _crossChainTxId,
-                receiverOrOldStrategy,
-                context.amount
-            );
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_switchStrategyFailed"))
-        ) {
-            strategyAddress = receiverOrOldStrategy;
-            emit SwitchStrategyFailed(_crossChainTxId);
-        } else {
-            revert("Revert not handled");
-        }
     }
 }

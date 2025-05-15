@@ -94,6 +94,12 @@ abstract contract ERC20StrategyParentV1 is StrategyParentV1 {
             currentExecutionNonce,
             _crossChainTxId
         );
+        emit AssetsReceivedFromOldStrategy(
+            oldStrategy,
+            amount,
+            currentExecutionNonce,
+            _crossChainTxId
+        );
         oldStrategy = address(0);
     }
 
