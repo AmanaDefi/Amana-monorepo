@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import "./ERC4626RewardsUpgradeable.sol";
 
-// import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
