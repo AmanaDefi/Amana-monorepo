@@ -38,8 +38,8 @@ export const vaultTestMatrix = [
 
       otherZRC20Input: ZC_USDC_POL_ADDRESS,
 
-      crossChainDepositAmount1: ethers.utils.parseUnits("0.1", 6),
-      crossChainDepositAmount2: ethers.utils.parseUnits("0.2", 6),
+      crossChainDepositAmount1: ethers.utils.parseUnits("10", 6),
+      crossChainDepositAmount2: ethers.utils.parseUnits("5", 6),
       slippage: 500,
 
       gasTankAmount: ethers.utils.parseUnits("100", 18),
