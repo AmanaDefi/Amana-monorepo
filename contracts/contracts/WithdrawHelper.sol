@@ -19,6 +19,12 @@ contract WithdrawHelper {
     address public immutable GATEWAY_ADDRESS;
     uint256 public gasLimitForWithdrawAndCallToReceiver = 500000;
 
+    event ReturnFundsToUserSent(
+        bytes32 indexed crossChainTxId,
+        address receiver,
+        uint256 amount
+    );
+
     constructor(address _gatewayAddress) {
         GATEWAY_ADDRESS = _gatewayAddress;
     }
@@ -93,6 +99,7 @@ contract WithdrawHelper {
             CallOptions(gasLimitForWithdrawAndCallToReceiver, false),
             revertOptions
         );
+        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
     }
 
     function handleGasFeeAndWithdrawToUser(
@@ -149,6 +156,7 @@ contract WithdrawHelper {
             tokenToTransfer,
             revertOptions
         );
+        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
     }
 
     function handleGasFeeAndWithdrawAndCallToStrategy(

@@ -67,11 +67,6 @@ abstract contract AmanaVaultBase is
     event PerformanceFeeUpdated(uint16 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
 
-    event ReturnFundsToUserSent(
-        bytes32 indexed crossChainTxId,
-        address receiver,
-        uint256 amount
-    );
     event ReturnFundsToUserFailed(
         bytes32 indexed crossChainTxId,
         address receiver,
@@ -433,6 +428,26 @@ abstract contract AmanaVaultBase is
         bytes32 crossChainTxId
     ) internal virtual;
 
+    function returnFundsToUser(
+        uint256 amount,
+        uint32 userChainId,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        bytes32 _crossChainTxId,
+        uint16 slippage
+    ) external onlyOwner {
+        _returnFundsToUser(
+            amount,
+            userChainId,
+            receiver,
+            withdrawZRC20,
+            withdrawERC20,
+            _crossChainTxId,
+            slippage
+        );
+    }
+
     /**
      * @dev Returns funds to the user, either on the same chain or a connected chain.
      * @param amount The amount of assets to return to the user.
@@ -486,12 +501,6 @@ abstract contract AmanaVaultBase is
                 IAmanaRegistry(registry).withdrawHelper(),
                 outputAmount
             );
-            console.log(
-                "Transferring",
-                outputAmount,
-                "to withdrawHelper",
-                IAmanaRegistry(registry).withdrawHelper()
-            );
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawToUser(
@@ -505,7 +514,6 @@ abstract contract AmanaVaultBase is
                     registry
                 );
         }
-        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
     }
 
     /**
