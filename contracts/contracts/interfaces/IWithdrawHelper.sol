@@ -2,6 +2,17 @@
 pragma solidity 0.8.26;
 
 interface IWithdrawHelper {
+    function handleGasFeeAndWithdrawToUser(
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        address tokenToTransfer,
+        uint256 amount,
+        uint32 userChainId,
+        bytes32 _crossChainTxId,
+        address registry
+    ) external;
+
     function handleDivestCallToStrategy(
         address strategyAddress,
         uint256 gasLimitForCall,

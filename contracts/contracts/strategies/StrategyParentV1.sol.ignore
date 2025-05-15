@@ -43,6 +43,12 @@ abstract contract StrategyParentV1 is Ownable2Step, IErrors {
         uint256 blockTimestamp
     );
     event SendTotalUnderlyingAssetsFailed();
+    event AssetsReceivedFromOldStrategy(
+        address indexed oldStrategy,
+        uint256 totalAssetsTransferrred,
+        uint256 executionNonce,
+        bytes32 crossChainTxId
+    );
     event AssetsTransferredToNewStrategy(
         address indexed newStrategy,
         uint256 totalAssetsTransferrred,

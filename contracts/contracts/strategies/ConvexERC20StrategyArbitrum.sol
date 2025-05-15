@@ -10,6 +10,7 @@ import "../interfaces/ICurvePoolDynamic.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBoosterArbitrum.sol";
 import "../interfaces/IConvexRewardPoolArbitrum.sol";
+import "hardhat/console.sol";
 
 contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -141,6 +142,11 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
                 if (rewardToken == address(0)) continue;
 
                 uint256 balance = IERC20(rewardToken).balanceOf(address(this));
+                console.log(
+                    "Harvesting rewardToken: %s, balance: %s",
+                    rewardToken,
+                    balance
+                );
                 if (balance < 1e17) continue;
 
                 uint256 converted = swapToInputToken(

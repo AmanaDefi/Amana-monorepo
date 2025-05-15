@@ -39,12 +39,17 @@ const VaultsDetailContainer: React.FC<{
 
     useEffect(() => {
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
-      setVaultData(foundVault);
-    
-      if (foundVault?.symbol && setVaultSymbol) {
-        setVaultSymbol(foundVault.symbol); // ✅ only call if defined
+      
+      if (foundVault) {
+        console.log(`VaultsDetailContainer: Switching to vault ${vaultID}`);
+        setVaultData(foundVault);
+        
+        // Explicitly reset selectedToken when vault changes
+        // This is critical to ensure proper auto-selection in child components
+        console.log(`VaultsDetailContainer: Resetting selected token for new vault`);
+        setSelectedToken(undefined);
       }
-    }, [vaultID, setVaultSymbol]);
+    }, [vaultID, vaults]);
 
     const strategyExplorerBaseUrl = useMemo(() => {
       if (!vaultData?.protocol?.chainId) return "";
@@ -62,6 +67,13 @@ const VaultsDetailContainer: React.FC<{
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
     useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
+
+    // Handle token selection from child components
+    const handleTokenSelect = (token: Token) => {
+      console.log(`VaultsDetailContainer: Token selection changed to ${token.symbol}`);
+      setSelectedToken(token);
+    };
+
     return (
 
       vaultData ? (
@@ -98,7 +110,7 @@ const VaultsDetailContainer: React.FC<{
                     vaultTotalAssetinToken={vaultTotalAssetinToken}
                     transactionCompleted={transactionCompleted}
                     initialIsDeposit={initialIsDeposit}
-                    onTokenSelect={setSelectedToken}
+                    onTokenSelect={handleTokenSelect}
                   />
                 </div>
               </div>

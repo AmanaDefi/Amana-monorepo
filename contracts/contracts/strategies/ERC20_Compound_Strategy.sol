@@ -25,7 +25,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     address public swapHelper;
     uint16 harvestSwapSlippage = 500; // 1% slippage
     address public rewardsTokenAddress;
-    address public rewardsContractAddress;
+    uint256 public minClaimableComp = 5 * 10 ** 15; // Default: 0.005 COMP
 
     /// @notice Initializes the strategy contract.
     constructor(
@@ -62,23 +62,32 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         harvestSwapSlippage = _harvestSwapSlippage;
     }
 
+    function setMinClaimableComp(uint256 newThreshold) external onlyOwner {
+        require(newThreshold < 1 ether, "Too high"); // Optional sanity check
+        minClaimableComp = newThreshold;
+    }
+
     /// @notice Claims rewards from Compound
     function claimRewards() public returns (uint256) {
         uint256 compBalanceBefore = IERC20(rewardsTokenAddress).balanceOf(
             address(this)
         );
-        cometRewardsContract.claim(address(receiptToken), address(this), true);
-
-        uint256 compBalanceAfter = IERC20(rewardsTokenAddress).balanceOf(
-            address(this)
-        );
-        require(compBalanceAfter > 0, "No rewards to claim");
-        emit RewardsClaimed(
-            address(this),
-            rewardsTokenAddress,
-            compBalanceAfter - compBalanceBefore
-        );
-        return compBalanceAfter - compBalanceBefore;
+        try
+            cometRewardsContract.claim(
+                address(receiptToken),
+                address(this),
+                true
+            )
+        {
+            uint256 compBalanceAfter = IERC20(rewardsTokenAddress).balanceOf(
+                address(this)
+            );
+            uint256 claimed = compBalanceAfter - compBalanceBefore;
+            emit RewardsClaimed(address(this), rewardsTokenAddress, claimed);
+            return claimed;
+        } catch {
+            return 0;
+        }
     }
 
     /**
@@ -115,19 +124,21 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
 
     /// @notice Harvests rewards and reinvests them into Compound
     function harvest() public {
-        uint256 compBalance = checkRewards();
-        if (compBalance > 0) {
-            compBalance = claimRewards();
-            uint256 usdcReceived = swapCompForUsdc(
-                compBalance,
-                harvestSwapSlippage
-            );
-            _depositFundsIntoYieldSource(usdcReceived, 0);
-            emit RewardsHarvested(
-                rewardsTokenAddress,
-                compBalance,
-                usdcReceived
-            );
+        uint256 compAccrued = checkRewards();
+        if (compAccrued >= minClaimableComp) {
+            uint256 compBalance = claimRewards();
+            if (compBalance > 0) {
+                uint256 usdcReceived = swapCompForUsdc(
+                    compBalance,
+                    harvestSwapSlippage
+                );
+                _depositFundsIntoYieldSource(usdcReceived, 0);
+                emit RewardsHarvested(
+                    rewardsTokenAddress,
+                    compBalance,
+                    usdcReceived
+                );
+            }
         }
     }
 

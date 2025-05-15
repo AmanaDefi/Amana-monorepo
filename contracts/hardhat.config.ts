@@ -52,7 +52,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY],
     },
     arbitrumOne: {
-      url: "https://arb1.arbitrum.io/rpc",
+      url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
     base: {
@@ -60,7 +60,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY],
     },
     polygon: {
-      url: "https://137.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c",
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
     sepolia_testnet: {
@@ -72,7 +72,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY],
     },
     bsc: {
-      url: "https://56.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c",
+      url: "https://binance.llamarpc.com",
       accounts: [process.env.PRIVATE_KEY],
     },
     bsc_testnet: {
