@@ -25,7 +25,8 @@ import {
   getOnlyTokenSymbol,
 } from "@/utils/utils";
 import { ethers } from "ethers";
-import InteractionContainer from "./interact";
+// import InteractionContainer from "./interact";
+import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
@@ -41,6 +42,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (balance: string | number, symbol: string): string => {
@@ -1069,7 +1071,6 @@ export default function VaultInputs({
           </span>
         </div>
       </div>
-
 
 
       {inputToken && !loadingOutputToken && (

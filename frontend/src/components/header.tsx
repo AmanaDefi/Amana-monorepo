@@ -70,6 +70,13 @@ const Header = () => {
             >
               Roadmap
             </span>
+            <span
+              className={`cursor-pointer ${path === "/transaction-flow" ? "font-bold text-themeColor" : ""
+                }`}
+              onClick={() => router.push("/transaction-flow")}
+            >
+              Transaction Flow
+            </span>
             {/* <span
               className={`cursor-pointer ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
                 }`}

@@ -61,9 +61,27 @@ const VaultsDetailContainer: React.FC<{
     // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
     useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     
+    // Get token price for USD conversion
+    const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
+    
+    // Log detailed vault deposit information
+    useEffect(() => {
+      if (userVaultBalance && vaultData) {
+        const rawBalance = typeof userVaultBalance === 'string' ? userVaultBalance : userVaultBalance.formatted;
+        const usdValue = Number(rawBalance) * (vaultTokenPrice || 0);
+        
+        console.log(`Vault Deposit Details for ${vaultData.name}:`, {
+          vaultId: vaultData.id,
+          tokenSymbol: vaultData.inputToken.symbol,
+          rawBalance: rawBalance,
+          usdValue: `$${usdValue.toFixed(2)}`,
+          tokenPrice: `$${vaultTokenPrice || 0}`
+        });
+      }
+    }, [userVaultBalance, vaultData, vaultTokenPrice]);
+    
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     const cvxTokenPrice = useTokenPriceBySymbol("CVX");
-    console.log("cvxTokenPrice: ", cvxTokenPrice)
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
     useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
