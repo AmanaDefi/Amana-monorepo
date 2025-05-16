@@ -132,12 +132,14 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
                     compBalance,
                     harvestSwapSlippage
                 );
-                _depositFundsIntoYieldSource(usdcReceived, 0);
-                emit RewardsHarvested(
-                    rewardsTokenAddress,
-                    compBalance,
-                    usdcReceived
-                );
+                if (usdcReceived > 0) {
+                    _depositFundsIntoYieldSource(usdcReceived, 0);
+                    emit RewardsHarvested(
+                        rewardsTokenAddress,
+                        compBalance,
+                        usdcReceived
+                    );
+                }
             }
         }
     }
@@ -150,9 +152,10 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
         uint256 initialBalance = receiptToken.balanceOf(address(this));
-        receiptToken.supply(address(inputToken), amount);
+        if (amount > 0) {
+            receiptToken.supply(address(inputToken), amount);
+        }
         uint256 finalBalance = receiptToken.balanceOf(address(this));
-
         if (finalBalance - initialBalance < minAmountOut) {
             revert InsufficientOut();
         }

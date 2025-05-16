@@ -304,19 +304,19 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               className="bg-customNeutral200 rounded-lg overflow-hidden border border-customNeutral100 hover:border-cyan-400 transition-all cursor-pointer"
               onClick={() => handleVaultClick(vault.id)}
             >
-              {/* Card Header with Chain and Risk */}
+              {/* Card Header with Protocol and Risk (was Chain) */}
               <div className="flex justify-between items-center p-3 bg-customNeutral300 border-b border-customNeutral100">
-                <div className="flex items-center gap-2  ml-[10px]">
+                <div className="flex items-center gap-2 ml-[10px]">
                   <Image
-                    src={vault.imgURL || ''}
-                    alt={vault.protocol.network}
+                    src={vault.protocol.imgURL || ''}
+                    alt={vault.protocol.name}
                     width={24}
                     height={24}
                     className="rounded-full"
                   />
                   <div className="flex items-center">
-                    <span className="text-gray-400 md:block hidden">Chain:</span>
-                    <span className="text-white font-medium md:ml-1">{vault.protocol.network}</span>
+                    <span className="text-gray-400 md:block hidden">Protocol:</span>
+                    <span className="text-white font-medium md:ml-1">{vault.protocol.name}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 mr-[10px]">
@@ -330,22 +330,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               <div className="p-4">
                 <div className='flex md:flex-row flex-col gap-2 justify-between'>
 
-                {/* Protocol with Logo */}
-                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
-                  <Image
-                    src={vault.protocol.imgURL}
-                    alt={vault.protocol.name}
-                    width={36}
-                    height={36}
-                    className="rounded-full"
-                  />
-                  <div>
-                    <span className="text-gray-400 text-xs">Protocol</span>
-                    <p className="text-white font-medium">{vault.protocol.name}</p>
-                  </div>
-                </div>
-                
-                {/* Vault Name and Asset */}
+                {/* Lending Pool with Logo (was Protocol) */}
                 <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
                   <Image
                     src={vault.inputToken.imgURL}
@@ -355,9 +340,23 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     className="rounded-full"
                   />
                   <div>
-                    <span className="text-gray-400 text-xs">{vault.type}</span>
-                    <h3 className="text-white font-bold">{vault.name}</h3>
-                    {/* <p className="text-gray-400 text-xs">{getOnlyTokenSymbol(vault.inputToken.symbol)}</p> */}
+                    <span className="text-gray-400 text-xs">Lending Pool</span>
+                    <p className="text-white font-medium">{vault.name}</p>
+                  </div>
+                </div>
+                
+                {/* Chain with Logo (was Lending Pool) */}
+                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
+                  <Image
+                    src={vault.imgURL || ''}
+                    alt={vault.protocol.network}
+                    width={36}
+                    height={36}
+                    className="rounded-full"
+                  />
+                  <div>
+                    <span className="text-gray-400 text-xs">Chain</span>
+                    <h3 className="text-white font-bold">{vault.protocol.network}</h3>
                   </div>
                 </div>
                 </div>

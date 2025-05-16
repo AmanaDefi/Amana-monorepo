@@ -126,7 +126,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Compound",
-      strategyAddress: "0x5E1613bB9d1A8838eD72BE8471326B4C05102757",
+      strategyAddress: "0x53d4ca240736DDD613152C4F8Fb3A8598f1b9bF4",
       rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
       network: "Polygon",
       chainId: 137,

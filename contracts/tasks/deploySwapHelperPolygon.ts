@@ -5,10 +5,16 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const [signer] = await hre.ethers.getSigners();
   const network = hre.network.name;
 
+  const priceOracle = args.priceoracle;
+  if (!priceOracle) {
+    throw new Error("🚨 Missing required argument: --priceoracle");
+  }
+
   console.log(`🔑 Deploying SwapHelperPolygon with signer: ${signer.address}`);
+  console.log(`📈 Using price oracle address: ${priceOracle}`);
 
   const SwapHelperPolygon = await hre.ethers.getContractFactory("SwapHelperPolygon", signer);
-  const swapHelper = await SwapHelperPolygon.deploy();
+  const swapHelper = await SwapHelperPolygon.deploy(priceOracle);
   await swapHelper.deployed();
 
   console.log(`✅ SwapHelperPolygon deployed at: ${swapHelper.address}`);
@@ -18,8 +24,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     console.log(`🛠 Verifying contract on ${network} explorer...`);
     try {
       await hre.run("verify:verify", {
-        address: swapHelper.address, // Updated from contract.target
-        constructorArguments: [],
+        address: swapHelper.address,
+        constructorArguments: [priceOracle],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -30,5 +36,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-task("deploy-swap-helper-polygon", "Deploys the SwapHelperPolygon contract", main);
+task("deploy-swap-helper-polygon", "Deploys the SwapHelperPolygon contract", main)
+  .addParam("priceoracle", "The address of the price oracle contract");
+
 export default {};
