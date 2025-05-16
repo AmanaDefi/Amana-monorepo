@@ -1,7 +1,7 @@
 ## Step 1 => Initial local transaction on Base (local chain)
 - Get from -> tx receipt.
 - Hash of tx -> '0xff53be485baa2faca5eb760771a60067d6636fb6b5c18078815ded02234f19c8'
-- Tx result details -> 'https://basescan.org/tx/0xff53be485baa2faca5eb760771a60067d6636fb6b5c18078815ded02234f19c8'
+- Tx result details or should say URL -> 'https://basescan.org/tx/0xff53be485baa2faca5eb760771a60067d6636fb6b5c18078815ded02234f19c8'
 - if Successful -> Tx succeeds, get receipt 
 - if Failure -> Tx Reverts
 
@@ -14,6 +14,7 @@
     ]
   }
 }'
+- URL for inBoundHashToCctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0xff53be485baa2faca5eb760771a60067d6636fb6b5c18078815ded02234f19c8]
 - Hash of Tx -> '0x5fcecb507982bd2e18b2b435aabc74b69183005a1ae94e864bb9aa72fa020dc7'
 - Tx results details -> '{
   "CrossChainTx": {
@@ -82,6 +83,7 @@
     }
   }
 }'
+- URL for Cctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/0x5fcecb507982bd2e18b2b435aabc74b69183005a1ae94e864bb9aa72fa020dc7]
 - If Successful -> 'Look at cctx endpoint. Look at cctx_status, Must get ”OutboundMined”.'
 - If Failure -> 'Look at cctx endpoint. Look at cctx_status.
 Will get Reverted or Aborted'
@@ -95,6 +97,7 @@ Will get Reverted or Aborted'
     ]
   }
 }'
+- URL for inBoundHashToCctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0x5fcecb507982bd2e18b2b435aabc74b69183005a1ae94e864bb9aa72fa020dc7]
 - Hash of Tx -> '0xe4d6cc027bf4b5e82488111267cb3b91f725fc08b475e8dad0941d331c72541f'
 - Tx results details -> '{
   "CrossChainTx": {
@@ -163,6 +166,7 @@ Will get Reverted or Aborted'
     }
   }
 }'
+- URL for Cctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/0xe4d6cc027bf4b5e82488111267cb3b91f725fc08b475e8dad0941d331c72541f]
 - If Successful -> 'Look at cctx endpoint. Look at cctx_status, Must get ”OutboundMined”.'
 - If Failure -> 'Look at cctx endpoint. Look at cctx_status.
 Will get Reverted or Aborted'
@@ -235,6 +239,7 @@ Will get Reverted or Aborted'
     }
   }
 }`'
+- URL for outbound_params hash (means transaction happened on strategy chain) -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/0xe4d6cc027bf4b5e82488111267cb3b91f725fc08b475e8dad0941d331c72541f]
 - Hash of Tx -> '0x95cc0cb8806235d00c9dcb3a41602c63e755201156941fb646a0e46d685b3a50'
 - If Successful -> 'Don't need to check this for success/failure'
 
@@ -247,6 +252,7 @@ Will get Reverted or Aborted'
     ]
   }
 }'
+- URL to inBoundHashToCctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0x95cc0cb8806235d00c9dcb3a41602c63e755201156941fb646a0e46d685b3a50]
 - Hash of Tx -> '0xac069e02538d032937c3498487486563b62f2057bfc856b0ab974083b1786e37'
 - Tx results details -> '{
   "CrossChainTx": {
@@ -315,6 +321,7 @@ Will get Reverted or Aborted'
     }
   }
 }'
+- URL to Cctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/0xac069e02538d032937c3498487486563b62f2057bfc856b0ab974083b1786e37]
 - If Successful -> 'Look at cctx endpoint. Look at cctx_status, Must get ”OutboundMined”.'
 - If Failure -> 'Look at cctx endpoint. Look at cctx_status.
 Will get Reverted or Aborted'
@@ -328,6 +335,7 @@ Will get Reverted or Aborted'
     ]
   }
 }'
+- URL to inBoundHashToCctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0xac069e02538d032937c3498487486563b62f2057bfc856b0ab974083b1786e37]
 - Hash to Tx -> '0xe2002861045fe4e627ce511f96cce55f1e7a9ab016fe818b8c64a60f0252f579'
 - Tx results details -> '{
   "CrossChainTx": {
@@ -396,6 +404,7 @@ Will get Reverted or Aborted'
     }
   }
 }'
+- URL to Cctx -> [https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/0xe2002861045fe4e627ce511f96cce55f1e7a9ab016fe818b8c64a60f0252f579]
 - If Successful -> 'Look at cctx endpoint. Look at cctx_status, Must get ”OutboundMined”.'
 - If Failure -> 'Look at cctx endpoint. Look at cctx_status.
 Will get Reverted or Aborted'
