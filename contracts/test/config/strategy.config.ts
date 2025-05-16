@@ -42,7 +42,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "ICompoundVault",
     swapHelperContractName: "SwapHelperPolygon",
     rewardsContractName: "ICometRewards",
-    forkBlock: 70004444,
+    forkBlock: 71580000,
     inputTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
     inputTokenStorageSlot: 0,
     inputTokenIndexOrPlaceholder: 0,

@@ -1334,11 +1334,14 @@ export const fetchUserVaultBalance = async (
     contract,
     address: userAddress,
   });
+  console.log("shares", shares);
+  console.log("decimals", decimals);
   const balance = await readContract({
     contract,
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [shares],
   });
+  console.log("balance", balance);
   return formatUnits(balance, decimals);
 };
 

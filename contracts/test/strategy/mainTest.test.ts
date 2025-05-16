@@ -906,6 +906,63 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(expectedAssets).to.be.closeTo(depositAmount, depositAmount.div(100)); // 1% tolerance
     });
 
+    it("should attempt Uniswap V3 exactInput swap and log error if it fails", async function () {
+      const {
+        gatewaySigner,
+        owner,
+        inputToken,
+        strategy,
+        receiptTokenContract,
+        config
+      } = ctx;
+      const COMP = "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c";
+      const WMATIC = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
+      const USDT = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
+      const UNISWAP_V3_ROUTER = "0xE592427A0AEce92De3Edee1F18E0157C05861564"; // Official Uniswap V3 Router on Polygon
+      const FEE_TIER = 500; // 0.05% pool
+
+      const [deployer] = await ethers.getSigners();
+
+      const router = await ethers.getContractAt("ISwapRouter", UNISWAP_V3_ROUTER);
+      const comp = await ethers.getContractAt("IERC20", COMP);
+      const amountIn = ethers.BigNumber.from("6582000000000000"); // 100 USDC
+      await setTokenBalance(COMP, await owner.getAddress(), amountIn, config.inputTokenStorageSlot, false);
+
+      const deadline = Math.floor(Date.now() / 1000) + 300;
+
+      // Approve router
+      await comp.connect(deployer).approve(router.address, amountIn);
+
+      // Encode the path (COMP -> WMATIC -> USDT with 0.05% fee)
+      const encodedPath = ethers.utils.solidityPack(
+        ["address", "uint24", "address", "uint24", "address"],
+        [COMP, 3000, WMATIC, 500, USDT]
+      );
+
+      const params = {
+        path: encodedPath,
+        recipient: deployer.address,
+        deadline,
+        amountIn,
+        amountOutMinimum: 0
+      };
+
+      try {
+        const preview = await router.callStatic.exactInput(params);
+        console.log("CallStatic swap will return:", preview.toString());
+
+        const tx = await router.exactInput(params);
+        await tx.wait();
+        console.log("Swap succeeded");
+      } catch (err: any) {
+        console.error("Uniswap V3 swap failed:");
+        console.error("Message:", err.message);
+        if (err.error && err.error.data) {
+          console.error("Revert data:", err.error.data);
+        }
+      }
+    });
+
     // Add more shared tests here (or conditionally based on strategy type)
   });
 });

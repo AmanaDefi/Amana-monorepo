@@ -12,8 +12,10 @@ contract UpgradeVault is Script {
         // address newImpl = 0x1a4810A0Dc61FF4d3D46Cb8Ac89612Cc286Ca11C; // <- older version with old switchStrategy function
         // address newImpl = 0x198938Cb9429D35562569AC567f063654166c636; // <- final version with updated switchStrategy function and toggleDepositFeePaidFromGasTank
         // address newImpl = 0xcB4b1936df6B44967Ca44A28BbC63cF1e886d06D;
-        address newImpl = 0xBDC27D4Bd051b774fB33AEFae10Bb6D698bAcEA6; // AmanaConnectedChainVault: 0x502881c6f25340e62757a7be556b0e8ccbdb195d
+        // address newImpl = 0xBDC27D4Bd051b774fB33AEFae10Bb6D698bAcEA6; // AmanaConnectedChainVault: 0x502881c6f25340e62757a7be556b0e8ccbdb195d
         // address newImpl = 0x6fE22F986797F16aabb461df546ed3317932213f; // V1 vault (old version)
+
+        address newImpl = 0x70774742d4065792AFeb16709acaD3a1630f3141; // V1 vault (older version)
 
         // ✅ Fetch the PRIVATE_KEY from environment and ensure it starts with "0x"
         string memory rawPrivateKey = vm.envString("PRIVATE_KEY");
