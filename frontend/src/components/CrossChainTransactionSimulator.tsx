@@ -25,8 +25,8 @@ type TransactionStepMessages = {
   [key: string]: TransactionStepFeedback;
 };
 
-// Define the steps for the simulation
-const simulationSteps = [
+// Define the steps for the withdrawal simulation
+const withdrawalSteps = [
   {
     name: 'Initial local transaction on Base',
     type: 'local',
@@ -65,6 +65,40 @@ const simulationSteps = [
   },
 ];
 
+// Define the steps for the deposit simulation
+const depositSteps = [
+  {
+    name: 'Initial local transaction on Base',
+    type: 'local',
+    hash: '0xa786c5b510113c400dca53eda1d471d7711f38229c67bf83f30b7226de9b3459',
+    url: 'https://basescan.org/tx/0xa786c5b510113c400dca53eda1d471d7711f38229c67bf83f30b7226de9b3459',
+  },
+  {
+    name: 'Cross chain call from Base to Vault on Zetachain',
+    type: 'inboundToCctx',
+    hash: '0xb0184142ae8d8363cc2d755692a2aec5ec0da24db63b1db4232a65f8eb570e14',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0xa786c5b510113c400dca53eda1d471d7711f38229c67bf83f30b7226de9b3459',
+  },
+  {
+    name: 'Cross chain call from vault on ZC to strategy on strategy chain',
+    type: 'inboundToCctx',
+    hash: '0x1b5d83092e4c03a58c624f04056b128292cc99f16d4d58ef4ab287f63dbdbca6',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0xb0184142ae8d8363cc2d755692a2aec5ec0da24db63b1db4232a65f8eb570e14',
+  },
+  {
+    name: 'Transaction on Strategy chain',
+    type: 'cctx',
+    hash: '0xe0697bffd721fc54581d5b492a49041bc818d8e77fb403171899af372345db26',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/0x1b5d83092e4c03a58c624f04056b128292cc99f16d4d58ef4ab287f63dbdbca6',
+  },
+  {
+    name: 'Cross chain call from strategy back to vault on ZC',
+    type: 'inboundToCctx',
+    hash: '0x03f322f2524bccac8021bf642082a1cbe0bb708aa382078897c0a1dff23bbf82',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0xe0697bffd721fc54581d5b492a49041bc818d8e77fb403171899af372345db26',
+  },
+];
+
 interface SimulationResult {
   step: string;
   hash: string;
@@ -73,13 +107,19 @@ interface SimulationResult {
   data: any;
 }
 
-export default function CrossChainTransactionSimulator() {
+interface CrossChainTransactionSimulatorProps {
+  type: 'deposit' | 'withdrawal';
+}
+
+export default function CrossChainTransactionSimulator({ type }: CrossChainTransactionSimulatorProps) {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [results, setResults] = useState<SimulationResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
+
+  const steps = type === 'deposit' ? depositSteps : withdrawalSteps;
 
   const resetSimulation = () => {
     setCurrentStep(0);
@@ -98,17 +138,17 @@ export default function CrossChainTransactionSimulator() {
     setResults([]);
     setCurrentStep(0);
     setFinished(false);
-    for (let i = 0; i < simulationSteps.length; i++) {
+    for (let i = 0; i < steps.length; i++) {
       try {
         let data: any = null;
-        let cctxHash = simulationSteps[i].hash;
+        let cctxHash = steps[i].hash;
         let cctxData: any = null;
-        if (simulationSteps[i].type === 'local') {
-          console.log('[Simulation] Local step:', simulationSteps[i].name, 'Hash:', simulationSteps[i].hash);
+        if (steps[i].type === 'local') {
+          console.log('[Simulation] Local step:', steps[i].name, 'Hash:', steps[i].hash);
           data = { status: 'LocalTx' };
-        } else if (simulationSteps[i].type === 'inboundToCctx') {
-          console.log('[Simulation] Fetching inboundHashToCctx:', simulationSteps[i].url);
-          const inboundRes = await axios.get(simulationSteps[i].url);
+        } else if (steps[i].type === 'inboundToCctx') {
+          console.log('[Simulation] Fetching inboundHashToCctx:', steps[i].url);
+          const inboundRes = await axios.get(steps[i].url);
           console.log('[Simulation] inboundHashToCctx response:', inboundRes.data);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0];
           if (!cctxIndex) throw new Error('No cctx_index found for this step');
@@ -122,9 +162,9 @@ export default function CrossChainTransactionSimulator() {
           }
           data = { inbound: inboundRes.data, cctx: cctxData };
           cctxHash = cctxIndex;
-        } else if (simulationSteps[i].type === 'cctx') {
-          console.log('[Simulation] Fetching cctx:', simulationSteps[i].url);
-          const cctxRes = await axios.get(simulationSteps[i].url);
+        } else if (steps[i].type === 'cctx') {
+          console.log('[Simulation] Fetching cctx:', steps[i].url);
+          const cctxRes = await axios.get(steps[i].url);
           console.log('[Simulation] cctx response:', cctxRes.data);
           cctxData = cctxRes.data;
           if (cctxData?.CrossChainTx?.cctx_status?.status !== 'OutboundMined') {
@@ -132,14 +172,14 @@ export default function CrossChainTransactionSimulator() {
           }
           data = { cctx: cctxData };
         }
-        setResults((prev) => [...prev, { step: simulationSteps[i].name, hash: cctxHash, url: simulationSteps[i].url, status: 'success', data }]);
+        setResults((prev) => [...prev, { step: steps[i].name, hash: cctxHash, url: steps[i].url, status: 'success', data }]);
         setCurrentStep(i + 1);
         await new Promise((resolve) => setTimeout(resolve, 1200)); // short delay for UX
       } catch (err) {
         let message = 'Unknown error';
         if (err instanceof Error) message = err.message;
         else if (typeof err === 'string') message = err;
-        setError(`Error at step "${simulationSteps[i].name}": ${message}`);
+        setError(`Error at step "${steps[i].name}": ${message}`);
         setLoading(false);
         setFinished(false);
         return;
@@ -159,13 +199,13 @@ export default function CrossChainTransactionSimulator() {
 
   return (
     <div className="flex flex-col gap-4 p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg max-w-2xl mx-auto">
-      <h2 className="text-white text-3xl font-bold mb-2">Cross-Chain Withdrawal Simulation</h2>
+      <h2 className="text-white text-3xl font-bold mb-2">{type === 'deposit' ? 'Cross-Chain Deposit Simulation' : 'Cross-Chain Withdrawal Simulation'}</h2>
       {!started && (
         <button
           onClick={runAllSteps}
           className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors self-center text-lg font-semibold shadow"
         >
-          Withdraw
+          {type === 'deposit' ? 'Deposit' : 'Withdraw'}
         </button>
       )}
       {loading && (
@@ -182,7 +222,7 @@ export default function CrossChainTransactionSimulator() {
         </div>
       )}
       <ul className="mt-2 flex flex-col gap-4">
-        {simulationSteps.map((step, i) => {
+        {steps.map((step, i) => {
           const status = getStepStatus(i);
           return (
             <li
@@ -218,7 +258,7 @@ export default function CrossChainTransactionSimulator() {
       {finished && !error && (
         <div className="text-center text-green-400 mt-6 text-xl font-bold flex flex-col items-center gap-2">
           <AiOutlineCheck className="text-green-400" size={32} />
-          Withdrawal completed successfully!
+          {type === 'deposit' ? 'Deposit' : 'Withdrawal'} completed successfully!
           <button onClick={resetSimulation} className="mt-3 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold">Test Again</button>
         </div>
       )}
