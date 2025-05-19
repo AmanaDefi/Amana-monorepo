@@ -19,7 +19,7 @@ contract WithdrawHelper is Revertable {
     using SafeERC20 for IZRC20;
 
     address public immutable GATEWAY_ADDRESS;
-    uint256 public gasLimitForWithdrawAndCallToReceiver = 500000;
+    // uint256 public gasLimitForWithdrawAndCallToReceiver = 500000;
 
     modifier onlyGateway() {
         if (msg.sender != GATEWAY_ADDRESS) revert IErrors.OnlyGateway();
@@ -27,140 +27,140 @@ contract WithdrawHelper is Revertable {
     }
 
     event ReturnFundsToUserSent(
-        bytes32 indexed crossChainTxId,
+        uint256 indexed vaultNonce,
+        address vault,
         address receiver,
         uint256 amount
     );
     event ReturnFundsToUserFailed(
-        bytes32 indexed crossChainTxId,
+        uint256 indexed vaultNonce,
+        address vault,
         address receiver,
         uint256 amount
     );
     event CrossChainInvestSent(
-        bytes32 indexed crossChainTxId,
+        uint256 indexed vaultNonce,
+        address vault,
         address receiver,
         uint256 amount
     );
     event CrossChainInvestFailed(
-        bytes32 indexed crossChainTxId,
+        uint256 indexed vaultNonce,
+        address vault,
         address receiver,
         uint256 amount
     );
     event DivestSent(
-        bytes32 indexed crossChainTxId,
+        uint256 indexed vaultNonce,
+        address vault,
         address user,
         uint256 shares
     );
     event DivestFailed(
-        bytes32 indexed crossChainTxId,
+        uint256 indexed vaultNonce,
+        address vault,
         address user,
         uint256 shares
     );
-    event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
+    event SwitchStrategyFailed(uint256 indexed vaultNonce, address vault);
 
     constructor(address _gatewayAddress) {
         GATEWAY_ADDRESS = _gatewayAddress;
     }
 
-    function updateGasLimitForWithdrawAndCallToReceiver(
-        uint256 _gasLimitForWithdrawAndCallToReceiver
-    ) external {
-        gasLimitForWithdrawAndCallToReceiver = _gasLimitForWithdrawAndCallToReceiver;
-    }
+    // function updateGasLimitForWithdrawAndCallToReceiver(
+    //     uint256 _gasLimitForWithdrawAndCallToReceiver
+    // ) external {
+    //     gasLimitForWithdrawAndCallToReceiver = _gasLimitForWithdrawAndCallToReceiver;
+    // }
 
-    function handleGasFeeAndWithdrawAndCallToReceiver(
-        address targetAddress,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        address tokenToTransfer,
-        uint256 amount,
-        uint32 userChainId,
-        bytes32 _crossChainTxId,
-        address registry
-    ) external {
-        bytes memory outgoingMessage = abi.encode(
-            receiver, // user to receive funds
-            withdrawERC20, // token on target chain
-            amount, // amount to be sent
-            _crossChainTxId
-        );
+    // function handleGasFeeAndWithdrawAndCallToReceiver(
+    //     address targetAddress,
+    //     address receiver,
+    //     address withdrawZRC20,
+    //     address withdrawERC20,
+    //     address tokenToTransfer,
+    //     uint256 amount,
+    //     uint32 userChainId,
+    //     address registry
+    // ) external {
+    //     bytes memory outgoingMessage = abi.encode(
+    //         receiver, // user to receive funds
+    //         withdrawERC20, // token on target chain
+    //         amount // amount to be sent
+    //     );
 
-        // Request gas
-        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
-            .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCallToReceiver);
+    //     // Request gas
+    //     (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
+    //         .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCallToReceiver);
 
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
+    //     IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
 
-        approveOrIncreaseAllowance(
-            IERC20(tokenToTransfer),
-            GATEWAY_ADDRESS,
-            amount + gasFee
-        );
+    //     approveOrIncreaseAllowance(
+    //         IERC20(tokenToTransfer),
+    //         GATEWAY_ADDRESS,
+    //         amount + gasFee
+    //     );
 
-        if (gas_zrc20 != tokenToTransfer) {
-            approveOrIncreaseAllowance(
-                IERC20(gas_zrc20),
-                GATEWAY_ADDRESS,
-                gasFee
-            );
-        }
+    //     if (gas_zrc20 != tokenToTransfer) {
+    //         approveOrIncreaseAllowance(
+    //             IERC20(gas_zrc20),
+    //             GATEWAY_ADDRESS,
+    //             gasFee
+    //         );
+    //     }
 
-        bytes memory recipient = abi.encodePacked(targetAddress);
+    //     bytes memory recipient = abi.encodePacked(targetAddress);
 
-        RevertOptions memory revertOptions = RevertOptions({
-            revertAddress: address(this),
-            callOnRevert: true,
-            abortAddress: address(this),
-            revertMessage: abi.encode(
-                "_returnFundsToUserFailed",
-                _crossChainTxId,
-                amount,
-                receiver,
-                withdrawZRC20,
-                withdrawERC20,
-                tokenToTransfer,
-                userChainId,
-                registry,
-                msg.sender
-            ),
-            onRevertGasLimit: 0
-        });
+    //     RevertOptions memory revertOptions = RevertOptions({
+    //         revertAddress: address(this),
+    //         callOnRevert: true,
+    //         abortAddress: address(this),
+    //         revertMessage: abi.encode(
+    //             "_returnFundsToUserFailed",
+    //             amount,
+    //             receiver,
+    //             withdrawZRC20,
+    //             withdrawERC20,
+    //             tokenToTransfer,
+    //             userChainId,
+    //             registry,
+    //             msg.sender
+    //         ),
+    //         onRevertGasLimit: 0
+    //     });
 
-        IGatewayZEVM(GATEWAY_ADDRESS).withdrawAndCall(
-            recipient,
-            amount,
-            tokenToTransfer,
-            outgoingMessage,
-            CallOptions(gasLimitForWithdrawAndCallToReceiver, false),
-            revertOptions
-        );
-        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
-    }
+    //     IGatewayZEVM(GATEWAY_ADDRESS).withdrawAndCall(
+    //         recipient,
+    //         amount,
+    //         tokenToTransfer,
+    //         outgoingMessage,
+    //         CallOptions(gasLimitForWithdrawAndCallToReceiver, false),
+    //         revertOptions
+    //     );
+    //     emit ReturnFundsToUserSent(vaultNonce, receiver, amount);
+    // }
 
     function handleGasFeeAndWithdrawToUser(
         address receiver,
         address withdrawZRC20,
-        address withdrawERC20,
-        address tokenToTransfer,
         uint256 amount,
-        uint32 userChainId,
-        bytes32 _crossChainTxId,
-        address registry
+        address registry,
+        uint256 vaultNonce
     ) public {
         // TODO does this need an access modifier? do any of the others need to have public?
         // Request gas
-        (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
-            .withdrawGasFeeWithGasLimit(IZRC20(tokenToTransfer).GAS_LIMIT());
+        (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
+            .withdrawGasFeeWithGasLimit(IZRC20(withdrawZRC20).GAS_LIMIT());
         IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
 
         approveOrIncreaseAllowance(
-            IERC20(tokenToTransfer),
+            IERC20(withdrawZRC20),
             GATEWAY_ADDRESS,
             amount + gasFee
         );
 
-        if (gas_zrc20 != tokenToTransfer) {
+        if (gas_zrc20 != withdrawZRC20) {
             approveOrIncreaseAllowance(
                 IERC20(gas_zrc20),
                 GATEWAY_ADDRESS,
@@ -176,15 +176,12 @@ contract WithdrawHelper is Revertable {
             abortAddress: address(this),
             revertMessage: abi.encode(
                 "_returnFundsToUserFailed",
-                _crossChainTxId,
                 amount,
                 receiver,
                 withdrawZRC20,
-                withdrawERC20,
-                tokenToTransfer,
-                userChainId,
                 registry,
-                msg.sender
+                msg.sender,
+                vaultNonce
             ),
             onRevertGasLimit: 0
         });
@@ -192,28 +189,24 @@ contract WithdrawHelper is Revertable {
         IGatewayZEVM(GATEWAY_ADDRESS).withdraw(
             recipient,
             amount,
-            tokenToTransfer,
+            withdrawZRC20,
             revertOptions
         );
-        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
+        emit ReturnFundsToUserSent(vaultNonce, msg.sender, receiver, amount);
     }
 
     function handleGasFeeAndWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,
         address withdrawZRC20,
-        address withdrawERC20,
         address tokenToTransfer,
         uint256 amount,
         uint256 minimumOut,
-        uint32 userChainId,
-        bytes32 _crossChainTxId,
         uint32 gasLimitForWithdrawAndCall,
         address registry,
         uint256 vaultNonce
     ) external {
         // Request gas
-        console.log("got into handleGasFeeAndWithdrawAndCallToStrategy");
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
         IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
@@ -237,11 +230,8 @@ contract WithdrawHelper is Revertable {
         }
 
         bytes memory outgoingMessage = abi.encode(
-            receiver,
             amount,
             minimumOut,
-            true,
-            _crossChainTxId,
             vaultNonce
         );
 
@@ -253,15 +243,12 @@ contract WithdrawHelper is Revertable {
             abortAddress: address(this),
             revertMessage: abi.encode(
                 "_crossChainInvestFailed",
-                _crossChainTxId,
                 amount,
                 receiver,
                 withdrawZRC20,
-                withdrawERC20,
-                withdrawZRC20,
-                userChainId,
                 registry,
-                msg.sender
+                msg.sender,
+                vaultNonce
             ),
             onRevertGasLimit: 0
         });
@@ -273,19 +260,16 @@ contract WithdrawHelper is Revertable {
             CallOptions(gasLimitForWithdrawAndCall, false),
             revertOptions
         );
-        emit CrossChainInvestSent(_crossChainTxId, receiver, amount);
+        emit CrossChainInvestSent(vaultNonce, msg.sender, receiver, amount);
     }
 
     function handleWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,
         address withdrawZRC20,
-        address withdrawERC20,
         address tokenToTransfer,
         uint256 amount,
         uint256 minimumOut,
-        uint32 userChainId,
-        bytes32 _crossChainTxId,
         uint32 gasLimitForWithdrawAndCall,
         address registry,
         uint256 vaultNonce
@@ -361,11 +345,8 @@ contract WithdrawHelper is Revertable {
         }
 
         bytes memory outgoingMessage = abi.encode(
-            receiver, // or address(0)?
             amount - amountToDeduct,
             minimumOut,
-            true,
-            _crossChainTxId,
             vaultNonce
         );
 
@@ -377,15 +358,12 @@ contract WithdrawHelper is Revertable {
             abortAddress: address(this),
             revertMessage: abi.encode(
                 "_crossChainInvestFailed",
-                _crossChainTxId,
                 amount - amountToDeduct,
                 receiver,
                 withdrawZRC20,
-                withdrawERC20,
-                tokenToTransfer,
-                userChainId,
                 registry,
-                msg.sender
+                msg.sender,
+                vaultNonce
             ),
             onRevertGasLimit: 0
         });
@@ -398,7 +376,7 @@ contract WithdrawHelper is Revertable {
             CallOptions(gasLimitForWithdrawAndCall, false),
             revertOptions
         );
-        emit CrossChainInvestSent(_crossChainTxId, receiver, amount);
+        emit CrossChainInvestSent(vaultNonce, msg.sender, receiver, amount);
     }
 
     function handleDivestCallToStrategy(
@@ -409,11 +387,8 @@ contract WithdrawHelper is Revertable {
         address registry,
         address user,
         address withdrawZRC20,
-        address withdrawERC20,
         uint256 vaultSharesToBeBurnt,
         uint256 minimumOut,
-        uint32 withdrawChainId,
-        bytes32 crossChainTxId,
         uint256 vaultNonce
     ) external {
         _handleGasFee(gasLimitForCall, vaultAsset, registry);
@@ -426,22 +401,13 @@ contract WithdrawHelper is Revertable {
             2;
         uint256 fractionOfTotalShares = numerator / adjustedTotalSupply;
 
-        // PRECOMPUTE all abi.encode arguments to avoid stack overflow
-
-        address _withdrawZRC20 = withdrawZRC20;
-        uint256 _fractionOfTotalShares = fractionOfTotalShares;
-        uint256 _minimumOut = minimumOut;
-        bool _isDeposit = false;
-        bytes32 _crossChainTxId = crossChainTxId;
-        uint256 _vaultNonce = vaultNonce;
+        bool isSwitch = false;
 
         bytes memory outgoingMessage = abi.encode(
-            _withdrawZRC20, // not really needed!
-            _fractionOfTotalShares,
-            _minimumOut,
-            _isDeposit,
-            _crossChainTxId,
-            _vaultNonce
+            fractionOfTotalShares,
+            minimumOut,
+            vaultNonce,
+            isSwitch
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -450,15 +416,12 @@ contract WithdrawHelper is Revertable {
             address(this), // abortAddress
             abi.encode(
                 "_divestConnectedChainStrategyFailed",
-                crossChainTxId,
                 vaultSharesToBeBurnt,
                 user,
                 withdrawZRC20,
-                withdrawERC20,
-                address(0),
-                withdrawChainId,
                 registry,
-                msg.sender
+                msg.sender,
+                vaultNonce
             ),
             uint256(0)
         );
@@ -471,7 +434,7 @@ contract WithdrawHelper is Revertable {
             callOptions,
             revertOptions
         );
-        emit DivestSent(crossChainTxId, user, vaultSharesToBeBurnt);
+        emit DivestSent(vaultNonce, msg.sender, user, vaultSharesToBeBurnt);
     }
 
     function handleSwitchCallToStrategy(
@@ -482,7 +445,6 @@ contract WithdrawHelper is Revertable {
         address vaultAsset,
         address registry,
         uint256 minAmountOut,
-        uint256 minSharesOut,
         uint256 vaultNonce
     ) external {
         _handleGasFee(
@@ -493,22 +455,13 @@ contract WithdrawHelper is Revertable {
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
-        // Generate a unique crossChainTxId
-        bytes32 crossChainTxId = keccak256(
-            abi.encodePacked(
-                strategyAddress,
-                newStrategyAddress,
-                block.timestamp, // Current timestamp
-                block.number // Current block number
-            )
-        );
+        bool isSwitch = true;
+
         bytes memory outgoingMessage = abi.encode(
             newStrategyAddress,
             minAmountOut,
-            minSharesOut,
-            false,
-            crossChainTxId,
-            vaultNonce
+            vaultNonce,
+            isSwitch
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -517,15 +470,12 @@ contract WithdrawHelper is Revertable {
             address(this), // abortAddress
             abi.encode(
                 "_switchStrategyFailed",
-                crossChainTxId,
                 0,
-                strategyAddress,
                 newStrategyAddress,
                 address(0),
-                address(0),
-                0,
                 registry,
-                msg.sender
+                msg.sender,
+                vaultNonce
             ),
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
@@ -591,29 +541,15 @@ contract WithdrawHelper is Revertable {
     ) external override onlyGateway {
         (
             string memory revertMessage,
-            bytes32 _crossChainTxId,
             uint256 amount,
             address receiverOrOldStrategy,
-            address userZRC20,
-            address userERC20,
-            address tokenToTransfer,
-            uint32 userChainId,
+            address withdrawZRC20,
             address registry,
-            address vault
+            address vault,
+            uint256 vaultNonce
         ) = abi.decode(
                 context.revertMessage,
-                (
-                    string,
-                    bytes32,
-                    uint256,
-                    address,
-                    address,
-                    address,
-                    address,
-                    uint32,
-                    address,
-                    address
-                )
+                (string, uint256, address, address, address, address, uint256)
             );
         if (
             keccak256(bytes(revertMessage)) ==
@@ -621,16 +557,14 @@ contract WithdrawHelper is Revertable {
         ) {
             handleGasFeeAndWithdrawToUser(
                 receiverOrOldStrategy,
-                userZRC20,
-                userERC20,
-                tokenToTransfer,
+                withdrawZRC20,
                 context.amount,
-                userChainId,
-                _crossChainTxId,
-                registry
+                registry,
+                vaultNonce
             );
             emit CrossChainInvestFailed(
-                _crossChainTxId,
+                vaultNonce,
+                vault,
                 receiverOrOldStrategy,
                 context.amount
             );
@@ -642,13 +576,14 @@ contract WithdrawHelper is Revertable {
                 receiverOrOldStrategy,
                 amount
             );
-            emit DivestFailed(_crossChainTxId, receiverOrOldStrategy, amount);
+            emit DivestFailed(vaultNonce, vault, receiverOrOldStrategy, amount);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsToUserFailed"))
         ) {
             emit ReturnFundsToUserFailed(
-                _crossChainTxId,
+                vaultNonce,
+                vault,
                 receiverOrOldStrategy,
                 context.amount
             );
@@ -657,7 +592,7 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes("_switchStrategyFailed"))
         ) {
             IAmanaVault(vault).setStrategy(receiverOrOldStrategy);
-            emit SwitchStrategyFailed(_crossChainTxId);
+            emit SwitchStrategyFailed(vaultNonce, vault);
         } else {
             revert("Revert not handled");
         }
@@ -666,29 +601,15 @@ contract WithdrawHelper is Revertable {
     function onAbort(AbortContext calldata context) external onlyGateway {
         (
             string memory revertMessage,
-            bytes32 _crossChainTxId,
             uint256 amount,
             address receiverOrOldStrategy,
-            address userZRC20,
-            address userERC20,
-            address tokenToTransfer,
-            uint32 userChainId,
+            address withdrawZRC20,
             address registry,
-            address vault
+            address vault,
+            uint256 vaultNonce
         ) = abi.decode(
                 context.revertMessage,
-                (
-                    string,
-                    bytes32,
-                    uint256,
-                    address,
-                    address,
-                    address,
-                    address,
-                    uint32,
-                    address,
-                    address
-                )
+                (string, uint256, address, address, address, address, uint256)
             );
 
         if (
@@ -697,16 +618,14 @@ contract WithdrawHelper is Revertable {
         ) {
             handleGasFeeAndWithdrawToUser(
                 receiverOrOldStrategy,
-                userZRC20,
-                userERC20,
-                tokenToTransfer,
+                withdrawZRC20,
                 context.amount,
-                userChainId,
-                _crossChainTxId,
-                registry
+                registry,
+                vaultNonce
             );
             emit CrossChainInvestFailed(
-                _crossChainTxId,
+                vaultNonce,
+                vault,
                 receiverOrOldStrategy,
                 amount
             );
@@ -719,13 +638,14 @@ contract WithdrawHelper is Revertable {
                 amount
             );
             // pendingWithdrawals[receiverOrOldStrategy] -= amount;
-            emit DivestFailed(_crossChainTxId, receiverOrOldStrategy, amount);
+            emit DivestFailed(vaultNonce, vault, receiverOrOldStrategy, amount);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsToUserFailed"))
         ) {
             emit ReturnFundsToUserFailed(
-                _crossChainTxId,
+                vaultNonce,
+                vault,
                 receiverOrOldStrategy,
                 context.amount
             );
@@ -734,7 +654,7 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes("_switchStrategyFailed"))
         ) {
             IAmanaVault(vault).setStrategy(receiverOrOldStrategy);
-            emit SwitchStrategyFailed(_crossChainTxId);
+            emit SwitchStrategyFailed(vaultNonce, vault);
         } else {
             revert("Revert not handled");
         }

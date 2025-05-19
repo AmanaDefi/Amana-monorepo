@@ -220,12 +220,12 @@ export async function simulateDepositCallFromConnChain(
   const minSharesOut = 0 // depositAmount.mul(1000).div(1001);
 
   // Generate a transaction ID using your generateTransactionId function
-  const transactionId = generateTransactionId(await user.getAddress(), 8453);
+  // const transactionId = generateTransactionId(await user.getAddress(), 8453);
 
   // Encode the deposit message
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "uint256", "uint16", "bytes32"],
-    [inputToken, minSharesOut, slippage, transactionId]
+    ["address", "uint256", "uint16"],
+    [inputToken, minSharesOut, slippage]
   );
   // Execute the onCall function to simulate a deposit
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -247,11 +247,9 @@ export async function simulateDepositCallFromConnChain(
 export async function simulateConfirmDeposit(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
-  user: Signer,
   depositAmount: any,
   totalAssetsBefore: any,
   executionNonce: any,
-  crossChainTxId: any,
   strategyAddress: any,
   strategyChainId: any,
   strategyGasToken: any
@@ -260,8 +258,8 @@ export async function simulateConfirmDeposit(
   const totalAssetsBeforeBN = BigNumber.from(totalAssetsBefore);
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
-    [ethers.constants.AddressZero, await user.getAddress(), ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, 0, true, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, crossChainTxId, 0]
+    ["address", "uint256", "uint256"],  // withdrawZRC20: 0x, totalAssetsAfter, vaultNonce
+    [ethers.constants.AddressZero, totalAssetsBeforeBN.add(depositAmountBN), executionNonce]
   );
 
   await amanaVault.connect(gatewaySigner).onCall(
@@ -341,16 +339,16 @@ export async function simulateWithdrawCallFromConnChain(
   pythContract: any,
   originChainZRC20Input: string,
   originChainId: number,
-  originChainGasToken: string
+  originChainGasToken: string,
+  nonEvmUserAddress: string
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
   const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
-  const slippage = 0;
-  const transactionId = generateTransactionId(await user.getAddress(), 8453)
+  const slippage = 1000;
 
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    [originChainZRC20Input, ethers.constants.AddressZero, sharesToWithdraw, minAmountOut, slippage, transactionId]
+    [originChainZRC20Input, ethers.constants.AddressZero, sharesToWithdraw, minAmountOut, slippage, nonEvmUserAddress]
   );
 
   await amanaVault.connect(gatewaySigner).onCall(
@@ -368,42 +366,33 @@ export async function simulateWithdrawCallFromConnChain(
 export async function simulateConfirmWithdrawToConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
-  user: Signer,
   withdrawnAmount: BigNumber,
-  fractionOfTotalShares: BigNumber,
+  VaultSharesToBeBurnt: BigNumber,
   totalAssetsBefore: BigNumber,
   executionNonce: number,
-  crossChainTxId: number,
-  originChainZRC20Input: string,
-  originChainId: number,
-  originChainERC20Input: string,
   vaultAsset: string,
   strategyAddress: string,
   strategyChainId: number,
   strategyGasToken: string,
-  slippage: number,
 ): Promise<any> {
+  console.log("withdrawnAmount", withdrawnAmount.toString());
+  console.log("VaultSharesToBeBurnt", VaultSharesToBeBurnt.toString());
+  console.log("totalAssetsBefore", totalAssetsBefore.sub(withdrawnAmount).toString());
+  console.log("executionNonce", executionNonce);
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+    ["uint256", "uint256", "uint256", "uint256"],
     [
-      await user.getAddress(),
-      await user.getAddress(),
-      originChainZRC20Input,
-      originChainERC20Input,
       withdrawnAmount,
-      fractionOfTotalShares,
-      originChainId,
-      false,
+      VaultSharesToBeBurnt,
       totalAssetsBefore.sub(withdrawnAmount),
-      executionNonce,
-      crossChainTxId,
-      slippage
+      executionNonce
     ]
   );
-
+  console.log("confirmMessage created");
   // Mock token balance setup for the test environment
   await setTokenBalance(vaultAsset, amanaVault.address, withdrawnAmount, 3);
   // Return the transaction object so it can be awaited or used in tests
+  console.log("setTokenBalance done", withdrawnAmount.toString());
   return await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
@@ -430,20 +419,12 @@ export async function simulateConfirmDirectWithdraw(
   strategyChainId: number
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+    ["uint256", "uint256", "uint256", "uint256"],
     [
-      await user.getAddress(),
-      await user.getAddress(),
-      vaultAsset,
-      vaultAsset,
       withdrawnAmount,
       vaultSharesBurnt,
-      7000,
-      false,
       totalAssetsBefore.sub(withdrawnAmount),
-      executionNonce,
-      crossChainTxId,
-      500
+      executionNonce
     ]
   );
 
@@ -466,33 +447,22 @@ export async function simulateConfirmDirectWithdraw(
 export async function simulateConfirmRedeemToAnyToken(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
-  user: Signer,
-  withdrawZRC20: string,
   withdrawnAmount: BigNumber,
   fractionOfTotalShares: BigNumber,
   totalAssetsBefore: BigNumber,
   executionNonce: number,
-  crossChainTxId: number,
   vaultAsset: string,
   strategyAddress: string,
   strategyChainId: number,
 
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+    ["uint256", "uint256", "uint256", "uint256"],
     [
-      await user.getAddress(),
-      await user.getAddress(),
-      withdrawZRC20,
-      withdrawZRC20,
       withdrawnAmount,
       fractionOfTotalShares,
-      7000,
-      false,
       totalAssetsBefore.sub(withdrawnAmount),
-      executionNonce,
-      crossChainTxId,
-      500
+      executionNonce
     ]
   );
 
