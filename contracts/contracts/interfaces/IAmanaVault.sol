@@ -28,4 +28,11 @@ interface IAmanaVault {
     function decreasePendingWithdrawals(address user, uint256 shares) external;
 
     function setStrategy(address strategy) external;
+
+    function previewDeposit(uint256 assets) external view returns (uint256);
+
+    function adjustPendingShareChange(
+        uint256 previewedShares,
+        uint256 vaultNonce
+    ) external;
 }

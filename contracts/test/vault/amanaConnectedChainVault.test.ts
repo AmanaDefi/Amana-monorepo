@@ -42,11 +42,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     // fund user with vault asset so that they can deposit
     await setTokenBalance(vaultConfig.asset, await user1.getAddress(), txConfig.directDepositAmount1, 3);
     await vaultAsset.connect(user1).approve(amanaVault.address, txConfig.directDepositAmount1);
-    console.log("Approved vault asset for user1");
     await amanaVault.connect(user1)["deposit(uint256,uint256,address)"](txConfig.directDepositAmount1, txConfig.minSharesOut1, await user1.getAddress());
-    console.log("Deposited vault asset for user1");
     await simulateConfirmDeposit(amanaVault, gatewaySigner, txConfig.directDepositAmount1, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-    console.log("Confirmed deposit for user1");
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
 
     expect(totalShares).to.be.closeTo(txConfig.directDepositAmount1, ERROR_MARGIN);
@@ -114,7 +111,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
     const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
-    console.log("Deposited vault asset for user1");
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -130,9 +126,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const emittedAmount = decoded.amount;
 
 
-    console.log("Confirming deposit for user1");
     await simulateConfirmDeposit(amanaVault, gatewaySigner, emittedAmount, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-    console.log("Confirmed deposit for user1");
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
 
     expect(totalShares).to.be.closeTo(emittedAmount, ERROR_MARGIN);
@@ -144,9 +138,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
-    console.log("About to call simulateDepositCallFromConnChain");
     const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
-    console.log("Deposited vault asset for user1");
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -160,16 +152,11 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     const decoded = iface.decodeEventLog("CrossChainInvestSent", log!.data, log!.topics);
     const emittedAmount = decoded.amount;
-    console.log("Confirming deposit for user1");
     await simulateConfirmDeposit(amanaVault, gatewaySigner, emittedAmount, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-    console.log("Confirmed deposit for user1");
     const userMaxWithdraw = await amanaVault.maxWithdraw(await user1.getAddress());
     const userVaultSharesBurnt = await amanaVault.convertToShares(userMaxWithdraw);
-    console.log("About to call amanaVault.connect(user1).withdraw");
     await amanaVault.connect(user1)["withdraw(uint256,uint256,address,address)"](userMaxWithdraw, minAmountOut, await user1.getAddress(), await user1.getAddress());
-    console.log("Withdrew vault asset for user1");
     await simulateConfirmDirectWithdraw(amanaVault, gatewaySigner, user1, userMaxWithdraw, userVaultSharesBurnt, emittedAmount, 2, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId);
-    console.log("Confirmed direct withdraw for user1");
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const userBalance = await vaultAsset.balanceOf(await user1.getAddress());
     expect(totalShares).to.eq(0);
@@ -272,7 +259,6 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     let totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const withdrawToken = txConfig.originZRC20Input;
-    console.log("withdrawToken from config in test", withdrawToken);
     await amanaVault.connect(user1).redeemToAnyToken(totalShares, minAmountOut, await user1.getAddress(), await user1.getAddress(), withdrawToken, 500);
     const expectedAmountWithdrawn = await amanaVault.convertToAssets(totalShares);
     await simulateConfirmRedeemToAnyToken(amanaVault, gatewaySigner, expectedAmountWithdrawn, totalShares, emittedAmount, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId);
@@ -435,20 +421,15 @@ describe("AmanaConnectedChainVault Tests", function () {
     const emittedAmount2 = decoded2.amount;
 
     const profit = emittedAmount.div(10); // 10% profit
-    console.log("emittedAmount", emittedAmount.toString());
-    console.log("emittedAmount2", emittedAmount2.toString());
+
     // The confirmation from the second deposit shows that user1 has made a profit already
     await simulateConfirmDeposit(amanaVault, gatewaySigner, emittedAmount2, initialTotalAssets.add(profit), 2, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-    console.log("Initial total assets:", initialTotalAssets.toString());
-    console.log("profit:", profit.toString());
+
     const updatedTotalAssets = initialTotalAssets.add(emittedAmount2).add(profit);
-    console.log("Updated total assets after deposit:", updatedTotalAssets.toString());
 
     // Step 3: Perform a withdrawal and calculate the fee
     const expectedFee = profit.mul(vaultConfig.feeRate).div(10000);
-    console.log("Expected fee:", expectedFee.toString());
     const withdrawAmount = emittedAmount.add(profit); // Withdraw everything except the fee
-    console.log("Withdraw amount:", withdrawAmount.toString());
     const totalSharesUser1 = await amanaVault.balanceOf(await user1.getAddress());
     const sharesToWithdraw = totalSharesUser1;
 
@@ -787,7 +768,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, maxRedeemAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress)
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const totalAssets = await amanaVault.convertToAssets(totalShares);
-    console.log("About to confirm withdraw to conn chain");
     await expect(simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, maxRedeemAmount, totalShares, totalAssets, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken))
       .to.emit(withdrawHelper, "ReturnFundsToUserSent")
       .to.emit(amanaVault, "Withdrawn");

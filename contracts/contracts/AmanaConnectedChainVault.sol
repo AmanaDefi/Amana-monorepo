@@ -89,9 +89,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             }
 
             _processBufferedConfirmations(true);
-            // } else {
-            //     revert("Invalid strategy message type");
-            // }
         } else {
             Transaction storage txn = transactions[vaultNonce];
             if (context.sender == address(0)) revert InvalidAddress();
@@ -385,10 +382,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             IAmanaRegistry(registry).withdrawHelper(),
             txn.amount
         );
-        uint256 previewedShares = previewDeposit(txn.amount);
-        require(previewedShares <= uint256(type(int256).max), "Overflow");
-
-        pendingShareChange += int256(previewedShares);
 
         if (depositFeePaidFromGasTank) {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
@@ -447,7 +440,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
         require(shares <= uint256(type(int256).max), "Overflow");
 
-        pendingShareChange -= int256(shares);
         emit Deposited(
             txn.receiver,
             txn.amount,
@@ -605,7 +597,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             txn.vaultSharesToBeBurnt <= uint256(type(int256).max),
             "Overflow"
         );
-        pendingShareChange += int256(txn.vaultSharesToBeBurnt);
         _returnFundsToUser(lastProcessedNonce + 1);
 
         emit Withdrawn(
@@ -619,5 +610,16 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function safeUintToInt(uint256 x) internal pure returns (int256) {
         require(x <= uint256(type(int256).max), "safeUintToInt: overflow");
         return int256(x);
+    }
+
+    function adjustPendingShareChange(
+        uint256 previewedShares,
+        uint256 _vaultNonce
+    ) public {
+        int256 signedShares = safeUintToInt(previewedShares);
+        pendingShareChange += signedShares;
+
+        Transaction storage txn = transactions[_vaultNonce];
+        txn.vaultSharesToBeBurnt = previewedShares;
     }
 }

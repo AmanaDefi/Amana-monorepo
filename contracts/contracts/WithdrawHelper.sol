@@ -212,6 +212,17 @@ contract WithdrawHelper is Revertable {
         address registry,
         uint256 vaultNonce
     ) external {
+        uint256 previewedShares = IAmanaVault(msg.sender).previewDeposit(
+            amount
+        );
+        console.log("previewedShares in WithdrawHelper", previewedShares);
+        require(previewedShares <= uint256(type(int256).max), "Overflow");
+
+        IAmanaVault(msg.sender).adjustPendingShareChange(
+            previewedShares,
+            vaultNonce
+        ); //+= int256(previewedShares)
+
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(tokenToTransfer)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
@@ -332,7 +343,17 @@ contract WithdrawHelper is Revertable {
         if (amountToDeduct > amount) {
             revert("AmountTooLowToPayForGas");
         }
-        // TODO call back to vault here to decrease pendingShareChange by amountToDeduct?
+
+        uint256 previewedShares = IAmanaVault(msg.sender).previewDeposit(
+            amount
+        );
+        require(previewedShares <= uint256(type(int256).max), "Overflow");
+
+        IAmanaVault(msg.sender).adjustPendingShareChange(
+            previewedShares,
+            vaultNonce
+        ); //+= int256(previewedShares)
+
         if (gas_zrc20 == tokenToTransfer) {
             approveOrIncreaseAllowance(
                 IERC20(tokenToTransfer),
@@ -403,7 +424,7 @@ contract WithdrawHelper is Revertable {
         _handleGasFee(gasLimitForCall, vaultAsset, registry);
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
-
+        console.log("adjustedTotalSupply", adjustedTotalSupply);
         uint256 numerator = vaultSharesToBeBurnt *
             1e18 +
             adjustedTotalSupply /
