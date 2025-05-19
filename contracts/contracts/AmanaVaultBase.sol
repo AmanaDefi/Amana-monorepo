@@ -242,14 +242,6 @@ abstract contract AmanaVaultBase is
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
-    /**
-     * @dev Returns the total assets currently held by the vault, including assets directly held
-     *      and the latest update from the strategy's total assets.
-     * @return The total amount of assets held by the vault.
-     * @notice Overrides the {IERC4626-totalAssets} function.
-     */
-    function totalAssets() public view virtual override returns (uint256) {}
-
     /** @dev See {IERC4626-deposit}. */
     function deposit(
         uint256 assets,
@@ -262,7 +254,6 @@ abstract contract AmanaVaultBase is
         }
 
         uint256 shares = previewDeposit(assets);
-        console.log("assets", assets);
         _deposit(_msgSender(), receiver, assets, shares, minimumOut);
 
         return shares;
@@ -330,22 +321,10 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        _investAssets(
-            txn.amount,
-            minimumOut,
-            txn.receiver,
-            nonEvmAddressByNonce[vaultNonce],
-            txn.withdrawZRC20
-        );
+        _investAssets(minimumOut);
     }
 
-    function _investAssets(
-        uint256 amount,
-        uint256 minimumOut,
-        address receiver,
-        bytes memory nonEvmAddress,
-        address zrc20source
-    ) internal virtual;
+    function _investAssets(uint256 minimumOut) internal virtual;
 
     function redeem(
         uint256 shares,
@@ -377,7 +356,6 @@ abstract contract AmanaVaultBase is
         address receiver,
         address owner
     ) public returns (uint256) {
-        console.log("withdraw", assets);
         if (assets == 0) {
             revert AmountCantBeZero();
         }
@@ -396,7 +374,6 @@ abstract contract AmanaVaultBase is
             shares,
             0
         );
-        console.log("address(asset()) in contract", address(asset()));
         return shares;
     }
 
@@ -438,43 +415,17 @@ abstract contract AmanaVaultBase is
         uint256 minimumOut
     ) internal virtual;
 
-    function returnFundsToUser(
-        uint256 amount,
-        uint32 userChainId,
-        address receiver,
-        address withdrawZRC20,
-        // address withdrawERC20,
-        bytes32 _nonEvmAddress,
-        uint16 slippage
-    ) external onlyOwner {
-        _returnFundsToUser();
-        // amount,
-        // userChainId,
-        // receiver,
-        // withdrawZRC20,
-        // // withdrawERC20,
-        // _nonEvmAddress,
-        // slippage
+    function returnFundsToUser(uint256 nonce) external onlyOwner {
+        _returnFundsToUser(nonce);
     }
 
     /**
      * @dev Returns funds to the user, either on the same chain or a connected chain.
      * @notice Handles cross-chain transfers or same-chain asset transfers. Manages gas fees and token approvals.
      */
-    function _returnFundsToUser() internal {
-        Transaction storage txn = transactions[lastProcessedNonce + 1];
-        console.log(
-            "Executing returnFundsToUser with nonce: ",
-            lastProcessedNonce + 1
-        );
-        console.log("address(asset())", address(asset()));
-        console.log(
-            "contract balance of asset",
-            IERC20(asset()).balanceOf(address(this))
-        );
-        console.log("txn.withdrawZRC20", txn.withdrawZRC20);
-        console.log("txn.amount", txn.amount);
-        console.log("txn.slippage", txn.slippage);
+    function _returnFundsToUser(uint256 nonce) internal {
+        Transaction storage txn = transactions[nonce];
+
         uint256 outputAmount = (txn.withdrawChainId == uint32(block.chainid) ||
             address(asset()) == txn.withdrawZRC20)
             ? txn.amount
@@ -486,13 +437,11 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        console.log("withdrawChainId", txn.withdrawChainId);
         if (txn.withdrawChainId == uint32(block.chainid)) {
             IERC20(address(asset())).approve(
                 IAmanaRegistry(registry).zapContract(),
                 txn.amount
             );
-            console.log("Using zap contract");
             IZapContract(IAmanaRegistry(registry).zapContract())
                 .zapSwapAndReturnToUser(
                     txn.amount,
@@ -506,10 +455,7 @@ abstract contract AmanaVaultBase is
             // Cross-chain transfer
             if (IAmanaRegistry(registry).withdrawHelper() == address(0))
                 revert InvalidAddress();
-            console.log(
-                "Using withdraw helper",
-                IAmanaRegistry(registry).withdrawHelper()
-            );
+
             // Step 1: Transfer tokens to the helper contract
             SafeERC20.safeTransfer(
                 IERC20(txn.withdrawZRC20),
@@ -517,12 +463,10 @@ abstract contract AmanaVaultBase is
                 outputAmount
             );
             bytes memory recipient;
-            if (nonEvmAddressByNonce[lastProcessedNonce + 1].length == 0) {
+            if (nonEvmAddressByNonce[nonce].length == 0) {
                 recipient = abi.encodePacked(txn.receiver);
             } else {
-                recipient = abi.encodePacked(
-                    nonEvmAddressByNonce[lastProcessedNonce + 1]
-                );
+                recipient = abi.encodePacked(nonEvmAddressByNonce[nonce]);
             }
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())

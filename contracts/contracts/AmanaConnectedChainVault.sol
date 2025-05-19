@@ -57,17 +57,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     uint256 executionNonce
                 ) = abi.decode(message, (address, uint256, uint256));
                 if (newStrategyAddress == address(0)) {
-                    console.log(
-                        "Received deposit confirmation with nonce: ",
-                        executionNonce
-                    );
                     transactions[executionNonce]
                         .totalAssetsAfter = totalAssetsAfter;
                 } else {
-                    console.log(
-                        "Received strategy switch confirmation with nonce: ",
-                        executionNonce
-                    );
                     transactions[executionNonce]
                         .totalAssetsAfter = totalAssetsAfter;
                     transactions[executionNonce]
@@ -81,32 +73,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     uint256 executionNonce
                 ) = abi.decode(message, (uint256, uint256, uint256, uint256));
                 if (executionNonce == lastProcessedNonce) {
-                    console.log("Updating total assets");
                     latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
                     emit TotalAssetsUpdated(totalAssetsAfter);
                 }
                 if (withdrawnAmount == 0) {
-                    console.log(
-                        "DivestFailed - update pendingWithdrawals and totalAssetsAfter with nonce: ",
-                        executionNonce
-                    );
                     transactions[executionNonce]
                         .vaultSharesToBeBurnt = vaultSharesToBeBurnt;
                     transactions[executionNonce]
                         .totalAssetsAfter = totalAssetsAfter;
                 } else {
-                    console.log(
-                        "Received withdrawal confirmation with nonce: ",
-                        executionNonce
-                    );
-                    console.log(
-                        "zrc20 coming back from cc message (vault asset): ",
-                        zrc20
-                    );
-                    console.log(
-                        "withdrawZRC20 previously set in txn during initiation: ",
-                        transactions[executionNonce].withdrawZRC20
-                    );
                     transactions[executionNonce].amount = withdrawnAmount;
                     transactions[executionNonce]
                         .totalAssetsAfter = totalAssetsAfter;
@@ -135,8 +110,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             //     txn.user = context.sender; // common to both paths
             //     txn.receiver = context.sender; // could take in a different receiver?
             // }
-            uint8 messageType = uint8(message[0]);
-            console.log("messageType: ", messageType);
 
             if (amount > 0) {
                 (
@@ -152,7 +125,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 txn.isDeposit = true;
                 nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
 
-                console.log("Initiating deposit from connected chain");
                 _depositComingFromConnectedChain(minimumOut);
             } else {
                 (
@@ -174,8 +146,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 txn.isDeposit = false;
                 nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
 
-                console.log("Initiating withdrawal from connected chain");
-                console.log("with slippage set to: ", slippage);
                 _withdrawComingFromConnectedChain(minimumOut);
             }
             vaultNonce++;
@@ -231,8 +201,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 totalAssetsAfter,
         uint256 executionNonce,
         bytes32 _nonEvmAddress,
-        uint16 _slippage,
-        bool processEntireBuffer
+        uint16 _slippage
     ) external onlyOwner {
         // Store the transaction in the buffer
         transactions[executionNonce] = Transaction({
@@ -248,13 +217,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             nonEvmAddress: _nonEvmAddress,
             slippage: _slippage
         });
-
-        // Attempt to process confirmations
-        _processBufferedConfirmations(processEntireBuffer);
     }
 
-    function processExistingConfirmation(
-        uint256 executionNonce
+    function processExistingConfirmations(
+        uint256 executionNonce,
+        bool processEntireBuffer
     ) external onlyOwner {
         // Ensure the transaction exists
         if (transactions[executionNonce].amount == 0) {
@@ -262,7 +229,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
 
         // Attempt to process confirmations
-        _processBufferedConfirmations(false);
+        _processBufferedConfirmations(processEntireBuffer);
     }
 
     /**
@@ -273,14 +240,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function _processBufferedConfirmations(bool processEntireBuffer) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-            console.log(
-                "Looking to process confirmation with nonce: ",
-                nextNonce
-            );
+
             Transaction memory transaction = transactions[nextNonce];
             // If there's no transaction for the next nonce, stop processing
             if (transaction.totalAssetsAfter == 0 && transaction.amount == 0) {
-                console.log("Breaking out of procession tx");
                 break;
             }
             //     if (
@@ -289,29 +252,21 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             //     ) revert ConfirmationAlreadyProcessed();
             // Process the transaction
             if (transaction.isDeposit) {
-                console.log("Calling _confirmDepositAndMint");
                 _confirmDepositAndMint();
             } else if (
                 transaction.user == address(0) &&
                 transaction.receiver == address(0)
             ) {
-                console.log("transaction.user", transaction.user);
-                console.log("transaction.receiver", transaction.receiver);
                 if (transaction.withdrawZRC20 == address(0)) {
                     if (transaction.vaultSharesToBeBurnt > 0) {
-                        console.log(
-                            "Updating pendingWithdrawals in case of divestFailed"
-                        );
                         pendingWithdrawals[transaction.user] -= transaction
                             .vaultSharesToBeBurnt;
                     }
                 } else {
-                    console.log("Updating strategy address");
                     strategyAddress = transaction.withdrawZRC20;
                     emit StrategyUpdated(strategyAddress);
                 }
             } else {
-                console.log("Calling _confirmWithdrawAndBurn");
                 _confirmWithdrawAndBurn();
             }
 
@@ -396,12 +351,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             revert AmountCantBeZero();
         }
         Transaction storage txn = transactions[vaultNonce];
-        console.log(
-            "Depositing assets with nonce: ",
-            vaultNonce,
-            " and amount: ",
-            assets
-        );
+
         txn.withdrawERC20 = asset(); // we store this in case of a revert, to return funds to user
         txn.withdrawZRC20 = asset();
 
@@ -415,33 +365,27 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             address(this),
             assets
         );
-        _investAssets(assets, minimumOut, receiver, new bytes(0), asset());
+        _investAssets(minimumOut);
         vaultNonce++;
     }
 
     /**
      * @dev Initiates cross-chain investment by interacting with the gateway and strategy.
-     * @param amount The amount of assets to invest.
-     * @param receiver The address of the receiver initiating the investment.
-     * @param userZRC20 The ZRC20 token address representing the receiver's assets.
      * @notice Approves and sends assets through the gateway to the strategy's chain.
      */
     function _investAssets(
-        uint256 amount,
-        uint256 minimumOut,
-        address receiver,
-        bytes memory nonEvmAddress,
-        address userZRC20
+        // uint256 amount,
+        uint256 minimumOut // address receiver, // bytes memory nonEvmAddress, // address userZRC20
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
-
+        Transaction storage txn = transactions[vaultNonce];
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
-            amount
+            txn.amount
         );
-        uint256 previewedShares = previewDeposit(amount);
+        uint256 previewedShares = previewDeposit(txn.amount);
         require(previewedShares <= uint256(type(int256).max), "Overflow");
 
         pendingShareChange += int256(previewedShares);
@@ -450,11 +394,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
-                    receiver,
-                    nonEvmAddress,
-                    userZRC20,
+                    txn.receiver,
+                    nonEvmAddressByNonce[vaultNonce],
+                    txn.withdrawZRC20,
                     address(asset()),
-                    amount,
+                    txn.amount,
                     minimumOut,
                     gasLimitForWithdrawAndCall,
                     registry,
@@ -464,11 +408,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleWithdrawAndCallToStrategy(
                     strategyAddress,
-                    receiver,
-                    nonEvmAddress,
-                    userZRC20,
+                    txn.receiver,
+                    nonEvmAddressByNonce[vaultNonce],
+                    txn.withdrawZRC20,
                     address(asset()),
-                    amount,
+                    txn.amount,
                     minimumOut,
                     gasLimitForWithdrawAndCall,
                     registry,
@@ -535,18 +479,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
 
         Transaction storage txn = transactions[vaultNonce];
-        console.log(
-            "Withdrawing assets with nonce: ",
-            vaultNonce,
-            " and amount: ",
-            shares
-        );
+
         txn.user = caller;
-        console.log("user: ", user);
-        console.log("receiver: ", receiver);
         txn.receiver = receiver;
         txn.withdrawZRC20 = withdrawZRC20;
-        console.log("withdrawZRC20 in _withdraw function: ", withdrawZRC20);
+
         txn.withdrawERC20 = asset();
         txn.vaultSharesToBeBurnt = shares;
         txn.slippage = slippage;
@@ -590,12 +527,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 minimumOut
     ) internal override {
         Transaction storage txn = transactions[vaultNonce];
-        console.log(
-            "Cross chain Withdrawing assets with nonce: ",
-            vaultNonce,
-            " and amount: ",
-            txn.vaultSharesToBeBurnt
-        );
+
         if (txn.vaultSharesToBeBurnt == 0) {
             revert AmountCantBeZero();
         }
@@ -643,10 +575,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      */
     function _confirmWithdrawAndBurn() internal {
         Transaction storage txn = transactions[lastProcessedNonce + 1];
-        console.log(
-            "Executing _confirmWithdrawAndBurn with nonce: ",
-            lastProcessedNonce + 1
-        );
+
         pendingShareChange += int256(txn.vaultSharesToBeBurnt); // TODO - is this the right place for this?
         uint256 fractionOfUserShares = (txn.vaultSharesToBeBurnt * 1e18) /
             balanceOf(txn.user);
@@ -677,13 +606,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             "Overflow"
         );
         pendingShareChange += int256(txn.vaultSharesToBeBurnt);
-        _returnFundsToUser();
+        _returnFundsToUser(lastProcessedNonce + 1);
 
         emit Withdrawn(
             txn.user,
             txn.amount,
             txn.vaultSharesToBeBurnt,
-            vaultNonce - 1
+            lastProcessedNonce + 1
         );
     }
 
