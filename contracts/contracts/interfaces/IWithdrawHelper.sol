@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 interface IWithdrawHelper {
     function handleGasFeeAndWithdrawToUser(
-        address receiver,
+        bytes memory recipient,
         address withdrawZRC20,
         uint256 amount,
         address registry,
@@ -13,6 +13,7 @@ interface IWithdrawHelper {
     function handleGasFeeAndWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,
+        bytes memory nonEvmAddress,
         address withdrawZRC20,
         address tokenToTransfer,
         uint256 amount,
@@ -25,6 +26,7 @@ interface IWithdrawHelper {
     function handleWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,
+        bytes memory nonEvmAddress,
         address withdrawZRC20,
         address tokenToTransfer,
         uint256 amount,

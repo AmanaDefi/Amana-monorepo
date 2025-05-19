@@ -72,11 +72,7 @@ abstract contract AmanaVaultBase is
     bool public depositFeePaidFromGasTank;
     int256 public pendingShareChange;
     uint256 public vaultNonce; // TODO need to initialize this to 1!
-
-    // uint8 constant DEPOSIT_CONFIRM = 1;
-    // uint8 constant WITHDRAW_CONFIRM = 2;
-    // uint8 constant STRATEGY_SWITCH_CONFIRM = 3;
-    // uint8 constant TRANSACTION_UPDATE = 4;
+    mapping(uint256 => bytes) public nonEvmAddressByNonce;
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
@@ -334,13 +330,20 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        _investAssets(txn.amount, minimumOut, txn.receiver, txn.withdrawZRC20);
+        _investAssets(
+            txn.amount,
+            minimumOut,
+            txn.receiver,
+            nonEvmAddressByNonce[vaultNonce],
+            txn.withdrawZRC20
+        );
     }
 
     function _investAssets(
         uint256 amount,
         uint256 minimumOut,
         address receiver,
+        bytes memory nonEvmAddress,
         address zrc20source
     ) internal virtual;
 
@@ -513,10 +516,18 @@ abstract contract AmanaVaultBase is
                 IAmanaRegistry(registry).withdrawHelper(),
                 outputAmount
             );
+            bytes memory recipient;
+            if (nonEvmAddressByNonce[lastProcessedNonce + 1].length == 0) {
+                recipient = abi.encodePacked(txn.receiver);
+            } else {
+                recipient = abi.encodePacked(
+                    nonEvmAddressByNonce[lastProcessedNonce + 1]
+                );
+            }
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawToUser(
-                    txn.receiver,
+                    recipient,
                     txn.withdrawZRC20,
                     outputAmount,
                     registry,

@@ -29,7 +29,7 @@ contract WithdrawHelper is Revertable {
     event ReturnFundsToUserSent(
         uint256 indexed vaultNonce,
         address vault,
-        address receiver,
+        bytes32 recipient,
         uint256 amount
     );
     event ReturnFundsToUserFailed(
@@ -142,7 +142,7 @@ contract WithdrawHelper is Revertable {
     // }
 
     function handleGasFeeAndWithdrawToUser(
-        address receiver,
+        bytes memory recipient,
         address withdrawZRC20,
         uint256 amount,
         address registry,
@@ -168,7 +168,7 @@ contract WithdrawHelper is Revertable {
             );
         }
 
-        bytes memory recipient = abi.encodePacked(receiver);
+        // bytes memory recipient = abi.encodePacked(receiver);
 
         RevertOptions memory revertOptions = RevertOptions({
             revertAddress: address(this),
@@ -177,7 +177,7 @@ contract WithdrawHelper is Revertable {
             revertMessage: abi.encode(
                 "_returnFundsToUserFailed",
                 amount,
-                receiver,
+                recipient,
                 withdrawZRC20,
                 registry,
                 msg.sender,
@@ -192,12 +192,18 @@ contract WithdrawHelper is Revertable {
             withdrawZRC20,
             revertOptions
         );
-        emit ReturnFundsToUserSent(vaultNonce, msg.sender, receiver, amount);
+        emit ReturnFundsToUserSent(
+            vaultNonce,
+            msg.sender,
+            bytes32(recipient),
+            amount
+        );
     }
 
     function handleGasFeeAndWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,
+        bytes memory nonEvmAddress,
         address withdrawZRC20,
         address tokenToTransfer,
         uint256 amount,
@@ -248,7 +254,8 @@ contract WithdrawHelper is Revertable {
                 withdrawZRC20,
                 registry,
                 msg.sender,
-                vaultNonce
+                vaultNonce,
+                nonEvmAddress
             ),
             onRevertGasLimit: 0
         });
@@ -266,6 +273,7 @@ contract WithdrawHelper is Revertable {
     function handleWithdrawAndCallToStrategy(
         address targetAddress,
         address receiver,
+        bytes memory nonEvmAddress,
         address withdrawZRC20,
         address tokenToTransfer,
         uint256 amount,
@@ -363,7 +371,8 @@ contract WithdrawHelper is Revertable {
                 withdrawZRC20,
                 registry,
                 msg.sender,
-                vaultNonce
+                vaultNonce,
+                nonEvmAddress
             ),
             onRevertGasLimit: 0
         });
@@ -546,17 +555,33 @@ contract WithdrawHelper is Revertable {
             address withdrawZRC20,
             address registry,
             address vault,
-            uint256 vaultNonce
+            uint256 vaultNonce,
+            bytes memory nonEvmAddress
         ) = abi.decode(
                 context.revertMessage,
-                (string, uint256, address, address, address, address, uint256)
+                (
+                    string,
+                    uint256,
+                    address,
+                    address,
+                    address,
+                    address,
+                    uint256,
+                    bytes
+                )
             );
         if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
+            bytes memory recipient;
+            if (nonEvmAddress.length > 0) {
+                recipient = abi.encode(nonEvmAddress);
+            } else {
+                recipient = abi.encodePacked(receiverOrOldStrategy);
+            }
             handleGasFeeAndWithdrawToUser(
-                receiverOrOldStrategy,
+                recipient,
                 withdrawZRC20,
                 context.amount,
                 registry,
@@ -606,18 +631,34 @@ contract WithdrawHelper is Revertable {
             address withdrawZRC20,
             address registry,
             address vault,
-            uint256 vaultNonce
+            uint256 vaultNonce,
+            bytes memory nonEvmAddress
         ) = abi.decode(
                 context.revertMessage,
-                (string, uint256, address, address, address, address, uint256)
+                (
+                    string,
+                    uint256,
+                    address,
+                    address,
+                    address,
+                    address,
+                    uint256,
+                    bytes
+                )
             );
 
         if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
+            bytes memory recipient;
+            if (nonEvmAddress.length > 0) {
+                recipient = abi.encode(nonEvmAddress);
+            } else {
+                recipient = abi.encodePacked(receiverOrOldStrategy);
+            }
             handleGasFeeAndWithdrawToUser(
-                receiverOrOldStrategy,
+                recipient,
                 withdrawZRC20,
                 context.amount,
                 registry,

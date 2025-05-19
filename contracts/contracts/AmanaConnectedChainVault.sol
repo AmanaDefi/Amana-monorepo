@@ -125,44 +125,58 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             txn.receiver = context.sender; // could take in a different receiver?
             txn.amount = amount;
             txn.withdrawChainId = uint32(context.chainID);
+            // if (context.senderEVM != address(0)) {
+            //     // Handle EVM-style sender logic
+            //     txn.user = context.senderEVM;
+            //     txn.receiver = context.senderEVM; // could take in a different receiver?
+            //     nonEvmAddressByNonce[vaultNonce] = context.sender;
+            // } else {
+            //     // Handle non-EVM sender (context.sender is now bytes)
+            //     txn.user = context.sender; // common to both paths
+            //     txn.receiver = context.sender; // could take in a different receiver?
+            // }
+            uint8 messageType = uint8(message[0]);
+            console.log("messageType: ", messageType);
 
-            if (message.length == 96) {
-                // TODO what is correct length here?
-                (address erc20source, uint256 minimumOut, uint16 slippage) = abi
-                    .decode(message, (address, uint256, uint16));
+            if (amount > 0) {
+                (
+                    address erc20source,
+                    uint256 minimumOut,
+                    uint16 slippage,
+                    bytes memory nonEvmAddress
+                ) = abi.decode(message, (address, uint256, uint16, bytes));
 
                 txn.withdrawZRC20 = zrc20;
                 txn.withdrawERC20 = erc20source;
                 txn.slippage = slippage;
                 txn.isDeposit = true;
+                nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
 
                 console.log("Initiating deposit from connected chain");
                 _depositComingFromConnectedChain(minimumOut);
-            } else if (message.length == 192) {
+            } else {
                 (
                     address withdrawZRC20,
                     address withdrawERC20,
                     uint256 vaultSharesToBeBurnt,
                     uint256 minimumOut,
                     uint16 slippage,
-                    bytes32 nonEvmAddress
+                    bytes memory nonEvmAddress
                 ) = abi.decode(
                         message,
-                        (address, address, uint256, uint256, uint16, bytes32)
+                        (address, address, uint256, uint256, uint16, bytes)
                     );
 
                 txn.withdrawZRC20 = withdrawZRC20;
                 txn.withdrawERC20 = withdrawERC20;
                 txn.vaultSharesToBeBurnt = vaultSharesToBeBurnt;
                 txn.slippage = slippage;
-                txn.nonEvmAddress = nonEvmAddress;
                 txn.isDeposit = false;
+                nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
 
                 console.log("Initiating withdrawal from connected chain");
                 console.log("with slippage set to: ", slippage);
                 _withdrawComingFromConnectedChain(minimumOut);
-            } else {
-                revert InvalidMessage();
             }
             vaultNonce++;
         }
@@ -401,7 +415,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             address(this),
             assets
         );
-        _investAssets(assets, minimumOut, receiver, asset());
+        _investAssets(assets, minimumOut, receiver, new bytes(0), asset());
         vaultNonce++;
     }
 
@@ -416,6 +430,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amount,
         uint256 minimumOut,
         address receiver,
+        bytes memory nonEvmAddress,
         address userZRC20
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
@@ -436,6 +451,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
                     receiver,
+                    nonEvmAddress,
                     userZRC20,
                     address(asset()),
                     amount,
@@ -449,6 +465,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 .handleWithdrawAndCallToStrategy(
                     strategyAddress,
                     receiver,
+                    nonEvmAddress,
                     userZRC20,
                     address(asset()),
                     amount,

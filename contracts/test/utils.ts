@@ -218,14 +218,15 @@ export async function simulateDepositCallFromConnChain(
   await setTokenBalance(originChainZRC20Input, amanaVault.address, depositAmount, 3);
 
   const minSharesOut = 0 // depositAmount.mul(1000).div(1001);
-
+  const messageType = 1; // 1 for deposit, 2 for withdraw
+  const nonEvmAddress = "0x"; // Placeholder for non-EVM address
   // Generate a transaction ID using your generateTransactionId function
   // const transactionId = generateTransactionId(await user.getAddress(), 8453);
 
   // Encode the deposit message
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "uint256", "uint16"],
-    [inputToken, minSharesOut, slippage]
+    ["address", "uint256", "uint16", "bytes"],
+    [inputToken, minSharesOut, slippage, nonEvmAddress]
   );
   // Execute the onCall function to simulate a deposit
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -345,9 +346,9 @@ export async function simulateWithdrawCallFromConnChain(
   // await updatePythPrices(pythContract, user);
   const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
   const slippage = 1000;
-
+  const messageType = 2; // 1 for deposit, 2 for withdraw
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
     [originChainZRC20Input, ethers.constants.AddressZero, sharesToWithdraw, minAmountOut, slippage, nonEvmUserAddress]
   );
 
