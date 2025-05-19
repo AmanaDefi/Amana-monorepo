@@ -53,7 +53,6 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
 
   return (
     <VaultsGrid
-      loading={loading}
       vaults={vaults}
       vaultAPYs={vaultAPYs}
       userVaultBalances={userVaultBalances}

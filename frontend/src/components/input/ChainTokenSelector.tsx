@@ -466,6 +466,7 @@ export default function ChainTokenSelector({
             width={24}
             height={24}
             className="rounded-full"
+            sizes="24px"
           />
           <span className="text-white">{selectedToken.symbol}</span>
         </>
@@ -483,6 +484,7 @@ export default function ChainTokenSelector({
               width={24}
               height={24}
               className="rounded-full"
+              sizes="24px"
             />
             <span className="text-white">{defaultToken.symbol}</span>
           </>
