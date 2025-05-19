@@ -80,9 +80,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     uint256 totalAssetsAfter,
                     uint256 executionNonce
                 ) = abi.decode(message, (uint256, uint256, uint256, uint256));
+                if (executionNonce == lastProcessedNonce) {
+                    console.log("Updating total assets");
+                    latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
+                    emit TotalAssetsUpdated(totalAssetsAfter);
+                }
                 if (withdrawnAmount == 0) {
                     console.log(
-                        "Received asset update with nonce: ",
+                        "DivestFailed - update pendingWithdrawals and totalAssetsAfter with nonce: ",
                         executionNonce
                     );
                     transactions[executionNonce]
@@ -117,24 +122,22 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             if (context.sender == address(0)) revert InvalidAddress();
 
             txn.user = context.sender; // common to both paths
+            txn.receiver = context.sender; // could take in a different receiver?
             txn.amount = amount;
-            txn.withdrawZRC20 = zrc20;
+            txn.withdrawChainId = uint32(context.chainID);
 
             if (message.length == 96) {
                 // TODO what is correct length here?
                 (address erc20source, uint256 minimumOut, uint16 slippage) = abi
                     .decode(message, (address, uint256, uint16));
 
+                txn.withdrawZRC20 = zrc20;
                 txn.withdrawERC20 = erc20source;
+                txn.slippage = slippage;
+                txn.isDeposit = true;
+
                 console.log("Initiating deposit from connected chain");
-                _depositComingFromConnectedChain(
-                    context.sender,
-                    context.chainID,
-                    amount,
-                    minimumOut,
-                    zrc20,
-                    slippage
-                );
+                _depositComingFromConnectedChain(minimumOut);
             } else if (message.length == 192) {
                 (
                     address withdrawZRC20,
@@ -154,8 +157,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 txn.slippage = slippage;
                 txn.nonEvmAddress = nonEvmAddress;
                 txn.isDeposit = false;
-                txn.receiver = context.sender; // could take in a different receiver?
-                txn.user = context.sender;
 
                 console.log("Initiating withdrawal from connected chain");
                 console.log("with slippage set to: ", slippage);
@@ -284,15 +285,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 console.log("transaction.receiver", transaction.receiver);
                 if (transaction.withdrawZRC20 == address(0)) {
                     if (transaction.vaultSharesToBeBurnt > 0) {
-                        console.log("Updating pendingWithdrawals");
+                        console.log(
+                            "Updating pendingWithdrawals in case of divestFailed"
+                        );
                         pendingWithdrawals[transaction.user] -= transaction
                             .vaultSharesToBeBurnt;
                     }
-                    // update total assets
-                    console.log("Updating total assets");
-                    latestTotalAssetsUpdateFromStrategy = transaction
-                        .totalAssetsAfter;
-                    emit TotalAssetsUpdated(transaction.totalAssetsAfter);
                 } else {
                     console.log("Updating strategy address");
                     strategyAddress = transaction.withdrawZRC20;
@@ -383,18 +381,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-        // Transaction storage txn = transactions[vaultNonce];
-        // console.log(
-        //     "Depositing assets with nonce: ",
-        //     vaultNonce,
-        //     " and amount: ",
-        //     assets
-        // );
-        // txn.withdrawERC20 = asset(); // we store this in case of a revert, to return funds to user
-        // txn.isDeposit = true;
-        // txn.amount = assets;
-        // txn.receiver = receiver;
-        // txn.minAmount = minimumOut;
+        Transaction storage txn = transactions[vaultNonce];
+        console.log(
+            "Depositing assets with nonce: ",
+            vaultNonce,
+            " and amount: ",
+            assets
+        );
+        txn.withdrawERC20 = asset(); // we store this in case of a revert, to return funds to user
+        txn.withdrawZRC20 = asset();
+
+        txn.isDeposit = true;
+        txn.amount = assets;
+        txn.receiver = receiver;
 
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
@@ -421,20 +420,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
-
-        Transaction storage txn = transactions[vaultNonce];
-        console.log(
-            "Investing assets with nonce: ",
-            vaultNonce,
-            " and amount: ",
-            amount
-        );
-        txn.amount = amount;
-        txn.withdrawZRC20 = userZRC20;
-        txn.withdrawERC20 = asset();
-
-        txn.receiver = receiver;
-        txn.isDeposit = true;
 
         SafeERC20.safeTransfer(
             IERC20(address(asset())),

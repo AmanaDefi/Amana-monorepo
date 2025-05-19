@@ -435,15 +435,18 @@ describe("AmanaConnectedChainVault Tests", function () {
     const emittedAmount2 = decoded2.amount;
 
     const profit = emittedAmount.div(10); // 10% profit
-
+    console.log("emittedAmount", emittedAmount.toString());
+    console.log("emittedAmount2", emittedAmount2.toString());
     // The confirmation from the second deposit shows that user1 has made a profit already
     await simulateConfirmDeposit(amanaVault, gatewaySigner, emittedAmount2, initialTotalAssets.add(profit), 2, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-
+    console.log("Initial total assets:", initialTotalAssets.toString());
+    console.log("profit:", profit.toString());
     const updatedTotalAssets = initialTotalAssets.add(emittedAmount2).add(profit);
     console.log("Updated total assets after deposit:", updatedTotalAssets.toString());
 
     // Step 3: Perform a withdrawal and calculate the fee
     const expectedFee = profit.mul(vaultConfig.feeRate).div(10000);
+    console.log("Expected fee:", expectedFee.toString());
     const withdrawAmount = emittedAmount.add(profit); // Withdraw everything except the fee
     console.log("Withdraw amount:", withdrawAmount.toString());
     const totalSharesUser1 = await amanaVault.balanceOf(await user1.getAddress());

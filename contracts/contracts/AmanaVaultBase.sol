@@ -305,39 +305,36 @@ abstract contract AmanaVaultBase is
 
     /**
      * @dev Handles deposits from a connected chain, processes swaps if necessary, and initiates cross-chain investment.
-     * @param receiver The address of the user receiving the shares.
-     * @param assets The amount of assets received from the connected chain.
-     * @param zrc20source The ZRC20 token address representing the assets being deposited.
      * @notice Performs token swaps if the ZRC20 source token differs from the vault's asset.
      */
     function _depositComingFromConnectedChain(
-        address receiver,
-        uint256 userChainId,
-        uint256 assets,
-        uint256 minimumOut,
-        address zrc20source,
-        uint16 slippage
+        uint256 minimumOut
     ) internal whenNotPaused {
-        uint256 maxAssets = maxDeposit(receiver);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-        }
-        if (zrc20source == address(0)) {
-            zrc20source = ISystem(_SYSTEM_ADDRESS).gasCoinZRC20ByChainId(
-                userChainId
+        Transaction storage txn = transactions[vaultNonce];
+        uint256 maxAssets = maxDeposit(txn.receiver);
+        if (txn.amount > maxAssets) {
+            revert ERC4626ExceededMaxDeposit(
+                txn.receiver,
+                txn.amount,
+                maxAssets
             );
         }
-        uint256 outputAmount = zrc20source == address(asset())
-            ? assets
+        if (txn.withdrawZRC20 == address(0)) {
+            txn.withdrawZRC20 = ISystem(_SYSTEM_ADDRESS).gasCoinZRC20ByChainId(
+                txn.withdrawChainId
+            );
+        }
+        txn.amount = txn.withdrawZRC20 == address(asset())
+            ? txn.amount
             : swap(
-                zrc20source,
-                assets,
+                txn.withdrawZRC20,
+                txn.amount,
                 address(asset()),
-                slippage,
+                txn.slippage,
                 address(this),
                 200
             );
-        _investAssets(outputAmount, minimumOut, receiver, zrc20source);
+        _investAssets(txn.amount, minimumOut, txn.receiver, txn.withdrawZRC20);
     }
 
     function _investAssets(
