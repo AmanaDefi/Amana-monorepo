@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import "./ERC4626RewardsUpgradeable.sol";
 
-import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/UniversalContract.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -24,7 +23,6 @@ abstract contract AmanaVaultBaseV1 is
     ERC4626RewardsUpgradeable,
     UUPSUpgradeable,
     UniversalContract,
-    Revertable,
     IErrors
 {
     using SafeERC20 for IERC20;
@@ -55,6 +53,16 @@ abstract contract AmanaVaultBaseV1 is
         _;
     }
 
+    modifier onlyOwnerOrWithdrawHelper() {
+        if (
+            msg.sender != owner() &&
+            msg.sender != IAmanaRegistry(registry).withdrawHelper()
+        ) {
+            revert OwnableUnauthorizedAccount(msg.sender);
+        }
+        _;
+    }
+
     modifier whenNotPaused() {
         if (depositsPaused) revert DepositsPaused();
         _;
@@ -64,20 +72,6 @@ abstract contract AmanaVaultBaseV1 is
     event PerformanceFeePaid(address indexed user, uint256 amount);
     event PerformanceFeeUpdated(uint16 newFeeRate);
     event VaultInitialized(uint8 decimals, uint256 perfFee);
-    event TreasuryUpdated(address indexed newTreasury);
-    event WithdrawalReceiverUpdated(address indexed newWithdrawalReceiver);
-    event GasTankUpdated(address indexed newGasTank);
-
-    event ReturnFundsToUserSent(
-        bytes32 indexed crossChainTxId,
-        address receiver,
-        uint256 amount
-    );
-    event ReturnFundsToUserFailed(
-        bytes32 indexed crossChainTxId,
-        address receiver,
-        uint256 amount
-    );
 
     event Deposited(
         address indexed user,
@@ -158,7 +152,9 @@ abstract contract AmanaVaultBaseV1 is
      * @param _strategyAddress The address of the new strategy.
      * @notice Emits a `StrategyUpdated` event upon success.
      */
-    function setStrategy(address _strategyAddress) external onlyOwner {
+    function setStrategy(
+        address _strategyAddress
+    ) external onlyOwnerOrWithdrawHelper {
         if (_strategyAddress == address(0)) revert InvalidAddress();
         strategyAddress = _strategyAddress;
         emit StrategyUpdated(_strategyAddress);
@@ -434,6 +430,26 @@ abstract contract AmanaVaultBaseV1 is
         bytes32 crossChainTxId
     ) internal virtual;
 
+    function returnFundsToUser(
+        uint256 amount,
+        uint32 userChainId,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        bytes32 _crossChainTxId,
+        uint16 slippage
+    ) external onlyOwner {
+        _returnFundsToUser(
+            amount,
+            userChainId,
+            receiver,
+            withdrawZRC20,
+            withdrawERC20,
+            _crossChainTxId,
+            slippage
+        );
+    }
+
     /**
      * @dev Returns funds to the user, either on the same chain or a connected chain.
      * @param amount The amount of assets to return to the user.
@@ -487,11 +503,9 @@ abstract contract AmanaVaultBaseV1 is
                 IAmanaRegistry(registry).withdrawHelper(),
                 outputAmount
             );
-
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
-                .handleGasFeeAndWithdrawAndCallToReceiver(
-                    IAmanaRegistry(registry).withdrawalReceiver(),
+                .handleGasFeeAndWithdrawToUser(
                     receiver,
                     withdrawZRC20,
                     withdrawERC20,
@@ -502,7 +516,6 @@ abstract contract AmanaVaultBaseV1 is
                     registry
                 );
         }
-        emit ReturnFundsToUserSent(_crossChainTxId, receiver, amount);
     }
 
     /**
@@ -569,11 +582,4 @@ abstract contract AmanaVaultBaseV1 is
             token.approve(spender, amount); // Set new allowance
         }
     }
-
-    /**
-     * @dev Handles revert scenarios during cross-chain operations.
-     * @param context The revert context containing details about the revert scenario.
-     * @notice Executes appropriate recovery steps based on the revert message.
-     */
-    function onRevert(RevertContext calldata context) external virtual override;
 }

@@ -13,6 +13,7 @@ import {
   ZC_ETH_BASE_ADDRESS,
   ZC_USDC_ETH_ADDRESS
 } from "../../../constants";
+import { registry } from "@coral-xyz/anchor/dist/cjs/utils";
 
 describe("AmanaConnectedChainVault Tests", function () {
 
@@ -56,12 +57,12 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a ZapContract deposit with ERC20", async function () {
-    const { user1, amanaVault, otherZRC20, zapContract, gatewaySigner, vaultConfig, txConfig, strategyConfig } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, otherZRC20, zapContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, withdrawHelper } = await loadFixture(setupVaultFixture);
     await setTokenBalance(txConfig.otherZRC20Input, await user1.getAddress(), txConfig.directDepositAmount3, 3);
 
     await otherZRC20.connect(user1).approve(zapContract.address, txConfig.directDepositAmount3);
     await expect(zapContract.connect(user1).zapDeposit(txConfig.otherZRC20Input, amanaVault.address, vaultConfig.asset, txConfig.directDepositAmount3, txConfig.minSharesOut3, await user1.getAddress(), 10000))
-      .to.emit(amanaVault, "CrossChainInvestSent");
+      .to.emit(withdrawHelper, "CrossChainInvestSent");
 
     await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, txConfig.directDepositAmount3, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
 
@@ -71,10 +72,10 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a ZapContract deposit with ZETA", async function () {
-    const { user1, amanaVault, zapContract, gatewaySigner, vaultConfig, txConfig, strategyConfig } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, zapContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, withdrawHelper } = await loadFixture(setupVaultFixture);
 
     await expect(zapContract.connect(user1).zapDeposit(ethers.constants.AddressZero, amanaVault.address, vaultConfig.asset, txConfig.directDepositAmount3, txConfig.minSharesOut3, await user1.getAddress(), 10000, { value: txConfig.directDepositAmount3 }))
-      .to.emit(amanaVault, "CrossChainInvestSent");
+      .to.emit(withdrawHelper, "CrossChainInvestSent");
 
     await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, txConfig.directDepositAmount3, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
 
@@ -205,7 +206,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     const withdrawToken = ethers.constants.AddressZero;
     await amanaVault.connect(user1).redeemToAnyToken(totalShares, minAmountOut, await user1.getAddress(), await user1.getAddress(), withdrawToken, 10000);
     const expectedAmountWithdrawn = await amanaVault.convertToAssets(totalShares);
-    // console.log("expectedAmountWithdrawn: ", expectedAmountWithdrawn.toString());
     await simulateConfirmRedeemToAnyToken(amanaVault, gatewaySigner, user1, withdrawToken, txConfig.crossChainDepositAmount1, expectedAmountWithdrawn, txConfig.crossChainDepositAmount1, 2, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId);
 
     totalShares = await amanaVault.balanceOf(await user1.getAddress());
@@ -339,7 +339,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should correctly handle _crossChainInvest revert during cross-chain deposits", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, amanaRegistry } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
@@ -349,24 +349,252 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.crossChainDepositAmount1,
       pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage
     )
-    console.log("Cross chain call simulated")
     // Simulate _crossChainInvest reverting
     const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "bytes32", "uint256", "address", "address", "address", "uint32"],
-      ["_crossChainInvestFailed", txId, txConfig.crossChainDepositAmount1, await user1.getAddress(), txConfig.originZRC20Input, ethers.constants.AddressZero, txConfig.originChainId]
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_crossChainInvestFailed", txId, txConfig.crossChainDepositAmount1, await user1.getAddress(), txConfig.originZRC20Input, txConfig.originERC20Input, vaultConfig.asset, txConfig.originChainId, amanaRegistry.address, amanaVault.address]
     );
 
     // the revert will send back some vault asset
-    await setTokenBalance(vaultConfig.asset, amanaVault.address, txConfig.crossChainDepositAmount1, 3);
-    console.log("Amount sent back to vault: ", txConfig.crossChainDepositAmount1.mul(95).div(100).toString());
+    await setTokenBalance(vaultConfig.asset, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
     await expect(
-      amanaVault.connect(gatewaySigner).onRevert({
+      withdrawHelper.connect(gatewaySigner).onRevert({
         sender: strategyConfig.address,
         asset: vaultConfig.asset,
         revertMessage: mockRevertMessage,
         amount: txConfig.crossChainDepositAmount1,
       })
-    ).to.emit(amanaVault, "CrossChainInvestFailed").withArgs(txId, await user1.getAddress(), txConfig.crossChainDepositAmount1);
+    ).to.emit(withdrawHelper, "CrossChainInvestFailed").withArgs(txId, await user1.getAddress(), txConfig.crossChainDepositAmount1);
+  });
+
+  it("should handle _divestConnectedChainStrategyFailed in onRevert", async function () {
+    const {
+      user1,
+      amanaVault,
+      gatewaySigner,
+      withdrawHelper,
+      vaultConfig,
+      txConfig,
+      amanaRegistry,
+      strategyConfig,
+      owner,
+      gasTank,
+      pythContract
+    } = await loadFixture(setupVaultFixture);
+
+    const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+
+    await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
+    await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
+
+    await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+
+    await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
+    const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken);
+
+    const revertMessage = ethers.utils.defaultAbiCoder.encode(
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_divestConnectedChainStrategyFailed", txId, userMaxRedeem, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, ethers.constants.AddressZero, 0, amanaRegistry.address, amanaVault.address]
+    );
+
+    await expect(
+      withdrawHelper.connect(gatewaySigner).onRevert({
+        sender: ethers.constants.AddressZero,
+        asset: vaultConfig.asset,
+        amount: 0,
+        revertMessage,
+      })
+    ).to.emit(withdrawHelper, "DivestFailed").withArgs(txId, user1.address, userMaxRedeem);
+  });
+
+  it("should handle _returnFundsToUserFailed in onRevert", async function () {
+    const {
+      user1,
+      gatewaySigner,
+      withdrawHelper,
+      vaultConfig,
+      txConfig,
+      amanaVault,
+      amanaRegistry
+    } = await loadFixture(setupVaultFixture);
+
+    const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+    const amount = ethers.utils.parseEther("1");
+
+    const revertMessage = ethers.utils.defaultAbiCoder.encode(
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_returnFundsToUserFailed", txId, amount, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originZRC20Input, 0, amanaRegistry.address, amanaVault.address]
+    );
+
+    await expect(
+      withdrawHelper.connect(gatewaySigner).onRevert({
+        sender: ethers.constants.AddressZero,
+        asset: vaultConfig.asset,
+        amount,
+        revertMessage,
+      })
+    ).to.emit(withdrawHelper, "ReturnFundsToUserFailed").withArgs(txId, user1.address, amount);
+  });
+
+  it("should handle _switchStrategyFailed in onRevert", async function () {
+    const {
+      gatewaySigner,
+      withdrawHelper,
+      amanaVault,
+      amanaRegistry,
+      txConfig,
+      user1
+    } = await loadFixture(setupVaultFixture);
+
+    const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+
+    const revertMessage = ethers.utils.defaultAbiCoder.encode(
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_switchStrategyFailed", txId, 0, user1.address, txConfig.originZRC20Input, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, amanaRegistry.address, amanaVault.address]
+    );
+
+    await expect(
+      withdrawHelper.connect(gatewaySigner).onRevert({
+        sender: ethers.constants.AddressZero,
+        asset: ethers.constants.AddressZero,
+        amount: 0,
+        revertMessage,
+      })
+    ).to.emit(withdrawHelper, "SwitchStrategyFailed").withArgs(txId);
+  });
+
+  it("should correctly handle _crossChainInvest abort during cross-chain deposits", async function () {
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, amanaRegistry } = await loadFixture(setupVaultFixture);
+
+    await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
+    await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
+
+    const txId = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner,
+      user1,
+      txConfig.crossChainDepositAmount1,
+      pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage
+    )
+    // Simulate _crossChainInvest reverting
+    const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_crossChainInvestFailed", txId, txConfig.crossChainDepositAmount1, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultConfig.asset, txConfig.originChainId, amanaRegistry.address, amanaVault.address]
+    );
+
+    // the abort will send back some vault asset
+    await setTokenBalance(vaultConfig.asset, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
+    await expect(
+      withdrawHelper.connect(gatewaySigner).onAbort({
+        sender: strategyConfig.address,
+        asset: vaultConfig.asset,
+        amount: txConfig.crossChainDepositAmount1,
+        outgoing: true,
+        chainID: txConfig.originChainId,
+        revertMessage: mockRevertMessage,
+      })
+    ).to.emit(withdrawHelper, "CrossChainInvestFailed").withArgs(txId, await user1.getAddress(), txConfig.crossChainDepositAmount1);
+  });
+
+  it("should handle _divestConnectedChainStrategyFailed in onAbort", async function () {
+    const {
+      user1,
+      amanaVault,
+      gatewaySigner,
+      withdrawHelper,
+      vaultConfig,
+      txConfig,
+      amanaRegistry,
+      owner,
+      strategyConfig,
+      gasTank,
+      pythContract
+    } = await loadFixture(setupVaultFixture);
+
+    const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+    await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
+    await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
+
+    await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+
+    await simulateConfirmDeposit(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, 0, 1, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
+    const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken);
+
+    const revertMessage = ethers.utils.defaultAbiCoder.encode(
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_divestConnectedChainStrategyFailed", txId, userMaxRedeem, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, ethers.constants.AddressZero, 0, amanaRegistry.address, amanaVault.address]
+    );
+
+    await expect(
+      withdrawHelper.connect(gatewaySigner).onAbort({
+        sender: ethers.constants.AddressZero,
+        asset: vaultConfig.asset,
+        amount: txConfig.crossChainDepositAmount1,
+        outgoing: true,
+        chainID: txConfig.originChainId,
+        revertMessage: revertMessage,
+      })
+    ).to.emit(withdrawHelper, "DivestFailed").withArgs(txId, user1.address, txConfig.crossChainDepositAmount1);
+  });
+
+  it("should handle _returnFundsToUserFailed in onAbort", async function () {
+    const {
+      user1,
+      gatewaySigner,
+      withdrawHelper,
+      vaultConfig,
+      txConfig,
+      amanaVault,
+      amanaRegistry
+    } = await loadFixture(setupVaultFixture);
+
+    const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+
+    const revertMessage = ethers.utils.defaultAbiCoder.encode(
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_returnFundsToUserFailed", txId, txConfig.crossChainDepositAmount1, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originZRC20Input, 0, amanaRegistry.address, amanaVault.address]
+    );
+
+    await expect(
+      withdrawHelper.connect(gatewaySigner).onAbort({
+        sender: ethers.constants.AddressZero,
+        asset: vaultConfig.asset,
+        amount: txConfig.crossChainDepositAmount1,
+        outgoing: true,
+        chainID: txConfig.originChainId,
+        revertMessage: revertMessage,
+      })
+    ).to.emit(withdrawHelper, "ReturnFundsToUserFailed").withArgs(txId, user1.address, txConfig.crossChainDepositAmount1);
+  });
+
+  it("should handle _switchStrategyFailed in onAbort", async function () {
+    const {
+      gatewaySigner,
+      withdrawHelper,
+      amanaVault,
+      amanaRegistry,
+      txConfig,
+      vaultConfig,
+      user1
+    } = await loadFixture(setupVaultFixture);
+
+    const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+
+    const revertMessage = ethers.utils.defaultAbiCoder.encode(
+      ["string", "bytes32", "uint256", "address", "address", "address", "address", "uint32", "address", "address"],
+      ["_switchStrategyFailed", txId, 0, user1.address, txConfig.originZRC20Input, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, amanaRegistry.address, amanaVault.address]
+    );
+
+    await expect(
+      withdrawHelper.connect(gatewaySigner).onAbort({
+        sender: ethers.constants.AddressZero,
+        asset: ethers.constants.AddressZero,
+        amount: 0,
+        outgoing: true,
+        chainID: txConfig.originChainId,
+        revertMessage: revertMessage,
+      })
+    ).to.emit(withdrawHelper, "SwitchStrategyFailed").withArgs(txId);
   });
 
   it("should reject unauthorized registry updates", async function () {
@@ -379,7 +607,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should withdraw the maximum amount possible for a user", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
@@ -396,7 +624,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, maxRedeemAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken)
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
     await expect(simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, user1, maxRedeemAmount, totalShares, txConfig.crossChainDepositAmount1, 2, 2, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originERC20Input, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken, txConfig.slippage))
-      .to.emit(amanaVault, "ReturnFundsToUserSent")
+      .to.emit(withdrawHelper, "ReturnFundsToUserSent")
       .to.emit(amanaVault, "Withdrawn");
   });
 

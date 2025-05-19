@@ -105,6 +105,8 @@ export async function setupVaultFixture() {
   console.log("Setup done, returning values")
   return {
     amanaVault,
+    withdrawHelper,
+    amanaRegistry,
     owner,
     user1,
     user2,

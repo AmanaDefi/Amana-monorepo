@@ -26,6 +26,7 @@ contract SwapHelperPolygon {
     address public constant UNISWAP_V3_ROUTER =
         0xE592427A0AEce92De3Edee1F18E0157C05861564; // Uniswap V3 Router on Polygon
 
+    uint24 constant V3_FEE_TIER_LOWEST = 100;
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
 
@@ -220,31 +221,37 @@ contract SwapHelperPolygon {
         return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
     }
 
-    function _existsV3Pool(
+    function _getBestV3Pool(
         address tokenA,
         address tokenB
-    ) internal view returns (bool exists, uint24 feeTier) {
-        address poolLow = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
-            tokenA,
-            tokenB,
-            V3_FEE_TIER_LOW
-        );
-        if (poolLow != address(0) && IUniswapV3Pool(poolLow).liquidity() > 0) {
-            return (true, V3_FEE_TIER_LOW); // Prioritize 0.05% fee pool
+    ) internal view returns (bool exists, uint24 bestFeeTier) {
+        uint24[4] memory tiers = [
+            uint24(100),
+            uint24(500),
+            uint24(3000),
+            uint24(10000)
+        ];
+        uint128 highestLiquidity = 0;
+        bestFeeTier = 0;
+        exists = false;
+
+        for (uint256 i = 0; i < tiers.length; i++) {
+            address pool = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
+                tokenA,
+                tokenB,
+                tiers[i]
+            );
+            if (pool != address(0)) {
+                uint128 liquidity = IUniswapV3Pool(pool).liquidity();
+                if (liquidity > highestLiquidity) {
+                    highestLiquidity = liquidity;
+                    bestFeeTier = tiers[i];
+                    exists = true;
+                }
+            }
         }
 
-        address poolHigh = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
-            tokenA,
-            tokenB,
-            V3_FEE_TIER_HIGH
-        );
-        if (
-            poolHigh != address(0) && IUniswapV3Pool(poolHigh).liquidity() > 0
-        ) {
-            return (true, V3_FEE_TIER_HIGH); // Fallback to 0.3% fee pool
-        }
-
-        return (false, 0); // No valid V3 pool found
+        return (exists, bestFeeTier);
     }
 
     function getPathV2(
@@ -263,14 +270,14 @@ contract SwapHelperPolygon {
             return (path);
         }
 
-        // UniswapV2 Indirect Swap via WETH_TOKEN
+        // UniswapV2 Indirect Swap via WMATIC_ADDRESS
         if (
-            _existsPairPool(inputToken, WETH_TOKEN) &&
-            _existsPairPool(WETH_TOKEN, outputToken)
+            _existsPairPool(inputToken, WMATIC_ADDRESS) &&
+            _existsPairPool(WMATIC_ADDRESS, outputToken)
         ) {
             path = new address[](3);
             path[0] = inputToken;
-            path[1] = WETH_TOKEN;
+            path[1] = WMATIC_ADDRESS;
             path[2] = outputToken;
             return (path);
         }
@@ -296,7 +303,7 @@ contract SwapHelperPolygon {
         uint24 feeTier;
 
         // UniswapV3 Direct Swap (Checks both fee tiers, prioritizes 0.05%)
-        (exists, feeTier) = _existsV3Pool(inputToken, outputToken);
+        (exists, feeTier) = _getBestV3Pool(inputToken, outputToken);
         if (exists) {
             path = new address[](2);
             feeTiers = new uint24[](1);
@@ -307,16 +314,16 @@ contract SwapHelperPolygon {
             return (path, feeTiers, encodedPath);
         }
 
-        // UniswapV3 Indirect Swap via WETH_TOKEN (Checks both fee tiers)
-        (exists, feeTier) = _existsV3Pool(inputToken, WETH_TOKEN);
+        // UniswapV3 Indirect Swap via WMATIC_ADDRESS (Checks both fee tiers)
+        (exists, feeTier) = _getBestV3Pool(inputToken, WMATIC_ADDRESS);
         if (exists) {
             uint24 feeTier2;
-            (exists, feeTier2) = _existsV3Pool(WETH_TOKEN, outputToken);
+            (exists, feeTier2) = _getBestV3Pool(WMATIC_ADDRESS, outputToken);
             if (exists) {
                 path = new address[](3);
                 feeTiers = new uint24[](2);
                 path[0] = inputToken;
-                path[1] = WETH_TOKEN;
+                path[1] = WMATIC_ADDRESS;
                 path[2] = outputToken;
                 feeTiers[0] = feeTier;
                 feeTiers[1] = feeTier2;
@@ -458,8 +465,9 @@ contract SwapHelperPolygon {
             amount,
             slippageBps
         );
+
         (
-            address[] memory path,
+            address[] memory pathV3,
             uint24[] memory feeTiers,
             bytes memory encodedPath
         ) = getPathV3(inputToken, outputToken);
@@ -467,29 +475,46 @@ contract SwapHelperPolygon {
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
-            ISwapRouter.ExactInputParams memory params = ISwapRouter
-                .ExactInputParams({
-                    path: encodedPath,
-                    recipient: vault,
-                    deadline: block.timestamp + maxDeadline,
-                    amountIn: amount,
-                    amountOutMinimum: minimumOut
-                });
 
-            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
-        } else {
-            // Uniswap V2 Swap
-            path = getPathV2(inputToken, outputToken);
-            IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
-            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-                .swapExactTokensForTokens(
-                    amount,
-                    minimumOut,
-                    path,
-                    vault,
-                    block.timestamp + maxDeadline
-                );
+            try
+                ISwapRouter(UNISWAP_V3_ROUTER).exactInput(
+                    ISwapRouter.ExactInputParams({
+                        path: encodedPath,
+                        recipient: vault,
+                        deadline: 99999999999,
+                        amountIn: amount,
+                        amountOutMinimum: 0
+                    })
+                )
+            returns (uint256 out) {
+                amountOut = out;
+                return amountOut;
+            } catch {
+                return 0;
+            }
+        }
+
+        // Uniswap V2 fallback
+        address[] memory path = getPathV2(inputToken, outputToken);
+        if (path.length < 2) {
+            // No valid path found
+            return 0;
+        }
+        IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
+
+        try
+            IUniswapV2Router02(UNISWAP_V2_ROUTER).swapExactTokensForTokens(
+                amount,
+                minimumOut,
+                path,
+                vault,
+                block.timestamp + maxDeadline
+            )
+        returns (uint256[] memory amounts) {
             amountOut = amounts[amounts.length - 1];
+            return amountOut;
+        } catch {
+            return 0;
         }
     }
 
@@ -509,44 +534,64 @@ contract SwapHelperPolygon {
             amountOut,
             slippageBps
         );
+
         require(
             IERC20(inputToken).balanceOf(address(this)) >= maxAmountIn,
             "Insufficient balance"
         );
+
         (
-            address[] memory path,
+            address[] memory pathV3,
             uint24[] memory feeTiers,
             bytes memory encodedPath
         ) = getPathV3(outputToken, inputToken);
+
         if (encodedPath.length > 0) {
-            // Uniswap V3 Swap (tokens for exact tokens out)
+            // Try Uniswap V3 swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, maxAmountIn);
 
-            ISwapRouter.ExactOutputParams memory params = ISwapRouter
-                .ExactOutputParams({
-                    path: encodedPath,
-                    recipient: vault,
-                    deadline: block.timestamp,
-                    amountOut: amountOut,
-                    amountInMaximum: maxAmountIn
-                });
-
-            amountIn = ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(params);
+            try
+                ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(
+                    ISwapRouter.ExactOutputParams({
+                        path: encodedPath,
+                        recipient: vault,
+                        deadline: block.timestamp,
+                        amountOut: amountOut,
+                        amountInMaximum: maxAmountIn
+                    })
+                )
+            returns (uint256 usedAmountIn) {
+                amountIn = usedAmountIn;
+            } catch {
+                return 0;
+            }
         } else {
-            // Uniswap V2 Swap (tokens for exact tokens out)
-            path = getPathV2(inputToken, outputToken);
+            // Try Uniswap V2 swap
+            address[] memory path = getPathV2(inputToken, outputToken);
+            if (path.length < 2) {
+                return 0; // No valid path
+            }
             IERC20(inputToken).approve(UNISWAP_V2_ROUTER, maxAmountIn);
-            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-                .swapTokensForExactTokens(
+
+            try
+                IUniswapV2Router02(UNISWAP_V2_ROUTER).swapTokensForExactTokens(
                     amountOut,
                     maxAmountIn,
                     path,
                     vault,
                     block.timestamp + maxDeadline
-                );
-            amountIn = amounts[0];
+                )
+            returns (uint256[] memory amounts) {
+                amountIn = amounts[0];
+            } catch {
+                return 0;
+            }
         }
-        IERC20(inputToken).transfer(vault, totalAmountAvailable - amountIn);
+
+        // Transfer any excess input token to vault (only if swap succeeded)
+        if (amountIn > 0 && totalAmountAvailable > amountIn) {
+            IERC20(inputToken).transfer(vault, totalAmountAvailable - amountIn);
+        }
 
         return amountIn;
     }
