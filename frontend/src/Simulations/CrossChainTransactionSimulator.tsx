@@ -9,7 +9,8 @@ enum TransactionStepStatus {
   pending = 'pending',
   processing = 'processing',
   completed = 'completed',
-  error = 'error'
+  error = 'error',
+  reverted = 'reverted',
 }
 
 // Transaction step feedback interface
@@ -99,6 +100,28 @@ const depositSteps = [
   },
 ];
 
+// Add new revert steps constant
+const revertSteps = [
+  {
+    name: 'Initial local transaction on Base',
+    type: 'local',
+    hash: '0x4e4e30d0b303d22bf83288a4e5104385247de0c19a0d4ad06abe55e324665549',
+    url: 'https://basescan.org/tx/0x4e4e30d0b303d22bf83288a4e5104385247de0c19a0d4ad06abe55e324665549',
+  },
+  {
+    name: 'Cross chain Tx from Base to Vault on Zetachain',
+    type: 'inboundToCctx',
+    hash: '0x859b5241ccc9fbacb7aadc834eacddc2ecfc14d0927055935b624a6639eaad19',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0x4e4e30d0b303d22bf83288a4e5104385247de0c19a0d4ad06abe55e324665549',
+  },
+  {
+    name: 'Cross chain call from vault on ZC to strategy on strategy chain',
+    type: 'inboundToCctx',
+    hash: '0xf84f7b31546317e169f0671c634389adfc33be1d8a1a1db9eda1a34d39673a2f',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0x859b5241ccc9fbacb7aadc834eacddc2ecfc14d0927055935b624a6639eaad19',
+  }
+];
+
 interface SimulationResult {
   step: string;
   hash: string;
@@ -108,7 +131,7 @@ interface SimulationResult {
 }
 
 interface CrossChainTransactionSimulatorProps {
-  type: 'deposit' | 'withdrawal';
+  type: 'deposit' | 'withdrawal' | 'revert';
 }
 
 export default function CrossChainTransactionSimulator({ type }: CrossChainTransactionSimulatorProps) {
@@ -119,7 +142,7 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
 
-  const steps = type === 'deposit' ? depositSteps : withdrawalSteps;
+  const steps = type === 'deposit' ? depositSteps : type === 'withdrawal' ? withdrawalSteps : revertSteps;
 
   const resetSimulation = () => {
     setCurrentStep(0);
@@ -130,7 +153,18 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
     setFinished(false);
   };
 
-  // Sequentially run all steps
+  // Helper function to check for revert with second outbound param
+  function isRevertWithSecondOutbound(cctxData: any): boolean {
+    const status = cctxData?.CrossChainTx?.cctx_status?.status;
+    const outboundParams = cctxData?.CrossChainTx?.outbound_params;
+    return (
+      status === 'Reverted' &&
+      Array.isArray(outboundParams) &&
+      outboundParams.length > 1 &&
+      !!outboundParams[1]?.hash
+    );
+  }
+
   const runAllSteps = async () => {
     setStarted(true);
     setLoading(true);
@@ -144,35 +178,48 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
         let cctxHash = steps[i].hash;
         let cctxData: any = null;
         if (steps[i].type === 'local') {
-          console.log('[Simulation] Local step:', steps[i].name, 'Hash:', steps[i].hash);
           data = { status: 'LocalTx' };
         } else if (steps[i].type === 'inboundToCctx') {
-          console.log('[Simulation] Fetching inboundHashToCctx:', steps[i].url);
           const inboundRes = await axios.get(steps[i].url);
-          console.log('[Simulation] inboundHashToCctx response:', inboundRes.data);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0];
           if (!cctxIndex) throw new Error('No cctx_index found for this step');
           const cctxUrl = `https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/${cctxIndex}`;
-          console.log('[Simulation] Fetching cctx:', cctxUrl);
           const cctxRes = await axios.get(cctxUrl);
-          console.log('[Simulation] cctx response:', cctxRes.data);
           cctxData = cctxRes.data;
-          if (cctxData?.CrossChainTx?.cctx_status?.status !== 'OutboundMined') {
-            throw new Error(`cctx_status.status is not OutboundMined (got: ${cctxData?.CrossChainTx?.cctx_status?.status})`);
+          const status = cctxData?.CrossChainTx?.cctx_status?.status;
+          if (status === 'OutboundMined') {
+            // Success, continue
+          } else if (isRevertWithSecondOutbound(cctxData)) {
+            setResults((prev) => [...prev, { step: steps[i].name, hash: cctxIndex, url: steps[i].url, status: TransactionStepStatus.reverted, data: { inbound: inboundRes.data, cctx: cctxData } }]);
+            setCurrentStep(i + 1);
+            setError(`Transaction reverted at step "${steps[i].name}": Revert detected (hash: ${cctxData.CrossChainTx.outbound_params[1].hash})`);
+            setLoading(false);
+            setFinished(false);
+            return;
+          } else {
+            throw new Error(`Unexpected status: ${status}`);
           }
           data = { inbound: inboundRes.data, cctx: cctxData };
           cctxHash = cctxIndex;
         } else if (steps[i].type === 'cctx') {
-          console.log('[Simulation] Fetching cctx:', steps[i].url);
           const cctxRes = await axios.get(steps[i].url);
-          console.log('[Simulation] cctx response:', cctxRes.data);
           cctxData = cctxRes.data;
-          if (cctxData?.CrossChainTx?.cctx_status?.status !== 'OutboundMined') {
-            throw new Error(`cctx_status.status is not OutboundMined (got: ${cctxData?.CrossChainTx?.cctx_status?.status})`);
+          const status = cctxData?.CrossChainTx?.cctx_status?.status;
+          if (status === 'OutboundMined') {
+            // Success, continue
+          } else if (isRevertWithSecondOutbound(cctxData)) {
+            setResults((prev) => [...prev, { step: steps[i].name, hash: steps[i].hash, url: steps[i].url, status: TransactionStepStatus.reverted, data: { cctx: cctxData } }]);
+            setCurrentStep(i + 1);
+            setError(`Transaction reverted at step "${steps[i].name}": Revert detected (hash: ${cctxData.CrossChainTx.outbound_params[1].hash})`);
+            setLoading(false);
+            setFinished(false);
+            return;
+          } else {
+            throw new Error(`Unexpected status: ${status}`);
           }
           data = { cctx: cctxData };
         }
-        setResults((prev) => [...prev, { step: steps[i].name, hash: cctxHash, url: steps[i].url, status: 'success', data }]);
+        setResults((prev) => [...prev, { step: steps[i].name, hash: cctxHash, url: steps[i].url, status: TransactionStepStatus.completed, data }]);
         setCurrentStep(i + 1);
         await new Promise((resolve) => setTimeout(resolve, 1200)); // short delay for UX
       } catch (err) {
@@ -190,22 +237,29 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
   };
 
   // Helper to get step status
-  const getStepStatus = (idx: number) => {
-    if (error && currentStep === idx) return 'error';
-    if (idx < currentStep) return 'success';
-    if (idx === currentStep && loading && !finished) return 'processing';
-    return 'pending';
+  const getStepStatus = (idx: number): TransactionStepStatus => {
+    if (error && currentStep === idx && results[idx]?.status === TransactionStepStatus.reverted) return TransactionStepStatus.reverted;
+    if (error && currentStep === idx) return TransactionStepStatus.error;
+    if (idx < currentStep) return TransactionStepStatus.completed;
+    if (idx === currentStep && loading && !finished) return TransactionStepStatus.processing;
+    return TransactionStepStatus.pending;
   };
 
   return (
     <div className="flex flex-col gap-4 p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg max-w-2xl mx-auto">
-      <h2 className="text-white text-3xl font-bold mb-2">{type === 'deposit' ? 'Cross-Chain Deposit Simulation' : 'Cross-Chain Withdrawal Simulation'}</h2>
+      <h2 className="text-white text-3xl font-bold mb-2">
+        {type === 'deposit' ? 'Cross-Chain Deposit Simulation' : 
+         type === 'withdrawal' ? 'Cross-Chain Withdrawal Simulation' :
+         'Cross-Chain Transaction Revert Simulation'}
+      </h2>
       {!started && (
         <button
           onClick={runAllSteps}
           className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors self-center text-lg font-semibold shadow"
         >
-          {type === 'deposit' ? 'Deposit' : 'Withdraw'}
+          {type === 'deposit' ? 'Deposit' : 
+           type === 'withdrawal' ? 'Withdraw' :
+           'Simulate Revert'}
         </button>
       )}
       {loading && (
@@ -223,33 +277,40 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
       )}
       <ul className="mt-2 flex flex-col gap-4">
         {steps.map((step, i) => {
-          const status = getStepStatus(i);
+          const status = results[i]?.status || getStepStatus(i);
           return (
             <li
               key={i}
               className={`p-4 rounded-xl shadow flex flex-col gap-1 border transition-all duration-300
-                ${status === 'success' ? 'bg-green-900/40 border-green-500' : ''}
-                ${status === 'processing' ? 'bg-yellow-900/40 border-yellow-400' : ''}
-                ${status === 'error' ? 'bg-red-900/40 border-red-500' : ''}
-                ${status === 'pending' ? 'bg-gray-800/60 border-gray-700' : ''}
+                ${status === TransactionStepStatus.completed ? 'bg-green-900/40 border-green-500' : ''}
+                ${status === TransactionStepStatus.processing ? 'bg-yellow-900/40 border-yellow-400' : ''}
+                ${status === TransactionStepStatus.error ? 'bg-red-900/40 border-red-500' : ''}
+                ${status === TransactionStepStatus.pending ? 'bg-gray-800/60 border-gray-700' : ''}
                 ${currentStep === i && !finished ? 'ring-2 ring-yellow-400' : ''}
               `}
             >
               <div className="flex items-center gap-2 mb-1">
-                {status === 'success' && <AiOutlineCheck className="text-green-400" size={20} />}
-                {status === 'processing' && <AiOutlineLoading3Quarters className="text-yellow-400 animate-spin" size={20} />}
-                {status === 'error' && <AiOutlineExclamation className="text-red-400" size={20} />}
-                <span className={`font-semibold text-lg ${status === 'success' ? 'text-green-200' : status === 'processing' ? 'text-yellow-200' : status === 'error' ? 'text-red-200' : 'text-white'}`}>{step.name}</span>
+                {status === TransactionStepStatus.completed && <AiOutlineCheck className="text-green-400" size={20} />}
+                {status === TransactionStepStatus.processing && <AiOutlineLoading3Quarters className="text-yellow-400 animate-spin" size={20} />}
+                {status === TransactionStepStatus.error && <AiOutlineExclamation className="text-red-400" size={20} />}
+                <span className={`font-semibold text-lg ${status === TransactionStepStatus.completed ? 'text-green-200' : status === TransactionStepStatus.processing ? 'text-yellow-200' : status === TransactionStepStatus.error ? 'text-red-200' : 'text-white'}`}>{step.name}</span>
               </div>
               <div className="text-xs text-gray-300 break-all"><span className="font-semibold">Hash:</span> {results[i]?.hash || step.hash}</div>
               <div className="text-xs text-blue-300 break-all">
                 <span className="font-semibold">URL:</span> <a href={step.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-200">{step.url}</a>
               </div>
-              <div className={`text-xs font-semibold mt-1 ${status === 'success' ? 'text-green-400' : status === 'processing' ? 'text-yellow-300' : status === 'error' ? 'text-red-400' : 'text-gray-400'}`}>
-                {status === 'success' && 'Step completed'}
-                {status === 'processing' && 'Processing...'}
-                {status === 'error' && 'Step failed'}
-                {status === 'pending' && 'Waiting...'}
+              <div className={`text-xs font-semibold mt-1 ${
+                status === TransactionStepStatus.completed ? 'text-green-400' :
+                status === TransactionStepStatus.processing ? 'text-yellow-300' :
+                status === TransactionStepStatus.error ? 'text-red-400' :
+                status === TransactionStepStatus.reverted ? 'text-red-400' :
+                'text-gray-400'
+              }`}>
+                {status === TransactionStepStatus.completed && 'Step completed'}
+                {status === TransactionStepStatus.processing && 'Processing...'}
+                {status === TransactionStepStatus.error && 'Step failed'}
+                {status === TransactionStepStatus.reverted && 'Step failed: Transaction reverted. Please restart the process.'}
+                {status === TransactionStepStatus.pending && 'Waiting...'}
               </div>
             </li>
           );
@@ -258,7 +319,9 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
       {finished && !error && (
         <div className="text-center text-green-400 mt-6 text-xl font-bold flex flex-col items-center gap-2">
           <AiOutlineCheck className="text-green-400" size={32} />
-          {type === 'deposit' ? 'Deposit' : 'Withdrawal'} completed successfully!
+          {type === 'deposit' ? 'Deposit' : 
+           type === 'withdrawal' ? 'Withdrawal' :
+           'Revert Simulation'} completed successfully!
           <button onClick={resetSimulation} className="mt-3 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold">Test Again</button>
         </div>
       )}

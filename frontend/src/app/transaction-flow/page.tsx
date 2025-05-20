@@ -1,10 +1,8 @@
 "use client";
 
 import React from "react";
-import TransactionFlow from "@/components/TransactionFlow";
-import { BannersCarousel } from "@/components/banners/BannersCarousel";
-import { Note } from "@/components/Note";
-import Link from "next/link";
+import TransactionFlow from "@/Simulations/TransactionFlow";
+
 
 export default function TransactionFlowPage() {
   return (
