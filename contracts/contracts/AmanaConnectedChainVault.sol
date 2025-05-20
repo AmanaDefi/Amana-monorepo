@@ -51,18 +51,18 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             (
                 uint256 withdrawnAmount,
                 uint256 totalAssetsAfter,
-                uint256 executionNonce
+                uint256 confirmationNonce
             ) = abi.decode(message, (uint256, uint256, uint256));
-            if (executionNonce == lastProcessedNonce) {
+            if (confirmationNonce == lastProcessedNonce) {
                 // this is an update (totalAssetsAfter)
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
-                emit TotalAssetsUpdated(totalAssetsAfter, executionNonce);
+                emit TotalAssetsUpdated(totalAssetsAfter, confirmationNonce);
             } else {
-                transactions[executionNonce]
+                transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
-                if (!transactions[executionNonce].isDeposit) {
+                if (!transactions[confirmationNonce].isDeposit) {
                     // this is a withdrawal confirmation (or revert)
-                    transactions[executionNonce].amount = withdrawnAmount;
+                    transactions[confirmationNonce].amount = withdrawnAmount;
                 }
             }
 
@@ -143,11 +143,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      This function validates and stores the transaction details for deposit, withdrawal or totalAsset update actions
      *      and then attempts to process all pending confirmations in order.
      */
-    // function _processConfirmationFromStrategy(uint256 executionNonce) internal {
+    // function _processConfirmationFromStrategy(uint256 confirmationNonce) internal {
     //     // Ensure no duplicate processing
     //     if (
-    //         transactions[executionNonce].amount != 0 &&
-    //         transactions[executionNonce].totalAssetsAfter != 0
+    //         transactions[confirmationNonce].amount != 0 &&
+    //         transactions[confirmationNonce].totalAssetsAfter != 0
     //     ) revert ConfirmationAlreadyProcessed();
 
     //     // Attempt to process confirmations
@@ -162,7 +162,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param withdrawChainId The chain ID of the withdrawal, if applicable.
      * @param isDeposit A boolean indicating if the transaction is for a deposit (true) or withdrawal (false).
      * @param totalAssetsAfter The total assets in the vault after the operation.
-     * @param executionNonce A unique identifier for the transaction to ensure it is processed only once.
+     * @param confirmationNonce A unique identifier for the transaction to ensure it is processed only once.
      */
     function manuallyAddConfirmation(
         address user,
@@ -174,12 +174,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 withdrawChainId,
         bool isDeposit,
         uint256 totalAssetsAfter,
-        uint256 executionNonce,
+        uint256 confirmationNonce,
         bytes32 _nonEvmAddress,
         uint16 _slippage
     ) external onlyOwner {
         // Store the transaction in the buffer
-        transactions[executionNonce] = Transaction({
+        transactions[confirmationNonce] = Transaction({
             user: user,
             receiver: receiver,
             withdrawZRC20: withdrawZRC20,
@@ -195,13 +195,13 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     function processExistingConfirmations(
-        uint256 executionNonce,
+        uint256 confirmationNonce,
         bool processEntireBuffer
     ) external onlyOwner {
         // Ensure the transaction exists
         if (
-            transactions[executionNonce].totalAssetsAfter == 0 &&
-            transactions[executionNonce].amount == 0
+            transactions[confirmationNonce].totalAssetsAfter == 0 &&
+            transactions[confirmationNonce].amount == 0
         ) {
             revert ConfirmationAlreadyProcessed();
         }
@@ -225,8 +225,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 break;
             }
             //     if (
-            //         transactions[executionNonce].amount != 0 &&
-            //         transactions[executionNonce].totalAssetsAfter != 0
+            //         transactions[confirmationNonce].amount != 0 &&
+            //         transactions[confirmationNonce].totalAssetsAfter != 0
             //     ) revert ConfirmationAlreadyProcessed();
             // Process the transaction
             if (transaction.isDeposit) {
@@ -597,12 +597,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     function adjustPendingShareChange(
         uint256 previewedShares,
-        uint256 _vaultNonce
+        uint256 nonce
     ) public {
         int256 signedShares = safeUintToInt(previewedShares);
         pendingShareChange += signedShares;
 
-        Transaction storage txn = transactions[_vaultNonce];
+        Transaction storage txn = transactions[nonce];
         txn.vaultSharesToBeBurnt = previewedShares;
     }
 }
