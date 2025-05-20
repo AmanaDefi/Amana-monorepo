@@ -125,7 +125,7 @@ const revertSteps = [
 interface SimulationResult {
   step: string;
   hash: string;
-  url: string;
+  cctxUrl?: string;
   status: string;
   data: any;
 }
@@ -179,6 +179,7 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
         let cctxData: any = null;
         if (steps[i].type === 'local') {
           data = { status: 'LocalTx' };
+          setResults((prev) => [...prev, { step: steps[i].name, hash: steps[i].hash, cctxUrl: steps[i].url, status: TransactionStepStatus.completed, data }]);
         } else if (steps[i].type === 'inboundToCctx') {
           const inboundRes = await axios.get(steps[i].url);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0];
@@ -188,9 +189,9 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           cctxData = cctxRes.data;
           const status = cctxData?.CrossChainTx?.cctx_status?.status;
           if (status === 'OutboundMined') {
-            // Success, continue
+            setResults((prev) => [...prev, { step: steps[i].name, hash: cctxIndex, cctxUrl, status: TransactionStepStatus.completed, data: { inbound: inboundRes.data, cctx: cctxData } }]);
           } else if (isRevertWithSecondOutbound(cctxData)) {
-            setResults((prev) => [...prev, { step: steps[i].name, hash: cctxIndex, url: steps[i].url, status: TransactionStepStatus.reverted, data: { inbound: inboundRes.data, cctx: cctxData } }]);
+            setResults((prev) => [...prev, { step: steps[i].name, hash: cctxIndex, cctxUrl, status: TransactionStepStatus.reverted, data: { inbound: inboundRes.data, cctx: cctxData } }]);
             setCurrentStep(i + 1);
             setError(`Transaction reverted at step "${steps[i].name}": Revert detected (hash: ${cctxData.CrossChainTx.outbound_params[1].hash})`);
             setLoading(false);
@@ -205,10 +206,11 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           const cctxRes = await axios.get(steps[i].url);
           cctxData = cctxRes.data;
           const status = cctxData?.CrossChainTx?.cctx_status?.status;
+          const cctxUrl = steps[i].url;
           if (status === 'OutboundMined') {
-            // Success, continue
+            setResults((prev) => [...prev, { step: steps[i].name, hash: steps[i].hash, cctxUrl, status: TransactionStepStatus.completed, data: { cctx: cctxData } }]);
           } else if (isRevertWithSecondOutbound(cctxData)) {
-            setResults((prev) => [...prev, { step: steps[i].name, hash: steps[i].hash, url: steps[i].url, status: TransactionStepStatus.reverted, data: { cctx: cctxData } }]);
+            setResults((prev) => [...prev, { step: steps[i].name, hash: steps[i].hash, cctxUrl, status: TransactionStepStatus.reverted, data: { cctx: cctxData } }]);
             setCurrentStep(i + 1);
             setError(`Transaction reverted at step "${steps[i].name}": Revert detected (hash: ${cctxData.CrossChainTx.outbound_params[1].hash})`);
             setLoading(false);
@@ -219,7 +221,9 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           }
           data = { cctx: cctxData };
         }
-        setResults((prev) => [...prev, { step: steps[i].name, hash: cctxHash, url: steps[i].url, status: TransactionStepStatus.completed, data }]);
+        if (steps[i].type === 'local') {
+          // already set above
+        }
         setCurrentStep(i + 1);
         await new Promise((resolve) => setTimeout(resolve, 1200)); // short delay for UX
       } catch (err) {
@@ -248,9 +252,9 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
   return (
     <div className="flex flex-col gap-4 p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg max-w-2xl mx-auto">
       <h2 className="text-white text-3xl font-bold mb-2">
-        {type === 'deposit' ? 'Cross-Chain Deposit Simulation' : 
-         type === 'withdrawal' ? 'Cross-Chain Withdrawal Simulation' :
-         'Cross-Chain Transaction Revert Simulation'}
+        {type === 'deposit' ? 'Type 4 Deposit Simulation' : 
+         type === 'withdrawal' ? 'Type 4 Withdrawal Simulation' :
+         'Type 4 Deposit Revert Simulation'}
       </h2>
       {!started && (
         <button
@@ -297,7 +301,11 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
               </div>
               <div className="text-xs text-gray-300 break-all"><span className="font-semibold">Hash:</span> {results[i]?.hash || step.hash}</div>
               <div className="text-xs text-blue-300 break-all">
-                <span className="font-semibold">URL:</span> <a href={step.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-200">{step.url}</a>
+                {results[i]?.cctxUrl && (
+                  <>
+                    <span className="font-semibold">URL:</span> <a href={results[i].cctxUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-200">{results[i].cctxUrl}</a>
+                  </>
+                )}
               </div>
               <div className={`text-xs font-semibold mt-1 ${
                 status === TransactionStepStatus.completed ? 'text-green-400' :
