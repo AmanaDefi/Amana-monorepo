@@ -100,7 +100,7 @@ const depositSteps = [
   },
 ];
 
-// Add new revert steps constant
+// type4 RevertSteps
 const revertSteps = [
   {
     name: 'Initial local transaction on Base',
@@ -122,6 +122,24 @@ const revertSteps = [
   }
 ];
 
+// type2 cRevertSteps 
+const type2RevertSteps = [
+  {
+    name: 'Initial local transaction on ZC',
+    type: 'local',
+    hash: '0xd2a9c2ab83a66605e5b12b6abb6b075c96d99959c4d008db99aee1e1792ed607',
+    url: 'https://explorer.zetachain.com/evm/tx/0xd2a9c2ab83a66605e5b12b6abb6b075c96d99959c4d008db99aee1e1792ed607',
+  },
+  {
+    name: 'Cross chain Tx from Zetachain to Vault on Non-Zetachain (Result Details)',
+    type: 'inboundToCctxWithResult',
+    hash: '0xd2a9c2ab83a66605e5b12b6abb6b075c96d99959c4d008db99aee1e1792ed607',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0xd2a9c2ab83a66605e5b12b6abb6b075c96d99959c4d008db99aee1e1792ed607',
+    cctxUrl: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/0x0a2f76fe2a2d012e634ac67d590812b623e4f7c47f3bbd9ec92f7fba863740b2',
+    cctxHash: '0x0a2f76fe2a2d012e634ac67d590812b623e4f7c47f3bbd9ec92f7fba863740b2',
+  }
+];
+
 interface SimulationResult {
   step: string;
   hash: string;
@@ -131,7 +149,7 @@ interface SimulationResult {
 }
 
 interface CrossChainTransactionSimulatorProps {
-  type: 'deposit' | 'withdrawal' | 'revert';
+  type: 'deposit' | 'withdrawal' | 'revert' | 'type2Revert';
 }
 
 export default function CrossChainTransactionSimulator({ type }: CrossChainTransactionSimulatorProps) {
@@ -142,7 +160,10 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
 
-  const steps = type === 'deposit' ? depositSteps : type === 'withdrawal' ? withdrawalSteps : revertSteps;
+  const steps = type === 'deposit' ? depositSteps : 
+                type === 'withdrawal' ? withdrawalSteps : 
+                type === 'revert' ? revertSteps :
+                type2RevertSteps;
 
   const resetSimulation = () => {
     setCurrentStep(0);
@@ -180,6 +201,29 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
         if (steps[i].type === 'local') {
           data = { status: 'LocalTx' };
           setResults((prev) => [...prev, { step: steps[i].name, hash: steps[i].hash, cctxUrl: steps[i].url, status: TransactionStepStatus.completed, data }]);
+        } else if (steps[i].type === 'inboundToCctxWithResult') {
+          // Step 2: fetch inboundHashToCctx, then cctx, and show result in the same step
+          const inboundRes = await axios.get(steps[i].url);
+          const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0] || ("cctxHash" in steps[i] ? (steps[i] as any).cctxHash : undefined);
+          if (!cctxIndex) throw new Error('No cctx_index found for this step');
+          const cctxUrl = `https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/${cctxIndex}`;
+          const cctxRes = await axios.get(cctxUrl);
+          cctxData = cctxRes.data;
+          const status = cctxData?.CrossChainTx?.cctx_status?.status;
+          if (status === 'OutboundMined') {
+            setResults((prev) => [...prev, { step: steps[i].name, hash: cctxIndex, cctxUrl, status: TransactionStepStatus.completed, data: { inbound: inboundRes.data, cctx: cctxData } }]);
+          } else if (isRevertWithSecondOutbound(cctxData) || status === 'Reverted' || status === 'Aborted') {
+            setResults((prev) => [...prev, { step: steps[i].name, hash: cctxIndex, cctxUrl, status: TransactionStepStatus.reverted, data: { inbound: inboundRes.data, cctx: cctxData } }]);
+            setCurrentStep(i + 1);
+            setError(`Transaction reverted at step "${steps[i].name}": Revert detected (hash: ${cctxData.CrossChainTx.outbound_params?.[1]?.hash || cctxData.CrossChainTx.outbound_params?.[0]?.hash})`);
+            setLoading(false);
+            setFinished(false);
+            return;
+          } else {
+            throw new Error(`Unexpected status: ${status}`);
+          }
+          data = { inbound: inboundRes.data, cctx: cctxData };
+          cctxHash = cctxIndex;
         } else if (steps[i].type === 'inboundToCctx') {
           const inboundRes = await axios.get(steps[i].url);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0];
@@ -252,9 +296,10 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
   return (
     <div className="flex flex-col gap-4 p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg max-w-2xl mx-auto">
       <h2 className="text-white text-3xl font-bold mb-2">
-        {type === 'deposit' ? 'Type 4 Deposit Simulation' : 
-         type === 'withdrawal' ? 'Type 4 Withdrawal Simulation' :
-         'Type 4 Deposit Revert Simulation'}
+        {type === 'deposit' ? 'Type 4 Deposit Success Simulation' : 
+         type === 'withdrawal' ? 'Type 4 Withdrawal Success Simulation' :
+         type === 'revert' ? 'Type 4 Deposit Revert Simulation' :
+         'Type 2 Deposit Revert Simulation'}
       </h2>
       {!started && (
         <button
@@ -263,7 +308,8 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
         >
           {type === 'deposit' ? 'Deposit' : 
            type === 'withdrawal' ? 'Withdraw' :
-           'Simulate Revert'}
+           type === 'revert' ? 'Simulate Revert' :
+           'Simulate Type 2 Revert'}
         </button>
       )}
       {loading && (
@@ -329,7 +375,8 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           <AiOutlineCheck className="text-green-400" size={32} />
           {type === 'deposit' ? 'Deposit' : 
            type === 'withdrawal' ? 'Withdrawal' :
-           'Revert Simulation'} completed successfully!
+           type === 'revert' ? 'Revert Simulation' :
+           'Type 2 Revert Simulation'} completed successfully!
           <button onClick={resetSimulation} className="mt-3 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold">Test Again</button>
         </div>
       )}
