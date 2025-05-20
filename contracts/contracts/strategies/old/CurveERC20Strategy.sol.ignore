@@ -204,39 +204,6 @@ contract CurveERC20Strategy is ERC20StrategyParent {
         );
     }
 
-    /// @notice Transfers assets to a new strategy.
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
-        }
-        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
-            1e18, // Withdraw all
-            minAmountOut
-        );
-
-        approveOrIncreaseAllowance(inputToken, newStrategy, withdrawnAmount);
-
-        IStrategy(newStrategy).depositFromOldStrategy(
-            withdrawnAmount,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            withdrawnAmount,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-    }
-
     function fetchCrvUsdPrice() public view returns (uint256) {
         return IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(crvUsdPriceFeedId);
     }

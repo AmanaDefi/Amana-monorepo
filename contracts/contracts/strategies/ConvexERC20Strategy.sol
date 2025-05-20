@@ -10,7 +10,6 @@ import "../interfaces/ICurvePoolDynamic.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBooster.sol";
 import "../interfaces/IConvexRewardPool.sol";
-import "hardhat/console.sol";
 
 contract ConvexERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -22,11 +21,8 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
     address public immutable cvxToken;
     address public immutable crvToken;
 
-    address public swapHelperEthereum;
     uint256 public inputTokenIndex;
     uint256 public convexPid;
-
-    uint16 public harvestSwapSlippage = 500; // 5% slippage
 
     constructor(
         string memory _name,
@@ -47,7 +43,7 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
         StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper)
     {
         receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
-        swapHelperEthereum = _swapHelper;
+        swapHelper = _swapHelper;
         booster = IConvexBooster(_boosterAddress);
         rewardPool = IConvexRewardPool(_rewardPoolAddress);
         crvToken = _crvToken;
@@ -56,49 +52,7 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
         convexPid = _convexPid;
     }
 
-    function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
-        harvestSwapSlippage = _slippage;
-    }
-
-    function setSwapHelperEthereum(address _swapHelper) external onlyOwner {
-        swapHelperEthereum = _swapHelper;
-    }
-
-    function swapToInputToken(
-        address token,
-        uint256 amountIn,
-        uint16 slippageBps
-    ) internal returns (uint256 amountOut) {
-        if (amountIn == 0) return 0;
-
-        SafeERC20.safeTransfer(IERC20(token), swapHelperEthereum, amountIn);
-        uint16 maxDeadline = uint16(block.timestamp + 1 hours);
-
-        try
-            ISwapHelper(swapHelperEthereum).swap(
-                token,
-                amountIn,
-                address(inputToken),
-                slippageBps,
-                address(this),
-                maxDeadline,
-                ""
-            )
-        returns (uint256 result) {
-            amountOut = result;
-            emit RewardsHarvested(token, amountIn, amountOut);
-        } catch Error(string memory reason) {
-            emit SwapFailed(token, amountIn, reason);
-            amountOut = 0;
-        } catch {
-            emit SwapFailed(token, amountIn, "Unknown error");
-            amountOut = 0;
-        }
-
-        return amountOut;
-    }
-
-    function claimRewards() public returns (uint256) {
+    function claimRewards() public override returns (uint256) {
         uint256 earnedCrv = IConvexRewardPool(rewardPool).earned(address(this));
         if (earnedCrv < 1e15) {
             return 0; // Skip claiming if there's too little to claim
@@ -123,12 +77,7 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
         return claimed;
     }
 
-    function harvest() public {
-        claimRewards();
-        _reinvestRewards();
-    }
-
-    function _reinvestRewards() internal {
+    function _reinvestRewards() internal override {
         address mainRewardToken = rewardPool.rewardToken();
         uint256 inputAmount = swapToInputToken(
             mainRewardToken,
@@ -228,14 +177,10 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
         );
     }
 
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault)
+    function _transferAssetsToNewStrategy() internal override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+
+        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
         harvest();
 
@@ -248,18 +193,17 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
             address(rewardPool),
             withdrawnAmount
         );
-        rewardPool.stakeFor(newStrategy, withdrawnAmount);
-        IStrategy(newStrategy).depositFromOldStrategy(
+        rewardPool.stakeFor(txn.newStrategy, withdrawnAmount);
+        IStrategy(txn.newStrategy).depositFromOldStrategy(
             withdrawnAmount,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
+            txn.minimumOut,
+            lastProcessedNonce + 1
         );
+
         emit AssetsTransferredToNewStrategy(
-            newStrategy,
+            txn.newStrategy,
             withdrawnAmount,
-            currentExecutionNonce,
-            _crossChainTxId
+            lastProcessedNonce + 1
         );
     }
 
@@ -267,29 +211,20 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
      * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
      *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
      * @param currentExecutionNonce The current execution nonce from the old strategy.
-     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
      */
     function depositFromOldStrategy(
         uint256 amount,
         uint256,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
+        uint256 currentExecutionNonce
     ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         lastProcessedNonce = currentExecutionNonce;
-        _sendInvestConfirmation(
-            address(0),
-            amount,
-            totalUnderlyingAssets(),
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,
-            currentExecutionNonce,
-            _crossChainTxId
+            currentExecutionNonce
         );
         oldStrategy = address(0);
     }

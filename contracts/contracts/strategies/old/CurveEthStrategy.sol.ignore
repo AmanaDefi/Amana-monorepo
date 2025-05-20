@@ -216,34 +216,25 @@ contract CurveEthStrategy is EthStrategyParent {
         weth.withdraw(amountWithdrawn);
     }
 
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault)
+    function _transferAssetsToNewStrategy() internal override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
 
         uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
             1e18,
-            minAmountOut
+            txn.amountOrFraction
         );
-        approveOrIncreaseAllowance(weth, newStrategy, withdrawnAmount);
+        approveOrIncreaseAllowance(weth, txn.newStrategy, withdrawnAmount);
 
-        IStrategy(newStrategy).depositFromOldStrategy{value: withdrawnAmount}(
-            withdrawnAmount,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+        IStrategy(txn.newStrategy).depositFromOldStrategy{
+            value: withdrawnAmount
+        }(withdrawnAmount, txn.minimumOut, lastProcessedNonce + 1);
 
         emit AssetsTransferredToNewStrategy(
-            newStrategy,
+            txn.newStrategy,
             withdrawnAmount,
-            currentExecutionNonce,
-            _crossChainTxId
+            lastProcessedNonce + 1
         );
     }
 

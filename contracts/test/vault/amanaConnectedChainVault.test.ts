@@ -314,17 +314,17 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     // Step 1: Verify ownership restriction
     await expect(
-      amanaVault.connect(user1).switchStrategy(newStrategyAddress, 0)
+      amanaVault.connect(user1).switchStrategy(newStrategyAddress, 0, 0)
     ).to.be.revertedWithCustomError(amanaVault, "OwnableUnauthorizedAccount");
 
     // Step 2: Validate invalid inputs
     await expect(
-      amanaVault.connect(owner).switchStrategy(invalidStrategyAddress, 0)
+      amanaVault.connect(owner).switchStrategy(invalidStrategyAddress, 0, 0)
     ).to.be.revertedWithCustomError(amanaVault, "InvalidAddress");
 
     const currentStrategy = await amanaVault.strategyAddress();
     await expect(
-      amanaVault.connect(owner).switchStrategy(currentStrategy, 0)
+      amanaVault.connect(owner).switchStrategy(currentStrategy, 0, 0)
     ).to.be.revertedWithCustomError(amanaVault, "InvalidAddress");
 
     // Step 3: Simulate a deposit by User1, otherwise full strategy switch won't happen (just update)
@@ -347,7 +347,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const emittedAmount = decoded.amount;
     await simulateConfirmDeposit(amanaVault, gatewaySigner, emittedAmount, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     await expect(
-      amanaVault.connect(owner).switchStrategy(newStrategyAddress, 0)
+      amanaVault.connect(owner).switchStrategy(newStrategyAddress, 0, 0)
     )
       .to.emit(gatewayZEVM, "Called");
     // .withArgs(newStrategyAddress);
@@ -360,8 +360,12 @@ describe("AmanaConnectedChainVault Tests", function () {
   it("should process a totalAssets update confirmation successfully", async function () {
     const { amanaVault, gatewaySigner, strategyConfig } = await loadFixture(setupVaultFixture);
     const totalAssetsAmount = ethers.utils.parseUnits("0.1", 18);
-    const receipt = await simulateConfirmAssetUpdate(amanaVault, gatewaySigner, totalAssetsAmount, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-    expect(receipt).to.emit(amanaVault, "TotalAssetsUpdated").withArgs(totalAssetsAmount);
+    const lastProcessedNonce = await amanaVault.lastProcessedNonce();
+    const vaultNonce = lastProcessedNonce;
+    const receipt = await simulateConfirmAssetUpdate(amanaVault, gatewaySigner, totalAssetsAmount, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken, vaultNonce);
+    const updatedTotalAssets = await amanaVault.totalAssets();
+    expect(updatedTotalAssets).to.equal(totalAssetsAmount);
+    expect(receipt).to.emit(amanaVault, "TotalAssetsUpdated").withArgs(totalAssetsAmount, vaultNonce);
   });
 
   it("should reject unauthorized access to setPerformanceFee", async function () {

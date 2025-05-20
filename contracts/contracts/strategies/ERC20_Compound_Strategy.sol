@@ -22,8 +22,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ICompoundVault public immutable receiptToken;
     ICometRewards public immutable cometRewardsContract;
 
-    address public swapHelper;
-    uint16 harvestSwapSlippage = 500; // 1% slippage
     address public rewardsTokenAddress;
     uint256 public minClaimableComp = 5 * 10 ** 15; // Default: 0.005 COMP
 
@@ -49,26 +47,13 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         rewardsTokenAddress = _rewardsTokenAddress;
     }
 
-    function updateSwapHelperPolygon(
-        address _swapHelperPolygon
-    ) external onlyOwner {
-        swapHelper = _swapHelperPolygon;
-    }
-
-    function setHarvestSwapSlippage(
-        uint16 _harvestSwapSlippage
-    ) external onlyOwner {
-        require(_harvestSwapSlippage <= 10000, "Slippage too high");
-        harvestSwapSlippage = _harvestSwapSlippage;
-    }
-
     function setMinClaimableComp(uint256 newThreshold) external onlyOwner {
         require(newThreshold < 1 ether, "Too high"); // Optional sanity check
         minClaimableComp = newThreshold;
     }
 
     /// @notice Claims rewards from Compound
-    function claimRewards() public returns (uint256) {
+    function claimRewards() public override returns (uint256) {
         uint256 compBalanceBefore = IERC20(rewardsTokenAddress).balanceOf(
             address(this)
         );
@@ -90,56 +75,23 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         }
     }
 
-    /**
-     * @notice Swaps rewardsToken for USDC on Uniswap V3 (Polygon)
-     * @param amountIn Amount of rewardsToken to swap
-     * @param slippageBps slippage
-     * @return amountOut The amount of USDC received
-     */
-    function swapCompForUsdc(
-        uint256 amountIn,
-        uint16 slippageBps
-    ) internal returns (uint256 amountOut) {
-        require(amountIn > 0, "Amount must be greater than zero");
-
-        SafeERC20.safeTransfer(
-            IERC20(rewardsTokenAddress),
-            swapHelper,
-            amountIn
+    function _reinvestRewards() internal override {
+        uint256 compBalance = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
         );
-        uint16 maxDeadline = uint16(block.timestamp + 1 hours); // Set a deadline for the swap
-
-        amountOut = ISwapHelper(swapHelper).swap(
-            rewardsTokenAddress,
-            amountIn,
-            address(inputToken),
-            slippageBps,
-            address(this),
-            maxDeadline,
-            "" // empty bytes param for future-proofing
-        );
-
-        return amountOut;
-    }
-
-    /// @notice Harvests rewards and reinvests them into Compound
-    function harvest() public {
-        uint256 compAccrued = checkRewards();
-        if (compAccrued >= minClaimableComp) {
-            uint256 compBalance = claimRewards();
-            if (compBalance > 0) {
-                uint256 usdcReceived = swapCompForUsdc(
+        if (compBalance > 0) {
+            uint256 usdcReceived = swapToInputToken(
+                rewardsTokenAddress,
+                compBalance,
+                harvestSwapSlippage
+            );
+            if (usdcReceived > 0) {
+                _depositFundsIntoYieldSource(usdcReceived, 0);
+                emit RewardsHarvested(
+                    rewardsTokenAddress,
                     compBalance,
-                    harvestSwapSlippage
+                    usdcReceived
                 );
-                if (usdcReceived > 0) {
-                    _depositFundsIntoYieldSource(usdcReceived, 0);
-                    emit RewardsHarvested(
-                        rewardsTokenAddress,
-                        compBalance,
-                        usdcReceived
-                    );
-                }
             }
         }
     }
@@ -184,44 +136,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
             revert InsufficientOut();
         }
         return sharesToWithdraw;
-    }
-
-    /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
-     */
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
-        }
-        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
-            1e18, // Withdraw all
-            minAmountOut
-        );
-
-        approveOrIncreaseAllowance(inputToken, newStrategy, withdrawnAmount);
-
-        IStrategy(newStrategy).depositFromOldStrategy(
-            withdrawnAmount,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            withdrawnAmount,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
     }
 
     /// @notice Gets the total assets held in the strategy.

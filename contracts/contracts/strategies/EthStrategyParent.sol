@@ -10,29 +10,21 @@ abstract contract EthStrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
     /// @notice Invests ETH into the Aave pool.
-    /// @param receiverAddress Address of the user whose funds are being invested.
-    /// @param amount Amount of ETH to invest.
-    /// @param _executionNonce Current execution nonce for the transaction.
-    /// @param _crossChainTxId Cross-chain transaction ID.
-    function _invest(
-        address receiverAddress,
-        uint256 amount,
-        uint256 minimumOut,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
+    function _invest() internal override {
         if (msg.value == 0) revert NoFundsReceived();
-        _depositFundsIntoYieldSource(msg.value, minimumOut);
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+        _depositFundsIntoYieldSource(msg.value, txn.minimumOut);
 
         _sendInvestConfirmation(
-            receiverAddress,
-            amount,
             totalUnderlyingAssets(),
-            _executionNonce,
-            _crossChainTxId
+            lastProcessedNonce + 1
         );
 
-        emit FundsInvested(_crossChainTxId, receiverAddress, amount);
+        emit FundsInvested(
+            lastProcessedNonce + 1,
+            msg.value,
+            totalUnderlyingAssets()
+        );
     }
 
     /**
@@ -56,33 +48,48 @@ abstract contract EthStrategyParent is StrategyParent {
     }
 
     /**
+     * @notice Transfers assets from the current strategy to a new strategy.
+     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     */
+    function _transferAssetsToNewStrategy() internal virtual override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
+        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
+            1e18,
+            txn.amountOrFraction
+        );
+
+        IStrategy(txn.newStrategy).depositFromOldStrategy{
+            value: amountWithdrawn
+        }(amountWithdrawn, txn.minimumOut, lastProcessedNonce + 1);
+        emit AssetsTransferredToNewStrategy(
+            txn.newStrategy,
+            amountWithdrawn,
+            lastProcessedNonce + 1
+        );
+    }
+
+    /**
      * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
      *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
      * @param currentExecutionNonce The current execution nonce from the old strategy.
-     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
      */
     function depositFromOldStrategy(
         uint256,
         uint256 minimumOut,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
+        uint256 currentExecutionNonce
     ) external payable virtual {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         if (msg.value == 0) revert NoFundsReceived();
         lastProcessedNonce = currentExecutionNonce;
-        _invest(
-            address(0),
-            msg.value,
-            minimumOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+        _invest();
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             msg.value,
-            currentExecutionNonce,
-            _crossChainTxId
+            currentExecutionNonce
         );
         oldStrategy = address(0);
     }

@@ -16,32 +16,25 @@ abstract contract ERC20StrategyParent is StrategyParent {
     }
 
     /// @notice Invests ERC20 into the yield source.
-    /// @param receiverAddress Address of the user whose funds are being invested.
-    /// @param amount Amount of ERC20 to invest.
-    /// @param _executionNonce Current execution nonce for the transaction.
-    /// @param _crossChainTxId Cross-chain transaction ID.
-    function _invest(
-        address receiverAddress,
-        uint256 amount,
-        uint256 minimumOut,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId
-    ) internal virtual override {
+
+    function _invest() internal virtual override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
         SafeERC20.safeTransferFrom(
             inputToken,
             msg.sender,
             address(this),
-            amount
+            txn.amountOrFraction
         );
-        _depositFundsIntoYieldSource(amount, minimumOut);
+        _depositFundsIntoYieldSource(txn.amountOrFraction, txn.minimumOut);
         _sendInvestConfirmation(
-            receiverAddress,
-            amount,
             totalUnderlyingAssets(),
-            _executionNonce,
-            _crossChainTxId
+            lastProcessedNonce + 1
         );
-        emit FundsInvested(_crossChainTxId, receiverAddress, amount);
+        emit FundsInvested(
+            lastProcessedNonce + 1,
+            txn.amountOrFraction,
+            totalUnderlyingAssets()
+        );
     }
 
     /**
@@ -68,37 +61,94 @@ abstract contract ERC20StrategyParent is StrategyParent {
         );
     }
 
+    function _transferAssetsToNewStrategy() internal virtual override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+
+        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault) {
+            revert InvalidAmanaVault();
+        }
+        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
+            1e18, // Withdraw all
+            txn.amountOrFraction
+        );
+        approveOrIncreaseAllowance(
+            inputToken,
+            txn.newStrategy,
+            withdrawnAmount
+        );
+
+        IStrategy(txn.newStrategy).depositFromOldStrategy(
+            withdrawnAmount,
+            txn.minimumOut,
+            lastProcessedNonce + 1
+        );
+        emit AssetsTransferredToNewStrategy(
+            txn.newStrategy,
+            withdrawnAmount,
+            lastProcessedNonce + 1
+        );
+    }
+
     /**
      * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
      *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
      * @param amount The amount of funds being transferred.
      * @param currentExecutionNonce The current execution nonce from the old strategy.
-     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
      */
     function depositFromOldStrategy(
         uint256 amount,
         uint256 minimumOut,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
+        uint256 currentExecutionNonce
     ) external virtual {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         if (amount == 0) revert NoFundsReceived();
         lastProcessedNonce = currentExecutionNonce;
-        _invest(
-            address(0),
-            amount,
-            minimumOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+        _invest();
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,
-            currentExecutionNonce,
-            _crossChainTxId
+            currentExecutionNonce
         );
         oldStrategy = address(0);
+    }
+
+    function swapToInputToken(
+        address token,
+        uint256 amountIn,
+        uint16 initialSlippageBps
+    ) internal returns (uint256 amountOut) {
+        if (amountIn == 0) return 0;
+
+        IERC20(token).safeTransfer(swapHelper, amountIn);
+
+        uint16 maxDeadline = uint16(block.timestamp + 1 hours);
+        uint16 slippage = initialSlippageBps;
+
+        // Retry with increasing slippage up to 10% (1000 bps)
+        while (slippage <= 1000) {
+            try
+                ISwapHelper(swapHelper).swap(
+                    token,
+                    amountIn,
+                    address(inputToken),
+                    slippage,
+                    address(this),
+                    maxDeadline,
+                    ""
+                )
+            returns (uint256 result) {
+                emit RewardsHarvested(token, amountIn, result);
+                return result;
+            } catch {
+                emit SwapFailed(token, amountIn, "Swap attempt failed");
+            }
+
+            slippage += 100; // increase slippage by 1% (100 bps)
+        }
+
+        // Swap failed even after max attempts
+        return 0;
     }
 
     function emergencyWithdraw(address _token) external onlyOwner {

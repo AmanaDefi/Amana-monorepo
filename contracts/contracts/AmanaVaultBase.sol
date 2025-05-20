@@ -113,6 +113,8 @@ abstract contract AmanaVaultBase is
         uint256 indexed vaultNonce
     );
 
+    event TotalAssetsUpdated(uint256 totalAssets, uint256 vaultNonce);
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -228,7 +230,8 @@ abstract contract AmanaVaultBase is
      */
     function switchStrategy(
         address newStrategyAddress,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        uint256 minSharesOut
     ) external virtual;
 
     /**

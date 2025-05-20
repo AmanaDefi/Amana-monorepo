@@ -10,7 +10,7 @@ import "../interfaces/I4626Vault.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IDistributor.sol";
-import "hardhat/console.sol";
+import "../interfaces/ISwapHelper.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -21,40 +21,67 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     string public name;
     address public amanaVault;
     address public withdrawHelper;
-    // uint256 public executionNonce = 1;
     address public oldStrategy;
     address public rewardsDistributor;
 
+    address immutable _GATEWAY_ADDRESS;
+
+    uint256 public lastProcessedNonce;
+
+    uint16 public harvestSwapSlippage;
+    address public swapHelper;
+
+    enum TxType {
+        Deposit,
+        Withdraw,
+        Switch
+    }
+
+    struct BufferedTx {
+        TxType txType;
+        uint256 amountOrFraction;
+        uint256 minimumOut;
+        address newStrategy; // only for switch, optional otherwise
+    }
+
+    mapping(uint256 => BufferedTx) public pendingByNonce;
+
     event FundsInvested(
-        bytes32 indexed crossChainTxId,
-        address user,
-        uint256 amount
+        uint256 indexed vaultNonce,
+        uint256 amount,
+        uint256 totalAssetsAfter
     );
     event FundsDivested(
-        bytes32 indexed crossChainTxId,
-        address user,
-        uint256 amount
+        uint256 indexed vaultNonce,
+        uint256 amount,
+        uint256 totalAssetsAfter
     );
-    event InvestConfirmFailed(bytes32 indexed crossChainTxId);
-    event ReturnFundsFromStrategyFailed(bytes32 indexed crossChainTxId);
+    event InvestConfirmFailed(
+        uint256 indexed vaultNonce,
+        uint256 totalAssetsAfter
+    );
+    event ReturnFundsFromStrategyFailed(
+        uint256 indexed vaultNonce,
+        uint256 withdrawnAmount,
+        uint256 totalAssetsAfter
+    );
     event TotalUnderlyingAssetsSent(
-        address indexed vaultAddress,
-        uint256 totalUnderlyingAssets,
-        uint256 blockNumber,
-        uint256 blockTimestamp
+        uint256 indexed vaultNonce,
+        uint256 totalUnderlyingAssets
     );
-    event SendTotalUnderlyingAssetsFailed();
+    event SendTotalUnderlyingAssetsFailed(
+        uint256 indexed vaultNonce,
+        uint256 totalAssetsAfter
+    );
     event AssetsTransferredToNewStrategy(
         address indexed newStrategy,
         uint256 totalAssetsTransferrred,
-        uint256 executionNonce,
-        bytes32 crossChainTxId
+        uint256 vaultNonce
     );
     event AssetsReceivedFromOldStrategy(
         address indexed oldStrategy,
         uint256 totalAssetsTransferrred,
-        uint256 executionNonce,
-        bytes32 crossChainTxId
+        uint256 vaultNonce
     );
     event RewardsClaimed(
         address indexed strategy,
@@ -72,17 +99,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         uint256 amount,
         string reason
     );
-
-    address immutable _GATEWAY_ADDRESS;
-
-    uint256 public lastProcessedNonce;
-
-    struct PendingTx {
-        bytes message;
-        bool exists;
-    }
-
-    mapping(uint256 => PendingTx) public pendingByNonce;
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) {
@@ -111,7 +127,6 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         MessageContext calldata context,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory result) {
-        console.log("oncall");
         if (
             context.sender != address(amanaVault) &&
             context.sender != withdrawHelper
@@ -120,123 +135,52 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         }
 
         (
-            address user,
-            address receiver,
-            address ZRC20AddressOrNewStrategy,
-            address withdrawERC20,
-            uint256 amount,
-            uint256 fraction,
+            TxType txType,
+            uint256 amountOrFraction,
             uint256 minimumOut,
-            uint32 withdrawChainId,
-            bool isDeposit,
-            bytes32 crossChainTxId,
-            uint16 slippage,
+            address newStrategy,
             uint256 vaultNonce
-        ) = abi.decode(
-                message,
-                (
-                    address,
-                    address,
-                    address,
-                    address,
-                    uint256,
-                    uint256,
-                    uint256,
-                    uint32,
-                    bool,
-                    bytes32,
-                    uint16,
-                    uint256
-                )
-            );
-        console.log("message received");
-        console.log("vaultNonce: ", vaultNonce);
-        console.log("lastProcessedNonce: ", lastProcessedNonce);
-        // Store or process based on nonce order
-        if (vaultNonce == lastProcessedNonce + 1) {
-            console.log("Processing");
-            _process(message);
-            lastProcessedNonce = vaultNonce;
+        ) = abi.decode(message, (TxType, uint256, uint256, address, uint256));
 
-            // Try processing buffered messages
+        pendingByNonce[vaultNonce] = BufferedTx({
+            txType: txType,
+            amountOrFraction: amountOrFraction,
+            minimumOut: minimumOut,
+            newStrategy: newStrategy
+        });
+
+        if (vaultNonce == lastProcessedNonce + 1) {
             _processBufferedConfirmations();
-        } else {
-            pendingByNonce[vaultNonce] = PendingTx({
-                message: message,
-                exists: true
-            });
         }
 
         return abi.encode(true);
     }
 
-    function _process(bytes memory message) internal {
-        (
-            address user,
-            address receiver,
-            address ZRC20AddressOrNewStrategy,
-            address withdrawERC20,
-            uint256 amount,
-            uint256 fraction,
-            uint256 minimumOut,
-            uint32 withdrawChainId,
-            bool isDeposit,
-            bytes32 crossChainTxId,
-            uint16 slippage,
-            uint256 vaultNonce
-        ) = abi.decode(
-                message,
-                (
-                    address,
-                    address,
-                    address,
-                    address,
-                    uint256,
-                    uint256,
-                    uint256,
-                    uint32,
-                    bool,
-                    bytes32,
-                    uint16,
-                    uint256
-                )
-            );
-
-        if (user == address(0) && receiver == address(0)) {
-            _transferAssetsToNewStrategy(
-                fraction,
-                minimumOut,
-                ZRC20AddressOrNewStrategy,
-                vaultNonce,
-                crossChainTxId
-            );
-        } else if (isDeposit) {
-            _invest(receiver, amount, minimumOut, vaultNonce, crossChainTxId);
-        } else {
-            _divest(
-                user,
-                receiver,
-                ZRC20AddressOrNewStrategy,
-                withdrawERC20,
-                amount,
-                fraction,
-                minimumOut,
-                withdrawChainId,
-                vaultNonce,
-                crossChainTxId,
-                slippage
-            );
-        }
-    }
-
     function _processBufferedConfirmations() internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-            PendingTx storage pending = pendingByNonce[nextNonce];
+            BufferedTx storage txData = pendingByNonce[nextNonce];
 
-            if (!pending.exists) break;
+            // Break if nothing is pending for this nonce
+            if (
+                txData.txType == TxType(0) &&
+                txData.amountOrFraction == 0 &&
+                txData.minimumOut == 0 &&
+                txData.newStrategy == address(0)
+            ) {
+                break;
+            }
 
-            _process(pending.message);
+            if (txData.txType == TxType.Deposit) {
+                _invest();
+            } else if (txData.txType == TxType.Withdraw) {
+                _divest();
+            } else if (txData.txType == TxType.Switch) {
+                _transferAssetsToNewStrategy();
+            } else {
+                revert("Unknown TxType");
+            }
+
             delete pendingByNonce[nextNonce];
             lastProcessedNonce = nextNonce;
         }
@@ -262,9 +206,30 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         oldStrategy = _oldStrategy;
     }
 
-    // function setExecutionNonce(uint256 _executionNonce) external onlyOwner {
-    //     executionNonce = _executionNonce;
-    // }
+    function setLastProcessedNonce(
+        uint256 _lastProcessedNonce
+    ) external onlyOwner {
+        lastProcessedNonce = _lastProcessedNonce;
+    }
+
+    function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
+        require(_slippage <= 10000, "Slippage too high");
+        harvestSwapSlippage = _slippage;
+    }
+
+    function setSwapHelper(address _swapHelper) external onlyOwner {
+        if (_swapHelper == address(0)) revert InvalidAddress();
+        swapHelper = _swapHelper;
+    }
+
+    function claimRewards() public virtual returns (uint256) {}
+
+    function _reinvestRewards() internal virtual {}
+
+    function harvest() public virtual {
+        claimRewards();
+        _reinvestRewards();
+    }
 
     /**
      * @notice Sets the address of the Merkl rewards distributor contract.
@@ -310,17 +275,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     ) public view virtual returns (uint256 withdrawShareAmount);
 
     /// @notice Invests assets into the yield source
-    /// @param receiver Address of the receiver whose funds are being invested.
-    /// @param amount Amount of asset to invest.
-    /// @param _executionNonce Current execution nonce for the transaction.
-    /// @param _crossChainTxId Cross-chain transaction ID.
-    function _invest(
-        address receiver,
-        uint256 amount,
-        uint256 minimumOut,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId
-    ) internal virtual;
+    function _invest() internal virtual;
 
     /**
      * @notice Deposits funds into the configured yield source.
@@ -334,60 +289,34 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
 
     /**
      * @notice Allows the owner to manually resend an investment confirmation message.
-     * @param receiver The address of the receiver to whom the confirmation is sent.
-     * @param amount The amount of assets being invested.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
-     * @param _executionNonce The execution nonce associated with the investment.
-     * @param _crossChainTxId The cross-chain transaction ID.
+     * @param vaultNonce The execution nonce associated with the investment.
      */
     function manualResendInvestConfirmation(
-        address receiver,
-        uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId
+        uint256 vaultNonce
     ) external onlyOwner {
-        _sendInvestConfirmation(
-            receiver,
-            amount,
-            totalUnderlyingAssetsAfter,
-            _executionNonce,
-            _crossChainTxId
-        );
+        _sendInvestConfirmation(totalUnderlyingAssetsAfter, vaultNonce);
     }
 
     /**
      * @dev Sends an investment confirmation message to the gateway.
-     * @param receiver The address of the receiver to whom the confirmation is sent.
-     * @param amount The amount of assets being invested.
+
      * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
-     * @param _executionNonce The execution nonce associated with the investment.
-     * @param _crossChainTxId The cross-chain transaction ID.
+
      *
      * Notes:
      * - This function encodes the investment details and sends them via the gateway contract.
      * - Includes revert options in case of failure.
      */
     function _sendInvestConfirmation(
-        address receiver,
-        uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId
+        uint256 vaultNonce
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            address(0), // user
-            receiver,
-            address(this), // withdrawZRC20
-            address(0), // withdrawERC20
-            amount,
-            0, // fractionOfTotalShares
-            0, // withdrawChainId
-            true, // isDeposit
+            0,
             totalUnderlyingAssetsAfter,
-            _executionNonce,
-            _crossChainTxId,
-            0
+            vaultNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -396,11 +325,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(this),
             abi.encode(
                 "_investConfirmFailed",
-                _crossChainTxId,
-                _executionNonce,
-                amount,
-                receiver,
-                0 // vaultSharesToBeBurnt
+                0,
+                totalUnderlyingAssetsAfter,
+                vaultNonce
             ),
             uint256(1000000)
         );
@@ -415,144 +342,68 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     /**
      * @notice Transfers assets from the current strategy to a new strategy during a strategy switch.
      * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
      */
-    function _transferAssetsToNewStrategy(
-        uint256 minimumAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal virtual;
+    function _transferAssetsToNewStrategy() internal virtual;
 
     /// @notice Withdraws funds from the yield source.
-    /// @param user Address of the user whose funds are being withdrawn.
-    /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
-    /// @param vaultSharesToBeBurnt amount of vault shares to be burnt.
-    /// @param fractionOfTotalShares Amount to withdraw.
-    /// @param withdrawChainId Chain ID for the withdrawal.
-    /// @param _executionNonce Current execution nonce for the transaction.
-    /// @param _crossChainTxId Cross-chain transaction ID.
-    function _divest(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 vaultSharesToBeBurnt,
-        uint256 fractionOfTotalShares,
-        uint256 minAmountOut,
-        uint32 withdrawChainId,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId,
-        uint16 slippage
-    ) internal virtual {
+    function _divest() internal virtual {
+        BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            fractionOfTotalShares,
-            minAmountOut
+            txData.amountOrFraction,
+            txData.minimumOut
         );
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
 
         _sendFundsAndDivestConfirmation(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
             amountWithdrawn,
-            vaultSharesToBeBurnt,
-            withdrawChainId,
             totalUnderlyingAssetsAfter,
-            _executionNonce,
-            _crossChainTxId,
-            slippage
+            lastProcessedNonce + 1
+            // do we need to add vaultSharesBurnt here? I don't think so - it's just shares
         );
 
-        emit FundsDivested(_crossChainTxId, user, amountWithdrawn);
+        emit FundsDivested(
+            lastProcessedNonce + 1,
+            amountWithdrawn,
+            totalUnderlyingAssetsAfter
+        );
     }
 
     /**
      * @notice Allows the owner to manually resend a funds and divest confirmation message.
      * @dev Calls the internal `_sendFundsAndDivestConfirmation` function with the provided parameters.
-     * @param user The address of the user whose funds are being processed.
-     * @param receiver The address of the receiver of the funds.
-     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
      * @param amountWithdrawn The amount of funds to process.
-     * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
-     * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
-     * @param _executionNonce The execution nonce associated with the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
      */
     function manualResendFundsAndDivestConfirmation(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
         uint256 amountWithdrawn,
-        uint256 vaultSharesToBeBurnt,
-        uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId,
-        uint16 slippage
+        uint256 vaultNonce
     ) external onlyOwner {
         _sendFundsAndDivestConfirmation(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
             amountWithdrawn,
-            vaultSharesToBeBurnt,
-            withdrawChainId,
             totalUnderlyingAssetsAfter,
-            _executionNonce,
-            _crossChainTxId,
-            slippage
+            vaultNonce
         );
     }
 
     /**
      * @dev Sends a funds and divest confirmation message to the Amana vault.
-     * @param user The address of the user whose funds are being processed.
-     * @param receiver The address of the receiver of the funds.
-     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
      * @param amountWithdrawn The amount of funds to process.
-     * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
-     * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
-     * @param _executionNonce The execution nonce associated with the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
+
      *
      * Notes:
      * - Constructs the message payload for the funds and divestment confirmation.
      * - Configures revert options in case of failure and sends the message using `_sendDepositAndCall`.
      */
     function _sendFundsAndDivestConfirmation(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
         uint256 amountWithdrawn,
-        uint256 vaultSharesToBeBurnt,
-        uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 _executionNonce,
-        bytes32 _crossChainTxId,
-        uint16 slippage
+        uint256 vaultNonce
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
             amountWithdrawn,
-            vaultSharesToBeBurnt,
-            withdrawChainId,
-            false,
             totalUnderlyingAssetsAfter,
-            _executionNonce,
-            _crossChainTxId,
-            slippage
+            vaultNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -561,11 +412,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(this),
             abi.encode(
                 "_returnFundsFromStrategyFailed",
-                _crossChainTxId,
-                _executionNonce,
                 amountWithdrawn,
-                user,
-                vaultSharesToBeBurnt
+                totalUnderlyingAssetsAfter,
+                vaultNonce
             ),
             uint256(1000000)
         );
@@ -612,31 +461,14 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        uint256 nonceToUse = lastProcessedNonce;
-        address user = address(0);
-        uint256 vaultSharesToBeBurnt = 0;
-        lastProcessedNonce++;
-        _sendUpdateToVault(user, vaultSharesToBeBurnt, nonceToUse);
+        _sendUpdateToVault(lastProcessedNonce);
     }
 
-    function _sendUpdateToVault(
-        address user,
-        uint256 vaultSharesToBeBurnt,
-        uint256 nonceToUse
-    ) internal {
+    function _sendUpdateToVault(uint256 nonceToUse) internal {
         bytes memory outgoingMessage = abi.encode(
-            user,
-            address(0),
-            address(0),
-            address(0),
-            block.number,
-            vaultSharesToBeBurnt,
             0,
-            false,
             totalUnderlyingAssets(),
-            nonceToUse,
-            0,
-            0
+            nonceToUse
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -645,11 +477,9 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             address(this),
             abi.encode(
                 "_handleRevertOnSendTotalUnderlyingAssets",
-                bytes32(0),
-                nonceToUse,
+                0,
                 totalUnderlyingAssets(),
-                user,
-                vaultSharesToBeBurnt
+                nonceToUse
             ),
             1_000_000
         );
@@ -660,12 +490,7 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
             revertOptions
         );
 
-        emit TotalUnderlyingAssetsSent(
-            amanaVault,
-            totalUnderlyingAssets(),
-            block.number,
-            block.timestamp
-        );
+        emit TotalUnderlyingAssetsSent(nonceToUse, totalUnderlyingAssets());
     }
 
     /// @notice Safely approves an allowance for a spender.
@@ -693,37 +518,35 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     ) external virtual onlyGateway {
         (
             string memory revertMessage,
-            bytes32 _crossChainTxId,
-            uint256 _executionNonce,
-            uint256 amount,
-            address userOrReceiver,
-            uint256 vaultSharesToBeBurnt
+            uint256 withdrawnAmount,
+            uint256 totalAssetsAfter,
+            uint256 vaultNonce
         ) = abi.decode(
                 context.revertMessage,
-                (string, bytes32, uint256, uint256, address, uint256)
+                (string, uint256, uint256, uint256)
             );
 
         if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
-            emit InvestConfirmFailed(_crossChainTxId);
+            emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 0);
-            _sendUpdateToVault(
-                userOrReceiver,
-                vaultSharesToBeBurnt,
-                _executionNonce
+            _sendUpdateToVault(vaultNonce); // To do - check this!
+            emit ReturnFundsFromStrategyFailed(
+                vaultNonce,
+                withdrawnAmount,
+                totalAssetsAfter
             );
-            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
         ) {
-            emit SendTotalUnderlyingAssetsFailed();
+            emit SendTotalUnderlyingAssetsFailed(vaultNonce, totalAssetsAfter);
         } else {
             revert("Revert not handled");
         }
@@ -736,37 +559,35 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     ) external virtual onlyGateway {
         (
             string memory revertMessage,
-            bytes32 _crossChainTxId,
-            uint256 _executionNonce,
-            uint256 amount,
-            address userOrReceiver,
-            uint256 vaultSharesToBeBurnt
+            uint256 withdrawnAmount,
+            uint256 totalAssetsAfter,
+            uint256 vaultNonce
         ) = abi.decode(
                 context.revertMessage,
-                (string, bytes32, uint256, uint256, address, uint256)
+                (string, uint256, uint256, uint256)
             );
 
         if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
-            emit InvestConfirmFailed(_crossChainTxId);
+            emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             // _depositFundsIntoYieldSource(context.amount, 0);
-            _sendUpdateToVault(
-                userOrReceiver,
-                vaultSharesToBeBurnt,
-                _executionNonce
+            _sendUpdateToVault(vaultNonce);
+            emit ReturnFundsFromStrategyFailed(
+                vaultNonce,
+                withdrawnAmount,
+                totalAssetsAfter
             );
-            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
         ) {
-            emit SendTotalUnderlyingAssetsFailed();
+            emit SendTotalUnderlyingAssetsFailed(vaultNonce, totalAssetsAfter);
         } else {
             revert("Revert not handled");
         }

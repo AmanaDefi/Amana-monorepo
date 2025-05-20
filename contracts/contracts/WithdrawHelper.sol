@@ -12,14 +12,18 @@ import "./interfaces/IErrors.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
 
-import "hardhat/console.sol";
-
 contract WithdrawHelper is Revertable {
     using SafeERC20 for IERC20;
     using SafeERC20 for IZRC20;
 
     address public immutable GATEWAY_ADDRESS;
     // uint256 public gasLimitForWithdrawAndCallToReceiver = 500000;
+
+    enum TxType {
+        Deposit,
+        Withdraw,
+        Switch
+    }
 
     modifier onlyGateway() {
         if (msg.sender != GATEWAY_ADDRESS) revert IErrors.OnlyGateway();
@@ -215,7 +219,6 @@ contract WithdrawHelper is Revertable {
         uint256 previewedShares = IAmanaVault(msg.sender).previewDeposit(
             amount
         );
-        console.log("previewedShares in WithdrawHelper", previewedShares);
         require(previewedShares <= uint256(type(int256).max), "Overflow");
 
         IAmanaVault(msg.sender).adjustPendingShareChange(
@@ -247,8 +250,10 @@ contract WithdrawHelper is Revertable {
         }
 
         bytes memory outgoingMessage = abi.encode(
+            uint8(TxType.Deposit),
             amount,
             minimumOut,
+            address(0), // placeholder for newStrategy (not needed for deposits)
             vaultNonce
         );
 
@@ -374,11 +379,12 @@ contract WithdrawHelper is Revertable {
         }
 
         bytes memory outgoingMessage = abi.encode(
+            uint8(TxType.Deposit),
             amount - amountToDeduct,
             minimumOut,
+            address(0), // placeholder for newStrategy (not needed for deposits)
             vaultNonce
         );
-
         bytes memory recipient = abi.encodePacked(targetAddress);
 
         RevertOptions memory revertOptions = RevertOptions({
@@ -424,20 +430,18 @@ contract WithdrawHelper is Revertable {
         _handleGasFee(gasLimitForCall, vaultAsset, registry);
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
-        console.log("adjustedTotalSupply", adjustedTotalSupply);
         uint256 numerator = vaultSharesToBeBurnt *
             1e18 +
             adjustedTotalSupply /
             2;
         uint256 fractionOfTotalShares = numerator / adjustedTotalSupply;
 
-        bool isSwitch = false;
-
         bytes memory outgoingMessage = abi.encode(
+            uint8(TxType.Withdraw),
             fractionOfTotalShares,
             minimumOut,
-            vaultNonce,
-            isSwitch
+            address(0),
+            vaultNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -475,6 +479,7 @@ contract WithdrawHelper is Revertable {
         address vaultAsset,
         address registry,
         uint256 minAmountOut,
+        uint256 minSharesOut,
         uint256 vaultNonce
     ) external {
         _handleGasFee(
@@ -485,13 +490,14 @@ contract WithdrawHelper is Revertable {
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
-        bool isSwitch = true;
+        // bool isSwitch = true;
 
         bytes memory outgoingMessage = abi.encode(
-            newStrategyAddress,
+            uint8(TxType.Switch),
             minAmountOut,
-            vaultNonce,
-            isSwitch
+            minSharesOut,
+            newStrategyAddress,
+            vaultNonce
         );
 
         RevertOptions memory revertOptions = RevertOptions(

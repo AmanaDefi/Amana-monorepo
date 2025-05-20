@@ -104,13 +104,7 @@ contract AaveERC20FlashStrategy is ERC20StrategyParent, ReentrancyGuard {
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {}
 
-    function _invest(
-        address receiver,
-        uint256 amount,
-        uint256 minSharesOut,
-        uint256 executionNonce,
-        bytes32 crossChainTxId
-    ) internal override {
+    function _invest() internal override {
         inputToken.safeTransferFrom(msg.sender, address(this), amount);
         _executeFlashLoan(
             DepositParams(

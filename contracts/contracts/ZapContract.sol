@@ -11,7 +11,6 @@ import "./interfaces/IAmanaVault.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaRegistry.sol";
 import "./interfaces/IErrors.sol";
-import "hardhat/console.sol";
 
 contract ZapContract {
     using Address for address payable;

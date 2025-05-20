@@ -10,8 +10,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    event TotalAssetsUpdated(uint256 totalAssets);
-
     /// @dev Initializer instead of constructor for upgradeability
     function initialize(
         string memory name,
@@ -50,41 +48,21 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (context.sender == strategyAddress) {
-            if (message.length == 96) {
-                (
-                    address newStrategyAddress,
-                    uint256 totalAssetsAfter,
-                    uint256 executionNonce
-                ) = abi.decode(message, (address, uint256, uint256));
-                if (newStrategyAddress == address(0)) {
-                    transactions[executionNonce]
-                        .totalAssetsAfter = totalAssetsAfter;
-                } else {
-                    transactions[executionNonce]
-                        .totalAssetsAfter = totalAssetsAfter;
-                    transactions[executionNonce]
-                        .withdrawZRC20 = newStrategyAddress;
-                }
+            (
+                uint256 withdrawnAmount,
+                uint256 totalAssetsAfter,
+                uint256 executionNonce
+            ) = abi.decode(message, (uint256, uint256, uint256));
+            if (executionNonce == lastProcessedNonce) {
+                // this is an update (totalAssetsAfter)
+                latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
+                emit TotalAssetsUpdated(totalAssetsAfter, executionNonce);
             } else {
-                (
-                    uint256 withdrawnAmount,
-                    uint256 vaultSharesToBeBurnt,
-                    uint256 totalAssetsAfter,
-                    uint256 executionNonce
-                ) = abi.decode(message, (uint256, uint256, uint256, uint256));
-                if (executionNonce == lastProcessedNonce) {
-                    latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
-                    emit TotalAssetsUpdated(totalAssetsAfter);
-                }
-                if (withdrawnAmount == 0) {
-                    transactions[executionNonce]
-                        .vaultSharesToBeBurnt = vaultSharesToBeBurnt;
-                    transactions[executionNonce]
-                        .totalAssetsAfter = totalAssetsAfter;
-                } else {
+                transactions[executionNonce]
+                    .totalAssetsAfter = totalAssetsAfter;
+                if (!transactions[executionNonce].isDeposit) {
+                    // this is a withdrawal confirmation (or revert)
                     transactions[executionNonce].amount = withdrawnAmount;
-                    transactions[executionNonce]
-                        .totalAssetsAfter = totalAssetsAfter;
                 }
             }
 
@@ -221,7 +199,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bool processEntireBuffer
     ) external onlyOwner {
         // Ensure the transaction exists
-        if (transactions[executionNonce].amount == 0) {
+        if (
+            transactions[executionNonce].totalAssetsAfter == 0 &&
+            transactions[executionNonce].amount == 0
+        ) {
             revert ConfirmationAlreadyProcessed();
         }
 
@@ -260,7 +241,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                             .vaultSharesToBeBurnt;
                     }
                 } else {
-                    strategyAddress = transaction.withdrawZRC20;
                     emit StrategyUpdated(strategyAddress);
                 }
             } else {
@@ -285,7 +265,8 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      */
     function switchStrategy(
         address newStrategyAddress,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        uint256 minSharesOut
     ) external override onlyOwner {
         if (newStrategyAddress == address(0)) revert InvalidAddress();
         if (newStrategyAddress == strategyAddress) revert InvalidAddress();
@@ -295,6 +276,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit StrategyUpdated(newStrategyAddress);
             return;
         }
+
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleSwitchCallToStrategy(
                 strategyAddress,
@@ -304,6 +286,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 address(asset()),
                 registry,
                 minAmountOut,
+                minSharesOut,
                 vaultNonce
             );
         vaultNonce++;

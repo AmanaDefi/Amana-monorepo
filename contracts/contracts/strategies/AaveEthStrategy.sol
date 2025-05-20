@@ -88,42 +88,6 @@ contract AaveEthStrategy is EthStrategyParent {
         }
     }
 
-    /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
-     */
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
-        }
-        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            1e18,
-            minAmountOut
-        );
-
-        IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
-            amountWithdrawn,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            amountWithdrawn,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-    }
-
     function getStrategyWithdrawShareAmount(
         uint256 fractionOfTotalShares
     ) public view override returns (uint256) {

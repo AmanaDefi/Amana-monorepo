@@ -42,7 +42,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
-      console.log("1")
       await expect(simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
@@ -54,7 +53,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.originChainId,
         1
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
-      console.log("2")
       // Attempt withdraw from a non-gateway address
       const withdrawAmountInShares = config.withdrawAmount;
       const minAmountOut = config.minAmountOut;
@@ -384,8 +382,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } = ctx;
 
       const revertMessage = ethers.utils.defaultAbiCoder.encode(
-        ["string", "bytes32", "uint256", "uint256", "address", "uint256"],
-        ["_investConfirmFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), 0, 0, ethers.constants.AddressZero, 0]
+        ["string", "uint256", "uint256", "uint256"],
+        ["_investConfirmFailed", 0, 0, 0]
       );
 
       const revertContext = {
@@ -397,20 +395,19 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
         .to.emit(strategy, "InvestConfirmFailed")
-        .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
+        .withArgs(0, 0);
     });
 
     it("should emit event and re-invest ERC20 on _returnFundsFromStrategyFailed revert", async function () {
       const {
         gatewaySigner,
         strategy,
-        receiptTokenContract,
         config
       } = ctx;
-
+      const vaultNonce = 0;
       const revertMessage = ethers.utils.defaultAbiCoder.encode(
-        ["string", "bytes32", "uint256", "uint256", "address", "uint256"],
-        ["_returnFundsFromStrategyFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), 0, 0, ethers.constants.AddressZero, 0]
+        ["string", "uint256", "uint256", "uint256"],
+        ["_returnFundsFromStrategyFailed", vaultNonce, 0, 0]
       );
 
       const withdrawPlusFee = config.depositAmount;
@@ -427,7 +424,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
         .to.emit(strategy, "ReturnFundsFromStrategyFailed")
-        .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
+        .withArgs(vaultNonce, 0, 0)
+        .to.emit(strategy, "TotalUnderlyingAssetsSent")
+        .withArgs(vaultNonce, anyValue);
+
     });
 
     it("should emit the TotalUnderlyingAssetsSent event", async function () {
@@ -466,10 +466,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await expect(tx)
         .to.emit(strategy, "TotalUnderlyingAssetsSent")
         .withArgs(
-          AMANA_VAULT_ADDRESS, // Exact match for vault address
-          anyValue, // Use `anyValue` placeholder for the deposit amount
-          (await ethers.provider.getBlockNumber()), // Expected block number
-          (await ethers.provider.getBlock("latest")).timestamp // Expected block timestamp
+          1, // vaultNonce
+          anyValue // Use `anyValue` placeholder for the deposit amount
         );
 
       // Capture event logs
@@ -554,14 +552,11 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Call the function as the owner
       await expect(
         strategy.manualResendInvestConfirmation(
-          userAddress,
-          amount,
           totalUnderlyingAssetsAfter,
-          executionNonce,
-          crossChainTxId
+          executionNonce
         )
       )
-        .to.emit(gatewayEVM, "Called") // Replace with the actual event name
+        .to.emit(gatewayEVM, "Called")
       // .withArgs(
       //   strategy.address,       // From address
       //   AMANA_VAULT_ADDRESS,    // Destination vault address
@@ -603,7 +598,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
           "bool",    // isInvest (false for divestment)
           "uint256", // totalUnderlyingAssetsAfter
           "uint256", // executionNonce
-          "bytes32",  // crossChainTxId
           "uint16" // slippage
         ],
         [
@@ -617,7 +611,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
           false,
           totalUnderlyingAssetsAfter,
           executionNonce,
-          crossChainTxId,
           slippage
         ]
       );
@@ -647,17 +640,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Call the function as the owner
       await expect(
         strategy.manualResendFundsAndDivestConfirmation(
-          userAddress,
-          userAddress,
-          withdrawZRC20,
-          ethers.constants.AddressZero,
           amount,
-          fractionOfTotalShares,
-          withdrawChainId,
           totalUnderlyingAssetsAfter,
-          executionNonce,
-          crossChainTxId,
-          slippage
+          executionNonce
+
         )
       )
         .to.emit(gatewayEVM, "DepositedAndCalled") // Replace with the actual event name
@@ -721,6 +707,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         2
       )).to.emit(strategy, "AssetsTransferredToNewStrategy")
         .to.emit(newStrategy, "AssetsReceivedFromOldStrategy");
+
       let oldStrategyBalance;
       if (isConvexStrategy(config.strategyContractName)) {
         oldStrategyBalance = await rewardsContract.balanceOf(strategy.address);
@@ -799,7 +786,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 5: Confirm Rewards Harvested Event
       const receipt = await tx.wait();
-      console.log("receipt", receipt);
       const event = receipt.events?.find((e: Event) => e.event === "RewardsHarvested");
       expect(event).to.not.be.undefined;
 

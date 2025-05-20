@@ -57,6 +57,7 @@ interface IWithdrawHelper {
         address vaultAsset,
         address registry,
         uint256 minAmountOut,
+        uint256 minSharesOut,
         uint256 vaultNonce
     ) external;
 }
