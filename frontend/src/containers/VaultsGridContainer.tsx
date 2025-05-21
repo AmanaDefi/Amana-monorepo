@@ -62,7 +62,6 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
   // Fetch token prices for APY calculations
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
   const cvxTokenPrice = useTokenPriceBySymbol("CVX");
-  console.log("cvxTokenPrice: ", cvxTokenPrice);
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   
