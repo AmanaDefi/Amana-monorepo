@@ -14,18 +14,18 @@ import "../interfaces/IConvexRewardPool.sol";
 contract ConvexEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePoolFixed public immutable receiptToken;
-    IConvexBooster public immutable booster;
-    IConvexRewardPool public immutable rewardPool;
+    ICurvePoolFixed public receiptToken;
+    IConvexBooster public booster;
+    IConvexRewardPool public rewardPool;
 
-    IWETH public immutable weth;
-    address public immutable cvxToken;
-    address public immutable crvToken;
+    IWETH public weth;
+    address public cvxToken;
+    address public crvToken;
 
     uint256 public inputTokenIndex;
     uint256 public convexPid;
 
-    constructor(
+    function initialize(
         string memory _name,
         address _gatewayAddress,
         address _amanaVault,
@@ -39,7 +39,14 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 _convexPid,
         address _boosterAddress,
         address _cvxToken
-    ) StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper) {
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper
+        );
+
         receiptToken = ICurvePoolFixed(_receiptTokenAddress);
         weth = IWETH(_inputTokenAddress);
         swapHelper = _swapHelper;

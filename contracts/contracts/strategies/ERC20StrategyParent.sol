@@ -9,9 +9,11 @@ import "./StrategyParent.sol";
 abstract contract ERC20StrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
-    IERC20 public immutable inputToken;
+    IERC20 public inputToken;
 
-    constructor(address _inputTokenAddress) {
+    function __ERC20StrategyParent_init(
+        address _inputTokenAddress
+    ) internal onlyInitializing {
         inputToken = IERC20(_inputTokenAddress);
     }
 

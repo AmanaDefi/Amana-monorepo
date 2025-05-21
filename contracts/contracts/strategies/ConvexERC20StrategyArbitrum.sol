@@ -14,17 +14,17 @@ import "../interfaces/IConvexRewardPoolArbitrum.sol";
 contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePoolDynamic public immutable receiptToken;
-    IConvexBoosterArbitrum public immutable booster;
-    IConvexRewardPoolArbitrum public immutable rewardPool;
+    ICurvePoolDynamic public receiptToken;
+    IConvexBoosterArbitrum public booster;
+    IConvexRewardPoolArbitrum public rewardPool;
 
-    address public immutable cvxToken;
-    address public immutable crvToken;
+    address public cvxToken;
+    address public crvToken;
 
     uint256 public inputTokenIndex;
     uint256 public convexPid;
 
-    constructor(
+    function initialize(
         string memory _name,
         address _gatewayAddress,
         address _amanaVault,
@@ -38,10 +38,15 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         uint256 _convexPid,
         address _boosterAddress,
         address _cvxToken
-    )
-        ERC20StrategyParent(_inputTokenAddress)
-        StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper)
-    {
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper
+        );
+        __ERC20StrategyParent_init(_inputTokenAddress); // Add this initializer too if needed
+
         receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
         swapHelper = _swapHelper;
         booster = IConvexBoosterArbitrum(_boosterAddress);

@@ -25,10 +25,10 @@ import "./EthStrategyParent.sol";
 contract AaveEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    IWETH public immutable weth;
-    IAavePool public immutable aavePool;
-    IAaveReceiptToken public immutable receiptToken;
-    IWrappedTokenGatewayV3 public immutable tokenGateway;
+    IWETH public weth;
+    IAavePool public aavePool;
+    IAaveReceiptToken public receiptToken;
+    IWrappedTokenGatewayV3 public tokenGateway;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -37,7 +37,7 @@ contract AaveEthStrategy is EthStrategyParent {
     /// @param _gateway Address of the ZetaChain Gateway.
     /// @param _wrappedTokenGateway Address of the Wrapped Token Gateway.
     /// @param _wethAddress Address of the WETH contract.
-    constructor(
+    function initialize(
         string memory _name,
         address _amanaVault,
         address _receiptTokenAddress,
@@ -45,7 +45,9 @@ contract AaveEthStrategy is EthStrategyParent {
         address _wrappedTokenGateway,
         address _wethAddress,
         address _withdrawHelper
-    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
+    ) external initializer {
+        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
+
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());
         tokenGateway = IWrappedTokenGatewayV3(_wrappedTokenGateway);

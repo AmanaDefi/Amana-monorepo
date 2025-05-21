@@ -19,13 +19,13 @@ import "../interfaces/ICometRewards.sol";
 contract ERC20_Compound_Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    ICompoundVault public immutable receiptToken;
-    ICometRewards public immutable cometRewardsContract;
+    ICompoundVault public receiptToken;
+    ICometRewards public cometRewardsContract;
 
     address public rewardsTokenAddress;
 
     /// @notice Initializes the strategy contract.
-    constructor(
+    function initialize(
         string memory _name,
         address _gatewayAddress,
         address _amanaVault,
@@ -35,11 +35,16 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         address _inputTokenAddress,
         address _rewardsContractAddress,
         address _rewardsTokenAddress,
-        uint256
-    )
-        StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper)
-        ERC20StrategyParent(_inputTokenAddress)
-    {
+        uint256 /* unused */
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper
+        );
+        __ERC20StrategyParent_init(_inputTokenAddress);
+
         swapHelper = _swapHelper;
         receiptToken = ICompoundVault(_receiptTokenAddress);
         cometRewardsContract = ICometRewards(_rewardsContractAddress);

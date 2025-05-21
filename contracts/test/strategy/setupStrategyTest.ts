@@ -1,5 +1,5 @@
 // test/helpers/setupStrategyTest.ts
-import { ethers, network } from "hardhat";
+import { ethers, network, upgrades } from "hardhat";
 import { Signer } from "ethers";
 import { StrategyTestConfig } from "../config/strategy.config";
 import { IERC20 } from "../../typechain";
@@ -123,9 +123,9 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     args.push(convexPoolId, convexBooster, cvxTokenAddress);
   }
 
-  const strategy = await StrategyFactory.deploy(
-    ...args
-  );
+  const strategy = await upgrades.deployProxy(StrategyFactory, args, {
+    initializer: "initialize"
+  });
   await strategy.deployed();
 
   return {
@@ -164,8 +164,9 @@ export async function deployStrategyFromConfig(config: StrategyTestConfig, swapH
     args.push(config.convexPoolId, config.convexBooster, config.cvxTokenAddress);
   }
 
-  const strategy = await StrategyFactory.deploy(...args);
-  await strategy.deployed();
+  const strategy = await upgrades.deployProxy(StrategyFactory, args, {
+    initializer: "initialize"
+  }); await strategy.deployed();
 
   return strategy;
 }

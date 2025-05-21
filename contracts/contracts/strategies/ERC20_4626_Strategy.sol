@@ -12,7 +12,7 @@ import "./ERC20StrategyParent.sol";
 contract ERC20_4626_Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    I4626Vault public immutable receiptToken;
+    I4626Vault public receiptToken;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -20,17 +20,17 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @param _inputTokenAddress Address of the input token.
     /// @param _receiptTokenAddress Address of the Aave receipt token.
     /// @param _gateway Address of the ZetaChain Gateway.
-    constructor(
+    function initialize(
         string memory _name,
         address _amanaVault,
         address _inputTokenAddress,
         address _receiptTokenAddress,
         address _gateway,
-        address withdrawHelper
-    )
-        StrategyParent(_name, _amanaVault, _gateway, withdrawHelper)
-        ERC20StrategyParent(_inputTokenAddress)
-    {
+        address _withdrawHelper
+    ) external initializer {
+        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
+        __ERC20StrategyParent_init(_inputTokenAddress);
+
         receiptToken = I4626Vault(_receiptTokenAddress);
     }
 

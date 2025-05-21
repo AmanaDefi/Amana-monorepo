@@ -17,8 +17,8 @@ import "./EthStrategyParent.sol";
 contract Eth_4626_Strategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    IWETH public immutable weth;
-    I4626Vault public immutable receiptToken;
+    IWETH public weth;
+    I4626Vault public receiptToken;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -26,14 +26,16 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @param _receiptTokenAddress Address of the Aave receipt token.
     /// @param _gateway Address of the ZetaChain Gateway.
     /// @param _wethAddress Address of the WETH contract.
-    constructor(
+    function initialize(
         string memory _name,
         address _amanaVault,
         address _receiptTokenAddress,
         address _gateway,
         address _wethAddress,
         address _withdrawHelper
-    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
+    ) external initializer {
+        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
+
         receiptToken = I4626Vault(_receiptTokenAddress);
         weth = IWETH(_wethAddress);
     }

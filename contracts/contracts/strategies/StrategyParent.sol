@@ -3,7 +3,9 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
@@ -15,7 +17,12 @@ import "../interfaces/ISwapHelper.sol";
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract StrategyParent is Ownable2Step, IErrors {
+abstract contract StrategyParent is
+    Initializable,
+    Ownable2StepUpgradeable,
+    UUPSUpgradeable,
+    IErrors
+{
     using SafeERC20 for IERC20;
 
     string public name;
@@ -24,12 +31,12 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     address public oldStrategy;
     address public rewardsDistributor;
 
-    address immutable _GATEWAY_ADDRESS;
+    address public _GATEWAY_ADDRESS;
 
     uint256 public lastProcessedNonce;
 
     uint16 public harvestSwapSlippage;
-    uint256 public minClaimableReward = 5 * 10 ** 15; // Default: 0.005
+    uint256 public minClaimableReward; // Default: 0.005
 
     address public swapHelper;
 
@@ -109,18 +116,21 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
         _;
     }
 
-    constructor(
+    function __StrategyParent_init(
         string memory _name,
         address _amanaVault,
         address _gateway,
         address _withdrawHelper
-    ) Ownable(msg.sender) {
-        if (_amanaVault == address(0)) revert InvalidAddress();
+    ) internal initializer {
+        __Ownable_init(msg.sender);
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
         withdrawHelper = _withdrawHelper;
+        minClaimableReward = 5 * 10 ** 15; // 0.005
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /// @notice Processes calls from the Gateway for deposits or withdrawals.
     /// @param context The message context from the Gateway.
