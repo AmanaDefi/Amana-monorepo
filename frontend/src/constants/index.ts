@@ -1,5 +1,5 @@
 import { VaultData, Token } from "../types/types";
-import { ZC_USDC_ARB_ADDRESS, ZC_ETH_ETH_ADDRESS, ZC_USDT_POL_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { ZC_USDT_ETH_ADDRESS, ZC_USDC_ARB_ADDRESS, ZC_ETH_ETH_ADDRESS, ZC_USDT_POL_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
@@ -470,6 +470,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       chainId: 1,
       netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+    },
+  },
+  {
+    id: "0x0552D4C51491D9bFeD97eb795E101E90a5F16d44",
+    name: "USDT/USDe Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits USDT into the Curve USDT/USDe pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+    symbol: "aConvexUsdtEth",
+    imgURL: "/ETH.png",
+    depositFeePaidFromGasTank: false,
+    inputToken: {
+      symbol: "USDT.ETH",
+      decimals: 6,
+      address: ZC_USDT_ETH_ADDRESS,
+      imgURL: "/USDT.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve-Convex",
+      strategyAddress: "0x3B3949A8dC9B1bF6EDd3D01e1BAcd8971a408039",
+      rewardsContractAddress: "0x60eF3c53c86E1eCEc76d900B6cf2f0B39ffD98B2",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/curve.png",
       des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
     },
   },
