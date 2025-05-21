@@ -577,7 +577,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Mock data for the test
       const userAddress = await owner.getAddress();
       const withdrawZRC20 = config.withdrawZRC20; // ETH or replace with actual ZRC20 token address
-      const amount = ethers.utils.parseEther("1000"); // 1000 tokens
+      const amount = config.depositAmount; // 1000 tokens
       const fractionOfTotalShares = ethers.utils.parseEther("0.2");
       const withdrawChainId = config.originChainId; // Example chain ID
       const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
@@ -631,12 +631,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         GatewayEVMABI.abi,
         config.gatewayAddress
       );
-
-      await setTokenBalance(config.inputTokenAddress, strategy.address, ethers.utils.parseEther("1010"), config.inputTokenStorageSlot, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, strategy.address, config.depositAmount, config.inputTokenStorageSlot, config.isNative);
       // if (!config.isNative) {
       //   await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       // }
-
       // Call the function as the owner
       await expect(
         strategy.manualResendFundsAndDivestConfirmation(
@@ -950,11 +948,9 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
     //   try {
     //     const preview = await router.callStatic.exactInput(params);
-    //     console.log("CallStatic swap will return:", preview.toString());
 
     //     const tx = await router.exactInput(params);
     //     await tx.wait();
-    //     console.log("Swap succeeded");
     //   } catch (err: any) {
     //     console.error("Uniswap V3 swap failed:");
     //     console.error("Message:", err.message);

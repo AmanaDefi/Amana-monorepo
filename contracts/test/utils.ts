@@ -10,6 +10,12 @@ const TxType = {
   Switch: 2
 };
 
+const WHALE_ADDRESSES: Record<string, string> = {
+  // USDT Ethereum mainnet
+  "0xdAC17F958D2ee523a2206206994597C13D831ec7":
+    "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+};
+
 /**
  * Sets the token balance of an account in a local Hardhat network.
  *
@@ -26,20 +32,18 @@ export async function setTokenBalance(
   isNative: boolean = false
 ) {
   if (isNative) {
-    // If the token is native, use the hardhat_setBalance method
     await ethers.provider.send("hardhat_setBalance", [
       account,
       amount.toHexString()
     ]);
     return;
   }
+
   const normalizedAccount = ethers.utils.getAddress(account);
+  const token = await ethers.getContractAt("IERC20", tokenAddress);
 
   // Format the amount as a 32-byte hex string
-  const paddedValue = ethers.utils.hexZeroPad(
-    ethers.BigNumber.from(amount).toHexString(),
-    32
-  );
+  const paddedValue = ethers.utils.hexZeroPad(amount.toHexString(), 32);
 
   // Compute the storage slot: keccak256(abi.encode(account, balanceSlot))
   const rawSlot = ethers.utils.keccak256(
@@ -49,14 +53,42 @@ export async function setTokenBalance(
     )
   );
 
-  // Convert slot to a QUANTITY (unpadded hex string with 0x prefix)
-  const slot = ethers.BigNumber.from(rawSlot).toHexString();
+  const slot = BigNumber.from(rawSlot).toHexString();
+
   // Set the storage slot directly
   await network.provider.send("hardhat_setStorageAt", [
     tokenAddress,
     slot,
-    paddedValue,
+    paddedValue
   ]);
+
+  // Check if the balance was successfully set
+  const newBalance = await token.balanceOf(account);
+
+  if (newBalance.isZero() && WHALE_ADDRESSES[tokenAddress]) {
+    console.warn(`[setTokenBalance] Storage set failed. Falling back to whale transfer for ${tokenAddress}`);
+
+    const whale = WHALE_ADDRESSES[tokenAddress];
+
+    await network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [whale]
+    });
+
+    await network.provider.send("hardhat_setBalance", [
+      whale,
+      ethers.utils.parseEther("10").toHexString()
+    ]);
+
+    const whaleSigner = await ethers.getSigner(whale);
+    const tokenFromWhale = token.connect(whaleSigner);
+    await tokenFromWhale.transfer(account, amount);
+
+    const fallbackBalance = await token.balanceOf(account);
+    if (fallbackBalance.isZero()) {
+      throw new Error(`[setTokenBalance] Whale fallback also failed for token ${tokenAddress}`);
+    }
+  }
 }
 
 
@@ -370,9 +402,6 @@ export async function simulateConfirmWithdrawToConnChain(
   strategyChainId: number,
   strategyGasToken: string,
 ): Promise<any> {
-  console.log("withdrawnAmount", withdrawnAmount.toString());
-  console.log("totalAssetsBefore", totalAssetsBefore.sub(withdrawnAmount).toString());
-  console.log("executionNonce", executionNonce);
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint256", "uint256"],
     [
@@ -381,11 +410,9 @@ export async function simulateConfirmWithdrawToConnChain(
       executionNonce
     ]
   );
-  console.log("confirmMessage created");
   // Mock token balance setup for the test environment
   await setTokenBalance(vaultAsset, amanaVault.address, withdrawnAmount, 3);
   // Return the transaction object so it can be awaited or used in tests
-  console.log("setTokenBalance done", withdrawnAmount.toString());
   return await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),

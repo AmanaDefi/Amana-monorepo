@@ -695,20 +695,30 @@ contract SwapHelper {
     }
 
     function approveOrIncreaseAllowance(
-        IZRC20 token,
+        IERC20 token,
         address spender,
         uint256 amount
     ) internal {
-        uint256 currentAllowance = token.allowance(msg.sender, spender);
+        bytes memory approveCalldata = abi.encodeWithSelector(
+            IERC20.approve.selector,
+            spender,
+            amount
+        );
 
-        if (currentAllowance == 0) {
-            // First-time approval
-            token.approve(spender, amount);
-        } else {
-            // Handle USDT-like tokens by forcing reset to zero first
-            token.approve(spender, 0); // Reset to zero
-            token.approve(spender, amount); // Set new allowance
-        }
+        (bool success, ) = address(token).call(approveCalldata);
+        if (success) return;
+
+        // If initial approve failed, try resetting to zero first
+        bytes memory resetCalldata = abi.encodeWithSelector(
+            IERC20.approve.selector,
+            spender,
+            0
+        );
+        (bool resetSuccess, ) = address(token).call(resetCalldata);
+        require(resetSuccess, "Reset to 0 failed");
+
+        (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
+        require(secondApproveSuccess, "Second approve failed");
     }
 
     function getAmountOutCurveOrUniswap(

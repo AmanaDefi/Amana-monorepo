@@ -540,11 +540,26 @@ contract WithdrawHelper is Revertable {
         address spender,
         uint256 amount
     ) internal {
-        uint256 currentAllowance = token.allowance(address(this), spender);
-        if (currentAllowance < amount) {
-            token.approve(spender, 0);
-            token.approve(spender, amount);
-        }
+        bytes memory approveCalldata = abi.encodeWithSelector(
+            IERC20.approve.selector,
+            spender,
+            amount
+        );
+
+        (bool success, ) = address(token).call(approveCalldata);
+        if (success) return;
+
+        // If initial approve failed, try resetting to zero first
+        bytes memory resetCalldata = abi.encodeWithSelector(
+            IERC20.approve.selector,
+            spender,
+            0
+        );
+        (bool resetSuccess, ) = address(token).call(resetCalldata);
+        require(resetSuccess, "Reset to 0 failed");
+
+        (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
+        require(secondApproveSuccess, "Second approve failed");
     }
 
     /**

@@ -159,6 +159,7 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
         uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
+
         approveOrIncreaseAllowance(receiptToken, address(booster), shares);
         booster.deposit(convexPid, shares, true);
     }
