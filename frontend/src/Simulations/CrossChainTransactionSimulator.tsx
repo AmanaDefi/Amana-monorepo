@@ -140,6 +140,28 @@ const type2RevertSteps = [
   }
 ];
 
+// type4WithdrawalRevertSteps
+const type4WithdrawalRevertSteps = [
+  {
+    name: 'Initial local transaction on Base',
+    type: 'local',
+    hash: '0xabe92fa1589b3cb15fd0eccfb1dd295a4e1c1474490b4dc46499ee37e9cff610',
+    url: 'https://basescan.org/tx/0xabe92fa1589b3cb15fd0eccfb1dd295a4e1c1474490b4dc46499ee37e9cff610',
+  },
+  {
+    name: 'Cross chain call from Base to vault on ZC',
+    type: 'inboundToCctx',
+    hash: '0x205dae7720987d4a32aad8156c4f4e810f9e16f404fb1f5b2b271382f1edfc85',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0xabe92fa1589b3cb15fd0eccfb1dd295a4e1c1474490b4dc46499ee37e9cff610',
+  },
+  {
+    name: 'Cross chain call from vault on ZC to strategy on strategy chain',
+    type: 'inboundToCctx',
+    hash: '0xfd419e7d3fc5fd5ba35b65c96e594c3186ac3acdbf4732d5441fdefc1b8f9f91',
+    url: 'https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/inboundHashToCctx/0x205dae7720987d4a32aad8156c4f4e810f9e16f404fb1f5b2b271382f1edfc85',
+  }
+];
+
 interface SimulationResult {
   step: string;
   hash: string;
@@ -149,7 +171,7 @@ interface SimulationResult {
 }
 
 interface CrossChainTransactionSimulatorProps {
-  type: 'deposit' | 'withdrawal' | 'revert' | 'type2Revert';
+  type: 'deposit' | 'withdrawal' | 'revert' | 'type2Revert' | 'type4WithdrawalRevert';
 }
 
 export default function CrossChainTransactionSimulator({ type }: CrossChainTransactionSimulatorProps) {
@@ -163,7 +185,8 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
   const steps = type === 'deposit' ? depositSteps : 
                 type === 'withdrawal' ? withdrawalSteps : 
                 type === 'revert' ? revertSteps :
-                type2RevertSteps;
+                type === 'type2Revert' ? type2RevertSteps :
+                type4WithdrawalRevertSteps;
 
   const resetSimulation = () => {
     setCurrentStep(0);
@@ -299,7 +322,8 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
         {type === 'deposit' ? 'Type 4 Deposit Success Simulation' : 
          type === 'withdrawal' ? 'Type 4 Withdrawal Success Simulation' :
          type === 'revert' ? 'Type 4 Deposit Revert Simulation' :
-         'Type 2 Deposit Revert Simulation'}
+         type === 'type2Revert' ? 'Type 2 Deposit Revert Simulation' :
+         'Type 4 Withdrawal Revert Simulation'}
       </h2>
       {!started && (
         <button
@@ -309,7 +333,8 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           {type === 'deposit' ? 'Deposit' : 
            type === 'withdrawal' ? 'Withdraw' :
            type === 'revert' ? 'Simulate Revert' :
-           'Simulate Type 2 Revert'}
+           type === 'type2Revert' ? 'Simulate Type 2 Revert' :
+           'Simulate Type 4 Withdrawal Revert'}
         </button>
       )}
       {loading && (
@@ -376,7 +401,8 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           {type === 'deposit' ? 'Deposit' : 
            type === 'withdrawal' ? 'Withdrawal' :
            type === 'revert' ? 'Revert Simulation' :
-           'Type 2 Revert Simulation'} completed successfully!
+           type === 'type2Revert' ? 'Type 2 Revert Simulation' :
+           'Type 4 Withdrawal Revert Simulation'} completed successfully!
           <button onClick={resetSimulation} className="mt-3 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold">Test Again</button>
         </div>
       )}
