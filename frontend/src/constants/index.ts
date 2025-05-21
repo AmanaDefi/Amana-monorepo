@@ -530,7 +530,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0x32fECdEf376E2aD74C53663BDE933116C09408f3",
+    id: "0x3A9f38c5A8ad79001F41fc97555c2E65bC11Cf23", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
     name: "eUSD/USDC Pool",
     type: "Liquidity Pool",
     des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
@@ -548,7 +548,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Curve-Convex",
-      strategyAddress: "0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
+      strategyAddress: "0x26d3aDbE3035e4aa07907BBeED3B7F5A5f0957f5", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
       rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
       network: "Arbitrum",
       chainId: 42161,

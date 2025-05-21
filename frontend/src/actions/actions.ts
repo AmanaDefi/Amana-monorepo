@@ -854,6 +854,7 @@ const getMinAmountOut = async (
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Direct Deposit");
   const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
+  console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
@@ -865,6 +866,10 @@ const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, act
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
     params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
+  console.log("assets", transactionAmount);
+  console.log("minSharesOut", minSharesOut);
+  console.log("receiver", activeAccount?.address);
+  console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx,
