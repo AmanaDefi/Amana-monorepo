@@ -23,7 +23,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ICometRewards public immutable cometRewardsContract;
 
     address public rewardsTokenAddress;
-    uint256 public minClaimableComp = 5 * 10 ** 15; // Default: 0.005 COMP
 
     /// @notice Initializes the strategy contract.
     constructor(
@@ -45,11 +44,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         receiptToken = ICompoundVault(_receiptTokenAddress);
         cometRewardsContract = ICometRewards(_rewardsContractAddress);
         rewardsTokenAddress = _rewardsTokenAddress;
-    }
-
-    function setMinClaimableComp(uint256 newThreshold) external onlyOwner {
-        require(newThreshold < 1 ether, "Too high"); // Optional sanity check
-        minClaimableComp = newThreshold;
     }
 
     /// @notice Claims rewards from Compound
@@ -79,7 +73,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 compBalance = IERC20(rewardsTokenAddress).balanceOf(
             address(this)
         );
-        if (compBalance > 0) {
+        if (compBalance > minClaimableReward) {
             uint256 usdcReceived = swapToInputToken(
                 rewardsTokenAddress,
                 compBalance,

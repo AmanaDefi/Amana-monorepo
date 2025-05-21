@@ -124,55 +124,44 @@ contract ConvexEthStrategy is EthStrategyParent {
     }
 
     function _reinvestRewards() internal override {
-        address[] memory rewardContracts = new address[](
-            1 + rewardPool.extraRewardsLength()
+        _handleRewardReinvestment(crvToken);
+        _handleRewardReinvestment(cvxToken);
+    }
+
+    function _handleRewardReinvestment(address rewardToken) internal {
+        uint256 rewardBalance = IERC20(rewardToken).balanceOf(address(this));
+        if (rewardBalance < minClaimableReward) return; // skip small amounts
+
+        uint256 receivedInputToken = swapToInputToken(
+            rewardToken,
+            rewardBalance,
+            harvestSwapSlippage
         );
-        rewardContracts[0] = address(rewardPool);
 
-        for (uint256 i = 0; i < rewardContracts.length - 1; i++) {
-            rewardContracts[i + 1] = IConvexRewardPool(rewardPool).extraRewards(
-                i
+        if (receivedInputToken == 0) return;
+
+        emit RewardsHarvested(rewardToken, rewardBalance, receivedInputToken);
+
+        uint256[2] memory amounts;
+        amounts[inputTokenIndex] = receivedInputToken;
+
+        approveOrIncreaseAllowance(
+            weth,
+            address(receiptToken),
+            receivedInputToken
+        );
+
+        try receiptToken.add_liquidity(amounts, 0) returns (uint256 shares) {
+            approveOrIncreaseAllowance(receiptToken, address(booster), shares);
+            booster.deposit(convexPid, shares, true);
+        } catch Error(string memory reason) {
+            emit SwapFailed(rewardToken, receivedInputToken, reason);
+        } catch {
+            emit SwapFailed(
+                rewardToken,
+                receivedInputToken,
+                "Curve add_liquidity failed"
             );
-        }
-
-        for (uint256 i = 0; i < rewardContracts.length; i++) {
-            address rewardToken = IConvexRewardPool(rewardContracts[i])
-                .rewardToken();
-            uint256 rewardBalance = IERC20(rewardToken).balanceOf(
-                address(this)
-            );
-
-            if (rewardBalance > 0) {
-                uint256 receivedInputToken = swapToInputToken(
-                    rewardToken,
-                    rewardBalance,
-                    harvestSwapSlippage
-                );
-
-                if (receivedInputToken > 0) {
-                    emit RewardsHarvested(
-                        rewardToken,
-                        rewardBalance,
-                        receivedInputToken
-                    );
-
-                    uint256[2] memory amounts;
-                    amounts[inputTokenIndex] = receivedInputToken;
-
-                    approveOrIncreaseAllowance(
-                        weth,
-                        address(receiptToken),
-                        receivedInputToken
-                    );
-                    uint256 shares = receiptToken.add_liquidity(amounts, 0);
-                    approveOrIncreaseAllowance(
-                        receiptToken,
-                        address(booster),
-                        shares
-                    );
-                    booster.deposit(convexPid, shares, true);
-                }
-            }
         }
     }
 

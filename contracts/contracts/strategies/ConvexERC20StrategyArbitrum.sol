@@ -84,11 +84,6 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         return totalClaimed;
     }
 
-    // function harvest() public override {
-    //     claimRewards();
-    //     _reinvestRewards();
-    // }
-
     function _reinvestRewards() internal override {
         uint256 totalConverted;
         try rewardPool.rewardLength() returns (uint256 length) {
@@ -97,7 +92,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
                 if (rewardToken == address(0)) continue;
 
                 uint256 balance = IERC20(rewardToken).balanceOf(address(this));
-                if (balance < 1e17) continue;
+                if (balance < minClaimableReward) continue;
 
                 uint256 converted = swapToInputToken(
                     rewardToken,
@@ -114,7 +109,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             emit RewardClaimFailed("Failed during rewardLength iteration");
         }
 
-        if (totalConverted > 1e17) {
+        if (totalConverted > minClaimableReward) {
             uint256[] memory amounts = new uint256[](2);
             amounts[inputTokenIndex] = totalConverted;
 

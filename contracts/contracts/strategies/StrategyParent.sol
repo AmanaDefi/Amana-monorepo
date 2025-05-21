@@ -29,6 +29,8 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     uint256 public lastProcessedNonce;
 
     uint16 public harvestSwapSlippage;
+    uint256 public minClaimableReward = 5 * 10 ** 15; // Default: 0.005
+
     address public swapHelper;
 
     enum TxType {
@@ -215,6 +217,11 @@ abstract contract StrategyParent is Ownable2Step, IErrors {
     function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
         require(_slippage <= 10000, "Slippage too high");
         harvestSwapSlippage = _slippage;
+    }
+
+    function setMinClaimableReward(uint256 newThreshold) external onlyOwner {
+        require(newThreshold < 1 ether, "Too high"); // Optional sanity check
+        minClaimableReward = newThreshold;
     }
 
     function setSwapHelper(address _swapHelper) external onlyOwner {
