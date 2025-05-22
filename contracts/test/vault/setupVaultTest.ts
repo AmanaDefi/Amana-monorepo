@@ -47,7 +47,21 @@ export async function setupVaultFixture() {
   const treasury = await deployAndLog("Treasury", [owner.address]);
   const withdrawalReceiver = await deployAndLog("WithdrawalReceiver", [owner.address])
   const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS]);
-  const swapHelper = await deployAndLog("SwapHelper", [priceOracle.address], owner);
+  const SwapHelperFactory = await ethers.getContractFactory("SwapHelperZetachain", owner);
+
+  const swapHelper = await upgrades.deployProxy(
+    SwapHelperFactory,
+    [
+      priceOracle.address
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups",
+    }
+  );
+
+  await swapHelper.deployed();
+  console.log("✅ SwapHelperZetachain deployed at:", swapHelper.address);
   const gasTank = await deployAndLog("GasTank", []);
   const withdrawHelper = await deployAndLog("WithdrawHelper", [ZEVM_GATEWAY_ADDRESS]);
   const zapContract = await deployAndLog("ZapContract", [], owner);

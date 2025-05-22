@@ -17,10 +17,6 @@ contract SwapHelperZetachain is SwapHelperParent {
         Eddy
     }
 
-    address constant UNISWAP_V3_FACTORY_EDDY =
-        0x67AA6B2b715937Edc1Eb4D3b7B5d5dCD1fd93E8C; // mainnet and testnet
-    address constant UNISWAP_V3_ROUTER_EDDY =
-        0x9b30CfbACD3504252F82263F72D6acf62bf733C2;
     address constant ALGEBRA_FACTORY_BEAM =
         0x28b5244B6CA7Cb07f2f7F40edE944c07C2395603; // mainnet and testnet
     address constant SWAPROUTER_BEAM =
@@ -91,22 +87,14 @@ contract SwapHelperZetachain is SwapHelperParent {
     bytes32 constant avaxUsdPriceFeedId =
         0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7;
 
-    address constant CURVE_POOL_REGISTRY =
-        0x5524124b8F36e682f3A23D069399247806e8B627; // mainnet only
-
-    function initialize(
-        address _priceOracle,
-        address _v3Router,
-        address _v3Factory,
-        address
-    ) external initializer {
+    function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
             _priceOracle,
             0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe, // ← Uniswap V2 Eddy Router
             0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c, // ← Uniswap V2 Eddy Factory
-            _v3Router,
-            _v3Factory,
-            address(0),
+            0x9b30CfbACD3504252F82263F72D6acf62bf733C2, // ← Uniswap V3 Eddy Router
+            0x67AA6B2b715937Edc1Eb4D3b7B5d5dCD1fd93E8C, // ← Uniswap V3 Eddy Factory
+            0x5524124b8F36e682f3A23D069399247806e8B627, // ← Curve Registry
             WZETA_TOKEN // ← passed into the parent as the intermediate token
         );
     }
@@ -165,7 +153,7 @@ contract SwapHelperZetachain is SwapHelperParent {
         address tokenA,
         address tokenB
     ) internal view returns (bool exists, uint24 feeTier) {
-        address poolLow = IUniswapV3Factory(UNISWAP_V3_FACTORY_EDDY).getPool(
+        address poolLow = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
             tokenA,
             tokenB,
             V3_FEE_TIER_LOW
@@ -174,7 +162,7 @@ contract SwapHelperZetachain is SwapHelperParent {
             return (true, V3_FEE_TIER_LOW); // Prioritize 0.05% fee pool
         }
 
-        address poolHigh = IUniswapV3Factory(UNISWAP_V3_FACTORY_EDDY).getPool(
+        address poolHigh = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
             tokenA,
             tokenB,
             V3_FEE_TIER_HIGH
@@ -351,100 +339,100 @@ contract SwapHelperZetachain is SwapHelperParent {
         return (path, feeTiers, encodedPath, SwapType.None);
     }
 
-    /**
-     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
-     * @param inputToken The token being swapped from.
-     * @param outputToken The token being swapped to.
-     * @return curvePool The address of the curve pool to use.
-     */
-    function getCurvePool(
-        address inputToken,
-        address outputToken
-    ) public view override returns (address curvePool, uint256 i, uint256 j) {
-        CurvePoolRegistry registry = CurvePoolRegistry(CURVE_POOL_REGISTRY);
-        curvePool = registry.getBestPool(inputToken, outputToken);
-        // Find token indexes in the pool using getTokenIndex()
-        if (curvePool != address(0)) {
-            i = getTokenIndex(inputToken, curvePool);
-            j = getTokenIndex(outputToken, curvePool);
-        } else {
-            i = 0;
-            j = 0;
-        }
-    }
+    // /**
+    //  * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+    //  * @param inputToken The token being swapped from.
+    //  * @param outputToken The token being swapped to.
+    //  * @return curvePool The address of the curve pool to use.
+    //  */
+    // function getCurvePool(
+    //     address inputToken,
+    //     address outputToken
+    // ) public view override returns (address curvePool, uint256 i, uint256 j) {
+    //     CurvePoolRegistry registry = CurvePoolRegistry(CURVE_REGISTRY);
+    //     curvePool = registry.getBestPool(inputToken, outputToken);
+    //     // Find token indexes in the pool using getTokenIndex()
+    //     if (curvePool != address(0)) {
+    //         i = getTokenIndex(inputToken, curvePool);
+    //         j = getTokenIndex(outputToken, curvePool);
+    //     } else {
+    //         i = 0;
+    //         j = 0;
+    //     }
+    // }
 
-    /**
-     * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
-     * @param inputToken The token being swapped from.
-     * @param outputToken The token being swapped to.
-     * @param amount The input amount in token units.
-     * @return amountOut The expected amount out from the Curve pool.
-     */
-    function getCurveAmountOut(
-        address curvePool,
-        address inputToken,
-        address outputToken,
-        uint256 amount
-    ) public view returns (uint256 amountOut) {
-        // Find token indexes in the pool using getTokenIndex()
-        uint256 i = getTokenIndex(inputToken, curvePool);
-        uint256 j = getTokenIndex(outputToken, curvePool);
+    // /**
+    //  * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
+    //  * @param inputToken The token being swapped from.
+    //  * @param outputToken The token being swapped to.
+    //  * @param amount The input amount in token units.
+    //  * @return amountOut The expected amount out from the Curve pool.
+    //  */
+    // function getCurveAmountOut(
+    //     address curvePool,
+    //     address inputToken,
+    //     address outputToken,
+    //     uint256 amount
+    // ) public view returns (uint256 amountOut) {
+    //     // Find token indexes in the pool using getTokenIndex()
+    //     uint256 i = getTokenIndex(inputToken, curvePool);
+    //     uint256 j = getTokenIndex(outputToken, curvePool);
 
-        // Fetch amount out from Curve pool
-        amountOut = ICurvePoolDynamic(curvePool).get_dy(i, j, amount);
-    }
+    //     // Fetch amount out from Curve pool
+    //     amountOut = ICurvePoolDynamic(curvePool).get_dy(i, j, amount);
+    // }
 
-    function approveOrIncreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
-        bytes memory approveCalldata = abi.encodeWithSelector(
-            IERC20.approve.selector,
-            spender,
-            amount
-        );
+    // function approveOrIncreaseAllowance(
+    //     IERC20 token,
+    //     address spender,
+    //     uint256 amount
+    // ) internal {
+    //     bytes memory approveCalldata = abi.encodeWithSelector(
+    //         IERC20.approve.selector,
+    //         spender,
+    //         amount
+    //     );
 
-        (bool success, ) = address(token).call(approveCalldata);
-        if (success) return;
+    //     (bool success, ) = address(token).call(approveCalldata);
+    //     if (success) return;
 
-        // If initial approve failed, try resetting to zero first
-        bytes memory resetCalldata = abi.encodeWithSelector(
-            IERC20.approve.selector,
-            spender,
-            0
-        );
-        (bool resetSuccess, ) = address(token).call(resetCalldata);
-        require(resetSuccess, "Reset to 0 failed");
+    //     // If initial approve failed, try resetting to zero first
+    //     bytes memory resetCalldata = abi.encodeWithSelector(
+    //         IERC20.approve.selector,
+    //         spender,
+    //         0
+    //     );
+    //     (bool resetSuccess, ) = address(token).call(resetCalldata);
+    //     require(resetSuccess, "Reset to 0 failed");
 
-        (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
-        require(secondApproveSuccess, "Second approve failed");
-    }
+    //     (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
+    //     require(secondApproveSuccess, "Second approve failed");
+    // }
 
-    function getAmountOutCurveOrUniswap(
-        address inputToken,
-        address outputToken,
-        uint256 amount
-    ) public view returns (uint256) {
-        (address curvePool, , ) = getCurvePool(inputToken, outputToken);
-        if (curvePool != address(0)) {
-            return
-                getCurveAmountOut(curvePool, inputToken, outputToken, amount);
-        } else {
-            (
-                address[] memory path,
-                uint24[] memory feeTiers,
-                bytes memory encodedPath,
-                SwapType swapType
-            ) = getPathV3BeamOrEddy(inputToken, outputToken);
-            if (encodedPath.length > 0) {
-                return getAmountOutV3(amount, path, feeTiers);
-            } else {
-                path = getPathV2(inputToken, outputToken);
-                return getAmountOutV2(amount, path);
-            }
-        }
-    }
+    // function getAmountOutCurveOrUniswap(
+    //     address inputToken,
+    //     address outputToken,
+    //     uint256 amount
+    // ) public view returns (uint256) {
+    //     (address curvePool, , ) = getCurvePool(inputToken, outputToken);
+    //     if (curvePool != address(0)) {
+    //         return
+    //             getCurveAmountOut(curvePool, inputToken, outputToken, amount);
+    //     } else {
+    //         (
+    //             address[] memory path,
+    //             uint24[] memory feeTiers,
+    //             bytes memory encodedPath,
+    //             SwapType swapType
+    //         ) = getPathV3BeamOrEddy(inputToken, outputToken);
+    //         if (encodedPath.length > 0) {
+    //             return getAmountOutV3(amount, path, feeTiers);
+    //         } else {
+    //             path = getPathV2(inputToken, outputToken);
+    //             return getAmountOutV2(amount, path);
+    //         }
+    //     }
+    // }
 
     function swap(
         address zrc20,
@@ -472,7 +460,7 @@ contract SwapHelperZetachain is SwapHelperParent {
             SwapType swapType
         ) = getPathV3BeamOrEddy(zrc20, targetZRC20);
         if (swapType == SwapType.Eddy) {
-            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER_EDDY, amount);
+            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
                     path: encodedPath,
@@ -481,7 +469,7 @@ contract SwapHelperZetachain is SwapHelperParent {
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
-            amountOut = ISwapRouter(UNISWAP_V3_ROUTER_EDDY).exactInput(params);
+            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else if (swapType == SwapType.Beam) {
             IZRC20(zrc20).approve(SWAPROUTER_BEAM, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
@@ -539,7 +527,7 @@ contract SwapHelperZetachain is SwapHelperParent {
 
         if (swapType == SwapType.Eddy) {
             // Eddy: Uniswap V3-style exactOutput swap
-            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER_EDDY, maxAmountIn);
+            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, maxAmountIn);
 
             ISwapRouter.ExactOutputParams memory params = ISwapRouter
                 .ExactOutputParams({
@@ -550,7 +538,7 @@ contract SwapHelperZetachain is SwapHelperParent {
                     amountInMaximum: maxAmountIn
                 });
 
-            amountIn = ISwapRouter(UNISWAP_V3_ROUTER_EDDY).exactOutput(params);
+            amountIn = ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(params);
         } else if (swapType == SwapType.Beam) {
             // Beam: Algebra V3-style exactOutput swap
             IZRC20(zrc20).approve(SWAPROUTER_BEAM, maxAmountIn);
