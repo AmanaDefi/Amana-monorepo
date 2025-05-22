@@ -910,6 +910,7 @@ const executeCrossChainDeposit = async (
     activeChain
   );
 
+  const nonEvmAddress = "0x"
   // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
   const isNativeToken = inputToken.address === ZeroAddress;
 
@@ -920,13 +921,13 @@ const executeCrossChainDeposit = async (
   // Prepare payload (calldata to pass to the receiver)
 
   payload = abiCoder.encode(
-    ["address", "uint256", "uint16", "bytes32"],
-    [inputToken.address, minSharesOut, slippageValue, transactionId]
+    ["address", "uint256", "uint16", "bytes"],
+    [inputToken.address, minSharesOut, slippageValue, nonEvmAddress]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(
-    ["string", "bytes32", "address"],
-    ["_crossChainDepositFailed", transactionId, activeAccount.address]
+    ["string", "bytes", "address"],
+    ["_crossChainDepositFailed", nonEvmAddress, activeAccount.address]
   );
 
   // Prepare revertOptions
@@ -965,7 +966,7 @@ const executeCrossChainDeposit = async (
       // ...txOptions,
     });
     console.log("Deposit executed");
-    setcrossChainTxId(transactionId);
+    // setcrossChainTxId(transactionId);
     return receipt;
   } else {
     // Case 2: ERC20 token
@@ -1057,16 +1058,17 @@ const executeSolanaDeposit = async (
     signAllTransactions: walletContext.signAllTransactions,
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
+  const depositorBytes = walletContext.publicKey!.toBytes();
 
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
     const args = {
-      types: ["address", "uint256", "uint16", "bytes32"],
+      types: ["address", "uint256", "uint16", "bytes"],
       values: [
         getSolanaEVMAddress(inputToken.address),
         minSharesOut,
         slippageValue,
-        transactionId,
+        depositorBytes,
       ],
     };
     const txHash = await client.solanaDepositAndCall(
@@ -1081,8 +1083,8 @@ const executeSolanaDeposit = async (
     // Case 2: SPL token
     const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
-      types: ["address", "uint256", "uint16", "bytes32"],
-      values: [evmAddress, minSharesOut, slippageValue, transactionId],
+      types: ["address", "uint256", "uint16", "bytes"],
+      values: [evmAddress, minSharesOut, slippageValue, depositorBytes],
     };
     console.log("SPL token deposit detected");
     const txHash = await client.depositSplTokenAndCall(
@@ -1108,13 +1110,14 @@ export const executeSolanaWithdrawal = async (
   withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
-  console.log("Executing Cross-Chain Withdrawal");
+  console.log("Executing Solana Cross-Chain Withdrawal");
   const minAmountOut = await getMinAmountOut(
     vaultId,
     withdrawShareAmount,
     strategyAddress,
     strategyChainId
   );
+  const depositorBytes = walletContext.publicKey!.toBytes();
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1135,14 +1138,14 @@ export const executeSolanaWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
-    types: ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes"],
     values: [
       withdrawZRC20,
       getSolanaEVMAddress(splMint),
       withdrawShareAmount,
       minAmountOut,
       slippageValue,
-      transactionId,
+      depositorBytes
     ],
   };
 
@@ -1257,6 +1260,7 @@ const executeCrossChainWithdrawal = async (
     strategyAddress,
     strategyChainId
   );
+
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     activeAccount.address,
@@ -1268,18 +1272,18 @@ const executeCrossChainWithdrawal = async (
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
     address: vaultId,
   });
-
+  const nonEvmAddress = "0x";
   const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
     [
       withdrawZRC20.address,
       withdrawERC20,
       withdrawShareAmount,
       minAmountOut,
       slippageValue,
-      transactionId,
+      nonEvmAddress
     ]
   ) as `0x${string}`;
   const revertMessage = abiCoder.encode(
