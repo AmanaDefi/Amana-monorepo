@@ -6,7 +6,7 @@ import "./tasks/deployAmanaZetachainVault";
 import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
 import "./tasks/deployGasTank";
-import "./tasks/deploySwapHelper";
+import "./tasks/deploySwapHelperZetachain";
 import "./tasks/deployMockERC20";
 import "./tasks/deployMock4626";
 import "./tasks/deployERC20_Strategy";
