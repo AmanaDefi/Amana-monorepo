@@ -14,7 +14,8 @@ import {
   fetchUserVaultMaxRedeem,
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
-  calculateConvexArbitrumRewardsAPY
+  calculateConvexArbitrumRewardsAPY,
+  calculateBalancerAPY
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
@@ -195,6 +196,8 @@ export const useUpdateAPYs = (
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
+              } else if (vault.protocol.name === "Balancer") {
+                APY7d = await calculateBalancerAPY(receiptTokenAddress as Address, strategyChain)
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve-Convex") {

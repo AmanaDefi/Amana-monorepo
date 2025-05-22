@@ -23,6 +23,8 @@ import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
 import curvePoolABI from "../../abis/curvePoolABI.json";
 import convexRewardPoolABI from "../../abis/convexRewardPoolABI.json";
+import IBalancerStablePoolABI from "../../abis/IBalancerStablePoolABI.json";
+
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
 import { keccak256 } from "thirdweb";
@@ -445,6 +447,38 @@ export async function calculateConvexArbitrumRewardsAPY(
     return crvApy;
   } catch (err) {
     console.error("CRV APY calculation failed:", err);
+    return 0;
+  }
+}
+
+export async function calculateBalancerAPY(
+  receiptTokenAddress: Address,
+  strategyChain: Chain
+): Promise<number> {
+  const relevantProvider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
+  const stablePool = new ethers.Contract(
+    receiptTokenAddress,
+    IBalancerStablePoolABI,
+    relevantProvider
+  );
+
+  try {
+    const currentRate = await stablePool.getRate();
+    const currentBlock = await relevantProvider.getBlockNumber();
+
+    const avgBlockTime = BLOCK_TIME[strategyChain.id] ?? 12;
+    const blocksIn7Days = Math.floor(7 * 24 * 60 * 60 / avgBlockTime);
+    const pastBlock = currentBlock - blocksIn7Days;
+
+    const pastRate = await stablePool.getRate({ blockTag: pastBlock });
+
+    const rateDelta = (BigInt(currentRate) - BigInt(pastRate)) * 1_000_000n / BigInt(pastRate);
+    const rateOfChange = Number(rateDelta) / 1_000_000;
+
+    const apy = Math.pow(1 + rateOfChange, 52.14) - 1;
+    return apy;
+  } catch (error) {
+    console.error("calculateBalancerStrategyAPY failed:", error);
     return 0;
   }
 }

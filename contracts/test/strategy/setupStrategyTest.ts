@@ -11,7 +11,7 @@ import {
   PYTH_CONTRACT_ADDRESS_POLYGON,
   PYTH_CONTRACT_ADDRESS_ARBITRUM
 } from "../../../constants";
-import { isConvexStrategy } from "../utils";
+import { isBalancerStrategy, isConvexStrategy } from "../utils";
 
 export interface StrategyTestContext {
   owner: Signer;
@@ -90,9 +90,18 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
 
   const inputToken = await ethers.getContractAt("IERC20", inputTokenAddress, gatewaySigner);
   const receiptTokenContract = await ethers.getContractAt(receiptTokenContractName, receiptTokenAddress, gatewaySigner);
-  const rewardsContract = rewardsContractAddress
-    ? await ethers.getContractAt(rewardsContractName, rewardsContractAddress, gatewaySigner)
-    : undefined;
+  let rewardsContract;
+  if (isConvexStrategy(strategyContractName)) {
+    rewardsContract = rewardsContractAddress
+      ? await ethers.getContractAt(rewardsContractName, rewardsContractAddress, gatewaySigner)
+      : undefined;
+  } else if (isBalancerStrategy(strategyContractName)) {
+    rewardsContract = await ethers.getContractAt("IBalancerLiquidityGauge", rewardsContractAddress!, gatewaySigner);
+  } else {
+    rewardsContract = rewardsContractAddress
+      ? await ethers.getContractAt(rewardsContractName, rewardsContractAddress, gatewaySigner)
+      : undefined;
+  }
 
   const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
   const priceOracle = await PriceOracleFactory.deploy(pythAddress); // Pyth contract address on specified chain

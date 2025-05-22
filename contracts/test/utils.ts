@@ -507,3 +507,8 @@ export function isConvexStrategy(name: string): boolean {
     "ConvexERC20StrategyArbitrum",
   ].includes(name);
 }
+
+export function isBalancerStrategy(name: string): boolean {
+  return name.toLowerCase().includes("balancer");
+}
+

@@ -6,6 +6,7 @@ import "./SwapHelperParent.sol";
 import "./interfaces/ICurvePoolDynamic.sol";
 
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
@@ -13,6 +14,7 @@ contract SwapHelperOnBase is SwapHelperParent {
     address constant WELL = 0xA88594D404727625A9437C3f886C7643872296AE;
     address constant MORPHO = 0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842;
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address constant axlOP = 0x994ac01750047B9d35431a7Ae4Ed312ee955E030;
 
     bytes32 constant wellUsdPriceFeedId =
         0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
@@ -20,6 +22,8 @@ contract SwapHelperOnBase is SwapHelperParent {
         0x5b2a4c542d4a74dd11784079ef337c0403685e3114ba0d9909b5c7a7e06fdc42;
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
+    bytes32 constant opUsdPriceFeedId =
+        0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf;
 
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
@@ -50,6 +54,10 @@ contract SwapHelperOnBase is SwapHelperParent {
             return wellUsdPriceFeedId;
         } else if (token == MORPHO) {
             return morphoUsdPriceFeedId;
+        } else if (token == axlOP) {
+            console.log("Getting OP price");
+            return opUsdPriceFeedId;
+            console.log("Got OP price");
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }

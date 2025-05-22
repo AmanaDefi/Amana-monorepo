@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import { strategyConfigs, StrategyTestConfig } from "../config/strategy.config";
 import { deployStrategyFixture, StrategyTestContext, deployStrategyFromConfig } from "./setupStrategyTest";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy } from "../utils";
+import { isBalancerStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy } from "../utils";
 import { AMANA_VAULT_ADDRESS } from "../config/constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
@@ -148,9 +148,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
-
       let strategyBalanceBefore;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalanceBefore = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
@@ -169,7 +168,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       );
 
       let strategyBalanceAfter;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceAfter = await receiptTokenContract.balanceOf(strategy.address);
@@ -210,7 +209,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         1
       )
       let shares;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         shares = await rewardsContract.balanceOf(strategy.address);
       } else {
         shares = await receiptTokenContract.balanceOf(strategy.address);
@@ -238,7 +237,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
       let rewardsContractBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         rewardsContractBalance = await rewardsContract.balanceOf(strategy.address);
         expect(rewardsContractBalance).to.equal(0);
 
@@ -286,7 +285,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 3: Check Initial Shares in  Pool
       let initialShares;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         initialShares = await rewardsContract.balanceOf(strategy.address);
       } else {
         initialShares = await receiptTokenContract.balanceOf(strategy.address);
@@ -300,15 +299,27 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await ethers.provider.send("evm_mine", []); // Mine a new block
 
       // Step 5: Check Claimable Rewards
+
+
       let reward;
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         reward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         reward = reward.owed;
-      } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
+      } else if (isConvexStrategy(config.strategyContractName)) {
         await rewardsContract.earned(strategy.address);
         // This is needed to update the internal state of the contract
         // before calling claimable_reward
         reward = await rewardsContract.claimable_reward(config.rewardsTokenAddress, strategy.address);
+      } else if (isBalancerStrategy(config.strategyContractName)) {
+        const gauge = await ethers.getContractAt("IBalancerLiquidityGauge", rewardsContract.address);
+        const rewardsCount = await gauge.reward_count();
+
+        for (let i = 0; i < Number(rewardsCount); i++) {
+          const rewardToken = await gauge.reward_tokens(i);
+          console.log(rewardToken)
+          reward = await gauge.claimable_reward(strategy.address, rewardToken);
+          console.log(`Claimable ${rewardToken} reward: ${reward.toString()}`);
+        }
       } else {
         reward = await strategy.checkRewards();
       }
@@ -334,7 +345,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       // Step 7: Check Strategy Balance After Withdrawal
       let strategyBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -368,7 +379,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const otherERC20Contract = await ethers.getContractAt("IERC20", config.otherErc20Address);
       const initialBalance = await otherERC20Contract.balanceOf(strategy.address);
       expect(initialBalance).to.be.gt(0);
-
       await strategy.emergencyWithdraw(config.otherErc20Address);
 
       const finalBalance = await otherERC20Contract.balanceOf(strategy.address);
@@ -688,7 +698,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         1
       );
       let oldStrategyInitialBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         oldStrategyInitialBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyInitialBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -707,7 +717,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         .to.emit(newStrategy, "AssetsReceivedFromOldStrategy");
 
       let oldStrategyBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         oldStrategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -716,7 +726,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(oldStrategyBalance).to.equal(0);
 
       let newStrategyBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         newStrategyBalance = await rewardsContract.balanceOf(newStrategy.address);
       } else {
         newStrategyBalance = await receiptTokenContract.balanceOf(newStrategy.address);
@@ -773,6 +783,17 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         // This is needed to update the internal state of the contract
         // before calling claimable_reward
         preHarvestReward = await rewardsContract.claimable_reward(config.rewardsTokenAddress, strategy.address);
+      } else if (isBalancerStrategy(config.strategyContractName)) {
+        const gauge = await ethers.getContractAt("IBalancerLiquidityGauge", rewardsContract.address);
+        const rewardsCount = await gauge.reward_count();
+
+        for (let i = 0; i < Number(rewardsCount); i++) {
+          const rewardToken = await gauge.reward_tokens(i);
+          console.log(rewardToken)
+          preHarvestReward = await gauge.claimable_reward(strategy.address, rewardToken);
+          console.log(`Claimable ${rewardToken} reward: ${preHarvestReward.toString()}`);
+        }
+
       } else {
         preHarvestReward = await strategy.checkRewards();
       }
@@ -835,16 +856,18 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const timeToSimulate = 7 * 24 * 60 * 60;
       await ethers.provider.send("evm_increaseTime", [timeToSimulate]);
       await ethers.provider.send("evm_mine", []);
-
+      console.log("got here");
       const rewardsToken = await ethers.getContractAt("IERC20", config.rewardsTokenAddress, gatewaySigner);
       const rewardsTokenBalanceBefore = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceBefore).to.eq(0);
-
+      console.log("rewards before", rewardsTokenBalanceBefore)
       // Step 5: Execute for real and verify RewardToken balance
       await strategy.claimRewards();
+      console.log("Claimed rewards")
       if (!config.rewardsTokenAddress) {
         throw new Error("Rewards token address is not defined in the config");
       }
+      console.log("rewardsToken")
       const rewardsTokenBalanceAfter = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceAfter).to.be.gte(rewardsTokenBalanceBefore);
     });
