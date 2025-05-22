@@ -46,7 +46,7 @@ import { decimals } from "thirdweb/extensions/erc20";
 import { trackEvent } from "@/utils/trackEvent";
 import { getAssetsFromShares } from "@/actions/actions";
 import { amount } from "codemelt-retro-api-sdk/functional/api/venft/upgrade";
-import { TestCctxSimulation } from './TestCctxSimulation';
+import Blockpi, { TransactionProgress, TransactionStep } from "@/service/blockpi";
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -277,7 +277,94 @@ export default function InteractionContainer({
       isTransactionStarted,
     });
 
-  const { data: cctxData, refetch: refetchCctx } = useInboundToCctxData(crosschainInvestHash, action);
+  const [transactionProgress, setTransactionProgress] = useState<TransactionProgress | null>(null);
+  const blockpi = useMemo(() => new Blockpi(), []);
+
+  // Replace useInboundToCctxData with useEffect for transaction tracking
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    const trackTransaction = async () => {
+      if (!crosschainInvestHash || action !== Action.crosschainInvest) return;
+      
+      try {
+        const progress = await blockpi.trackTransactionProgress(crosschainInvestHash);
+        setTransactionProgress(progress);
+        
+        // Handle transaction completion
+        if (progress.isComplete) {
+          if (progress.error) {
+            // Handle error case
+            const nextStep = actions.findIndex(
+              (el) => el == Action.CrossChainInvestFailed
+            );
+            setAction(actions[nextStep]);
+            setStep(nextStep);
+          } else {
+            // Handle success case
+            const nextStep = actions.findIndex(
+              (el) => el == Action.FundsInvest
+            );
+            setAction(actions[nextStep]);
+            setStep(nextStep);
+          }
+        }
+        
+        // Continue tracking if not complete
+        if (!progress.isComplete) {
+          timeoutId = setTimeout(trackTransaction, 5000);
+        }
+      } catch (error) {
+        console.error("[BlockPI] Error tracking transaction:", error);
+        timeoutId = setTimeout(trackTransaction, 5000);
+      }
+    };
+
+    if (crosschainInvestHash && action === Action.crosschainInvest) {
+      trackTransaction();
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [crosschainInvestHash, action, actions, setAction, setStep]);
+
+  // Update transaction step feedback based on progress
+  useEffect(() => {
+    if (!transactionProgress) return;
+
+    const feedback: TransactionStepMessages = {};
+    
+    transactionProgress.steps.forEach((step: TransactionStep) => {
+      let actionKey: Action;
+      let description: string;
+      
+      if (step.type === 'inboundToCctx') {
+        actionKey = Action.depositConfirmed;
+        description = "Cross chain transfer to vault in progress";
+      } else if (step.type === 'cctx') {
+        actionKey = Action.crosschainInvest;
+        description = "Cross chain transfer and investment of funds in progress";
+      } else {
+        return;
+      }
+
+      feedback[actionKey] = {
+        label: "Deposit",
+        description,
+        status: step.status === "OutboundMined" || step.status === "Success" 
+          ? TransactionStepStatus.completed 
+          : step.status === "Reverted" || step.status === "Failed"
+          ? TransactionStepStatus.error
+          : TransactionStepStatus.processing,
+        txHash: step.hash
+      };
+    });
+
+    setTransactionStepFeedback(feedback);
+  }, [transactionProgress]);
 
   function completeTransactionProcess(
     feedbackSnapshot: TransactionStepMessages
@@ -313,8 +400,9 @@ export default function InteractionContainer({
     console.log("crosschainInvestHash: ", crosschainInvestHash);
     console.log("crossChainTxId: ", crossChainTxId);
     if (
-      cctxData?.CrossChainTxs &&
-      cctxData.CrossChainTxs[0].cctx_status.status != "SUCCESS"
+      transactionProgress?.steps.some(step => 
+        step.status === "Reverted" || step.status === "Failed"
+      )
     ) {
       console.log({ action, actions });
       if (action == Action.depositConfirmed) {
@@ -563,7 +651,7 @@ export default function InteractionContainer({
         }
       }
     }
-  }, [vaultEvents, crosschainInvestHash, cctxData]);
+  }, [vaultEvents, crosschainInvestHash, transactionProgress]);
 
   useEffect(() => {
     if (
@@ -850,15 +938,360 @@ export default function InteractionContainer({
 
   // END
 
+  // Helper: Update UI for step status
+  function updateFirstCrossChainStepStatus(
+    status: string | undefined,
+    cctxUrl: string | undefined,
+    setTransactionStepFeedback: (feedback: TransactionStepMessages) => void
+  ) {
+    let feedback: TransactionStepMessages = {};
+    if (status === "PendingOutbound") {
+      feedback[Action.depositConfirmed] = {
+        label: "Deposit",
+        description: "Cross-chain transfer: initiating outbound (pending)",
+        status: TransactionStepStatus.processing,
+        txHash: cctxUrl
+      };
+    } else if (status === "OutboundMined" || status === "Success") {
+      feedback[Action.depositConfirmed] = {
+        label: "Deposit",
+        description: "Cross-chain transfer: outbound mined (completed)",
+        status: TransactionStepStatus.completed,
+        txHash: cctxUrl
+      };
+    } else if (status === "Reverted" || status === "Aborted" || status === "Failed") {
+      feedback[Action.depositConfirmed] = {
+        label: "Deposit",
+        description: `Cross-chain transfer failed: ${status}`,
+        status: TransactionStepStatus.error,
+        txHash: cctxUrl
+      };
+    } else if (status) {
+      feedback[Action.depositConfirmed] = {
+        label: "Deposit",
+        description: `Cross-chain transfer: ${status}`,
+        status: TransactionStepStatus.processing,
+        txHash: cctxUrl
+      };
+    }
+    setTransactionStepFeedback(feedback);
+  }
+
+  useEffect(() => {
+    // Only run for the first cross-chain step after local transaction
+    if (!crosschainInvestHash || action !== Action.depositConfirmed) return;
+    let cancelled = false;
+    
+    // Save transaction state to localStorage for persistence across refreshes
+    localStorage.setItem('pendingDepositTransaction', JSON.stringify({
+      hash: crosschainInvestHash,
+      txId: crossChainTxId,
+      timestamp: Date.now()
+    }));
+
+    async function pollBlockPIForFirstStep() {
+      let attempt = 0;
+      const maxAttempts = 30; // Allow for up to 10+ minutes of polling
+      let backoffDelay = 3000; // Start with 3 seconds
+      let consecutiveErrors = 0;
+
+      while (!cancelled && attempt < maxAttempts) {
+        try {
+          console.log(`[BlockPI] Attempt ${attempt+1}/${maxAttempts} - Calling inboundHashToCctx for ${crosschainInvestHash}`);
+          
+          // Update UI with current attempt info
+          let attemptFeedback: TransactionStepMessages = {};
+          attemptFeedback[Action.depositConfirmed] = {
+            label: "Deposit",
+            description: `Cross-chain transfer in progress (attempt ${attempt+1}/${maxAttempts})`,
+            status: TransactionStepStatus.processing,
+            txHash: lastEventTxHash
+          };
+          setTransactionStepFeedback(attemptFeedback);
+          
+          const inboundRes = await blockpi.getInboundHashToCctxData(crosschainInvestHash);
+          const cctxIndex = inboundRes?.inboundHashToCctx?.cctx_index?.[0];
+          
+          if (!cctxIndex) {
+            consecutiveErrors++;
+            
+            // If too many consecutive errors, consider falling back to RPC
+            if (consecutiveErrors > 10) {
+              console.log("[BlockPI] Too many consecutive errors, falling back to RPC-based monitoring");
+              // The existing event-based monitoring in this component will serve as the fallback
+              return;
+            }
+            
+            attempt++;
+            // Exponential backoff with a cap
+            backoffDelay = Math.min(backoffDelay * 1.5, 30000); // Increase delay, max 30sec
+            console.log(`[BlockPI] No cctx_index found yet, waiting ${backoffDelay/1000}s before retry`);
+            await new Promise(res => setTimeout(res, backoffDelay));
+            continue;
+          }
+          
+          // Reset consecutive errors since we got a valid response
+          consecutiveErrors = 0;
+          
+          // STEP 2: Now get the actual transaction status using the cctx endpoint
+          console.log(`[BlockPI] Found cctx_index: ${cctxIndex}, calling cctx endpoint`);
+          
+          // Use the BLOCKPI_URL from blockpi instance to construct the URL
+          const cctxUrl = `${blockpi.api.defaults.baseURL}/cctx/${cctxIndex}`;
+          
+          const cctxRes = await blockpi.getCctxData(cctxIndex);
+          const status = cctxRes?.CrossChainTx?.cctx_status?.status;
+          
+          console.log(`[BlockPI] First cross-chain step status for ${crosschainInvestHash} (cctx: ${cctxIndex}):`, status);
+          updateFirstCrossChainStepStatus(status, cctxUrl, setTransactionStepFeedback);
+          
+          if (status === "OutboundMined" || status === "Success" || status === "Reverted" || status === "Aborted" || status === "Failed") {
+            // Clear the localStorage entry on terminal state
+            localStorage.removeItem('pendingDepositTransaction');
+            
+            // If successful, update UI with success message
+            if (status === "OutboundMined" || status === "Success") {
+              console.log("[BlockPI] Transaction completed successfully");
+            } else {
+              console.log(`[BlockPI] Transaction failed with status: ${status}`);
+            }
+            
+            // Stop polling on terminal state
+            return;
+          }
+          
+          // If we get here, we need to continue polling with backoff
+          attempt++;
+          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
+          await new Promise(res => setTimeout(res, backoffDelay));
+          
+        } catch (err) {
+          console.error(`[BlockPI] API error for ${crosschainInvestHash}:`, err);
+          attempt++;
+          consecutiveErrors++;
+          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
+          await new Promise(res => setTimeout(res, backoffDelay));
+        }
+      }
+      
+      if (attempt >= maxAttempts) {
+        console.log("[BlockPI] Max polling attempts reached, falling back to RPC");
+        // The existing event-based monitoring will continue
+      }
+    }
+
+    pollBlockPIForFirstStep();
+    return () => { cancelled = true; };
+  }, [crosschainInvestHash, action, crossChainTxId, lastEventTxHash, setTransactionStepFeedback]);
+
+  // Helper: Update UI for withdrawal step status
+  function updateFirstWithdrawStepStatus(
+    status: string | undefined,
+    cctxUrl: string | undefined,
+    setTransactionStepFeedback: (feedback: TransactionStepMessages) => void
+  ) {
+    let feedback: TransactionStepMessages = {};
+    if (status === "PendingOutbound") {
+      feedback[Action.withdrawconfirmed] = {
+        label: "Withdraw",
+        description: "Cross-chain withdraw request: initiating outbound (pending)",
+        status: TransactionStepStatus.processing,
+        txHash: cctxUrl
+      };
+    } else if (status === "OutboundMined" || status === "Success") {
+      feedback[Action.withdrawconfirmed] = {
+        label: "Withdraw",
+        description: "Cross-chain withdraw request: outbound mined (completed)",
+        status: TransactionStepStatus.completed,
+        txHash: cctxUrl
+      };
+    } else if (status === "Reverted" || status === "Aborted" || status === "Failed") {
+      feedback[Action.withdrawconfirmed] = {
+        label: "Withdraw",
+        description: `Cross-chain withdraw request failed: ${status}`,
+        status: TransactionStepStatus.error,
+        txHash: cctxUrl
+      };
+    } else if (status) {
+      feedback[Action.withdrawconfirmed] = {
+        label: "Withdraw",
+        description: `Cross-chain withdraw request: ${status}`,
+        status: TransactionStepStatus.processing,
+        txHash: cctxUrl
+      };
+    }
+    setTransactionStepFeedback(feedback);
+  }
+
+  // BlockPI integration for withdraw flow
+  useEffect(() => {
+    // Only run for the first cross-chain step after local withdraw transaction
+    if (!crosschainInvestHash || action !== Action.withdrawconfirmed) return;
+    let cancelled = false;
+    
+    // Save transaction state to localStorage for persistence across refreshes
+    localStorage.setItem('pendingWithdrawTransaction', JSON.stringify({
+      hash: crosschainInvestHash,
+      txId: crossChainTxId,
+      timestamp: Date.now()
+    }));
+
+    async function pollBlockPIForWithdrawStep() {
+      let attempt = 0;
+      const maxAttempts = 30; // Allow for up to 10+ minutes of polling
+      let backoffDelay = 3000; // Start with 3 seconds
+      let consecutiveErrors = 0;
+
+      while (!cancelled && attempt < maxAttempts) {
+        try {
+          console.log(`[BlockPI] Attempt ${attempt+1}/${maxAttempts} - Calling inboundHashToCctx for withdraw ${crosschainInvestHash}`);
+          
+          // Update UI with current attempt info
+          let attemptFeedback: TransactionStepMessages = {};
+          attemptFeedback[Action.withdrawconfirmed] = {
+            label: "Withdraw",
+            description: `Cross-chain withdraw request in progress (attempt ${attempt+1}/${maxAttempts})`,
+            status: TransactionStepStatus.processing,
+            txHash: lastEventTxHash
+          };
+          setTransactionStepFeedback(attemptFeedback);
+          
+          const inboundRes = await blockpi.getInboundHashToCctxData(crosschainInvestHash);
+          const cctxIndex = inboundRes?.inboundHashToCctx?.cctx_index?.[0];
+          
+          if (!cctxIndex) {
+            consecutiveErrors++;
+            
+            // If too many consecutive errors, consider falling back to RPC
+            if (consecutiveErrors > 10) {
+              console.log("[BlockPI] Too many consecutive errors, falling back to RPC-based monitoring");
+              // The existing event-based monitoring in this component will serve as the fallback
+              return;
+            }
+            
+            attempt++;
+            // Exponential backoff with a cap
+            backoffDelay = Math.min(backoffDelay * 1.5, 30000); // Increase delay, max 30sec
+            console.log(`[BlockPI] No cctx_index found yet for withdraw, waiting ${backoffDelay/1000}s before retry`);
+            await new Promise(res => setTimeout(res, backoffDelay));
+            continue;
+          }
+          
+          // Reset consecutive errors since we got a valid response
+          consecutiveErrors = 0;
+          
+          // STEP 2: Now get the actual transaction status using the cctx endpoint
+          console.log(`[BlockPI] Found cctx_index: ${cctxIndex} for withdraw, calling cctx endpoint`);
+          
+          // Use the BLOCKPI_URL from blockpi instance to construct the URL
+          const cctxUrl = `${blockpi.api.defaults.baseURL}/cctx/${cctxIndex}`;
+          
+          const cctxRes = await blockpi.getCctxData(cctxIndex);
+          const status = cctxRes?.CrossChainTx?.cctx_status?.status;
+          
+          console.log(`[BlockPI] Withdraw cross-chain step status for ${crosschainInvestHash} (cctx: ${cctxIndex}):`, status);
+          updateFirstWithdrawStepStatus(status, cctxUrl, setTransactionStepFeedback);
+          
+          if (status === "OutboundMined" || status === "Success" || status === "Reverted" || status === "Aborted" || status === "Failed") {
+            // Clear the localStorage entry on terminal state
+            localStorage.removeItem('pendingWithdrawTransaction');
+            
+            // If successful, update UI with success message
+            if (status === "OutboundMined" || status === "Success") {
+              console.log("[BlockPI] Withdraw transaction completed successfully");
+            } else {
+              console.log(`[BlockPI] Withdraw transaction failed with status: ${status}`);
+            }
+            
+            // Stop polling on terminal state
+            return;
+          }
+          
+          // If we get here, we need to continue polling with backoff
+          attempt++;
+          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
+          await new Promise(res => setTimeout(res, backoffDelay));
+          
+        } catch (err) {
+          console.error(`[BlockPI] API error for withdraw ${crosschainInvestHash}:`, err);
+          attempt++;
+          consecutiveErrors++;
+          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
+          await new Promise(res => setTimeout(res, backoffDelay));
+        }
+      }
+      
+      if (attempt >= maxAttempts) {
+        console.log("[BlockPI] Max polling attempts reached for withdraw, falling back to RPC");
+        // The existing event-based monitoring will continue
+      }
+    }
+
+    pollBlockPIForWithdrawStep();
+    return () => { cancelled = true; };
+  }, [crosschainInvestHash, action, crossChainTxId, lastEventTxHash, setTransactionStepFeedback]);
+
+  // Check for pending transactions on component mount
+  useEffect(() => {
+    // Check for pending deposit transactions
+    const pendingDepositTx = localStorage.getItem('pendingDepositTransaction');
+    if (pendingDepositTx) {
+      try {
+        const { hash, txId, timestamp } = JSON.parse(pendingDepositTx);
+        
+        // Only resume if transaction is less than 20 minutes old
+        if (Date.now() - timestamp < 20 * 60 * 1000) {
+          console.log('[BlockPI] Resuming pending deposit transaction:', hash);
+          setCrosschainInvestHash(hash);
+          setcrossChainTxId(txId);
+          
+          // Set action to depositConfirmed to trigger the polling effect
+          const nextStep = actions.findIndex((el) => el == Action.depositConfirmed);
+          if (nextStep >= 0) {
+            setAction(actions[nextStep]);
+            setStep(nextStep);
+          }
+        } else {
+          console.log('[BlockPI] Found stale deposit transaction, removing from localStorage');
+          localStorage.removeItem('pendingDepositTransaction');
+        }
+      } catch (error) {
+        console.error('[BlockPI] Error parsing pending deposit transaction:', error);
+        localStorage.removeItem('pendingDepositTransaction');
+      }
+    }
+    
+    // Check for pending withdraw transactions
+    const pendingWithdrawTx = localStorage.getItem('pendingWithdrawTransaction');
+    if (pendingWithdrawTx) {
+      try {
+        const { hash, txId, timestamp } = JSON.parse(pendingWithdrawTx);
+        
+        // Only resume if transaction is less than 20 minutes old
+        if (Date.now() - timestamp < 20 * 60 * 1000) {
+          console.log('[BlockPI] Resuming pending withdraw transaction:', hash);
+          setCrosschainInvestHash(hash);
+          setcrossChainTxId(txId);
+          
+          // Set action to withdrawconfirmed to trigger the polling effect
+          const nextStep = actions.findIndex((el) => el == Action.withdrawconfirmed);
+          if (nextStep >= 0) {
+            setAction(actions[nextStep]);
+            setStep(nextStep);
+          }
+        } else {
+          console.log('[BlockPI] Found stale withdraw transaction, removing from localStorage');
+          localStorage.removeItem('pendingWithdrawTransaction');
+        }
+      } catch (error) {
+        console.error('[BlockPI] Error parsing pending withdraw transaction:', error);
+        localStorage.removeItem('pendingWithdrawTransaction');
+      }
+    }
+  }, [actions, setCrosschainInvestHash, setcrossChainTxId, setAction, setStep]);
+
   return (
     <div className="w-full flex flex-col mt-5">
-      {(() => {
-        return process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-4 bg-gray-800 rounded-lg">
-            <TestCctxSimulation refetch={refetchCctx} />
-          </div>
-        );
-      })()}
       <Interaction
         setStep={setStep}
         setAction={setAction}
@@ -1198,8 +1631,9 @@ function Interaction({
           },
           [Action.DivestSent]: {
             label: "Withdraw",
-            description: "Divestment of funds from strategy in progress",
-            status: TransactionStepStatus.processing,
+            description: "Divestment of funds from strategy completed",
+            status: TransactionStepStatus.completed,
+            txHash: localLastEventTxHash,
           },
         }));
         break;

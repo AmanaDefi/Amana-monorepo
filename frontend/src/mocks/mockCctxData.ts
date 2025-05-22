@@ -1,4 +1,6 @@
-export const mockWithdrawCctxData = {
+import { BlockPIResponse } from '@/service/blockpi';
+
+export const mockWithdrawCctxData: BlockPIResponse = {
   CrossChainTxs: [{
     creator: "zeta1l07weaxkmn6z69qm55t53v4rfr43eys4cjz54h",
     index: "0x5fcecb507982bd2e18b2b435aabc74b69183005a1ae94e864bb9aa72fa020dc7",
@@ -53,27 +55,65 @@ export const mockWithdrawCctxData = {
 };
 
 // Different status scenarios for testing
-export const mockCctxScenarios = {
+const base = mockWithdrawCctxData.CrossChainTxs?.[0];
+export const mockCctxScenarios: Record<string, BlockPIResponse> = {
   success: mockWithdrawCctxData,
   pending: {
     ...mockWithdrawCctxData,
-    CrossChainTxs: [{
-      ...mockWithdrawCctxData.CrossChainTxs[0],
-      cctx_status: {
-        ...mockWithdrawCctxData.CrossChainTxs[0].cctx_status,
-        status: "Pending"
-      }
-    }]
+    CrossChainTxs: [
+      base ? {
+        creator: base.creator ?? "",
+        index: base.index ?? "",
+        cctx_status: {
+          status: "Pending",
+          status_message: base.cctx_status.status_message ?? "",
+          error_message: base.cctx_status.error_message ?? "",
+          lastUpdate_timestamp: base.cctx_status.lastUpdate_timestamp ?? "",
+          isAbortRefunded: base.cctx_status.isAbortRefunded ?? false,
+          created_timestamp: base.cctx_status.created_timestamp ?? ""
+        },
+        inbound_params: base.inbound_params ?? {
+          sender: "",
+          sender_chain_id: "",
+          tx_origin: "",
+          coin_type: "",
+          asset: "",
+          amount: "",
+          observed_hash: "",
+          status: "",
+          confirmation_mode: ""
+        },
+        outbound_params: base.outbound_params ?? []
+      } : undefined as any
+    ]
   },
   failed: {
     ...mockWithdrawCctxData,
-    CrossChainTxs: [{
-      ...mockWithdrawCctxData.CrossChainTxs[0],
-      cctx_status: {
-        ...mockWithdrawCctxData.CrossChainTxs[0].cctx_status,
-        status: "Failed",
-        error_message: "Transaction failed"
-      }
-    }]
+    CrossChainTxs: [
+      base ? {
+        creator: base.creator ?? "",
+        index: base.index ?? "",
+        cctx_status: {
+          status: "Failed",
+          status_message: base.cctx_status.status_message ?? "",
+          error_message: "Transaction failed",
+          lastUpdate_timestamp: base.cctx_status.lastUpdate_timestamp ?? "",
+          isAbortRefunded: base.cctx_status.isAbortRefunded ?? false,
+          created_timestamp: base.cctx_status.created_timestamp ?? ""
+        },
+        inbound_params: base.inbound_params ?? {
+          sender: "",
+          sender_chain_id: "",
+          tx_origin: "",
+          coin_type: "",
+          asset: "",
+          amount: "",
+          observed_hash: "",
+          status: "",
+          confirmation_mode: ""
+        },
+        outbound_params: base.outbound_params ?? []
+      } : undefined as any
+    ]
   }
 };

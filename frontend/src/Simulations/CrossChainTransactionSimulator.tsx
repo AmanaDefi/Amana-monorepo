@@ -229,7 +229,7 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           const inboundRes = await axios.get(steps[i].url);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0] || ("cctxHash" in steps[i] ? (steps[i] as any).cctxHash : undefined);
           if (!cctxIndex) throw new Error('No cctx_index found for this step');
-          const cctxUrl = `https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/${cctxIndex}`;
+          const cctxUrl = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${cctxIndex}`;
           const cctxRes = await axios.get(cctxUrl);
           cctxData = cctxRes.data;
           const status = cctxData?.CrossChainTx?.cctx_status?.status;
@@ -251,7 +251,7 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           const inboundRes = await axios.get(steps[i].url);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0];
           if (!cctxIndex) throw new Error('No cctx_index found for this step');
-          const cctxUrl = `https://zetachain.blockpi.network/lcd/v1/public/zeta-chain/crosschain/cctx/${cctxIndex}`;
+          const cctxUrl = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${cctxIndex}`;
           const cctxRes = await axios.get(cctxUrl);
           cctxData = cctxRes.data;
           const status = cctxData?.CrossChainTx?.cctx_status?.status;
