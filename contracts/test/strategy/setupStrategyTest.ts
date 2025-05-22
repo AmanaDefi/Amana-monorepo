@@ -97,11 +97,21 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
   const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
   const priceOracle = await PriceOracleFactory.deploy(pythAddress); // Pyth contract address on specified chain
   await priceOracle.deployed();
-
+  console.log(`PriceOracle deployed to: ${priceOracle.address}`);
   const SwapHelperFactory = await ethers.getContractFactory(swapHelperContractName);
-  const swapHelper = await SwapHelperFactory.deploy(priceOracle.address);
+  const swapHelper = await upgrades.deployProxy(
+    SwapHelperFactory,
+    [
+      priceOracle.address
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups",
+    }
+  );
+  console.log(`SwapHelperFactory deployed to: ${swapHelper.address}`);
   await swapHelper.deployed();
-
+  console.log(`SwapHelper deployed to: ${swapHelper.address}`);
   const StrategyFactory = await ethers.getContractFactory(strategyContractName);
   const args = [
     config.name,
@@ -122,11 +132,18 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     }
     args.push(convexPoolId, convexBooster, cvxTokenAddress);
   }
-
-  const strategy = await upgrades.deployProxy(StrategyFactory, args, {
-    initializer: "initialize"
-  });
-  await strategy.deployed();
+  console.log(`Deploying strategy with args: ${args}`);
+  let strategy;
+  try {
+    strategy = await upgrades.deployProxy(StrategyFactory, args, {
+      initializer: "initialize"
+    });
+    await strategy.deployed();
+  } catch (err) {
+    console.error("❌ Strategy deployment failed:", err);
+    throw err;
+  }
+  console.log(`Strategy deployed to: ${strategy.address}`);
 
   return {
     owner,

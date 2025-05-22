@@ -90,14 +90,14 @@ export const strategyConfigs: StrategyTestConfig[] = [
     convexPoolId: 217
   },
   {
-    name: "Convex eUSD/USDC Strategy - Ethereum",
+    name: "Convex eUSDUSDC Strategy - Ethereum",
     gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
     strategyContractName: "ConvexERC20Strategy",
     strategyChainId: 1,
     receiptTokenContractName: "ICurvePoolFixed",
     swapHelperContractName: "SwapHelperEthereum",
     rewardsContractName: "IConvexRewardPool",
-    forkBlock: 22315281,
+    forkBlock: 22530874,
     inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     inputTokenStorageSlot: 9,
     inputTokenIndexOrPlaceholder: 1,
@@ -119,7 +119,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     convexPoolId: 369 // use hardhat task to find this
   },
   {
-    name: "Convex eUSD/USDC Strategy - Arbitrum",
+    name: "Convex eUSDUSDC Strategy - Arbitrum",
     gatewayAddress: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549",
     strategyContractName: "ConvexERC20StrategyArbitrum",
     strategyChainId: 42161,
@@ -148,7 +148,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     convexPoolId: 36 // use hardhat task to find this, or look on convex website
   },
   {
-    name: "Convex USDT/USDe Strategy - Ethereum",
+    name: "Convex USDTUSDe Strategy - Ethereum",
     gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
     strategyContractName: "ConvexERC20Strategy",
     strategyChainId: 1,

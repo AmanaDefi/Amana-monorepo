@@ -1,34 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./SwapHelperParent.sol";
 
 import "./interfaces/IZRC20.sol";
-import "./interfaces/IErrors.sol";
-import "./interfaces/IPriceOracle.sol";
-import "./interfaces/ICurvePoolDynamic.sol";
-import "./interfaces/IUniswapV3Factory.sol";
-import "./interfaces/IUniswapV3Pool.sol";
-import "./interfaces/ISwapRouter.sol";
+
 import "./interfaces/IAlgebraFactory.sol";
 import "./interfaces/IAlgebraPool.sol";
 
 import "./CurvePoolRegistry.sol";
 
-contract SwapHelper {
+contract SwapHelperZetachain is SwapHelperParent {
     enum SwapType {
         None,
         Beam,
         Eddy
     }
 
-    address constant UNISWAP_V2_FACTORY_EDDY =
-        0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c; // mainnet and testnet
-    address constant UNISWAP_V2_ROUTER_EDDY =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe; // mainnet and testnet
     address constant UNISWAP_V3_FACTORY_EDDY =
         0x67AA6B2b715937Edc1Eb4D3b7B5d5dCD1fd93E8C; // mainnet and testnet
     address constant UNISWAP_V3_ROUTER_EDDY =
@@ -106,10 +94,21 @@ contract SwapHelper {
     address constant CURVE_POOL_REGISTRY =
         0x5524124b8F36e682f3A23D069399247806e8B627; // mainnet only
 
-    address public immutable PRICE_ORACLE_ADDRESS;
-
-    constructor(address _priceOracle) {
-        PRICE_ORACLE_ADDRESS = _priceOracle;
+    function initialize(
+        address _priceOracle,
+        address _v3Router,
+        address _v3Factory,
+        address
+    ) external initializer {
+        __SwapHelperParent_init(
+            _priceOracle,
+            0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe, // ← Uniswap V2 Eddy Router
+            0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c, // ← Uniswap V2 Eddy Factory
+            _v3Router,
+            _v3Factory,
+            address(0),
+            WZETA_TOKEN // ← passed into the parent as the intermediate token
+        );
     }
 
     /**
@@ -117,7 +116,9 @@ contract SwapHelper {
      * @param token The address of the token.
      * @return The price feed ID associated with the token.
      */
-    function getPriceFeedId(address token) internal pure returns (bytes32) {
+    function getPriceFeedId(
+        address token
+    ) internal pure override returns (bytes32) {
         if (
             token == ETH_ETH_ADDRESS ||
             token == ETH_BASE_ADDRESS ||
@@ -144,7 +145,7 @@ contract SwapHelper {
      * @param token The address of the token.
      * @return True if the token is a stablecoin, false otherwise.
      */
-    function isStablecoin(address token) internal pure returns (bool) {
+    function isStablecoin(address token) internal pure override returns (bool) {
         return (token == USDC_BSC_ADDRESS ||
             token == USDC_ETH_ADDRESS ||
             token == USDC_POL_ADDRESS ||
@@ -158,151 +159,6 @@ contract SwapHelper {
             token == USDT_ARB_ADDRESS ||
             token == USDC_AVAX_ADDRESS ||
             token == USDT_AVAX_ADDRESS);
-    }
-
-    /**
-     * @notice Fetches the token's decimal places from its contract.
-     * @dev Assumes 18 decimals for native tokens (ETH, BNB, POL, WZETA).
-     * @param token The address of the token.
-     * @return The number of decimal places.
-     */
-    function getTokenDecimals(address token) internal view returns (uint8) {
-        return IERC20Metadata(token).decimals();
-    }
-
-    /**
-     * @notice Calculates the minimum output amount based on input token, output token, and slippage.
-     * @param inputToken The address of the input token.
-     * @param outputToken The address of the output token.
-     * @param amount The input amount in token units.
-     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
-     * @return The minimum acceptable output amount.
-     */
-    function calculateMinAmountOut(
-        address inputToken,
-        address outputToken,
-        uint256 amount,
-        uint16 slippageBps
-    ) internal view returns (uint256) {
-        bytes32 inputPriceFeed = getPriceFeedId(inputToken);
-        bytes32 outputPriceFeed = getPriceFeedId(outputToken);
-
-        require(
-            inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
-            "Invalid input token"
-        );
-        require(
-            outputPriceFeed != bytes32(0) || isStablecoin(outputToken),
-            "Invalid output token"
-        );
-
-        // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
-        uint256 inputPrice = isStablecoin(inputToken)
-            ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
-        uint256 outputPrice = isStablecoin(outputToken)
-            ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
-
-        require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
-
-        // Get token decimals dynamically
-        uint256 inputDecimals = getTokenDecimals(inputToken);
-        uint256 outputDecimals = getTokenDecimals(outputToken);
-
-        // Convert input amount to USD value
-        uint256 amountInUsd = (amount * inputPrice) / (10 ** inputDecimals);
-
-        // Convert USD value to output token amount
-        uint256 amountOut = (amountInUsd * (10 ** outputDecimals)) /
-            outputPrice;
-
-        // Apply slippage
-        return amountOut - ((amountOut * slippageBps) / 10000);
-    }
-
-    /**
-     * @notice Calculates the maximum acceptable input amount to receive a desired output amount.
-     * @param inputToken The address of the input token.
-     * @param outputToken The address of the output token.
-     * @param desiredOutputAmount The desired output amount in token units.
-     * @param slippageBps The slippage tolerance in basis points (e.g., 50 for 0.5%).
-     * @return The maximum acceptable input amount.
-     */
-    function calculateMaxAmountIn(
-        address inputToken,
-        address outputToken,
-        uint256 desiredOutputAmount,
-        uint16 slippageBps
-    ) internal view returns (uint256) {
-        bytes32 inputPriceFeed = getPriceFeedId(inputToken);
-        bytes32 outputPriceFeed = getPriceFeedId(outputToken);
-
-        require(
-            inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
-            "Invalid input token"
-        );
-        require(
-            outputPriceFeed != bytes32(0) || isStablecoin(outputToken),
-            "Invalid output token"
-        );
-
-        // Assume 1 USD = 1 USDC/USDT if it's a stablecoin
-        uint256 inputPrice = isStablecoin(inputToken)
-            ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(inputPriceFeed);
-        uint256 outputPrice = isStablecoin(outputToken)
-            ? 1e8
-            : IPriceOracle(PRICE_ORACLE_ADDRESS).fetchPrice(outputPriceFeed);
-
-        require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
-
-        // Get token decimals
-        uint256 inputDecimals = getTokenDecimals(inputToken);
-        uint256 outputDecimals = getTokenDecimals(outputToken);
-
-        // Convert desired output to USD
-        uint256 desiredOutputInUsd = (desiredOutputAmount * outputPrice) /
-            (10 ** outputDecimals);
-
-        // Convert USD to input token amount
-        uint256 rawAmountIn = (desiredOutputInUsd * (10 ** inputDecimals)) /
-            inputPrice;
-
-        // Apply slippage buffer (increase the amount in)
-        return rawAmountIn + ((rawAmountIn * slippageBps) / 10000);
-    }
-
-    /**
-     * @notice Sorts two token addresses in ascending order.
-     * @dev Ensures consistent order for token pairs in Uniswap and other protocols.
-     * @param tokenA The first token address.
-     * @param tokenB The second token address.
-     * @return token0 The address of the token that comes first.
-     * @return token1 The address of the token that comes second.
-     * @custom:reverts CantBeIdenticalAddresses if the two token addresses are identical.
-     * @custom:reverts CantBeZeroAddress if one of the token addresses is the zero address.
-     */
-    function sortTokens(
-        address tokenA,
-        address tokenB
-    ) internal pure returns (address token0, address token1) {
-        if (tokenA == tokenB) revert IErrors.InvalidAddress();
-        (token0, token1) = tokenA < tokenB
-            ? (tokenA, tokenB)
-            : (tokenB, tokenA);
-        if (token0 == address(0)) revert IErrors.InvalidAddress();
-    }
-
-    function _existsV2PoolEddy(
-        address tokenA,
-        address tokenB
-    ) internal view returns (bool) {
-        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY_EDDY).getPair(
-            tokenA,
-            tokenB
-        );
-        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
     }
 
     function _existsV3PoolEddy(
@@ -346,37 +202,7 @@ contract SwapHelper {
         return false; // No valid V3 pool found
     }
 
-    function getPathV2(
-        address zrc20,
-        address targetZRC20
-    ) public view returns (address[] memory path) {
-        if (zrc20 == targetZRC20) {
-            revert IErrors.InvalidAddress();
-        }
-
-        // UniswapV2 Direct Swap
-        if (_existsV2PoolEddy(zrc20, targetZRC20)) {
-            path = new address[](2);
-            path[0] = zrc20;
-            path[1] = targetZRC20;
-            return (path);
-        }
-
-        // UniswapV2 Indirect Swap via WZETA_TOKEN
-        if (
-            _existsV2PoolEddy(zrc20, WZETA_TOKEN) &&
-            _existsV2PoolEddy(WZETA_TOKEN, targetZRC20)
-        ) {
-            path = new address[](3);
-            path[0] = zrc20;
-            path[1] = WZETA_TOKEN;
-            path[2] = targetZRC20;
-            return (path);
-        }
-        return path;
-    }
-
-    function getPathV3(
+    function getPathV3BeamOrEddy(
         address zrc20,
         address targetZRC20
     )
@@ -525,132 +351,6 @@ contract SwapHelper {
         return (path, feeTiers, encodedPath, SwapType.None);
     }
 
-    function getAmountOutV2(
-        uint amountIn,
-        address[] memory path
-    ) public view returns (uint amountOut) {
-        if (amountIn == 0 || path.length < 2) {
-            revert IErrors.InvalidPath();
-        }
-
-        amountOut = amountIn;
-
-        for (uint i = 0; i < path.length - 1; i++) {
-            address tokenIn = path[i];
-            address tokenOut = path[i + 1];
-
-            // Fetch the Uniswap V2 pair
-            address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY_EDDY).getPair(
-                tokenIn,
-                tokenOut
-            );
-            if (pair == address(0)) {
-                revert IErrors.InsufficientLiquidity();
-            }
-
-            // Fetch reserves
-            (uint reserve0, uint reserve1, ) = IUniswapV2Pair(pair)
-                .getReserves();
-            (uint reserveIn, uint reserveOut) = tokenIn < tokenOut
-                ? (reserve0, reserve1)
-                : (reserve1, reserve0);
-
-            if (reserveIn == 0 || reserveOut == 0) {
-                revert IErrors.InsufficientLiquidity();
-            }
-
-            // Apply Uniswap V2 swap formula
-            uint amountInWithFee = amountOut * 997;
-            uint numerator = amountInWithFee * reserveOut;
-            uint denominator = (reserveIn * 1000) + amountInWithFee;
-            amountOut = numerator / denominator;
-        }
-    }
-
-    function getAmountOutV3(
-        uint amountIn,
-        address[] memory path,
-        uint24[] memory feeTiers
-    ) internal view returns (uint amountOut) {
-        if (
-            amountIn == 0 ||
-            path.length < 2 ||
-            path.length - 1 != feeTiers.length
-        ) {
-            revert IErrors.InvalidPath();
-        }
-
-        amountOut = amountIn;
-
-        for (uint i = 0; i < path.length - 1; i++) {
-            address tokenIn = path[i];
-            address tokenOut = path[i + 1];
-            uint24 feeTier = feeTiers[i];
-
-            // Fetch Uniswap V3 pool address
-            address pool = IUniswapV3Factory(UNISWAP_V3_FACTORY_EDDY).getPool(
-                tokenIn,
-                tokenOut,
-                feeTier
-            );
-            if (pool == address(0)) {
-                revert IErrors.InsufficientLiquidity();
-            }
-
-            // Fetch slot0 to get sqrtPriceX96
-            (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
-            uint128 liquidity = IUniswapV3Pool(pool).liquidity();
-            if (liquidity == 0) {
-                revert IErrors.InsufficientLiquidity();
-            }
-
-            // Calculate amountOut using Uniswap V3 price formula
-            uint256 priceX96 = (uint256(sqrtPriceX96) * uint256(sqrtPriceX96)) /
-                (1 << 96);
-            amountOut = (amountOut * priceX96) / (1 << 96);
-        }
-    }
-
-    function getReserves(
-        address tokenA,
-        address tokenB
-    ) internal view returns (uint reserveA, uint reserveB) {
-        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY_EDDY).getPair(
-            tokenA,
-            tokenB
-        );
-        if (pair == address(0)) revert IErrors.InsufficientLiquidity();
-        (uint112 reserve0, uint112 reserve1, ) = IUniswapV2Pair(pair)
-            .getReserves();
-        (address token0, ) = sortTokens(tokenA, tokenB);
-        (reserveA, reserveB) = tokenA == token0
-            ? (reserve0, reserve1)
-            : (reserve1, reserve0);
-    }
-
-    /**
-     * @notice Finds the index of a token in a Curve pool.
-     * @param token The token to find in the pool.
-     * @param pool The Curve pool address.
-     * @return index The token index in the pool.
-     */
-    function getTokenIndex(
-        address token,
-        address pool
-    ) public view returns (uint256) {
-        // Assume Curve pools have at most 8 tokens
-        for (uint256 i = 0; i < 8; i++) {
-            try ICurvePoolDynamic(pool).coins(i) returns (address poolToken) {
-                if (poolToken == token) {
-                    return i;
-                }
-            } catch {
-                break; // Stop if out of range
-            }
-        }
-        revert("Token not found in Curve pool");
-    }
-
     /**
      * @notice Finds the Curve pool for a token pair and calculates the expected amount out.
      * @param inputToken The token being swapped from.
@@ -660,7 +360,7 @@ contract SwapHelper {
     function getCurvePool(
         address inputToken,
         address outputToken
-    ) public view returns (address curvePool, uint256 i, uint256 j) {
+    ) public view override returns (address curvePool, uint256 i, uint256 j) {
         CurvePoolRegistry registry = CurvePoolRegistry(CURVE_POOL_REGISTRY);
         curvePool = registry.getBestPool(inputToken, outputToken);
         // Find token indexes in the pool using getTokenIndex()
@@ -736,7 +436,7 @@ contract SwapHelper {
                 uint24[] memory feeTiers,
                 bytes memory encodedPath,
                 SwapType swapType
-            ) = getPathV3(inputToken, outputToken);
+            ) = getPathV3BeamOrEddy(inputToken, outputToken);
             if (encodedPath.length > 0) {
                 return getAmountOutV3(amount, path, feeTiers);
             } else {
@@ -754,7 +454,7 @@ contract SwapHelper {
         address vault,
         uint16 maxDeadline,
         bytes calldata data
-    ) external returns (uint256 amountOut) {
+    ) external override returns (uint256 amountOut) {
         require(
             IERC20(zrc20).balanceOf(address(this)) >= amount,
             "Insufficient balance"
@@ -770,7 +470,7 @@ contract SwapHelper {
             uint24[] memory feeTiers,
             bytes memory encodedPath,
             SwapType swapType
-        ) = getPathV3(zrc20, targetZRC20);
+        ) = getPathV3BeamOrEddy(zrc20, targetZRC20);
         if (swapType == SwapType.Eddy) {
             IZRC20(zrc20).approve(UNISWAP_V3_ROUTER_EDDY, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
@@ -796,10 +496,9 @@ contract SwapHelper {
         } else {
             // fallback to V2 or revert
             path = getPathV2(zrc20, targetZRC20);
-            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER_EDDY, amount);
-            uint256[] memory amounts = IUniswapV2Router02(
-                UNISWAP_V2_ROUTER_EDDY
-            ).swapExactTokensForTokens(
+            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapExactTokensForTokens(
                     amount,
                     minimumOut,
                     path,
@@ -819,7 +518,7 @@ contract SwapHelper {
         address vault,
         uint16 maxDeadline,
         bytes calldata data
-    ) external returns (uint256 amountIn) {
+    ) external override returns (uint256 amountIn) {
         uint256 maxAmountIn = calculateMaxAmountIn(
             zrc20,
             targetZRC20,
@@ -836,7 +535,7 @@ contract SwapHelper {
             uint24[] memory feeTiers,
             bytes memory encodedPath,
             SwapType swapType
-        ) = getPathV3(targetZRC20, zrc20); // Note: reversed order for exactOutput
+        ) = getPathV3BeamOrEddy(targetZRC20, zrc20); // Note: reversed order for exactOutput
 
         if (swapType == SwapType.Eddy) {
             // Eddy: Uniswap V3-style exactOutput swap
@@ -869,11 +568,10 @@ contract SwapHelper {
             // Fallback: Uniswap V2-style exactOutput swap
             path = getPathV2(zrc20, targetZRC20);
 
-            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER_EDDY, maxAmountIn);
+            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, maxAmountIn);
 
-            uint256[] memory amounts = IUniswapV2Router02(
-                UNISWAP_V2_ROUTER_EDDY
-            ).swapTokensForExactTokens(
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapTokensForExactTokens(
                     amountOut,
                     maxAmountIn,
                     path,

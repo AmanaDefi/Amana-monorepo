@@ -121,7 +121,7 @@ abstract contract StrategyParent is
         address _amanaVault,
         address _gateway,
         address _withdrawHelper
-    ) internal initializer {
+    ) internal onlyInitializing {
         __Ownable_init(msg.sender);
         name = _name;
         amanaVault = _amanaVault;
