@@ -108,14 +108,20 @@ contract SwapHelperEthereum is SwapHelperParent {
 
         IERC20(CVX_ADDRESS).approve(ROUTER_NG, amount);
 
-        amountOut = ICurveRouterNG(ROUTER_NG).exchange(
-            route,
-            swapParams,
-            amount,
-            minOut,
-            pools,
-            msg.sender
-        );
+        try
+            ICurveRouterNG(ROUTER_NG).exchange(
+                route,
+                swapParams,
+                amount,
+                minOut,
+                pools,
+                msg.sender
+            )
+        returns (uint256 out) {
+            amountOut = out;
+        } catch {
+            amountOut = 0;
+        }
 
         return amountOut;
     }
@@ -140,26 +146,33 @@ contract SwapHelperEthereum is SwapHelperParent {
             amount,
             slippageBps
         );
+
         if (inputToken == CVX_ADDRESS) {
             uint256 amountOutCurve = 0;
+
             if (outputToken == WETH_TOKEN) {
                 address curvePool = 0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4;
                 uint256 i = getTokenIndex(inputToken, curvePool);
                 uint256 j = getTokenIndex(outputToken, curvePool);
-                // Approve Curve pool to spend tokens
                 IERC20(inputToken).approve(curvePool, amount);
-                amountOutCurve = ICurvePoolDynamic(curvePool).exchange(
-                    i,
-                    j,
-                    amount,
-                    minimumOut
-                );
-                IERC20(outputToken).transfer(strategy, amountOutCurve);
+
+                try
+                    ICurvePoolDynamic(curvePool).exchange(
+                        i,
+                        j,
+                        amount,
+                        minimumOut
+                    )
+                returns (uint256 out) {
+                    amountOutCurve = out;
+                    IERC20(outputToken).transfer(strategy, amountOutCurve);
+                    return amountOutCurve;
+                } catch {
+                    return 0;
+                }
             } else if (outputToken == USDC_ADDRESS) {
                 amountOutCurve = _swapCVXtoUSDC(amount, minimumOut);
             }
-
-            return amountOutCurve;
         }
 
         (
@@ -180,20 +193,33 @@ contract SwapHelperEthereum is SwapHelperParent {
                     amountOutMinimum: minimumOut
                 });
 
-            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
+            try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
+                uint256 out
+            ) {
+                return out;
+            } catch {
+                return 0;
+            }
         } else {
             // Uniswap V2 Swap
             path = getPathV2(inputToken, outputToken);
+            if (path.length < 2) return 0;
+
             IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
-            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-                .swapExactTokensForTokens(
+
+            try
+                IUniswapV2Router02(UNISWAP_V2_ROUTER).swapExactTokensForTokens(
                     amount,
                     minimumOut,
                     path,
                     strategy,
                     block.timestamp + maxDeadline
-                );
-            amountOut = amounts[amounts.length - 1];
+                )
+            returns (uint256[] memory amounts) {
+                return amounts[amounts.length - 1];
+            } catch {
+                return 0;
+            }
         }
     }
 }

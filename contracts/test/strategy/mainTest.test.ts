@@ -305,7 +305,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         reward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         reward = reward.owed;
-      } else if (isConvexStrategy(config.strategyContractName)) {
+      } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
         await rewardsContract.earned(strategy.address);
         // This is needed to update the internal state of the contract
         // before calling claimable_reward

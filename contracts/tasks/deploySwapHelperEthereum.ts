@@ -2,24 +2,38 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
-  const [signer] = await hre.ethers.getSigners();
+  const { ethers, upgrades } = hre;
+  const [signer] = await ethers.getSigners();
   const network = hre.network.name;
-  const priceOracle = args.priceOracle;
-  console.log(`🔑 Deploying SwapHelperEthereum with signer: ${signer.address}`);
 
-  const SwapHelperEthereum = await hre.ethers.getContractFactory("SwapHelperEthereum", signer);
-  const swapHelper = await SwapHelperEthereum.deploy(priceOracle);
-  await swapHelper.deployed();
+  console.log(`🔑 Deploying UUPS Upgradeable SwapHelperEthereum with signer: ${signer.address}`);
 
-  console.log(`✅ SwapHelperEthereum deployed at: ${swapHelper.address}`);
+  const priceOracleAddress = args.priceOracle;
+  if (!priceOracleAddress) {
+    throw new Error("🚨 Price oracle address is required");
+  }
 
-  const etherscanApiKey = hre.config.etherscan.apiKey[network];
+  const SwapHelperEthereum = await ethers.getContractFactory("SwapHelperEthereum", signer);
+
+  const proxy = await upgrades.deployProxy(SwapHelperEthereum, [priceOracleAddress], {
+    kind: "uups",
+    initializer: "initialize",
+  });
+
+  await proxy.deployed();
+  console.log(`✅ SwapHelperEthereum proxy deployed at: ${proxy.address}`);
+
+  // Optional: print the implementation address
+  const implementationAddress = await upgrades.erc1967.getImplementationAddress(proxy.address);
+  console.log(`📦 Implementation address: ${implementationAddress}`);
+
+  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
   if (etherscanApiKey) {
-    console.log(`🛠 Verifying contract on ${network} explorer...`);
+    console.log(`🛠 Verifying implementation contract on ${network} explorer...`);
     try {
       await hre.run("verify:verify", {
-        address: swapHelper.address, // Updated from contract.target
-        constructorArguments: [priceOracle],
+        address: implementationAddress,
+        constructorArguments: [],
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -30,7 +44,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-task("deploy-swap-helper-ethereum", "Deploys the SwapHelperEthereum contract", main)
-  .addParam("priceOracle", "The address of the PriceOracle contract");
+task("deploy-swap-helper-ethereum", "Deploys the UUPS upgradeable SwapHelperEthereum contract", main)
+  .addParam("priceOracle", "The address of the price oracle contract");
 
 export default {};
