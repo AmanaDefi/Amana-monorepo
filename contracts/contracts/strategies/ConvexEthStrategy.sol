@@ -176,7 +176,7 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        harvest();
+        harvest(); // TO DO remove this from the deposit flow, rather do it manually
         weth.deposit{value: amount}();
 
         uint256[2] memory amounts;
@@ -201,7 +201,7 @@ contract ConvexEthStrategy is EthStrategyParent {
             fractionToWithdraw
         );
 
-        harvest();
+        harvest(); // TO DO remove this from the withdraw flow, rather do it manually - but it might still get called in the Convex contract?
         sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
         rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
 

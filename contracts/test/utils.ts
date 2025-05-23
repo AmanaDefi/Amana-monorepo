@@ -125,7 +125,7 @@ export async function simulateDepositCallFromVaultToStrategy(
     await gatewaySigner.getAddress(),
     ethers.utils.parseEther("434").toHexString()
   ]);
-  await
+  const tx = await
     strategy.connect(gatewaySigner).onCall(
       {
         sender: vaultAddress,
@@ -136,6 +136,8 @@ export async function simulateDepositCallFromVaultToStrategy(
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
       }
     );
+  const receipt = await tx.wait();
+  console.log("📥 Deposit gas used:", receipt.gasUsed.toString());
 }
 
 export async function simulateWithdrawCallFromVaultToStrategy(
@@ -155,7 +157,7 @@ export async function simulateWithdrawCallFromVaultToStrategy(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity onCall decode
     [TxType.Withdraw, fractionOfTotalShares, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
   );
-  await
+  const tx = await
     strategy.connect(gatewaySigner).onCall(
       {
         sender: vaultAddress,
@@ -165,6 +167,8 @@ export async function simulateWithdrawCallFromVaultToStrategy(
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
       }
     )
+  const receipt = await tx.wait();
+  console.log("📥 Withdraw gas used:", receipt.gasUsed.toString());
 }
 
 export async function simulateSwitchCallFromVaultToStrategy(
@@ -266,7 +270,8 @@ export async function simulateDepositCallFromConnChain(
     depositAmount,
     depositMessage
   );
-
+  const receipt = await tx.wait();
+  console.log("📥 Deposit gas used:", receipt.gasUsed.toString());
   // Return the transaction ID
   return tx;
 }
