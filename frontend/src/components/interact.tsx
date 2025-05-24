@@ -266,6 +266,8 @@ export default function InteractionContainer({
   const [finishedTransaction, setFinishedTransaction] = useState(false);
   const [lastEventTxHash, setLastEventTxHash] = useState("");
 
+  // Event listeners remain active for potential debugging/monitoring
+  // but event processing logic is disabled in favor of BlockPI API method in interactAPI.tsx
   const { vaultEvents, strategyEvents, withdrawalReceiverEvents } =
     useInteractionEvents({
       vaultData,
@@ -307,13 +309,20 @@ export default function InteractionContainer({
     return CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
   }, [activeChain?.id]);
 
+  // ================================================================================================
+  // COMMENTED OUT: Event-based transaction confirmation logic in interact.tsx
+  // The BlockPI API method in interactAPI.tsx provides more reliable cross-chain transaction tracking
+  // This file (interact.tsx) is kept for backward compatibility but events are disabled
+  // ================================================================================================
+
+  /*
   useEffect(() => {
     console.log("event1: ", vaultEvents);
     console.log("crosschainInvestHash: ", crosschainInvestHash);
     console.log("crossChainTxId: ", crossChainTxId);
     if (
-      cctxData?.CrossChainTxs &&
-      cctxData.CrossChainTxs[0].cctx_status.status != "SUCCESS"
+      cctxData?.data?.CrossChainTxs &&
+      cctxData.data.CrossChainTxs[0].cctx_status.status != "SUCCESS"
     ) {
       console.log({ action, actions });
       if (action == Action.depositConfirmed) {
@@ -748,7 +757,7 @@ export default function InteractionContainer({
             const nextStep = actions.findIndex((el) => el == Action.withdrew);
             setAction(actions[nextStep]);
             setStep(nextStep);
-            return;}
+            return;
           } else if (
             last_event.eventName == "CrossChainDepositFailed" &&
             action == Action.depositConfirmed
@@ -799,12 +808,17 @@ export default function InteractionContainer({
               setAction(actions[nextStep]);
               setStep(nextStep);
               return;
-            
+            }
           }
         }
       }
     }
   }, [withdrawalReceiverEvents]);
+  */
+
+  // ================================================================================================
+  // END OF COMMENTED OUT EVENT-BASED CONFIRMATION LOGIC
+  // ================================================================================================
 
   function updateTransactionStepFeedback(
     actionIndex: Action,
@@ -832,6 +846,7 @@ export default function InteractionContainer({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
+    setTransactionCompleted(false);
   }
   useEffect(() => {
     if (Number(_inputBalance.value) > 0) {
@@ -1477,6 +1492,7 @@ function Interaction({
   function handleDone() {
     setLastTransactionStepFeedback({});
     setFinishedTransaction(false);
+    setTransactionCompleted(false);
     refreshBalance();
   }
 

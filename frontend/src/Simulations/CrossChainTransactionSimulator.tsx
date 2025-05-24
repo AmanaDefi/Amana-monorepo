@@ -216,19 +216,51 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
     setResults([]);
     setCurrentStep(0);
     setFinished(false);
+    
+    let previousStepCctxIndex: string | null = null;
+    
     for (let i = 0; i < steps.length; i++) {
       try {
         let data: any = null;
         let cctxHash = steps[i].hash;
         let cctxData: any = null;
+        let actualHashToUse = steps[i].hash;
+        
+        // Correct hash chaining logic based on Flow-explainer.md
+        if (i === 0) {
+          // Step 1: Local transaction - use original hash
+          actualHashToUse = steps[i].hash;
+        } else if (i === 1) {
+          // Step 2: Use local transaction hash
+          actualHashToUse = steps[0].hash;
+        } else if (i === 2) {
+          // Step 3: Use Step 2's cctx_index as inbound hash
+          actualHashToUse = previousStepCctxIndex || steps[i].hash;
+        } else if (i === 3) {
+          // Step 4: Extract strategy chain tx hash from Step 3's outbound_params
+          if (results[2]?.data?.cctx?.CrossChainTx?.outbound_params?.[0]?.hash) {
+            actualHashToUse = results[2].data.cctx.CrossChainTx.outbound_params[0].hash;
+            cctxHash = actualHashToUse;
+          }
+        } else if (i >= 4) {
+          // Step 5+: Use extracted hash from Step 4
+          if (results[3]?.hash) {
+            actualHashToUse = results[3].hash;
+          }
+        }
+        
         if (steps[i].type === 'local') {
           data = { status: 'LocalTx' };
           setResults((prev) => [...prev, { step: steps[i].name, hash: steps[i].hash, cctxUrl: steps[i].url, status: TransactionStepStatus.completed, data }]);
         } else if (steps[i].type === 'inboundToCctxWithResult') {
           // Step 2: fetch inboundHashToCctx, then cctx, and show result in the same step
-          const inboundRes = await axios.get(steps[i].url);
+          const inboundUrl = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/inboundHashToCctx/${actualHashToUse}`;
+          const inboundRes = await axios.get(inboundUrl);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0] || ("cctxHash" in steps[i] ? (steps[i] as any).cctxHash : undefined);
           if (!cctxIndex) throw new Error('No cctx_index found for this step');
+          
+          previousStepCctxIndex = cctxIndex; // Store for next step
+          
           const cctxUrl = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${cctxIndex}`;
           const cctxRes = await axios.get(cctxUrl);
           cctxData = cctxRes.data;
@@ -248,9 +280,13 @@ export default function CrossChainTransactionSimulator({ type }: CrossChainTrans
           data = { inbound: inboundRes.data, cctx: cctxData };
           cctxHash = cctxIndex;
         } else if (steps[i].type === 'inboundToCctx') {
-          const inboundRes = await axios.get(steps[i].url);
+          const inboundUrl = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/inboundHashToCctx/${actualHashToUse}`;
+          const inboundRes = await axios.get(inboundUrl);
           const cctxIndex = inboundRes.data?.inboundHashToCctx?.cctx_index?.[0];
           if (!cctxIndex) throw new Error('No cctx_index found for this step');
+          
+          previousStepCctxIndex = cctxIndex; // Store for next step
+          
           const cctxUrl = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${cctxIndex}`;
           const cctxRes = await axios.get(cctxUrl);
           cctxData = cctxRes.data;

@@ -69,11 +69,13 @@ export interface BlockPIResponse {
 }
 
 export interface TransactionStep {
-  type: 'local' | 'inboundToCctx' | 'cctx';
+  type: 'local' | 'inboundToCctx' | 'cctx' | 'strategy_tx_extract';
   hash: string;
   status: BlockPIStatus | null;
   data: BlockPIResponse | null;
   error?: string;
+  name: string;
+  url?: string;
 }
 
 export interface TransactionProgress {
@@ -82,6 +84,105 @@ export interface TransactionProgress {
   isComplete: boolean;
   error?: string;
 }
+
+// Define transaction sequences based on the correct hash chaining flow
+export interface TransactionSequence {
+  type: 'deposit' | 'withdrawal';
+  steps: Array<{
+    name: string;
+    type: 'local' | 'inboundToCctx' | 'cctx' | 'strategy_tx_extract';
+    getHash: (localHash: string, prevStepData?: any) => string;
+  }>;
+}
+
+export const TRANSACTION_SEQUENCES: Record<string, TransactionSequence> = {
+  deposit: {
+    type: 'deposit',
+    steps: [
+      {
+        name: 'Initial local transaction',
+        type: 'local',
+        getHash: (localHash: string) => localHash
+      },
+      {
+        name: 'Cross chain call to vault on ZC',
+        type: 'inboundToCctx',
+        getHash: (localHash: string) => localHash // Step 2 uses local hash
+      },
+      {
+        name: 'Cross chain call from vault to strategy',
+        type: 'inboundToCctx',
+        getHash: (localHash: string, prevStepData: any) => {
+          // Step 3 uses Step 2's cctx_index as inbound hash
+          return prevStepData?.cctxIndex || prevStepData?.CrossChainTx?.index;
+        }
+      },
+      {
+        name: 'Transaction on strategy chain',
+        type: 'strategy_tx_extract',
+        getHash: (localHash: string, prevStepData: any) => {
+          // Step 4: Extract the outbound hash from Step 3's cctx data
+          return prevStepData?.CrossChainTx?.outbound_params?.[0]?.hash;
+        }
+      },
+      {
+        name: 'Cross chain call from strategy back to vault',
+        type: 'inboundToCctx',
+        getHash: (localHash: string, prevStepData: any) => {
+          // Step 5: Use the strategy chain hash extracted in Step 4
+          return prevStepData?.hash;
+        }
+      }
+    ]
+  },
+  withdrawal: {
+    type: 'withdrawal',
+    steps: [
+      {
+        name: 'Initial local transaction',
+        type: 'local',
+        getHash: (localHash: string) => localHash
+      },
+      {
+        name: 'Cross chain call to vault on ZC',
+        type: 'inboundToCctx',
+        getHash: (localHash: string) => localHash // Step 2 uses local hash
+      },
+      {
+        name: 'Cross chain call from vault to strategy',
+        type: 'inboundToCctx',
+        getHash: (localHash: string, prevStepData: any) => {
+          // Step 3 uses Step 2's cctx_index as inbound hash
+          return prevStepData?.cctxIndex || prevStepData?.CrossChainTx?.index;
+        }
+      },
+      {
+        name: 'Transaction on strategy chain',
+        type: 'strategy_tx_extract',
+        getHash: (localHash: string, prevStepData: any) => {
+          // Step 4: Extract the outbound hash from Step 3's cctx data
+          return prevStepData?.CrossChainTx?.outbound_params?.[0]?.hash;
+        }
+      },
+      {
+        name: 'Cross chain call from strategy back to vault',
+        type: 'inboundToCctx',
+        getHash: (localHash: string, prevStepData: any) => {
+          // Step 5: Use the strategy chain hash extracted in Step 4
+          return prevStepData?.hash;
+        }
+      },
+      {
+        name: 'Cross chain withdraw from vault to user',
+        type: 'inboundToCctx',
+        getHash: (localHash: string, prevStepData: any) => {
+          // Step 6: Use Step 5's cctx_index as inbound hash
+          return prevStepData?.cctxIndex || prevStepData?.CrossChainTx?.index;
+        }
+      }
+    ]
+  }
+};
 
 export default class Blockpi {
   public api: AxiosInstance;
@@ -109,63 +210,104 @@ export default class Blockpi {
     }
   }
 
+  private async makeRequest(endpoint: string, retries: number = 3): Promise<any> {
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        // FIXED: Add cache busting to ensure we get fresh data
+        const cacheBuster = Date.now();
+        const separator = endpoint.includes('?') ? '&' : '?';
+        const endpointWithCacheBuster = `${endpoint}${separator}t=${cacheBuster}`;
+        
+        const response = await this.api.get(endpointWithCacheBuster);
+        return response.data;
+      } catch (error: any) {
+        lastError = error;
+        
+        // Handle different types of errors
+        if (error.response?.status === 404) {
+          // For 404s, only log on first and last attempt
+          if (attempt === 1 || attempt === retries) {
+            console.log(`[BlockPI] Data not yet available (attempt ${attempt}/${retries})`);
+          }
+          
+          // For 404s, wait longer with exponential backoff
+          if (attempt < retries) {
+            const waitTime = Math.min(5000 * Math.pow(2, attempt - 1), 30000); // 5s, 10s, 20s, max 30s
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        } else if (error.response?.status === 429) {
+          // Rate limited - wait much longer
+          console.log(`[BlockPI] Rate limited (attempt ${attempt}/${retries}) - backing off`);
+          if (attempt < retries) {
+            const waitTime = Math.min(10000 * Math.pow(2, attempt - 1), 60000); // 10s, 20s, 40s, max 60s
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        } else if (error.response?.status >= 500) {
+          if (attempt === retries) {
+            console.log(`[BlockPI] Server error ${error.response.status}`);
+          }
+          
+          // For server errors, shorter retry intervals
+          if (attempt < retries) {
+            const waitTime = 3000 * attempt; // 3s, 6s, 9s
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+          if (attempt === retries) {
+            console.log(`[BlockPI] Network issue after ${retries} attempts`);
+          }
+          
+          if (attempt < retries) {
+            const waitTime = 5000 * attempt; // 5s, 10s, 15s
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        } else {
+          // For other errors, fail immediately
+          console.error(`[BlockPI] Request failed:`, error.message);
+          throw error;
+        }
+      }
+    }
+    
+    // If we've exhausted retries, provide a more descriptive error
+    if (lastError?.response?.status === 404) {
+      throw new Error(`Data not yet available after ${retries} attempts.`);
+    } else if (lastError?.response?.status === 429) {
+      throw new Error(`Rate limited. Please try again later.`);
+    } else {
+      throw new Error(`Request failed: ${lastError?.message || 'Unknown error'}`);
+    }
+  }
+
   // Get data from inboundHashToCctx endpoint
-  async getInboundHashToCctxData(localchainHash: string): Promise<BlockPIResponse | null> {
+  async getInboundHashToCctx(hash: string): Promise<any> {
     try {
-      // Set a shorter timeout for individual requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const res = await this.api.get<BlockPIResponse>(`inboundHashToCctx/${localchainHash}`, {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (res.data) {
-        console.log("[BlockPI] InboundHashToCctx data:", res.data);
-        return res.data;
-      }
-      return null;
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log("[BlockPI] Request timed out, will retry");
-      } else if (error.response?.status === 404) {
-        console.log("[BlockPI] Transaction not propagated yet (404), will retry");
-      } else {
-        console.error("[BlockPI] Error fetching inboundHashToCctx data:", error);
-      }
-      return null;
+      console.log(`[BlockPI] Getting inboundHashToCctx for hash: ${hash}`);
+      const data = await this.makeRequest(`/inboundHashToCctx/${hash}`);
+      console.log(`[BlockPI] inboundHashToCctx response:`, data);
+      return data;
+    } catch (error) {
+      console.error(`[BlockPI] Error getting inboundHashToCctx for ${hash}:`, error);
+      throw error;
     }
   }
 
   // Get data from cctx endpoint
-  async getCctxData(cctxIndex: string): Promise<BlockPIResponse | null> {
+  async getCctx(cctxIndex: string): Promise<any> {
     try {
-      // Set a shorter timeout for individual requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const res = await this.api.get<BlockPIResponse>(`cctx/${cctxIndex}`, {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (res.data) {
-        console.log("[BlockPI] Cctx data:", res.data);
-        return res.data;
-      }
-      return null;
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log("[BlockPI] Request timed out, will retry");
-      } else if (error.response?.status === 404) {
-        console.log("[BlockPI] Transaction not propagated yet (404), will retry");
-      } else {
-        console.error("[BlockPI] Error fetching cctx data:", error);
-      }
-      return null;
+      console.log(`[BlockPI] Getting cctx for index: ${cctxIndex}`);
+      const data = await this.makeRequest(`/cctx/${cctxIndex}`);
+      console.log(`[BlockPI] cctx response:`, data);
+      return data;
+    } catch (error) {
+      console.error(`[BlockPI] Error getting cctx for ${cctxIndex}:`, error);
+      throw error;
     }
   }
 
@@ -183,15 +325,283 @@ export default class Blockpi {
     );
   }
 
+  // Execute a single step of the transaction sequence
+  async executeTransactionStep(
+    stepIndex: number,
+    stepConfig: any,
+    localHash: string,
+    prevStepData?: any
+  ): Promise<{ success: boolean; data?: any; error?: string; cctxIndex?: string }> {
+    try {
+      const stepHash = stepConfig.getHash(localHash, prevStepData);
+      
+      if (!stepHash) {
+        return { success: false, error: `No hash available for step ${stepIndex + 1}` };
+      }
+      
+      if (stepConfig.type === 'local') {
+        // Local transaction is already completed
+        return { 
+          success: true, 
+          data: { status: 'LocalTx', hash: stepHash }
+        };
+      } else if (stepConfig.type === 'inboundToCctx') {
+        // Get inbound to cctx data
+        console.log(`[BlockPI] Step ${stepIndex + 1}: Calling inboundHashToCctx with hash: ${stepHash}`);
+        const inboundData = await this.getInboundHashToCctx(stepHash);
+        if (!inboundData) {
+          return { success: false, error: 'No inbound data found' };
+        }
+
+        const cctxIndex = inboundData?.inboundHashToCctx?.cctx_index?.[0];
+        if (!cctxIndex) {
+          return { success: false, error: 'No cctx_index found in inbound response' };
+        }
+
+        console.log(`[BlockPI] Step ${stepIndex + 1}: Got cctx_index: ${cctxIndex}`);
+
+        // Get the cctx data to check status
+        const cctxData = await this.getCctx(cctxIndex);
+        if (!cctxData) {
+          return { success: false, error: 'No cctx data found' };
+        }
+
+        const status = cctxData?.CrossChainTx?.cctx_status?.status;
+        const lastUpdate = cctxData?.CrossChainTx?.cctx_status?.lastUpdate_timestamp;
+        console.log(`[BlockPI] Step ${stepIndex + 1}: Status: ${status}, Last Update: ${lastUpdate}, cctxIndex: ${cctxIndex}`);
+        
+        // FIXED: More detailed status logging for debugging
+        if (status === 'OutboundMined' || status === 'Success') {
+          console.log(`[BlockPI] Step ${stepIndex + 1} completed: Cross chain call to vault on ZC (hash: ${stepHash})`);
+          return { 
+            success: true, 
+            data: { 
+              ...cctxData, 
+              cctxIndex, 
+              hash: stepHash,
+              inboundData,
+              status,
+              lastUpdate
+            },
+            cctxIndex
+          };
+        } else if (this.isRevertWithSecondOutbound(cctxData) || status === 'Reverted' || status === 'Aborted' || status === 'Failed') {
+          const revertHash = cctxData.CrossChainTx?.outbound_params?.[1]?.hash || cctxData.CrossChainTx?.outbound_params?.[0]?.hash;
+          console.error(`[BlockPI] Step ${stepIndex + 1} failed: ${status} (hash: ${revertHash})`);
+          return { 
+            success: false, 
+            error: `Transaction reverted: ${status} (hash: ${revertHash})`,
+            data: cctxData
+          };
+        } else {
+          // FIXED: Add more detailed pending status info
+          console.log(`[BlockPI] Step ${stepIndex + 1} still pending: ${status}, will retry...`);
+          return { 
+            success: false, 
+            error: `Transaction pending: ${status} (updated: ${lastUpdate})`,
+            data: cctxData
+          };
+        }
+      } else if (stepConfig.type === 'strategy_tx_extract') {
+        // This step represents the strategy chain transaction hash extracted from previous step
+        // We don't make an API call here, just return the hash as a completed step
+        if (!stepHash) {
+          return { success: false, error: 'No strategy transaction hash found in previous step' };
+        }
+        
+        console.log(`[BlockPI] Step ${stepIndex + 1}: Extracted strategy chain tx hash: ${stepHash}`);
+        
+        return { 
+          success: true, 
+          data: { 
+            status: 'StrategyTxExtracted',
+            hash: stepHash,
+            type: 'strategy_chain_transaction',
+            description: 'Transaction executed on strategy chain'
+          }
+        };
+      } else if (stepConfig.type === 'cctx') {
+        // Direct cctx call
+        const cctxData = await this.getCctx(stepHash);
+        if (!cctxData) {
+          return { success: false, error: 'No cctx data found' };
+        }
+
+        const status = cctxData?.CrossChainTx?.cctx_status?.status;
+        
+        if (status === 'OutboundMined' || status === 'Success') {
+          return { 
+            success: true, 
+            data: { ...cctxData, hash: stepHash }
+          };
+        } else if (this.isRevertWithSecondOutbound(cctxData) || status === 'Reverted' || status === 'Aborted' || status === 'Failed') {
+          const revertHash = cctxData.CrossChainTx?.outbound_params?.[1]?.hash || cctxData.CrossChainTx?.outbound_params?.[0]?.hash;
+          return { 
+            success: false, 
+            error: `Transaction reverted: ${status} (hash: ${revertHash})`,
+            data: cctxData
+          };
+        } else {
+          return { 
+            success: false, 
+            error: `Transaction pending: ${status}`,
+            data: cctxData
+          };
+        }
+      }
+
+      return { success: false, error: 'Unknown step type' };
+    } catch (error) {
+      console.error(`[BlockPI] Error in step ${stepIndex + 1}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  // Track complete transaction sequence
+  async trackTransactionSequence(
+    localHash: string,
+    transactionType: 'deposit' | 'withdrawal',
+    onStepUpdate?: (step: number, status: 'pending' | 'processing' | 'completed' | 'error', data?: any) => void,
+    timeout: number = 600000 // 10 minutes
+  ): Promise<TransactionProgress> {
+    const sequence = TRANSACTION_SEQUENCES[transactionType];
+    if (!sequence) {
+      throw new Error(`Unknown transaction type: ${transactionType}`);
+    }
+
+    const startTime = Date.now();
+    const steps: TransactionStep[] = [];
+    let currentStep = 0;
+    let prevStepData: any = null;
+
+    // Initialize steps array but don't call onStepUpdate for all steps
+    // This prevents showing all steps as pending in the UI at once
+    for (let i = 0; i < sequence.steps.length; i++) {
+      steps.push({
+        type: sequence.steps[i].type,
+        hash: '',
+        status: null,
+        data: null,
+        name: sequence.steps[i].name
+      });
+    }
+
+    // Only initialize the first step as processing
+    onStepUpdate?.(0, 'processing');
+
+    try {
+      // Execute each step in sequence
+      for (let stepIndex = 0; stepIndex < sequence.steps.length; stepIndex++) {
+        currentStep = stepIndex;
+        const stepConfig = sequence.steps[stepIndex];
+        
+        // Only call processing update if not already called for step 0
+        if (stepIndex > 0) {
+          onStepUpdate?.(stepIndex, 'processing');
+        }
+        
+        let attempt = 0;
+        const maxAttempts = 8; // Further reduced for efficiency
+        let baseDelay = 3000; // Start with 3s
+        let stepCompleted = false;
+
+        while (attempt < maxAttempts && !stepCompleted && Date.now() - startTime < timeout) {
+          const result = await this.executeTransactionStep(stepIndex, stepConfig, localHash, prevStepData);
+          
+          // Calculate hash after we have the result, in case it depends on the outcome
+          const calculatedHash = stepConfig.getHash(localHash, prevStepData);
+          steps[stepIndex].hash = calculatedHash;
+          
+          if (result.success) {
+            steps[stepIndex].status = 'OutboundMined' as BlockPIStatus;
+            steps[stepIndex].data = result.data;
+            // Important: Update prevStepData with the complete result data including cctxIndex
+            prevStepData = result.data;
+            onStepUpdate?.(stepIndex, 'completed', {
+              ...result.data,
+              hash: calculatedHash,
+              cctxIndex: result.cctxIndex,
+              url: stepConfig.type === 'inboundToCctx' && result.cctxIndex ? 
+                `${this.api.defaults.baseURL}/cctx/${result.cctxIndex}` : undefined
+            });
+            stepCompleted = true;
+            console.log(`[BlockPI] Step ${stepIndex + 1} completed: ${stepConfig.name} (hash: ${calculatedHash})`);
+          } else if (result.error?.includes('reverted')) {
+            steps[stepIndex].status = 'Reverted' as BlockPIStatus;
+            steps[stepIndex].error = result.error;
+            steps[stepIndex].data = result.data;
+            onStepUpdate?.(stepIndex, 'error', result.data);
+            return {
+              steps,
+              currentStep: stepIndex,
+              isComplete: false,
+              error: result.error
+            };
+          } else {
+            // Step not ready yet, retry with exponential backoff
+            attempt++;
+            // FIXED: Better exponential backoff - 3s, 6s, 9s, 12s, 15s, 18s, 21s, 24s
+            const backoffDelay = Math.min(baseDelay * attempt, 24000);
+            
+            if (attempt <= 3 || attempt === maxAttempts) {
+              console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt}/${maxAttempts}: ${result.error}`);
+            }
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          }
+        }
+
+        if (!stepCompleted) {
+          const error = `Step ${stepIndex + 1} failed after ${maxAttempts} attempts`;
+          steps[stepIndex].error = error;
+          onStepUpdate?.(stepIndex, 'error');
+          
+          // FIXED: Continue processing other steps instead of stopping completely
+          // Only break the sequence if this is a critical early step (step 0 or 1)
+          if (stepIndex <= 1) {
+            return {
+              steps,
+              currentStep: stepIndex,
+              isComplete: false,
+              error
+            };
+          }
+          
+          // For later steps, log the error but continue checking remaining steps
+          console.warn(`[BlockPI] Step ${stepIndex + 1} failed, but continuing to check remaining steps`);
+          // Don't update prevStepData for failed steps
+          continue;
+        }
+      }
+
+      return {
+        steps,
+        currentStep: sequence.steps.length,
+        isComplete: true
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      onStepUpdate?.(currentStep, 'error');
+      return {
+        steps,
+        currentStep,
+        isComplete: false,
+        error: errorMessage
+      };
+    }
+  }
+
   // Get transaction status from either endpoint
   async getTransactionStatus(localchainHash: string, cctxIndex?: string): Promise<BlockPIStatus | null> {
     try {
       let data: BlockPIResponse | null = null;
       
       if (cctxIndex) {
-        data = await this.getCctxData(cctxIndex);
+        data = await this.getCctx(cctxIndex);
       } else {
-        data = await this.getInboundHashToCctxData(localchainHash);
+        data = await this.getInboundHashToCctx(localchainHash);
       }
 
       const status = data?.CrossChainTx?.cctx_status?.status || 
@@ -207,7 +617,7 @@ export default class Blockpi {
     }
   }
 
-  // Track transaction progress across all steps
+  // Track transaction progress across all steps (legacy method for backward compatibility)
   async trackTransactionProgress(
     localchainHash: string,
     timeout: number = 300000 // 5 minutes
@@ -219,7 +629,7 @@ export default class Blockpi {
 
     try {
       // Step 1: Get initial inboundHashToCctx data
-      const inboundData = await this.getInboundHashToCctxData(localchainHash);
+      const inboundData = await this.getInboundHashToCctx(localchainHash);
       if (!inboundData) {
         throw new Error("Failed to get initial transaction data");
       }
@@ -230,7 +640,8 @@ export default class Blockpi {
         status: (inboundData.CrossChainTx?.cctx_status?.status || 
                 inboundData.CrossChainTxs?.[0]?.cctx_status?.status || 
                 null) as BlockPIStatus | null,
-        data: inboundData
+        data: inboundData,
+        name: 'Initial cross-chain call'
       });
 
       // Get cctx index from inbound data
@@ -242,7 +653,7 @@ export default class Blockpi {
       }
 
       // Step 2: Get cctx data
-      const cctxData = await this.getCctxData(cctxIndex);
+      const cctxData = await this.getCctx(cctxIndex);
       if (!cctxData) {
         throw new Error("Failed to get cctx data");
       }
@@ -253,7 +664,8 @@ export default class Blockpi {
         status: (cctxData.CrossChainTx?.cctx_status?.status || 
                 cctxData.CrossChainTxs?.[0]?.cctx_status?.status || 
                 null) as BlockPIStatus | null,
-        data: cctxData
+        data: cctxData,
+        name: 'Cross-chain transaction'
       });
 
       // Check for revert
@@ -266,11 +678,11 @@ export default class Blockpi {
       while (Date.now() - startTime < timeout) {
         const status = await this.getTransactionStatus(localchainHash, cctxIndex);
       
-      if (status === "OutboundMined" || status === "Success") {
+        if (status === "OutboundMined" || status === "Success") {
           return { steps, currentStep: 2, isComplete: true };
-      }
+        }
       
-      if (status === "Reverted" || status === "Failed") {
+        if (status === "Reverted" || status === "Failed") {
           error = `Transaction failed with status: ${status}`;
           return { steps, currentStep: 2, isComplete: false, error };
         }

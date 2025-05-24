@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   Action,
   Balance,
@@ -46,7 +47,7 @@ import { decimals } from "thirdweb/extensions/erc20";
 import { trackEvent } from "@/utils/trackEvent";
 import { getAssetsFromShares } from "@/actions/actions";
 import { amount } from "codemelt-retro-api-sdk/functional/api/venft/upgrade";
-import Blockpi, { TransactionProgress, TransactionStep } from "@/service/blockpi";
+import Blockpi, { TransactionProgress, TransactionStep, TRANSACTION_SEQUENCES } from "@/service/blockpi";
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -267,6 +268,8 @@ export default function InteractionContainer({
   const [finishedTransaction, setFinishedTransaction] = useState(false);
   const [lastEventTxHash, setLastEventTxHash] = useState("");
 
+  // Event listeners remain active for potential debugging/monitoring
+  // but event processing logic is disabled in favor of BlockPI API method
   const { vaultEvents, strategyEvents, withdrawalReceiverEvents } =
     useInteractionEvents({
       vaultData,
@@ -279,57 +282,378 @@ export default function InteractionContainer({
 
   const [transactionProgress, setTransactionProgress] = useState<TransactionProgress | null>(null);
   const blockpi = useMemo(() => new Blockpi(), []);
+  
+  // Flag to prioritize BlockPI feedback over traditional action-based feedback
+  const [isBlockPIActive, setIsBlockPIActive] = useState(false);
 
-  // Replace useInboundToCctxData with useEffect for transaction tracking
+  // Comprehensive transaction tracking with sequence management
+  const [transactionSequenceProgress, setTransactionSequenceProgress] = useState<{
+    steps: Array<{
+      name: string;
+      status: 'pending' | 'processing' | 'completed' | 'error';
+      hash?: string;
+      data?: any;
+      url?: string;
+    }>;
+    currentStep: number;
+    isComplete: boolean;
+    error?: string;
+  } | null>(null);
+
+  // Enhanced BlockPI integration that persists across tab switches
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | undefined;
+    let cancelled = false;
     
-    const trackTransaction = async () => {
-      if (!crosschainInvestHash || action !== Action.crosschainInvest) return;
+    const trackTransactionSequence = async () => {
+      if (!crosschainInvestHash || !action) return;
+      
+      // Only start BlockPI tracking for confirmed transactions, not initial transactions
+      if (action === Action.depositConfirmed || action === Action.withdrawconfirmed) {
+        // These are the starting points for BlockPI tracking
+        console.log('[BlockPI] Starting tracking for confirmed transaction action:', action);
+      } else {
+        console.log('[BlockPI] Skipping tracking for action:', action);
+        return;
+      }
+      
+      // Determine transaction type based on action
+      let transactionType: 'deposit' | 'withdrawal' | null = null;
+      if (action === Action.depositConfirmed) {
+        transactionType = 'deposit';
+      } else if (action === Action.withdrawconfirmed) {
+        transactionType = 'withdrawal';
+      }
+      
+      if (!transactionType) return;
+      
+      // Don't clear existing transaction feedback - preserve loading states from local transactions
+      console.log('[BlockPI] Starting comprehensive transaction sequence tracking for:', crosschainInvestHash);
+      
+      // Save transaction state to localStorage with more details
+      const txState = {
+        hash: crosschainInvestHash,
+        txId: crossChainTxId,
+        timestamp: Date.now(),
+        type: transactionType,
+        action: action,
+        step: step
+      };
+      
+      localStorage.setItem(`pending${transactionType.charAt(0).toUpperCase() + transactionType.slice(1)}Transaction`, JSON.stringify(txState));
       
       try {
-        const progress = await blockpi.trackTransactionProgress(crosschainInvestHash);
-        setTransactionProgress(progress);
+        console.log(`[BlockPI] Starting ${transactionType} tracking for ${crosschainInvestHash}`);
+        setIsBlockPIActive(true); // Enable BlockPI priority mode
         
-        // Handle transaction completion
+        const progress = await blockpi.trackTransactionSequence(
+          crosschainInvestHash,
+          transactionType,
+          (stepIndex: number, status: 'pending' | 'processing' | 'completed' | 'error', data?: any) => {
+            if (cancelled) return;
+            
+            console.log(`[BlockPI] Step update: ${stepIndex}, status: ${status}`);
+            
+            // Update UI feedback based on step progress - but don't override local transaction feedback
+            updateTransactionStepFeedbackFromSequence(stepIndex, status, data, transactionType);
+          }
+        );
+        
+        // Handle completion
         if (progress.isComplete) {
-          if (progress.error) {
-            // Handle error case
-            const nextStep = actions.findIndex(
-              (el) => el == Action.CrossChainInvestFailed
-            );
-            setAction(actions[nextStep]);
-            setStep(nextStep);
-          } else {
-            // Handle success case
-            const nextStep = actions.findIndex(
-              (el) => el == Action.FundsInvest
-            );
-            setAction(actions[nextStep]);
-            setStep(nextStep);
+          console.log(`[BlockPI] ${transactionType} sequence completed successfully`);
+          
+          // FIXED: Mark final step as completed in UI before state transitions
+          const finalStepIndex = transactionType === 'deposit' ? 4 : 5;
+          updateTransactionStepFeedbackFromSequence(finalStepIndex, 'completed', {}, transactionType);
+          
+          setIsBlockPIActive(false); // Disable BlockPI priority mode
+          localStorage.removeItem(`pending${transactionType.charAt(0).toUpperCase() + transactionType.slice(1)}Transaction`);
+          localStorage.removeItem('amana_current_transaction_feedback');
+          localStorage.removeItem('amana_transaction_progress');
+          localStorage.removeItem('amana_sequence_progress');
+          
+          setTransactionSequenceProgress(prev => prev ? {
+            ...prev,
+            isComplete: true
+          } : null);
+          
+          // Move to final step based on transaction type and trigger completion
+          setTimeout(() => {
+            if (transactionType === 'deposit') {
+              const nextStep = actions.findIndex(el => el === Action.deposited);
+              if (nextStep >= 0) {
+                setAction(actions[nextStep]);
+                setStep(nextStep);
+              }
+            } else if (transactionType === 'withdrawal') {
+              const nextStep = actions.findIndex(el => el === Action.withdrew);
+              if (nextStep >= 0) {
+                setAction(actions[nextStep]);
+                setStep(nextStep);
+              }
+            }
+          }, 500); // Small delay to ensure UI updates properly
+        } else if (progress.error) {
+          console.error(`[BlockPI] ${transactionType} sequence failed:`, progress.error);
+          setIsBlockPIActive(false); // Disable BlockPI priority mode on error
+          
+          // Store error state
+          localStorage.setItem('amana_transaction_error', JSON.stringify({
+            error: progress.error,
+            timestamp: Date.now()
+          }));
+          
+          setTransactionSequenceProgress(prev => prev ? {
+            ...prev,
+            error: progress.error
+          } : null);
+          
+          // Handle different error scenarios
+          if (progress.error.includes('reverted')) {
+            if (transactionType === 'deposit') {
+              const nextStep = actions.findIndex(el => el === Action.CrossChainInvestFailed);
+              if (nextStep >= 0) {
+                setAction(actions[nextStep]);
+                setStep(nextStep);
+              }
+            } else if (transactionType === 'withdrawal') {
+              const nextStep = actions.findIndex(el => el === Action.DivestFailed);
+              if (nextStep >= 0) {
+                setAction(actions[nextStep]);
+                setStep(nextStep);
+              }
+            }
           }
         }
         
-        // Continue tracking if not complete
-        if (!progress.isComplete) {
-          timeoutId = setTimeout(trackTransaction, 5000);
-        }
       } catch (error) {
-        console.error("[BlockPI] Error tracking transaction:", error);
-        timeoutId = setTimeout(trackTransaction, 5000);
+        console.error(`[BlockPI] Error in ${transactionType} sequence tracking:`, error);
+        setIsBlockPIActive(false); // Disable BlockPI priority mode on exception
+        
+        // Store error in localStorage
+        localStorage.setItem('amana_transaction_error', JSON.stringify({
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: Date.now()
+        }));
+        
+        // Fallback to RPC-based monitoring
+        console.log(`[BlockPI] Falling back to RPC-based monitoring for ${transactionType}`);
       }
     };
 
-    if (crosschainInvestHash && action === Action.crosschainInvest) {
-      trackTransaction();
+    if (crosschainInvestHash && (action === Action.depositConfirmed || action === Action.withdrawconfirmed)) {
+      trackTransactionSequence();
     }
 
     return () => {
+      cancelled = true;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
     };
-  }, [crosschainInvestHash, action, actions, setAction, setStep]);
+  }, [crosschainInvestHash, action, blockpi]); // Removed problematic dependencies
+
+  // Restore transaction state when component mounts (after tab switch or page refresh)
+  useEffect(() => {
+    // Restore feedback from localStorage if available
+    const savedFeedback = localStorage.getItem('amana_current_transaction_feedback');
+    if (savedFeedback) {
+      try {
+        const feedback = JSON.parse(savedFeedback);
+        if (Object.keys(feedback).length > 0) {
+          console.log('[Tab Restore] Restoring transaction feedback from localStorage');
+          setTransactionStepFeedback(feedback);
+        }
+      } catch (error) {
+        console.error('Error restoring transaction feedback:', error);
+      }
+    }
+    
+    // Restore sequence progress
+    const savedProgress = localStorage.getItem('amana_sequence_progress');
+    if (savedProgress) {
+      try {
+        const progress = JSON.parse(savedProgress);
+        console.log('[Tab Restore] Restoring sequence progress from localStorage');
+        setTransactionSequenceProgress(progress);
+      } catch (error) {
+        console.error('Error restoring sequence progress:', error);
+      }
+    }
+    
+    // Check for transaction errors
+    const savedError = localStorage.getItem('amana_transaction_error');
+    if (savedError) {
+      try {
+        const { error, timestamp } = JSON.parse(savedError);
+        // Only show recent errors (within 5 minutes)
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          console.warn('[Tab Restore] Transaction error detected:', error);
+        } else {
+          localStorage.removeItem('amana_transaction_error');
+        }
+      } catch (error) {
+        console.error('Error checking transaction error:', error);
+      }
+    }
+  }, []); // Only run on mount
+
+  // Helper function to update UI feedback based on sequence progress
+  function updateTransactionStepFeedbackFromSequence(
+    stepIndex: number,
+    status: 'pending' | 'processing' | 'completed' | 'error',
+    data?: any,
+    transactionType?: 'deposit' | 'withdrawal'
+  ) {
+    const isDeposit = transactionType === 'deposit';
+    
+    console.log(`[UI Feedback] Step ${stepIndex}, Status: ${status}, Type: ${transactionType}`);
+    
+    // Map BlockPI steps to Action enum based on transaction flow
+    const actionMapping = isDeposit ? [
+      Action.deposit,           // Step 0: Local transaction
+      Action.depositConfirmed,  // Step 1: Cross chain to vault
+      Action.crosschainInvest,  // Step 2: Vault to strategy
+      Action.FundsInvest,       // Step 3: Strategy execution
+      Action.deposited          // Step 4: Return to vault (completion)
+    ] : [
+      Action.withdraw,              // Step 0: Local transaction  
+      Action.withdrawconfirmed,     // Step 1: Cross chain to vault
+      Action.DivestSent,           // Step 2: Vault to strategy
+      Action.FundsDivested,        // Step 3: Strategy execution
+      Action.ReturnFundsToUserSent, // Step 4: Return to vault
+      Action.withdrew              // Step 5: Final withdraw (completion)
+    ];
+    
+    // Helper function to get step description
+    function getStepDescription(stepIndex: number, status: string, isDeposit: boolean): string {
+      const stepDescriptions = isDeposit ? [
+        'Initial deposit transaction',
+        'Cross chain transfer to vault',
+        'Cross chain transfer to strategy',
+        'Funds investment on strategy chain',
+        'Investment confirmation and shares issued'
+      ] : [
+        'Initial withdraw transaction',
+        'Cross chain request to vault',
+        'Cross chain request to strategy',
+        'Funds divestment on strategy chain',
+        'Return of funds to vault',
+        'Final withdraw to user'
+      ];
+      
+      const statusText = status === 'completed' ? 'completed' : 
+                        status === 'error' ? 'failed' : 'in progress';
+      
+      return `${stepDescriptions[stepIndex] || `Step ${stepIndex + 1}`} ${statusText}`;
+    }
+    
+    // Helper function to get transaction hash for step
+    function getStepTxHash(stepIndex: number, data?: any): string | undefined {
+      if (!data) return undefined;
+      
+      if (stepIndex === 0) {
+        // Local transaction hash
+        return data.localHash || data.hash;
+      } else if (data.cctxIndex) {
+        // BlockPI cctx URL
+        return `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${data.cctxIndex}`;
+      } else if (data.hash) {
+        // Direct hash
+        return data.hash;
+      }
+      
+      return undefined;
+    }
+    
+    // Only update the specific step that changed, don't rebuild all feedback
+    const actionKey = actionMapping[stepIndex];
+    if (!actionKey) {
+      console.warn(`[UI Feedback] No action mapping for step ${stepIndex}`);
+      return;
+    }
+    
+    // FIXED: Force BlockPI feedback to take priority and update all steps correctly
+    setTransactionStepFeedback(prev => {
+      const existingFeedback = prev[actionKey];
+      
+      console.log(`[UI Feedback] Current feedback for ${actionKey}:`, existingFeedback);
+      console.log(`[UI Feedback] Attempting to update to status: ${status}`);
+      
+      // FIXED: Stronger protection against downgrading completed steps
+      if (existingFeedback && existingFeedback.status === TransactionStepStatus.completed) {
+        if (status === 'processing' || status === 'pending') {
+          console.log(`[UI Feedback] BLOCKED: Preventing downgrade from completed to ${status} for step ${stepIndex} (${actionKey})`);
+          return prev;
+        }
+        // Only allow completed->error transitions, skip completed->completed updates unless they have better data
+        if (status !== 'completed' && status !== 'error') {
+          console.log(`[UI Feedback] BLOCKED: Invalid status transition from completed to ${status}`);
+          return prev;
+        }
+      }
+      
+      let stepStatus: TransactionStepStatus;
+      let description: string;
+      let txHash: string | undefined;
+      
+      // Determine status for this specific step
+      if (status === 'completed') {
+        stepStatus = TransactionStepStatus.completed;
+        description = getStepDescription(stepIndex, 'completed', isDeposit);
+        txHash = getStepTxHash(stepIndex, data);
+      } else if (status === 'error') {
+        stepStatus = TransactionStepStatus.error;
+        description = getStepDescription(stepIndex, 'error', isDeposit);
+        txHash = getStepTxHash(stepIndex, data);
+      } else if (status === 'processing') {
+        stepStatus = TransactionStepStatus.processing;
+        description = getStepDescription(stepIndex, 'processing', isDeposit);
+        txHash = getStepTxHash(stepIndex, data);
+      } else {
+        // Don't show pending steps in UI - only show when they become processing
+        return prev;
+      }
+      
+      const timestamp = new Date().toISOString();
+      console.log(`[UI Feedback] ${timestamp} - Updating step ${stepIndex} (${actionKey}) with status ${stepStatus}`);
+      
+      // FIXED: Build feedback progressively - mark all previous steps as completed when current step starts
+      const updatedFeedback = { ...prev };
+      
+      // Mark all previous steps as completed if current step is processing/completed
+      if (status === 'processing' || status === 'completed') {
+        for (let i = 0; i < stepIndex; i++) {
+          const prevActionKey = actionMapping[i];
+          if (prevActionKey && (!updatedFeedback[prevActionKey] || updatedFeedback[prevActionKey].status !== TransactionStepStatus.completed)) {
+            updatedFeedback[prevActionKey] = {
+              label: isDeposit ? "Deposit" : "Withdraw",
+              description: getStepDescription(i, 'completed', isDeposit),
+              status: TransactionStepStatus.completed,
+              txHash: updatedFeedback[prevActionKey]?.txHash
+            };
+            console.log(`[UI Feedback] ${timestamp} - Auto-completing previous step ${i} (${prevActionKey})`);
+          }
+        }
+      }
+      
+      // Update current step
+      updatedFeedback[actionKey] = {
+        label: isDeposit ? "Deposit" : "Withdraw",
+        description,
+        status: stepStatus,
+        txHash
+      };
+      
+      // FIXED: Persist transaction feedback to localStorage for tab switch resilience
+      localStorage.setItem('amana_current_transaction_feedback', JSON.stringify(updatedFeedback));
+      
+      console.log(`[UI Feedback] ${timestamp} - Updated feedback:`, updatedFeedback[actionKey]);
+      
+      return updatedFeedback;
+    });
+  }
 
   // Update transaction step feedback based on progress
   useEffect(() => {
@@ -374,6 +698,11 @@ export default function InteractionContainer({
     setIsTransactionProcessing(false);
     setLastTransactionStepFeedback(feedbackSnapshot);
     setFinishedTransaction(true);
+    
+    // FIXED: Freeze current feedback to prevent further updates
+    console.log('[Transaction Complete] Freezing feedback state:', feedbackSnapshot);
+    
+    // Clear current feedback but preserve the snapshot for display
     setTransactionStepFeedback({});
 
     setTransactionCompleted(true);
@@ -382,6 +711,16 @@ export default function InteractionContainer({
       formatted: "0",
       formattedUSD: "0",
     });
+    
+    // FIXED: Additional protection - disable BlockPI updates after completion
+    setIsBlockPIActive(false);
+    
+    // FIXED: Clear any lingering transaction state that might trigger updates
+    setTimeout(() => {
+      localStorage.removeItem('amana_current_transaction_feedback');
+      localStorage.removeItem('amana_transaction_progress');
+      localStorage.removeItem('amana_sequence_progress');
+    }, 1000);
   }
 
   const strategyExplorerBaseUrl = useMemo(() => {
@@ -395,6 +734,12 @@ export default function InteractionContainer({
     return CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
   }, [activeChain?.id]);
 
+  // ================================================================================================
+  // COMMENTED OUT: Event-based transaction confirmation logic
+  // The BlockPI API method above provides more reliable cross-chain transaction tracking
+  // ================================================================================================
+
+  /*
   useEffect(() => {
     console.log("event1: ", vaultEvents);
     console.log("crosschainInvestHash: ", crosschainInvestHash);
@@ -894,6 +1239,11 @@ export default function InteractionContainer({
       }
     }
   }, [withdrawalReceiverEvents]);
+  */
+
+  // ================================================================================================
+  // END OF COMMENTED OUT EVENT-BASED CONFIRMATION LOGIC
+  // ================================================================================================
 
   function updateTransactionStepFeedback(
     actionIndex: Action,
@@ -912,341 +1262,293 @@ export default function InteractionContainer({
     setTransactionStepFeedback({});
   }, [actions]);
 
-  // Track user interaction to release last transaction logs
-  // START
+  // ADDED: Page Visibility API to handle browser tab switching
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  const [transactionStateBeforeTabSwitch, setTransactionStateBeforeTabSwitch] = useState<{
+    transactionStepFeedback: TransactionStepMessages;
+    isTransactionStarted: boolean;
+    isTransactionProcessing: boolean;
+    finishedTransaction: boolean;
+    crosschainInvestHash: string;
+    crossChainTxId: string;
+  } | null>(null);
 
+  // Handle browser tab visibility changes to prevent feedback loss
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isVisible = !document.hidden;
+      setIsTabVisible(isVisible);
+      
+      if (!isVisible) {
+        // Tab became invisible - save current transaction state
+        if (crosschainInvestHash.length > 0 || isTransactionStarted || isTransactionProcessing || Object.keys(transactionStepFeedback).length > 0) {
+          console.log('[Tab Visibility] Saving transaction state before tab switch');
+          setTransactionStateBeforeTabSwitch({
+            transactionStepFeedback,
+            isTransactionStarted,
+            isTransactionProcessing,
+            finishedTransaction,
+            crosschainInvestHash,
+            crossChainTxId
+          });
+        }
+      } else {
+        // Tab became visible - restore transaction state if needed
+        if (transactionStateBeforeTabSwitch) {
+          console.log('[Tab Visibility] Restoring transaction state after tab switch');
+          setTransactionStepFeedback(transactionStateBeforeTabSwitch.transactionStepFeedback);
+          setIsTransactionStarted(transactionStateBeforeTabSwitch.isTransactionStarted);
+          setIsTransactionProcessing(transactionStateBeforeTabSwitch.isTransactionProcessing);
+          setFinishedTransaction(transactionStateBeforeTabSwitch.finishedTransaction);
+          setCrosschainInvestHash(transactionStateBeforeTabSwitch.crosschainInvestHash);
+          setcrossChainTxId(transactionStateBeforeTabSwitch.crossChainTxId);
+          
+          // Clear the saved state
+          setTransactionStateBeforeTabSwitch(null);
+        }
+      }
+    };
+
+    // Add event listener for page visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also listen for window focus/blur as backup
+    const handleFocus = () => setIsTabVisible(true);
+    const handleBlur = () => setIsTabVisible(false);
+    
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [transactionStepFeedback, isTransactionStarted, isTransactionProcessing, finishedTransaction, crosschainInvestHash, crossChainTxId]);
+
+  // Replace the problematic reset logic with smarter reset conditions
   function resetTransactionState() {
     setFinishedTransaction(false);
     setIsTransactionProcessing(false);
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
+    setTransactionStepFeedback({});
+    setTransactionCompleted(false); // Reset transaction completed state
+    setIsBlockPIActive(false); // Reset BlockPI priority flag
   }
+
+  // FIXED: Only reset when there's no active transaction AND tab is visible
   useEffect(() => {
-    if (Number(_inputBalance.value) > 0) {
+    // Don't reset if there's an active transaction in progress OR if tab is not visible
+    if (
+      isTabVisible && 
+      Number(_inputBalance.value) > 0 && 
+      crosschainInvestHash.length === 0 && 
+      !isTransactionStarted && 
+      !isTransactionProcessing && 
+      Object.keys(transactionStepFeedback).length === 0
+    ) {
+      console.log('[Reset] Resetting transaction state due to input balance change');
       resetTransactionState();
     }
-  }, [_inputBalance.value]);
+  }, [_inputBalance.value, crosschainInvestHash, isTransactionStarted, isTransactionProcessing, isTabVisible]);
 
   useEffect(() => {
-    resetTransactionState();
-  }, [_inputToken]);
-
-  useEffect(() => {
-    resetTransactionState();
-  }, [isDeposit]);
-
-  // END
-
-  // Helper: Update UI for step status
-  function updateFirstCrossChainStepStatus(
-    status: string | undefined,
-    cctxUrl: string | undefined,
-    setTransactionStepFeedback: (feedback: TransactionStepMessages) => void
-  ) {
-    let feedback: TransactionStepMessages = {};
-    if (status === "PendingOutbound") {
-      feedback[Action.depositConfirmed] = {
-        label: "Deposit",
-        description: "Cross-chain transfer: initiating outbound (pending)",
-        status: TransactionStepStatus.processing,
-        txHash: cctxUrl
-      };
-    } else if (status === "OutboundMined" || status === "Success") {
-      feedback[Action.depositConfirmed] = {
-        label: "Deposit",
-        description: "Cross-chain transfer: outbound mined (completed)",
-        status: TransactionStepStatus.completed,
-        txHash: cctxUrl
-      };
-    } else if (status === "Reverted" || status === "Aborted" || status === "Failed") {
-      feedback[Action.depositConfirmed] = {
-        label: "Deposit",
-        description: `Cross-chain transfer failed: ${status}`,
-        status: TransactionStepStatus.error,
-        txHash: cctxUrl
-      };
-    } else if (status) {
-      feedback[Action.depositConfirmed] = {
-        label: "Deposit",
-        description: `Cross-chain transfer: ${status}`,
-        status: TransactionStepStatus.processing,
-        txHash: cctxUrl
-      };
+    // Don't reset if there's an active transaction OR if tab is not visible
+    if (
+      isTabVisible && 
+      crosschainInvestHash.length === 0 && 
+      !isTransactionStarted && 
+      !isTransactionProcessing && 
+      Object.keys(transactionStepFeedback).length === 0
+    ) {
+      console.log('[Reset] Resetting transaction state due to input token change');
+      resetTransactionState();
     }
-    setTransactionStepFeedback(feedback);
-  }
+  }, [_inputToken, crosschainInvestHash, isTransactionStarted, isTransactionProcessing, isTabVisible]);
 
   useEffect(() => {
-    // Only run for the first cross-chain step after local transaction
-    if (!crosschainInvestHash || action !== Action.depositConfirmed) return;
-    let cancelled = false;
+    // Don't reset if there's an active transaction OR if tab is not visible
+    if (
+      isTabVisible && 
+      crosschainInvestHash.length === 0 && 
+      !isTransactionStarted && 
+      !isTransactionProcessing && 
+      Object.keys(transactionStepFeedback).length === 0
+    ) {
+      console.log('[Reset] Resetting transaction state due to deposit/withdraw toggle');
+      resetTransactionState();
+    }
+  }, [isDeposit, crosschainInvestHash, isTransactionStarted, isTransactionProcessing, isTabVisible]);
+
+  // ADDED: Integrate BlockPI sequence progress with existing state machine
+  useEffect(() => {
+    if (!transactionSequenceProgress) return;
+
+    const { steps, currentStep, isComplete, error } = transactionSequenceProgress;
     
-    // Save transaction state to localStorage for persistence across refreshes
-    localStorage.setItem('pendingDepositTransaction', JSON.stringify({
-      hash: crosschainInvestHash,
-      txId: crossChainTxId,
-      timestamp: Date.now()
-    }));
-
-    async function pollBlockPIForFirstStep() {
-      let attempt = 0;
-      const maxAttempts = 30; // Allow for up to 10+ minutes of polling
-      let backoffDelay = 3000; // Start with 3 seconds
-      let consecutiveErrors = 0;
-
-      while (!cancelled && attempt < maxAttempts) {
-        try {
-          console.log(`[BlockPI] Attempt ${attempt+1}/${maxAttempts} - Calling inboundHashToCctx for ${crosschainInvestHash}`);
-          
-          // Update UI with current attempt info
-          let attemptFeedback: TransactionStepMessages = {};
-          attemptFeedback[Action.depositConfirmed] = {
-            label: "Deposit",
-            description: `Cross-chain transfer in progress (attempt ${attempt+1}/${maxAttempts})`,
-            status: TransactionStepStatus.processing,
-            txHash: lastEventTxHash
-          };
-          setTransactionStepFeedback(attemptFeedback);
-          
-          const inboundRes = await blockpi.getInboundHashToCctxData(crosschainInvestHash);
-          const cctxIndex = inboundRes?.inboundHashToCctx?.cctx_index?.[0];
-          
-          if (!cctxIndex) {
-            consecutiveErrors++;
-            
-            // If too many consecutive errors, consider falling back to RPC
-            if (consecutiveErrors > 10) {
-              console.log("[BlockPI] Too many consecutive errors, falling back to RPC-based monitoring");
-              // The existing event-based monitoring in this component will serve as the fallback
-              return;
-            }
-            
-            attempt++;
-            // Exponential backoff with a cap
-            backoffDelay = Math.min(backoffDelay * 1.5, 30000); // Increase delay, max 30sec
-            console.log(`[BlockPI] No cctx_index found yet, waiting ${backoffDelay/1000}s before retry`);
-            await new Promise(res => setTimeout(res, backoffDelay));
-            continue;
-          }
-          
-          // Reset consecutive errors since we got a valid response
-          consecutiveErrors = 0;
-          
-          // STEP 2: Now get the actual transaction status using the cctx endpoint
-          console.log(`[BlockPI] Found cctx_index: ${cctxIndex}, calling cctx endpoint`);
-          
-          // Use the BLOCKPI_URL from blockpi instance to construct the URL
-          const cctxUrl = `${blockpi.api.defaults.baseURL}/cctx/${cctxIndex}`;
-          
-          const cctxRes = await blockpi.getCctxData(cctxIndex);
-          const status = cctxRes?.CrossChainTx?.cctx_status?.status;
-          
-          console.log(`[BlockPI] First cross-chain step status for ${crosschainInvestHash} (cctx: ${cctxIndex}):`, status);
-          updateFirstCrossChainStepStatus(status, cctxUrl, setTransactionStepFeedback);
-          
-          if (status === "OutboundMined" || status === "Success" || status === "Reverted" || status === "Aborted" || status === "Failed") {
-            // Clear the localStorage entry on terminal state
-            localStorage.removeItem('pendingDepositTransaction');
-            
-            // If successful, update UI with success message
-            if (status === "OutboundMined" || status === "Success") {
-              console.log("[BlockPI] Transaction completed successfully");
-            } else {
-              console.log(`[BlockPI] Transaction failed with status: ${status}`);
-            }
-            
-            // Stop polling on terminal state
-            return;
-          }
-          
-          // If we get here, we need to continue polling with backoff
-          attempt++;
-          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
-          await new Promise(res => setTimeout(res, backoffDelay));
-          
-        } catch (err) {
-          console.error(`[BlockPI] API error for ${crosschainInvestHash}:`, err);
-          attempt++;
-          consecutiveErrors++;
-          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
-          await new Promise(res => setTimeout(res, backoffDelay));
+    // Map BlockPI progress to action/step progression
+    if (isComplete) {
+      // Transaction completed successfully
+      const isDeposit = steps.some(step => step.name.includes('deposit') || step.name.includes('Deposit'));
+      if (isDeposit) {
+        const nextStep = actions.findIndex(el => el === Action.deposited);
+        if (nextStep >= 0 && action !== Action.deposited) {
+          setAction(actions[nextStep]);
+          setStep(nextStep);
+        }
+      } else {
+        const nextStep = actions.findIndex(el => el === Action.withdrew);
+        if (nextStep >= 0 && action !== Action.withdrew) {
+          setAction(actions[nextStep]);
+          setStep(nextStep);
         }
       }
+    } else if (error) {
+      // Handle errors based on transaction type and current step
+      const isDeposit = steps.some(step => step.name.includes('deposit') || step.name.includes('Deposit'));
       
-      if (attempt >= maxAttempts) {
-        console.log("[BlockPI] Max polling attempts reached, falling back to RPC");
-        // The existing event-based monitoring will continue
-      }
-    }
-
-    pollBlockPIForFirstStep();
-    return () => { cancelled = true; };
-  }, [crosschainInvestHash, action, crossChainTxId, lastEventTxHash, setTransactionStepFeedback]);
-
-  // Helper: Update UI for withdrawal step status
-  function updateFirstWithdrawStepStatus(
-    status: string | undefined,
-    cctxUrl: string | undefined,
-    setTransactionStepFeedback: (feedback: TransactionStepMessages) => void
-  ) {
-    let feedback: TransactionStepMessages = {};
-    if (status === "PendingOutbound") {
-      feedback[Action.withdrawconfirmed] = {
-        label: "Withdraw",
-        description: "Cross-chain withdraw request: initiating outbound (pending)",
-        status: TransactionStepStatus.processing,
-        txHash: cctxUrl
-      };
-    } else if (status === "OutboundMined" || status === "Success") {
-      feedback[Action.withdrawconfirmed] = {
-        label: "Withdraw",
-        description: "Cross-chain withdraw request: outbound mined (completed)",
-        status: TransactionStepStatus.completed,
-        txHash: cctxUrl
-      };
-    } else if (status === "Reverted" || status === "Aborted" || status === "Failed") {
-      feedback[Action.withdrawconfirmed] = {
-        label: "Withdraw",
-        description: `Cross-chain withdraw request failed: ${status}`,
-        status: TransactionStepStatus.error,
-        txHash: cctxUrl
-      };
-    } else if (status) {
-      feedback[Action.withdrawconfirmed] = {
-        label: "Withdraw",
-        description: `Cross-chain withdraw request: ${status}`,
-        status: TransactionStepStatus.processing,
-        txHash: cctxUrl
-      };
-    }
-    setTransactionStepFeedback(feedback);
-  }
-
-  // BlockPI integration for withdraw flow
-  useEffect(() => {
-    // Only run for the first cross-chain step after local withdraw transaction
-    if (!crosschainInvestHash || action !== Action.withdrawconfirmed) return;
-    let cancelled = false;
-    
-    // Save transaction state to localStorage for persistence across refreshes
-    localStorage.setItem('pendingWithdrawTransaction', JSON.stringify({
-      hash: crosschainInvestHash,
-      txId: crossChainTxId,
-      timestamp: Date.now()
-    }));
-
-    async function pollBlockPIForWithdrawStep() {
-      let attempt = 0;
-      const maxAttempts = 30; // Allow for up to 10+ minutes of polling
-      let backoffDelay = 3000; // Start with 3 seconds
-      let consecutiveErrors = 0;
-
-      while (!cancelled && attempt < maxAttempts) {
-        try {
-          console.log(`[BlockPI] Attempt ${attempt+1}/${maxAttempts} - Calling inboundHashToCctx for withdraw ${crosschainInvestHash}`);
-          
-          // Update UI with current attempt info
-          let attemptFeedback: TransactionStepMessages = {};
-          attemptFeedback[Action.withdrawconfirmed] = {
-            label: "Withdraw",
-            description: `Cross-chain withdraw request in progress (attempt ${attempt+1}/${maxAttempts})`,
-            status: TransactionStepStatus.processing,
-            txHash: lastEventTxHash
-          };
-          setTransactionStepFeedback(attemptFeedback);
-          
-          const inboundRes = await blockpi.getInboundHashToCctxData(crosschainInvestHash);
-          const cctxIndex = inboundRes?.inboundHashToCctx?.cctx_index?.[0];
-          
-          if (!cctxIndex) {
-            consecutiveErrors++;
-            
-            // If too many consecutive errors, consider falling back to RPC
-            if (consecutiveErrors > 10) {
-              console.log("[BlockPI] Too many consecutive errors, falling back to RPC-based monitoring");
-              // The existing event-based monitoring in this component will serve as the fallback
-              return;
-            }
-            
-            attempt++;
-            // Exponential backoff with a cap
-            backoffDelay = Math.min(backoffDelay * 1.5, 30000); // Increase delay, max 30sec
-            console.log(`[BlockPI] No cctx_index found yet for withdraw, waiting ${backoffDelay/1000}s before retry`);
-            await new Promise(res => setTimeout(res, backoffDelay));
-            continue;
+      if (error.includes('reverted')) {
+        if (isDeposit) {
+          const nextStep = actions.findIndex(el => el === Action.CrossChainInvestFailed);
+          if (nextStep >= 0 && action !== Action.CrossChainInvestFailed) {
+            setAction(actions[nextStep]);
+            setStep(nextStep);
           }
-          
-          // Reset consecutive errors since we got a valid response
-          consecutiveErrors = 0;
-          
-          // STEP 2: Now get the actual transaction status using the cctx endpoint
-          console.log(`[BlockPI] Found cctx_index: ${cctxIndex} for withdraw, calling cctx endpoint`);
-          
-          // Use the BLOCKPI_URL from blockpi instance to construct the URL
-          const cctxUrl = `${blockpi.api.defaults.baseURL}/cctx/${cctxIndex}`;
-          
-          const cctxRes = await blockpi.getCctxData(cctxIndex);
-          const status = cctxRes?.CrossChainTx?.cctx_status?.status;
-          
-          console.log(`[BlockPI] Withdraw cross-chain step status for ${crosschainInvestHash} (cctx: ${cctxIndex}):`, status);
-          updateFirstWithdrawStepStatus(status, cctxUrl, setTransactionStepFeedback);
-          
-          if (status === "OutboundMined" || status === "Success" || status === "Reverted" || status === "Aborted" || status === "Failed") {
-            // Clear the localStorage entry on terminal state
-            localStorage.removeItem('pendingWithdrawTransaction');
-            
-            // If successful, update UI with success message
-            if (status === "OutboundMined" || status === "Success") {
-              console.log("[BlockPI] Withdraw transaction completed successfully");
-            } else {
-              console.log(`[BlockPI] Withdraw transaction failed with status: ${status}`);
-            }
-            
-            // Stop polling on terminal state
-            return;
+        } else {
+          const nextStep = actions.findIndex(el => el === Action.DivestFailed);
+          if (nextStep >= 0 && action !== Action.DivestFailed) {
+            setAction(actions[nextStep]);
+            setStep(nextStep);
           }
-          
-          // If we get here, we need to continue polling with backoff
-          attempt++;
-          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
-          await new Promise(res => setTimeout(res, backoffDelay));
-          
-        } catch (err) {
-          console.error(`[BlockPI] API error for withdraw ${crosschainInvestHash}:`, err);
-          attempt++;
-          consecutiveErrors++;
-          backoffDelay = Math.min(backoffDelay * 1.5, 30000);
-          await new Promise(res => setTimeout(res, backoffDelay));
         }
       }
+    } else {
+      // Progress through intermediate steps based on currentStep
+      const isDeposit = steps.some(step => step.name.includes('deposit') || step.name.includes('Deposit'));
       
-      if (attempt >= maxAttempts) {
-        console.log("[BlockPI] Max polling attempts reached for withdraw, falling back to RPC");
-        // The existing event-based monitoring will continue
+      if (currentStep >= 1 && action === Action.depositConfirmed && isDeposit) {
+        // Move to crosschainInvest step
+        const nextStep = actions.findIndex(el => el === Action.crosschainInvest);
+        if (nextStep >= 0) {
+          setAction(actions[nextStep]);
+          setStep(nextStep);
+        }
+      } else if (currentStep >= 1 && action === Action.withdrawconfirmed && !isDeposit) {
+        // Move to DivestSent step
+        const nextStep = actions.findIndex(el => el === Action.DivestSent);
+        if (nextStep >= 0) {
+          setAction(actions[nextStep]);
+          setStep(nextStep);
+        }
+      } else if (currentStep >= 3 && action === Action.crosschainInvest && isDeposit) {
+        // Move to FundsInvest step
+        const nextStep = actions.findIndex(el => el === Action.FundsInvest);
+        if (nextStep >= 0) {
+          setAction(actions[nextStep]);
+          setStep(nextStep);
+        }
+      } else if (currentStep >= 3 && action === Action.DivestSent && !isDeposit) {
+        // Move to FundsDivested step
+        const nextStep = actions.findIndex(el => el === Action.FundsDivested);
+        if (nextStep >= 0) {
+          setAction(actions[nextStep]);
+          setStep(nextStep);
+        }
+      } else if (currentStep >= 4 && action === Action.FundsDivested && !isDeposit) {
+        // Move to ReturnFundsToUserSent step for withdrawals
+        const nextStep = actions.findIndex(el => el === Action.ReturnFundsToUserSent);
+        if (nextStep >= 0) {
+          setAction(actions[nextStep]);
+          setStep(nextStep);
+        }
       }
     }
+  }, [transactionSequenceProgress, actions, action, setAction, setStep]);
 
-    pollBlockPIForWithdrawStep();
-    return () => { cancelled = true; };
-  }, [crosschainInvestHash, action, crossChainTxId, lastEventTxHash, setTransactionStepFeedback]);
+  // ADDED: State persistence - maintain transaction state when component unmounts/remounts
+  useEffect(() => {
+    // Save transaction state to sessionStorage for persistence across tab switches
+    if (crosschainInvestHash.length > 0 || crossChainTxId.length > 0 || isTransactionStarted || isTransactionProcessing) {
+      const transactionState = {
+        crosschainInvestHash,
+        crossChainTxId,
+        isTransactionStarted,
+        isTransactionProcessing,
+        finishedTransaction,
+        action,
+        step,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('amana_transaction_state', JSON.stringify(transactionState));
+    }
+  }, [crosschainInvestHash, crossChainTxId, isTransactionStarted, isTransactionProcessing, finishedTransaction, action, step]);
+
+  // ADDED: Restore transaction state on component mount
+  useEffect(() => {
+    const savedState = sessionStorage.getItem('amana_transaction_state');
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        // Only restore if transaction is less than 20 minutes old
+        if (Date.now() - state.timestamp < 20 * 60 * 1000) {
+          setCrosschainInvestHash(state.crosschainInvestHash || "");
+          setcrossChainTxId(state.crossChainTxId || "");
+          setIsTransactionStarted(state.isTransactionStarted || false);
+          setIsTransactionProcessing(state.isTransactionProcessing || false);
+          setFinishedTransaction(state.finishedTransaction || false);
+          
+          // Restore action and step
+          if (state.action && state.step !== undefined) {
+            setAction(state.action);
+            setStep(state.step);
+          }
+        } else {
+          // Clear stale state
+          sessionStorage.removeItem('amana_transaction_state');
+        }
+      } catch (error) {
+        console.error('Error restoring transaction state:', error);
+        sessionStorage.removeItem('amana_transaction_state');
+      }
+    }
+  }, []); // Only run on mount
+
+  // ADDED: Clear transaction state when transaction completes
+  useEffect(() => {
+    if (finishedTransaction) {
+      sessionStorage.removeItem('amana_transaction_state');
+    }
+  }, [finishedTransaction]);
 
   // Check for pending transactions on component mount
   useEffect(() => {
+    // Add debugging to understand button disabled state
+    console.log('[Debug] Button disabled state check:', {
+      isTransactionProcessing,
+      crosschainInvestHash: crosschainInvestHash.length,
+      finishedTransaction,
+      disabled: isTransactionProcessing || (crosschainInvestHash.length > 0 && !finishedTransaction)
+    });
+    
     // Check for pending deposit transactions
     const pendingDepositTx = localStorage.getItem('pendingDepositTransaction');
     if (pendingDepositTx) {
       try {
-        const { hash, txId, timestamp } = JSON.parse(pendingDepositTx);
+        const { hash, txId, timestamp, type } = JSON.parse(pendingDepositTx);
+        
+        console.log('[Debug] Found pending deposit transaction:', { hash, type, age: Date.now() - timestamp });
         
         // Only resume if transaction is less than 20 minutes old
         if (Date.now() - timestamp < 20 * 60 * 1000) {
-          console.log('[BlockPI] Resuming pending deposit transaction:', hash);
+          console.log(`[BlockPI] Resuming pending ${type} transaction:`, hash);
           setCrosschainInvestHash(hash);
           setcrossChainTxId(txId);
           
-          // Set action to depositConfirmed to trigger the polling effect
-          const nextStep = actions.findIndex((el) => el == Action.depositConfirmed);
+          // Set action to appropriate confirmed state to trigger sequence tracking
+          const actionKey = type === 'deposit' ? Action.depositConfirmed : Action.withdrawconfirmed;
+          const nextStep = actions.findIndex((el) => el === actionKey);
           if (nextStep >= 0) {
             setAction(actions[nextStep]);
             setStep(nextStep);
@@ -1265,22 +1567,25 @@ export default function InteractionContainer({
     const pendingWithdrawTx = localStorage.getItem('pendingWithdrawTransaction');
     if (pendingWithdrawTx) {
       try {
-        const { hash, txId, timestamp } = JSON.parse(pendingWithdrawTx);
+        const { hash, txId, timestamp, type } = JSON.parse(pendingWithdrawTx);
+        
+        console.log('[Debug] Found pending withdraw transaction:', { hash, type, age: Date.now() - timestamp });
         
         // Only resume if transaction is less than 20 minutes old
         if (Date.now() - timestamp < 20 * 60 * 1000) {
-          console.log('[BlockPI] Resuming pending withdraw transaction:', hash);
+          console.log(`[BlockPI] Resuming pending ${type} transaction:`, hash);
           setCrosschainInvestHash(hash);
           setcrossChainTxId(txId);
           
-          // Set action to withdrawconfirmed to trigger the polling effect
-          const nextStep = actions.findIndex((el) => el == Action.withdrawconfirmed);
+          // Set action to appropriate confirmed state to trigger sequence tracking
+          const actionKey = type === 'withdrawal' ? Action.withdrawconfirmed : Action.depositConfirmed;
+          const nextStep = actions.findIndex((el) => el === actionKey);
           if (nextStep >= 0) {
             setAction(actions[nextStep]);
             setStep(nextStep);
           }
         } else {
-          console.log('[BlockPI] Found stale withdraw transaction, removing from localStorage');
+          console.log(`[BlockPI] Found stale ${type} transaction, removing from localStorage`);
           localStorage.removeItem('pendingWithdrawTransaction');
         }
       } catch (error) {
@@ -1289,6 +1594,192 @@ export default function InteractionContainer({
       }
     }
   }, [actions, setCrosschainInvestHash, setcrossChainTxId, setAction, setStep]);
+
+  // Force clear all transaction state - manual cleanup function
+  const forceClearTransactionState = useCallback(() => {
+    console.log('[Cleanup] Force clearing all transaction state');
+    
+    // Clear all state
+    setFinishedTransaction(false);
+    setIsTransactionProcessing(false);
+    setIsTransactionStarted(false);
+    setCrosschainInvestHash("");
+    setcrossChainTxId("");
+    setTransactionStepFeedback({});
+    setLastTransactionStepFeedback({});
+    setTransactionSequenceProgress(null);
+    setTransactionStateBeforeTabSwitch(null);
+    setTransactionCompleted(false);
+    setIsBlockPIActive(false);
+    
+    // Clear all localStorage items
+    localStorage.removeItem('pendingDepositTransaction');
+    localStorage.removeItem('pendingWithdrawTransaction');
+    localStorage.removeItem('amana_current_transaction_feedback');
+    localStorage.removeItem('amana_transaction_progress');
+    localStorage.removeItem('amana_sequence_progress');
+    localStorage.removeItem('amana_transaction_error');
+    
+    // Clear sessionStorage as well
+    sessionStorage.removeItem('amana_transaction_state');
+    
+    console.log('[Cleanup] All transaction state cleared');
+  }, [
+    setFinishedTransaction,
+    setIsTransactionProcessing, 
+    setIsTransactionStarted,
+    setCrosschainInvestHash,
+    setcrossChainTxId,
+    setTransactionStepFeedback,
+    setLastTransactionStepFeedback,
+    setTransactionSequenceProgress,
+    setTransactionStateBeforeTabSwitch,
+    setTransactionCompleted
+  ]);
+
+  // Separate effect for cleanup check to avoid dependency issues
+  useEffect(() => {
+    // Only run cleanup check after component has mounted and stabilized
+    const timer = setTimeout(() => {
+      const pendingDepositTx = localStorage.getItem('pendingDepositTransaction');
+      const pendingWithdrawTx = localStorage.getItem('pendingWithdrawTransaction');
+      
+      // If no pending transactions found but we still have disabled state, force clear it
+      if (!pendingDepositTx && !pendingWithdrawTx && (crosschainInvestHash.length > 0 || isTransactionProcessing) && !isTransactionStarted) {
+        console.log('[Debug] No pending transactions but disabled state detected - force clearing');
+        forceClearTransactionState();
+      }
+    }, 1000); // Wait 1 second before checking
+    
+    return () => clearTimeout(timer);
+  }, []); // Only run once on mount
+
+  // Add window function for manual debugging
+  useEffect(() => {
+    // @ts-ignore
+    window.forceClearTransactionState = forceClearTransactionState;
+    // @ts-ignore
+    window.debugTransactionState = () => {
+      console.log('[Debug] Current transaction state:', {
+        isTransactionProcessing,
+        crosschainInvestHash,
+        crossChainTxId,
+        finishedTransaction,
+        isTransactionStarted,
+        action,
+        step,
+        transactionStepFeedback: Object.keys(transactionStepFeedback),
+        buttonDisabled: isTransactionProcessing || (crosschainInvestHash.length > 0 && !finishedTransaction)
+      });
+      
+      console.log('[Debug] localStorage items:', {
+        pendingDepositTransaction: localStorage.getItem('pendingDepositTransaction'),
+        pendingWithdrawTransaction: localStorage.getItem('pendingWithdrawTransaction'),
+        amana_current_transaction_feedback: localStorage.getItem('amana_current_transaction_feedback'),
+        amana_transaction_progress: localStorage.getItem('amana_transaction_progress'),
+        amana_sequence_progress: localStorage.getItem('amana_sequence_progress'),
+        amana_transaction_error: localStorage.getItem('amana_transaction_error')
+      });
+      
+      console.log('[Debug] sessionStorage items:', {
+        amana_transaction_state: sessionStorage.getItem('amana_transaction_state')
+      });
+    };
+    
+    // FIXED: Add real-time BlockPI status checker
+    // @ts-ignore
+    window.checkBlockPIStatus = async (hash, cctxIndex = null) => {
+      try {
+        const response = await fetch(cctxIndex ? 
+          `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${cctxIndex}?t=${Date.now()}` :
+          `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/inboundHashToCctx/${hash}?t=${Date.now()}`
+        );
+        const data = await response.json();
+        console.log('[BlockPI Debug] Fresh data:', data);
+        
+        if (cctxIndex) {
+          const status = data?.CrossChainTx?.cctx_status?.status;
+          const lastUpdate = data?.CrossChainTx?.cctx_status?.lastUpdate_timestamp;
+          console.log(`[BlockPI Debug] Status: ${status}, Last Update: ${lastUpdate}`);
+          return { status, lastUpdate, data };
+        } else {
+          const cctxIdx = data?.inboundHashToCctx?.cctx_index?.[0];
+          console.log(`[BlockPI Debug] CCTX Index: ${cctxIdx}`);
+          return { cctxIndex: cctxIdx, data };
+        }
+             } catch (error) {
+         console.error('[BlockPI Debug] Error:', error);
+         return { error: error instanceof Error ? error.message : 'Unknown error' };
+       }
+    };
+    
+    return () => {
+      // @ts-ignore
+      delete window.forceClearTransactionState;
+      // @ts-ignore
+      delete window.debugTransactionState;
+      // @ts-ignore
+      delete window.checkBlockPIStatus;
+    };
+  }, [forceClearTransactionState, isTransactionProcessing, crosschainInvestHash, crossChainTxId, finishedTransaction, isTransactionStarted, action, step, transactionStepFeedback]);
+
+  // ADDED: Route change detection to reset transaction state on page navigation
+  const pathname = usePathname();
+  const previousPathnameRef = useRef(pathname);
+  
+  // Force reset transaction state when route changes (navigation within app)
+  useEffect(() => {
+    if (previousPathnameRef.current !== pathname) {
+      console.log('[Route Change] Detected navigation from', previousPathnameRef.current, 'to', pathname);
+      console.log('[Route Change] Resetting all transaction state and stopping tracking');
+      
+      // Force reset all transaction state
+      setFinishedTransaction(false);
+      setIsTransactionProcessing(false);
+      setIsTransactionStarted(false);
+      setCrosschainInvestHash("");
+      setcrossChainTxId("");
+      setTransactionStepFeedback({});
+      setLastTransactionStepFeedback({});
+      setTransactionSequenceProgress(null);
+      setTransactionStateBeforeTabSwitch(null);
+      setIsBlockPIActive(false);
+      
+      // Clear all localStorage items related to transactions
+      localStorage.removeItem('pendingDepositTransaction');
+      localStorage.removeItem('pendingWithdrawTransaction');
+      localStorage.removeItem('amana_current_transaction_feedback');
+      localStorage.removeItem('amana_transaction_progress');
+      localStorage.removeItem('amana_sequence_progress');
+      localStorage.removeItem('amana_transaction_error');
+      
+      // Clear sessionStorage as well
+      sessionStorage.removeItem('amana_transaction_state');
+      
+      // Update previous pathname reference
+      previousPathnameRef.current = pathname;
+    }
+  }, [pathname]);
+
+  // Auto-cleanup on component mount to prevent disabled button issues
+  useEffect(() => {
+    // Check for lingering transaction state that might cause disabled button
+    const hasLingeringState = crosschainInvestHash.length > 0 && !isTransactionStarted && !isTransactionProcessing && !finishedTransaction;
+    
+    if (hasLingeringState) {
+      console.log('[Auto-Cleanup] Detected lingering transaction state on mount - clearing');
+      forceClearTransactionState();
+    }
+  }, []); // Only run once on mount
+
+  // Additional immediate cleanup check for button state
+  useEffect(() => {
+    // If we have a crosschainInvestHash but no active transaction state, clear it immediately
+    if (crosschainInvestHash.length > 0 && !isTransactionStarted && !isTransactionProcessing && !finishedTransaction) {
+      console.log('[Button State] Clearing lingering hash that would disable button');
+      setCrosschainInvestHash("");
+    }
+  }, [crosschainInvestHash, isTransactionStarted, isTransactionProcessing, finishedTransaction]);
 
   return (
     <div className="w-full flex flex-col mt-5">
@@ -1324,6 +1815,10 @@ export default function InteractionContainer({
         lastEventTxHash={lastEventTxHash}
         setLastEventTxHash={setLastEventTxHash}
         refreshBalance={refreshBalance}
+        crosschainInvestHash={crosschainInvestHash}
+        crossChainTxId={crossChainTxId}
+        transactionStateBeforeTabSwitch={transactionStateBeforeTabSwitch}
+        isBlockPIActive={isBlockPIActive}
       />
     </div>
   );
@@ -1361,6 +1856,10 @@ function Interaction({
   lastEventTxHash,
   setLastEventTxHash,
   refreshBalance,
+  crosschainInvestHash,
+  crossChainTxId,
+  transactionStateBeforeTabSwitch,
+  isBlockPIActive,
 }: {
   setStep: Function;
   setAction: Function;
@@ -1400,13 +1899,48 @@ function Interaction({
   lastEventTxHash: string;
   setLastEventTxHash: (data: string) => void;
   refreshBalance: Function;
+  crosschainInvestHash: string;
+  crossChainTxId: string;
+  transactionStateBeforeTabSwitch: {
+    transactionStepFeedback: TransactionStepMessages;
+    isTransactionStarted: boolean;
+    isTransactionProcessing: boolean;
+    finishedTransaction: boolean;
+    crosschainInvestHash: string;
+    crossChainTxId: string;
+  } | null;
+  isBlockPIActive: boolean;
 }): JSX.Element {
   const activeAccount = useActiveAccount();
   const walletContext = useWallet();
   const { selectedChain } = useMultiChain();
 
-  useEffect(() => {
+    useEffect(() => {
     console.log("%c Called SWITCH!!", "color: blue");
+    
+    // Skip traditional action-based feedback updates when BlockPI is actively managing feedback
+    if (isBlockPIActive) {
+      console.log("[Traditional Feedback] Skipping action-based feedback update - BlockPI is active");
+      return;
+    }
+    
+    // FIXED: Prevent traditional feedback from running after transaction completion
+    if (finishedTransaction) {
+      console.log("[Traditional Feedback] Skipping action-based feedback update - transaction finished");
+      return;
+    }
+    
+    // FIXED: Prevent traditional feedback from overriding completed steps
+    if (Object.keys(transactionStepFeedback).length > 0) {
+      const hasCompletedSteps = Object.values(transactionStepFeedback).some(
+        feedback => feedback?.status === TransactionStepStatus.completed
+      );
+      if (hasCompletedSteps && (action === Action.depositConfirmed || action === Action.withdrawconfirmed)) {
+        console.log("[Traditional Feedback] Skipping confirmed action - completed steps exist, likely BlockPI managed");
+        return;
+      }
+    }
+    
     let newTransactionStepFeedback;
     let targetAction: Action;
     let description: string;
@@ -1438,6 +1972,12 @@ function Interaction({
         setLabel("Deposit");
         break;
       case Action.depositConfirmed:
+        // FIXED: Don't override if already completed by BlockPI
+        if (transactionStepFeedback[Action.depositConfirmed]?.status === TransactionStepStatus.completed) {
+          console.log("[Traditional Feedback] Skipping depositConfirmed - already completed by BlockPI");
+          break;
+        }
+        console.log("[Traditional Feedback] Setting depositConfirmed to processing");
         setTransactionStepFeedback((prev) => ({
           ...prev,
           [Action.deposit]: {
@@ -1454,6 +1994,11 @@ function Interaction({
         }));
         break;
       case Action.withdrawconfirmed:
+        // FIXED: Don't override if already completed by BlockPI
+        if (transactionStepFeedback[Action.withdrawconfirmed]?.status === TransactionStepStatus.completed) {
+          console.log("[Traditional Feedback] Skipping withdrawconfirmed - already completed by BlockPI");
+          break;
+        }
         setTransactionStepFeedback((prev) => ({
           ...prev,
           [Action.withdraw]: {
@@ -1672,8 +2217,7 @@ function Interaction({
           [Action.DivestSent]: {
             label: "Withdraw",
             description: "Divestment of funds from strategy completed",
-            status: TransactionStepStatus.completed,
-            txHash: localLastEventTxHash,
+            status: TransactionStepStatus.processing,
           },
           [Action.FundsDivested]: {
             label: "Withdraw",
@@ -1778,7 +2322,7 @@ function Interaction({
         completeTransactionProcess(newTransactionStepFeedback);
         break;
     }
-  }, [action, actions]);
+  }, [action, actions, isBlockPIActive]);
 
   async function interactionPostHook(success: boolean) {
     if (success) {
@@ -1841,6 +2385,14 @@ function Interaction({
   const handleMainAction = async () => {
     if (isTransactionProcessing) return;
     setIsTransactionProcessing(true);
+    
+    // Only clear feedback for completely new transactions, not continued ones
+    if ((action === Action.deposit || action === Action.withdraw) && Object.keys(transactionStepFeedback).length === 0) {
+      console.log('[UI] Starting new transaction - ensuring clean state');
+      setTransactionStepFeedback({});
+      setLastTransactionStepFeedback({});
+    }
+    
     if (action == Action.depositApprove) {
       trackEvent("Approve Clicked", {
         vaultSymbol: vaultData.symbol,
@@ -1870,6 +2422,8 @@ function Interaction({
       } else {
         description = "Initial deposit transaction on local chain in progress";
       }
+      
+      console.log('[UI] Setting deposit loading state:', description);
       updateTransactionStepFeedback(action, {
         label: "Deposit",
         description,
@@ -1917,107 +2471,138 @@ function Interaction({
   }, [lastTransactionStepFeedback, transactionStepFeedback]);
 
   function handleDone() {
+    console.log('[UI] handleDone called - clearing all transaction state');
+    
+    // Clear all transaction-related state
     setLastTransactionStepFeedback({});
+    setTransactionStepFeedback({}); // Clear current feedback
     setFinishedTransaction(false);
+    setTransactionCompleted(false);
+    setIsTransactionProcessing(false);
+    setIsTransactionStarted(false);
+    setCrosschainInvestHash("");
+    setcrossChainTxId("");
+    setLabel(""); // Clear button label
+    
+    // Clear localStorage items
+    localStorage.removeItem('pendingDepositTransaction');
+    localStorage.removeItem('pendingWithdrawTransaction');
+    localStorage.removeItem('amana_current_transaction_feedback');
+    localStorage.removeItem('amana_transaction_progress');
+    localStorage.removeItem('amana_sequence_progress');
+    localStorage.removeItem('amana_transaction_error');
+    
+    // Clear sessionStorage
+    sessionStorage.removeItem('amana_transaction_state');
+    
     refreshBalance();
+    
+    console.log('[UI] All transaction state cleared');
   }
 
   return (
     <>
-      {((Number(inputBalance.formatted) > 0 && actions.length) ||
-        finishedTransaction) &&
-        !errorMessage && (
-          <>
-            <p className="text-white text-start text-2xl font-bold leading-none mb-3">
-              {label}
-            </p>
-            {
-              <>
-                {(Object.keys(Action) as Array<keyof typeof Action>)
-                  .map((key) => key as unknown as Action)
-                  .map((item, index) => {
-                    const feedbackData = finishedTransaction
-                      ? lastTransactionStepFeedback
-                      : transactionStepFeedback;
-                    if (feedbackData[item]) {
-                      const actionFeedback = feedbackData[item];
-                      return (
-                        <div
-                          className="flex flex-col gap-2 mb-2 last:mb-4"
-                          key={index}
-                        >
-                          <div className="flex gap-2 items-center">
-                            <div className="w-6 h-6 rounded-full bg-gray-800 flex-center [&:has(.pending-state)]:bg-[transparent] [&:has(.pending-state)]:border-none">
-                              {((actionStatus) => {
-                                switch (actionStatus) {
-                                  case TransactionStepStatus.pending:
-                                    return (
-                                      <div className="w-4 h-4 bg-java-600 rounded-full animate-[ping_1.5s_ease-in-out_infinite]" />
-                                    );
-                                  case TransactionStepStatus.error:
-                                    return (
-                                      <AiOutlineExclamation
-                                        className="text-red-600"
-                                        size={16}
-                                      />
-                                    );
-                                  case TransactionStepStatus.processing:
-                                    return (
-                                      <MoonLoader
-                                        color="yellow"
-                                        size={18}
-                                        speedMultiplier={0.3}
-                                        className="pending-state"
-                                      />
-                                    );
-                                  case TransactionStepStatus.completed:
-                                    return (
-                                      <AiOutlineCheck
-                                        className="text-green-400"
-                                        size={16}
-                                      />
-                                    );
-                                  default:
-                                    return null;
-                                }
-                              })(actionFeedback.status)}
-                            </div>
-                            <p className="text-white text-start">
-                              {actionFeedback.description}
-                            </p>
-                            {actionFeedback?.txHash && (
-                              <Link
-                                href={actionFeedback.txHash}
-                                className="flex items-center gap-1 group text-white hover:text-blue-600"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <ArrowTopRightOnSquareIcon
-                                  width="20"
-                                  height="20"
-                                  className="size-5"
-                                />
-                              </Link>
-                            )}
+      {(
+        // Show UI only if we have valid input amount OR there's an active/finished transaction
+        (Number(inputBalance.formatted) > 0 && actions.length && !errorMessage) ||
+        // OR if there's an active transaction
+        (crosschainInvestHash.length > 0 || isTransactionStarted || isTransactionProcessing) ||
+        // OR if transaction is finished and we have feedback to show
+        (finishedTransaction && (Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0))
+      ) && (
+        <>
+          <p className="text-white text-start text-2xl font-bold leading-none mb-3">
+            {label}
+          </p>
+          {
+            <>
+              {(Object.keys(Action) as Array<keyof typeof Action>)
+                .map((key) => key as unknown as Action)
+                .map((item, index) => {
+                  // Use saved state if available (during tab switch restoration)
+                  const feedbackData = transactionStateBeforeTabSwitch ? 
+                    transactionStateBeforeTabSwitch.transactionStepFeedback :
+                    finishedTransaction ? lastTransactionStepFeedback : transactionStepFeedback;
+                  
+                  if (feedbackData[item]) {
+                    const actionFeedback = feedbackData[item];
+                    return (
+                      <div
+                        className="flex flex-col gap-2 mb-2 last:mb-4"
+                        key={index}
+                      >
+                        <div className="flex gap-2 items-center">
+                          <div className="w-6 h-6 rounded-full bg-gray-800 flex-center [&:has(.pending-state)]:bg-[transparent] [&:has(.pending-state)]:border-none">
+                            {((actionStatus) => {
+                              switch (actionStatus) {
+                                case TransactionStepStatus.pending:
+                                  return (
+                                    <div className="w-4 h-4 bg-java-600 rounded-full animate-[ping_1.5s_ease-in-out_infinite]" />
+                                  );
+                                case TransactionStepStatus.error:
+                                  return (
+                                    <AiOutlineExclamation
+                                      className="text-red-600"
+                                      size={16}
+                                    />
+                                  );
+                                case TransactionStepStatus.processing:
+                                  return (
+                                    <MoonLoader
+                                      color="yellow"
+                                      size={18}
+                                      speedMultiplier={0.3}
+                                      className="pending-state"
+                                    />
+                                  );
+                                case TransactionStepStatus.completed:
+                                  return (
+                                    <AiOutlineCheck
+                                      className="text-green-400"
+                                      size={16}
+                                    />
+                                  );
+                                default:
+                                  return null;
+                              }
+                            })(actionFeedback.status)}
                           </div>
+                          <p className="text-white text-start">
+                            {actionFeedback.description}
+                          </p>
+                          {actionFeedback?.txHash && (
+                            <Link
+                              href={actionFeedback.txHash}
+                              className="flex items-center gap-1 group text-white hover:text-blue-600"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <ArrowTopRightOnSquareIcon
+                                width="20"
+                                height="20"
+                                className="size-5"
+                              />
+                            </Link>
+                          )}
                         </div>
-                      );
-                    }
-                    return null;
-                  })}
-              </>
-            }
-            {finishedTransaction ? (
-              <MainActionButton label="Done" handleClick={handleDone} />
-            ) : (
-              <MainActionButton
-                disabled={isTransactionProcessing}
-                label={label}
-                handleClick={handleMainAction}
-              />
-            )}
-          </>
-        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+            </>
+          }
+          {finishedTransaction ? (
+            <MainActionButton label="Done" handleClick={handleDone} />
+          ) : (
+            <MainActionButton
+              disabled={isTransactionProcessing || (crosschainInvestHash.length > 0 && !finishedTransaction)}
+              label={label}
+              handleClick={handleMainAction}
+            />
+          )}
+        </>
+      )}
     </>
   );
 }
@@ -2092,3 +2677,4 @@ function handleInteraction(
       };
   }
 }
+
