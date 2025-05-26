@@ -210,17 +210,19 @@ export default class Blockpi {
     }
   }
 
-  private async makeRequest(endpoint: string, retries: number = 3): Promise<any> {
+  private async makeRequest(endpoint: string, cacheBuster?: number | number, retries: number = 3): Promise<any> {
     let lastError: any;
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        // FIXED: Add cache busting to ensure we get fresh data
-        const cacheBuster = Date.now();
+        // Add cache busting to ensure we get fresh data
+        const timestamp = typeof cacheBuster === 'number' ? cacheBuster : Date.now();
         const separator = endpoint.includes('?') ? '&' : '?';
-        const endpointWithCacheBuster = `${endpoint}${separator}t=${cacheBuster}`;
+        const endpointWithCacheBuster = `${endpoint}${separator}t=${timestamp}`;
         
+        console.log(`[BlockPI API Call] Making request to: ${this.api.defaults.baseURL}${endpointWithCacheBuster}`);
         const response = await this.api.get(endpointWithCacheBuster);
+        console.log(`[BlockPI API Call] Response received:`, response.status, response.statusText);
         return response.data;
       } catch (error: any) {
         lastError = error;
@@ -286,10 +288,10 @@ export default class Blockpi {
   }
 
   // Get data from inboundHashToCctx endpoint
-  async getInboundHashToCctx(hash: string): Promise<any> {
+  async getInboundHashToCctx(hash: string, cacheBuster?: number): Promise<any> {
     try {
-      console.log(`[BlockPI] Getting inboundHashToCctx for hash: ${hash}`);
-      const data = await this.makeRequest(`/inboundHashToCctx/${hash}`);
+      console.log(`[BlockPI] Getting inboundHashToCctx for hash: ${hash} (timestamp: ${cacheBuster || 'none'})`);
+      const data = await this.makeRequest(`/inboundHashToCctx/${hash}`, cacheBuster);
       console.log(`[BlockPI] inboundHashToCctx response:`, data);
       return data;
     } catch (error) {
@@ -299,10 +301,10 @@ export default class Blockpi {
   }
 
   // Get data from cctx endpoint
-  async getCctx(cctxIndex: string): Promise<any> {
+  async getCctx(cctxIndex: string, cacheBuster?: number): Promise<any> {
     try {
-      console.log(`[BlockPI] Getting cctx for index: ${cctxIndex}`);
-      const data = await this.makeRequest(`/cctx/${cctxIndex}`);
+      console.log(`[BlockPI] Getting cctx for index: ${cctxIndex} (timestamp: ${cacheBuster || 'none'})`);
+      const data = await this.makeRequest(`/cctx/${cctxIndex}`, cacheBuster);
       console.log(`[BlockPI] cctx response:`, data);
       return data;
     } catch (error) {
@@ -330,7 +332,8 @@ export default class Blockpi {
     stepIndex: number,
     stepConfig: any,
     localHash: string,
-    prevStepData?: any
+    prevStepData?: any,
+    cacheBuster?: number
   ): Promise<{ success: boolean; data?: any; error?: string; cctxIndex?: string }> {
     try {
       const stepHash = stepConfig.getHash(localHash, prevStepData);
@@ -346,9 +349,9 @@ export default class Blockpi {
           data: { status: 'LocalTx', hash: stepHash }
         };
       } else if (stepConfig.type === 'inboundToCctx') {
-        // Get inbound to cctx data
-        console.log(`[BlockPI] Step ${stepIndex + 1}: Calling inboundHashToCctx with hash: ${stepHash}`);
-        const inboundData = await this.getInboundHashToCctx(stepHash);
+        // Get inbound to cctx data with cache buster
+        console.log(`[BlockPI] Step ${stepIndex + 1}: Calling inboundHashToCctx with hash: ${stepHash} (timestamp: ${cacheBuster || 'none'})`);
+        const inboundData = await this.getInboundHashToCctx(stepHash, cacheBuster);
         if (!inboundData) {
           return { success: false, error: 'No inbound data found' };
         }
@@ -360,8 +363,8 @@ export default class Blockpi {
 
         console.log(`[BlockPI] Step ${stepIndex + 1}: Got cctx_index: ${cctxIndex}`);
 
-        // Get the cctx data to check status
-        const cctxData = await this.getCctx(cctxIndex);
+        // Get the cctx data to check status with cache buster
+        const cctxData = await this.getCctx(cctxIndex, cacheBuster);
         if (!cctxData) {
           return { success: false, error: 'No cctx data found' };
         }
@@ -370,7 +373,6 @@ export default class Blockpi {
         const lastUpdate = cctxData?.CrossChainTx?.cctx_status?.lastUpdate_timestamp;
         console.log(`[BlockPI] Step ${stepIndex + 1}: Status: ${status}, Last Update: ${lastUpdate}, cctxIndex: ${cctxIndex}`);
         
-        // FIXED: More detailed status logging for debugging
         if (status === 'OutboundMined' || status === 'Success') {
           console.log(`[BlockPI] Step ${stepIndex + 1} completed: Cross chain call to vault on ZC (hash: ${stepHash})`);
           return { 
@@ -394,7 +396,6 @@ export default class Blockpi {
             data: cctxData
           };
         } else {
-          // FIXED: Add more detailed pending status info
           console.log(`[BlockPI] Step ${stepIndex + 1} still pending: ${status}, will retry...`);
           return { 
             success: false, 
@@ -421,8 +422,8 @@ export default class Blockpi {
           }
         };
       } else if (stepConfig.type === 'cctx') {
-        // Direct cctx call
-        const cctxData = await this.getCctx(stepHash);
+        // Direct cctx call with cache buster
+        const cctxData = await this.getCctx(stepHash, cacheBuster);
         if (!cctxData) {
           return { success: false, error: 'No cctx data found' };
         }
@@ -450,7 +451,7 @@ export default class Blockpi {
         }
       }
 
-      return { success: false, error: 'Unknown step type' };
+      return { success: false, error: `Unknown step type: ${stepConfig.type}` };
     } catch (error) {
       console.error(`[BlockPI] Error in step ${stepIndex + 1}:`, error);
       return { 
@@ -465,12 +466,21 @@ export default class Blockpi {
     localHash: string,
     transactionType: 'deposit' | 'withdrawal',
     onStepUpdate?: (step: number, status: 'pending' | 'processing' | 'completed' | 'error', data?: any) => void,
-    timeout: number = 600000 // 10 minutes
+    timestamp?: number // Added optional timestamp parameter for cache busting
   ): Promise<TransactionProgress> {
+    console.log('[BlockPI Service] trackTransactionSequence called with:', {
+      localHash,
+      transactionType,
+      hasCallback: !!onStepUpdate,
+      timestamp: timestamp || Date.now()
+    });
+    
     const sequence = TRANSACTION_SEQUENCES[transactionType];
     if (!sequence) {
       throw new Error(`Unknown transaction type: ${transactionType}`);
     }
+    
+    console.log('[BlockPI Service] Using sequence:', sequence);
 
     const startTime = Date.now();
     const steps: TransactionStep[] = [];
@@ -478,7 +488,6 @@ export default class Blockpi {
     let prevStepData: any = null;
 
     // Initialize steps array but don't call onStepUpdate for all steps
-    // This prevents showing all steps as pending in the UI at once
     for (let i = 0; i < sequence.steps.length; i++) {
       steps.push({
         type: sequence.steps[i].type,
@@ -508,17 +517,27 @@ export default class Blockpi {
         let baseDelay = 3000; // Start with 3s
         let stepCompleted = false;
 
-        while (attempt < maxAttempts && !stepCompleted && Date.now() - startTime < timeout) {
-          const result = await this.executeTransactionStep(stepIndex, stepConfig, localHash, prevStepData);
+        while (attempt < maxAttempts && !stepCompleted && Date.now() - startTime < 600000) {
+          // Add timestamp to force fresh API call on each attempt
+          const cacheBuster = Date.now();
+          console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt + 1} with timestamp ${cacheBuster}`);
           
-          // Calculate hash after we have the result, in case it depends on the outcome
+          const result = await this.executeTransactionStep(
+            stepIndex, 
+            stepConfig, 
+            localHash, 
+            prevStepData,
+            cacheBuster // Pass timestamp to ensure fresh API call
+          );
+          
+          // Calculate hash after we have the result
           const calculatedHash = stepConfig.getHash(localHash, prevStepData);
           steps[stepIndex].hash = calculatedHash;
           
           if (result.success) {
             steps[stepIndex].status = 'OutboundMined' as BlockPIStatus;
             steps[stepIndex].data = result.data;
-            // Important: Update prevStepData with the complete result data including cctxIndex
+            // Update prevStepData with the complete result data
             prevStepData = result.data;
             onStepUpdate?.(stepIndex, 'completed', {
               ...result.data,
@@ -543,12 +562,9 @@ export default class Blockpi {
           } else {
             // Step not ready yet, retry with exponential backoff
             attempt++;
-            // FIXED: Better exponential backoff - 3s, 6s, 9s, 12s, 15s, 18s, 21s, 24s
             const backoffDelay = Math.min(baseDelay * attempt, 24000);
             
-            if (attempt <= 3 || attempt === maxAttempts) {
-              console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt}/${maxAttempts}: ${result.error}`);
-            }
+            console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt}/${maxAttempts}: ${result.error}, next attempt in ${backoffDelay}ms`);
             await new Promise(resolve => setTimeout(resolve, backoffDelay));
           }
         }
@@ -558,8 +574,7 @@ export default class Blockpi {
           steps[stepIndex].error = error;
           onStepUpdate?.(stepIndex, 'error');
           
-          // FIXED: Continue processing other steps instead of stopping completely
-          // Only break the sequence if this is a critical early step (step 0 or 1)
+          // Don't stop on later step failures - continue to next step
           if (stepIndex <= 1) {
             return {
               steps,
@@ -569,9 +584,7 @@ export default class Blockpi {
             };
           }
           
-          // For later steps, log the error but continue checking remaining steps
           console.warn(`[BlockPI] Step ${stepIndex + 1} failed, but continuing to check remaining steps`);
-          // Don't update prevStepData for failed steps
           continue;
         }
       }
