@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {ConvexERC20StrategyArbitrum} from "../contracts/strategies/ConvexERC20StrategyArbitrum.sol";
+import {AmanaConnectedChainVault} from "../contracts/AmanaConnectedChainVault.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        ConvexERC20StrategyArbitrumV1 newImpl = new ConvexERC20StrategyArbitrumV1();
+        AmanaConnectedChainVaultV1 newImpl = new AmanaConnectedChainVaultV1();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }

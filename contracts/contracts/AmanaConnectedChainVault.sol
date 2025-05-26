@@ -51,8 +51,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             (
                 uint256 withdrawnAmount,
                 uint256 totalAssetsAfter,
-                uint256 confirmationNonce
-            ) = abi.decode(message, (uint256, uint256, uint256));
+                uint256 confirmationNonce,
+                bytes32 txSucceeded
+            ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
             if (confirmationNonce == lastProcessedNonce) {
                 // this is an update (totalAssetsAfter)
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
@@ -63,6 +64,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 if (!transactions[confirmationNonce].isDeposit) {
                     // this is a withdrawal confirmation (or revert)
                     transactions[confirmationNonce].amount = withdrawnAmount;
+                    transactions[confirmationNonce].txSucceeded = txSucceeded;
                 }
             }
 
@@ -175,7 +177,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bool isDeposit,
         uint256 totalAssetsAfter,
         uint256 confirmationNonce,
-        bytes32 _nonEvmAddress,
+        bytes32 _txSucceeded,
         uint16 _slippage
     ) external onlyOwner {
         // Store the transaction in the buffer
@@ -189,7 +191,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             withdrawChainId: withdrawChainId,
             isDeposit: isDeposit,
             totalAssetsAfter: totalAssetsAfter,
-            nonEvmAddress: _nonEvmAddress,
+            txSucceeded: _txSucceeded,
             slippage: _slippage
         });
     }
@@ -220,35 +222,29 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256 nextNonce = lastProcessedNonce + 1;
 
             Transaction memory transaction = transactions[nextNonce];
-            // If there's no transaction for the next nonce, stop processing
-            if (transaction.totalAssetsAfter == 0 && transaction.amount == 0) {
-                break;
-            }
-            //     if (
-            //         transactions[confirmationNonce].amount != 0 &&
-            //         transactions[confirmationNonce].totalAssetsAfter != 0
-            //     ) revert ConfirmationAlreadyProcessed();
-            // Process the transaction
-            if (transaction.isDeposit) {
+            if (transaction.txSucceeded != bytes32(0)) {
+                // This is a totalAssets update from a withdrawal revert
+                pendingWithdrawals[transaction.user] -= transaction
+                    .vaultSharesToBeBurnt;
+                latestTotalAssetsUpdateFromStrategy = transaction
+                    .totalAssetsAfter;
+            } else if (transaction.isDeposit) {
+                if (transaction.totalAssetsAfter == 0) {
+                    break; // No totalAssets update, skip processing
+                }
                 _confirmDepositAndMint();
             } else if (
                 transaction.user == address(0) &&
                 transaction.receiver == address(0)
             ) {
-                if (transaction.withdrawZRC20 == address(0)) {
-                    if (transaction.vaultSharesToBeBurnt > 0) {
-                        pendingWithdrawals[transaction.user] -= transaction
-                            .vaultSharesToBeBurnt;
-                    }
-                } else {
-                    emit StrategyUpdated(strategyAddress);
-                }
+                emit StrategyUpdated(strategyAddress);
             } else {
+                // This is a withdrawal confirmation
                 _confirmWithdrawAndBurn();
             }
 
             // Mark this nonce as processed
-            lastProcessedNonce = nextNonce; // TODO - check if this is correct
+            lastProcessedNonce = nextNonce;
             delete transactions[nextNonce];
             if (!processEntireBuffer) {
                 break; // Stop processing if not in processEntireBuffer mode
@@ -353,10 +349,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @dev Initiates cross-chain investment by interacting with the gateway and strategy.
      * @notice Approves and sends assets through the gateway to the strategy's chain.
      */
-    function _investAssets(
-        // uint256 amount,
-        uint256 minimumOut // address receiver, // bytes memory nonEvmAddress, // address userZRC20
-    ) internal override {
+    function _investAssets(uint256 minimumOut) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
         Transaction storage txn = transactions[vaultNonce];

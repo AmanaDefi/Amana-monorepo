@@ -291,8 +291,9 @@ export async function simulateConfirmDeposit(
   const totalAssetsBeforeBN = BigNumber.from(totalAssetsBefore);
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256", "uint256"],  // withdrawZRC20: 0x, totalAssetsAfter, vaultNonce
-    [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce]
+    ["uint256", "uint256", "uint256", "bytes32"],
+    [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, ethers.constants.HashZero
+    ]
   );
 
   await amanaVault.connect(gatewaySigner).onCall(
@@ -320,8 +321,9 @@ export async function simulateConfirmSwitch(
   const transferredAmountBN = BigNumber.from(transferredAmount);
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256", "uint256"],
-    [0, transferredAmountBN, executionNonce]
+    ["uint256", "uint256", "uint256", "bytes32"],
+    [0, transferredAmountBN, executionNonce, ethers.constants.HashZero
+    ]
   );
 
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -347,8 +349,9 @@ export async function simulateConfirmAssetUpdate(
   vaultNonce: any
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256", "uint256"],
-    [0, totalAssetsAmount, vaultNonce]
+    ["uint256", "uint256", "uint256", "bytes32"],
+    [0, totalAssetsAmount, vaultNonce, ethers.constants.HashZero
+    ]
   );
 
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -408,11 +411,13 @@ export async function simulateConfirmWithdrawToConnChain(
   strategyGasToken: string,
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256", "uint256"],
+    ["uint256", "uint256", "uint256", "bytes32"],
     [
       withdrawnAmount,
       totalAssetsBefore.sub(withdrawnAmount),
-      executionNonce
+      executionNonce,
+      ethers.constants.HashZero
+
     ]
   );
   // Mock token balance setup for the test environment
@@ -444,11 +449,13 @@ export async function simulateConfirmDirectWithdraw(
   strategyChainId: number
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256", "uint256"],
+    ["uint256", "uint256", "uint256", "bytes32"],
     [
       withdrawnAmount,
       totalAssetsBefore.sub(withdrawnAmount),
-      executionNonce
+      executionNonce,
+      ethers.constants.HashZero
+
     ]
   );
 
@@ -481,11 +488,13 @@ export async function simulateConfirmRedeemToAnyToken(
 
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256", "uint256"],
+    ["uint256", "uint256", "uint256", "bytes32"],
     [
       withdrawnAmount,
       totalAssetsBefore.sub(withdrawnAmount),
-      executionNonce
+      executionNonce,
+      ethers.constants.HashZero
+
     ]
   );
 

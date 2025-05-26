@@ -63,7 +63,7 @@ abstract contract AmanaVaultBase is
         uint32 withdrawChainId;
         bool isDeposit;
         uint256 totalAssetsAfter;
-        bytes32 nonEvmAddress;
+        bytes32 txSucceeded;
         uint16 slippage;
     }
 

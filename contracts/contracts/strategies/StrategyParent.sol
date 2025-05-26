@@ -333,7 +333,8 @@ abstract contract StrategyParent is
         bytes memory outgoingMessage = abi.encode(
             0,
             totalUnderlyingAssetsAfter,
-            vaultNonce
+            vaultNonce,
+            bytes32(0)
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -376,7 +377,6 @@ abstract contract StrategyParent is
             amountWithdrawn,
             totalUnderlyingAssetsAfter,
             lastProcessedNonce + 1
-            // do we need to add vaultSharesBurnt here? I don't think so - it's just shares
         );
 
         emit FundsDivested(
@@ -394,7 +394,8 @@ abstract contract StrategyParent is
     function manualResendFundsAndDivestConfirmation(
         uint256 amountWithdrawn,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 vaultNonce
+        uint256 vaultNonce,
+        bool txSucceeded
     ) external onlyOwner {
         _sendFundsAndDivestConfirmation(
             amountWithdrawn,
@@ -420,7 +421,8 @@ abstract contract StrategyParent is
         bytes memory outgoingMessage = abi.encode(
             amountWithdrawn,
             totalUnderlyingAssetsAfter,
-            vaultNonce
+            vaultNonce,
+            bytes32(0)
         );
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
@@ -484,7 +486,8 @@ abstract contract StrategyParent is
         bytes memory outgoingMessage = abi.encode(
             0,
             totalUnderlyingAssets(),
-            nonceToUse
+            nonceToUse,
+            bytes32("FAIL") // txSucceeded
         );
 
         RevertOptions memory revertOptions = RevertOptions(
