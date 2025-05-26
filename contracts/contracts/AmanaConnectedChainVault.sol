@@ -48,14 +48,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (context.sender == strategyAddress) {
-            console.log("Received message from strategy: %s", strategyAddress);
             (
                 uint256 withdrawnAmount,
                 uint256 totalAssetsAfter,
                 uint256 confirmationNonce,
                 bytes32 txSucceeded
             ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
-            console.log("Decoded message from strategy:");
             if (confirmationNonce == lastProcessedNonce) {
                 // this is an update (totalAssetsAfter)
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
@@ -222,17 +220,22 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function _processBufferedConfirmations(bool processEntireBuffer) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-
+            if (nextNonce >= vaultNonce) {
+                break;
+            }
             Transaction memory transaction = transactions[nextNonce];
+
             if (transaction.txSucceeded != bytes32(0)) {
-                // This is a totalAssets update from a withdrawal revert
+                // A revert update from strategy
                 pendingWithdrawals[transaction.user] -= transaction
                     .vaultSharesToBeBurnt;
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
             } else if (transaction.isDeposit) {
                 if (transaction.totalAssetsAfter == 0) {
-                    break; // No totalAssets update, skip processing
+                    lastProcessedNonce = nextNonce;
+                    delete transactions[nextNonce];
+                    continue; // Skip empty deposit update
                 }
                 _confirmDepositAndMint();
             } else if (
@@ -245,12 +248,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 _confirmWithdrawAndBurn();
             }
 
-            // Mark this nonce as processed
             lastProcessedNonce = nextNonce;
             delete transactions[nextNonce];
-            if (!processEntireBuffer) {
-                break; // Stop processing if not in processEntireBuffer mode
-            }
+            if (!processEntireBuffer) break;
         }
     }
 
