@@ -1580,19 +1580,24 @@ export const getAssetsFromShares = async (
   amount: bigint,
   vaultData: VaultData
 ) => {
+  console.log("amount", amount);
+  console.log("vault address", vaultData.id);
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0],
     address: vaultData.id as Address,
   });
-
+  console.log("contract", contract);
   try {
-    return await readContract({
+    const result = await readContract({
       contract,
       method: "function previewRedeem(uint shares) view returns (uint assets)",
       params: [amount],
     });
+    console.log("result", result);
+    return result;
   } catch (e) {
+    console.log("Error reading contract:", e);
     return BigInt("0");
   }
 };
