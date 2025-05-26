@@ -184,11 +184,34 @@ export const TRANSACTION_SEQUENCES: Record<string, TransactionSequence> = {
   }
 };
 
+// Add new types for error classification
+export type BlockPIErrorType = 
+  | 'NETWORK_ERROR'
+  | 'API_RATE_LIMIT'
+  | 'TRANSACTION_REVERTED'
+  | 'TIMEOUT'
+  | 'TIMEOUT_WITH_NEXT_STEP'
+  | 'DATA_NOT_AVAILABLE'
+  | 'SERVER_ERROR'
+  | 'UNKNOWN_ERROR';
+
+// Add enhanced response interface
+export interface EnhancedTransactionProgress extends TransactionProgress {
+  isTimeout: boolean;
+  hasOutboundHash?: boolean;
+  outboundHash?: string;
+  errorType?: BlockPIErrorType;
+  stepWaitingTooLong?: number; // Step index that's taking longer than expected
+  waitTime?: number; // How long the step has been waiting
+}
+
 export default class Blockpi {
   public api: AxiosInstance;
-  private readonly MAX_RETRIES = 3;
+  private readonly MAX_RETRIES = 5; // Increased from 3
   private readonly RETRY_DELAY = 2000; // 2 seconds
   private readonly POLLING_INTERVAL = 5000; // 5 seconds
+  private readonly MAX_ATTEMPTS = 30; // Increased from 15
+  private readonly LONG_WAIT_THRESHOLD = 5; // After 5 attempts, show "taking longer than expected"
 
   constructor() {
     this.api = axios.create({ 
@@ -461,18 +484,160 @@ export default class Blockpi {
     }
   }
 
-  // Track complete transaction sequence
+  // Enhanced error classification method
+  private classifyError(error: any): BlockPIErrorType {
+    if (error?.code === 'NETWORK_ERROR' || error?.code === 'ECONNABORTED') {
+      return 'NETWORK_ERROR';
+    }
+    
+    if (error?.response?.status === 429) {
+      return 'API_RATE_LIMIT';
+    }
+    
+    if (error?.response?.status === 404) {
+      return 'DATA_NOT_AVAILABLE';
+    }
+    
+    if (error?.response?.status >= 500) {
+      return 'SERVER_ERROR';
+    }
+    
+    if (typeof error === 'string') {
+      if (error.includes('reverted')) {
+        return 'TRANSACTION_REVERTED';
+      }
+      if (error.includes('timeout')) {
+        return 'TIMEOUT';
+      }
+    }
+    
+    return 'UNKNOWN_ERROR';
+  }
+
+  // Enhanced retry with exponential backoff
+  private async retryWithExponentialBackoff<T>(
+    operation: () => Promise<T>,
+    errorHandler?: (error: any, attempt: number, maxAttempts: number) => void,
+    maxAttempts: number = this.MAX_ATTEMPTS,
+    baseDelay: number = 3000
+  ): Promise<T> {
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        
+        if (errorHandler) {
+          errorHandler(error, attempt, maxAttempts);
+        }
+        
+        // Determine backoff based on error type
+        const errorType = this.classifyError(error);
+        let delayMultiplier;
+        
+        switch (errorType) {
+          case 'API_RATE_LIMIT':
+            delayMultiplier = Math.pow(2, attempt); // Exponential: 2^n
+            break;
+          case 'NETWORK_ERROR':
+            delayMultiplier = 1.5 * attempt; // Linear but faster: 1.5*n
+            break;
+          case 'SERVER_ERROR':
+            delayMultiplier = Math.pow(1.5, attempt); // Moderate exponential: 1.5^n
+            break;
+          default:
+            delayMultiplier = attempt; // Linear: n
+        }
+        
+        const delay = Math.min(baseDelay * delayMultiplier, 60000); // Cap at 1 minute
+        
+        console.log(`[BlockPI] Retrying after ${Math.round(delay/1000)}s due to ${errorType}`);
+        
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    throw lastError; // Should never reach here but TypeScript needs it
+  }
+
+  // Add method to attempt to find next step after timeout
+  public async attemptStepRecovery(
+    outboundHash: string,
+    currentStepIndex: number,
+    transactionType: 'deposit' | 'withdrawal',
+    transactionTypeData?: { isType2?: boolean; isType4?: boolean; totalSteps?: number }
+  ): Promise<boolean> {
+    // Get transaction type information
+    const isType2 = transactionTypeData?.isType2 === true;
+    const totalSteps = transactionTypeData?.totalSteps || (isType2 ? 3 : (transactionType === 'deposit' ? 5 : 6));
+    
+    // Determine which step is the "outbound step" based on transaction type
+    // For Type 2: This is the first cross-chain step (step 1, index 1)
+    // For Type 4 and others: This is the second cross-chain step (step 2, index 2)
+    const outboundStepIndex = isType2 ? 1 : 2;
+    
+    // Only attempt recovery at the outbound step index (where outbound hash is relevant)
+    const shouldAttemptRecovery = currentStepIndex === outboundStepIndex;
+    
+    // For flexibility, allow recovery if no transaction type data is provided
+    const allowRecovery = transactionTypeData ? shouldAttemptRecovery : true;
+    
+    if (!allowRecovery) {
+      console.log(`[BlockPI Recovery] Skipping recovery for step ${currentStepIndex} on ${isType2 ? 'Type 2' : 'other'} transaction type`);
+      return false;
+    }
+    
+    if (!outboundHash) {
+      console.log('[BlockPI Recovery] No outbound hash available for recovery');
+      return false;
+    }
+    
+    try {
+      console.log(`[BlockPI Recovery] Attempting to find next step using outbound hash: ${outboundHash}`);
+      
+      // First, try to get inbound hash to cctx using the outbound hash
+      const inboundData = await this.getInboundHashToCctx(outboundHash);
+      
+      if (inboundData?.inboundHashToCctx?.cctx_index?.[0]) {
+        const cctxIndex = inboundData.inboundHashToCctx.cctx_index[0];
+        console.log(`[BlockPI Recovery] Found next step cctx_index: ${cctxIndex}`);
+        
+        // Verify this cctx is valid by fetching it
+        const cctxData = await this.getCctx(cctxIndex);
+        if (cctxData?.CrossChainTx) {
+          console.log(`[BlockPI Recovery] Successfully found next step!`);
+          return true;
+        }
+      }
+      
+      console.log('[BlockPI Recovery] Could not find valid next step');
+      return false;
+    } catch (error) {
+      console.error('[BlockPI Recovery] Error during recovery attempt:', error);
+      return false;
+    }
+  }
+
+  // Enhanced trackTransactionSequence method
   async trackTransactionSequence(
     localHash: string,
     transactionType: 'deposit' | 'withdrawal',
-    onStepUpdate?: (step: number, status: 'pending' | 'processing' | 'completed' | 'error', data?: any) => void,
-    timestamp?: number // Added optional timestamp parameter for cache busting
-  ): Promise<TransactionProgress> {
+    onStepUpdate?: (step: number, status: 'pending' | 'processing' | 'completed' | 'error' | 'waiting_too_long', data?: any) => void,
+    timestamp?: number, // Optional timestamp parameter for cache busting
+    transactionTypeData?: { isType2?: boolean; isType4?: boolean } // Transaction type information
+  ): Promise<EnhancedTransactionProgress> {
     console.log('[BlockPI Service] trackTransactionSequence called with:', {
       localHash,
       transactionType,
       hasCallback: !!onStepUpdate,
-      timestamp: timestamp || Date.now()
+      timestamp: timestamp || Date.now(),
+      transactionTypeData
     });
     
     const sequence = TRANSACTION_SEQUENCES[transactionType];
@@ -486,6 +651,10 @@ export default class Blockpi {
     const steps: TransactionStep[] = [];
     let currentStep = 0;
     let prevStepData: any = null;
+    let outboundHash: string | undefined;
+    let isTimeout = false;
+    let waitingTooLongStep: number | undefined;
+    let waitStartTime: number | undefined;
 
     // Initialize steps array but don't call onStepUpdate for all steps
     for (let i = 0; i < sequence.steps.length; i++) {
@@ -513,14 +682,31 @@ export default class Blockpi {
         }
         
         let attempt = 0;
-        const maxAttempts = 15; // Increased retry attempts for better reliability
+        const maxAttempts = this.MAX_ATTEMPTS;
         let baseDelay = 3000; // Start with 3s
         let stepCompleted = false;
+
+        // Calculate step start time for "taking too long" notification
+        const stepStartTime = Date.now();
+        waitingTooLongStep = undefined;
+        waitStartTime = undefined;
 
         while (attempt < maxAttempts && !stepCompleted && Date.now() - startTime < 600000) {
           // Add timestamp to force fresh API call on each attempt
           const cacheBuster = Date.now();
           console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt + 1} with timestamp ${cacheBuster}`);
+          
+          // Check if we've been waiting too long and should notify the user
+          if (attempt >= this.LONG_WAIT_THRESHOLD && !waitingTooLongStep) {
+            waitingTooLongStep = stepIndex;
+            waitStartTime = Date.now() - stepStartTime;
+            console.log(`[BlockPI] Step ${stepIndex + 1} is taking longer than expected (${Math.round(waitStartTime/1000)}s)`);
+            onStepUpdate?.(stepIndex, 'waiting_too_long', { 
+              waitTime: waitStartTime,
+              stepIndex,
+              description: `This step is taking longer than expected. This doesn't mean it failed, just that the network might be congested.`
+            });
+          }
           
           const result = await this.executeTransactionStep(
             stepIndex, 
@@ -539,6 +725,19 @@ export default class Blockpi {
             steps[stepIndex].data = result.data;
             // Update prevStepData with the complete result data
             prevStepData = result.data;
+            
+            // If we had a "waiting too long" notification, clear it
+            if (waitingTooLongStep === stepIndex) {
+              waitingTooLongStep = undefined;
+              waitStartTime = undefined;
+            }
+            
+            // Save outbound hash for potential recovery
+            if (result.data?.CrossChainTx?.outbound_params?.[0]?.hash) {
+              outboundHash = result.data.CrossChainTx.outbound_params[0].hash;
+              console.log(`[BlockPI] Saved outbound hash for step ${stepIndex}: ${outboundHash}`);
+            }
+            
             onStepUpdate?.(stepIndex, 'completed', {
               ...result.data,
               hash: calculatedHash,
@@ -557,14 +756,16 @@ export default class Blockpi {
               steps,
               currentStep: stepIndex,
               isComplete: false,
-              error: result.error
+              error: result.error,
+              isTimeout: false,
+              errorType: 'TRANSACTION_REVERTED'
             };
           } else {
             // Step not ready yet, retry with exponential backoff
             attempt++;
-            const backoffDelay = Math.min(baseDelay * attempt, 24000);
+            const backoffDelay = Math.min(baseDelay * Math.pow(1.5, attempt - 1), 30000);
             
-            console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt}/${maxAttempts}: ${result.error}, next attempt in ${backoffDelay}ms`);
+            console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt}/${maxAttempts}: ${result.error}, next attempt in ${Math.round(backoffDelay/1000)}s`);
             await new Promise(resolve => setTimeout(resolve, backoffDelay));
           }
         }
@@ -572,15 +773,54 @@ export default class Blockpi {
         if (!stepCompleted) {
           const error = `Step ${stepIndex + 1} failed after ${maxAttempts} attempts`;
           steps[stepIndex].error = error;
-          onStepUpdate?.(stepIndex, 'error');
           
-          // Don't stop on later step failures - continue to next step
+          // Mark step as having a timeout
+          isTimeout = true;
+          
+          // Check if we can recover using outbound hash
+          let recoveryAttempted = false;
+          if (outboundHash) {
+            console.log(`[BlockPI] Attempting recovery for step ${stepIndex} using outbound hash ${outboundHash}`);
+            recoveryAttempted = true;
+            
+            const recoverySuccessful = await this.attemptStepRecovery(
+              outboundHash, 
+              stepIndex, 
+              transactionType,
+              transactionTypeData
+            );
+            
+            if (recoverySuccessful) {
+              console.log(`[BlockPI] Recovery successful! Continuing to next step`);
+              onStepUpdate?.(stepIndex, 'completed', { 
+                recoveredViaOutboundHash: true,
+                outboundHash 
+              });
+              continue;
+            }
+          }
+          
+          // Notify UI of the error if recovery failed or wasn't attempted
+          onStepUpdate?.(stepIndex, 'error', { 
+            recoveryAttempted,
+            outboundHash,
+            error,
+            isTimeout: true
+          });
+          
+          // Don't stop on later step failures - continue to next step if we're past the critical steps
           if (stepIndex <= 1) {
             return {
               steps,
               currentStep: stepIndex,
               isComplete: false,
-              error
+              error,
+              isTimeout: true,
+              hasOutboundHash: !!outboundHash,
+              outboundHash,
+              errorType: outboundHash ? 'TIMEOUT_WITH_NEXT_STEP' : 'TIMEOUT',
+              stepWaitingTooLong: waitingTooLongStep,
+              waitTime: waitStartTime
             };
           }
           
@@ -592,16 +832,26 @@ export default class Blockpi {
       return {
         steps,
         currentStep: sequence.steps.length,
-        isComplete: true
+        isComplete: true,
+        isTimeout: false
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      onStepUpdate?.(currentStep, 'error');
+      const errorType = this.classifyError(error);
+      
+      onStepUpdate?.(currentStep, 'error', { errorType });
+      
       return {
         steps,
         currentStep,
         isComplete: false,
-        error: errorMessage
+        error: errorMessage,
+        isTimeout: errorType === 'TIMEOUT',
+        hasOutboundHash: !!outboundHash,
+        outboundHash,
+        errorType,
+        stepWaitingTooLong: waitingTooLongStep,
+        waitTime: waitStartTime
       };
     }
   }
@@ -719,6 +969,31 @@ export default class Blockpi {
     } catch (error) {
       console.error("[BlockPI] Error checking transaction confirmation:", error);
       return false;
+    }
+  }
+
+  // Add a method to get inbound hash from outbound hash
+  async getInboundHashFromOutboundHash(outboundHash: string): Promise<any> {
+    try {
+      console.log(`[BlockPI] Looking for inbound hash using outbound hash: ${outboundHash}`);
+      
+      // First, attempt to get inbound hash directly
+      const inboundData = await this.getInboundHashToCctx(outboundHash);
+      
+      if (inboundData?.inboundHashToCctx?.cctx_index?.[0]) {
+        return {
+          cctxIndex: inboundData.inboundHashToCctx.cctx_index[0],
+          method: 'direct'
+        };
+      }
+      
+      // If direct lookup fails, could try alternative methods here
+      // such as querying all recent transactions
+      
+      return null;
+    } catch (error) {
+      console.error(`[BlockPI] Error finding inbound hash for outbound hash ${outboundHash}:`, error);
+      return null;
     }
   }
 }

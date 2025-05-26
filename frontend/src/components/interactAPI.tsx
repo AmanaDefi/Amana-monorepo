@@ -486,9 +486,9 @@ export default function InteractionContainer({
     console.log("action:", action);
     console.log("action enum value:", Action[action] || "undefined");
     
-    // CRITICAL: Don't proceed if action is undefined
-    if (action === undefined) {
-      console.log("=== ACTION IS UNDEFINED, SKIPPING BLOCKPI TRACKING ===");
+    // CRITICAL: Don't proceed if action is undefined or if transaction is already finished
+    if (action === undefined || finishedTransaction) {
+      console.log(`=== SKIPPING BLOCKPI TRACKING === ${finishedTransaction ? 'Transaction already finished' : 'Action undefined'}`);
       return;
     }
     
@@ -617,6 +617,12 @@ export default function InteractionContainer({
               return;
             }
             
+            // Additional safety check to prevent callbacks after transaction is finished
+            if (finishedTransaction) {
+              console.log(`[BlockPI] Callback skipped - transaction already finished`);
+              return;
+            }
+            
             console.log(`[BlockPI] Step update callback: stepIndex=${stepIndex}, status=${status}, timestamp=${Date.now()}`);
             
             // Handle step updates directly
@@ -704,39 +710,39 @@ export default function InteractionContainer({
               ];
             }
             
-                       // Handle special "waiting too long" status
-           if (status === 'waiting_too_long') {
-             const waitTime = data?.waitTime || 0;
-             const waitTimeFormatted = Math.round(waitTime/1000);
-             
-             console.log(`[BlockPI] Step ${stepIndex} is taking longer than expected: ${waitTimeFormatted}s`);
-             
-             // Update UI without changing step status or description - just add a warning flag
-             setTransactionStepFeedback(prev => {
-               const updatedFeedback = { ...prev };
-               
-               // Don't change the status or description, just add the warning flag
-               if (updatedFeedback[actionKey]) {
-                 updatedFeedback[actionKey] = {
-                   ...updatedFeedback[actionKey],
-                   isWaitingTooLong: true,
-                   waitTime: waitTime
-                 };
-               } else {
-                 updatedFeedback[actionKey] = {
-                   label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
-                   description: `${stepDescriptions[stepIndex] || `Step ${stepIndex + 1}`}`,
-                   status: TransactionStepStatus.processing, // Keep as processing
-                   isWaitingTooLong: true,
-                   waitTime: waitTime
-                 };
-               }
-               
-               return updatedFeedback;
-             });
-             
-             return;
-           }
+            // Handle special "waiting too long" status
+            if (status === 'waiting_too_long') {
+              const waitTime = data?.waitTime || 0;
+              const waitTimeFormatted = Math.round(waitTime/1000);
+              
+              console.log(`[BlockPI] Step ${stepIndex} is taking longer than expected: ${waitTimeFormatted}s`);
+              
+              // Update UI without changing step status or description - just add a warning flag
+              setTransactionStepFeedback(prev => {
+                const updatedFeedback = { ...prev };
+                
+                // Don't change the status or description, just add the warning flag
+                if (updatedFeedback[actionKey]) {
+                  updatedFeedback[actionKey] = {
+                    ...updatedFeedback[actionKey],
+                    isWaitingTooLong: true,
+                    waitTime: waitTime
+                  };
+                } else {
+                  updatedFeedback[actionKey] = {
+                    label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
+                    description: `${stepDescriptions[stepIndex] || `Step ${stepIndex + 1}`}`,
+                    status: TransactionStepStatus.processing, // Keep as processing
+                    isWaitingTooLong: true,
+                    waitTime: waitTime
+                  };
+                }
+                
+                return updatedFeedback;
+              });
+              
+              return;
+            }
             
             const statusText = status === 'completed' ? 'completed' : 
                               status === 'error' ? 'failed' : 'in progress';
@@ -905,7 +911,7 @@ export default function InteractionContainer({
       
       // Use setTimeout to ensure this runs after all state updates are processed
       const timeoutId = setTimeout(() => {
-        if (crosschainInvestHash && !cancelRef.current) {
+        if (crosschainInvestHash && !cancelRef.current && !finishedTransaction) {
           console.log("=== TRANSACTION SEQUENCE STARTING ===");
           trackTransactionSequence();
         }
@@ -923,8 +929,8 @@ export default function InteractionContainer({
       cancelRef.current = true;
       console.log('[BlockPI] Effect cleanup - marking callbacks as cancelled');
     };
-  // CRITICAL FIX: Add dependency on vaultData to prevent stale captures
-  }, [crosschainInvestHash, action, blockpi, vaultData.id, vaultData.protocol.chainId, activeChain.id, step]);
+  // CRITICAL FIX: Remove step from dependency array - it causes re-renders after completion
+  }, [crosschainInvestHash, action, blockpi, vaultData.id, vaultData.protocol.chainId, activeChain.id, finishedTransaction]);
 
   // No longer restoring transaction state from localStorage
   // This ensures we always start fresh and rely only on API responses
@@ -1380,9 +1386,7 @@ function Interaction({
               const isDisabledByHash = crosschainInvestHash.length > 0 && !finishedTransaction;
               const isDisabled = isDisabledByProcessing || isDisabledByHash;
               
-              const hasTimeoutStep = Object.values(transactionStepFeedback).some(
-                step => step?.isWaitingTooLong === true
-              );
+
               
               return (
                 <>
@@ -1391,83 +1395,6 @@ function Interaction({
                     label={label}
                     handleClick={handleMainAction}
                   />
-                  
-                  {hasTimeoutStep && (
-                    <div className="mt-4">
-                      <TransactionRefreshButton 
-                        onClick={() => {
-                          // Force a fresh transaction check by restarting the tracking process
-                          if (crosschainInvestHash) {
-                            console.log("[Transaction Refresh] User manually requested fresh transaction check");
-                            
-                            // Use timestamp to force new API calls
-                            const timestamp = Date.now();
-                            
-                            // Determine transaction type
-                            const isDepositAction = 
-                              action === Action.depositConfirmed || 
-                              action === Action.deposit || 
-                              action === Action.crosschainInvest ||
-                              action === Action.FundsInvest;
-                            
-                            const transactionType = isDepositAction ? 'deposit' : 'withdrawal';
-                            
-                            // Get current active step in the sequence to use for callback
-                            const currentCallback = (stepIndex: number, status: 'pending' | 'processing' | 'completed' | 'error' | 'waiting_too_long', data?: any) => {
-                              if (!isComponentActiveRef.current) {
-                                console.log(`[BlockPI] Manual refresh callback cancelled - component inactive`);
-                                return;
-                              }
-                              
-                              console.log(`[BlockPI] Manual refresh update: step=${stepIndex}, status=${status}`);
-                              
-                              // Reuse the same stepUpdateCallback logic from the main effect
-                              // We just create a new instance here to avoid scope issues
-                              
-                              // Map BlockPI steps to Action enum and continue with standard logic...
-                              // (essentially duplicating the stepUpdateCallback logic)
-                              
-                              // For simplicity, we'll just trigger a full component reload
-                              refreshBalance();
-                            };
-                            
-                            try {
-                              // Call BlockPI with fresh timestamp
-                              const blockpiInstance = new Blockpi();
-                              // Determine transaction type data
-                              const isUserOnZetachain = isZetachain(activeChain.id);
-                              const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
-                              const isType2 = isUserOnZetachain && !isVaultOnZetachain;
-                              const isType4 = !isUserOnZetachain && !isVaultOnZetachain;
-                              
-                              // Enhanced transaction type info
-                              const transactionTypeInfo = {
-                                isType2,
-                                isType4,
-                                totalSteps: isType2 ? 3 : (transactionType === 'deposit' ? 5 : 6)
-                              };
-                              
-                              console.log(`[Transaction Refresh] Using transaction type info:`, transactionTypeInfo);
-                              
-                              blockpiInstance.trackTransactionSequence(
-                                crosschainInvestHash,
-                                transactionType,
-                                currentCallback,
-                                timestamp,
-                                transactionTypeInfo // Pass enhanced transaction type data
-                              );
-                            } catch (error) {
-                              console.error("[Transaction Refresh] Error:", error);
-                            }
-                          }
-                        }} 
-                        disabled={!crosschainInvestHash || isTransactionProcessing === false}
-                      />
-                      <p className="text-xs text-gray-400 mt-1">
-                        If a step is taking too long, you can try refreshing the transaction status check.
-                      </p>
-                    </div>
-                  )}
                 </>
               );
             })()
