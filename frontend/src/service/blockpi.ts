@@ -504,7 +504,7 @@ export default class Blockpi {
         }
         
         let attempt = 0;
-        const maxAttempts = 8; // Further reduced for efficiency
+        const maxAttempts = 15; // Increased retry attempts for better reliability
         let baseDelay = 3000; // Start with 3s
         let stepCompleted = false;
 
