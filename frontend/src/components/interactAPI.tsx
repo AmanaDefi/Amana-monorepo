@@ -359,36 +359,69 @@ export default function InteractionContainer({
     const txType = isDeposit ? 'deposit' : 'withdrawal';
     console.log(`[Transaction Complete] Processing ${txType} completion`);
     
+    // Determine if this is a Type 2 transaction
+    const isUserOnZetachain = isZetachain(activeChain.id);
+    const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
+    const isType2Transaction = isUserOnZetachain && !isVaultOnZetachain;
+    
+    console.log(`[Transaction Complete] Transaction type: ${isType2Transaction ? 'Type 2' : 'Type 4 or other'}`);
+    
     // 1. Mark all steps as completed
-    const actionMapping = isDeposit ? [
-      Action.deposit,           // Step 0
-      Action.depositConfirmed,  // Step 1
-      Action.crosschainInvest,  // Step 2
-      Action.FundsInvest,       // Step 3
-      Action.deposited          // Step 4
-    ] : [
-      Action.withdraw,              // Step 0
-      Action.withdrawconfirmed,     // Step 1
-      Action.DivestSent,           // Step 2
-      Action.FundsDivested,        // Step 3
-      Action.ReturnFundsToUserSent, // Step 4
-      Action.withdrew              // Step 5
-    ];
+    let actionMapping, stepDescriptions;
+    
+    if (isType2Transaction) {
+      // Type 2 transactions (3 steps)
+      actionMapping = isDeposit ? [
+        Action.deposit,           // Step 0: Initial transaction on Zetachain
+        Action.crosschainInvest,  // Step 1: Cross chain to strategy
+        Action.deposited          // Step 2: Complete (funds back to Zetachain)
+      ] : [
+        Action.withdraw,          // Step 0: Initial transaction on Zetachain
+        Action.DivestSent,        // Step 1: Cross chain to strategy
+        Action.withdrew           // Step 2: Complete (funds back to Zetachain)
+      ];
 
-    const stepDescriptions = isDeposit ? [
-      'Initial deposit transaction completed',
-      'Cross chain transfer to vault completed',
-      'Cross chain transfer to strategy completed',
-      'Funds investment on strategy chain completed',
-      'Investment confirmation and shares issued completed'
-    ] : [
-      'Initial withdraw transaction completed',
-      'Cross chain request to vault completed',
-      'Cross chain request to strategy completed',
-      'Funds divestment on strategy chain completed',
-      'Return of funds to vault completed',
-      'Final withdraw to user completed'
-    ];
+      stepDescriptions = isDeposit ? [
+        'Initial deposit transaction on Zetachain completed',
+        'Cross chain transfer to strategy completed',
+        'Investment confirmation and shares issued completed'
+      ] : [
+        'Initial withdraw transaction on Zetachain completed',
+        'Cross chain request to strategy completed',
+        'Final withdraw to user on Zetachain completed'
+      ];
+    } else {
+      // Type 4 and other transactions (5-6 steps)
+      actionMapping = isDeposit ? [
+        Action.deposit,           // Step 0
+        Action.depositConfirmed,  // Step 1
+        Action.crosschainInvest,  // Step 2
+        Action.FundsInvest,       // Step 3
+        Action.deposited          // Step 4
+      ] : [
+        Action.withdraw,              // Step 0
+        Action.withdrawconfirmed,     // Step 1
+        Action.DivestSent,           // Step 2
+        Action.FundsDivested,        // Step 3
+        Action.ReturnFundsToUserSent, // Step 4
+        Action.withdrew              // Step 5
+      ];
+
+      stepDescriptions = isDeposit ? [
+        'Initial deposit transaction',
+        'Cross chain transfer to vault',
+        'Cross chain transfer to strategy',
+        'Funds investment on strategy chain',
+        'Investment confirmation and shares issued completed'
+      ] : [
+        'Initial withdraw transaction',
+        'Cross chain request to vault',
+        'Cross chain request to strategy',
+        'Funds divestment on strategy chain',
+        'Return of funds to vault',
+        'Final withdraw to user completed'
+      ];
+    }
     
     console.log(`[Transaction Complete] Marking all steps as completed`);
     
@@ -459,7 +492,9 @@ export default function InteractionContainer({
       return;
     }
     
-    let cancelled = false;
+    // Create a ref for tracking cancellation instead of a variable in the closure
+    // This prevents the cleanup function from affecting callbacks that are already in progress
+    const cancelRef = { current: false };
     
     const trackTransactionSequence = async () => {
       console.log("=== TRACK TRANSACTION SEQUENCE CALLED ===");
@@ -470,8 +505,19 @@ export default function InteractionContainer({
       }
       
       // Only start BlockPI tracking for confirmed transactions
-      if (action !== Action.depositConfirmed && action !== Action.withdrawconfirmed) {
+      // For Type 2 transactions, we need to handle both deposit and withdraw transactions
+      const isDepositConfirmed = 
+        action === Action.depositConfirmed || // Normal depositConfirmed
+        action === Action.deposit;           // Allow deposit action for Type 2 transactions
+      
+      const isWithdrawConfirmed = 
+        action === Action.withdrawconfirmed || // Normal withdrawconfirmed
+        action === Action.withdraw;           // Allow withdraw action for Type 2 transactions
+      
+      if (!isDepositConfirmed && !isWithdrawConfirmed) {
         console.log("=== SKIPPING TRACKING - WRONG ACTION ===");
+        console.log(`Expected: Action.depositConfirmed (${Action.depositConfirmed}) or Action.withdrawconfirmed (${Action.withdrawconfirmed})`);
+        console.log(`Got: ${action} (${typeof action === 'number' ? Action[action] : 'unknown'})`);
         return;
       }
       
@@ -497,7 +543,14 @@ export default function InteractionContainer({
       if (isUserOnZetachain && isVaultOnZetachain) {
         console.log('[BlockPI] Type 1 transaction detected - no cross-chain tracking needed');
         // For Type 1 transactions, move directly to final step
-        const transactionType: 'deposit' | 'withdrawal' = action === Action.depositConfirmed ? 'deposit' : 'withdrawal';
+        // Determine transaction type based on action
+        // For Type 2 transactions, handle both deposit and withdraw actions
+        const transactionType: 'deposit' | 'withdrawal' = 
+          action === Action.depositConfirmed || action === Action.deposit
+            ? 'deposit' 
+            : 'withdrawal';
+        
+        console.log(`[BlockPI] Type 1 transaction type determined: ${transactionType}`);
         setTimeout(() => {
           if (isComponentActiveRef.current) {
             if (transactionType === 'deposit') {
@@ -518,14 +571,26 @@ export default function InteractionContainer({
         return;
       }
       
-      const transactionType: 'deposit' | 'withdrawal' = action === Action.depositConfirmed ? 'deposit' : 'withdrawal';
+      // Determine transaction type based on action
+      // For Type 2 transactions, action might be deposit (2) or withdraw (10)
+      const transactionType: 'deposit' | 'withdrawal' = 
+        action === Action.depositConfirmed || action === Action.deposit
+          ? 'deposit' 
+          : 'withdrawal';
       
+      // Determine specific transaction type (Type 2, Type 4, etc.)
+      const isType2 = isUserOnZetachain && !isVaultOnZetachain;
+      const isType4 = !isUserOnZetachain && !isVaultOnZetachain;
+      const transactionTypeData = { isType2, isType4 };
+      
+      console.log(`[BlockPI] Transaction type determined: ${transactionType} (Type2: ${isType2}, Type4: ${isType4})`);
+    
       console.log('[BlockPI Debug] Proceeding with BlockPI tracking for:', {
         transactionType,
         hash: crosschainInvestHash
       });
       
-              try {
+      try {
           console.log(`[BlockPI] Starting ${transactionType} tracking for ${crosschainInvestHash}`);
           
           // CRITICAL: Store transaction details in window object to preserve across React renders
@@ -539,267 +604,327 @@ export default function InteractionContainer({
           }
           
           // Create step callback function with timestamp logging
-        const stepUpdateCallback = (stepIndex: number, status: 'pending' | 'processing' | 'completed' | 'error', data?: any) => {
-          if (cancelled || !isComponentActiveRef.current) {
-            console.log(`[BlockPI] Callback cancelled`);
-            return;
-          }
-          
-          console.log(`[BlockPI] Step update callback: stepIndex=${stepIndex}, status=${status}, timestamp=${Date.now()}`);
-          
-          // Handle step updates directly
-          if (typeof stepIndex !== 'number' || stepIndex < 0) {
-            console.error(`[UI Safety] Invalid step index: ${stepIndex}`);
-            return;
-          }
-          
-          // Map BlockPI steps to Action enum
-          const actionMapping = transactionType === 'deposit' ? [
-            Action.deposit,           // Step 0: Local transaction
-            Action.depositConfirmed,  // Step 1: Cross chain to vault
-            Action.crosschainInvest,  // Step 2: Vault to strategy
-            Action.FundsInvest,       // Step 3: Strategy execution
-            Action.deposited          // Step 4: Return to vault (completion)
-          ] : [
-            Action.withdraw,              // Step 0: Local transaction  
-            Action.withdrawconfirmed,     // Step 1: Cross chain to vault
-            Action.DivestSent,           // Step 2: Vault to strategy
-            Action.FundsDivested,        // Step 3: Strategy execution
-            Action.ReturnFundsToUserSent, // Step 4: Return to vault
-            Action.withdrew              // Step 5: Final withdraw (completion)
-          ];
-          
-          // Get action key for this step
-          if (stepIndex >= actionMapping.length) {
-            console.error(`[UI Safety] Step index ${stepIndex} out of bounds for action mapping`);
-            return;
-          }
-          
-          const actionKey = actionMapping[stepIndex];
-          if (!actionKey) {
-            console.error(`[UI Safety] No action mapping for step ${stepIndex}`);
-            return;
-          }
-          
-          // Get step description
-          const stepDescriptions = transactionType === 'deposit' ? [
-            'Initial deposit transaction',
-            'Cross chain transfer to vault',
-            'Cross chain transfer to strategy',
-            'Funds investment on strategy chain',
-            'Investment confirmation and shares issued'
-          ] : [
-            'Initial withdraw transaction',
-            'Cross chain request to vault',
-            'Cross chain request to strategy',
-            'Funds divestment on strategy chain',
-            'Return of funds to vault',
-            'Final withdraw to user'
-          ];
-          
-          const statusText = status === 'completed' ? 'completed' : 
-                            status === 'error' ? 'failed' : 'in progress';
-          
-          const description = `${stepDescriptions[stepIndex] || `Step ${stepIndex + 1}`} ${statusText}`;
-          
-          // Get transaction hash if available
-          let txHash: string | undefined = undefined;
-          if (data) {
-            if (stepIndex === 0) {
-              txHash = data.localHash || data.hash;
-            } else if (data.cctxIndex) {
-              txHash = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${data.cctxIndex}`;
-            } else if (data.hash) {
-              txHash = data.hash;
+          const stepUpdateCallback = (stepIndex: number, status: 'pending' | 'processing' | 'completed' | 'error' | 'waiting_too_long', data?: any) => {
+            // Use the ref instead of a closure variable
+            if (cancelRef.current) {
+              console.log(`[BlockPI] Callback cancelled by cleanup`);
+              return;
             }
-          }
-          
-          // Get transaction status
-          let stepStatus: TransactionStepStatus;
-          if (status === 'completed') {
-            stepStatus = TransactionStepStatus.completed;
-          } else if (status === 'error') {
-            stepStatus = TransactionStepStatus.error;
-          } else if (status === 'processing') {
-            stepStatus = TransactionStepStatus.processing;
-          } else {
-            stepStatus = TransactionStepStatus.pending;
-          }
-          
-          // Update UI feedback without using localStorage
-          setTransactionStepFeedback(prev => {
-            const updatedFeedback = { ...prev };
             
-            // Always mark all previous steps as completed
-            if ((status === 'completed' || status === 'processing') && stepIndex > 0) {
-              for (let i = 0; i < stepIndex; i++) {
-                const prevActionKey = actionMapping[i];
-                if (prevActionKey) {
-                  updatedFeedback[prevActionKey] = {
-                    label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
-                    description: `${stepDescriptions[i] || `Step ${i + 1}`} completed`,
-                    status: TransactionStepStatus.completed,
-                    txHash: updatedFeedback[prevActionKey]?.txHash
-                  };
+            // Also check if component is still mounted
+            if (!isComponentActiveRef.current) {
+              console.log(`[BlockPI] Callback cancelled - component inactive`);
+              return;
+            }
+            
+            console.log(`[BlockPI] Step update callback: stepIndex=${stepIndex}, status=${status}, timestamp=${Date.now()}`);
+            
+            // Handle step updates directly
+            if (typeof stepIndex !== 'number' || stepIndex < 0) {
+              console.error(`[UI Safety] Invalid step index: ${stepIndex}`);
+              return;
+            }
+            
+            // Map BlockPI steps to Action enum based on transaction type
+            let actionMapping;
+            
+            // Determine if this is a Type 2 transaction (Zetachain to non-Zetachain)
+            const isType2Transaction = isUserOnZetachain && !isVaultOnZetachain;
+            
+            if (isType2Transaction) {
+              // Type 2 transactions have only 3 steps
+              actionMapping = transactionType === 'deposit' ? [
+                Action.deposit,           // Step 0: Initial transaction on Zetachain
+                Action.crosschainInvest,  // Step 1: Cross chain to strategy
+                Action.deposited          // Step 2: Complete (funds back to Zetachain)
+              ] : [
+                Action.withdraw,          // Step 0: Initial transaction on Zetachain
+                Action.DivestSent,        // Step 1: Cross chain to strategy
+                Action.withdrew           // Step 2: Complete (funds back to Zetachain)
+              ];
+            } else {
+              // Type 4 and other transactions keep the original 5-step flow
+              actionMapping = transactionType === 'deposit' ? [
+                Action.deposit,           // Step 0: Local transaction
+                Action.depositConfirmed,  // Step 1: Cross chain to vault
+                Action.crosschainInvest,  // Step 2: Vault to strategy
+                Action.FundsInvest,       // Step 3: Strategy execution
+                Action.deposited          // Step 4: Return to vault (completion)
+              ] : [
+                Action.withdraw,              // Step 0: Local transaction  
+                Action.withdrawconfirmed,     // Step 1: Cross chain to vault
+                Action.DivestSent,           // Step 2: Vault to strategy
+                Action.FundsDivested,        // Step 3: Strategy execution
+                Action.ReturnFundsToUserSent, // Step 4: Return to vault
+                Action.withdrew              // Step 5: Final withdraw (completion)
+              ];
+            }
+            
+            // Get action key for this step
+            if (stepIndex >= actionMapping.length) {
+              console.error(`[UI Safety] Step index ${stepIndex} out of bounds for action mapping`);
+              return;
+            }
+            
+            const actionKey = actionMapping[stepIndex];
+            if (!actionKey) {
+              console.error(`[UI Safety] No action mapping for step ${stepIndex}`);
+              return;
+            }
+            
+            // Get step description based on transaction type
+            let stepDescriptions;
+            
+            if (isType2Transaction) {
+              // Descriptions for Type 2 transactions (3 steps)
+              stepDescriptions = transactionType === 'deposit' ? [
+                'Initial deposit transaction on Zetachain',
+                'Cross chain transfer to strategy',
+                'Investment confirmation and shares issued'
+              ] : [
+                'Initial withdraw transaction on Zetachain',
+                'Cross chain request to strategy',
+                'Final withdraw to user on Zetachain'
+              ];
+            } else {
+              // Descriptions for Type 4 and other transactions (5-6 steps)
+              stepDescriptions = transactionType === 'deposit' ? [
+                'Initial deposit transaction',
+                'Cross chain transfer to vault',
+                'Cross chain transfer to strategy',
+                'Funds investment on strategy chain',
+                'Investment confirmation and shares issued'
+              ] : [
+                'Initial withdraw transaction',
+                'Cross chain request to vault',
+                'Cross chain request to strategy',
+                'Funds divestment on strategy chain',
+                'Return of funds to vault',
+                'Final withdraw to user'
+              ];
+            }
+            
+                       // Handle special "waiting too long" status
+           if (status === 'waiting_too_long') {
+             const waitTime = data?.waitTime || 0;
+             const waitTimeFormatted = Math.round(waitTime/1000);
+             
+             console.log(`[BlockPI] Step ${stepIndex} is taking longer than expected: ${waitTimeFormatted}s`);
+             
+             // Update UI without changing step status or description - just add a warning flag
+             setTransactionStepFeedback(prev => {
+               const updatedFeedback = { ...prev };
+               
+               // Don't change the status or description, just add the warning flag
+               if (updatedFeedback[actionKey]) {
+                 updatedFeedback[actionKey] = {
+                   ...updatedFeedback[actionKey],
+                   isWaitingTooLong: true,
+                   waitTime: waitTime
+                 };
+               } else {
+                 updatedFeedback[actionKey] = {
+                   label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
+                   description: `${stepDescriptions[stepIndex] || `Step ${stepIndex + 1}`}`,
+                   status: TransactionStepStatus.processing, // Keep as processing
+                   isWaitingTooLong: true,
+                   waitTime: waitTime
+                 };
+               }
+               
+               return updatedFeedback;
+             });
+             
+             return;
+           }
+            
+            const statusText = status === 'completed' ? 'completed' : 
+                              status === 'error' ? 'failed' : 'in progress';
+            
+            const description = `${stepDescriptions[stepIndex] || `Step ${stepIndex + 1}`} ${statusText}`;
+            
+            // Get transaction hash if available
+            let txHash: string | undefined = undefined;
+            if (data) {
+              if (stepIndex === 0) {
+                txHash = data.localHash || data.hash;
+              } else if (data.cctxIndex) {
+                txHash = `${process.env.NEXT_PUBLIC_BLOCKPI_URL}/cctx/${data.cctxIndex}`;
+              } else if (data.hash) {
+                txHash = data.hash;
+              }
+            }
+            
+            // Determine if this is a recovery from timeout
+            const isRecovery = data?.recoveredViaOutboundHash === true;
+            
+            // Get transaction status
+            let stepStatus: TransactionStepStatus;
+            if (status === 'completed') {
+              stepStatus = TransactionStepStatus.completed;
+            } else if (status === 'error') {
+              // Distinguish between different error types
+              if (data?.isTimeout && data?.outboundHash) {
+                // This is a timeout, but we have an outbound hash - we're trying to recover
+                console.log(`[BlockPI] Step ${stepIndex} timed out but has outbound hash - attempting recovery`);
+              }
+              stepStatus = TransactionStepStatus.error;
+            } else if (status === 'processing') {
+              stepStatus = TransactionStepStatus.processing;
+            } else {
+              stepStatus = TransactionStepStatus.pending;
+            }
+            
+            // Update UI feedback without using localStorage
+            setTransactionStepFeedback(prev => {
+              const updatedFeedback = { ...prev };
+              
+              // Always mark all previous steps as completed
+              if ((status === 'completed' || status === 'processing') && stepIndex > 0) {
+                for (let i = 0; i < stepIndex; i++) {
+                  const prevActionKey = actionMapping[i];
+                  if (prevActionKey) {
+                    updatedFeedback[prevActionKey] = {
+                      label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
+                      description: `${stepDescriptions[i] || `Step ${i + 1}`} completed`,
+                      status: TransactionStepStatus.completed,
+                      txHash: updatedFeedback[prevActionKey]?.txHash
+                    };
+                  }
+                }
+              }
+              
+              // Update current step
+              let finalDescription = description;
+              
+              // Add recovery info if applicable
+              if (isRecovery) {
+                finalDescription = `${description} (recovered)`;
+              }
+              
+              // For timeout errors with possible next step, add guidance
+              if (status === 'error' && data?.isTimeout && data?.outboundHash) {
+                finalDescription = `${description}. However, we found a next step and are attempting to continue.`;
+              }
+              
+              updatedFeedback[actionKey] = {
+                label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
+                description: finalDescription,
+                status: stepStatus,
+                txHash,
+                isRecovery,
+                recoveryAttempted: data?.recoveryAttempted,
+                outboundHash: data?.outboundHash
+              };
+              
+              return updatedFeedback;
+            });
+            
+            // Update UI state if necessary
+            if ((status === 'completed' || status === 'processing') && stepIndex > step) {
+              console.log(`[UI Safety] Advancing UI from step ${step} to step ${stepIndex}`);
+              setStep(stepIndex);
+              setAction(actionMapping[stepIndex]);
+            }
+          };
+          
+          // IMPORTANT: Force a fresh API call by adding a timestamp parameter
+          // Include more detailed transaction type data for proper step handling
+          const transactionTypeInfo = {
+            ...transactionTypeData,
+            isType2: isType2,   // Type 2: Zetachain to non-Zetachain
+            totalSteps: isType2 ? 3 : (transactionType === 'deposit' ? 5 : 6)
+          };
+          
+          console.log(`[BlockPI] Starting tracking with transaction type info:`, transactionTypeInfo);
+          
+          // Only start tracking if this effect is still the active one
+          if (!cancelRef.current) {
+            const progress = await blockpi.trackTransactionSequence(
+              crosschainInvestHash,
+              transactionType,
+              stepUpdateCallback,
+              Date.now(), // Pass timestamp to force fresh API call
+              transactionTypeInfo // Pass enhanced transaction type data
+            );
+            
+            // Only handle completion if we haven't been cancelled
+            if (!cancelRef.current && progress.isComplete) {
+              console.log(`[BlockPI] ${transactionType} sequence completed successfully`);
+              
+              // Use completeTransactionProcess to handle completion in a consistent way
+              completeTransactionProcess(transactionStepFeedback);
+            } else if (!cancelRef.current && progress.error) {
+              console.error(`[BlockPI] ${transactionType} sequence failed:`, progress.error);
+              
+              // Reset transaction processing state to allow new transactions
+              setIsTransactionProcessing(false);
+              setIsTransactionStarted(false);
+              
+              // Handle error scenarios
+              if (progress.error.includes('reverted')) {
+                if (transactionType === 'deposit') {
+                  const nextStep = actions.findIndex(el => el === Action.CrossChainInvestFailed);
+                  if (nextStep >= 0) {
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                  }
+                } else if (transactionType === 'withdrawal') {
+                  const nextStep = actions.findIndex(el => el === Action.DivestFailed);
+                  if (nextStep >= 0) {
+                    setAction(actions[nextStep]);
+                    setStep(nextStep);
+                  }
                 }
               }
             }
-            
-            // Update current step
-            updatedFeedback[actionKey] = {
-              label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
-              description,
-              status: stepStatus,
-              txHash
-            };
-            
-            return updatedFeedback;
-          });
-          
-          // Update UI state if necessary
-          if ((status === 'completed' || status === 'processing') && stepIndex > step) {
-            console.log(`[UI Safety] Advancing UI from step ${step} to step ${stepIndex}`);
-            setStep(stepIndex);
-            setAction(actionMapping[stepIndex]);
+          } else {
+            console.log('[BlockPI] Tracking cancelled before it completed');
           }
-        };
-        
-        // IMPORTANT: Force a fresh API call by adding a timestamp parameter
-        const progress = await blockpi.trackTransactionSequence(
-          crosschainInvestHash,
-          transactionType,
-          stepUpdateCallback,
-          Date.now() // Pass timestamp to force fresh API call
-        );
-        
-        // Handle completion
-        if (progress.isComplete) {
-          console.log(`[BlockPI] ${transactionType} sequence completed successfully`);
-          
-          const actionMapping = transactionType === 'deposit' ? [
-            Action.deposit,
-            Action.depositConfirmed,
-            Action.crosschainInvest,
-            Action.FundsInvest,
-            Action.deposited
-          ] : [
-            Action.withdraw,
-            Action.withdrawconfirmed,
-            Action.DivestSent,
-            Action.FundsDivested,
-            Action.ReturnFundsToUserSent,
-            Action.withdrew
-          ];
-          
-          const stepDescriptions = transactionType === 'deposit' ? [
-            'Initial deposit transaction completed',
-            'Cross chain transfer to vault completed',
-            'Cross chain transfer to strategy completed',
-            'Funds investment on strategy chain completed',
-            'Investment confirmation and shares issued completed'
-          ] : [
-            'Initial withdraw transaction completed',
-            'Cross chain request to vault completed',
-            'Cross chain request to strategy completed',
-            'Funds divestment on strategy chain completed',
-            'Return of funds to vault completed',
-            'Final withdraw to user completed'
-          ];
-          
-          console.log(`[BlockPI Completion] Updating all steps to completed`);
-          
-          // Update all steps to completed using functional update
-          setTransactionStepFeedback(prev => {
-            const updatedFeedback = { ...prev };
-            
-            actionMapping.forEach((actionKey, index) => {
-              if (actionKey) {
-                updatedFeedback[actionKey] = {
-                  label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
-                  description: stepDescriptions[index],
-                  status: TransactionStepStatus.completed,
-                  txHash: updatedFeedback[actionKey]?.txHash
-                };
-              }
-            });
-            
-            // Also save the completed state for the Done button
-            setLastTransactionStepFeedback(updatedFeedback);
-            
-            return updatedFeedback;
-          });
-          
-          // Set final action and completion state
-          const finalAction = transactionType === 'deposit' ? Action.deposited : Action.withdrew;
-          console.log(`[BlockPI Completion] Setting final action to ${finalAction}`);
-          setAction(finalAction);
-          
-          // Move to completion state
-          console.log(`[BlockPI Completion] Setting completion state`);
-          setFinishedTransaction(true);
-          setIsTransactionProcessing(false);
-          setIsTransactionStarted(false);
-          
-          // Track completion
-          trackEvent("Transaction Crosschain Complete", {
-            vaultSymbol: vaultData.symbol,
-            vault: vaultData.id,
-            type: transactionType
-          });
-        } else if (progress.error) {
-          console.error(`[BlockPI] ${transactionType} sequence failed:`, progress.error);
-          
-          // Reset transaction processing state to allow new transactions
-          setIsTransactionProcessing(false);
-          setIsTransactionStarted(false);
-          
-          // Handle error scenarios
-          if (progress.error.includes('reverted')) {
-            if (transactionType === 'deposit') {
-              const nextStep = actions.findIndex(el => el === Action.CrossChainInvestFailed);
-              if (nextStep >= 0) {
-                setAction(actions[nextStep]);
-                setStep(nextStep);
-              }
-            } else if (transactionType === 'withdrawal') {
-              const nextStep = actions.findIndex(el => el === Action.DivestFailed);
-              if (nextStep >= 0) {
-                setAction(actions[nextStep]);
-                setStep(nextStep);
-              }
-            }
-          }
-        }
       } catch (error) {
-        console.error(`[BlockPI] Error in ${transactionType} sequence tracking:`, error);
+        if (!cancelRef.current) {
+          console.error(`[BlockPI] Error in ${transactionType} sequence tracking:`, error);
+        }
       }
     };
 
-    // CRITICAL FIX: For Type 2 transactions, check action numeric value as well
-    if (crosschainInvestHash && 
-        (action === Action.depositConfirmed || 
-         action === Action.withdrawconfirmed || 
-         action === 10 || // Action.depositConfirmed numeric value
-         action === 16    // Action.withdrawconfirmed numeric value
-        )) {
+    // For Type 2 transactions, we need to handle both deposit and withdraw actions directly
+    const shouldTrackDepositTransaction = 
+      action === Action.depositConfirmed || 
+      action === Action.deposit; // Allow deposit action for Type 2 transactions
+      
+    const shouldTrackWithdrawTransaction = 
+      action === Action.withdrawconfirmed || 
+      action === Action.withdraw; // Allow withdraw action for Type 2 transactions
+    
+    // Start tracking if we have a hash and appropriate action
+    if (crosschainInvestHash && (shouldTrackDepositTransaction || shouldTrackWithdrawTransaction)) {
       console.log("=== TRIGGERING TRACK TRANSACTION SEQUENCE ===");
       console.log("Current action value:", action);
       console.log("Action.depositConfirmed value:", Action.depositConfirmed);
       
       // Use setTimeout to ensure this runs after all state updates are processed
-      setTimeout(() => {
-        if (crosschainInvestHash) {
+      const timeoutId = setTimeout(() => {
+        if (crosschainInvestHash && !cancelRef.current) {
           console.log("=== TRANSACTION SEQUENCE STARTING ===");
           trackTransactionSequence();
         }
       }, 100);
+      
+      // Clear the timeout in the cleanup function
+      return () => {
+        clearTimeout(timeoutId);
+        cancelRef.current = true;
+        console.log('[BlockPI] Effect cleanup - marking callbacks as cancelled');
+      };
     }
 
     return () => {
-      cancelled = true;
+      cancelRef.current = true;
+      console.log('[BlockPI] Effect cleanup - marking callbacks as cancelled');
     };
   // CRITICAL FIX: Add dependency on vaultData to prevent stale captures
-  }, [crosschainInvestHash, action, blockpi, vaultData.id, vaultData.protocol.chainId, activeChain.id]);
+  }, [crosschainInvestHash, action, blockpi, vaultData.id, vaultData.protocol.chainId, activeChain.id, step]);
 
   // No longer restoring transaction state from localStorage
   // This ensures we always start fresh and rely only on API responses
@@ -1240,77 +1365,11 @@ function Interaction({
           </p>
           {
             <>
-              {(Object.keys(Action) as Array<keyof typeof Action>)
-                .map((key) => key as unknown as Action)
-                .map((item, index) => {
-                  const feedbackData = finishedTransaction ? lastTransactionStepFeedback : transactionStepFeedback;
-                  
-                  if (feedbackData[item]) {
-                    const actionFeedback = feedbackData[item];
-                    return (
-                      <div
-                        className="flex flex-col gap-2 mb-2 last:mb-4"
-                        key={index}
-                      >
-                        <div className="flex gap-2 items-center">
-                          <div className="w-6 h-6 rounded-full bg-gray-800 flex-center [&:has(.pending-state)]:bg-[transparent] [&:has(.pending-state)]:border-none">
-                            {((actionStatus) => {
-                              switch (actionStatus) {
-                                case TransactionStepStatus.pending:
-                                  return (
-                                    <div className="w-4 h-4 bg-java-600 rounded-full animate-[ping_1.5s_ease-in-out_infinite]" />
-                                  );
-                                case TransactionStepStatus.error:
-                                  return (
-                                    <AiOutlineExclamation
-                                      className="text-red-600"
-                                      size={16}
-                                    />
-                                  );
-                                case TransactionStepStatus.processing:
-                                  return (
-                                    <MoonLoader
-                                      color="yellow"
-                                      size={18}
-                                      speedMultiplier={0.3}
-                                      className="pending-state"
-                                    />
-                                  );
-                                case TransactionStepStatus.completed:
-                                  return (
-                                    <AiOutlineCheck
-                                      className="text-green-400"
-                                      size={16}
-                                    />
-                                  );
-                                default:
-                                  return null;
-                              }
-                            })(actionFeedback.status)}
-                          </div>
-                          <p className="text-white text-start">
-                            {actionFeedback.description}
-                          </p>
-                          {actionFeedback?.txHash && (
-                            <Link
-                              href={actionFeedback.txHash}
-                              className="flex items-center gap-1 group text-white hover:text-blue-600"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ArrowTopRightOnSquareIcon
-                                width="20"
-                                height="20"
-                                className="size-5"
-                              />
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+              {renderTransactionSteps(
+                finishedTransaction,
+                lastTransactionStepFeedback,
+                transactionStepFeedback
+              )}
             </>
           }
           {finishedTransaction ? (
@@ -1321,30 +1380,224 @@ function Interaction({
               const isDisabledByHash = crosschainInvestHash.length > 0 && !finishedTransaction;
               const isDisabled = isDisabledByProcessing || isDisabledByHash;
               
-              if (isDisabled) {
-                console.log(`[Button Disabled] Reasons:`, {
-                  isTransactionProcessing,
-                  crosschainInvestHashLength: crosschainInvestHash.length,
-                  finishedTransaction,
-                  disabledByProcessing: isDisabledByProcessing,
-                  disabledByHash: isDisabledByHash,
-                  action,
-                  label
-                });
-              }
+              const hasTimeoutStep = Object.values(transactionStepFeedback).some(
+                step => step?.isWaitingTooLong === true
+              );
               
               return (
-                <MainActionButton
-                  disabled={isDisabled}
-                  label={label}
-                  handleClick={handleMainAction}
-                />
+                <>
+                  <MainActionButton
+                    disabled={isDisabled}
+                    label={label}
+                    handleClick={handleMainAction}
+                  />
+                  
+                  {hasTimeoutStep && (
+                    <div className="mt-4">
+                      <TransactionRefreshButton 
+                        onClick={() => {
+                          // Force a fresh transaction check by restarting the tracking process
+                          if (crosschainInvestHash) {
+                            console.log("[Transaction Refresh] User manually requested fresh transaction check");
+                            
+                            // Use timestamp to force new API calls
+                            const timestamp = Date.now();
+                            
+                            // Determine transaction type
+                            const isDepositAction = 
+                              action === Action.depositConfirmed || 
+                              action === Action.deposit || 
+                              action === Action.crosschainInvest ||
+                              action === Action.FundsInvest;
+                            
+                            const transactionType = isDepositAction ? 'deposit' : 'withdrawal';
+                            
+                            // Get current active step in the sequence to use for callback
+                            const currentCallback = (stepIndex: number, status: 'pending' | 'processing' | 'completed' | 'error' | 'waiting_too_long', data?: any) => {
+                              if (!isComponentActiveRef.current) {
+                                console.log(`[BlockPI] Manual refresh callback cancelled - component inactive`);
+                                return;
+                              }
+                              
+                              console.log(`[BlockPI] Manual refresh update: step=${stepIndex}, status=${status}`);
+                              
+                              // Reuse the same stepUpdateCallback logic from the main effect
+                              // We just create a new instance here to avoid scope issues
+                              
+                              // Map BlockPI steps to Action enum and continue with standard logic...
+                              // (essentially duplicating the stepUpdateCallback logic)
+                              
+                              // For simplicity, we'll just trigger a full component reload
+                              refreshBalance();
+                            };
+                            
+                            try {
+                              // Call BlockPI with fresh timestamp
+                              const blockpiInstance = new Blockpi();
+                              // Determine transaction type data
+                              const isUserOnZetachain = isZetachain(activeChain.id);
+                              const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
+                              const isType2 = isUserOnZetachain && !isVaultOnZetachain;
+                              const isType4 = !isUserOnZetachain && !isVaultOnZetachain;
+                              
+                              // Enhanced transaction type info
+                              const transactionTypeInfo = {
+                                isType2,
+                                isType4,
+                                totalSteps: isType2 ? 3 : (transactionType === 'deposit' ? 5 : 6)
+                              };
+                              
+                              console.log(`[Transaction Refresh] Using transaction type info:`, transactionTypeInfo);
+                              
+                              blockpiInstance.trackTransactionSequence(
+                                crosschainInvestHash,
+                                transactionType,
+                                currentCallback,
+                                timestamp,
+                                transactionTypeInfo // Pass enhanced transaction type data
+                              );
+                            } catch (error) {
+                              console.error("[Transaction Refresh] Error:", error);
+                            }
+                          }
+                        }} 
+                        disabled={!crosschainInvestHash || isTransactionProcessing === false}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        If a step is taking too long, you can try refreshing the transaction status check.
+                      </p>
+                    </div>
+                  )}
+                </>
               );
             })()
           )}
         </>
       )}
     </>
+  );
+}
+
+function renderTransactionSteps(
+  finishedTransaction: boolean,
+  lastTransactionStepFeedback: TransactionStepMessages,
+  transactionStepFeedback: TransactionStepMessages
+) {
+  return (Object.keys(Action) as Array<keyof typeof Action>)
+    .map((key) => key as unknown as Action)
+    .map((item, index) => {
+      const feedbackData = finishedTransaction ? lastTransactionStepFeedback : transactionStepFeedback;
+      
+      if (feedbackData[item]) {
+        const actionFeedback = feedbackData[item];
+        const isWaitingTooLong = actionFeedback.isWaitingTooLong === true;
+        
+        return (
+          <div
+            className="flex flex-col gap-2 mb-2 last:mb-4"
+            key={index}
+          >
+            <div className="flex gap-2 items-center">
+              <div className="w-6 h-6 rounded-full bg-gray-800 flex-center [&:has(.pending-state)]:bg-[transparent] [&:has(.pending-state)]:border-none">
+                {((actionStatus) => {
+                  switch (actionStatus) {
+                    case TransactionStepStatus.pending:
+                      return (
+                        <div className="w-4 h-4 bg-java-600 rounded-full animate-[ping_1.5s_ease-in-out_infinite]" />
+                      );
+                    case TransactionStepStatus.error:
+                      return (
+                        <AiOutlineExclamation
+                          className="text-red-600"
+                          size={16}
+                        />
+                      );
+                    case TransactionStepStatus.processing:
+                      return (
+                        <MoonLoader
+                          color={isWaitingTooLong ? "orange" : "yellow"}
+                          size={18}
+                          speedMultiplier={0.3}
+                          className="pending-state"
+                        />
+                      );
+                    case TransactionStepStatus.completed:
+                      return (
+                        <AiOutlineCheck
+                          className="text-green-400"
+                          size={16}
+                        />
+                      );
+                    default:
+                      return null;
+                  }
+                })(actionFeedback.status)}
+              </div>
+              <div className="flex flex-col">
+                <p className="text-white text-start">
+                  {actionFeedback.description}
+                </p>
+                {isWaitingTooLong && (
+                  <p className="text-gray-400 text-xs mt-0.5">
+                    This step is taking longer than expected. The network might be congested.
+                  </p>
+                )}
+                {actionFeedback.recoveryAttempted && (
+                  <p className="text-blue-300 text-xs mt-0.5">
+                    {actionFeedback.isRecovery 
+                      ? "Successfully recovered and continued to next step." 
+                      : "Recovery attempt unsuccessful. Please try again later."}
+                  </p>
+                )}
+              </div>
+              {actionFeedback?.txHash && (
+                <Link
+                  href={actionFeedback.txHash}
+                  className="flex items-center gap-1 group text-white hover:text-blue-600"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ArrowTopRightOnSquareIcon
+                    width="20"
+                    height="20"
+                    className="size-5"
+                  />
+                </Link>
+              )}
+            </div>
+          </div>
+        );
+      }
+      return null;
+    });
+}
+
+function TransactionRefreshButton({ onClick, disabled }: { onClick: () => void, disabled: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`mt-2 flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium ${
+        disabled 
+          ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+          : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+      }`}
+    >
+      <svg 
+        className="w-5 h-5 mr-2" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+        />
+      </svg>
+      Retry Transaction Check
+    </button>
   );
 }
 
