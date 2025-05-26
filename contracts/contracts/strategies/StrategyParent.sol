@@ -394,8 +394,7 @@ abstract contract StrategyParent is
     function manualResendFundsAndDivestConfirmation(
         uint256 amountWithdrawn,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 vaultNonce,
-        bool txSucceeded
+        uint256 vaultNonce
     ) external onlyOwner {
         _sendFundsAndDivestConfirmation(
             amountWithdrawn,
