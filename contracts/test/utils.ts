@@ -295,7 +295,7 @@ export async function simulateConfirmDeposit(
     [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, ethers.constants.HashZero
     ]
   );
-
+  console.log("Confirming deposit with message:", confirmMessage);
   await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
@@ -306,6 +306,7 @@ export async function simulateConfirmDeposit(
     0,
     confirmMessage
   );
+  console.log("Deposit confirmed successfully");
 }
 
 export async function simulateConfirmSwitch(

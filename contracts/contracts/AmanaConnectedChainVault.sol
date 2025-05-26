@@ -48,12 +48,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes calldata message
     ) external override onlyGateway {
         if (context.sender == strategyAddress) {
+            console.log("Received message from strategy: %s", strategyAddress);
             (
                 uint256 withdrawnAmount,
                 uint256 totalAssetsAfter,
                 uint256 confirmationNonce,
                 bytes32 txSucceeded
             ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
+            console.log("Decoded message from strategy:");
             if (confirmationNonce == lastProcessedNonce) {
                 // this is an update (totalAssetsAfter)
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;

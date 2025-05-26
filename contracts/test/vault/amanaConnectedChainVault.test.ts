@@ -43,6 +43,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(vaultConfig.asset, await user1.getAddress(), txConfig.directDepositAmount1, 3);
     await vaultAsset.connect(user1).approve(amanaVault.address, txConfig.directDepositAmount1);
     await amanaVault.connect(user1)["deposit(uint256,uint256,address)"](txConfig.directDepositAmount1, txConfig.minSharesOut1, await user1.getAddress());
+    console.log("About to confirm")
     await simulateConfirmDeposit(amanaVault, gatewaySigner, txConfig.directDepositAmount1, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
 
