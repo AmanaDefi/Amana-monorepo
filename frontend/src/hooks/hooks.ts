@@ -27,6 +27,7 @@ import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { EMPTY_BALANCE } from "@/utils/helpers";
+import { useDebounce } from "./useDebounce";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -35,9 +36,13 @@ export const useUpdateVaultBalanceAndTotal = (
   setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
 ) => {
+  const debouncedWalletAddress = useDebounce(walletAddress, 300);
+
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
+      let address = isSolanaAddress(debouncedWalletAddress)
+        ? "0x77706672467938396e78347A4B734c5066653142"
+        : debouncedWalletAddress;
       try {
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
@@ -48,20 +53,29 @@ export const useUpdateVaultBalanceAndTotal = (
                 balance = await fetchUserVaultBalance(
                   address as Address,
                   vault.id as Address
-                )
+                );
                 newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
                   vault.inputToken.decimals,
                   address as Address,
                   vault.id as Address
                 );
               } else {
-                balance = EMPTY_BALANCE
-                newTotalAssetsinToken = "Error"
+                balance = EMPTY_BALANCE;
+                newTotalAssetsinToken = "Error";
               }
-              const newTotalAssets = vault && vault.id ? await fetchTotalAssets(vault.id as Address) : "Error";
+              const newTotalAssets =
+                vault && vault.id
+                  ? await fetchTotalAssets(vault.id as Address)
+                  : "Error";
 
-              const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
-              const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
+              const totalAssetsStr =
+                typeof newTotalAssets === "string"
+                  ? newTotalAssets
+                  : String(newTotalAssets);
+              const totalAssetsinTokenStr =
+                typeof newTotalAssetsinToken === "string"
+                  ? newTotalAssetsinToken
+                  : String(newTotalAssetsinToken);
 
               return {
                 vaultId: vault?.id || "unknown",
@@ -70,12 +84,17 @@ export const useUpdateVaultBalanceAndTotal = (
                 totalAssetsinToken: totalAssetsinTokenStr,
               };
             } catch (error) {
-              console.error(`Error fetching user balance or total assets for vault ${vault?.id || "unknown"}:`, error);
+              console.error(
+                `Error fetching user balance or total assets for vault ${
+                  vault?.id || "unknown"
+                }:`,
+                error
+              );
               return {
                 vaultId: vault?.id || "unknown",
                 balance: "Error",
                 totalAssets: "Error",
-                totalAssetsinToken: "Error"
+                totalAssetsinToken: "Error",
               };
             }
           })
@@ -84,15 +103,19 @@ export const useUpdateVaultBalanceAndTotal = (
           vaultId,
           balance,
         }));
-        const totalAssets = balancesAndAssets.map(({ vaultId, totalAssets }) => ({
-          vaultId,
-          totalAssets,
-        }));
+        const totalAssets = balancesAndAssets.map(
+          ({ vaultId, totalAssets }) => ({
+            vaultId,
+            totalAssets,
+          })
+        );
 
-        const totalAssetsinToken = balancesAndAssets.map(({ vaultId, totalAssetsinToken }) => ({
-          vaultId,
-          totalAssetsinToken,
-        }));
+        const totalAssetsinToken = balancesAndAssets.map(
+          ({ vaultId, totalAssetsinToken }) => ({
+            vaultId,
+            totalAssetsinToken,
+          })
+        );
         setUserVaultBalances(balances); // Update user balances
         setVaultTotalAssets(totalAssets); // Update total assets
         setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
@@ -104,7 +127,10 @@ export const useUpdateVaultBalanceAndTotal = (
     if (vaults.length > 0) {
       updateVaultBalanceAndTotal();
     }
-  }, [vaults, walletAddress, setUserVaultBalances, setVaultTotalAssets]);
+  }, [
+    vaults,
+    debouncedWalletAddress,
+  ]);
 };
 
 export const useUpdateVaultBalanceAndTotalPerVault = (
@@ -116,9 +142,14 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   transactionCompleted: boolean,
 ) => {
   const { selectedChain } = useMultiChain();
+
+  const debouncedUserAddress = useDebounce(userAddress, 300);
+
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
+      const address = isSolanaAddress(debouncedUserAddress)
+        ? "0x77706672467938396e78347A4B734c5066653142"
+        : debouncedUserAddress;
       try {
         if (vault && vault.id) {
           const balance = await fetchUserVaultBalance(
@@ -146,7 +177,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
     if (userAddress && vault) {
       updateVaultBalanceAndTotal();
     }
-  }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
+  }, [vault, debouncedUserAddress, transactionCompleted]);
 };
 
 export const useUpdateAPYs = (
