@@ -1,10 +1,154 @@
-import { VaultData, Token } from "../types/types";
-import { ZC_USDC_ARB_ADDRESS, ZC_ETH_ETH_ADDRESS, ZC_USDT_POL_ADDRESS, ZC_USDT_BSC_ADDRESS, ZC_TEST_USDC_SEPOLIA_ADDRESS, ZC_POL_POL_ADDRESS, ZC_USDC_ETH_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_TEST_ETH_BASESEPOLIA_ADDRESS, ZC_TEST_ETH_SEPOLIA_ADDRESS, ZC_ETH_BASE_ADDRESS, ZC_TEST_MATIC_AMOY_ADDRESS, ZC_TEST_USDC_BSC_ADDRESS } from "../../../constants";
+import { VaultData, Token } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 
 const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
-const ethPrice = 3400 // await fetchEthPrice();
+const ethPrice = 3400; // await fetchEthPrice();
 export const swapHelperLibEddy = "0x1968643f36ad81a2756Dba0C4Dfe948bBa957A72";
+
+// Global Addresses
+export const SYSTEM_CONTRACT_ADDRESS =
+  "0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B";
+export const ZEVM_GATEWAY_ADDRESS_TESTNET =
+  "0x6c533f7fe93fae114d0954697069df33c9b74fd7";
+export const EVM_GATEWAY_ADDRESS_TESTNET =
+  "0x0c487a766110c85d301d96e33579c5b317fa4995";
+export const ZEVM_GATEWAY_ADDRESS =
+  "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
+export const EVM_GATEWAY_ADDRESS = "0x48b9aacc350b20147001f88821d31731ba4c30ed";
+export const SOLANA_GATEWAY_ADDRESS =
+  "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis";
+
+export const PYTH_CONTRACT_ADDRESS_ZETACHAIN =
+  "0x2880aB155794e7179c9eE2e38200202908C17B43";
+export const PYTH_CONTRACT_ADDRESS_ETHEREUM =
+  "0x4305FB66699C3B2702D4d05CF36551390A4c69C6";
+export const PYTH_CONTRACT_ADDRESS_BASE =
+  "0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a";
+export const PYTH_CONTRACT_ADDRESS_POLYGON =
+  "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C";
+export const PYTH_CONTRACT_ADDRESS_ARBITRUM =
+  "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C";
+
+// Mainnet Addresses
+
+// ZetaChain Addresses
+export const ZC_WZETA_ADDRESS = "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf";
+
+export const ZC_ETH_ETH_ADDRESS = "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891";
+export const ZC_USDC_ETH_ADDRESS = "0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a";
+export const ZC_USDT_ETH_ADDRESS = "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7";
+export const ZC_DAI_ETH_ADDRESS = "0xcC683A782f4B30c138787CB5576a86AF66fdc31d";
+
+export const ZC_ETH_BASE_ADDRESS = "0x1de70f3e971B62A0707dA18100392af14f7fB677";
+export const ZC_USDC_BASE_ADDRESS =
+  "0x96152E6180E085FA57c7708e18AF8F05e37B479D";
+
+export const ZC_POL_POL_ADDRESS = "0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501";
+export const ZC_USDT_POL_ADDRESS = "0xdbfF6471a79E5374d771922F2194eccc42210B9F";
+export const ZC_USDC_POL_ADDRESS = "0xfC9201f4116aE6b054722E10b98D904829b469c3";
+
+export const ZC_SOL_SOL_ADDRESS = "0x4bC32034caCcc9B7e02536945eDbC286bACbA073";
+export const ZC_USDC_SOL_ADDRESS = "0x8344d6f84d26f998fa070BbEA6D2E15E359e2641";
+export const ZC_USDT_SOL_ADDRESS = "0xEe9CC614D03e7Dbe994b514079f4914a605B4719";
+
+export const ZC_USDC_BSC_ADDRESS = "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0";
+export const ZC_BNB_BSC_ADDRESS = "0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb";
+export const ZC_USDT_BSC_ADDRESS = "0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F";
+
+export const ZC_BTC_BTC_ADDRESS = "0x13A0c5930C028511Dc02665E7285134B6d11A5f4";
+
+export const ZC_USDC_ARB_ADDRESS = "0x0327f0660525b15Cdb8f1f5FBF0dD7Cd5Ba182aD";
+export const ZC_USDT_ARB_ADDRESS = "0x0ca762FA958194795320635c11fF0C45C6412958";
+export const ZC_ETH_ARB_ADDRESS = "0xA614Aebf7924A3Eb4D066aDCA5595E4980407f1d";
+
+export const ZC_USDT_AVAX_ADDRESS =
+  "0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794";
+export const ZC_AVAX_AVAX_ADDRESS =
+  "0xE8d7796535F1cd63F0fe8D631E68eACe6839869B";
+export const ZC_USDC_AVAX_ADDRESS =
+  "0xa52Ad01A1d62b408fFe06C2467439251da61E4a9";
+
+export const ZC_EDDY_FOURPOOL_ADDRESS =
+  "0x448028804461e8e5a8877c228F3adFd58c3Da6B6";
+export const ZC_EDDY4P_ADDRESS = "0xf45DC12FDEcA77afF35602d7FBE3B97f7f3dCBB2";
+
+// Base Chain Addresses
+export const BASE_USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+export const BASE_USDT_ADDRESS = "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2";
+export const BASE_AAVE_POOL_ADDRESS =
+  "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
+export const BASE_AAVE_RECEIPT_TOKEN_ADDRESS =
+  "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB";
+export const BASE_USDC_HOLDER_ADDRESS =
+  "0xF977814e90dA44bFA03b6295A0616a897441aceC";
+export const BASE_USDT_HOLDER_ADDRESS =
+  "0x0d5CF4Ff52A658000979C7901100817BD6cb72c6";
+export const BASE_MOONWELL_USDC_VAULT_ADDRESS =
+  "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca";
+export const BASE_COMPOUND_USDC_VAULT_ADDRESS =
+  "0xb125E6687d4313864e53df431d5425969c15Eb2F";
+
+// Ethereum Addresses
+export const ETH_USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+export const ETH_USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+
+// Polygon Addresses
+export const POL_USDC_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+export const POL_USDT_ADDRESS = "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D";
+export const POL_WMATIC_ADDRESS = "0x0d500B1d8E8D11dA4f62B4a1F2e3876c4d3C5eA9";
+export const POL_WETH_ADDRESS = "0x7ceB23fD6bC0e96cA880fA83A8B6b14610C8f3a6";
+
+// Arbitrum Addresses
+export const ARB_USDC_ADDRESS = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+export const ARB_USDT_ADDRESS = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
+export const ARB_WETH_ADDRESS = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+export const ARB_CRV_ADDRESS = "0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978";
+
+// Testnet Addresses
+
+// Zetachain Testnet Addresses
+export const ZC_TEST_GASTANK_ADDRESS =
+  "0x3bbB4509B4ffbc7fF48E33D74Ce9e2f7fFb041B8";
+export const ZC_TEST_UNISWAP_ROUTER_ADDRESS =
+  "0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe";
+
+export const ZC_TEST_WZETA_ADDRESS =
+  "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf";
+export const ZC_TEST_ETH_BASESEPOLIA_ADDRESS =
+  "0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD";
+export const ZC_TEST_ETH_SEPOLIA_ADDRESS =
+  "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0";
+export const ZC_TEST_USDC_SEPOLIA_ADDRESS =
+  "0xcC683A782f4B30c138787CB5576a86AF66fdc31d";
+export const ZC_TEST_MATIC_AMOY_ADDRESS =
+  "0x777915D031d1e8144c90D025C594b3b8Bf07a08d";
+export const ZC_TEST_BNB_BSC_ADDRESS =
+  "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891";
+export const ZC_TEST_USDC_BSC_ADDRESS =
+  "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7";
+export const ZC_TEST_USDC_AMOY_ADDRESS =
+  "0xe573a6e11f8506620F123DBF930222163D46BCB6";
+
+// Base Sepolia Addresses
+export const BASE_SEPOLIA_USDC_ADDRESS =
+  "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+export const BASE_SEPOLIA_AAVE_POOL_ADDRESS =
+  "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b";
+export const BASE_SEPOLIA_AAVE_RECEIPT_TOKEN_ADDRESS =
+  "0xf53B60F4006cab2b3C4688ce41fD5362427A2A66";
+export const BASE_SEP_AAVE_ETH_RECEIPT_TOKEN_ADDRESS =
+  "0x96e32dE4B1d1617B8c2AE13a88B9cC287239b13f";
+
+// Polygon Amoy Addresses
+export const AMOY_WMATIC_ADDRESS = "0xd39986C4bc5D9Bc4A4e532e37dBC7ea4a2CcF1BB";
+
+// BSC Testnet Addresses
+export const BSC_TEST_USDC_ADDRESS =
+  "0x64544969ed7EBf5f083679233325356EbE738930";
+
+// Eth-Sepolia Addresses
+export const ETH_SEP_USDC_ADDRESS =
+  "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 
 export const tokens: Token[] = [
   {
@@ -14,7 +158,7 @@ export const tokens: Token[] = [
     imgURL: "/ETH.png",
     price: ethPrice,
     balance: EMPTY_BALANCE,
-    isNative: false
+    isNative: false,
   },
   {
     symbol: "sETH",
@@ -23,9 +167,9 @@ export const tokens: Token[] = [
     imgURL: "/ETH.png",
     price: ethPrice,
     balance: EMPTY_BALANCE,
-    isNative: false
+    isNative: false,
   },
-]
+];
 
 const MAINNET_VAULT_DATA: VaultData[] = [
   {
@@ -43,16 +187,17 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "ZeroLend",
       strategyAddress: "0xC967154127af55cecC47328B06385EFd8f8C427E",
       network: "Base",
       chainId: 8453,
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      netdes:
+        "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
       imgURL: "/ZeroLend.png",
-      des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements."
+      des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements.",
     },
   },
   // {
@@ -95,16 +240,17 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "Fluid",
       strategyAddress: "0x5D4a0eF44758c9ab0571b67927ED0B849bbB12D0",
       network: "Base",
       chainId: 8453,
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      netdes:
+        "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
       imgURL: "/fluid.png",
-      des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
+      des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters.",
     },
   },
   {
@@ -122,7 +268,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "Compound",
@@ -130,9 +276,10 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
       network: "Polygon",
       chainId: 137,
-      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
+      netdes:
+        "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
       imgURL: "/compound.png",
-      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
+      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters.",
     },
   },
 
@@ -151,16 +298,17 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "Aave",
       strategyAddress: "0x21e92Bc73c0215Dbb695fba5654C2331044DbBD7",
       network: "BNB",
       chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      netdes:
+        "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
       imgURL: "/aave.png",
-      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
+      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements.",
     },
   },
 
@@ -460,7 +608,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/ETH.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "Curve-Convex",
@@ -468,9 +616,10 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
       network: "Ethereum",
       chainId: 1,
-      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      netdes:
+        "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       imgURL: "/convex.png",
-      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
     },
   },
   // {
@@ -516,7 +665,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "Curve-Convex",
@@ -524,9 +673,10 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
       network: "Arbitrum",
       chainId: 42161,
-      netdes: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
+      netdes:
+        "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
       imgURL: "/convex.png",
-      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
     },
   },
 ];
@@ -582,7 +732,6 @@ const TESTNET_VAULT_DATA: VaultData[] = [
   //       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
   //     },
   //   },
-
   //   {
   //     id: "0xf18635c0e127Ac010dd484ba2EA123D8bc58a7E7", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
   //     name: "Mock USDC",
@@ -661,8 +810,9 @@ const TESTNET_VAULT_DATA: VaultData[] = [
 ];
 
 // Export the appropriate vault data based on DEPLOY_ENV
-export const VAULT_DATA = deployEnv === "testnet" ? TESTNET_VAULT_DATA : MAINNET_VAULT_DATA;
+export const VAULT_DATA =
+  deployEnv === "testnet" ? TESTNET_VAULT_DATA : MAINNET_VAULT_DATA;
 
-export const USER_SETTINGS_LOCAL_STORAGE_KEY = 'user_settings';
+export const USER_SETTINGS_LOCAL_STORAGE_KEY = "user_settings";
 
-export const ONE_MINUTE = 60 * 1000
+export const ONE_MINUTE = 60 * 1000;

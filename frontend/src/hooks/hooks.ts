@@ -13,9 +13,11 @@ import {
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
+  fetchReceiptTokens,
 } from "@/actions/actions";
 import {
   Address,
+  ADDRESS_ZERO,
   defineChain,
   getContract,
   prepareEvent,
@@ -75,10 +77,10 @@ export const useUpdateVaultBalanceAndTotal = (
       return; //Update only if interval > 5 min or if user has deposited in Pool
     }
 
-    if (!provider || !walletAddress || vaults.length === 0) return;
+    if (!provider || vaults.length === 0) return;
     let address = isSolanaAddress(walletAddress)
       ? "0x77706672467938396e78347A4B734c5066653142"
-      : walletAddress;
+      : walletAddress || ADDRESS_ZERO;
 
     const mcCfg = MULTICALL_ADDRS[CHAIN_ID.zetachain];
 
@@ -158,7 +160,8 @@ export const useUpdateVaultBalanceAndTotal = (
       const maxRed = assetResults[2 * i + 1].success
         ? BigInt(assetResults[2 * i + 1].returnData)
         : 0n;
-      const totalAssetsStr = vaultDataMap[vault.id]?.toString() ?? "Error";
+      const totalAssetsStr =
+        vaultDataMap[vault.id].total_assets?.toString() ?? "Error";
 
       return {
         vaultId: vault.id,
@@ -258,19 +261,12 @@ export const useUpdateAPYs = (
 
       const now = Date.now();
       try {
+        const receiptTokenAddresses = await fetchReceiptTokens(vaults);
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
               const strategyChain = defineChain(vault.protocol.chainId);
-              const strategyContract = getContract({
-                client,
-                chain: strategyChain,
-                address: vault.protocol.strategyAddress,
-              });
-              const receiptTokenAddress = await readContract({
-                contract: strategyContract,
-                method: "function receiptToken() view returns (address)",
-              });
+              const receiptTokenAddress = receiptTokenAddresses[vault.id];
               let APY7d = 0;
               let RewardsAPY = 0;
               if (vault.protocol.name === "Aave") {
@@ -365,7 +361,6 @@ export const useUpdateAPYs = (
             }
           }),
         );
-
         setVaultAPYs(updatedVaultAPYs);
         if (isFromVaultGrid) {
           localStorage.setItem(CASHED_VAULT_APIS, JSON.stringify(updatedVaultAPYs))
