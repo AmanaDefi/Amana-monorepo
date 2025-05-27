@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
   calculateAaveFlashAPY,
@@ -388,31 +388,39 @@ export function useUserSettings() {
     }
   }, []);
 
-  const updateSettings = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
-    const newSettings = { ...userSettings, [key]: value };
-    localStorage.setItem(USER_SETTINGS_LOCAL_STORAGE_KEY, JSON.stringify(newSettings));
-    setUserSettings(newSettings);
-  };
+  const updateSettings = useCallback(
+    <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
+      const newSettings = { ...userSettings, [key]: value };
+      localStorage.setItem(
+        USER_SETTINGS_LOCAL_STORAGE_KEY,
+        JSON.stringify(newSettings)
+      );
+      setUserSettings(newSettings);
+    },
+    [userSettings]
+  );
 
-  return { userSettings, updateSettings }
+  return { userSettings, updateSettings };
 }
-
 export function useSlippage() {
   const { userSettings, updateSettings } = useUserSettings();
 
-  const setSlippage = (value: number) => {
-    updateSettings('slippage', {
-      isAuto: false,
-      value
-    });
-  };
+  const setSlippage = useCallback(
+    (value: number) => {
+      updateSettings("slippage", {
+        isAuto: false,
+        value,
+      });
+    },
+    [updateSettings]
+  );
 
-  const toggleAuto = () => {
-    updateSettings('slippage', {
+  const toggleAuto = useCallback(() => {
+    updateSettings("slippage", {
       isAuto: !userSettings.slippage?.isAuto,
-      value: DEFAULT_SETTINGS.slippage.value
+      value: DEFAULT_SETTINGS.slippage.value,
     });
-  };
+  }, [updateSettings, userSettings.slippage?.isAuto]);
 
   return {
     slippageValue: useMemo(() => userSettings.slippage?.value, [userSettings.slippage?.value]),
