@@ -19,6 +19,7 @@ import {
 } from "@/actions/actions";
 import {
   Address,
+  ADDRESS_ZERO,
   defineChain,
   getContract,
   prepareEvent,
@@ -70,11 +71,10 @@ export const useUpdateVaultBalanceAndTotal = (
   const vaultInterface = useMemo(() => new Interface(vaultAbi), []);
 
   const update = useCallback(async () => {
-    if (!provider || !walletAddress || vaults.length === 0) return;
-    console.time("updateVaultBalanceAndTotal");
+    if (!provider || vaults.length === 0) return;
     let address = isSolanaAddress(walletAddress)
       ? "0x77706672467938396e78347A4B734c5066653142"
-      : walletAddress;
+      : walletAddress || ADDRESS_ZERO;
 
     const mcCfg = MULTICALL_ADDRS[CHAIN_ID.zetachain];
 
