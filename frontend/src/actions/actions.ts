@@ -17,7 +17,7 @@ import {
 } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { ethers, getBytes, JsonRpcProvider } from "ethers";
+import { ethers, getBytes, } from "ethers";
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
@@ -34,6 +34,7 @@ import {
   isZetachain,
   getSolanaEVMAddress,
 } from "@/utils/utils";
+import { baseProvider, ethereumProvider, arbitrumProvider } from "../utils/providers";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -52,12 +53,6 @@ import { read } from "fs";
 import { trackEvent } from "@/utils/trackEvent";
 
 dotenv.config();
-const provider = new JsonRpcProvider(
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE
-);
-const provider_ethereum = new JsonRpcProvider(
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH
-);
 
 const abiCoder = new AbiCoder();
 
@@ -88,7 +83,7 @@ export async function calculateEddyAPY(
   const eddyFinancePool = new ethers.Contract(
     poolAddress,
     fourPoolABI,
-    provider
+    baseProvider
   );
 
   try {
@@ -98,7 +93,7 @@ export async function calculateEddyAPY(
     );
 
     // Fetch the block number and determine the number of seconds in the past (e.g., 7 days)
-    const currentBlockNumber = await provider.getBlockNumber();
+    const currentBlockNumber = await baseProvider.getBlockNumber();
     const averageBlockTimeInSeconds = 5; // Adjust this based on the average block time for Eddy Finance
     const secondsIn7Days = 7 * 24 * 60 * 60;
     const blocksIn7Days = Math.floor(
@@ -132,7 +127,7 @@ export async function calculateBeefyAPY(
   const beefyVault = new ethers.Contract(
     receiptTokenAddress,
     beefyVaultABI,
-    provider
+    baseProvider
   );
 
   try {
@@ -142,7 +137,7 @@ export async function calculateBeefyAPY(
     );
 
     // Fetch the block number and determine the number of seconds in the past (e.g., 7 days)
-    const currentBlockNumber = await provider.getBlockNumber();
+    const currentBlockNumber = await baseProvider.getBlockNumber();
     const averageBlockTimeInSeconds = 2; // Adjust this based on the average block time for Eddy Finance
     const secondsIn7Days = 7 * 24 * 60 * 60;
     const blocksIn7Days = Math.floor(
@@ -265,12 +260,12 @@ export async function calculateAaveFlashAPY(
 }
 
 export async function calculateCurveAPY(poolAddress: Address, strategyChain: Chain) {
-  let relevant_provider = provider;
+  let relevant_provider = baseProvider;
   if (strategyChain.id === 1) {
-    relevant_provider = provider_ethereum;
-  } else if (strategyChain.id === 42161) {
-    relevant_provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE);
-  }
+    relevant_provider = ethereumProvider;
+   } else if (strategyChain.id === 42161) {
+  relevant_provider = arbitrumProvider;
+}
   const curvePool = new ethers.Contract(
     poolAddress,
     curvePoolABI,
@@ -402,7 +397,7 @@ export async function calculateConvexArbitrumRewardsAPY(
   crvTokenPrice: number,
   ethTokenPrice: number
 ): Promise<number> {
-  const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE);
+  const provider = arbitrumProvider;
 
   const rewardPool = new ethers.Contract(convexRewardPool, convexRewardPoolABI, provider);
 
@@ -513,13 +508,13 @@ export async function calculateMoonwellAPY(
   const moonwellVault = new ethers.Contract(
     receiptTokenAddress,
     moonwellVaultABI,
-    provider
+    baseProvider
   );
   const averageBlockTimeInSeconds = 2;
   const secondsInADay = 24 * 60 * 60;
   const secondsIn7Days = 7 * secondsInADay;
 
-  const currentBlockNumber = await provider.getBlockNumber();
+  const currentBlockNumber = await baseProvider.getBlockNumber();
   const blocksIn7Days = Math.floor(secondsIn7Days / averageBlockTimeInSeconds);
   const pastBlockNumber = BigInt(currentBlockNumber - blocksIn7Days);
   const currentPrice = ethers.toBigInt(
