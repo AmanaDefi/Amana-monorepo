@@ -1,10 +1,10 @@
-import { ApiService } from "@/service";
+import { apiService } from "@/service";
 import { useQuery } from "@tanstack/react-query";
 
 // export default function useVaultData() {
 //   const { data, isLoading, error } = useQuery({
 //     queryKey: ["VaultDat"],
-//     queryFn: () => new ApiService().api.getVaultData(),
+//     queryFn: () => apiService.api.getVaultData(),
 //   });
 
 //   return { data, isLoading, error };

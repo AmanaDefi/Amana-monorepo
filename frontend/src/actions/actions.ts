@@ -19,12 +19,7 @@ import {
 } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
-import {
-  ethers,
-  getAddress,
-  getBytes,
-  Interface,
-} from "ethers";
+import { ethers, getAddress, getBytes, Interface } from "ethers";
 
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
@@ -42,7 +37,11 @@ import {
   isZetachain,
   getSolanaEVMAddress,
 } from "@/utils/utils";
-import { baseProvider, ethereumProvider, arbitrumProvider } from "../utils/providers";
+import {
+  baseProvider,
+  ethereumProvider,
+  arbitrumProvider,
+} from "../utils/providers";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -56,8 +55,7 @@ import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
 
 import type { IConnection } from "codemelt-retro-api-sdk";
-import { ApiService } from "@/service";
-import { read } from "fs";
+import { apiService } from "@/service";
 import { trackEvent } from "@/utils/trackEvent";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
@@ -97,7 +95,7 @@ export async function calculateEddyAPY(
   const eddyFinancePool = new ethers.Contract(
     poolAddress,
     fourPoolABI,
-    baseProvider
+    baseProvider,
   );
 
   try {
@@ -141,7 +139,7 @@ export async function calculateBeefyAPY(
   const beefyVault = new ethers.Contract(
     receiptTokenAddress,
     beefyVaultABI,
-    baseProvider
+    baseProvider,
   );
 
   try {
@@ -296,13 +294,16 @@ export async function calculateAaveFlashAPY(
   return leveragedAPY;
 }
 
-export async function calculateCurveAPY(poolAddress: Address, strategyChain: Chain) {
+export async function calculateCurveAPY(
+  poolAddress: Address,
+  strategyChain: Chain,
+) {
   let relevant_provider = baseProvider;
   if (strategyChain.id === 1) {
     relevant_provider = ethereumProvider;
-   } else if (strategyChain.id === 42161) {
-  relevant_provider = arbitrumProvider;
-}
+  } else if (strategyChain.id === 42161) {
+    relevant_provider = arbitrumProvider;
+  }
 
   const curvePool = new ethers.Contract(
     poolAddress,
@@ -580,7 +581,7 @@ export async function calculateMoonwellAPY(
   const moonwellVault = new ethers.Contract(
     receiptTokenAddress,
     moonwellVaultABI,
-    baseProvider
+    baseProvider,
   );
   const averageBlockTimeInSeconds = 2;
   const secondsInADay = 24 * 60 * 60;
@@ -1456,7 +1457,7 @@ export const fetchUserVaultMaxRedeem = async (
 };
 
 export const fetchTotalAssets = async (vaultAddress: Address) => {
-  const vaultData = await new ApiService().api.getVaultData(vaultAddress);
+  const vaultData = await apiService.api.getVaultData(vaultAddress);
   return vaultData.total_assets;
   // const contract = getContract({
   //   client,

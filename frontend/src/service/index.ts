@@ -2,7 +2,7 @@ import { SearchParams } from "@/types/types";
 import BaseAPI from "./baseApi";
 import Blockpi from "./blockpi";
 
-export class ApiService {
+class APIService {
   public api: BaseAPI;
   public blockpi: Blockpi;
   constructor() {
@@ -14,3 +14,5 @@ export class ApiService {
     return this.api.getLeaderboardData(searchParams);
   }
 }
+
+export const apiService = new APIService();

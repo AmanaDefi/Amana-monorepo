@@ -44,12 +44,10 @@ import {
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { EMPTY_BALANCE } from "@/utils/helpers";
 import { ethers, Interface } from "ethers";
-import { erc20Abi } from "viem";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
-import { ApiService } from "@/service";
+import {apiService} from "@/service";
 import { zetaProvider } from "@/utils/providers";
 
 export const UPDATE_VAULT_TIMESTAMP = 'updateCashTimestamp';
@@ -145,8 +143,7 @@ export const useUpdateVaultBalanceAndTotal = (
     ) as any;
 
     // 3) fetch totalAssets from backend
-    const api = new ApiService();
-    const vaultDataMap = await api.api.getAllVaultDataCached(
+    const vaultDataMap = await apiService.api.getAllVaultDataCached(
       vaults.map((vault) => vault.id),
     );
 
@@ -187,7 +184,7 @@ export const useUpdateVaultBalanceAndTotal = (
     );
     localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
     localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
-  }, [provider, vaults, walletAddress, localStorage]);
+  }, [provider, vaults, walletAddress]);
   useEffect(() => {
     update();
   }, [update]);
@@ -383,7 +380,7 @@ export const useUpdateAPYs = (
       const now = Date.now();
       const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
       const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
-  
+
       if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true' && isFromVaultGrid) {
         const cashedVaultApis = localStorage.getItem(CASHED_VAULT_APIS);
         if (cashedVaultApis) {
@@ -395,9 +392,9 @@ export const useUpdateAPYs = (
         setLoading(true);
         updateAPYs();
       }
-    
+
     }
-  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, localStorage, isFromVaultGrid]);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, isFromVaultGrid]);
 };
 
 export const useInteractionEvents = ({

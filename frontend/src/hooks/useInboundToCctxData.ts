@@ -1,11 +1,11 @@
-import { ApiService } from "@/service";
+import {apiService} from "@/service";
 import { Action } from "@/types/types";
 import { useQuery } from "@tanstack/react-query";
 
 export const useInboundToCctxData = (crossschainInvestHash: string, action: Action) => {
   const { data } = useQuery({
     queryKey: ["InboundToCctxData", crossschainInvestHash, action],
-    queryFn: () => new ApiService().blockpi.getInboundHashToCctxData(crossschainInvestHash),
+    queryFn: () => apiService.blockpi.getInboundHashToCctxData(crossschainInvestHash),
     refetchInterval: 5000,
     staleTime: 3 * 1000,
     enabled: crossschainInvestHash !== "" && action === Action.crosschainInvest
