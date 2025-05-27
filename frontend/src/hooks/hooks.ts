@@ -99,7 +99,7 @@ export const useUpdateVaultBalanceAndTotal = (
     const [balanceResults] = mcInterface.decodeFunctionResult(
       "aggregate3",
       balanceData,
-    ) as [{ success: boolean; returnData: string }[]];
+    ) as any;
     // parse shares and decimals
     const sharesArray = [] as BigInt[];
     const decimalsArray = [] as number[];
@@ -136,7 +136,7 @@ export const useUpdateVaultBalanceAndTotal = (
     const [assetResults] = mcInterface.decodeFunctionResult(
       "aggregate3",
       assetData,
-    ) as [{ success: boolean; returnData: string }[]];
+    ) as any;
 
     // 3) fetch totalAssets from backend
     const api = new ApiService();
