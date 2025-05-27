@@ -6,24 +6,29 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const [signer] = await ethers.getSigners();
   const network = hre.network.name;
 
-  console.log(`🔑 Deploying UUPS Upgradeable SwapHelperZetaTestnet with signer: ${signer.address}`);
-
+  const contractName = args.contract;
   const priceOracleAddress = args.priceOracle;
+
+  if (!contractName) {
+    throw new Error("🚨 Contract name is required (e.g., SwapHelperOnBase)");
+  }
+
   if (!priceOracleAddress) {
     throw new Error("🚨 Price oracle address is required");
   }
 
-  const SwapHelperZetaTestnet = await ethers.getContractFactory("SwapHelperZetaTestnet", signer);
+  console.log(`🔑 Deploying UUPS Upgradeable ${contractName} with signer: ${signer.address}`);
 
-  const proxy = await upgrades.deployProxy(SwapHelperZetaTestnet, [priceOracleAddress], {
+  const ContractFactory = await ethers.getContractFactory(contractName, signer);
+
+  const proxy = await upgrades.deployProxy(ContractFactory, [priceOracleAddress], {
     kind: "uups",
     initializer: "initialize",
   });
 
   await proxy.deployed();
-  console.log(`✅ SwapHelperZetaTestnet proxy deployed at: ${proxy.address}`);
+  console.log(`✅ ${contractName} proxy deployed at: ${proxy.address}`);
 
-  // Optional: print the implementation address
   const implementationAddress = await upgrades.erc1967.getImplementationAddress(proxy.address);
   console.log(`📦 Implementation address: ${implementationAddress}`);
 
@@ -44,7 +49,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 };
 
-task("deploy-swap-helper-zeta-testnet", "Deploys the UUPS upgradeable SwapHelperZetaTestnet contract", main)
-  .addParam("priceOracle", "The address of the price oracle contract");
+task("deploy-swap-helper", "Deploys a UUPS upgradeable SwapHelper contract")
+  .addParam("contract", "The contract name to deploy, e.g., SwapHelperOnBase")
+  .addParam("priceOracle", "The address of the price oracle contract")
+  .setAction(main); // <- This line is missing in your current script
 
 export default {};

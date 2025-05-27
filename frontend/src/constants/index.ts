@@ -530,7 +530,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xcaDD7865818ab401b4CD8921F8c72ECbffF6191f", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
+    id: "0xAbE7a5C760B030421B5C9815fE91f9Ba68058769", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
     name: "eUSD/USDC Pool",
     type: "Liquidity Pool",
     des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
@@ -548,13 +548,41 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Curve-Convex",
-      strategyAddress: "0x1aaA558F422dFA7BF0E643A1543959B2bf9Ba812", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
+      strategyAddress: "0x8C1b444830A37CE72330d808bB97F91047224c66", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
       rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
       network: "Arbitrum",
       chainId: 42161,
       netdes: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
       imgURL: "/convex.png",
       des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+    },
+  },
+  {
+    id: "0xb8F0fBee642638C11019139Dee02D1b18E91b28E",
+    name: "yUSD/USDC Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer’s LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
+    symbol: "aBalancerUsdcBase",
+    imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Balancer",
+      strategyAddress: "0xE870EDca08CA5422260445ab24ED8ff1419cE688",
+      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/balancer.png",
+      des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
     },
   },
 ];
