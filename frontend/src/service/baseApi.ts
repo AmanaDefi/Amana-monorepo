@@ -42,24 +42,61 @@ export default class BaseAPI {
   async getAllVaultDataCached(
     addresses: string[],
   ): Promise<Record<string, any>> {
+    const CACHE_KEY = this.vaultDataCache;
+    const TS_KEY = this.vaultDataCacheTimestamp;
+    const TTL = 5 * ONE_MINUTE;
+    const now = Date.now();
+
     try {
-      const now = Date.now();
-      const cached = localStorage.getItem(this.vaultDataCache);
-      const timestamp = localStorage.getItem(this.vaultDataCacheTimestamp);
-      if (cached && timestamp && now - Number(timestamp) < 5 * ONE_MINUTE) {
-        return JSON.parse(cached);
+      const cachedStr = localStorage.getItem(CACHE_KEY);
+      const tsStr = localStorage.getItem(TS_KEY);
+      let cachedMap: Record<string, any> = {};
+
+      if (cachedStr) {
+        try {
+          cachedMap = JSON.parse(cachedStr);
+        } catch {
+          cachedMap = {};
+        }
       }
-      const results = await Promise.all(
-        addresses.map((addr) => this.getVaultData(addr)),
-      );
-      const map: Record<string, any> = {};
-      addresses.forEach((addr, idx) => {
-        map[addr] = results[idx];
-      });
-      localStorage.setItem(this.vaultDataCache, JSON.stringify(map));
-      localStorage.setItem(this.vaultDataCacheTimestamp, now.toString());
-      return map;
+
+      if (tsStr && now - Number(tsStr) < TTL) {
+        const missingAddrs = Object.entries(cachedMap)
+          .filter(([_, v]) => Array.isArray(v) && v.length === 0)
+          .map((item) => item[0]);
+
+        if (missingAddrs.length === 0) {
+          return cachedMap;
+        }
+
+        for (const addr of missingAddrs) {
+          try {
+            const fresh = await this.getVaultData(addr);
+            cachedMap[addr] = fresh;
+          } catch (err) {
+            console.warn(`getVaultData(${addr}) retry failed:`, err);
+          }
+        }
+
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cachedMap));
+        return cachedMap;
+      }
+
+      const newMap: Record<string, any> = {};
+      for (const addr of addresses) {
+        try {
+          newMap[addr] = await this.getVaultData(addr);
+        } catch (err) {
+          console.warn(`getVaultData(${addr}) failed:`, err);
+          newMap[addr] = [];
+        }
+      }
+
+      localStorage.setItem(CACHE_KEY, JSON.stringify(newMap));
+      localStorage.setItem(TS_KEY, now.toString());
+      return newMap;
     } catch (error) {
+      console.error("getAllVaultDataCached error:", error);
       return {};
     }
   }

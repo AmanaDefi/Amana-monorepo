@@ -15,6 +15,7 @@ import {
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
+  fetchReceiptTokens,
 } from "@/actions/actions";
 import {
   Address,
@@ -150,7 +151,8 @@ export const useUpdateVaultBalanceAndTotal = (
       const maxRed = assetResults[2 * i + 1].success
         ? BigInt(assetResults[2 * i + 1].returnData)
         : 0n;
-      const totalAssetsStr = vaultDataMap[vault.id]?.toString() ?? "Error";
+      const totalAssetsStr =
+        vaultDataMap[vault.id].total_assets?.toString() ?? "Error";
 
       return {
         vaultId: vault.id,
@@ -244,35 +246,25 @@ export const useUpdateAPYs = (
   useEffect(() => {
     const updateAPYs = async () => {
       try {
+        const receiptTokenAddresses = await fetchReceiptTokens(vaults);
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
               const strategyChain = defineChain(vault.protocol.chainId);
-              const strategyContract = getContract({
-                client,
-                chain: strategyChain,
-                address: vault.protocol.strategyAddress,
-              });
-              const receiptTokenAddress = await readContract({
-                contract: strategyContract,
-                method: "function receiptToken() view returns (address)",
-              });
+              const receiptTokenAddress = receiptTokenAddresses[vault.id];
               let APY7d = 0;
               let RewardsAPY = 0;
               if (vault.protocol.name === "Aave") {
-                console.log(111);
                 APY7d = await calculateAaveAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "ZeroLend") {
-                console.log(222);
                 APY7d = await calculateAaveAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Compound") {
-                console.log(333);
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
@@ -289,7 +281,6 @@ export const useUpdateAPYs = (
                 vault.protocol.name === "Euler" ||
                 vault.protocol.name === "Fluid"
               ) {
-                console.log(444);
                 // TO DO This only works for Base right now - it's hardcoded
 
                 APY7d = await calculateMoonwellAPY(
@@ -297,7 +288,6 @@ export const useUpdateAPYs = (
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Venus") {
-                console.log(555);
                 APY7d = await calculateVenusAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
@@ -308,23 +298,19 @@ export const useUpdateAPYs = (
                 );
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
-                console.log(666);
                 APY7d = await calculateEddyAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Beefy") {
-                console.log(777);
                 APY7d = await calculateBeefyAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Curve-Convex") {
-                console.log(888);
                 // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
                   if (strategyChain.id === 1) {
-                    console.log(881);
                     RewardsAPY = await calculateConvexEthereumRewardsAPY(
                       receiptTokenAddress as Address,
                       vault.inputToken as Token,
@@ -335,7 +321,6 @@ export const useUpdateAPYs = (
                       ethTokenPrice,
                     );
                   } else if (strategyChain.id === 42161) {
-                    console.log(882);
                     RewardsAPY = await calculateConvexArbitrumRewardsAPY(
                       receiptTokenAddress as Address,
                       vault.inputToken as Token,
@@ -361,7 +346,6 @@ export const useUpdateAPYs = (
             }
           }),
         );
-
         setVaultAPYs(updatedVaultAPYs);
       } finally {
         setLoading(false); // Stop the loading state after updating APYs
