@@ -128,7 +128,7 @@ const CHAIN_ICONS: { [chainId: number]: Icon } = {
 export const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV || "mainnet"; // Default to mainnet if not set
 
 // Define RPC URLs
-const zetaRpcUrl = deployEnv === "testnet"
+export const zetaRpcUrl = deployEnv === "testnet"
   ? process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA_TESTNET || ""
   : process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA || "";
 
@@ -157,6 +157,71 @@ export enum CHAIN_ID {
   solana = deployEnv === 'testnet' ? 901 : 900,
   arbitrum = deployEnv === 'testnet' ? 421613 : 42161,
   avalanche = deployEnv === 'testnet' ? 43113 : 43114,
+}
+
+export enum MulticallVersion {
+  V1 = 1,
+  V2 = 2,
+  V3 = 3
+}
+
+export const MULTICALL_ADDRS = {
+  7001: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // ZetaChain Testnet
+  },
+  7000: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // ZetaChain
+  },
+  1: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // mainnet
+  },
+  11155111: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Sepolia Testnet
+  },
+  80001: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // mumbai
+  },
+  137: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // polygon
+  },
+  56: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // BSC mainnet
+  },
+  97: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // BSC testnet
+  },
+  42161: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Arbitrum One
+  },
+  421613: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Arbitrum Sepolia Testnet
+  },
+  43113: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Avalanche Fuji TestneFuji
+  },
+  43114: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Avax
+  },
+  84532: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Base Sepolia Testnet
+  },
+  8453: {
+    version: MulticallVersion.V3,
+    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Base
+  }
 }
 
 // Define ZetaChain configuration
