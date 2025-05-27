@@ -28,7 +28,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   ARB: "/arbitrum-arb-logo.png",
   AMANAZ: "/amana-token-logo.svg",
   BASE: "/base.png",
-}
+};
 
 // Chain icons mapping (optional fallback if modal icons fail) {It's a long one, should we move it to utils || any other data center}
 const CHAIN_ICONS: { [chainId: number]: Icon } = {
@@ -36,193 +36,211 @@ const CHAIN_ICONS: { [chainId: number]: Icon } = {
     url: TOKEN_LOGO_URLS.ZETA,
     width: 32,
     height: 32,
-    format: "jpeg"
+    format: "jpeg",
   }, // ZetaChain Mainnet
   7001: {
     url: TOKEN_LOGO_URLS.ZETA,
     width: 32,
     height: 32,
-    format: "jpeg"
+    format: "jpeg",
   }, // ZetaChain Testnet
   1: {
     url: TOKEN_LOGO_URLS.ETH,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Ethereum Mainnet
   11155111: {
     url: TOKEN_LOGO_URLS.ETH,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Ethereum Sepolia Testnet
   8453: {
     url: TOKEN_LOGO_URLS.BASE,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Base Mainnet
   84532: {
     url: TOKEN_LOGO_URLS.BASE,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Base Testnet
   137: {
     url: TOKEN_LOGO_URLS.POL,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Polygon Mainnet
   80002: {
     url: TOKEN_LOGO_URLS.POL,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Polygon Amoy Testnet
   56: {
     url: TOKEN_LOGO_URLS.BNB,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // BSC Mainnet
   97: {
     url: TOKEN_LOGO_URLS.BNB,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // BSC Testnet
   42161: {
     url: TOKEN_LOGO_URLS.ARB,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Arbitrum Mainnet
   421613: {
     url: TOKEN_LOGO_URLS.ARB,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Arbitrum Sepolia Testnet
   43114: {
     url: TOKEN_LOGO_URLS.AVAX,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Avalanche Mainnet
   43113: {
     url: TOKEN_LOGO_URLS.AVAX,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Avalanche Fuji Testnet
   900: {
     url: TOKEN_LOGO_URLS.SOL,
     width: 32,
     height: 32,
-    format: "png"
+    format: "png",
   }, // Solana Mainnet;
-}
+};
 
 // Load environment variables
 export const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV || "mainnet"; // Default to mainnet if not set
 
 // Define RPC URLs
-export const zetaRpcUrl = deployEnv === "testnet"
-  ? process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA_TESTNET || ""
-  : process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA || "";
+export const zetaRpcUrl =
+  deployEnv === "testnet"
+    ? process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA_TESTNET || ""
+    : process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA || "";
 
 const sepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
-const baseSepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
-const polygonAmoyRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
-const bscTestnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC_TESTNET || "";
+const baseSepoliaRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
+const polygonAmoyRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
+const bscTestnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC_TESTNET || "";
 const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
 const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
-const polygonMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
+const polygonMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
-const avalancheMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
-const avalancheFujiRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
-const arbitrumMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
-const arbitrumSepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_SEPOLIA || "";
+const avalancheMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
+const avalancheFujiRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
+const arbitrumMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
+const arbitrumSepoliaRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_SEPOLIA || "";
 
-export const solanaRpcUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || "" : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
-export const crossChainTxUrl = deployEnv == "testnet" ? process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API_TEST || "" : process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API || "";
+export const solanaRpcUrl =
+  deployEnv == "testnet"
+    ? process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT_DEVNET || ""
+    : process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || "";
+export const crossChainTxUrl =
+  deployEnv == "testnet"
+    ? process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API_TEST || ""
+    : process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API || "";
 
 export enum CHAIN_ID {
-  zetachain = deployEnv === 'testnet' ? 7001 : 7000,
-  ethereum = deployEnv === 'testnet' ? 11155111 : 1,
-  base = deployEnv === 'testnet' ? 84532 : 8453,
-  polygon = deployEnv === 'testnet' ? 80001 : 137,
-  bsc = deployEnv === 'testnet' ? 97 : 56,
-  solana = deployEnv === 'testnet' ? 901 : 900,
-  arbitrum = deployEnv === 'testnet' ? 421613 : 42161,
-  avalanche = deployEnv === 'testnet' ? 43113 : 43114,
+  zetachain = deployEnv === "testnet" ? 7001 : 7000,
+  ethereum = deployEnv === "testnet" ? 11155111 : 1,
+  base = deployEnv === "testnet" ? 84532 : 8453,
+  polygon = deployEnv === "testnet" ? 80001 : 137,
+  bsc = deployEnv === "testnet" ? 97 : 56,
+  solana = deployEnv === "testnet" ? 901 : 900,
+  arbitrum = deployEnv === "testnet" ? 421613 : 42161,
+  avalanche = deployEnv === "testnet" ? 43113 : 43114,
 }
 
 export enum MulticallVersion {
   V1 = 1,
   V2 = 2,
-  V3 = 3
+  V3 = 3,
 }
 
-export const MULTICALL_ADDRS = {
+export const MULTICALL_ADDRS: Record<
+  number,
+  { version: MulticallVersion; address: string }
+> = {
   7001: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // ZetaChain Testnet
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // ZetaChain Testnet
   },
   7000: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // ZetaChain
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // ZetaChain
   },
   1: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // mainnet
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // mainnet
   },
   11155111: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Sepolia Testnet
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Sepolia Testnet
   },
   80001: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // mumbai
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // mumbai
   },
   137: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // polygon
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // polygon
   },
   56: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // BSC mainnet
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // BSC mainnet
   },
   97: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // BSC testnet
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // BSC testnet
   },
   42161: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Arbitrum One
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Arbitrum One
   },
   421613: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Arbitrum Sepolia Testnet
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Arbitrum Sepolia Testnet
   },
   43113: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Avalanche Fuji TestneFuji
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Avalanche Fuji TestneFuji
   },
   43114: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Avax
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Avax
   },
   84532: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Base Sepolia Testnet
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Base Sepolia Testnet
   },
   8453: {
     version: MulticallVersion.V3,
-    address: '0xcA11bde05977b3631167028862bE2a173976CA11' // Base
-  }
-}
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Base
+  },
+};
 
 // Define ZetaChain configuration
 const zetaChain = defineChain({
@@ -240,9 +258,10 @@ const zetaChain = defineChain({
   explorers: [
     {
       name: "Zeta Explorer",
-      url: deployEnv === "testnet"
-        ? "https://zetachain-testnet.blockscout.com/"
-        : "https://explorer.zetachain.com",
+      url:
+        deployEnv === "testnet"
+          ? "https://zetachain-testnet.blockscout.com/"
+          : "https://explorer.zetachain.com",
       standard: "EIP3091",
     },
   ],
@@ -266,9 +285,10 @@ const ethereumChain = defineChain({
   explorers: [
     {
       name: "Etherscan",
-      url: deployEnv === "testnet"
-        ? "https://sepolia.etherscan.io"
-        : "https://etherscan.io",
+      url:
+        deployEnv === "testnet"
+          ? "https://sepolia.etherscan.io"
+          : "https://etherscan.io",
       standard: "EIP3091",
     },
   ],
@@ -292,9 +312,10 @@ const baseChain = defineChain({
   explorers: [
     {
       name: "Base Explorer",
-      url: deployEnv === "testnet"
-        ? "https://base-sepolia.blockscout.com"
-        : "https://explorer.base.org",
+      url:
+        deployEnv === "testnet"
+          ? "https://base-sepolia.blockscout.com"
+          : "https://explorer.base.org",
       standard: "EIP3091",
     },
   ],
@@ -318,9 +339,10 @@ const polygonChain = defineChain({
   explorers: [
     {
       name: "Polygonscan",
-      url: deployEnv === "testnet"
-        ? "https://mumbai.polygonscan.com"
-        : "https://polygonscan.com",
+      url:
+        deployEnv === "testnet"
+          ? "https://mumbai.polygonscan.com"
+          : "https://polygonscan.com",
       standard: "EIP3091",
     },
   ],
@@ -344,9 +366,10 @@ const bscChain = defineChain({
   explorers: [
     {
       name: "BSCScan",
-      url: deployEnv === "testnet"
-        ? "https://testnet.bscscan.com"
-        : "https://bscscan.com",
+      url:
+        deployEnv === "testnet"
+          ? "https://testnet.bscscan.com"
+          : "https://bscscan.com",
       standard: "EIP3091",
     },
   ],
@@ -359,9 +382,7 @@ const solanaChain = defineChain({
   name: deployEnv === "testnet" ? "devnet" : "mainnet",
   shortName: "sol",
   chain: "Solana",
-  rpc: [
-    solanaRpcUrl
-  ],
+  rpc: [solanaRpcUrl],
   nativeCurrency: {
     name: "Solana",
     symbol: "SOL",
@@ -370,9 +391,10 @@ const solanaChain = defineChain({
   explorers: [
     {
       name: "Solana Explorer",
-      url: deployEnv === "testnet"
-        ? "https://explorer.solana.com/?cluster=devnet"
-        : "https://explorer.solana.com/",
+      url:
+        deployEnv === "testnet"
+          ? "https://explorer.solana.com/?cluster=devnet"
+          : "https://explorer.solana.com/",
       standard: "none",
     },
   ],
@@ -395,9 +417,10 @@ const avalancheChain = defineChain({
   explorers: [
     {
       name: "SnowTrace",
-      url: deployEnv === "testnet"
-        ? "https://testnet.snowtrace.io"
-        : "https://snowtrace.io",
+      url:
+        deployEnv === "testnet"
+          ? "https://testnet.snowtrace.io"
+          : "https://snowtrace.io",
       standard: "EIP3091",
     },
   ],
@@ -411,7 +434,9 @@ const arbitrumChain = defineChain({
   shortName: "arb",
   chain: "Arbitrum",
   icon: CHAIN_ICONS[42161],
-  rpc: [deployEnv === "testnet" ? arbitrumSepoliaRpcUrl : arbitrumMainnetRpcUrl],
+  rpc: [
+    deployEnv === "testnet" ? arbitrumSepoliaRpcUrl : arbitrumMainnetRpcUrl,
+  ],
   nativeCurrency: {
     name: "Ether",
     symbol: "ETH",
@@ -420,9 +445,10 @@ const arbitrumChain = defineChain({
   explorers: [
     {
       name: "Arbiscan",
-      url: deployEnv === "testnet"
-        ? "https://sepolia.arbiscan.io"
-        : "https://arbiscan.io",
+      url:
+        deployEnv === "testnet"
+          ? "https://sepolia.arbiscan.io"
+          : "https://arbiscan.io",
       standard: "EIP3091",
     },
   ],
@@ -431,9 +457,26 @@ const arbitrumChain = defineChain({
 });
 
 // Define supported chains based on the deployment environment
-export const SUPPORTED_CHAINS = deployEnv === "testnet"
-  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain] // always put Zetachain first
-  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain]; // always put Zetachain first
+export const SUPPORTED_CHAINS =
+  deployEnv === "testnet"
+    ? [
+        zetaChain,
+        ethereumChain,
+        baseChain,
+        polygonChain,
+        bscChain,
+        avalancheChain,
+        arbitrumChain,
+      ] // always put Zetachain first
+    : [
+        zetaChain,
+        ethereumChain,
+        baseChain,
+        polygonChain,
+        bscChain,
+        avalancheChain,
+        arbitrumChain,
+      ]; // always put Zetachain first
 
 export const chainConfigs = {
   [CHAIN_ID.zetachain]: zetaChain,
@@ -444,9 +487,7 @@ export const chainConfigs = {
   [CHAIN_ID.solana]: solanaChain,
   [CHAIN_ID.arbitrum]: arbitrumChain,
   [CHAIN_ID.avalanche]: avalancheChain,
-}
-
-
+};
 
 // Define approved tokens per chain
 export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
@@ -668,7 +709,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-    }
+    },
   ],
   1: [
     {
@@ -679,7 +720,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
       symbol: "USDC (ETH)",
@@ -689,7 +731,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a"],
     },
     {
       symbol: "USDT (ETH)",
@@ -699,7 +742,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7"],
     },
   ],
   11155111: [
@@ -711,7 +755,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
     },
     {
       symbol: "USDC (ETH)",
@@ -721,7 +766,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xcC683A782f4B30c138787CB5576a86AF66fdc31d"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xcC683A782f4B30c138787CB5576a86AF66fdc31d"],
     },
   ],
   8453: [
@@ -733,7 +779,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x1de70f3e971B62A0707dA18100392af14f7fB677"]
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x1de70f3e971B62A0707dA18100392af14f7fB677"],
     },
     {
       symbol: "USDC (BASE)",
@@ -743,7 +790,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x96152E6180E085FA57c7708e18AF8F05e37B479D"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x96152E6180E085FA57c7708e18AF8F05e37B479D"],
     },
   ],
   84532: [
@@ -755,7 +803,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 3904,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD"]
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD"],
     },
   ],
   137: [
@@ -767,7 +816,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 0.7159,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501"],
     },
     {
       symbol: "USDC (POL)",
@@ -777,7 +827,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xfC9201f4116aE6b054722E10b98D904829b469c3"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xfC9201f4116aE6b054722E10b98D904829b469c3"],
     },
     {
       symbol: "USDT (POL)",
@@ -787,7 +838,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xdbfF6471a79E5374d771922F2194eccc42210B9F"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xdbfF6471a79E5374d771922F2194eccc42210B9F"],
     },
   ],
   80002: [
@@ -799,7 +851,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 0.7159,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x777915D031d1e8144c90D025C594b3b8Bf07a08d"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x777915D031d1e8144c90D025C594b3b8Bf07a08d"],
     },
   ],
   56: [
@@ -811,7 +864,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb"],
     },
     {
       symbol: "USDC (BNB)",
@@ -821,7 +875,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0"],
     },
     {
       symbol: "USDT (BNB)",
@@ -831,7 +886,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F"],
     },
   ],
   97: [
@@ -843,7 +899,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"],
     },
     {
       symbol: "USDC (BNB)",
@@ -853,7 +910,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7"],
     },
   ],
   900: [
@@ -865,7 +923,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x4bC32034caCcc9B7e02536945eDbC286bACbA073"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x4bC32034caCcc9B7e02536945eDbC286bACbA073"],
     },
     {
       symbol: "USDC (SOL)",
@@ -875,7 +934,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x8344d6f84d26f998fa070BbEA6D2E15E359e2641"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x8344d6f84d26f998fa070BbEA6D2E15E359e2641"],
     },
     {
       symbol: "USDT (SOL)",
@@ -885,7 +945,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xEe9CC614D03e7Dbe994b514079f4914a605B4719"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xEe9CC614D03e7Dbe994b514079f4914a605B4719"],
     },
     {
       symbol: "CBBTC (SOL)",
@@ -895,8 +956,9 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 97303,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x54Bf2B1E91FCb56853097BD2545750d218E245e1"]
-    }
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x54Bf2B1E91FCb56853097BD2545750d218E245e1"],
+    },
   ],
   42161: [
     {
@@ -907,7 +969,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734, // TODO - is this price field even being used?
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xA614Aebf7924A3Eb4D066aDCA5595E4980407f1d"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xA614Aebf7924A3Eb4D066aDCA5595E4980407f1d"],
     },
     {
       symbol: "USDC (ARB)",
@@ -917,7 +980,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0327f0660525b15Cdb8f1f5FBF0dD7Cd5Ba182aD"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x0327f0660525b15Cdb8f1f5FBF0dD7Cd5Ba182aD"],
     },
     {
       symbol: "USDT (ARB)",
@@ -927,7 +991,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x0ca762FA958194795320635c11fF0C45C6412958"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x0ca762FA958194795320635c11fF0C45C6412958"],
     },
   ],
   43114: [
@@ -939,7 +1004,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 734, // TODO - is this price field even being used?
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xE8d7796535F1cd63F0fe8D631E68eACe6839869B"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xE8d7796535F1cd63F0fe8D631E68eACe6839869B"],
     },
     {
       symbol: "USDC (AVAX)",
@@ -949,7 +1015,8 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xa52Ad01A1d62b408fFe06C2467439251da61E4a9"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0xa52Ad01A1d62b408fFe06C2467439251da61E4a9"],
     },
     {
       symbol: "USDT (AVAX)",
@@ -959,12 +1026,11 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794"],
+      ZRC20equivalent:
+        ZRC20_TOKENS_BY_ADDRESS["0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794"],
     },
   ],
 };
-
-
 
 // Account abstraction configuration
 export const ACCOUNT_ABSTRACTION_CONFIG = {
@@ -976,34 +1042,48 @@ export const ACCOUNT_ABSTRACTION_CONFIG = {
 export const HERMES_URL = "https://hermes.pyth.network/";
 export const PRICE_IDS: { [key: string]: string } = {
   // Base tokens
-  "ETH": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  "BNB": "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
-  "POL": "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
-  "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "SOL": "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
-  "COMP": "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
-  "AVAX": "0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7",
-  "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
-  "CVX": "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
+  ETH: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  BNB: "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
+  POL: "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
+  USDC: "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  USDT: "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  SOL: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
+  COMP: "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
+  AVAX: "0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7",
+  CRV: "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
+  CVX: "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
 
   // Chain-specific tokens - using the "(CHAIN)" format
-  "ETH (BASE)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  "USDC (BASE)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "ETH (ARB)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  "USDC (ARB)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (ARB)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (ETH)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (ETH)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (POL)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (POL)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (BNB)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (BNB)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (SOL)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (SOL)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (AVAX)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (AVAX)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
-
+  "ETH (BASE)":
+    "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  "USDC (BASE)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "ETH (ARB)":
+    "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  "USDC (ARB)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (ARB)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (ETH)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (ETH)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (POL)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (POL)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (BNB)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (BNB)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (SOL)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (SOL)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (AVAX)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (AVAX)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
 };
 
 export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
@@ -1015,7 +1095,7 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   [CHAIN_ID.solana]: "https://solscan.io",
   [CHAIN_ID.arbitrum]: "https://arbiscan.io",
   [CHAIN_ID.avalanche]: "https://snowtrace.io",
-}
+};
 
 export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
   // EVM Chains with unique gateway
