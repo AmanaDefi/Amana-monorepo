@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
@@ -49,7 +49,7 @@ const VaultsDetailContainer: React.FC<{
         console.log(`VaultsDetailContainer: Resetting selected token for new vault`);
         setSelectedToken(undefined);
       }
-    }, [vaultID, vaults]);
+    }, [vaultID]);
 
     const strategyExplorerBaseUrl = useMemo(() => {
       if (!vaultData?.protocol?.chainId) return "";
@@ -69,10 +69,12 @@ const VaultsDetailContainer: React.FC<{
     useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
 
     // Handle token selection from child components
-    const handleTokenSelect = (token: Token) => {
-      console.log(`VaultsDetailContainer: Token selection changed to ${token.symbol}`);
+    const handleTokenSelect = useCallback((token: Token) => {
+      console.log(
+        `VaultsDetailContainer: Token selection changed to ${token.symbol}`
+      );
       setSelectedToken(token);
-    };
+    }, []);
 
     return (
 
