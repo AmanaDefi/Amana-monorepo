@@ -21,10 +21,9 @@ import {
   ZC_USDT_AVAX_ADDRESS,
   ZC_AVAX_AVAX_ADDRESS,
   ZC_USDC_AVAX_ADDRESS,
-} from "../../../constants";
+} from "./index";
 import { Token } from "../types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
-
 
 export const ZRC20_TOKENS_BY_ADDRESS: { [address: string]: Token } = {
   [ZC_ETH_ETH_ADDRESS]: {
