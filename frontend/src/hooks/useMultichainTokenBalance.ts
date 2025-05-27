@@ -1,4 +1,3 @@
-import { zeroSolAddress } from "@/constants/chainConfig";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Balance, Token } from "@/types/types";

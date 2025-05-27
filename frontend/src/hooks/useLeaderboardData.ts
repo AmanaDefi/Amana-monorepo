@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query"
 export const useLeaderboardData = (searchParams: SearchParams): { data: any, isLoading: boolean, error: any } => {
     const { data, isLoading, error } = useQuery({
         queryKey: ["LeaderboardData", searchParams],
-        queryFn: () => new ApiService().getLeaderboardData(searchParams)
+        queryFn: () => new ApiService().getLeaderboardData(searchParams),
+        staleTime: 3 * 1000 * 60,
     })
 
     return { data, isLoading, error }

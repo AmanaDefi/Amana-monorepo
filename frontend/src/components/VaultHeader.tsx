@@ -247,7 +247,7 @@ export default function VaultHeader({
           <LargeCardStat
             id="wallet"
             label="Your Wallet"
-            value={`${formattedWalletBalance} ${symbol}`}
+            value={`${1000} ${symbol}`}
             secondaryValue={`$ ${formatCurrency(
               Number(walletTokenBalance.formatted) * price
             )}`}

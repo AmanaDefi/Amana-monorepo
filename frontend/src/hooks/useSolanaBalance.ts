@@ -16,7 +16,7 @@ export default function useSolanaBalance() {
   } = useQuery({
     queryKey: ["SolBalance", publicKey?.toBase58(), connected],
     queryFn: async () => {
-     
+      console.log('solana react query')
       if (publicKey) {
         try {
           const balance = await connection.getBalance(publicKey);
@@ -29,7 +29,8 @@ export default function useSolanaBalance() {
         }
       } else return { value: 0n, formatted: "0" };
     },
-    enabled: !!publicKey && connected === true,
+    staleTime: 1000 * 30,
+    enabled: !!publicKey && connected === true && !!connection,
   });
 
   return { balance: data, refetch };

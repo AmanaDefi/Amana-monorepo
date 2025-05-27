@@ -19,7 +19,6 @@ import {
   SolflareWalletAdapter,
   TrustWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { solanaRpcUrl } from "@/constants/chainConfig";
 
 // imports here
 
