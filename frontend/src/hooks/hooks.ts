@@ -152,29 +152,26 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         : debouncedUserAddress;
       try {
         if (vault && vault.id) {
-          const balance = await fetchUserVaultBalance(
-            address as Address,
-            vault.id as Address
-          );
-
-          const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
-            vault.inputToken.decimals,
-            address as Address,
-            vault?.id as Address
-          );
+          const [balance, newTotalAssetsinToken, newTotalAssets] =
+            await Promise.all([
+              fetchUserVaultBalance(address as Address, vault.id as Address),
+              fetchUserVaultMaxRedeem(
+                vault.inputToken.decimals,
+                address as Address,
+                vault.id as Address
+              ),
+              fetchTotalAssets(vault.id as Address),
+            ]);
 
           setUserVaultBalance(balance);
-
-          const newTotalAssets = await fetchTotalAssets(vault.id as Address);
           setVaultTotalAsset(newTotalAssets);
-
           setVaultTotalAssetinToken(newTotalAssetsinToken);
         }
       } catch (error) {
         console.error("Error updating vault balances and total assets:", error);
       }
     };
-    if (userAddress && vault) {
+    if (debouncedUserAddress && vault) {
       updateVaultBalanceAndTotal();
     }
   }, [vault, debouncedUserAddress, transactionCompleted]);
