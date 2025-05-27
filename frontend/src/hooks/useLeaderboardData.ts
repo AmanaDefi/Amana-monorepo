@@ -1,3 +1,4 @@
+import { ONE_MINUTE } from "@/constants"
 import { ApiService } from "@/service"
 import { SearchParams } from "@/types/types"
 import { useQuery } from "@tanstack/react-query"
@@ -6,7 +7,7 @@ export const useLeaderboardData = (searchParams: SearchParams): { data: any, isL
     const { data, isLoading, error } = useQuery({
         queryKey: ["LeaderboardData", searchParams],
         queryFn: () => new ApiService().getLeaderboardData(searchParams),
-        staleTime: 3 * 1000 * 60,
+        staleTime: 3 * ONE_MINUTE
     })
 
     return { data, isLoading, error }

@@ -4,7 +4,6 @@ import LargeCardStat from "@/components/common/LargeCardStat";
 import Image from "next/image";
 import {
   determineVaultTokenFromApprovedTokens,
-  formatBalance,
   formatCurrency,
 } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -17,7 +16,6 @@ export default function VaultHeader({
   vaultData,
   userVaultBalance,
   selectedVaultId,
-  vaultTotalAsset,
   vaultAPYs,
   transactionCompleted,
   selectedToken,
@@ -98,7 +96,6 @@ export default function VaultHeader({
             const vaultTokenParts = vaultData?.inputToken?.symbol.split('.') || [];
             const vaultTokenSuffix = vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
             
-            
             // Sort by our prioritization logic
             const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
               const aSuffix = a.symbol.split('.')[1] || '';
@@ -145,7 +142,7 @@ export default function VaultHeader({
     }
   }, [activeChain, vaultData.id, vaultData.inputToken, selectedToken, inputToken]);
 
-  const { balance: walletTokenBalance, fetchBalance } =
+  const { balance: walletTokenBalance } =
     useMultichainTokenBalance(inputToken);
 
   const symbol = inputToken?.symbol || "";
@@ -154,13 +151,6 @@ export default function VaultHeader({
 
   // Format wallet balance according to token type
   const formattedWalletBalance = formatTokenBalance(walletTokenBalance.formatted, symbol);
-
-  // Refresh wallet balance when input token changes
-  useEffect(() => {
-    if (inputToken) {
-      fetchBalance();
-    }
-  }, [inputToken, fetchBalance]);
 
   useEffect(() => {
     // Update deposit amount whenever the vault balance changes
@@ -247,7 +237,7 @@ export default function VaultHeader({
           <LargeCardStat
             id="wallet"
             label="Your Wallet"
-            value={`${1000} ${symbol}`}
+            value={`${formattedWalletBalance} ${symbol}`}
             secondaryValue={`$ ${formatCurrency(
               Number(walletTokenBalance.formatted) * price
             )}`}
@@ -259,15 +249,13 @@ export default function VaultHeader({
             value={
               Number.isNaN(
                 Number(
-                  vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                    ?.APY7d
+                  vaultAPYs[0]?.APY7d
                 )
               )
                 ? "0%"
                 : `${(
                     Number(
-                      vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                        ?.APY7d
+                      vaultAPYs[0]?.APY7d
                     ) * 100
                   ).toFixed(2)}%`
             }

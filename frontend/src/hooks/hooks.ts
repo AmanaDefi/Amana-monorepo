@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
-  calculateAaveFlashAPY,
   calculateCompoundAPY,
   calculateMoonwellAPY,
   calculateVenusAPY,
   calculateVenusRewardsAPY,
   calculateEddyAPY,
   calculateBeefyAPY,
-  calculateCurveAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
@@ -29,7 +27,6 @@ import {
   VaultData,
   Token,
 } from "@/types/types";
-import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import {
   CHAIN_ID,
@@ -40,19 +37,21 @@ import {
 import { useContractEvents } from "thirdweb/react";
 import {
   getOnlyTokenSymbol,
-  getSolanaEVMAddress,
   isSolanaAddress,
   isZetachain,
 } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
-import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
+import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { EMPTY_BALANCE } from "@/utils/helpers";
-import { ethers, Interface, JsonRpcProvider } from "ethers";
-import { erc20Abi } from "viem";
+import { ethers, Interface } from "ethers";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { ApiService } from "@/service";
+
+export const UPDATE_VAULT_TIMESTAMP = 'updateCashTimestamp';
+export const HAS_CHANGE_DEPOSIT = 'has_deposited';
+const CASHED_VAULT_APIS = 'cashedVaultApis';
+const CASH_VAULT_INTERVAL_IN_MIN = 0.5;
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -69,8 +68,14 @@ export const useUpdateVaultBalanceAndTotal = (
   const vaultInterface = useMemo(() => new Interface(vaultAbi), []);
 
   const update = useCallback(async () => {
+    const now = Date.now();
+    const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
+    const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
+    if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true') {
+      return; //Update only if interval > 5 min or if user has deposited in Pool
+    }
+
     if (!provider || !walletAddress || vaults.length === 0) return;
-    console.time("updateVaultBalanceAndTotal");
     let address = isSolanaAddress(walletAddress)
       ? "0x77706672467938396e78347A4B734c5066653142"
       : walletAddress;
@@ -178,7 +183,9 @@ export const useUpdateVaultBalanceAndTotal = (
         totalAssetsinToken,
       })),
     );
-  }, [provider, vaults, walletAddress]);
+    localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
+    localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
+  }, [provider, vaults, walletAddress, localStorage]);
   useEffect(() => {
     update();
   }, [update]);
@@ -236,16 +243,20 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
 };
 
 export const useUpdateAPYs = (
-  vaults: VaultData[],
+  vaults: VaultData[] | null,
   setVaultAPYs: (vaultAPYs: { vaultId: string; APY7d: number }[]) => void,
   setLoading: (loading: boolean) => void,
   crvTokenPrice: number,
   cvxTokenPrice: number,
   ethTokenPrice: number,
   compTokenPrice: number,
+  isFromVaultGrid?: boolean
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
+      if (!vaults) return;
+
+      const now = Date.now();
       try {
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
@@ -263,19 +274,16 @@ export const useUpdateAPYs = (
               let APY7d = 0;
               let RewardsAPY = 0;
               if (vault.protocol.name === "Aave") {
-                console.log(111);
                 APY7d = await calculateAaveAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "ZeroLend") {
-                console.log(222);
                 APY7d = await calculateAaveAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Compound") {
-                console.log(333);
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
@@ -292,7 +300,6 @@ export const useUpdateAPYs = (
                 vault.protocol.name === "Euler" ||
                 vault.protocol.name === "Fluid"
               ) {
-                console.log(444);
                 // TO DO This only works for Base right now - it's hardcoded
 
                 APY7d = await calculateMoonwellAPY(
@@ -300,7 +307,6 @@ export const useUpdateAPYs = (
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Venus") {
-                console.log(555);
                 APY7d = await calculateVenusAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
@@ -311,23 +317,19 @@ export const useUpdateAPYs = (
                 );
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
-                console.log(666);
                 APY7d = await calculateEddyAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Beefy") {
-                console.log(777);
                 APY7d = await calculateBeefyAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Curve-Convex") {
-                console.log(888);
                 // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
                   if (strategyChain.id === 1) {
-                    console.log(881);
                     RewardsAPY = await calculateConvexEthereumRewardsAPY(
                       receiptTokenAddress as Address,
                       vault.inputToken as Token,
@@ -338,7 +340,6 @@ export const useUpdateAPYs = (
                       ethTokenPrice,
                     );
                   } else if (strategyChain.id === 42161) {
-                    console.log(882);
                     RewardsAPY = await calculateConvexArbitrumRewardsAPY(
                       receiptTokenAddress as Address,
                       vault.inputToken as Token,
@@ -366,6 +367,11 @@ export const useUpdateAPYs = (
         );
 
         setVaultAPYs(updatedVaultAPYs);
+        if (isFromVaultGrid) {
+          localStorage.setItem(CASHED_VAULT_APIS, JSON.stringify(updatedVaultAPYs))
+          localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
+          localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
+        }
       } finally {
         setLoading(false); // Stop the loading state after updating APYs
       }
@@ -373,16 +379,31 @@ export const useUpdateAPYs = (
 
     // Trigger the function if vaults and prices are available
     if (
+      vaults &&
       vaults.length > 0 &&
       crvTokenPrice > 0 &&
       cvxTokenPrice > 0 &&
       ethTokenPrice > 0 &&
       compTokenPrice > 0
     ) {
-      setLoading(true);
-      updateAPYs();
+      const now = Date.now();
+      const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
+      const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
+  
+      if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true' && isFromVaultGrid) {
+        const cashedVaultApis = localStorage.getItem(CASHED_VAULT_APIS);
+        if (cashedVaultApis) {
+          setVaultAPYs(JSON.parse(cashedVaultApis));
+        }
+        setLoading(false);
+        return; //Update only if interval > 5 min or if user has deposited in Pool
+      } else {
+        setLoading(true);
+        updateAPYs();
+      }
+    
     }
-  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice]);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, localStorage, isFromVaultGrid]);
 };
 
 export const useInteractionEvents = ({

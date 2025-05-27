@@ -1,5 +1,5 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import { solanaRpcUrl } from "@/constants/chainConfig";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "@/utils/utils";
@@ -16,7 +16,6 @@ export default function useSolanaBalance() {
   } = useQuery({
     queryKey: ["SolBalance", publicKey?.toBase58(), connected],
     queryFn: async () => {
-      console.log('solana react query')
       if (publicKey) {
         try {
           const balance = await connection.getBalance(publicKey);
