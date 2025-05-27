@@ -3,10 +3,11 @@ import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { solanaRpcUrl } from "@/constants/chainConfig";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "@/utils/utils";
+import { useMemo } from "react";
 
 export default function useSolanaBalance() {
   const { publicKey, connected } = useWallet();
-  const connection = new Connection(solanaRpcUrl);
+  const connection = useMemo(() => new Connection(solanaRpcUrl), []);
 
   const {
     data = { value: 0n, formatted: "0" },
