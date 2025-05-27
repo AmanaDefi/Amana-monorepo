@@ -1,5 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { MAINNET_PROGRAM_ID, DEVNET_PROGRAM_ID } from "@raydium-io/raydium-sdk"
+import SolanaConnectionSingleton from "@/utils/solanaSingleton";
 
 
 export const PROGRAM_ID = new PublicKey("EFj2jrBRHR96ScgYwGgUkKquuaL5g8eJivSkzETUHo9e")
@@ -18,8 +19,8 @@ export const USDC = cluster == 'mainnet-beta' ? new PublicKey("EPjFWdd5AufqSSqeM
 export const MARKET_ID = new PublicKey("7LdXubmYtbbJNyBtzmRSEUwoZ8gSfg1WwxMv4n48sHrv")
 export const USDC_MARKET_ID = new PublicKey("J3unQ8aZWKaEa8GGQZ6MYi8RVpEJvmAf7Ko5YeY9XHnW")
 
-export const RPC_URL = cluster == "mainnet-beta" ? "https://mainnet.helius-rpc.com/?api-key=36fe5fc9-8598-4302-a28f-a93d9cc441b7" :"https://devnet.helius-rpc.com/?api-key=44b7171f-7de7-4e68-9d08-eff1ef7529bd" ;
-export const connection = new Connection(RPC_URL, 'confirmed'); 
+// export const RPC_URL = cluster == "mainnet-beta" ? "https://mainnet.helius-rpc.com/?api-key=36fe5fc9-8598-4302-a28f-a93d9cc441b7" :"https://devnet.helius-rpc.com/?api-key=44b7171f-7de7-4e68-9d08-eff1ef7529bd" ;
+export const connection = SolanaConnectionSingleton.getInstance(); 
 export const raydiumProgramId =
 cluster == "mainnet-beta" ? MAINNET_PROGRAM_ID : DEVNET_PROGRAM_ID;
 export const ammProgram =
