@@ -154,7 +154,8 @@ export const useUpdateVaultBalanceAndTotal = (
       const maxRed = assetResults[2 * i + 1].success
         ? BigInt(assetResults[2 * i + 1].returnData)
         : 0n;
-      const totalAssetsStr = vaultDataMap[vault.id]?.toString() ?? "Error";
+      const totalAssetsStr =
+        vaultDataMap[vault.id].total_assets?.toString() ?? "Error";
 
       return {
         vaultId: vault.id,
