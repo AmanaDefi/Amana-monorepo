@@ -34,7 +34,6 @@ import {
   CHAIN_ID,
   MULTICALL_ADDRS,
   SUPPORTED_CHAINS,
-  zetaRpcUrl,
 } from "@/constants/chainConfig";
 import { useContractEvents } from "thirdweb/react";
 import {
@@ -45,10 +44,13 @@ import {
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 import { ethers, Interface } from "ethers";
+import { erc20Abi } from "viem";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { ApiService } from "@/service";
+import { zetaProvider } from "@/utils/providers";
 
 export const UPDATE_VAULT_TIMESTAMP = 'updateCashTimestamp';
 export const HAS_CHANGE_DEPOSIT = 'has_deposited';
@@ -62,10 +64,7 @@ export const useUpdateVaultBalanceAndTotal = (
   setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
 ) => {
-  const provider = useMemo(
-    () => new ethers.JsonRpcProvider(zetaRpcUrl, CHAIN_ID.zetachain),
-    [],
-  );
+  const provider = zetaProvider;
   const mcInterface = useMemo(() => new Interface(multicall3Abi), []);
   const vaultInterface = useMemo(() => new Interface(vaultAbi), []);
 

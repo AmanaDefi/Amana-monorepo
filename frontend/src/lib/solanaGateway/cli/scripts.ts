@@ -15,7 +15,7 @@ import {
   createSolanaDepositTx,
   createSolanaWithdrawalTx,
 } from "./lib/scripts";
-import { solanaConnection } from "@/utils/utils";
+import SolanaConnectionSingleton from "@/utils/solanaSingleton";
 
 interface ISetConnectionParams {
   cluster: web3.Cluster; // env from CLI global params
@@ -36,7 +36,7 @@ export class SolanaZetaClient {
 
   constructor(wallet: Wallet) {
     this.programId = new anchor.web3.PublicKey(IDL.address);
-    this.connection = solanaConnection
+    this.connection = SolanaConnectionSingleton.getInstance();
 
     this.wallet = wallet;
 
@@ -52,7 +52,6 @@ export class SolanaZetaClient {
 
   solanaDeposit = async (amount: BigInt, recipient: string) => {
     try {
-      console.log(`Depositing ${amount} SOL to ${recipient}`)
       const tx = new Transaction().add(
         await createSolanaDepositTx(this.wallet.publicKey, Number(amount), recipient, this.program)
       );
@@ -67,7 +66,6 @@ export class SolanaZetaClient {
       });
       return txId;
     } catch (e) {
-      console.log(e)
       throw new Error;
     }
   }
@@ -98,7 +96,6 @@ export class SolanaZetaClient {
 
       return signature;
     } catch (e) {
-      console.log(e);
       throw new Error(`Transaction failed`);
     }
   }
@@ -127,7 +124,6 @@ export class SolanaZetaClient {
 
       return signature;
     } catch (error) {
-      console.log(error);
       throw new Error("Transacction Failed")
     }
   }
@@ -155,7 +151,6 @@ export class SolanaZetaClient {
 
       return signature;
     } catch (error) {
-      console.log(error);
       throw new Error(`Transaction failed`);
     }
   }
