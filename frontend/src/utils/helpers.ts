@@ -1,7 +1,6 @@
 import { Balance } from "@/types/types";
 
 export const NumberFormatter = Intl.NumberFormat("en", {
-  //@ts-ignore
   notation: "compact",
 });
 

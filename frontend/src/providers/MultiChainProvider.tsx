@@ -159,8 +159,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     : EMPTY_BALANCE;
 
   const refetchBalance = () => {
-    refetchSolBalance();
-    refetchEthBalance();
+    if (activeChain?.id === CHAIN_ID.ethereum) {
+      refetchEthBalance();
+    } else if (activeChain?.id === CHAIN_ID.solana) {
+      refetchSolBalance();
+    }
   };
 
   useEffect(() => {
@@ -177,9 +180,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [account, publicKey]);
 
   const switchToChain = async (chain: Chain) => {
-    console.log(`Switching to chain: ${chain.id} (${chain.name})`);
-    console.log(`Current chain: ${activeChain?.id} (${activeChain?.name})`);
-
     try {
       if (chain.id === CHAIN_ID.solana) {
         setSelectedChain("solana");
@@ -212,9 +212,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
               const checkChain = setInterval(() => {
                 checkAttempts++;
                 // Use the chain from thirdweb directly to verify the wallet's actual chain
-                console.log(
-                  `Checking chain switch: Wallet chain is ${chain?.id}, our ref is ${latestChainRef.current}`
-                );
 
                 // Check BOTH the ref (our tracked value) and the thirdweb chain value
                 if (latestChainRef.current === chain.id) {
