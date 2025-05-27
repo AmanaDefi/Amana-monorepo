@@ -177,8 +177,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [account, publicKey]);
 
   const switchToChain = async (chain: Chain) => {
-    console.log(`Switching to chain: ${chain.id} (${chain.name})`);
-    console.log(`Current chain: ${activeChain?.id} (${activeChain?.name})`);
+    
 
     try {
       if (chain.id === CHAIN_ID.solana) {
@@ -212,28 +211,22 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
               const checkChain = setInterval(() => {
                 checkAttempts++;
                 // Use the chain from thirdweb directly to verify the wallet's actual chain
-                console.log(
-                  `Checking chain switch: Wallet chain is ${chain?.id}, our ref is ${latestChainRef.current}`
-                );
+                
 
                 // Check BOTH the ref (our tracked value) and the thirdweb chain value
                 if (latestChainRef.current === chain.id) {
-                  console.log(
-                    `Chain switch successful: Now on chain ${chain.id}`
-                  );
+                  
                   clearInterval(checkChain);
                   resolve();
                 } else if (checkAttempts >= maxAttempts) {
-                  console.error(
-                    `Chain switch timeout: Current ref shows chain ${latestChainRef.current}`
-                  );
+                  
                   clearInterval(checkChain);
                   reject(new Error("Chain switch timeout"));
                 }
               }, 100);
             });
           } catch (error) {
-            console.error("Failed to switch chain in wallet:", error);
+            
             throw error;
           }
         } else {
@@ -241,7 +234,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     } catch (error) {
-      console.error("Error in switchToChain:", error);
+      
       throw error;
     }
   };

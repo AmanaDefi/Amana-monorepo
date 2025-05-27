@@ -41,12 +41,12 @@ const VaultsDetailContainer: React.FC<{
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
       
       if (foundVault) {
-        console.log(`VaultsDetailContainer: Switching to vault ${vaultID}`);
+       
         setVaultData(foundVault);
         
         // Explicitly reset selectedToken when vault changes
         // This is critical to ensure proper auto-selection in child components
-        console.log(`VaultsDetailContainer: Resetting selected token for new vault`);
+        
         setSelectedToken(undefined);
       }
     }, [vaultID, vaults]);
@@ -63,14 +63,14 @@ const VaultsDetailContainer: React.FC<{
     
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     const cvxTokenPrice = useTokenPriceBySymbol("CVX");
-    console.log("cvxTokenPrice: ", cvxTokenPrice)
+    
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
     useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
 
     // Handle token selection from child components
     const handleTokenSelect = (token: Token) => {
-      console.log(`VaultsDetailContainer: Token selection changed to ${token.symbol}`);
+      
       setSelectedToken(token);
     };
 

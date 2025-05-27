@@ -21,7 +21,7 @@ export default class BaseAPI {
       );
       return res.data;
     } catch (error) {
-      console.log(error);
+     
       return [];
     }
   }

@@ -12,7 +12,7 @@ export default class Blockpi {
       const res = await this.api.get(
         `/inboundHashToCctxData/${localchainHash}`
       );
-      if (res.data) console.log(res.data, "Data from blockpi");
+      if (res.data) 
       return res.data;
     } catch (error) {
       return null;

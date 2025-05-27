@@ -52,7 +52,7 @@ export class SolanaZetaClient {
 
   solanaDeposit = async (amount: BigInt, recipient: string) => {
     try {
-      console.log(`Depositing ${amount} SOL to ${recipient}`)
+      
       const tx = new Transaction().add(
         await createSolanaDepositTx(this.wallet.publicKey, Number(amount), recipient, this.program)
       );
@@ -67,7 +67,7 @@ export class SolanaZetaClient {
       });
       return txId;
     } catch (e) {
-      console.log(e)
+      
       throw new Error;
     }
   }
@@ -98,7 +98,7 @@ export class SolanaZetaClient {
 
       return signature;
     } catch (e) {
-      console.log(e);
+      
       throw new Error(`Transaction failed`);
     }
   }
@@ -127,7 +127,7 @@ export class SolanaZetaClient {
 
       return signature;
     } catch (error) {
-      console.log(error);
+      
       throw new Error("Transacction Failed")
     }
   }
@@ -155,7 +155,7 @@ export class SolanaZetaClient {
 
       return signature;
     } catch (error) {
-      console.log(error);
+      
       throw new Error(`Transaction failed`);
     }
   }

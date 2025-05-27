@@ -122,9 +122,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
     prevChainRef.current = activeChain;
 
     if (hasChainSwitched) {
-      console.log(
-        `Chain switched from ${prevChainRef.current?.id} to ${activeChain?.id}. Resetting retry count.`
-      );
+      
       retryCountRef.current = 0;
     }
 
@@ -140,14 +138,8 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       const retryDelay = 1000 * (retryCountRef.current + 1); // Increasing delay: 1s, 2s, 3s...
       retryCountRef.current += 1;
 
-      console.log(
-        `Scheduling retry #${retryCountRef.current} for token balance fetch in ${retryDelay}ms`
-      );
-
       const timeoutId = setTimeout(() => {
-        console.log(
-          `Executing retry #${retryCountRef.current} for token balance fetch`
-        );
+        
         fetchBalance();
       }, retryDelay);
 
