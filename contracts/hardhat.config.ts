@@ -7,6 +7,7 @@ import "./tasks/deployTreasury";
 import "./tasks/upgradeVault";
 import "./tasks/deployGasTank";
 import "./tasks/deploySwapHelperZetachain";
+import "./tasks/deploySwapHelperZetaTestnet";
 import "./tasks/deployMockERC20";
 import "./tasks/deployMock4626";
 import "./tasks/deployERC20_Strategy";
@@ -29,6 +30,7 @@ import "./tasks/deploySwapHelperEthereum";
 import "./tasks/deploySwapHelperArbitrum";
 import "./tasks/findConvexPid";
 import "./tasks/updateWithdrawHelperOnStrats";
+import "./tasks/deployStrategyImpl";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -275,7 +277,7 @@ const config: HardhatUserConfig = {
     target: "ethers-v5",
   },
   mocha: {
-    timeout: 180000,
+    timeout: 60000,
   },
 };
 

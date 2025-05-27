@@ -67,8 +67,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     transactions[confirmationNonce].txSucceeded = txSucceeded;
                 }
             }
-
-            _processBufferedConfirmations(true);
+            if (confirmationNonce == lastProcessedNonce + 1) {
+                // Process the confirmation immediately if it's the next one in line
+                _processBufferedConfirmations(true);
+            }
         } else {
             Transaction storage txn = transactions[vaultNonce];
             if (context.sender == address(0)) revert InvalidAddress();
@@ -232,11 +234,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
             } else if (transaction.isDeposit) {
-                if (transaction.totalAssetsAfter == 0) {
-                    lastProcessedNonce = nextNonce;
-                    delete transactions[nextNonce];
-                    continue; // Skip empty deposit update
-                }
                 _confirmDepositAndMint();
             } else if (
                 transaction.user == address(0) &&

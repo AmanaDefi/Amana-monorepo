@@ -69,7 +69,7 @@ export async function setupVaultFixture() {
     gasTank.address,
     treasury.address,
     withdrawHelper.address,
-    withdrawalReceiver.address,
+    withdrawalReceiver.address, // ,
     swapHelper.address,
     zapContract.address,
   ]);

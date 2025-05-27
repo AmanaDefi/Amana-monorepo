@@ -530,7 +530,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0x3A9f38c5A8ad79001F41fc97555c2E65bC11Cf23", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
+    id: "0xcaDD7865818ab401b4CD8921F8c72ECbffF6191f", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
     name: "eUSD/USDC Pool",
     type: "Liquidity Pool",
     des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
@@ -548,7 +548,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Curve-Convex",
-      strategyAddress: "0x26d3aDbE3035e4aa07907BBeED3B7F5A5f0957f5", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
+      strategyAddress: "0x1aaA558F422dFA7BF0E643A1543959B2bf9Ba812", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
       rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
       network: "Arbitrum",
       chainId: 42161,
@@ -560,132 +560,136 @@ const MAINNET_VAULT_DATA: VaultData[] = [
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [
-  //   {
-  //     id: "0x237B655eB18823C78042Da4CB366BA8093efDe04", // Base Sepolia ETH Vault
-  //     name: "AaveV3 ETH",
-  //     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-  //     symbol: "aAaveETH",
-  //     imgURL: "/base.png",
-  //     inputToken: {
-  //       symbol: "ETH",
-  //       decimals: 18,
-  //       address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
-  //       imgURL: "/ETH.png",
-  //       price: ethPrice,
-  //       balance: EMPTY_BALANCE,
-  //       isNative: false
-  //     },
-  //     protocol: {
-  //       name: "Aave",
-  //       strategyAddress: "0x48326BdEa7CAF701cEee64f08faE899e90c110A1",
-  //       chainId: 84532,
-  //       network: "Base Sepolia",
-  //       netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-  //       imgURL: "/aave.png",
-  //       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-  //     },
-  //   },
-  //   {
-  //     id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Aave strategy on Eth Sepolia
-  //     name: "AaveV3 ETH",
-  //     des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
-  //     symbol: "aAaveETH",
-  //     imgURL: "/Ethsepolia.png",
-  //     inputToken: {
-  //       symbol: "sETH",
-  //       decimals: 18,
-  //       address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
-  //       imgURL: "/ETH.png",
-  //       price: ethPrice,
-  //       balance: EMPTY_BALANCE,
-  //       isNative: false
-  //     },
-  //     protocol: {
-  //       name: "Aave",
-  //       strategyAddress: "0x1aea20C27c3b0f34172aC416419994d39512887A",
-  //       chainId: 11155111,
-  //       network: "Eth Sepolia",
-  //       netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
-  //       imgURL: "/aave.png",
-  //       des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
-  //     },
-  //   },
+  {
+    id: "0x130ab2E8B959788c1035Ed38b9ec69E7D7d3384D", // Base Sepolia ETH Vault
+    name: "AaveV3 ETH",
+    type: "Lending Pool",
 
-  //   {
-  //     id: "0xf18635c0e127Ac010dd484ba2EA123D8bc58a7E7", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
-  //     name: "Mock USDC",
-  //     des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
-  //     symbol: "aMockUSDC",
-  //     imgURL: "/ZetaChain.jpeg",
-  //     inputToken: {
-  //       symbol: "USDC.SEPOLIA",
-  //       decimals: 6,
-  //       address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
-  //       imgURL: "/USDC.png",
-  //       price: 1,
-  //       balance: EMPTY_BALANCE,
-  //       isNative: false
-  //     },
-  //     protocol: {
-  //       name: "Mock",
-  //       strategyAddress: "0x1d0dBa968A26c1D8834B600EDAF9182E0A71FFe4",
-  //       network: "Zetachain Athens",
-  //       chainId: 7001,
-  //       netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
-  //       imgURL: "/aave.png",
-  //       des: "This is a mock strategy for testing purposes."
-  //     },
+    des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+    symbol: "aAaveETH",
+    imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
+
+    inputToken: {
+      symbol: "ETH",
+      decimals: 18,
+      address: ZC_TEST_ETH_BASESEPOLIA_ADDRESS,
+      imgURL: "/ETH.png",
+      price: ethPrice,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x6e16D120f8207b4f376A4aDA0CD499757BB7129E",
+      chainId: 84532,
+      network: "Base Sepolia",
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/aave.png",
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+    },
+  },
+  // {
+  //   id: "0xFAcD05d51ef312F3A23d5480376750c6f4c1c192", // Aave strategy on Eth Sepolia
+  //   name: "AaveV3 ETH",
+  //   des: " This vault invests ETH into a simple strategy which deposits the funds as collateral into an Aave ETH pool, which earns interest every block.",
+  //   symbol: "aAaveETH",
+  //   imgURL: "/Ethsepolia.png",
+  //   inputToken: {
+  //     symbol: "sETH",
+  //     decimals: 18,
+  //     address: ZC_TEST_ETH_SEPOLIA_ADDRESS,
+  //     imgURL: "/ETH.png",
+  //     price: ethPrice,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
   //   },
-  //   // {
-  //   //   id: "0x7a351114F9C2637da09f177b62A3f8736dfAa130", // Polygon Amoy POL Vault (POL is new name for MATIC)
-  //   //   name: "Mock POL",
-  //   //   des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
-  //   //   symbol: "aMockPOL",
-  //   //   imgURL: "/polygon_logo.png",
-  //   //   inputToken: {
-  //   //     symbol: "MATIC.AMOY",
-  //   //     decimals: 18,
-  //   //     address: ZC_TEST_MATIC_AMOY_ADDRESS,
-  //   //     imgURL: "/polygon_logo.png",
-  //   //     price: 1,
-  //   //     balance: EMPTY_BALANCE,
-  //   //     isNative: false
-  //   //   },
-  //   //   protocol: {
-  //   //     name: "Mock",
-  //   //     strategyAddress: "0x8AD0bD606B1820bb2a4e569EFC48501c5e0735E6",
-  //   //     chainId: 80002,
-  //   //     network: "Polygon Amoy",
-  //   //     netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
-  //   //     imgURL: "/polygon_logo.png",
-  //   //     des: "This is a mock strategy for testing purposes."
-  //   //   },
-  //   // },
-  //   // {
-  //   //   id: "0xc01f344A7eAd2D06A196D1b2aC93be78A16bD876", // BSC USDC Vault
-  //   //   name: "Mock USDC",
-  //   //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
-  //   //   symbol: "aMockUSDC",
-  //   //   imgURL: "/bscnet.jpg",
-  //   //   inputToken: {
-  //   //     symbol: "USDC",
-  //   //     decimals: 18,
-  //   //     address: ZC_TEST_USDC_BSC_ADDRESS,
-  //   //     imgURL: "/USDC.png",
-  //   //     price: 1,
-  //   //     balance: EMPTY_BALANCE,
-  //   //     isNative: false
-  //   //   },
-  //   //   protocol: {
-  //   //     name: "Mock",
-  //   //     strategyAddress: "0x99aDf091C5d6ad042F763018C3e43D622a22Cc24",
-  //   //     chainId: 97,
-  //   //     network: "BSC Testnet",
-  //   //     netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
-  //   //     imgURL: "/bnb_logo.png",
-  //   //     des: "This is a mock strategy for testing purposes."
-  //   //   },
-  //   // },
+  //   protocol: {
+  //     name: "Aave",
+  //     strategyAddress: "0x1aea20C27c3b0f34172aC416419994d39512887A",
+  //     chainId: 11155111,
+  //     network: "Eth Sepolia",
+  //     netdes: "Eth Sepolia is a relatively new chain, backed by Coinbase and built on the OP stack.",
+  //     imgURL: "/aave.png",
+  //     des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+  //   },
+  // },
+
+  // {
+  //   id: "0xf18635c0e127Ac010dd484ba2EA123D8bc58a7E7", // Amana USDC Vault on Zetachain testnet, linked to Mock strategy on Zetachain testnet
+  //   name: "Mock USDC",
+  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into mock 4626 pool.",
+  //   symbol: "aMockUSDC",
+  //   imgURL: "/ZetaChain.jpeg",
+  //   inputToken: {
+  //     symbol: "USDC.SEPOLIA",
+  //     decimals: 6,
+  //     address: ZC_TEST_USDC_SEPOLIA_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     strategyAddress: "0x1d0dBa968A26c1D8834B600EDAF9182E0A71FFe4",
+  //     network: "Zetachain Athens",
+  //     chainId: 7001,
+  //     netdes: "Zetachain is a rocking new L1 that enables omnichain functionality.",
+  //     imgURL: "/aave.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
+  // {
+  //   id: "0x7a351114F9C2637da09f177b62A3f8736dfAa130", // Polygon Amoy POL Vault (POL is new name for MATIC)
+  //   name: "Mock POL",
+  //   des: " This vault invests POL (MATIC) into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+  //   symbol: "aMockPOL",
+  //   imgURL: "/polygon_logo.png",
+  //   inputToken: {
+  //     symbol: "MATIC.AMOY",
+  //     decimals: 18,
+  //     address: ZC_TEST_MATIC_AMOY_ADDRESS,
+  //     imgURL: "/polygon_logo.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     strategyAddress: "0x8AD0bD606B1820bb2a4e569EFC48501c5e0735E6",
+  //     chainId: 80002,
+  //     network: "Polygon Amoy",
+  //     netdes: "Polygon is an Ethereum POS side-chain, that has been around for a while.",
+  //     imgURL: "/polygon_logo.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
+  // {
+  //   id: "0xc01f344A7eAd2D06A196D1b2aC93be78A16bD876", // BSC USDC Vault
+  //   name: "Mock USDC",
+  //   des: " This vault invests USDC into a mock strategy which deposits the funds as collateral into a mock 4626 pool.",
+  //   symbol: "aMockUSDC",
+  //   imgURL: "/bscnet.jpg",
+  //   inputToken: {
+  //     symbol: "USDC",
+  //     decimals: 18,
+  //     address: ZC_TEST_USDC_BSC_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Mock",
+  //     strategyAddress: "0x99aDf091C5d6ad042F763018C3e43D622a22Cc24",
+  //     chainId: 97,
+  //     network: "BSC Testnet",
+  //     netdes: "BSC testnet is the testnet for BNB Smart Chain - owned by Binance.",
+  //     imgURL: "/bnb_logo.png",
+  //     des: "This is a mock strategy for testing purposes."
+  //   },
+  // },
 ];
 
 // Export the appropriate vault data based on DEPLOY_ENV

@@ -108,4 +108,12 @@ contract AaveEthStrategy is EthStrategyParent {
     function totalUnderlyingAssets() public view override returns (uint256) {
         return receiptToken.balanceOf(address(this));
     }
+
+    function claimRewards() public override returns (uint256) {
+        return 0;
+    }
+
+    function _reinvestRewards() internal override {
+        // No reinvestment logic yet
+    }
 }
