@@ -441,7 +441,7 @@ export async function calculateConvexArbitrumRewardsAPY(
       : lpPriceInInput;
 
     const crvApy = (Number(annualCrvPerToken) / 1e20) * crvTokenPrice / lpPriceInUSD;
-    console.log("CRV APY:", crvApy);
+   
     return crvApy;
   } catch (err) {
     console.error("CRV APY calculation failed:", err);
@@ -749,7 +749,6 @@ export const Approvedeposit = async (
   activeChain: Chain,
   transactionAmount: bigint
 ) => {
-  console.log("Executing DepositApprove");
 
   try {
     let contract = getContract({
@@ -778,7 +777,7 @@ export const Approvedeposit = async (
       transactionAmount,
       inputToken,
     });
-    console.log("Approval confirmed");
+
     return true;
   } catch (error: any) {
     return false;
@@ -852,7 +851,7 @@ const getMinAmountOut = async (
 };
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-  console.log("Executing Direct Deposit");
+
   const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
   let contract = getContract({
     client,
@@ -891,7 +890,7 @@ const executeCrossChainDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function
 ) => {
-  console.log("Executing Cross-Chain Deposit");
+ 
   const minSharesOut = await getMinSharesOut(
     vaultData,
     inputToken,
@@ -940,7 +939,7 @@ const executeCrossChainDeposit = async (
 
   // Case 1: Native token (ETH, BNB, etc.)
   if (inputToken.isNative) {
-    console.log("Native token deposit detected");
+   
     contract = getContract({
       client,
       chain: activeChain,
@@ -959,12 +958,12 @@ const executeCrossChainDeposit = async (
       transaction: depositTx,
       // ...txOptions,
     });
-    console.log("Deposit executed");
+   
     setcrossChainTxId(transactionId);
     return receipt;
   } else {
     // Case 2: ERC20 token
-    console.log("ERC20 token deposit detected");
+   
 
     // Step 1: Approve the tokens for the EVM Gateway contract
     // contract = getContract({
@@ -1013,7 +1012,7 @@ const executeCrossChainDeposit = async (
         // ...txOptions,
       });
 
-      console.log("Deposit executed");
+    
       setcrossChainTxId(transactionId);
       return receipt;
     } catch (error) {
@@ -1031,7 +1030,7 @@ const executeSolanaDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function
 ) => {
-  console.log("Executing Cross-Chain Deposit");
+  
   const minSharesOut = await getMinSharesOut(
     vaultData,
     inputToken,
@@ -1069,7 +1068,7 @@ const executeSolanaDeposit = async (
       vaultData.id,
       args
     );
-    console.log("Deposit executed");
+  
     setcrossChainTxId(transactionId);
     return { transactionHash: txHash };
   } else {
@@ -1079,14 +1078,14 @@ const executeSolanaDeposit = async (
       types: ["address", "uint256", "uint16", "bytes32"],
       values: [evmAddress, minSharesOut, slippageValue, transactionId],
     };
-    console.log("SPL token deposit detected");
+  
     const txHash = await client.depositSplTokenAndCall(
       inputToken.address,
       Number(transactionAmount),
       vaultData.id,
       args
     );
-    console.log("Deposit executed");
+   
     setcrossChainTxId(transactionId);
     return { transactionHash: txHash };
   }
@@ -1103,7 +1102,7 @@ export const executeSolanaWithdrawal = async (
   withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
-  console.log("Executing Cross-Chain Withdrawal");
+ 
   const minAmountOut = await getMinAmountOut(
     vaultId,
     withdrawShareAmount,
@@ -1142,7 +1141,7 @@ export const executeSolanaWithdrawal = async (
   };
 
   const txHash = await client.solanaWithdrawal(vaultId, args);
-  console.log("Withdrawal executed");
+ 
   setcrossChainTxId(transactionId);
   return { transactionHash: txHash };
 };
@@ -1245,7 +1244,7 @@ const executeCrossChainWithdrawal = async (
   withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
-  console.log("Executing Cross-Chain Withdrawal");
+
   const minAmountOut = await getMinAmountOut(
     vaultId,
     withdrawShareAmount,
@@ -1334,14 +1333,13 @@ export const fetchUserVaultBalance = async (
     contract,
     address: userAddress,
   });
-  console.log("shares", shares);
-  console.log("decimals", decimals);
+ 
   const balance = await readContract({
     contract,
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [shares],
   });
-  console.log("balance", balance);
+
   return formatUnits(balance, decimals);
 };
 
@@ -1445,7 +1443,7 @@ export const getAmountOutFromSwap = async (
   // Step 2: If both token IDs are found, try Beam API first
   if (inputTokenId && outputTokenId) {
     try {
-      console.log("🚀 Getting quote from Beam API...");
+      
       const beamQuote = await swap.native.getSwapData(
         beamConnection,
         swapDetails
@@ -1466,7 +1464,7 @@ export const getAmountOutFromSwap = async (
         const quoteAmount = beamQuote.data.data.expectedAmountOut;
 
         if (quoteAmount > 0) {
-          console.log("✅ Beam quote found");
+         
           const quoteAmountRaw = (
             quoteAmount *
             10 ** outputToken.decimals
@@ -1485,7 +1483,7 @@ export const getAmountOutFromSwap = async (
 
     // Step 3: Fallback to Eddy
     try {
-      console.log("🌐 Trying Eddy as fallback...");
+    
       const eddyQuote = await sdk.bridge.getQuoteForBridge({
         inputTokenAddress: inputToken.address,
         outputTokenAddress: outputToken.address,
@@ -1495,7 +1493,7 @@ export const getAmountOutFromSwap = async (
         slippage: 0.5,
       });
 
-      console.log("✅ Eddy quote found");
+   
       return BigInt(eddyQuote.quoteAmount);
     } catch (e) {
       console.error("❌ Eddy quote failed:", e);
