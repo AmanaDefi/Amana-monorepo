@@ -215,7 +215,7 @@ export async function calculateAaveAPY(
   const [results] = mcIface.decodeFunctionResult(
     "aggregate3",
     multicallData,
-  ) as [{ success: boolean; returnData: string }[]];
+  ) as any;
   if (!results[0].success || !results[1].success) {
     throw new Error("Failed to fetch POOL or UNDERLYING_ASSET_ADDRESS");
   }
@@ -402,7 +402,7 @@ export async function calculateConvexEthereumRewardsAPY(
   const [results] = mcIface.decodeFunctionResult(
     "aggregate3",
     multicallData,
-  ) as [{ success: boolean; returnData: string }[]];
+  ) as any;
 
   // Decode batched results
   const crvRewardRate = BigInt(results[0].returnData);
