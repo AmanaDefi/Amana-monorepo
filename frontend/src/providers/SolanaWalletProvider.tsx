@@ -29,7 +29,9 @@ export default function SolanaWalletProvider({
   children: React.ReactNode;
 }) {
   const network = WalletAdapterNetwork.Mainnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const endpoint = useMemo(() => {
+    return solanaRpcUrl || clusterApiUrl(network);
+  }, [network]);
   const wallets = useMemo(
     () => [
       // manually add any legacy wallet adapters here
@@ -40,7 +42,7 @@ export default function SolanaWalletProvider({
       new TrustWalletAdapter(),
       new CoinbaseWalletAdapter(),
     ],
-    [network]
+    []
   );
 
   return (
