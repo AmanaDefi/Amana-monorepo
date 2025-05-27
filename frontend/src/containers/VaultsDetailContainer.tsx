@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import {useState, useEffect, useMemo, useCallback} from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
@@ -16,7 +16,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
-  setVaultSymbol?: (symbol: string) => void;    
+  setVaultSymbol?: (symbol: string) => void;
 }> = ({ vaultID, setVaultSymbol }) => {
     const [vaultData, setVaultData] = useState<VaultData>();
     const router = useRouter();
@@ -42,15 +42,15 @@ const VaultsDetailContainer: React.FC<{
 
     useEffect(() => {
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
-      
+
       if (foundVault) {
         setVaultData(foundVault);
-        
+
         // Explicitly reset selectedToken when vault changes
         // This is critical to ensure proper auto-selection in child components
         setSelectedToken(undefined);
       }
-    }, [vaultID, vaults]);
+    }, [vaultID]);
 
     const strategyExplorerBaseUrl = useMemo(() => {
       if (!vaultData?.protocol?.chainId) return "";
@@ -61,7 +61,7 @@ const VaultsDetailContainer: React.FC<{
 
     // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
     useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
-    
+
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     const cvxTokenPrice = useTokenPriceBySymbol("CVX");
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
@@ -69,9 +69,12 @@ const VaultsDetailContainer: React.FC<{
     useUpdateAPYs(currentVault, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
 
     // Handle token selection from child components
-    const handleTokenSelect = (token: Token) => {
-      setSelectedToken(token);
-    };
+    const handleTokenSelect = useCallback((token: Token) => {
+        console.log(
+            `VaultsDetailContainer: Token selection changed to ${token.symbol}`
+        );
+        setSelectedToken(token);
+    }, []);
 
     return (
       vaultData ? (
