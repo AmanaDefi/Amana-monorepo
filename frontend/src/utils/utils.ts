@@ -21,6 +21,7 @@ import { Chain } from "viem";
 import { ChainOptions } from "thirdweb/chains";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { keccak_256 } from 'js-sha3';
+import SolanaConnectionSingleton from "./solanaSingleton";
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -532,7 +533,7 @@ export function convertUsdToEth(usdAmount: number, ethPrice: number): number {
  * Solana part
  */
 
-export const solanaConnection = new Connection(solanaRpcUrl, "confirmed");
+export const solanaConnection = SolanaConnectionSingleton.getInstance();
 export function isSolanaAddress(address: any): boolean {
   try {
     new PublicKey(address);

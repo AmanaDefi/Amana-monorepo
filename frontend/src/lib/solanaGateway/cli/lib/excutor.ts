@@ -1,5 +1,5 @@
 import { VersionedTransaction } from "@solana/web3.js";
-import { solanaConnection as connection } from "@/utils/utils";
+import SolanaConnectionSingleton from "@/utils/solanaSingleton";
 
 interface Blockhash {
   blockhash: string;
@@ -8,8 +8,10 @@ interface Blockhash {
 
 export const execute = async (transaction: VersionedTransaction, latestBlockhash: Blockhash, isBuy: boolean = true) => {
 
+  const connection = SolanaConnectionSingleton.getInstance();
+
   const signature = await connection.sendRawTransaction(transaction.serialize(), { skipPreflight: true });
-  console.log("!!!!!!!!!!!!", signature);
+  
   const confirmation = await connection.confirmTransaction(
     {
       signature,
@@ -18,14 +20,9 @@ export const execute = async (transaction: VersionedTransaction, latestBlockhash
     }
   );
 
-  if (confirmation.value.err) {
-    console.log("Confrimtaion error", confirmation.value.err)
-    return ""
-  } else {
-    if (isBuy)
-      console.log(`Success in buy transaction: https://solscan.io/tx/${signature}`)
-    else
-      console.log(`Success in Sell transaction: https://solscan.io/tx/${signature}`)
+if (confirmation.value.err) {
+    return "";
   }
-  return signature
+
+  return signature;
 }
