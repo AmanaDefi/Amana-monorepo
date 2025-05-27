@@ -10,6 +10,7 @@ import {
   isSolanaAddress,
 } from "@/utils/utils";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useDebounce } from "./useDebounce";
 
 export const useMultichainTokenBalance = (token: Token | undefined) => {
   const {
@@ -18,6 +19,8 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
     balance: nativeBalance,
     refetchBalance: refetchNativeBalance,
   } = useMultiChain();
+  const debouncedWalletAddress = useDebounce(walletAddress, 300);
+
   const [balance, setBalance] = useState<Balance>({
     value: 0n,
     formatted: "0",
@@ -33,7 +36,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const fetchBalance = useCallback(async () => {
     refetchNativeBalance();
     try {
-      if (!walletAddress || !token) {
+      if (!debouncedWalletAddress || !token) {
         setBalance({
           value: 0n,
           formatted: "0",
@@ -46,10 +49,13 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
         return;
       }
 
-      if (isSolanaAddress(token.address) && isSolanaAddress(walletAddress)) {
+      if (
+        isSolanaAddress(token.address) &&
+        isSolanaAddress(debouncedWalletAddress)
+      ) {
         try {
           const { balance, decimals } = await getSplTokenBalance(
-            walletAddress,
+            debouncedWalletAddress,
             token.address
           );
           setBalance({
@@ -62,7 +68,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
         }
       } else if (
         isEthereumAddress(token.address) &&
-        isEthereumAddress(walletAddress)
+        isEthereumAddress(debouncedWalletAddress)
       ) {
         try {
           // Verify the token is supported on this chain before fetching balance
@@ -87,7 +93,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
           }
 
           const { balance, decimals } = await getERC20TokenBalance(
-            walletAddress,
+            debouncedWalletAddress,
             token.address,
             activeChain
           );
@@ -109,7 +115,12 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       console.error("Error in fetchBalance:", error);
       setBalance({ value: 0n, formatted: "0" });
     }
-  }, [token, walletAddress, activeChain, nativeBalance, balance.value]);
+  }, [
+    token,
+    debouncedWalletAddress,
+    activeChain,
+    nativeBalance,
+  ]);
 
   useEffect(() => {
     // Detect if chain has changed
@@ -153,7 +164,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [token, walletAddress, activeChain, nativeBalance, balance.value]);
+  }, [token, debouncedWalletAddress, activeChain, nativeBalance, fetchBalance]);
 
   return { balance, fetchBalance };
 };
