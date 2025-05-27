@@ -37,7 +37,6 @@ export default function SelectToken({
             <SearchToken
               options={options}
               selectToken={(token) => {
-                console.log("Token selected in SelectToken:", token); // Debug log
                 selectToken(token);
                 setShow(false);
               }}

@@ -70,9 +70,9 @@ const VaultsDetailContainer: React.FC<{
 
     // Handle token selection from child components
     const handleTokenSelect = useCallback((token: Token) => {
-        console.log(
+        /*console.log(
             `VaultsDetailContainer: Token selection changed to ${token.symbol}`
-        );
+        );*/
         setSelectedToken(token);
     }, []);
 
