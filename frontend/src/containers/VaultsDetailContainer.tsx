@@ -65,7 +65,8 @@ const VaultsDetailContainer: React.FC<{
     const cvxTokenPrice = useTokenPriceBySymbol("CVX");
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
-    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
+    const opTokenPrice = useTokenPriceBySymbol("OP");
+    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, opTokenPrice);
 
     // Handle token selection from child components
     const handleTokenSelect = (token: Token) => {

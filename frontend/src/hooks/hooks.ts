@@ -15,7 +15,8 @@ import {
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
-  calculateBalancerAPY
+  calculateCombinedBalancerAPY
+
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
@@ -157,7 +158,8 @@ export const useUpdateAPYs = (
   crvTokenPrice: number,
   cvxTokenPrice: number,
   ethTokenPrice: number,
-  compTokenPrice: number
+  compTokenPrice: number,
+  opTokenPrice: number
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
@@ -197,7 +199,15 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Eddy") {
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
               } else if (vault.protocol.name === "Balancer") {
-                APY7d = await calculateBalancerAPY(receiptTokenAddress as Address, strategyChain)
+                const { totalAPY } = await calculateCombinedBalancerAPY({
+                  receiptTokenAddress: receiptTokenAddress as Address,
+                  liquidityGaugeAddress: vault.protocol.rewardsContractAddress as Address,
+                  rewardTokenAddress: "0x994ac01750047B9d35431a7Ae4Ed312ee955E030",
+                  inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  opTokenPrice,
+                  strategyChain
+                });
+                APY7d = totalAPY;
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve-Convex") {

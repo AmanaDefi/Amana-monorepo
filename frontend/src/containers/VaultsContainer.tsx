@@ -46,8 +46,10 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
   const cvxTokenPrice = useTokenPriceBySymbol("CVX");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
+const opTokenPrice = useTokenPriceBySymbol("OP");
+  console.log("opTokenPrice", opTokenPrice);
 
-  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
+  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, opTokenPrice);
 
   return (
     <VaultsGrid

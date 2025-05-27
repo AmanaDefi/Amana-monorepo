@@ -24,6 +24,8 @@ import beefyVaultABI from "../../abis/beefyVaultABI.json";
 import curvePoolABI from "../../abis/curvePoolABI.json";
 import convexRewardPoolABI from "../../abis/convexRewardPoolABI.json";
 import IBalancerStablePoolABI from "../../abis/IBalancerStablePoolABI.json";
+import IBalancerLiquidityGaugeABI from "../../abis/IBalancerLiquidityGauge.json";
+import IERC20MetadataABI from "../../abis/IERC20MetadataABI.json";
 
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
@@ -451,37 +453,88 @@ export async function calculateConvexArbitrumRewardsAPY(
   }
 }
 
-export async function calculateBalancerAPY(
-  receiptTokenAddress: Address,
-  strategyChain: Chain
-): Promise<number> {
-  const relevantProvider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
+export async function calculateCombinedBalancerAPY({
+  receiptTokenAddress,
+  liquidityGaugeAddress,
+  rewardTokenAddress,
+  inputTokenAddress,
+  opTokenPrice,
+  strategyChain
+}: {
+  receiptTokenAddress: Address;
+  liquidityGaugeAddress: Address;
+  rewardTokenAddress: Address;
+  inputTokenAddress: Address;
+  opTokenPrice: number;
+  strategyChain: Chain;
+}): Promise<{ baseAPY: number; rewardsAPY: number; totalAPY: number }> {
+  const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
+
   const stablePool = new ethers.Contract(
     receiptTokenAddress,
     IBalancerStablePoolABI,
-    relevantProvider
+    provider
+  );
+
+  const gauge = new ethers.Contract(
+    liquidityGaugeAddress,
+    IBalancerLiquidityGaugeABI,
+    provider
   );
 
   try {
+    // --- Base APY calculation ---
     const currentRate = await stablePool.getRate();
-    const currentBlock = await relevantProvider.getBlockNumber();
+    const currentBlock = await provider.getBlockNumber();
 
     const avgBlockTime = BLOCK_TIME[strategyChain.id] ?? 12;
-    const blocksIn7Days = Math.floor(7 * 24 * 60 * 60 / avgBlockTime);
+    const blocksIn7Days = Math.floor((7 * 24 * 60 * 60) / avgBlockTime);
     const pastBlock = currentBlock - blocksIn7Days;
 
     const pastRate = await stablePool.getRate({ blockTag: pastBlock });
 
     const rateDelta = (BigInt(currentRate) - BigInt(pastRate)) * 1_000_000n / BigInt(pastRate);
     const rateOfChange = Number(rateDelta) / 1_000_000;
+    const baseAPY = Math.pow(1 + rateOfChange, 52.14) - 1;
+    console.log("Base APY:", baseAPY);
+    // --- Rewards APY calculation ---
+    const rewardData = await gauge.reward_data(rewardTokenAddress);
+    const rewardRate = rewardData.rate;
+    const totalSupply = await gauge.totalSupply();
 
-    const apy = Math.pow(1 + rateOfChange, 52.14) - 1;
-    return apy;
+    if (BigInt(totalSupply) === 0n) {
+      return { baseAPY, rewardsAPY: 0, totalAPY: baseAPY };
+    }
+
+    const rewardToken = new ethers.Contract(rewardTokenAddress, IERC20MetadataABI, provider);
+    const inputToken = new ethers.Contract(inputTokenAddress, IERC20MetadataABI, provider);
+
+    const [rewardDecimals, inputDecimals] = await Promise.all([
+      rewardToken.decimals(),
+      inputToken.decimals(),
+    ]);
+
+    const secondsPerYear = 365 * 24 * 60 * 60;
+
+    const rewardsPerYear =
+      Number(rewardRate) * secondsPerYear / Math.pow(10, Number(rewardDecimals));
+    console.log("Rewards per year:", rewardsPerYear);
+    const rewardsPerYearUSD = rewardsPerYear * opTokenPrice;
+    console.log("Rewards per year in USD:", rewardsPerYearUSD);
+    const rateDecimal = Number(currentRate) / 1e18; // assuming 18 decimals
+    const totalSupplyUSD = parseFloat(ethers.formatUnits(totalSupply, 18)) * rateDecimal;
+    console.log("Total supply in USD:", totalSupplyUSD);
+    const rewardsAPR = rewardsPerYearUSD / totalSupplyUSD;
+    const rewardsAPY = Math.pow(1 + rewardsAPR / 365, 365) - 1; // assumes daily compounding of the rewards
+
+    console.log("Rewards APY:", rewardsAPY);
+    return { baseAPY, rewardsAPY, totalAPY: baseAPY + rewardsAPY };
   } catch (error) {
-    console.error("calculateBalancerStrategyAPY failed:", error);
-    return 0;
+    console.error("calculateCombinedBalancerAPY failed:", error);
+    return { baseAPY: 0, rewardsAPY: 0, totalAPY: 0 };
   }
 }
+
 
 export async function calculateAaveRewardsAPY(
   receiptTokenAddress: Address,
