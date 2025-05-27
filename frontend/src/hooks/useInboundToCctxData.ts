@@ -7,7 +7,8 @@ export const useInboundToCctxData = (crossschainInvestHash: string, action: Acti
     queryKey: ["InboundToCctxData", crossschainInvestHash],
     queryFn: () => new ApiService().blockpi.getInboundHashToCctxData(crossschainInvestHash),
     refetchInterval: 5000,
-    enabled: crossschainInvestHash != "" && action == Action.crosschainInvest
+    staleTime: 3 * 1000,
+    enabled: crossschainInvestHash !== "" && action === Action.crosschainInvest
   });
 
   return data

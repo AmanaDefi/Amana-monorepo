@@ -33,7 +33,10 @@ const VaultsDetailContainer: React.FC<{
     const [transactionCompleted, setTransactionCompleted] = useState(false);
     const [selectedToken, setSelectedToken] = useState<Token | undefined>();
 
-    const vaults: VaultData[] =  VAULT_DATA;
+    const currentVault = useMemo(() =>{
+      return vaultData ? [vaultData] : null}, [vaultData])
+
+    const vaults: VaultData[] = VAULT_DATA;
     const backPath: string = pathname.includes("old-vaults") ? "/old-vaults" : "/";
     const { walletAddress } = useMultiChain();
 
@@ -41,12 +44,10 @@ const VaultsDetailContainer: React.FC<{
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
       
       if (foundVault) {
-        console.log(`VaultsDetailContainer: Switching to vault ${vaultID}`);
         setVaultData(foundVault);
         
         // Explicitly reset selectedToken when vault changes
         // This is critical to ensure proper auto-selection in child components
-        console.log(`VaultsDetailContainer: Resetting selected token for new vault`);
         setSelectedToken(undefined);
       }
     }, [vaultID, vaults]);
@@ -63,19 +64,16 @@ const VaultsDetailContainer: React.FC<{
     
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     const cvxTokenPrice = useTokenPriceBySymbol("CVX");
-    console.log("cvxTokenPrice: ", cvxTokenPrice)
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
-    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
+    useUpdateAPYs(currentVault, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
 
     // Handle token selection from child components
     const handleTokenSelect = (token: Token) => {
-      console.log(`VaultsDetailContainer: Token selection changed to ${token.symbol}`);
       setSelectedToken(token);
     };
 
     return (
-
       vaultData ? (
         <div className="overflow-x-auto">
           <button

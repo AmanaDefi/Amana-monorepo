@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
-  calculateAaveFlashAPY,
   calculateCompoundAPY,
   calculateMoonwellAPY,
   calculateVenusAPY,
   calculateVenusRewardsAPY,
   calculateEddyAPY,
   calculateBeefyAPY,
-  calculateCurveAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
@@ -19,6 +17,7 @@ import {
 } from "@/actions/actions";
 import {
   Address,
+  ADDRESS_ZERO,
   defineChain,
   getContract,
   prepareEvent,
@@ -30,7 +29,6 @@ import {
   VaultData,
   Token,
 } from "@/types/types";
-import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import {
   CHAIN_ID,
@@ -40,12 +38,11 @@ import {
 import { useContractEvents } from "thirdweb/react";
 import {
   getOnlyTokenSymbol,
-  getSolanaEVMAddress,
   isSolanaAddress,
   isZetachain,
 } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
-import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
+import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { ethers, Interface } from "ethers";
@@ -54,6 +51,11 @@ import multicall3Abi from "../../abis/multicall3ABI.json";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { ApiService } from "@/service";
 import { zetaProvider } from "@/utils/providers";
+
+export const UPDATE_VAULT_TIMESTAMP = 'updateCashTimestamp';
+export const HAS_CHANGE_DEPOSIT = 'has_deposited';
+const CASHED_VAULT_APIS = 'cashedVaultApis';
+const CASH_VAULT_INTERVAL_IN_MIN = 0.5;
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
@@ -67,11 +69,17 @@ export const useUpdateVaultBalanceAndTotal = (
   const vaultInterface = useMemo(() => new Interface(vaultAbi), []);
 
   const update = useCallback(async () => {
-    if (!provider || !walletAddress || vaults.length === 0) return;
-    console.time("updateVaultBalanceAndTotal");
+    const now = Date.now();
+    const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
+    const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
+    if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true') {
+      return; //Update only if interval > 5 min or if user has deposited in Pool
+    }
+
+    if (!provider || vaults.length === 0) return;
     let address = isSolanaAddress(walletAddress)
       ? "0x77706672467938396e78347A4B734c5066653142"
-      : walletAddress;
+      : walletAddress || ADDRESS_ZERO;
 
     const mcCfg = MULTICALL_ADDRS[CHAIN_ID.zetachain];
 
@@ -177,7 +185,9 @@ export const useUpdateVaultBalanceAndTotal = (
         totalAssetsinToken,
       })),
     );
-  }, [provider, vaults, walletAddress]);
+    localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
+    localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
+  }, [provider, vaults, walletAddress, localStorage]);
   useEffect(() => {
     update();
   }, [update]);
@@ -235,16 +245,20 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
 };
 
 export const useUpdateAPYs = (
-  vaults: VaultData[],
+  vaults: VaultData[] | null,
   setVaultAPYs: (vaultAPYs: { vaultId: string; APY7d: number }[]) => void,
   setLoading: (loading: boolean) => void,
   crvTokenPrice: number,
   cvxTokenPrice: number,
   ethTokenPrice: number,
   compTokenPrice: number,
+  isFromVaultGrid?: boolean
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
+      if (!vaults) return;
+
+      const now = Date.now();
       try {
         const receiptTokenAddresses = await fetchReceiptTokens(vaults);
         const updatedVaultAPYs = await Promise.all(
@@ -347,6 +361,11 @@ export const useUpdateAPYs = (
           }),
         );
         setVaultAPYs(updatedVaultAPYs);
+        if (isFromVaultGrid) {
+          localStorage.setItem(CASHED_VAULT_APIS, JSON.stringify(updatedVaultAPYs))
+          localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
+          localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
+        }
       } finally {
         setLoading(false); // Stop the loading state after updating APYs
       }
@@ -354,16 +373,31 @@ export const useUpdateAPYs = (
 
     // Trigger the function if vaults and prices are available
     if (
+      vaults &&
       vaults.length > 0 &&
       crvTokenPrice > 0 &&
       cvxTokenPrice > 0 &&
       ethTokenPrice > 0 &&
       compTokenPrice > 0
     ) {
-      setLoading(true);
-      updateAPYs();
+      const now = Date.now();
+      const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
+      const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
+  
+      if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true' && isFromVaultGrid) {
+        const cashedVaultApis = localStorage.getItem(CASHED_VAULT_APIS);
+        if (cashedVaultApis) {
+          setVaultAPYs(JSON.parse(cashedVaultApis));
+        }
+        setLoading(false);
+        return; //Update only if interval > 5 min or if user has deposited in Pool
+      } else {
+        setLoading(true);
+        updateAPYs();
+      }
+    
     }
-  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice]);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, localStorage, isFromVaultGrid]);
 };
 
 export const useInteractionEvents = ({

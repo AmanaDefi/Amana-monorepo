@@ -5,8 +5,7 @@ import { wallets } from "./header";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useEffect } from "react";
+
 export default function ConnectButton() {
   const {
     selectedChain,
