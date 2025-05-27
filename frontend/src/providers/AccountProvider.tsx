@@ -1,6 +1,6 @@
 "use client";
 
-import React, { PropsWithChildren, useEffect, useState } from "react";
+import React, { PropsWithChildren, useCallback, useEffect, useState } from "react";
 import mixpanel from "mixpanel-browser";
 import {
   useActiveAccount,
@@ -43,6 +43,7 @@ export default function AccountProvider({ children }: PropsWithChildren) {
   const [isThirdwebReady, setIsThirdwebReady] = useState(false);
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
   const [hasIdentified, setHasIdentified] = useState(false); // Track identification status
+  const [hasTrackedWalletConnect, setHasTrackedWalletConnect] = useState(false);
 
   const route = usePathname();
 
@@ -56,6 +57,16 @@ export default function AccountProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     setHasTrackedPage(false);
   }, [route]);
+
+  // ✅ Define human-readable page name
+  const getPageName = useCallback((currentRoute: string) => {
+    if (currentRoute === "/") return "Vaults List";
+    if (currentRoute.startsWith("/vaults/")) return "Vault Details";
+    if (currentRoute === "/about") return "About";
+    if (currentRoute === "/leaderboard") return "Leaderboard";
+    if (currentRoute === "/roadmap") return "Roadmap";
+    return currentRoute;
+  }, []);
 
   // ✅ Track page views + wallet connect
   useEffect(() => {
@@ -81,27 +92,25 @@ export default function AccountProvider({ children }: PropsWithChildren) {
       mixpanel.people.set({
         wallet_address: account.address,
       });
-      setHasIdentified(true); // Set identified to true after tracking
+      setHasIdentified(true);
     }
 
     // ✅ Track "Wallet Connected" explicitly
-    if (connectionStatus === "connected" && account?.address && !hasIdentified) {
+    if (
+      connectionStatus === "connected" &&
+      account?.address &&
+      !hasTrackedWalletConnect
+    ) {
       trackEvent("Wallet Connected", {
         walletAddress: account.address,
       });
+      setHasTrackedWalletConnect(true);
     }
-
-    // ✅ Define human-readable page name
-    const page =
-      route === "/" ? "Vaults List" :
-      route.startsWith("/vaults/") ? "Vault Details" :
-      route === "/about" ? "About" :
-      route === "/leaderboard" ? "Leaderboard" :
-      route === "/roadmap" ? "Roadmap" :
-      route;
 
     // ✅ Track page view once per route
     if (!hasTrackedPage) {
+      const page = getPageName(route);
+
       trackEvent("Page Viewed", {
         page,
         route,
@@ -112,15 +121,23 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     }
   }, [
     route,
-    account,
-    connect,
+    account?.address,
     connectionStatus,
     initialCheckCount,
-    isConnecting,
     isThirdwebReady,
     hasTrackedPage,
     hasIdentified, // Include hasIdentified to prevent multiple wallet connect events
+    hasTrackedWalletConnect,
+    getPageName,
   ]);
+
+  useEffect(() => {
+    if (!account?.address) {
+      setHasIdentified(false);
+      setHasTrackedWalletConnect(false);
+    }
+  }, [account?.address]);
 
   return <>{children}</>;
 }
+
