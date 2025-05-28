@@ -2,7 +2,6 @@
 
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import MobileMenuModal from "@/components/modal/MobileMenuModal";
@@ -30,8 +29,12 @@ export const wallets = [
 
 const Header = () => {
   const path = usePathname();
-  const router = useRouter();
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
+
+  const getLinkClass = (href: string) =>
+    `cursor-pointer transition ${
+      path === href ? "font-bold text-themeColor" : ""
+    }`;
 
   return (
     <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">
@@ -42,41 +45,21 @@ const Header = () => {
       <div className='flex items-center gap-3'>
         <div className='flex items-center gap-3 lg:gap-16'>
           <nav className="hidden lg:flex gap-16">
-            <span
-              className={`cursor-pointer ${path === "/" ? "font-bold text-themeColor" : ""
-                }`}
-              onClick={() => router.push("/")}
-            >
+            <Link href="/" className={getLinkClass("/")}>
               Vaults
-            </span>
-            <span
-              className={`cursor-pointer ${path === "/about" ? "font-bold text-themeColor" : ""
-                }`}
-              onClick={() => router.push("/about")}
-            >
+            </Link>
+            <Link href="/about" className={getLinkClass("/about")}>
               About
-            </span>
-            <span
-              className={`cursor-pointer ${path === "/leaderboard" ? "font-bold text-themeColor" : ""
-                }`}
-              onClick={() => router.push("/leaderboard")}
-            >
+            </Link>
+            <Link href="/leaderboard" className={getLinkClass("/leaderboard")}>
               Leaderboard
-            </span>
-            <span
-              className={`cursor-pointer ${path === "/roadmap" ? "font-bold text-themeColor" : ""
-                }`}
-              onClick={() => router.push("/roadmap")}
-            >
+            </Link>
+            <Link href="/roadmap" className={getLinkClass("/roadmap")}>
               Roadmap
-            </span>
-            {/* <span
-              className={`cursor-pointer ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
-                }`}
-              onClick={() => router.push("/old-vaults")}
-            >
+            </Link>
+            {/* <Link href="/old-vaults" className={getLinkClass("/old-vaults")}>
               Old Vaults
-            </span> */}
+            </Link> */}
           </nav>
           {/* Select Network Modal */}
           {/* <ChainSwitcher/> */}

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { PropsWithChildren, useEffect, useState } from "react";
-import mixpanel from "mixpanel-browser";
 import {
   useActiveAccount,
   useConnectModal,
@@ -11,9 +10,8 @@ import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "../utils/client";
 import { usePathname } from "next/navigation";
-import { trackEvent } from "@/utils/trackEvent";
+import { trackPageView, identifyUser, trackWalletConnection } from "@/utils/trackEvent";
 
-// Explicitly type the shared configuration for ConnectButton and connect
 export const connectModalConfig: {
   client: typeof client;
   chains: typeof SUPPORTED_CHAINS;
@@ -42,7 +40,7 @@ export default function AccountProvider({ children }: PropsWithChildren) {
   const [initialCheckCount, setInitialCheckCount] = useState(0);
   const [isThirdwebReady, setIsThirdwebReady] = useState(false);
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
-  const [hasIdentified, setHasIdentified] = useState(false); // Track identification status
+  const [hasIdentified, setHasIdentified] = useState(false);
 
   const route = usePathname();
 
@@ -52,12 +50,10 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     }
   }, [initialCheckCount]);
 
-  // 🔄 Reset page tracking when route changes
   useEffect(() => {
     setHasTrackedPage(false);
   }, [route]);
 
-  // ✅ Track page views + wallet connect
   useEffect(() => {
     if (initialCheckCount < 2) {
       setInitialCheckCount((prev) => prev + 1);
@@ -66,50 +62,26 @@ export default function AccountProvider({ children }: PropsWithChildren) {
 
     if (!isThirdwebReady) return;
 
-    // ✅ Initialize Mixpanel (only once)
-    if (!(mixpanel as any).__initialized) {
-      mixpanel.init("1f01d05893463c7ba9d4ac7280821010", {
-        debug: true,
-        persistence: "localStorage",
-      });
-      (mixpanel as any).__initialized = true;
-    }
 
-    // ✅ Identify user only once when wallet is connected
-    if (account?.address && !hasIdentified) {
-      mixpanel.identify(account.address);
-      mixpanel.people.set({
-        wallet_address: account.address,
-      });
-      setHasIdentified(true); // Set identified to true after tracking
-    }
+  const handleAnalytics = async () => {
 
-    // ✅ Track "Wallet Connected" explicitly
-    if (connectionStatus === "connected" && account?.address && !hasIdentified) {
-      trackEvent("Wallet Connected", {
-        walletAddress: account.address,
-      });
+  if (account?.address && !hasIdentified) {
+    await identifyUser(account.address);
+    
+    if (connectionStatus === "connected") {
+      await trackWalletConnection(account.address);
     }
+    
+    setHasIdentified(true);
+  }
 
-    // ✅ Define human-readable page name
-    const page =
-      route === "/" ? "Vaults List" :
-      route.startsWith("/vaults/") ? "Vault Details" :
-      route === "/about" ? "About" :
-      route === "/leaderboard" ? "Leaderboard" :
-      route === "/roadmap" ? "Roadmap" :
-      route;
+  if (!hasTrackedPage) {
+    await trackPageView(route, account?.address);
+    setHasTrackedPage(true);
+  }
+};
 
-    // ✅ Track page view once per route
-    if (!hasTrackedPage) {
-      trackEvent("Page Viewed", {
-        page,
-        route,
-        isWalletConnected: !!account?.address,
-        walletAddress: account?.address || null,
-      });
-      setHasTrackedPage(true);
-    }
+    handleAnalytics();
   }, [
     route,
     account,
