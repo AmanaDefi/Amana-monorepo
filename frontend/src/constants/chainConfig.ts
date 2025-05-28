@@ -249,7 +249,12 @@ const zetaChain = defineChain({
   shortName: "zeta",
   chain: "ZetaChain",
   icon: CHAIN_ICONS[7000],
-  rpc: [zetaRpcUrl], // RPC should be an array of strings
+  rpc: [
+    zetaRpcUrl,
+    deployEnv === "testnet"
+      ? "https://zeta-chain-testnet.drpc.org"
+      : "https://zeta-chain.drpc.org",
+  ], // RPC should be an array of strings
   nativeCurrency: {
     name: "Zeta",
     symbol: "ZETA",
@@ -276,7 +281,10 @@ const ethereumChain = defineChain({
   shortName: deployEnv === "testnet" ? "sepolia" : "eth",
   chain: "ETH",
   icon: CHAIN_ICONS[1],
-  rpc: [deployEnv === "testnet" ? sepoliaRpcUrl : ethMainnetRpcUrl], // Replace with your RPC URL if available
+  rpc:
+    deployEnv === "testnet"
+      ? [sepoliaRpcUrl, "https://1rpc.io/sepolia"]
+      : [ethMainnetRpcUrl, "https://eth.llamarpc.com"], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "Ether",
     symbol: "ETH",
@@ -303,7 +311,10 @@ const baseChain = defineChain({
   shortName: "base",
   chain: "Base",
   icon: CHAIN_ICONS[84532],
-  rpc: [deployEnv === "testnet" ? baseSepoliaRpcUrl : baseMainnetRpcUrl], // Replace with your RPC URL if available
+  rpc:
+    deployEnv === "testnet"
+      ? [baseSepoliaRpcUrl, "https://base-sepolia.drpc.org"]
+      : [baseMainnetRpcUrl, "https://base.llamarpc.com"], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "Ether",
     symbol: "ETH",
@@ -330,7 +341,10 @@ const polygonChain = defineChain({
   shortName: "polygon",
   chain: "Polygon",
   icon: CHAIN_ICONS[137],
-  rpc: [deployEnv === "testnet" ? polygonAmoyRpcUrl : polygonMainnetRpcUrl], // Replace with your RPC URL if available
+  rpc:
+    deployEnv === "testnet"
+      ? [polygonAmoyRpcUrl, "https://polygon-mumbai-pokt.nodies.app"]
+      : [polygonMainnetRpcUrl, "https://1rpc.io/matic"], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "MATIC",
     symbol: "MATIC",
@@ -357,7 +371,10 @@ const bscChain = defineChain({
   shortName: "bsc",
   chain: "BSC",
   icon: CHAIN_ICONS[97],
-  rpc: [deployEnv === "testnet" ? bscTestnetRpcUrl : bscMainnetRpcUrl], // Replace with your RPC URL if available
+  rpc:
+    deployEnv === "testnet"
+      ? [bscTestnetRpcUrl, "https://bsc-testnet.drpc.org"]
+      : [bscMainnetRpcUrl, "https://binance.llamarpc.com"], // Replace with your RPC URL if available
   nativeCurrency: {
     name: "Binance Coin",
     symbol: "BNB",
@@ -408,7 +425,10 @@ const avalancheChain = defineChain({
   shortName: "avax",
   chain: "Avalanche",
   icon: CHAIN_ICONS[43114],
-  rpc: [deployEnv === "testnet" ? avalancheFujiRpcUrl : avalancheMainnetRpcUrl],
+  rpc:
+    deployEnv === "testnet"
+      ? [avalancheFujiRpcUrl, "https://avalanche-fuji.drpc.org"]
+      : [avalancheMainnetRpcUrl, "https://1rpc.io/avax/c"],
   nativeCurrency: {
     name: "Avalanche",
     symbol: "AVAX",
@@ -434,9 +454,10 @@ const arbitrumChain = defineChain({
   shortName: "arb",
   chain: "Arbitrum",
   icon: CHAIN_ICONS[42161],
-  rpc: [
-    deployEnv === "testnet" ? arbitrumSepoliaRpcUrl : arbitrumMainnetRpcUrl,
-  ],
+  rpc:
+    deployEnv === "testnet"
+      ? [arbitrumSepoliaRpcUrl, "https://arbitrum-goerli.publicnode.com"]
+      : [arbitrumMainnetRpcUrl, "https://arbitrum.meowrpc.com"],
   nativeCurrency: {
     name: "Ether",
     symbol: "ETH",

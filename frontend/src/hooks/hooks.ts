@@ -47,7 +47,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { ethers, Interface } from "ethers";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
-import {apiService} from "@/service";
+import { apiService } from "@/service";
 import { zetaProvider } from "@/utils/providers";
 
 type CashedVaultData = {
@@ -55,12 +55,12 @@ type CashedVaultData = {
   balance: string;
   totalAssets: any;
   totalAssetsinToken: string;
-}[]
+}[];
 
-export const UPDATE_VAULT_TIMESTAMP = 'updateCashTimestamp';
-export const HAS_CHANGE_DEPOSIT = 'has_deposited';
-const CASHED_VAULT_ASSETS_DATA = 'cashedVaultAssetsData';
-const CASHED_VAULT_APIS = 'cashedVaultApis';
+export const UPDATE_VAULT_TIMESTAMP = "updateCashTimestamp";
+export const HAS_CHANGE_DEPOSIT = "has_deposited";
+const CASHED_VAULT_ASSETS_DATA = "cashedVaultAssetsData";
+const CASHED_VAULT_APIS = "cashedVaultApis";
 const CASH_VAULT_INTERVAL_IN_MIN = 0.5;
 
 export const useUpdateVaultBalanceAndTotal = (
@@ -68,150 +68,163 @@ export const useUpdateVaultBalanceAndTotal = (
   walletAddress: string | null,
   setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
   setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
-  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
+  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter,
 ) => {
   const provider = zetaProvider;
   const mcInterface = useMemo(() => new Interface(multicall3Abi), []);
   const vaultInterface = useMemo(() => new Interface(vaultAbi), []);
 
   const update = useCallback(async () => {
-    const now = Date.now();
-    const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
-    const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
-    if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true') {
-      const cashedVaultData = localStorage.getItem(CASHED_VAULT_ASSETS_DATA);
-      if (cashedVaultData) {
-        const parsedVaultData: CashedVaultData = JSON.parse(cashedVaultData);
-        setUserVaultBalances(
-          parsedVaultData.map(({ vaultId, balance }) => ({ vaultId, balance })),
-        );
-        setVaultTotalAssets(
-          parsedVaultData.map(({ vaultId, totalAssets }) => ({
-            vaultId,
-            totalAssets,
-          })),
-        );
-        setVaultTotalAssetsinToken(
-          parsedVaultData.map(({ vaultId, totalAssetsinToken }) => ({
-            vaultId,
-            totalAssetsinToken,
-          })),
-        );
+    try {
+      const now = Date.now();
+      const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
+      const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
+      if (
+        timestamp &&
+        now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE &&
+        hasDeposited !== "true"
+      ) {
+        const cashedVaultData = localStorage.getItem(CASHED_VAULT_ASSETS_DATA);
+        if (cashedVaultData) {
+          const parsedVaultData: CashedVaultData = JSON.parse(cashedVaultData);
+          setUserVaultBalances(
+            parsedVaultData.map(({ vaultId, balance }) => ({
+              vaultId,
+              balance,
+            })),
+          );
+          setVaultTotalAssets(
+            parsedVaultData.map(({ vaultId, totalAssets }) => ({
+              vaultId,
+              totalAssets,
+            })),
+          );
+          setVaultTotalAssetsinToken(
+            parsedVaultData.map(({ vaultId, totalAssetsinToken }) => ({
+              vaultId,
+              totalAssetsinToken,
+            })),
+          );
+        }
+        return; //Update only if interval > 2 min or if user has deposited in Pool
       }
-      return; //Update only if interval > 2 min or if user has deposited in Pool
+
+      if (!provider || vaults.length === 0) return;
+      let address = isSolanaAddress(walletAddress)
+        ? "0x77706672467938396e78347A4B734c5066653142"
+        : walletAddress || ADDRESS_ZERO;
+
+      const mcCfg = MULTICALL_ADDRS[CHAIN_ID.zetachain];
+
+      // 1. First multicall: fetch shares and token decimals
+      const balanceCalls = vaults.flatMap((vault) => [
+        {
+          target: vault.id,
+          allowFailure: true,
+          callData: new Interface(vaultAbi).encodeFunctionData("balanceOf", [
+            address,
+          ]),
+        },
+        {
+          target: vault.id,
+          allowFailure: true,
+          callData: new Interface(vaultAbi).encodeFunctionData("decimals", []),
+        },
+      ]);
+      const balanceData = await provider.call({
+        to: mcCfg.address,
+        data: mcInterface.encodeFunctionData("aggregate3", [balanceCalls]),
+      });
+      const [balanceResults] = mcInterface.decodeFunctionResult(
+        "aggregate3",
+        balanceData,
+      ) as any;
+      // parse shares and decimals
+      const sharesArray = [] as BigInt[];
+      const decimalsArray = [] as number[];
+      for (let i = 0; i < vaults.length; i++) {
+        const shareRes = balanceResults[2 * i];
+        const decRes = balanceResults[2 * i + 1];
+        const shares = shareRes.success ? BigInt(shareRes.returnData) : 0n;
+        const dec = decRes.success
+          ? Number(BigInt(decRes.returnData))
+          : vaults[i].inputToken.decimals;
+        sharesArray.push(shares);
+        decimalsArray.push(dec);
+      }
+
+      // 2. Second multicall: fetch converted assets, maxRedeem and totalAssets
+      const assetCalls = vaults.flatMap((vault, idx) => [
+        {
+          target: vault.id,
+          allowFailure: true,
+          callData: vaultInterface.encodeFunctionData("convertToAssets", [
+            sharesArray[idx],
+          ]),
+        },
+        {
+          target: vault.id,
+          allowFailure: true,
+          callData: vaultInterface.encodeFunctionData("maxRedeem", [address]),
+        },
+      ]);
+      const assetData = await provider.call({
+        to: mcCfg.address,
+        data: mcInterface.encodeFunctionData("aggregate3", [assetCalls]),
+      });
+      const [assetResults] = mcInterface.decodeFunctionResult(
+        "aggregate3",
+        assetData,
+      ) as any;
+
+      // 3) fetch totalAssets from backend
+      const vaultDataMap = await apiService.api.getAllVaultDataCached(
+        vaults.map((vault) => vault.id),
+      );
+
+      // assemble results
+      const balancesAndAssets = vaults.map((vault, i) => {
+        const dec = decimalsArray[i];
+        const balAssets = assetResults[2 * i].success
+          ? BigInt(assetResults[2 * i].returnData)
+          : 0n;
+        const maxRed = assetResults[2 * i + 1].success
+          ? BigInt(assetResults[2 * i + 1].returnData)
+          : 0n;
+        const totalAssetsStr =
+          vaultDataMap[vault.id].total_assets?.toString() ?? "Error";
+
+        return {
+          vaultId: vault.id,
+          balance: ethers.formatUnits(balAssets, dec),
+          totalAssets: totalAssetsStr,
+          totalAssetsinToken: ethers.formatUnits(maxRed, dec),
+        };
+      });
+
+      setUserVaultBalances(
+        balancesAndAssets.map(({ vaultId, balance }) => ({ vaultId, balance })),
+      );
+      setVaultTotalAssets(
+        balancesAndAssets.map(({ vaultId, totalAssets }) => ({
+          vaultId,
+          totalAssets,
+        })),
+      );
+      setVaultTotalAssetsinToken(
+        balancesAndAssets.map(({ vaultId, totalAssetsinToken }) => ({
+          vaultId,
+          totalAssetsinToken,
+        })),
+      );
+      localStorage.setItem(
+        CASHED_VAULT_ASSETS_DATA,
+        JSON.stringify(balancesAndAssets),
+      );
+      localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
+      localStorage.setItem(HAS_CHANGE_DEPOSIT, "false");
+    } finally {
     }
-
-    if (!provider || vaults.length === 0) return;
-    let address = isSolanaAddress(walletAddress)
-      ? "0x77706672467938396e78347A4B734c5066653142"
-      : walletAddress || ADDRESS_ZERO;
-
-    const mcCfg = MULTICALL_ADDRS[CHAIN_ID.zetachain];
-
-    // 1. First multicall: fetch shares and token decimals
-    const balanceCalls = vaults.flatMap((vault) => [
-      {
-        target: vault.id,
-        allowFailure: true,
-        callData: new Interface(vaultAbi).encodeFunctionData("balanceOf", [
-          address,
-        ]),
-      },
-      {
-        target: vault.id,
-        allowFailure: true,
-        callData: new Interface(vaultAbi).encodeFunctionData("decimals", []),
-      },
-    ]);
-    const balanceData = await provider.call({
-      to: mcCfg.address,
-      data: mcInterface.encodeFunctionData("aggregate3", [balanceCalls]),
-    });
-    const [balanceResults] = mcInterface.decodeFunctionResult(
-      "aggregate3",
-      balanceData,
-    ) as any;
-    // parse shares and decimals
-    const sharesArray = [] as BigInt[];
-    const decimalsArray = [] as number[];
-    for (let i = 0; i < vaults.length; i++) {
-      const shareRes = balanceResults[2 * i];
-      const decRes = balanceResults[2 * i + 1];
-      const shares = shareRes.success ? BigInt(shareRes.returnData) : 0n;
-      const dec = decRes.success
-        ? Number(BigInt(decRes.returnData))
-        : vaults[i].inputToken.decimals;
-      sharesArray.push(shares);
-      decimalsArray.push(dec);
-    }
-
-    // 2. Second multicall: fetch converted assets, maxRedeem and totalAssets
-    const assetCalls = vaults.flatMap((vault, idx) => [
-      {
-        target: vault.id,
-        allowFailure: true,
-        callData: vaultInterface.encodeFunctionData("convertToAssets", [
-          sharesArray[idx],
-        ]),
-      },
-      {
-        target: vault.id,
-        allowFailure: true,
-        callData: vaultInterface.encodeFunctionData("maxRedeem", [address]),
-      },
-    ]);
-    const assetData = await provider.call({
-      to: mcCfg.address,
-      data: mcInterface.encodeFunctionData("aggregate3", [assetCalls]),
-    });
-    const [assetResults] = mcInterface.decodeFunctionResult(
-      "aggregate3",
-      assetData,
-    ) as any;
-
-    // 3) fetch totalAssets from backend
-    const vaultDataMap = await apiService.api.getAllVaultDataCached(
-      vaults.map((vault) => vault.id),
-    );
-
-    // assemble results
-    const balancesAndAssets = vaults.map((vault, i) => {
-      const dec = decimalsArray[i];
-      const balAssets = assetResults[2 * i].success
-        ? BigInt(assetResults[2 * i].returnData)
-        : 0n;
-      const maxRed = assetResults[2 * i + 1].success
-        ? BigInt(assetResults[2 * i + 1].returnData)
-        : 0n;
-      const totalAssetsStr =
-        vaultDataMap[vault.id].total_assets?.toString() ?? "Error";
-
-      return {
-        vaultId: vault.id,
-        balance: ethers.formatUnits(balAssets, dec),
-        totalAssets: totalAssetsStr,
-        totalAssetsinToken: ethers.formatUnits(maxRed, dec),
-      };
-    });
-
-    setUserVaultBalances(
-      balancesAndAssets.map(({ vaultId, balance }) => ({ vaultId, balance })),
-    );
-    setVaultTotalAssets(
-      balancesAndAssets.map(({ vaultId, totalAssets }) => ({
-        vaultId,
-        totalAssets,
-      })),
-    );
-    setVaultTotalAssetsinToken(
-      balancesAndAssets.map(({ vaultId, totalAssetsinToken }) => ({
-        vaultId,
-        totalAssetsinToken,
-      })),
-    );
-    localStorage.setItem(CASHED_VAULT_ASSETS_DATA, JSON.stringify(balancesAndAssets));
-    localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
-    localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
   }, [provider, vaults, walletAddress]);
   useEffect(() => {
     update();
@@ -277,7 +290,7 @@ export const useUpdateAPYs = (
   cvxTokenPrice: number,
   ethTokenPrice: number,
   compTokenPrice: number,
-  isFromVaultGrid?: boolean
+  isFromVaultGrid?: boolean,
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
@@ -387,9 +400,12 @@ export const useUpdateAPYs = (
         );
         setVaultAPYs(updatedVaultAPYs);
         if (isFromVaultGrid) {
-          localStorage.setItem(CASHED_VAULT_APIS, JSON.stringify(updatedVaultAPYs))
+          localStorage.setItem(
+            CASHED_VAULT_APIS,
+            JSON.stringify(updatedVaultAPYs),
+          );
           localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
-          localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
+          localStorage.setItem(HAS_CHANGE_DEPOSIT, "false");
         }
       } finally {
         setLoading(false); // Stop the loading state after updating APYs
@@ -409,7 +425,12 @@ export const useUpdateAPYs = (
       const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
       const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
 
-      if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true' && isFromVaultGrid) {
+      if (
+        timestamp &&
+        now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE &&
+        hasDeposited !== "true" &&
+        isFromVaultGrid
+      ) {
         const cashedVaultApis = localStorage.getItem(CASHED_VAULT_APIS);
         if (cashedVaultApis) {
           setVaultAPYs(JSON.parse(cashedVaultApis));
@@ -420,7 +441,6 @@ export const useUpdateAPYs = (
         setLoading(true);
         updateAPYs();
       }
-
     }
   }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, isFromVaultGrid]);
 };
