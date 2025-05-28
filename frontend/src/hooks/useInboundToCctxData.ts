@@ -29,7 +29,7 @@ export const useInboundToCctxData = (
     queryKey: ["InboundToCctxData", crosschainInvestHash],
     queryFn: async () => {
       if (!crosschainInvestHash) return null;
-      return blockpiService.getInboundHashToCctxData(crosschainInvestHash);
+      return blockpiService.getInboundHashToCctx(crosschainInvestHash);
     },
     refetchInterval: 5000,
     enabled: crosschainInvestHash !== "" && action === Action.crosschainInvest,

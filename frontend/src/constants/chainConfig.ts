@@ -952,6 +952,12 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   [CHAIN_ID.avalanche]: "https://snowtrace.io",
 }
 
+// Cross-chain explorer URLs for ZetaChain cross-chain transactions (cc/tx format)
+export const ZETACHAIN_CROSSCHAIN_EXPLORER_URLS = {
+  mainnet: "https://explorer.zetachain.com",
+  testnet: "https://zetachain-testnet.blockscout.com" // Keeping testnet as blockscout for now
+}
+
 export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
   // EVM Chains with unique gateway
   43113: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549", // Avalanche Testnet

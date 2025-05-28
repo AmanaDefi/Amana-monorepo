@@ -1016,7 +1016,7 @@ function Interaction({
           ...prev,
           [Action.deposit]: {
             label: "Deposit",
-            description: "Initial deposit transaction on local chain completed",
+            description: "Initial deposit transaction on zetachain completed",
             status: TransactionStepStatus.completed,
             txHash: localLastEventTxHash,
           },
@@ -1438,7 +1438,7 @@ function Interaction({
         if (isZetachain(vaultData.protocol.chainId)) {
           description = "Deposit in progress";
         } else {
-          description = `Initial deposit transaction on ${activeChain.name} in progress`;
+          description = "Initial deposit transaction on zetachain in progress";
         }
       } else {
         description = "Initial deposit transaction on local chain in progress";
@@ -1451,14 +1451,17 @@ function Interaction({
     }
     if (action == Action.withdraw) {
       let description;
-      if (isZetachain(vaultData.protocol.chainId)) {
-        if (isZetachain(activeChain.id)) {
+      if (isZetachain(activeChain.id)) {
+        if (isZetachain(vaultData.protocol.chainId)) {
+          // Type 1: User on zetachain, vault strategy on zetachain
           description = `Withdrawing ${inputBalance.formatted} ${vaultData.inputToken.symbol}`;
         } else {
-          description = `Initial withdraw transaction on local chain in progress`;
+          // Type 2: User on zetachain, vault strategy on non-zetachain
+          description = "Initial withdraw transaction on zetachain in progress";
         }
       } else {
-        description = `Initial withdraw transaction on ${activeChain.name} in progress`;
+        // Type 3 & 4: User on non-zetachain
+        description = "Initial withdraw transaction on local chain in progress";
       }
       updateTransactionStepFeedback(action, {
         label: "Withdraw",

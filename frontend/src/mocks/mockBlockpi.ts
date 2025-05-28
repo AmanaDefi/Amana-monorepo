@@ -27,6 +27,11 @@ export class MockBlockpi {
     return mockCctxScenarios[this.currentScenario];
   }
 
+  // Alias for getInboundHashToCctxData to match the real BlockPI service
+  async getInboundHashToCctx(localchainHash: string): Promise<BlockPIResponse | null> {
+    return this.getInboundHashToCctxData(localchainHash);
+  }
+
   async getTransactionStatus(localchainHash: string): Promise<BlockPIStatus | null> {
     const data = await this.getInboundHashToCctxData(localchainHash);
     const status = data?.CrossChainTxs?.[0]?.cctx_status?.status;

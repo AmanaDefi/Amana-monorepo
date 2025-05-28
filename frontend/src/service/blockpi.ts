@@ -1,4 +1,5 @@
 import { BLOCKPI_URL } from "@/config.ts/apiConfig";
+import { CHAINS_EXPLORER_BASE_URL_MAINNET, ZETACHAIN_CROSSCHAIN_EXPLORER_URLS, deployEnv } from "@/constants/chainConfig";
 import axios, { AxiosInstance } from "axios";
 
 export type BlockPIStatus = 
@@ -91,7 +92,7 @@ export interface TransactionSequence {
   steps: Array<{
     name: string;
     type: 'local' | 'inboundToCctx' | 'cctx' | 'strategy_tx_extract';
-    getHash: (localHash: string, prevStepData?: any) => string;
+    getHash: (localHash: string, prevStepData?: any, transactionTypeData?: any) => string;
   }>;
 }
 
@@ -112,9 +113,18 @@ export const TRANSACTION_SEQUENCES: Record<string, TransactionSequence> = {
       {
         name: 'Cross chain call from vault to strategy',
         type: 'inboundToCctx',
-        getHash: (localHash: string, prevStepData: any) => {
-          // Step 3 uses Step 2's cctx_index as inbound hash
-          return prevStepData?.cctxIndex || prevStepData?.CrossChainTx?.index;
+        getHash: (localHash: string, prevStepData: any, transactionTypeData: any) => {
+          const isType2 = transactionTypeData?.isType2 === true;
+          
+          if (isType2) {
+            // Type 2: Step 3 uses outbound hash from Step 2
+            console.log('[Type 2] Step 3 using outbound hash from Step 2');
+            return prevStepData?.CrossChainTx?.outbound_params?.[0]?.hash;
+          } else {
+            // Type 4: Step 3 uses Step 2's cctx_index as inbound hash
+            console.log('[Type 4] Step 3 using cctx_index from Step 2');
+            return prevStepData?.cctxIndex || prevStepData?.CrossChainTx?.index;
+          }
         }
       },
       {
@@ -151,9 +161,18 @@ export const TRANSACTION_SEQUENCES: Record<string, TransactionSequence> = {
       {
         name: 'Cross chain call from vault to strategy',
         type: 'inboundToCctx',
-        getHash: (localHash: string, prevStepData: any) => {
-          // Step 3 uses Step 2's cctx_index as inbound hash
-          return prevStepData?.cctxIndex || prevStepData?.CrossChainTx?.index;
+        getHash: (localHash: string, prevStepData: any, transactionTypeData: any) => {
+          const isType2 = transactionTypeData?.isType2 === true;
+          
+          if (isType2) {
+            // Type 2: Step 3 uses outbound hash from Step 2
+            console.log('[Type 2] Step 3 using outbound hash from Step 2');
+            return prevStepData?.CrossChainTx?.outbound_params?.[0]?.hash;
+          } else {
+            // Type 4: Step 3 uses Step 2's cctx_index as inbound hash
+            console.log('[Type 4] Step 3 using cctx_index from Step 2');
+            return prevStepData?.cctxIndex || prevStepData?.CrossChainTx?.index;
+          }
         }
       },
       {
@@ -356,10 +375,11 @@ export default class Blockpi {
     stepConfig: any,
     localHash: string,
     prevStepData?: any,
-    cacheBuster?: number
+    cacheBuster?: number,
+    transactionTypeData?: any
   ): Promise<{ success: boolean; data?: any; error?: string; cctxIndex?: string }> {
     try {
-      const stepHash = stepConfig.getHash(localHash, prevStepData);
+      const stepHash = stepConfig.getHash(localHash, prevStepData, transactionTypeData);
       
       if (!stepHash) {
         return { success: false, error: `No hash available for step ${stepIndex + 1}` };
@@ -624,234 +644,340 @@ export default class Blockpi {
     }
   }
 
-  // Enhanced trackTransactionSequence method
-  async trackTransactionSequence(
+  // Add a method that provides real-time step updates using simple polling
+  async trackTransactionSequenceWithProgress(
     localHash: string,
     transactionType: 'deposit' | 'withdrawal',
-    onStepUpdate?: (step: number, status: 'pending' | 'processing' | 'completed' | 'error' | 'waiting_too_long', data?: any) => void,
-    timestamp?: number, // Optional timestamp parameter for cache busting
-    transactionTypeData?: { isType2?: boolean; isType4?: boolean } // Transaction type information
-  ): Promise<EnhancedTransactionProgress> {
-    console.log('[BlockPI Service] trackTransactionSequence called with:', {
+    onStepComplete: (stepIndex: number, stepData: any) => void,
+    transactionTypeData?: { isType2?: boolean; isType4?: boolean; totalSteps?: number },
+    activeChainId?: number,
+    vaultProtocolChainId?: number
+  ): Promise<{
+    success: boolean;
+    completedSteps: number;
+    totalSteps: number;
+    error?: string;
+  }> {
+    console.log('[BlockPI Progressive] Starting progressive tracking for:', {
       localHash,
       transactionType,
-      hasCallback: !!onStepUpdate,
-      timestamp: timestamp || Date.now(),
-      transactionTypeData
+      transactionTypeData,
+      activeChainId,
+      vaultProtocolChainId
     });
-    
+
     const sequence = TRANSACTION_SEQUENCES[transactionType];
     if (!sequence) {
       throw new Error(`Unknown transaction type: ${transactionType}`);
     }
+
+    const isType2 = transactionTypeData?.isType2 === true;
     
-    console.log('[BlockPI Service] Using sequence:', sequence);
-
-    const startTime = Date.now();
-    const steps: TransactionStep[] = [];
-    let currentStep = 0;
+    // CRITICAL FIX: Limit sequence steps based on transaction type
+    const stepsToProcess = isType2 ? 3 : sequence.steps.length; // Type 2 only needs 3 steps
+    const sequenceSteps = sequence.steps.slice(0, stepsToProcess);
+    
+    console.log(`[BlockPI Progressive] Using ${stepsToProcess} steps for ${isType2 ? 'Type 2' : 'Type 4/other'} transaction`);
+    
     let prevStepData: any = null;
-    let outboundHash: string | undefined;
-    let isTimeout = false;
-    let waitingTooLongStep: number | undefined;
-    let waitStartTime: number | undefined;
+    let completedSteps = 0;
 
-    // Initialize steps array but don't call onStepUpdate for all steps
-    for (let i = 0; i < sequence.steps.length; i++) {
-      steps.push({
-        type: sequence.steps[i].type,
-        hash: '',
-        status: null,
-        data: null,
-        name: sequence.steps[i].name
-      });
-    }
-
-    // Only initialize the first step as processing
-    onStepUpdate?.(0, 'processing');
+    // Step descriptions based on transaction type
+    const getStepDescription = (stepIndex: number): string => {
+      if (isType2) {
+        const descriptions = transactionType === 'deposit' ? [
+          'Initial deposit transaction on Zetachain',
+          'Cross chain transfer and investment of funds',
+          'Final confirmation completed, shares issued by vault'
+        ] : [
+          'Initial withdraw transaction on Zetachain',
+          'Divestment of funds from strategy',
+          'Withdrawal confirmation completed, funds returned'
+        ];
+        return descriptions[stepIndex] || `Step ${stepIndex + 1}`;
+      } else {
+        const descriptions = transactionType === 'deposit' ? [
+          'Initial deposit transaction on local chain',
+          'Cross chain transfer to vault',
+          'Cross chain transfer and investment of funds',
+          'Funds investment on strategy chain',
+          'Final confirmation completed, shares issued by vault'
+        ] : [
+          'Initial withdraw transaction on local chain',
+          'Cross chain request to vault',
+          'Divestment of funds from strategy',
+          'Withdrawal confirmation',
+          'Return of funds',
+          'Final withdraw to user'
+        ];
+        return descriptions[stepIndex] || `Step ${stepIndex + 1}`;
+      }
+    };
 
     try {
-      // Execute each step in sequence
-      for (let stepIndex = 0; stepIndex < sequence.steps.length; stepIndex++) {
-        currentStep = stepIndex;
-        const stepConfig = sequence.steps[stepIndex];
+          console.log(`[BlockPI Progressive] About to process ${sequenceSteps.length} steps for ${isType2 ? 'Type 2' : 'Type 4/other'} transaction`);
+    
+    // Execute each step with retry logic and update UI immediately when each completes
+    for (let stepIndex = 0; stepIndex < sequenceSteps.length; stepIndex++) {
+      const stepConfig = sequenceSteps[stepIndex];
+      console.log(`[BlockPI Progressive] Processing step ${stepIndex + 1}/${sequenceSteps.length}: ${stepConfig.name}`);
+      console.log(`[BlockPI Progressive] Step ${stepIndex + 1} starting at timestamp: ${Date.now()}`);
+      
+      const stepHash = stepConfig.getHash(localHash, prevStepData, transactionTypeData);
+      const description = getStepDescription(stepIndex);
+      
+      // Show this step as processing
+      const processingStepData = {
+        stepIndex,
+        status: 'processing' as const,
+        description: `${description} in progress`,
+        txHash: stepHash
+      };
+      
+      // Generate correct explorer link for processing step
+      if (activeChainId && vaultProtocolChainId) {
+        processingStepData.txHash = this.getStepExplorerLink(
+          stepIndex,
+          processingStepData,
+          stepHash,
+          transactionType,
+          transactionTypeData,
+          activeChainId,
+          vaultProtocolChainId
+        );
+      }
+      
+      onStepComplete(stepIndex, processingStepData);
+      
+      // Retry logic for each step
+      let attempt = 0;
+      const maxAttempts = 120; // 120 attempts = ~20 minutes with 10s intervals
+      let stepCompleted = false;
+      let stepResult: any = null;
+
+      while (attempt < maxAttempts && !stepCompleted) {
+        attempt++;
+        console.log(`[BlockPI Progressive] Step ${stepIndex + 1}, attempt ${attempt}/${maxAttempts}`);
         
-        // Only call processing update if not already called for step 0
-        if (stepIndex > 0) {
-          onStepUpdate?.(stepIndex, 'processing');
-        }
-        
-        let attempt = 0;
-        const maxAttempts = this.MAX_ATTEMPTS;
-        let baseDelay = 3000; // Start with 3s
-        let stepCompleted = false;
+        const result = await this.executeTransactionStep(
+          stepIndex,
+          stepConfig,
+          localHash,
+          prevStepData,
+          Date.now(),
+          transactionTypeData // Pass transaction type data for hash calculation
+        );
 
-        // Calculate step start time for "taking too long" notification
-        const stepStartTime = Date.now();
-        waitingTooLongStep = undefined;
-        waitStartTime = undefined;
-
-        while (attempt < maxAttempts && !stepCompleted && Date.now() - startTime < 600000) {
-          // Add timestamp to force fresh API call on each attempt
-          const cacheBuster = Date.now();
-          console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt + 1} with timestamp ${cacheBuster}`);
+        if (result.success) {
+          // Step completed successfully
+          stepResult = result;
+          stepCompleted = true;
+          console.log(`[BlockPI Progressive] Step ${stepIndex + 1} completed on attempt ${attempt}`);
+        } else {
+          // Check if this is a real failure or just a retryable state
+          const isRetryableError = result.error?.includes('pending') || 
+                                  result.error?.includes('PendingOutbound') ||
+                                  result.error?.includes('Pending') ||
+                                  result.error?.includes('Data not yet available') ||
+                                  result.error?.includes('not yet available') ||
+                                  result.error?.includes('404') ||
+                                  result.error?.includes('Rate limited');
           
-          // Check if we've been waiting too long and should notify the user
-          if (attempt >= this.LONG_WAIT_THRESHOLD && !waitingTooLongStep) {
-            waitingTooLongStep = stepIndex;
-            waitStartTime = Date.now() - stepStartTime;
-            console.log(`[BlockPI] Step ${stepIndex + 1} is taking longer than expected (${Math.round(waitStartTime/1000)}s)`);
-            onStepUpdate?.(stepIndex, 'waiting_too_long', { 
-              waitTime: waitStartTime,
-              stepIndex,
-              description: `This step is taking longer than expected. This doesn't mean it failed, just that the network might be congested.`
-            });
-          }
-          
-          const result = await this.executeTransactionStep(
-            stepIndex, 
-            stepConfig, 
-            localHash, 
-            prevStepData,
-            cacheBuster // Pass timestamp to ensure fresh API call
-          );
-          
-          // Calculate hash after we have the result
-          const calculatedHash = stepConfig.getHash(localHash, prevStepData);
-          steps[stepIndex].hash = calculatedHash;
-          
-          if (result.success) {
-            steps[stepIndex].status = 'OutboundMined' as BlockPIStatus;
-            steps[stepIndex].data = result.data;
-            // Update prevStepData with the complete result data
-            prevStepData = result.data;
+          if (isRetryableError) {
+            // This is just a retryable state, not a real failure - keep retrying
+            console.log(`[BlockPI Progressive] Step ${stepIndex + 1} retryable error (${result.error}), retrying in 10s...`);
             
-            // If we had a "waiting too long" notification, clear it
-            if (waitingTooLongStep === stepIndex) {
-              waitingTooLongStep = undefined;
-              waitStartTime = undefined;
+            // Show "taking longer than expected" after 5 attempts
+            if (attempt >= 5) {
+              const waitingStepData = {
+                stepIndex,
+                status: 'processing' as const,
+                description: `${description} is taking longer than expected`,
+                txHash: stepHash,
+                isWaitingTooLong: true
+              };
+              
+              // Generate correct explorer link for waiting step
+              if (activeChainId && vaultProtocolChainId) {
+                waitingStepData.txHash = this.getStepExplorerLink(
+                  stepIndex,
+                  waitingStepData,
+                  stepHash,
+                  transactionType,
+                  transactionTypeData,
+                  activeChainId,
+                  vaultProtocolChainId
+                );
+              }
+              
+              onStepComplete(stepIndex, waitingStepData);
             }
             
-            // Save outbound hash for potential recovery
-            if (result.data?.CrossChainTx?.outbound_params?.[0]?.hash) {
-              outboundHash = result.data.CrossChainTx.outbound_params[0].hash;
-              console.log(`[BlockPI] Saved outbound hash for step ${stepIndex}: ${outboundHash}`);
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 10000)); // 10 second intervals
+                      } else {
+              // This is a real failure (reverted, failed, etc.)
+              const isRealFailure = result.error?.includes('reverted') || 
+                                   result.error?.includes('Reverted') ||
+                                   result.error?.includes('Failed') ||
+                                   result.error?.includes('Aborted');
+              
+              if (isRealFailure) {
+                console.error(`[BlockPI Progressive] Step ${stepIndex + 1} failed with transaction error: ${result.error}`);
+                
+                const stepData = {
+                  stepIndex,
+                  status: 'error' as const,
+                  description: `${description} failed: ${result.error}`,
+                  txHash: stepHash,
+                  data: result.data
+                };
+                
+                // Generate correct explorer link for error step
+                if (activeChainId && vaultProtocolChainId) {
+                  stepData.txHash = this.getStepExplorerLink(
+                    stepIndex,
+                    stepData,
+                    stepHash,
+                    transactionType,
+                    transactionTypeData,
+                    activeChainId,
+                    vaultProtocolChainId
+                  );
+                }
+                
+                // Immediately update UI for this failed step
+                onStepComplete(stepIndex, stepData);
+                
+                // Transaction failures should stop processing
+                console.log(`[BlockPI Progressive] Transaction failed at step ${stepIndex + 1}, stopping`);
+                return {
+                  success: false,
+                  completedSteps,
+                  totalSteps: stepsToProcess,
+                  error: result.error
+                };
+              } else {
+                // Unknown error - treat as retryable for now but log it
+                console.warn(`[BlockPI Progressive] Step ${stepIndex + 1} unknown error (treating as retryable): ${result.error}`);
+                
+                // Show "taking longer than expected" for unknown errors too
+                if (attempt >= 5) {
+                  const retryStepData = {
+                    stepIndex,
+                    status: 'processing' as const,
+                    description: `${description} encountering issues, retrying...`,
+                    txHash: stepHash,
+                    isWaitingTooLong: true
+                  };
+                  
+                  // Generate correct explorer link for retry step
+                  if (activeChainId && vaultProtocolChainId) {
+                    retryStepData.txHash = this.getStepExplorerLink(
+                      stepIndex,
+                      retryStepData,
+                      stepHash,
+                      transactionType,
+                      transactionTypeData,
+                      activeChainId,
+                      vaultProtocolChainId
+                    );
+                  }
+                  
+                  onStepComplete(stepIndex, retryStepData);
+                }
+                
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, 10000)); // 10 second intervals
+              }
             }
-            
-            onStepUpdate?.(stepIndex, 'completed', {
-              ...result.data,
-              hash: calculatedHash,
-              cctxIndex: result.cctxIndex,
-              url: stepConfig.type === 'inboundToCctx' && result.cctxIndex ? 
-                `${this.api.defaults.baseURL}/cctx/${result.cctxIndex}` : undefined
-            });
-            stepCompleted = true;
-            console.log(`[BlockPI] Step ${stepIndex + 1} completed: ${stepConfig.name} (hash: ${calculatedHash})`);
-          } else if (result.error?.includes('reverted')) {
-            steps[stepIndex].status = 'Reverted' as BlockPIStatus;
-            steps[stepIndex].error = result.error;
-            steps[stepIndex].data = result.data;
-            onStepUpdate?.(stepIndex, 'error', result.data);
-            return {
-              steps,
-              currentStep: stepIndex,
-              isComplete: false,
-              error: result.error,
-              isTimeout: false,
-              errorType: 'TRANSACTION_REVERTED'
-            };
-          } else {
-            // Step not ready yet, retry with exponential backoff
-            attempt++;
-            const backoffDelay = Math.min(baseDelay * Math.pow(1.5, attempt - 1), 30000);
-            
-            console.log(`[BlockPI] Step ${stepIndex + 1} attempt ${attempt}/${maxAttempts}: ${result.error}, next attempt in ${Math.round(backoffDelay/1000)}s`);
-            await new Promise(resolve => setTimeout(resolve, backoffDelay));
-          }
-        }
-
-        if (!stepCompleted) {
-          const error = `Step ${stepIndex + 1} failed after ${maxAttempts} attempts`;
-          steps[stepIndex].error = error;
-          
-          // Mark step as having a timeout
-          isTimeout = true;
-          
-          // Check if we can recover using outbound hash
-          let recoveryAttempted = false;
-          if (outboundHash) {
-            console.log(`[BlockPI] Attempting recovery for step ${stepIndex} using outbound hash ${outboundHash}`);
-            recoveryAttempted = true;
-            
-            const recoverySuccessful = await this.attemptStepRecovery(
-              outboundHash, 
-              stepIndex, 
-              transactionType,
-              transactionTypeData
-            );
-            
-            if (recoverySuccessful) {
-              console.log(`[BlockPI] Recovery successful! Continuing to next step`);
-              onStepUpdate?.(stepIndex, 'completed', { 
-                recoveredViaOutboundHash: true,
-                outboundHash 
-              });
-              continue;
-            }
-          }
-          
-          // Notify UI of the error if recovery failed or wasn't attempted
-          onStepUpdate?.(stepIndex, 'error', { 
-            recoveryAttempted,
-            outboundHash,
-            error,
-            isTimeout: true
-          });
-          
-          // Don't stop on later step failures - continue to next step if we're past the critical steps
-          if (stepIndex <= 1) {
-            return {
-              steps,
-              currentStep: stepIndex,
-              isComplete: false,
-              error,
-              isTimeout: true,
-              hasOutboundHash: !!outboundHash,
-              outboundHash,
-              errorType: outboundHash ? 'TIMEOUT_WITH_NEXT_STEP' : 'TIMEOUT',
-              stepWaitingTooLong: waitingTooLongStep,
-              waitTime: waitStartTime
-            };
-          }
-          
-          console.warn(`[BlockPI] Step ${stepIndex + 1} failed, but continuing to check remaining steps`);
-          continue;
         }
       }
 
+              if (stepCompleted && stepResult) {
+          // Step completed successfully - update UI
+          const stepData = {
+            stepIndex,
+            status: 'completed' as const,
+            description: `${description} completed`,
+            txHash: stepHash,
+            data: stepResult.data
+          };
+          
+          // Generate correct explorer link for completed step
+          if (activeChainId && vaultProtocolChainId) {
+            stepData.txHash = this.getStepExplorerLink(
+              stepIndex,
+              stepData,
+              stepHash,
+              transactionType,
+              transactionTypeData,
+              activeChainId,
+              vaultProtocolChainId
+            );
+          }
+          
+          onStepComplete(stepIndex, stepData);
+          
+          prevStepData = stepResult.data;
+          completedSteps++;
+          console.log(`[BlockPI Progressive] Step ${stepIndex + 1} completed and UI updated at timestamp: ${Date.now()}`);
+          console.log(`[BlockPI Progressive] Completed ${completedSteps}/${stepsToProcess} steps so far`);
+      } else if (!stepCompleted) {
+        // Step timed out after max attempts
+        console.error(`[BlockPI Progressive] Step ${stepIndex + 1} timed out after ${attempt} attempts (max: ${maxAttempts})`);
+        
+        const stepData = {
+          stepIndex,
+          status: 'error' as const,
+          description: `${description} timed out after ${attempt} attempts`,
+          txHash: stepHash
+        };
+        
+        // Generate correct explorer link for timeout step
+        if (activeChainId && vaultProtocolChainId) {
+          stepData.txHash = this.getStepExplorerLink(
+            stepIndex,
+            stepData,
+            stepHash,
+            transactionType,
+            transactionTypeData,
+            activeChainId,
+            vaultProtocolChainId
+          );
+        }
+        
+        onStepComplete(stepIndex, stepData);
+        
+        // CRITICAL FIX: Return failure for ANY step that times out, not just early steps
+        console.log(`[BlockPI Progressive] Step ${stepIndex + 1} failed, stopping transaction`);
+        return {
+          success: false,
+          completedSteps,
+          totalSteps: stepsToProcess,
+          error: `Step ${stepIndex + 1} timed out after ${attempt} attempts`
+        };
+      }
+    }
+
+      console.log(`[BlockPI Progressive] *** FOR LOOP COMPLETED ***`);
+      console.log(`[BlockPI Progressive] All ${stepsToProcess} steps completed successfully (completedSteps: ${completedSteps})`);
+      console.log(`[BlockPI Progressive] Final result: success=true, completedSteps=${completedSteps}, totalSteps=${stepsToProcess}`);
       return {
-        steps,
-        currentStep: sequence.steps.length,
-        isComplete: true,
-        isTimeout: false
+        success: true,
+        completedSteps,
+        totalSteps: stepsToProcess
       };
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const errorType = this.classifyError(error);
-      
-      onStepUpdate?.(currentStep, 'error', { errorType });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[BlockPI Progressive] Error during tracking:', errorMessage);
       
       return {
-        steps,
-        currentStep,
-        isComplete: false,
-        error: errorMessage,
-        isTimeout: errorType === 'TIMEOUT',
-        hasOutboundHash: !!outboundHash,
-        outboundHash,
-        errorType,
-        stepWaitingTooLong: waitingTooLongStep,
-        waitTime: waitStartTime
+        success: false,
+        completedSteps,
+        totalSteps: stepsToProcess,
+        error: errorMessage
       };
     }
   }
@@ -994,6 +1120,100 @@ export default class Blockpi {
     } catch (error) {
       console.error(`[BlockPI] Error finding inbound hash for outbound hash ${outboundHash}:`, error);
       return null;
+    }
+  }
+
+  // Add method to construct correct explorer links for each step
+  private getStepExplorerLink(
+    stepIndex: number, 
+    stepData: any, 
+    stepHash: string, 
+    transactionType: 'deposit' | 'withdrawal',
+    transactionTypeData: any,
+    activeChainId: number,
+    vaultProtocolChainId: number
+  ): string {
+    // Use the existing explorer URL configuration
+    const explorerUrls = CHAINS_EXPLORER_BASE_URL_MAINNET;
+    const ZETACHAIN_ID = deployEnv === "testnet" ? 7001 : 7000; // Use correct ZetaChain ID based on environment
+    
+    const isType2 = transactionTypeData?.isType2 === true;
+    
+    if (isType2) {
+      // Type 2: 3 steps (User on ZetaChain → Vault on Non-ZetaChain)
+      switch (stepIndex) {
+        case 0: // Initial transaction on ZetaChain
+          return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+          
+        case 1: // Cross-chain transfer to strategy chain
+          // Use the outbound hash from the CCTX data, which is the actual transaction on strategy chain
+          const strategyTxHash = stepData?.data?.CrossChainTx?.outbound_params?.[0]?.hash;
+          if (strategyTxHash && explorerUrls[vaultProtocolChainId]) {
+            return `${explorerUrls[vaultProtocolChainId]}/tx/${strategyTxHash}`;
+          }
+          // Fallback to ZetaChain explorer with the stepHash (CCTX index)
+          return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+          
+        case 2: // Final confirmation - should be strategy chain, not ZetaChain
+          // FIXED: Final confirmation happens on strategy chain
+          const finalStrategyTxHash = stepData?.data?.CrossChainTx?.outbound_params?.[0]?.hash;
+          if (finalStrategyTxHash && explorerUrls[vaultProtocolChainId]) {
+            return `${explorerUrls[vaultProtocolChainId]}/tx/${finalStrategyTxHash}`;
+          }
+          // Fallback to strategy chain with stepHash or ZetaChain if no strategy explorer
+          return explorerUrls[vaultProtocolChainId] 
+            ? `${explorerUrls[vaultProtocolChainId]}/tx/${stepHash}`
+            : `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+          
+        default:
+          return stepHash; // Fallback
+      }
+    } else {
+      // Type 4: 5-6 steps (Cross-chain from Non-ZetaChain)
+      switch (stepIndex) {
+        case 0: // Initial transaction on user's chain
+          return `${explorerUrls[activeChainId]}/tx/${stepHash}`;
+          
+        case 1: // Cross-chain to ZetaChain vault
+          // This is a CCTX index, link to ZetaChain explorer
+          return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+          
+        case 2: // Cross-chain from vault to strategy - FIXED: Use cc/tx format for CCTX
+          // FIXED: Use ZetaChain's cross-chain transaction explorer format with proper configuration
+          const zetaExplorerBaseUrl = deployEnv === "testnet" 
+            ? ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.testnet 
+            : ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.mainnet;
+          return `${zetaExplorerBaseUrl}/cc/tx/${stepHash}`;
+          
+        case 3: // Strategy chain transaction (extracted hash)
+          // This is the actual strategy chain transaction hash
+          if (explorerUrls[vaultProtocolChainId]) {
+            return `${explorerUrls[vaultProtocolChainId]}/tx/${stepHash}`;
+          }
+          return stepHash; // Fallback
+          
+        case 4: // Return from strategy to vault (ZetaChain)
+          return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+          
+        case 5: // Final withdraw to user (withdrawal only) - FIXED: Should be strategy chain
+          if (transactionType === 'withdrawal') {
+            // FIXED: Return of funds happens on strategy chain, not ZetaChain
+            const finalTxHash = stepData?.data?.CrossChainTx?.outbound_params?.[0]?.hash;
+            if (finalTxHash && explorerUrls[vaultProtocolChainId]) {
+              return `${explorerUrls[vaultProtocolChainId]}/tx/${finalTxHash}`;
+            }
+            // Use stepHash on strategy chain as fallback
+            if (explorerUrls[vaultProtocolChainId]) {
+              return `${explorerUrls[vaultProtocolChainId]}/tx/${stepHash}`;
+            }
+            // Last resort fallback to ZetaChain
+            return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+          }
+          return stepHash; // Fallback
+          
+        default:
+          return stepHash; // Fallback
+      }
     }
   }
 }
