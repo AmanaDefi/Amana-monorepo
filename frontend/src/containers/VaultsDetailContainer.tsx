@@ -4,8 +4,6 @@ import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token, Balance } from "@/types/types";
 import { VAULT_DATA } from "@/constants";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
-import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
