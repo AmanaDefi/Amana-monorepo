@@ -67,13 +67,13 @@ const StaticBanner2 = () => {
             {/* Chain logos */}
             <div className='flex-center h-full'>
                 <div className='flex flex-wrap items-center justify-center gap-2'>
-                    <Image src="/ZetaChain.webp" alt="ZetaChain" width={32} height={32} className="object-contain" />
-                    <Image src="/ETH.png" alt="Ethereum" width={32} height={32} className="object-contain" />
-                    <Image src="/base.png" alt="Base" width={32} height={32} className="object-contain" />
-                    <Image src="/bnb-bnb-logo.png" alt="Binance" width={32} height={32} className="object-contain" />
-                    <Image src="/polygon_logo.png" alt="Polygon" width={32} height={32} className="object-contain" />
-                    <Image src="/avalanche-avax-logo.png" alt="Avalanche" width={32} height={32} className="object-contain" />
-                    <Image src="/arbitrum-arb-logo.png" alt="Arbitrum" width={32} height={32} className="object-contain" />
+                    <Image src="/ZetaChain.webp" alt="ZetaChain" width={32} height={32} className="object-contain" sizes="32px" />
+                    <Image src="/ETH.png" alt="Ethereum" width={32} height={32} className="object-contain" sizes="32px" />
+                    <Image src="/base.png" alt="Base" width={32} height={32} className="object-contain" sizes="32px" />
+                    <Image src="/bnb-bnb-logo.png" alt="Binance" width={32} height={32} className="object-contain" sizes="32px" />
+                    <Image src="/polygon_logo.png" alt="Polygon" width={32} height={32} className="object-contain" sizes="32px" />
+                    <Image src="/avalanche-avax-logo.png" alt="Avalanche" width={32} height={32} className="object-contain" sizes="32px" />
+                    <Image src="/arbitrum-arb-logo.png" alt="Arbitrum" width={32} height={32} className="object-contain" sizes="32px" />
                 </div>
             </div>
         </div>
@@ -154,6 +154,7 @@ const CarouselBanner2 = () => (
                         alt='Ethereum'
                         fill
                         className='object-contain rounded-full'
+                        sizes="64px"
                     />
                 </div>
                 <div className='relative w-16 h-16 z-20'>
@@ -162,6 +163,7 @@ const CarouselBanner2 = () => (
                         alt='Polygon'
                         fill
                         className='object-contain rounded-full'
+                        sizes="64px"
                     />
                 </div>
                 <div className='relative w-16 h-16 z-10'>
@@ -170,6 +172,7 @@ const CarouselBanner2 = () => (
                         alt='USDC'
                         fill
                         className='object-contain rounded-full'
+                        sizes="64px"
                     />
                 </div>
             </div>
@@ -199,6 +202,7 @@ const CarouselBanner3 = () => (
                     fill
                     className='object-contain'
                     priority
+                    sizes="56px"
                 />
             </div>
             <div className='relative w-14 h-14'>
@@ -208,6 +212,7 @@ const CarouselBanner3 = () => (
                     fill
                     className='object-contain'
                     priority
+                    sizes="56px"
                 />
             </div>
         </div>
