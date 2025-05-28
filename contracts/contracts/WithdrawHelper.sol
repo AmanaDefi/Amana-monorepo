@@ -39,7 +39,7 @@ contract WithdrawHelper is Revertable {
     event ReturnFundsToUserFailed(
         uint256 indexed vaultNonce,
         address vault,
-        address receiver,
+        bytes recipient,
         uint256 amount
     );
     event CrossChainInvestSent(
@@ -181,11 +181,12 @@ contract WithdrawHelper is Revertable {
             revertMessage: abi.encode(
                 "_returnFundsToUserFailed",
                 amount,
-                recipient,
+                address(0),
                 withdrawZRC20,
                 registry,
                 msg.sender,
-                vaultNonce
+                vaultNonce,
+                recipient
             ),
             onRevertGasLimit: 0
         });
@@ -455,7 +456,8 @@ contract WithdrawHelper is Revertable {
                 withdrawZRC20,
                 registry,
                 msg.sender,
-                vaultNonce
+                vaultNonce,
+                bytes("0x")
             ),
             uint256(0)
         );
@@ -511,7 +513,8 @@ contract WithdrawHelper is Revertable {
                 address(0),
                 registry,
                 msg.sender,
-                vaultNonce
+                vaultNonce,
+                bytes("0x")
             ),
             uint256(0) // onRevertGasLimit - NA on ZEVM
         );
@@ -651,7 +654,7 @@ contract WithdrawHelper is Revertable {
             emit ReturnFundsToUserFailed(
                 vaultNonce,
                 vault,
-                receiverOrOldStrategy,
+                nonEvmAddress,
                 context.amount
             );
         } else if (
@@ -729,7 +732,7 @@ contract WithdrawHelper is Revertable {
             emit ReturnFundsToUserFailed(
                 vaultNonce,
                 vault,
-                receiverOrOldStrategy,
+                nonEvmAddress,
                 context.amount
             );
         } else if (

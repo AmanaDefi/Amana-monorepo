@@ -160,42 +160,22 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     /**
      * @dev Allows for manual input of a transaction message, mimicking _processConfirmationFromStrategy.
-     * @param user The address of the user associated with the transaction.
-     * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
-     * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
-     * @param withdrawChainId The chain ID of the withdrawal, if applicable.
-     * @param isDeposit A boolean indicating if the transaction is for a deposit (true) or withdrawal (false).
+     * @param amount The amount of the ZRC20 token to be withdrawn, if applicable.
      * @param totalAssetsAfter The total assets in the vault after the operation.
      * @param confirmationNonce A unique identifier for the transaction to ensure it is processed only once.
+     * @param _txSucceeded A bytes32 value indicating whether the transaction succeeded or failed.
      */
     function manuallyAddConfirmation(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 withdrawAmount,
-        uint256 vaultSharesToBeBurnt,
-        uint32 withdrawChainId,
-        bool isDeposit,
+        uint256 amount,
         uint256 totalAssetsAfter,
         uint256 confirmationNonce,
-        bytes32 _txSucceeded,
-        uint16 _slippage
+        bytes32 _txSucceeded
     ) external onlyOwner {
         // Store the transaction in the buffer
-        transactions[confirmationNonce] = Transaction({
-            user: user,
-            receiver: receiver,
-            withdrawZRC20: withdrawZRC20,
-            withdrawERC20: withdrawERC20,
-            amount: withdrawAmount,
-            vaultSharesToBeBurnt: vaultSharesToBeBurnt,
-            withdrawChainId: withdrawChainId,
-            isDeposit: isDeposit,
-            totalAssetsAfter: totalAssetsAfter,
-            txSucceeded: _txSucceeded,
-            slippage: _slippage
-        });
+        Transaction storage txn = transactions[confirmationNonce];
+        txn.amount = amount;
+        txn.totalAssetsAfter = totalAssetsAfter;
+        txn.txSucceeded = _txSucceeded;
     }
 
     function processExistingConfirmations(

@@ -142,15 +142,10 @@ export async function simulateDepositCallFromVaultToStrategy(
 
 export async function simulateWithdrawCallFromVaultToStrategy(
   vaultAddress: string,
-  owner: string,
   gatewaySigner: Signer,
   strategy: any,
-  withdrawZRC20: any,
-  vaultSharesToBeBurnt: BigNumber,
   fractionOfTotalShares: BigNumber,
   minAmountOut: BigNumber,
-  slippage: number,
-  ORIGIN_CHAIN_ID: number,
   vaultNonce: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
