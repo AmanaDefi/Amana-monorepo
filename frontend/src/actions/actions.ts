@@ -1711,9 +1711,7 @@ export async function fetchReceiptTokens(
         to: mcAddr,
         data: mcIface.encodeFunctionData("aggregate3", [calls]),
       });
-      const [rows] = mcIface.decodeFunctionResult("aggregate3", data) as [
-        { success: boolean; returnData: string }[],
-      ];
+      const [rows] = mcIface.decodeFunctionResult("aggregate3", data) as any;
 
       group.forEach((v, i) => {
         const r = rows[i];
