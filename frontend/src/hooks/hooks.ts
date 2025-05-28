@@ -50,8 +50,16 @@ import vaultAbi from "../../abis/moonwellVaultABI.json";
 import {apiService} from "@/service";
 import { zetaProvider } from "@/utils/providers";
 
+type CashedVaultData = {
+  vaultId: string;
+  balance: string;
+  totalAssets: any;
+  totalAssetsinToken: string;
+}[]
+
 export const UPDATE_VAULT_TIMESTAMP = 'updateCashTimestamp';
 export const HAS_CHANGE_DEPOSIT = 'has_deposited';
+const CASHED_VAULT_ASSETS_DATA = 'cashedVaultAssetsData';
 const CASHED_VAULT_APIS = 'cashedVaultApis';
 const CASH_VAULT_INTERVAL_IN_MIN = 0.5;
 
@@ -71,7 +79,26 @@ export const useUpdateVaultBalanceAndTotal = (
     const timestamp = localStorage.getItem(UPDATE_VAULT_TIMESTAMP);
     const hasDeposited = localStorage.getItem(HAS_CHANGE_DEPOSIT);
     if (timestamp && now - Number(timestamp) < CASH_VAULT_INTERVAL_IN_MIN * ONE_MINUTE && hasDeposited !== 'true') {
-      return; //Update only if interval > 5 min or if user has deposited in Pool
+      const cashedVaultData = localStorage.getItem(CASHED_VAULT_ASSETS_DATA);
+      if (cashedVaultData) {
+        const parsedVaultData: CashedVaultData = JSON.parse(cashedVaultData);
+        setUserVaultBalances(
+          parsedVaultData.map(({ vaultId, balance }) => ({ vaultId, balance })),
+        );
+        setVaultTotalAssets(
+          parsedVaultData.map(({ vaultId, totalAssets }) => ({
+            vaultId,
+            totalAssets,
+          })),
+        );
+        setVaultTotalAssetsinToken(
+          parsedVaultData.map(({ vaultId, totalAssetsinToken }) => ({
+            vaultId,
+            totalAssetsinToken,
+          })),
+        );
+      }
+      return; //Update only if interval > 2 min or if user has deposited in Pool
     }
 
     if (!provider || vaults.length === 0) return;
@@ -182,6 +209,7 @@ export const useUpdateVaultBalanceAndTotal = (
         totalAssetsinToken,
       })),
     );
+    localStorage.setItem(CASHED_VAULT_ASSETS_DATA, JSON.stringify(balancesAndAssets));
     localStorage.setItem(UPDATE_VAULT_TIMESTAMP, now.toString());
     localStorage.setItem(HAS_CHANGE_DEPOSIT, 'false');
   }, [provider, vaults, walletAddress]);
