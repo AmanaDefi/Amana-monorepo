@@ -816,3 +816,5 @@ export const VAULT_DATA =
 export const USER_SETTINGS_LOCAL_STORAGE_KEY = "user_settings";
 
 export const ONE_MINUTE = 60 * 1000;
+
+export const RECEIPT_LOCAL_STORAGE_KEY = 'receipt_local_storage_key'

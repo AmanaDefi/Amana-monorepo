@@ -59,6 +59,7 @@ import { apiService } from "@/service";
 import { trackEvent } from "@/utils/trackEvent";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
+import { RECEIPT_LOCAL_STORAGE_KEY } from "@/constants";
 
 dotenv.config();
 
@@ -1664,33 +1665,45 @@ export const updatePythPrices = async () => {};
 export async function fetchReceiptTokens(
   vaults: VaultData[],
 ): Promise<Record<string, string>> {
-  const result: Record<string, string> = {};
-  // Group vault indices by chainId
-  const groups = vaults.reduce(
-    (acc, v, idx) => {
-      (acc[v.protocol.chainId] ??= []).push(idx);
+  const CACHE_KEY = RECEIPT_LOCAL_STORAGE_KEY;
+  let cache: Record<string, string> = {};
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) cache = JSON.parse(raw);
+  } catch {}
+
+  const missingIds = vaults.map((v) => v.id).filter((id) => !(id in cache));
+
+  if (missingIds.length === 0) {
+    return cache;
+  }
+
+  const toFetch = vaults.filter((v) => missingIds.includes(v.id));
+
+  const groups = toFetch.reduce(
+    (acc, v) => {
+      (acc[v.protocol.chainId] ??= []).push(v);
       return acc;
     },
-    {} as Record<number, number[]>,
+    {} as Record<number, VaultData[]>,
   );
 
   const receiptIface = new Interface([
     "function receiptToken() view returns (address)",
   ]);
   const mcIface = new Interface(multicall3Abi);
+  const result: Record<string, string> = {};
 
-  // Process each chain separately
-  for (const [chainIdStr, indices] of Object.entries(groups)) {
+  for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
     const rpcUrl = chainConfigs[chainId].rpc;
     if (!rpcUrl) continue;
     const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);
-    const mcAddr = MULTICALL_ADDRS[chainId].address;
+    const mcAddr = MULTICALL_ADDRS[chainId]?.address;
 
-    if (indices.length > 1 && mcAddr) {
-      // Prepare multicall
-      const calls = indices.map((i) => ({
-        target: vaults[i].protocol.strategyAddress,
+    if (group.length > 1 && mcAddr) {
+      const calls = group.map((v) => ({
+        target: v.protocol.strategyAddress,
         allowFailure: true,
         callData: receiptIface.encodeFunctionData("receiptToken", []),
       }));
@@ -1698,35 +1711,38 @@ export async function fetchReceiptTokens(
         to: mcAddr,
         data: mcIface.encodeFunctionData("aggregate3", [calls]),
       });
-      const [results] = mcIface.decodeFunctionResult("aggregate3", data) as any;
-      // Map results back
-      indices.forEach((i, idx) => {
-        const r = results[idx];
-        result[vaults[i].id] = r.success
+      const [rows] = mcIface.decodeFunctionResult("aggregate3", data) as [
+        { success: boolean; returnData: string }[],
+      ];
+
+      group.forEach((v, i) => {
+        const r = rows[i];
+        result[v.id] = r.success
           ? ethers.getAddress(hexDataSlice(r.returnData, 12))
           : ethers.ZeroAddress;
       });
     } else {
-      // Single or no multicall: fallback to individual calls
-      for (const i of indices) {
+      for (const v of group) {
         try {
           const chain = defineChain(chainId);
           const contract = getContract({
             client,
             chain,
-            address: vaults[i].protocol.strategyAddress,
+            address: v.protocol.strategyAddress,
           });
           const receipt = await readContract({
             contract,
             method: "function receiptToken() view returns (address)",
           });
-          result[vaults[i].id] = receipt as string;
+          result[v.id] = receipt as string;
         } catch {
-          result[vaults[i].id] = ethers.ZeroAddress;
+          result[v.id] = ethers.ZeroAddress;
         }
       }
     }
   }
 
-  return result;
+  const updatedCache = { ...cache, ...result };
+  localStorage.setItem(CACHE_KEY, JSON.stringify(updatedCache));
+  return updatedCache;
 }
