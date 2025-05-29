@@ -10,6 +10,7 @@ import {
 } from '@/types/types';
 import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
+import { useMultiChain } from '@/providers/MultiChainProvider';
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -54,6 +55,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   vaultTotalAssetsinToken,
 }) => {
   const router = useRouter();
+  const { walletAddress } = useMultiChain();
   const filterRef = useRef<HTMLDivElement>(null);
   
   // State for filters and sorting
@@ -97,12 +99,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       
       switch (sortBy) {
         case 'apy':
-          aValue = Number(vaultAPYs.find(apy => apy.vaultId === a.id)?.APY7d || 0);
-          bValue = Number(vaultAPYs.find(apy => apy.vaultId === b.id)?.APY7d || 0);
+          aValue = Number(vaultAPYs.find((apy: VaultAPY) => apy.vaultId === a.id)?.APY7d || 0);
+          bValue = Number(vaultAPYs.find((apy: VaultAPY) => apy.vaultId === b.id)?.APY7d || 0);
           break;
         case 'tvl':
-          aValue = Number(vaultTotalAssets.find(asset => asset.vaultId === a.id)?.totalAssets || 0);
-          bValue = Number(vaultTotalAssets.find(asset => asset.vaultId === b.id)?.totalAssets || 0);
+          aValue = Number(vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === a.id)?.totalAssets || 0);
+          bValue = Number(vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === b.id)?.totalAssets || 0);
           break;
         case 'risk':
           aValue = calculateRiskLevel(a);
@@ -394,23 +396,19 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   </div> */}
 
                   {/* User Deposits */}
-                  {
-                    userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
-                    // Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && 
-                    (
-                      <div className="mt-2 px-3">
-                        <div className="flex justify-around text-[16px] mb-1">
-                          <span className="text-gray-400">Your Deposits:</span>
-                          <span className="text-white font-medium">
-                            {formatTokenBalance(
-                              userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance || 0, 
-                              vault.inputToken.symbol
-                            )} {vault.inputToken.symbol}
-                          </span>
-                        </div>
+                  { walletAddress && (
+                    <div className="mt-2 px-3">
+                      <div className="flex justify-around text-[16px] mb-1">
+                        <span className="text-gray-400">Your Deposits:</span>
+                        <span className="text-white font-medium">
+                          {formatTokenBalance(
+                            userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance || 0,
+                            vault.inputToken.symbol
+                          )} {vault.inputToken.symbol}
+                        </span>
                       </div>
-                    )
-                  }
+                    </div>
+                  )}
                 </div>
                 
                 {/* Buttons */}
@@ -425,8 +423,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     <span className="relative z-2">Deposit</span>
                   </button>
                   {
-                    userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
-                    Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && (
+                    userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance && 
+                    Number(userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance) > 0 && (
                       <button 
                         className="flex-1 border border-customNeutral100 hover:border-cyan-400 text-white py-2 px-4 rounded-md transition-all"
                         onClick={(e) => {
