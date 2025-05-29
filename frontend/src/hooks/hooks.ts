@@ -16,7 +16,6 @@ import {
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
   calculateCombinedBalancerAPY,
-  calculateConvexArbitrumRewardsAPY,
   fetchReceiptTokens,
 } from "@/actions/actions";
 import {
