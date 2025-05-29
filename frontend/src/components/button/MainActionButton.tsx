@@ -33,7 +33,7 @@ export default function MainActionButton({
         <span className="font-bold">{label}</span>
         {icon && <Image src={icon} width={1200}
           height={800}
-          alt={label} className="w-5 h-5" />}
+          alt={label} className="w-5 h-5" sizes="20px" />}
       </span>
     </button>
   );

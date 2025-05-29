@@ -25,10 +25,10 @@ import "./EthStrategyParent.sol";
 contract AaveEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    IWETH public immutable weth;
-    IAavePool public immutable aavePool;
-    IAaveReceiptToken public immutable receiptToken;
-    IWrappedTokenGatewayV3 public immutable tokenGateway;
+    IWETH public weth;
+    IAavePool public aavePool;
+    IAaveReceiptToken public receiptToken;
+    IWrappedTokenGatewayV3 public tokenGateway;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -37,7 +37,7 @@ contract AaveEthStrategy is EthStrategyParent {
     /// @param _gateway Address of the ZetaChain Gateway.
     /// @param _wrappedTokenGateway Address of the Wrapped Token Gateway.
     /// @param _wethAddress Address of the WETH contract.
-    constructor(
+    function initialize(
         string memory _name,
         address _amanaVault,
         address _receiptTokenAddress,
@@ -45,7 +45,9 @@ contract AaveEthStrategy is EthStrategyParent {
         address _wrappedTokenGateway,
         address _wethAddress,
         address _withdrawHelper
-    ) StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper) {
+    ) external initializer {
+        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
+
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());
         tokenGateway = IWrappedTokenGatewayV3(_wrappedTokenGateway);
@@ -88,42 +90,6 @@ contract AaveEthStrategy is EthStrategyParent {
         }
     }
 
-    /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
-     */
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
-        }
-        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            1e18,
-            minAmountOut
-        );
-
-        IStrategy(newStrategy).depositFromOldStrategy{value: amountWithdrawn}(
-            amountWithdrawn,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            amountWithdrawn,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-    }
-
     function getStrategyWithdrawShareAmount(
         uint256 fractionOfTotalShares
     ) public view override returns (uint256) {
@@ -141,5 +107,13 @@ contract AaveEthStrategy is EthStrategyParent {
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         return receiptToken.balanceOf(address(this));
+    }
+
+    function claimRewards() public override returns (uint256) {
+        return 0;
+    }
+
+    function _reinvestRewards() internal override {
+        // No reinvestment logic yet
     }
 }

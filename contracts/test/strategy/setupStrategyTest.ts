@@ -1,5 +1,5 @@
 // test/helpers/setupStrategyTest.ts
-import { ethers, network } from "hardhat";
+import { ethers, network, upgrades } from "hardhat";
 import { Signer } from "ethers";
 import { StrategyTestConfig } from "../config/strategy.config";
 import { IERC20 } from "../../typechain";
@@ -11,7 +11,7 @@ import {
   PYTH_CONTRACT_ADDRESS_POLYGON,
   PYTH_CONTRACT_ADDRESS_ARBITRUM
 } from "../../../constants";
-import { isConvexStrategy } from "../utils";
+import { isBalancerStrategy, isConvexStrategy } from "../utils";
 
 export interface StrategyTestContext {
   owner: Signer;
@@ -90,18 +90,37 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
 
   const inputToken = await ethers.getContractAt("IERC20", inputTokenAddress, gatewaySigner);
   const receiptTokenContract = await ethers.getContractAt(receiptTokenContractName, receiptTokenAddress, gatewaySigner);
-  const rewardsContract = rewardsContractAddress
-    ? await ethers.getContractAt(rewardsContractName, rewardsContractAddress, gatewaySigner)
-    : undefined;
+  let rewardsContract;
+  if (isConvexStrategy(strategyContractName)) {
+    rewardsContract = rewardsContractAddress
+      ? await ethers.getContractAt(rewardsContractName, rewardsContractAddress, gatewaySigner)
+      : undefined;
+  } else if (isBalancerStrategy(strategyContractName)) {
+    rewardsContract = await ethers.getContractAt("IBalancerLiquidityGauge", rewardsContractAddress!, gatewaySigner);
+  } else {
+    rewardsContract = rewardsContractAddress
+      ? await ethers.getContractAt(rewardsContractName, rewardsContractAddress, gatewaySigner)
+      : undefined;
+  }
 
   const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
   const priceOracle = await PriceOracleFactory.deploy(pythAddress); // Pyth contract address on specified chain
   await priceOracle.deployed();
-
+  console.log(`PriceOracle deployed to: ${priceOracle.address}`);
   const SwapHelperFactory = await ethers.getContractFactory(swapHelperContractName);
-  const swapHelper = await SwapHelperFactory.deploy(priceOracle.address);
+  const swapHelper = await upgrades.deployProxy(
+    SwapHelperFactory,
+    [
+      priceOracle.address
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups",
+    }
+  );
+  console.log(`SwapHelperFactory deployed to: ${swapHelper.address}`);
   await swapHelper.deployed();
-
+  console.log(`SwapHelper deployed to: ${swapHelper.address}`);
   const StrategyFactory = await ethers.getContractFactory(strategyContractName);
   const args = [
     config.name,
@@ -122,11 +141,18 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
     }
     args.push(convexPoolId, convexBooster, cvxTokenAddress);
   }
-
-  const strategy = await StrategyFactory.deploy(
-    ...args
-  );
-  await strategy.deployed();
+  console.log(`Deploying strategy with args: ${args}`);
+  let strategy;
+  try {
+    strategy = await upgrades.deployProxy(StrategyFactory, args, {
+      initializer: "initialize"
+    });
+    await strategy.deployed();
+  } catch (err) {
+    console.error("❌ Strategy deployment failed:", err);
+    throw err;
+  }
+  console.log(`Strategy deployed to: ${strategy.address}`);
 
   return {
     owner,
@@ -164,8 +190,9 @@ export async function deployStrategyFromConfig(config: StrategyTestConfig, swapH
     args.push(config.convexPoolId, config.convexBooster, config.cvxTokenAddress);
   }
 
-  const strategy = await StrategyFactory.deploy(...args);
-  await strategy.deployed();
+  const strategy = await upgrades.deployProxy(StrategyFactory, args, {
+    initializer: "initialize"
+  }); await strategy.deployed();
 
   return strategy;
 }

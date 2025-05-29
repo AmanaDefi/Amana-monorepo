@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
+  calculateAaveFlashAPY,
   calculateCompoundAPY,
   calculateMoonwellAPY,
   calculateVenusAPY,
   calculateVenusRewardsAPY,
   calculateEddyAPY,
   calculateBeefyAPY,
+  calculateCurveAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
+  calculateConvexArbitrumRewardsAPY,
+  calculateCombinedBalancerAPY,
   calculateConvexArbitrumRewardsAPY,
   fetchReceiptTokens,
 } from "@/actions/actions";
@@ -290,6 +294,7 @@ export const useUpdateAPYs = (
   cvxTokenPrice: number,
   ethTokenPrice: number,
   compTokenPrice: number,
+  opTokenPrice: number,
   isFromVaultGrid?: boolean,
 ) => {
   useEffect(() => {
@@ -354,6 +359,17 @@ export const useUpdateAPYs = (
                   receiptTokenAddress as Address,
                   strategyChain,
                 );
+                APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
+              } else if (vault.protocol.name === "Balancer") {
+                const { totalAPY } = await calculateCombinedBalancerAPY({
+                  receiptTokenAddress: receiptTokenAddress as Address,
+                  liquidityGaugeAddress: vault.protocol.rewardsContractAddress as Address,
+                  rewardTokenAddress: "0x994ac01750047B9d35431a7Ae4Ed312ee955E030",
+                  inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  opTokenPrice,
+                  strategyChain
+                });
+                APY7d = totalAPY;
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(
                   receiptTokenAddress as Address,

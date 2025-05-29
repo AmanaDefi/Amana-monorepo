@@ -1,0 +1,288 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x8C1b444830A37CE72330d808bB97F91047224c66",
+      "txHash": "0x7b34e6cdcd1ad528f05e68c04c35ec6f58c74fc2dac631b66c4773df0e391758",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "23a4128a5789719459eb0e8204a7375eea465ff21ae7acb00e2944d1f82bc0b8": {
+      "address": "0xC4619545d7609BEF7BDC5C438812132Ba837FC38",
+      "txHash": "0xd58cc4da26e6eff093374e89d184af11b14c836793c1d6695ae3d8b55bc8e5cd",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "name",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_string_storage",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:28"
+          },
+          {
+            "label": "amanaVault",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:29"
+          },
+          {
+            "label": "withdrawHelper",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:30"
+          },
+          {
+            "label": "oldStrategy",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:31"
+          },
+          {
+            "label": "rewardsDistributor",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:32"
+          },
+          {
+            "label": "_GATEWAY_ADDRESS",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:34"
+          },
+          {
+            "label": "lastProcessedNonce",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint256",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:36"
+          },
+          {
+            "label": "harvestSwapSlippage",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_uint16",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:38"
+          },
+          {
+            "label": "minClaimableReward",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_uint256",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:39"
+          },
+          {
+            "label": "swapHelper",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:41"
+          },
+          {
+            "label": "pendingByNonce",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_mapping(t_uint256,t_struct(BufferedTx)30704_storage)",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:56"
+          },
+          {
+            "label": "inputToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_contract(IERC20)3754",
+            "contract": "ERC20StrategyParent",
+            "src": "contracts/strategies/ERC20StrategyParent.sol:12"
+          },
+          {
+            "label": "receiptToken",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(ICurvePoolDynamic)21929",
+            "contract": "ConvexERC20StrategyArbitrum",
+            "src": "contracts/strategies/ConvexERC20StrategyArbitrum.sol:17"
+          },
+          {
+            "label": "booster",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_contract(IConvexBoosterArbitrum)21578",
+            "contract": "ConvexERC20StrategyArbitrum",
+            "src": "contracts/strategies/ConvexERC20StrategyArbitrum.sol:18"
+          },
+          {
+            "label": "rewardPool",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_contract(IConvexRewardPoolArbitrum)21738",
+            "contract": "ConvexERC20StrategyArbitrum",
+            "src": "contracts/strategies/ConvexERC20StrategyArbitrum.sol:19"
+          },
+          {
+            "label": "cvxToken",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_address",
+            "contract": "ConvexERC20StrategyArbitrum",
+            "src": "contracts/strategies/ConvexERC20StrategyArbitrum.sol:21"
+          },
+          {
+            "label": "crvToken",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_address",
+            "contract": "ConvexERC20StrategyArbitrum",
+            "src": "contracts/strategies/ConvexERC20StrategyArbitrum.sol:22"
+          },
+          {
+            "label": "inputTokenIndex",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_uint256",
+            "contract": "ConvexERC20StrategyArbitrum",
+            "src": "contracts/strategies/ConvexERC20StrategyArbitrum.sol:24"
+          },
+          {
+            "label": "convexPid",
+            "offset": 0,
+            "slot": "18",
+            "type": "t_uint256",
+            "contract": "ConvexERC20StrategyArbitrum",
+            "src": "contracts/strategies/ConvexERC20StrategyArbitrum.sol:25"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IConvexBoosterArbitrum)21578": {
+            "label": "contract IConvexBoosterArbitrum",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IConvexRewardPoolArbitrum)21738": {
+            "label": "contract IConvexRewardPoolArbitrum",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ICurvePoolDynamic)21929": {
+            "label": "contract ICurvePoolDynamic",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20)3754": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_enum(TxType)30694": {
+            "label": "enum StrategyParent.TxType",
+            "members": [
+              "Deposit",
+              "Withdraw",
+              "Switch"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_uint256,t_struct(BufferedTx)30704_storage)": {
+            "label": "mapping(uint256 => struct StrategyParent.BufferedTx)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(BufferedTx)30704_storage": {
+            "label": "struct StrategyParent.BufferedTx",
+            "members": [
+              {
+                "label": "txType",
+                "type": "t_enum(TxType)30694",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "amountOrFraction",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "minimumOut",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "newStrategy",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable2Step": [
+            {
+              "contract": "Ownable2StepUpgradeable",
+              "label": "_pendingOwner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:29"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

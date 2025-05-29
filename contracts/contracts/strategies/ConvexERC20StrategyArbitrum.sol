@@ -10,25 +10,21 @@ import "../interfaces/ICurvePoolDynamic.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBoosterArbitrum.sol";
 import "../interfaces/IConvexRewardPoolArbitrum.sol";
-import "hardhat/console.sol";
 
 contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePoolDynamic public immutable receiptToken;
-    IConvexBoosterArbitrum public immutable booster;
-    IConvexRewardPoolArbitrum public immutable rewardPool;
+    ICurvePoolDynamic public receiptToken;
+    IConvexBoosterArbitrum public booster;
+    IConvexRewardPoolArbitrum public rewardPool;
 
-    address public immutable cvxToken;
-    address public immutable crvToken;
+    address public cvxToken;
+    address public crvToken;
 
-    address public swapHelperArbitrum;
     uint256 public inputTokenIndex;
     uint256 public convexPid;
 
-    uint16 public harvestSwapSlippage = 500; // 5% slippage
-
-    constructor(
+    function initialize(
         string memory _name,
         address _gatewayAddress,
         address _amanaVault,
@@ -42,12 +38,17 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         uint256 _convexPid,
         address _boosterAddress,
         address _cvxToken
-    )
-        ERC20StrategyParent(_inputTokenAddress)
-        StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper)
-    {
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper
+        );
+        __ERC20StrategyParent_init(_inputTokenAddress); // Add this initializer too if needed
+
         receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
-        swapHelperArbitrum = _swapHelper;
+        swapHelper = _swapHelper;
         booster = IConvexBoosterArbitrum(_boosterAddress);
         rewardPool = IConvexRewardPoolArbitrum(_rewardPoolAddress);
         crvToken = _crvToken;
@@ -56,48 +57,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         convexPid = _convexPid;
     }
 
-    function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
-        harvestSwapSlippage = _slippage;
-    }
-
-    function setSwapHelper(address _swapHelper) external onlyOwner {
-        swapHelperArbitrum = _swapHelper;
-    }
-
-    function swapToInputToken(
-        address token,
-        uint256 amountIn,
-        uint16 slippageBps
-    ) internal returns (uint256 amountOut) {
-        if (amountIn == 0) return 0;
-
-        SafeERC20.safeTransfer(IERC20(token), swapHelperArbitrum, amountIn);
-        uint16 maxDeadline = uint16(block.timestamp + 1 hours);
-
-        try
-            ISwapHelper(swapHelperArbitrum).swap(
-                token,
-                amountIn,
-                address(inputToken),
-                slippageBps,
-                address(this),
-                maxDeadline,
-                ""
-            )
-        returns (uint256 result) {
-            amountOut = result;
-        } catch Error(string memory reason) {
-            emit SwapFailed(token, amountIn, reason);
-            amountOut = 0;
-        } catch {
-            emit SwapFailed(token, amountIn, "Unknown error");
-            amountOut = 0;
-        }
-
-        return amountOut; // might be zero
-    }
-
-    function claimRewards() public returns (uint256 totalClaimed) {
+    function claimRewards() public override returns (uint256 totalClaimed) {
         try rewardPool.getReward(address(this), address(this)) {
             // Claimed, now count rewards
             try rewardPool.rewardLength() returns (uint256 length) {
@@ -129,12 +89,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         return totalClaimed;
     }
 
-    function harvest() public {
-        claimRewards();
-        _reinvestRewards();
-    }
-
-    function _reinvestRewards() internal {
+    function _reinvestRewards() internal override {
         uint256 totalConverted;
         try rewardPool.rewardLength() returns (uint256 length) {
             for (uint256 i = 0; i < length; i++) {
@@ -142,12 +97,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
                 if (rewardToken == address(0)) continue;
 
                 uint256 balance = IERC20(rewardToken).balanceOf(address(this));
-                console.log(
-                    "Harvesting rewardToken: %s, balance: %s",
-                    rewardToken,
-                    balance
-                );
-                if (balance < 1e17) continue;
+                if (balance < minClaimableReward) continue;
 
                 uint256 converted = swapToInputToken(
                     rewardToken,
@@ -164,7 +114,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             emit RewardClaimFailed("Failed during rewardLength iteration");
         }
 
-        if (totalConverted > 1e17) {
+        if (totalConverted > minClaimableReward) {
             uint256[] memory amounts = new uint256[](2);
             amounts[inputTokenIndex] = totalConverted;
 
@@ -209,32 +159,26 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         );
     }
 
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault)
+    function _transferAssetsToNewStrategy() internal override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
         harvest();
         rewardPool.withdrawAll(false);
         (address lpToken, , , , ) = booster.poolInfo(convexPid);
         uint256 withdrawnAmount = IERC20(lpToken).balanceOf(address(this));
 
-        IERC20(lpToken).transfer(newStrategy, withdrawnAmount);
-        IStrategy(newStrategy).depositFromOldStrategy(
+        IERC20(lpToken).transfer(txn.newStrategy, withdrawnAmount);
+        IStrategy(txn.newStrategy).depositFromOldStrategy(
             withdrawnAmount,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
+            txn.minimumOut,
+            lastProcessedNonce + 1
         );
+
         emit AssetsTransferredToNewStrategy(
-            newStrategy,
+            txn.newStrategy,
             withdrawnAmount,
-            currentExecutionNonce,
-            _crossChainTxId
+            lastProcessedNonce + 1
         );
     }
 
@@ -242,36 +186,27 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
      * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
      *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
      * @param currentExecutionNonce The current execution nonce from the old strategy.
-     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
      */
     function depositFromOldStrategy(
         uint256 amount,
         uint256 minimumSharesOut,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
+        uint256 currentExecutionNonce
     ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
 
-        executionNonce = currentExecutionNonce + 1;
+        lastProcessedNonce = currentExecutionNonce;
 
         // Stake the LP tokens into Convex (Arbitrum)
         IERC20(receiptToken).approve(address(booster), amount);
         booster.deposit(convexPid, amount); // This stakes on Arbitrum
 
-        _sendInvestConfirmation(
-            address(0),
-            amount,
-            totalUnderlyingAssets(),
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
 
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,
-            currentExecutionNonce,
-            _crossChainTxId
+            currentExecutionNonce
         );
 
         oldStrategy = address(0);

@@ -6,7 +6,7 @@ libs = ['node_modules','lib']          # Use node_modules for libraries (Hardhat
 test = 'test'                  # Test folder
 cache_path = 'cache_forge'     # Cache folder for Forge
 optimizer = true
-optimizer_runs = 100
+optimizer_runs = 175
 evm_version = "paris"          # 👈 Prevents usage of PUSH0 from EIP-3855
 
 [rpc_endpoints]

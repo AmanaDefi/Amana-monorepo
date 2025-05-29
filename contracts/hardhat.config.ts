@@ -22,13 +22,12 @@ import "./tasks/deployWithdrawHelper";
 import "./tasks/deployERC20_MoonwellStrategy";
 import "./tasks/deployAmanaRegistry";
 import "./tasks/clearNonces";
-import "./tasks/deploySwapHelperPolygon";
 import "./tasks/deployERC20_Strategy_SwapHelper";
 import "./tasks/depositMultiple";
-import "./tasks/deploySwapHelperEthereum";
-import "./tasks/deploySwapHelperArbitrum";
 import "./tasks/findConvexPid";
 import "./tasks/updateWithdrawHelperOnStrats";
+import "./tasks/deployStrategyImpl";
+import "./tasks/deployBalancerStrategy";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";

@@ -10,29 +10,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    uint256 latestTotalAssetsUpdateFromStrategy;
-    uint256 public lastProcessedNonce;
-
-    struct Confirmation {
-        address user;
-        address receiver;
-        address withdrawZRC20;
-        address withdrawERC20;
-        uint256 amount;
-        uint256 vaultSharesToBeBurnt;
-        uint32 withdrawChainId;
-        bool isDeposit;
-        uint256 totalAssetsAfter;
-        bytes32 crossChainTxId;
-        uint16 slippage;
-    }
-
-    mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
-    mapping(address => uint256) public pendingWithdrawals;
-    bool public depositFeePaidFromGasTank;
-
-    event TotalAssetsUpdated(uint256 totalAssets);
-
     /// @dev Initializer instead of constructor for upgradeability
     function initialize(
         string memory name,
@@ -72,93 +49,85 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) external override onlyGateway {
         if (context.sender == strategyAddress) {
             (
-                address user,
-                address receiver,
-                address withdrawZRC20,
-                address withdrawERC20,
-                uint256 withdrawAmount,
-                uint256 vaultSharesToBeBurnt,
-                uint32 withdrawChainId,
-                bool isDeposit,
+                uint256 withdrawnAmount,
                 uint256 totalAssetsAfter,
-                uint256 executionNonce,
-                bytes32 _crossChainTxId,
-                uint16 slippage
-            ) = abi.decode(
-                    message,
-                    (
-                        address,
-                        address,
-                        address,
-                        address,
-                        uint256,
-                        uint256,
-                        uint32,
-                        bool,
-                        uint256,
-                        uint256,
-                        bytes32,
-                        uint16
-                    )
-                );
-            _processConfirmationFromStrategy(
-                user,
-                receiver,
-                withdrawZRC20,
-                withdrawERC20,
-                withdrawAmount,
-                vaultSharesToBeBurnt,
-                withdrawChainId,
-                isDeposit,
-                totalAssetsAfter,
-                executionNonce,
-                _crossChainTxId,
-                slippage
-            );
+                uint256 confirmationNonce,
+                bytes32 txSucceeded
+            ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
+            if (confirmationNonce == lastProcessedNonce) {
+                // this is an update (totalAssetsAfter)
+                latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
+                emit TotalAssetsUpdated(totalAssetsAfter, confirmationNonce);
+            } else {
+                transactions[confirmationNonce]
+                    .totalAssetsAfter = totalAssetsAfter;
+                if (!transactions[confirmationNonce].isDeposit) {
+                    // this is a withdrawal confirmation (or revert)
+                    transactions[confirmationNonce].amount = withdrawnAmount;
+                    transactions[confirmationNonce].txSucceeded = txSucceeded;
+                }
+            }
+            if (confirmationNonce == lastProcessedNonce + 1) {
+                // Process the confirmation immediately if it's the next one in line
+                _processBufferedConfirmations(true);
+            }
         } else {
+            Transaction storage txn = transactions[vaultNonce];
             if (context.sender == address(0)) revert InvalidAddress();
-            if (message.length == 128) {
+
+            txn.user = context.sender; // common to both paths
+            txn.receiver = context.sender; // could take in a different receiver?
+            txn.amount = amount;
+            txn.withdrawChainId = uint32(context.chainID);
+            // if (context.senderEVM != address(0)) {
+            //     // Handle EVM-style sender logic
+            //     txn.user = context.senderEVM;
+            //     txn.receiver = context.senderEVM; // could take in a different receiver?
+            //     nonEvmAddressByNonce[vaultNonce] = context.sender;
+            // } else {
+            //     // Handle non-EVM sender (context.sender is now bytes)
+            //     txn.user = context.sender; // common to both paths
+            //     txn.receiver = context.sender; // could take in a different receiver?
+            // }
+
+            if (amount > 0) {
                 (
                     address erc20source,
                     uint256 minimumOut,
                     uint16 slippage,
-                    bytes32 crossChainTxId
-                ) = abi.decode(message, (address, uint256, uint16, bytes32));
-                _depositComingFromConnectedChain(
-                    context.sender,
-                    context.chainID,
-                    amount,
-                    minimumOut,
-                    zrc20,
-                    erc20source,
-                    slippage,
-                    crossChainTxId
-                );
-            } else if (message.length == 192) {
+                    bytes memory nonEvmAddress
+                ) = abi.decode(message, (address, uint256, uint16, bytes));
+
+                txn.withdrawZRC20 = zrc20;
+                txn.withdrawERC20 = erc20source;
+                txn.slippage = slippage;
+                txn.isDeposit = true;
+                nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
+
+                _depositComingFromConnectedChain(minimumOut);
+            } else {
                 (
                     address withdrawZRC20,
                     address withdrawERC20,
                     uint256 vaultSharesToBeBurnt,
                     uint256 minimumOut,
                     uint16 slippage,
-                    bytes32 crossChainTxId
+                    bytes memory nonEvmAddress
                 ) = abi.decode(
                         message,
-                        (address, address, uint256, uint256, uint16, bytes32)
+                        (address, address, uint256, uint256, uint16, bytes)
                     );
-                _withdrawComingFromConnectedChain(
-                    context.sender,
-                    withdrawZRC20,
-                    withdrawERC20,
-                    vaultSharesToBeBurnt,
-                    minimumOut,
-                    uint32(context.chainID),
-                    slippage,
-                    crossChainTxId
-                );
-            } else {
-                revert InvalidMessage();
+
+                txn.withdrawZRC20 = withdrawZRC20;
+                txn.withdrawERC20 = withdrawERC20;
+                txn.vaultSharesToBeBurnt = vaultSharesToBeBurnt;
+                txn.slippage = slippage;
+                txn.isDeposit = false;
+                nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
+
+                _withdrawComingFromConnectedChain(minimumOut);
             }
+            vaultNonce++;
         }
     }
 
@@ -174,64 +143,30 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     /**
-     * @dev Processes a confirmation message from the strategy.
-     *      This function validates and stores the confirmation details for deposit, withdrawal or totalAsset update actions
+     * @dev Processes a transaction message from the strategy.
+     *      This function validates and stores the transaction details for deposit, withdrawal or totalAsset update actions
      *      and then attempts to process all pending confirmations in order.
-     * @param user The address of the user associated with the confirmation.
-     * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
-     * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
-     * @param withdrawChainId The chain ID of the withdrawal, if applicable.
-     * @param isDeposit A boolean indicating if the confirmation is for a deposit (true) or withdrawal (false).
-     * @param totalAssetsAfter The total assets in the vault after the operation.
-     * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
      */
-    function _processConfirmationFromStrategy(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 withdrawAmount,
-        uint256 vaultSharesToBeBurnt,
-        uint32 withdrawChainId,
-        bool isDeposit,
-        uint256 totalAssetsAfter,
-        uint256 executionNonce,
-        bytes32 _crossChainTxId,
-        uint16 _slippage
-    ) internal {
-        // Ensure no duplicate processing
-        if (
-            pendingConfirmations[executionNonce].amount != 0 &&
-            pendingConfirmations[executionNonce].totalAssetsAfter != 0
-        ) revert ConfirmationAlreadyProcessed();
-        // Store the confirmation in the buffer
-        pendingConfirmations[executionNonce] = Confirmation({
-            user: user,
-            receiver: receiver,
-            withdrawZRC20: withdrawZRC20,
-            withdrawERC20: withdrawERC20,
-            amount: withdrawAmount,
-            vaultSharesToBeBurnt: vaultSharesToBeBurnt,
-            withdrawChainId: withdrawChainId,
-            isDeposit: isDeposit,
-            totalAssetsAfter: totalAssetsAfter,
-            crossChainTxId: _crossChainTxId,
-            slippage: _slippage
-        });
+    // function _processConfirmationFromStrategy(uint256 confirmationNonce) internal {
+    //     // Ensure no duplicate processing
+    //     if (
+    //         transactions[confirmationNonce].amount != 0 &&
+    //         transactions[confirmationNonce].totalAssetsAfter != 0
+    //     ) revert ConfirmationAlreadyProcessed();
 
-        // Attempt to process confirmations
-        _processBufferedConfirmations(true);
-    }
+    //     // Attempt to process confirmations
+    //     _processBufferedConfirmations(true);
+    // }
 
     /**
-     * @dev Allows for manual input of a confirmation message, mimicking _processConfirmationFromStrategy.
-     * @param user The address of the user associated with the confirmation.
+     * @dev Allows for manual input of a transaction message, mimicking _processConfirmationFromStrategy.
+     * @param user The address of the user associated with the transaction.
      * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
      * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
      * @param withdrawChainId The chain ID of the withdrawal, if applicable.
-     * @param isDeposit A boolean indicating if the confirmation is for a deposit (true) or withdrawal (false).
+     * @param isDeposit A boolean indicating if the transaction is for a deposit (true) or withdrawal (false).
      * @param totalAssetsAfter The total assets in the vault after the operation.
-     * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
+     * @param confirmationNonce A unique identifier for the transaction to ensure it is processed only once.
      */
     function manuallyAddConfirmation(
         address user,
@@ -243,13 +178,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint32 withdrawChainId,
         bool isDeposit,
         uint256 totalAssetsAfter,
-        uint256 executionNonce,
-        bytes32 _crossChainTxId,
-        uint16 _slippage,
-        bool processEntireBuffer
+        uint256 confirmationNonce,
+        bytes32 _txSucceeded,
+        uint16 _slippage
     ) external onlyOwner {
-        // Store the confirmation in the buffer
-        pendingConfirmations[executionNonce] = Confirmation({
+        // Store the transaction in the buffer
+        transactions[confirmationNonce] = Transaction({
             user: user,
             receiver: receiver,
             withdrawZRC20: withdrawZRC20,
@@ -259,87 +193,61 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             withdrawChainId: withdrawChainId,
             isDeposit: isDeposit,
             totalAssetsAfter: totalAssetsAfter,
-            crossChainTxId: _crossChainTxId,
+            txSucceeded: _txSucceeded,
             slippage: _slippage
         });
+    }
+
+    function processExistingConfirmations(
+        uint256 confirmationNonce,
+        bool processEntireBuffer
+    ) external onlyOwner {
+        // Ensure the transaction exists
+        if (
+            transactions[confirmationNonce].totalAssetsAfter == 0 &&
+            transactions[confirmationNonce].amount == 0
+        ) {
+            revert ConfirmationAlreadyProcessed();
+        }
 
         // Attempt to process confirmations
         _processBufferedConfirmations(processEntireBuffer);
     }
 
-    function processExistingConfirmation(
-        uint256 executionNonce
-    ) external onlyOwner {
-        // Ensure the confirmation exists
-        if (pendingConfirmations[executionNonce].amount == 0) {
-            revert ConfirmationAlreadyProcessed();
-        }
-
-        // Attempt to process confirmations
-        _processBufferedConfirmations(false);
-    }
-
     /**
      * @dev Processes all buffered confirmations sequentially based on their execution nonce.
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
-     *      Once a confirmation is processed, it is removed from the buffer.
+     *      Once a transaction is processed, it is removed from the buffer.
      */
     function _processBufferedConfirmations(bool processEntireBuffer) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-
-            Confirmation memory confirmation = pendingConfirmations[nextNonce];
-            // If there's no confirmation for the next nonce, stop processing
-            if (
-                confirmation.totalAssetsAfter == 0 && confirmation.amount == 0
-            ) {
+            if (nextNonce >= vaultNonce) {
                 break;
             }
+            Transaction memory transaction = transactions[nextNonce];
 
-            // Process the confirmation
-            if (confirmation.crossChainTxId == 0) {
-                if (confirmation.vaultSharesToBeBurnt > 0) {
-                    pendingWithdrawals[confirmation.user] -= confirmation
-                        .vaultSharesToBeBurnt;
-                }
-                // update total assets
-                latestTotalAssetsUpdateFromStrategy = confirmation
+            if (transaction.txSucceeded != bytes32(0)) {
+                // A revert update from strategy
+                pendingWithdrawals[transaction.user] -= transaction
+                    .vaultSharesToBeBurnt;
+                latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
-                emit TotalAssetsUpdated(confirmation.totalAssetsAfter);
+            } else if (transaction.isDeposit) {
+                _confirmDepositAndMint();
             } else if (
-                confirmation.user == address(0) &&
-                confirmation.receiver == address(0)
+                transaction.user == address(0) &&
+                transaction.receiver == address(0)
             ) {
-                strategyAddress = confirmation.withdrawZRC20;
                 emit StrategyUpdated(strategyAddress);
-            } else if (confirmation.isDeposit) {
-                _confirmDepositAndMint(
-                    confirmation.receiver,
-                    confirmation.amount,
-                    confirmation.totalAssetsAfter,
-                    confirmation.crossChainTxId
-                );
             } else {
-                _confirmWithdrawAndBurn(
-                    confirmation.user,
-                    confirmation.receiver,
-                    confirmation.withdrawZRC20,
-                    confirmation.withdrawERC20,
-                    confirmation.amount,
-                    confirmation.vaultSharesToBeBurnt,
-                    confirmation.withdrawChainId,
-                    confirmation.totalAssetsAfter,
-                    confirmation.crossChainTxId,
-                    confirmation.slippage
-                );
+                // This is a withdrawal confirmation
+                _confirmWithdrawAndBurn();
             }
 
-            // Mark this nonce as processed
             lastProcessedNonce = nextNonce;
-            delete pendingConfirmations[nextNonce];
-            if (!processEntireBuffer) {
-                break; // Stop processing if not in processEntireBuffer mode
-            }
+            delete transactions[nextNonce];
+            if (!processEntireBuffer) break;
         }
     }
 
@@ -363,6 +271,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit StrategyUpdated(newStrategyAddress);
             return;
         }
+
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleSwitchCallToStrategy(
                 strategyAddress,
@@ -372,8 +281,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 address(asset()),
                 registry,
                 minAmountOut,
-                minSharesOut
+                minSharesOut,
+                vaultNonce
             );
+        vaultNonce++;
         strategyAddress = newStrategyAddress;
     }
 
@@ -414,86 +325,66 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-        // Generate a unique crossChainTxId
-        bytes32 crossChainTxId = keccak256(
-            abi.encodePacked(
-                caller,
-                receiver,
-                assets,
-                block.timestamp, // Current timestamp
-                block.number // Current block number
-            )
-        );
+        Transaction storage txn = transactions[vaultNonce];
+
+        txn.withdrawERC20 = asset(); // we store this in case of a revert, to return funds to user
+        txn.withdrawZRC20 = asset();
+
+        txn.isDeposit = true;
+        txn.amount = assets;
+        txn.receiver = receiver;
+
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
             address(this),
             assets
         );
-        _investAssets(
-            assets,
-            minimumOut,
-            receiver,
-            asset(),
-            asset(),
-            uint32(block.chainid),
-            crossChainTxId
-        );
+        _investAssets(minimumOut);
+        vaultNonce++;
     }
 
     /**
      * @dev Initiates cross-chain investment by interacting with the gateway and strategy.
-     * @param amount The amount of assets to invest.
-     * @param receiver The address of the receiver initiating the investment.
-     * @param userZRC20 The ZRC20 token address representing the receiver's assets.
-     * @param userChainId The chain ID of the receiver's connected chain.
      * @notice Approves and sends assets through the gateway to the strategy's chain.
      */
-    function _investAssets(
-        uint256 amount,
-        uint256 minimumOut,
-        address receiver,
-        address userZRC20,
-        address userERC20,
-        uint32 userChainId,
-        bytes32 crossChainTxId
-    ) internal override {
+    function _investAssets(uint256 minimumOut) internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
+        Transaction storage txn = transactions[vaultNonce];
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
-            amount
+            txn.amount
         );
+
         if (depositFeePaidFromGasTank) {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
-                    receiver,
-                    userZRC20,
-                    userERC20,
+                    txn.receiver,
+                    nonEvmAddressByNonce[vaultNonce],
+                    txn.withdrawZRC20,
                     address(asset()),
-                    amount,
+                    txn.amount,
                     minimumOut,
-                    userChainId,
-                    crossChainTxId,
                     gasLimitForWithdrawAndCall,
-                    registry
+                    registry,
+                    vaultNonce
                 );
         } else {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleWithdrawAndCallToStrategy(
                     strategyAddress,
-                    receiver,
-                    userZRC20,
-                    userERC20,
+                    txn.receiver,
+                    nonEvmAddressByNonce[vaultNonce],
+                    txn.withdrawZRC20,
                     address(asset()),
-                    amount,
+                    txn.amount,
                     minimumOut,
-                    userChainId,
-                    crossChainTxId,
                     gasLimitForWithdrawAndCall,
-                    registry
+                    registry,
+                    vaultNonce
                 );
         }
     }
@@ -501,33 +392,35 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     /**
      * @dev Confirms a deposit and mints shares for the receiver.
      *      Updates the total assets and receiver's principal accordingly.
-     * @param receiver The address of the receiver making the deposit.
-     * @param depositAmount The amount of assets deposited by the receiver.
-     * @param totalAssetsAfterDeposit The total assets in the vault after the deposit.
-     */
-    function _confirmDepositAndMint(
-        address receiver,
-        uint256 depositAmount,
-        uint256 totalAssetsAfterDeposit,
-        bytes32 _crossChainTxId
-    ) internal {
-        userPrincipal[receiver] += depositAmount;
-        totalPrincipal += depositAmount;
 
-        if (totalAssetsAfterDeposit >= depositAmount) {
+     */
+    function _confirmDepositAndMint() internal {
+        Transaction storage txn = transactions[lastProcessedNonce + 1];
+        pendingShareChange -= int256(txn.vaultSharesToBeBurnt);
+        // TODO -- insert a check here - is previewedShares approx equal to shares?
+        userPrincipal[txn.receiver] += txn.amount;
+        totalPrincipal += txn.amount;
+
+        if (txn.totalAssetsAfter >= txn.amount) {
             latestTotalAssetsUpdateFromStrategy =
-                totalAssetsAfterDeposit -
-                depositAmount;
+                txn.totalAssetsAfter -
+                txn.amount;
         } else {
             latestTotalAssetsUpdateFromStrategy = 0;
         }
 
-        uint256 shares = previewDeposit(depositAmount);
-        _mint(receiver, shares);
+        uint256 shares = previewDeposit(txn.amount);
+        _mint(txn.receiver, shares);
 
-        latestTotalAssetsUpdateFromStrategy = totalAssetsAfterDeposit;
+        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
+        require(shares <= uint256(type(int256).max), "Overflow");
 
-        emit Deposited(receiver, depositAmount, shares, _crossChainTxId);
+        emit Deposited(
+            txn.receiver,
+            txn.amount,
+            shares,
+            lastProcessedNonce + 1
+        );
     }
 
     /**
@@ -551,151 +444,157 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (shares > maxShares - pendingWithdrawals[user]) {
             revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
         }
+
+        Transaction storage txn = transactions[vaultNonce];
+
+        txn.user = caller;
+        txn.receiver = receiver;
+        txn.withdrawZRC20 = withdrawZRC20;
+
+        txn.withdrawERC20 = asset();
+        txn.vaultSharesToBeBurnt = shares;
+        txn.slippage = slippage;
+        txn.isDeposit = false;
+        txn.withdrawChainId = uint32(block.chainid);
+
         pendingWithdrawals[user] += shares;
 
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
 
-        // Generate a unique crossChainTxId
-        bytes32 crossChainTxId = keccak256(
-            abi.encodePacked(
-                caller,
-                receiver,
-                shares,
-                block.timestamp, // Current timestamp
-                block.number // Current block number
-            )
-        );
+        uint256 amendedTotalSupply = pendingShareChange >= 0
+            ? totalSupply() + uint256(pendingShareChange)
+            : totalSupply() - uint256(-pendingShareChange);
 
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleDivestCallToStrategy(
                 strategyAddress,
                 gasLimitForCall,
-                totalSupply(),
+                amendedTotalSupply,
                 address(asset()),
                 registry,
                 user,
-                receiver,
-                withdrawZRC20,
                 withdrawZRC20,
                 shares,
                 minimumOut,
-                uint32(block.chainid),
-                slippage,
-                crossChainTxId
+                vaultNonce
             );
+        require(shares <= uint256(type(int256).max), "Overflow");
+
+        pendingShareChange -= int256(shares);
+        vaultNonce++;
     }
 
     /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
-     * @param user The address of the user receiving the withdrawn assets.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param vaultSharesToBeBurnt The amount of shares being withdrawn.
-     * @param userChainId The chain ID of the user's connected chain.
      * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
      */
     function _withdrawComingFromConnectedChain(
-        address user,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 vaultSharesToBeBurnt,
-        uint256 minimumOut,
-        uint32 userChainId,
-        uint16 slippage,
-        bytes32 crossChainTxId
+        uint256 minimumOut
     ) internal override {
-        if (vaultSharesToBeBurnt == 0) {
+        Transaction storage txn = transactions[vaultNonce];
+
+        if (txn.vaultSharesToBeBurnt == 0) {
             revert AmountCantBeZero();
         }
-        uint256 maxShares = maxRedeem(user);
-        if (vaultSharesToBeBurnt > maxShares - pendingWithdrawals[user]) {
+        uint256 maxShares = maxRedeem(txn.user);
+        if (
+            txn.vaultSharesToBeBurnt > maxShares - pendingWithdrawals[txn.user]
+        ) {
             revert ERC4626ExceededMaxRedeem(
-                user,
-                vaultSharesToBeBurnt,
+                txn.user,
+                txn.vaultSharesToBeBurnt,
                 maxShares
             );
         }
+        pendingWithdrawals[txn.user] += txn.vaultSharesToBeBurnt;
 
-        pendingWithdrawals[user] += vaultSharesToBeBurnt;
+        uint256 amendedTotalSupply = pendingShareChange >= 0
+            ? totalSupply() + uint256(pendingShareChange)
+            : totalSupply() - uint256(-pendingShareChange);
 
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleDivestCallToStrategy(
                 strategyAddress,
                 gasLimitForCall,
-                totalSupply(),
+                amendedTotalSupply,
                 address(asset()),
                 registry,
-                user,
-                user,
-                withdrawZRC20,
-                withdrawERC20,
-                vaultSharesToBeBurnt,
+                txn.user,
+                txn.withdrawZRC20,
+                txn.vaultSharesToBeBurnt,
                 minimumOut,
-                userChainId,
-                slippage,
-                crossChainTxId
+                vaultNonce
             );
+        require(
+            txn.vaultSharesToBeBurnt <= uint256(type(int256).max),
+            "Overflow"
+        );
+
+        pendingShareChange -= int256(txn.vaultSharesToBeBurnt);
     }
 
     /**
      * @dev Confirms the withdrawal process by burning shares, applying fees, and returning assets to the user.
-     * @param user The address of the user requesting the withdrawal.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param vaultSharesToBeBurnt The amount of assets to be withdrawn.
-     * @param userChainId The chain ID of the user's connected chain.
-     * @param totalAssetsAfterWithdraw The total assets held by the vault after the withdrawal.
+
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
      */
-    function _confirmWithdrawAndBurn(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 amountWithdrawn,
-        uint256 vaultSharesToBeBurnt,
-        uint32 userChainId,
-        uint256 totalAssetsAfterWithdraw,
-        bytes32 _crossChainTxId,
-        uint16 slippage
-    ) internal {
-        uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
-            balanceOf(user);
+    function _confirmWithdrawAndBurn() internal {
+        Transaction storage txn = transactions[lastProcessedNonce + 1];
+
+        pendingShareChange += int256(txn.vaultSharesToBeBurnt); // TODO - is this the right place for this?
+        uint256 fractionOfUserShares = (txn.vaultSharesToBeBurnt * 1e18) /
+            balanceOf(txn.user);
         uint256 principalWithdrawn = (fractionOfUserShares *
-            userPrincipal[user]) / 1e18;
+            userPrincipal[txn.user]) / 1e18;
         uint256 feeToWithdraw;
-        if (amountWithdrawn > principalWithdrawn) {
+        if (txn.amount > principalWithdrawn) {
             feeToWithdraw =
-                ((amountWithdrawn - principalWithdrawn) * perfFee) /
+                ((txn.amount - principalWithdrawn) * perfFee) /
                 10000;
-            emit PerformanceFeePaid(user, feeToWithdraw);
+            emit PerformanceFeePaid(txn.user, feeToWithdraw);
             SafeERC20.safeTransfer(
                 IERC20(asset()),
                 IAmanaRegistry(registry).treasury(),
                 feeToWithdraw
             );
         }
-        userPrincipal[user] -= principalWithdrawn;
+        txn.amount -= feeToWithdraw;
+        userPrincipal[txn.user] -= principalWithdrawn;
         totalPrincipal -= principalWithdrawn;
-        pendingWithdrawals[user] -= vaultSharesToBeBurnt;
+        pendingWithdrawals[txn.user] -= txn.vaultSharesToBeBurnt;
 
-        latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
-        _burn(user, vaultSharesToBeBurnt);
-        _returnFundsToUser(
-            amountWithdrawn - feeToWithdraw,
-            userChainId,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
-            _crossChainTxId,
-            slippage
+        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
+        _burn(txn.user, txn.vaultSharesToBeBurnt);
+
+        require(
+            txn.vaultSharesToBeBurnt <= uint256(type(int256).max),
+            "Overflow"
         );
+        _returnFundsToUser(lastProcessedNonce + 1);
 
         emit Withdrawn(
-            user,
-            amountWithdrawn,
-            vaultSharesToBeBurnt,
-            _crossChainTxId
+            txn.user,
+            txn.amount,
+            txn.vaultSharesToBeBurnt,
+            lastProcessedNonce + 1
         );
+    }
+
+    function safeUintToInt(uint256 x) internal pure returns (int256) {
+        require(x <= uint256(type(int256).max), "safeUintToInt: overflow");
+        return int256(x);
+    }
+
+    function adjustPendingShareChange(
+        uint256 previewedShares,
+        uint256 nonce
+    ) public {
+        int256 signedShares = safeUintToInt(previewedShares);
+        pendingShareChange += signedShares;
+
+        Transaction storage txn = transactions[nonce];
+        txn.vaultSharesToBeBurnt = previewedShares;
     }
 }

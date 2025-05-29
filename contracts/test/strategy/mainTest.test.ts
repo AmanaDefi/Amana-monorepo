@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import { strategyConfigs, StrategyTestConfig } from "../config/strategy.config";
 import { deployStrategyFixture, StrategyTestContext, deployStrategyFromConfig } from "./setupStrategyTest";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy } from "../utils";
+import { isBalancerStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy } from "../utils";
 import { AMANA_VAULT_ADDRESS } from "../config/constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
@@ -42,7 +42,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
-
       await expect(simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         await owner.getAddress(),
@@ -52,8 +51,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
-
       // Attempt withdraw from a non-gateway address
       const withdrawAmountInShares = config.withdrawAmount;
       const minAmountOut = config.minAmountOut;
@@ -72,7 +71,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
     });
 
@@ -106,6 +106,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
 
       // Attempt a withdrawal from a non-vault sender
@@ -123,7 +124,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
     });
 
@@ -146,9 +148,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
-
       let strategyBalanceBefore;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalanceBefore = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
@@ -163,10 +164,11 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
 
       let strategyBalanceAfter;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceAfter = await receiptTokenContract.balanceOf(strategy.address);
@@ -204,9 +206,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       )
       let shares;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         shares = await rewardsContract.balanceOf(strategy.address);
       } else {
         shares = await receiptTokenContract.balanceOf(strategy.address);
@@ -227,13 +230,14 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       );
       let strategyBalance;
 
       strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
       let rewardsContractBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         rewardsContractBalance = await rewardsContract.balanceOf(strategy.address);
         expect(rewardsContractBalance).to.equal(0);
 
@@ -276,11 +280,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
 
       // Step 3: Check Initial Shares in  Pool
       let initialShares;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         initialShares = await rewardsContract.balanceOf(strategy.address);
       } else {
         initialShares = await receiptTokenContract.balanceOf(strategy.address);
@@ -294,6 +299,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await ethers.provider.send("evm_mine", []); // Mine a new block
 
       // Step 5: Check Claimable Rewards
+
+
       let reward;
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
         reward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
@@ -303,6 +310,16 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         // This is needed to update the internal state of the contract
         // before calling claimable_reward
         reward = await rewardsContract.claimable_reward(config.rewardsTokenAddress, strategy.address);
+      } else if (isBalancerStrategy(config.strategyContractName)) {
+        const gauge = await ethers.getContractAt("IBalancerLiquidityGauge", rewardsContract.address);
+        const rewardsCount = await gauge.reward_count();
+
+        for (let i = 0; i < Number(rewardsCount); i++) {
+          const rewardToken = await gauge.reward_tokens(i);
+          console.log(rewardToken)
+          reward = await gauge.claimable_reward(strategy.address, rewardToken);
+          console.log(`Claimable ${rewardToken} reward: ${reward.toString()}`);
+        }
       } else {
         reward = await strategy.checkRewards();
       }
@@ -322,12 +339,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         withdrawFractionOfTotalShares,
         minAmountOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        2
       );
 
       // Step 7: Check Strategy Balance After Withdrawal
       let strategyBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -361,7 +379,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const otherERC20Contract = await ethers.getContractAt("IERC20", config.otherErc20Address);
       const initialBalance = await otherERC20Contract.balanceOf(strategy.address);
       expect(initialBalance).to.be.gt(0);
-
       await strategy.emergencyWithdraw(config.otherErc20Address);
 
       const finalBalance = await otherERC20Contract.balanceOf(strategy.address);
@@ -375,8 +392,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } = ctx;
 
       const revertMessage = ethers.utils.defaultAbiCoder.encode(
-        ["string", "bytes32", "uint256", "uint256", "address", "uint256"],
-        ["_investConfirmFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), 0, 0, ethers.constants.AddressZero, 0]
+        ["string", "uint256", "uint256", "uint256"],
+        ["_investConfirmFailed", 0, 0, 0]
       );
 
       const revertContext = {
@@ -388,20 +405,19 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
         .to.emit(strategy, "InvestConfirmFailed")
-        .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
+        .withArgs(0, 0);
     });
 
     it("should emit event and re-invest ERC20 on _returnFundsFromStrategyFailed revert", async function () {
       const {
         gatewaySigner,
         strategy,
-        receiptTokenContract,
         config
       } = ctx;
-
+      const vaultNonce = 0;
       const revertMessage = ethers.utils.defaultAbiCoder.encode(
-        ["string", "bytes32", "uint256", "uint256", "address", "uint256"],
-        ["_returnFundsFromStrategyFailed", ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), 0, 0, ethers.constants.AddressZero, 0]
+        ["string", "uint256", "uint256", "uint256"],
+        ["_returnFundsFromStrategyFailed", vaultNonce, 0, 0]
       );
 
       const withdrawPlusFee = config.depositAmount;
@@ -418,7 +434,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await expect(strategy.connect(gatewaySigner).onRevert(revertContext))
         .to.emit(strategy, "ReturnFundsFromStrategyFailed")
-        .withArgs(ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32));
+        .withArgs(vaultNonce, 0, 0)
+        .to.emit(strategy, "TotalUnderlyingAssetsSent")
+        .withArgs(vaultNonce, anyValue);
+
     });
 
     it("should emit the TotalUnderlyingAssetsSent event", async function () {
@@ -450,16 +469,15 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
       // Call the function
       const tx = await strategy.sendTotalUnderlyingAssetsToVault();
       await expect(tx)
         .to.emit(strategy, "TotalUnderlyingAssetsSent")
         .withArgs(
-          AMANA_VAULT_ADDRESS, // Exact match for vault address
-          anyValue, // Use `anyValue` placeholder for the deposit amount
-          (await ethers.provider.getBlockNumber()), // Expected block number
-          (await ethers.provider.getBlock("latest")).timestamp // Expected block timestamp
+          1, // vaultNonce
+          anyValue // Use `anyValue` placeholder for the deposit amount
         );
 
       // Capture event logs
@@ -544,14 +562,11 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Call the function as the owner
       await expect(
         strategy.manualResendInvestConfirmation(
-          userAddress,
-          amount,
           totalUnderlyingAssetsAfter,
-          executionNonce,
-          crossChainTxId
+          executionNonce
         )
       )
-        .to.emit(gatewayEVM, "Called") // Replace with the actual event name
+        .to.emit(gatewayEVM, "Called")
       // .withArgs(
       //   strategy.address,       // From address
       //   AMANA_VAULT_ADDRESS,    // Destination vault address
@@ -572,7 +587,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Mock data for the test
       const userAddress = await owner.getAddress();
       const withdrawZRC20 = config.withdrawZRC20; // ETH or replace with actual ZRC20 token address
-      const amount = ethers.utils.parseEther("1000"); // 1000 tokens
+      const amount = config.depositAmount; // 1000 tokens
       const fractionOfTotalShares = ethers.utils.parseEther("0.2");
       const withdrawChainId = config.originChainId; // Example chain ID
       const totalUnderlyingAssetsAfter = ethers.utils.parseEther("4000");
@@ -593,7 +608,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
           "bool",    // isInvest (false for divestment)
           "uint256", // totalUnderlyingAssetsAfter
           "uint256", // executionNonce
-          "bytes32",  // crossChainTxId
           "uint16" // slippage
         ],
         [
@@ -607,7 +621,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
           false,
           totalUnderlyingAssetsAfter,
           executionNonce,
-          crossChainTxId,
           slippage
         ]
       );
@@ -628,26 +641,17 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         GatewayEVMABI.abi,
         config.gatewayAddress
       );
-
-      await setTokenBalance(config.inputTokenAddress, strategy.address, ethers.utils.parseEther("1010"), config.inputTokenStorageSlot, config.isNative);
+      await setTokenBalance(config.inputTokenAddress, strategy.address, config.depositAmount, config.inputTokenStorageSlot, config.isNative);
       // if (!config.isNative) {
       //   await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       // }
-
       // Call the function as the owner
       await expect(
         strategy.manualResendFundsAndDivestConfirmation(
-          userAddress,
-          userAddress,
-          withdrawZRC20,
-          ethers.constants.AddressZero,
           amount,
-          fractionOfTotalShares,
-          withdrawChainId,
           totalUnderlyingAssetsAfter,
-          executionNonce,
-          crossChainTxId,
-          slippage
+          executionNonce
+
         )
       )
         .to.emit(gatewayEVM, "DepositedAndCalled") // Replace with the actual event name
@@ -691,9 +695,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
       let oldStrategyInitialBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         oldStrategyInitialBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyInitialBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -706,11 +711,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
         strategy,
-        newStrategy.address
+        newStrategy.address,
+        2
       )).to.emit(strategy, "AssetsTransferredToNewStrategy")
         .to.emit(newStrategy, "AssetsReceivedFromOldStrategy");
+
       let oldStrategyBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         oldStrategyBalance = await rewardsContract.balanceOf(strategy.address);
       } else {
         oldStrategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -719,7 +726,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(oldStrategyBalance).to.equal(0);
 
       let newStrategyBalance;
-      if (isConvexStrategy(config.strategyContractName)) {
+      if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         newStrategyBalance = await rewardsContract.balanceOf(newStrategy.address);
       } else {
         newStrategyBalance = await receiptTokenContract.balanceOf(newStrategy.address);
@@ -759,7 +766,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         depositAmount,
         minSharesOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        1
       );
 
       // Step 3: Accumulate Rewards
@@ -775,6 +783,17 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         // This is needed to update the internal state of the contract
         // before calling claimable_reward
         preHarvestReward = await rewardsContract.claimable_reward(config.rewardsTokenAddress, strategy.address);
+      } else if (isBalancerStrategy(config.strategyContractName)) {
+        const gauge = await ethers.getContractAt("IBalancerLiquidityGauge", rewardsContract.address);
+        const rewardsCount = await gauge.reward_count();
+
+        for (let i = 0; i < Number(rewardsCount); i++) {
+          const rewardToken = await gauge.reward_tokens(i);
+          console.log(rewardToken)
+          preHarvestReward = await gauge.claimable_reward(strategy.address, rewardToken);
+          console.log(`Claimable ${rewardToken} reward: ${preHarvestReward.toString()}`);
+        }
+
       } else {
         preHarvestReward = await strategy.checkRewards();
       }
@@ -830,22 +849,25 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         depositAmount,
         minSharesOut,
         slippage,
-        config.originChainId
+        config.originChainId,
+        1
       );
       // Step 3: Accumulate Rewards
       const timeToSimulate = 7 * 24 * 60 * 60;
       await ethers.provider.send("evm_increaseTime", [timeToSimulate]);
       await ethers.provider.send("evm_mine", []);
-
+      console.log("got here");
       const rewardsToken = await ethers.getContractAt("IERC20", config.rewardsTokenAddress, gatewaySigner);
       const rewardsTokenBalanceBefore = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceBefore).to.eq(0);
-
+      console.log("rewards before", rewardsTokenBalanceBefore)
       // Step 5: Execute for real and verify RewardToken balance
       await strategy.claimRewards();
+      console.log("Claimed rewards")
       if (!config.rewardsTokenAddress) {
         throw new Error("Rewards token address is not defined in the config");
       }
+      console.log("rewardsToken")
       const rewardsTokenBalanceAfter = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceAfter).to.be.gte(rewardsTokenBalanceBefore);
     });
@@ -894,6 +916,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         minSharesOut,
         slippage,
         config.originChainId,
+        1
       );
 
       // Run convertToShares
@@ -948,11 +971,9 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
     //   try {
     //     const preview = await router.callStatic.exactInput(params);
-    //     console.log("CallStatic swap will return:", preview.toString());
 
     //     const tx = await router.exactInput(params);
     //     await tx.wait();
-    //     console.log("Swap succeeded");
     //   } catch (err: any) {
     //     console.error("Uniswap V3 swap failed:");
     //     console.error("Message:", err.message);

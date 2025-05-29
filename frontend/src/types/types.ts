@@ -161,7 +161,12 @@ export type TransactionStepFeedback = {
   label: string
   description: string
   status: TransactionStepStatus,
-  txHash?: string
+  txHash?: string,
+  isWaitingTooLong?: boolean,
+  waitTime?: number,
+  isRecovery?: boolean,
+  recoveryAttempted?: boolean,
+  outboundHash?: string
 }
 
 export type TransactionStepMessages = {
