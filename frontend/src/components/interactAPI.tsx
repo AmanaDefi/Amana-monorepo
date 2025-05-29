@@ -35,6 +35,20 @@ import {
 import { trackEvent } from "@/utils/trackEvent";
 import Blockpi from "@/service/blockpi";
 import { showWarningToast } from "@/toasts";
+import { ACTION_STEP, CURRENT_ACTION, ACTION_STEPS, TX_STEP_FEEDBACK, LAST_TX_STEP_FEEDBACK, LAST_EVENT_TX_HASH, CROSS_CHAIN_TX_ID, CROSS_CHAIN_INVEST_HASH, SELECTED_TOKEN, INPUT_BALANCE } from "@/constants/localStorageKeys";
+
+export const resetTxLocalStorage = () => {
+  localStorage.removeItem(CURRENT_ACTION);
+  localStorage.removeItem(ACTION_STEP);
+  localStorage.removeItem(ACTION_STEPS);
+  localStorage.removeItem(TX_STEP_FEEDBACK);
+  localStorage.removeItem(LAST_TX_STEP_FEEDBACK);
+  localStorage.removeItem(LAST_EVENT_TX_HASH);
+  localStorage.removeItem(CROSS_CHAIN_TX_ID);
+  localStorage.removeItem(CROSS_CHAIN_INVEST_HASH);
+  localStorage.removeItem(SELECTED_TOKEN);
+  localStorage.removeItem(INPUT_BALANCE)
+}
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
