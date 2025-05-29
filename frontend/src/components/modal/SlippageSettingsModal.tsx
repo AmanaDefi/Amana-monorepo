@@ -5,6 +5,7 @@ import {InformationCircleIcon} from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import {useSlippage} from "@/hooks/hooks";
 import {EMPTY_BALANCE} from "@/utils/helpers";
+import { INPUT_BALANCE } from "@/constants/localStorageKeys";
 
 export default function SlippageSettingsModal({setInputBalance} : { setInputBalance: Function }) {
     const { slippageValue, isAuto, setSlippage, toggleAuto } = useSlippage();
@@ -12,9 +13,12 @@ export default function SlippageSettingsModal({setInputBalance} : { setInputBala
     const [inputValue, setInputValue] = useState(slippageValue?.toString());
 
     useEffect(() => {
-        setInputValue(slippageValue?.toString());
-        setInputBalance(EMPTY_BALANCE);
-    }, [setInputBalance, slippageValue]);
+        if (openSlippageModal) {
+            setInputValue(slippageValue?.toString());
+            setInputBalance(EMPTY_BALANCE);
+            localStorage.removeItem(INPUT_BALANCE)
+        }
+    }, [setInputBalance, slippageValue, openSlippageModal]);
 
     const handleInputChange = (value: string) => {
         if (value === '') {

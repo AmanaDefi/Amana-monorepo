@@ -12,25 +12,7 @@ import Link from "next/link";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { SELECTED_TOKEN, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
-
-function bigIntReplacer(key: string, value: any) {
-  if (typeof value === 'bigint') {
-    console.log(key, 'key')
-    return value.toString(); 
-  }
-  return value;
-}
-
-function bigIntReviver(key: string, value: any) {
-  if (key === 'value') {
-      try {
-        return BigInt(value);
-      } catch (e) {
-        return value;
-      }
-  }
-  return value;
-}
+import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];

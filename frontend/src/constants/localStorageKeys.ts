@@ -7,3 +7,4 @@ export const LAST_EVENT_TX_HASH = 'lastEventTxHash';
 export const CROSS_CHAIN_TX_ID = 'crossChainTxId';
 export const CROSS_CHAIN_INVEST_HASH = 'crosschainInvestHash';
 export const SELECTED_TOKEN = 'SelectedToken';
+export const INPUT_BALANCE = 'InputBalance';

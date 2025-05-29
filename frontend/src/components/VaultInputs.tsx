@@ -23,9 +23,11 @@ import {
   selectActions,
   convertUsdToEth,
   getOnlyTokenSymbol,
+  bigIntReviver,
+  bigIntReplacer,
 } from "@/utils/utils";
 import { ethers } from "ethers";
-import InteractionContainer from "./interact";
+import InteractionContainer, { resetTxLocalStorage } from "./interact";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
@@ -41,7 +43,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-import { ACTION_STEP, ACTION_STEPS, CURRENT_ACTION } from "@/constants/localStorageKeys";
+import { ACTION_STEP, ACTION_STEPS, CURRENT_ACTION, INPUT_BALANCE, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (balance: string | number, symbol: string): string => {
@@ -151,14 +153,24 @@ export default function VaultInputs({
     const currentSteps = localStorage.getItem(ACTION_STEPS);
     const currentStep = localStorage.getItem(ACTION_STEP);
     const currentAction = localStorage.getItem(CURRENT_ACTION);
-    if (currentSteps) {
-      setSteps(JSON.parse(currentSteps))
-    }
-    if (currentStep) {
-      setStep(Number(currentStep))
-    }
-    if (currentAction) {
-      setAction(JSON.parse(currentAction))
+    const inputBal = localStorage.getItem(INPUT_BALANCE);
+    const txStep = localStorage.getItem(ACTION_STEP)
+    if (Number(txStep) > 0) {
+      if (currentSteps) {
+        setSteps(JSON.parse(currentSteps))
+      }
+      if (currentStep) {
+        setStep(Number(currentStep))
+      }
+      if (currentAction) {
+        setAction(JSON.parse(currentAction))
+      }
+      if (inputBal ) {
+        setInputBalance(JSON.parse(inputBal, bigIntReviver))
+        setDisplayValue(JSON.parse(inputBal, bigIntReviver)?.formatted ?? "")
+      }
+    } else {
+      resetTxLocalStorage()
     }
   }, [])
 
@@ -229,17 +241,21 @@ export default function VaultInputs({
     // Clear token selection and balance when the active chain changes
     // This prevents the app from attempting to use a token from the previous chain
     // which could cause AbiDecodingZeroDataError when fetching token balances
-    if (activeChain?.id) {
+    const txStep = localStorage.getItem(ACTION_STEP)
+    if (activeChain?.id && Number(txStep) === 0) {
       setInputBalance(EMPTY_BALANCE);
+      localStorage.removeItem(INPUT_BALANCE)
     }
   }, [activeChain?.id]);
 
   // Force refresh token balance when token or chain changes
   useEffect(() => {
-    if (inputToken && activeChain) {
+    const txStep = localStorage.getItem(ACTION_STEP)
+    if (inputToken && activeChain && Number(txStep) === 0) {
       fetchBalance();
       // Reset input field when token changes
       setInputBalance(EMPTY_BALANCE);
+      localStorage.removeItem(INPUT_BALANCE)
       setDisplayValue("");
     }
   }, [inputToken?.address, activeChain?.id, fetchBalance]);
@@ -358,6 +374,7 @@ export default function VaultInputs({
           formatted: "0",
           formattedUSD: "0",
         });
+        localStorage.removeItem(INPUT_BALANCE)
         setDisplayValue("");
         return;
       }
@@ -369,6 +386,7 @@ export default function VaultInputs({
           formatted: "0",
           formattedUSD: "0",
         });
+        localStorage.removeItem(INPUT_BALANCE)
         setDisplayValue("0.");
         return;
       }
@@ -403,6 +421,11 @@ export default function VaultInputs({
         formatted: inputAmt,
         formattedUSD: String(Number(inputAmt) * inputTokenPrice),
       });
+      localStorage.setItem(INPUT_BALANCE, JSON.stringify({
+        value: newAmt,
+        formatted: inputAmt,
+        formattedUSD: String(Number(inputAmt) * inputTokenPrice),
+      }, bigIntReplacer))
 
       setDisplayValue(inputAmt);
     },
@@ -414,6 +437,7 @@ export default function VaultInputs({
     if (isDeposit) {
       // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
       setInputBalance(tokenBalance);
+      localStorage.setItem(INPUT_BALANCE, JSON.stringify(tokenBalance, bigIntReplacer))
       setDisplayValue(tokenBalance.formatted)
     } else {
       handleChangeInput({
@@ -777,6 +801,7 @@ export default function VaultInputs({
   useEffect(() => {
     if (transactionCompleted) {
       setInputBalance(EMPTY_BALANCE);
+      localStorage.removeItem(INPUT_BALANCE)
       setDisplayValue("");
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(EMPTY_BALANCE);
@@ -852,6 +877,7 @@ export default function VaultInputs({
 
     // Reset input balance
     setInputBalance(EMPTY_BALANCE);
+    localStorage.removeItem(INPUT_BALANCE)
 
     // Only attempt to set steps if we have a token and chain
     if (inputToken && activeChain) {

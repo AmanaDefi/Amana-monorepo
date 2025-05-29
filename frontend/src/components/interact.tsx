@@ -36,10 +36,10 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useInboundToCctxData } from "@/hooks/useInboundToCctxData";
 import { trackEvent } from "@/utils/trackEvent";
 import { getAssetsFromShares } from "@/actions/actions";
-import { ACTION_STEP, ACTION_STEPS, CROSS_CHAIN_INVEST_HASH, CROSS_CHAIN_TX_ID, CURRENT_ACTION, LAST_EVENT_TX_HASH, LAST_TX_STEP_FEEDBACK, SELECTED_TOKEN, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
+import { ACTION_STEP, ACTION_STEPS, CROSS_CHAIN_INVEST_HASH, CROSS_CHAIN_TX_ID, CURRENT_ACTION, INPUT_BALANCE, LAST_EVENT_TX_HASH, LAST_TX_STEP_FEEDBACK, SELECTED_TOKEN, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
 import { useRouter } from "next/navigation";
 
-const resetTxLocalStorage = () => {
+export const resetTxLocalStorage = () => {
   localStorage.removeItem(CURRENT_ACTION);
   localStorage.removeItem(ACTION_STEP);
   localStorage.removeItem(ACTION_STEPS);
@@ -49,6 +49,7 @@ const resetTxLocalStorage = () => {
   localStorage.removeItem(CROSS_CHAIN_TX_ID);
   localStorage.removeItem(CROSS_CHAIN_INVEST_HASH);
   localStorage.removeItem(SELECTED_TOKEN);
+  localStorage.removeItem(INPUT_BALANCE)
 }
 
 const handleDepositTransaction = async (
@@ -245,10 +246,13 @@ export default function InteractionContainer({
   });
 
   useEffect(() => {
-    setAction(_action);
-    setStep(0);
-    localStorage.removeItem(CURRENT_ACTION)
-    localStorage.removeItem(ACTION_STEP)
+    if (Number(localStorage.getItem(ACTION_STEP)) === 0) {
+
+      setAction(_action);
+      setStep(0);
+      localStorage.removeItem(CURRENT_ACTION)
+      localStorage.removeItem(ACTION_STEP)
+    }
   }, [actions]);
 
   const [strategyAddress] = useState(vaultData.protocol.strategyAddress);
@@ -311,6 +315,7 @@ export default function InteractionContainer({
       formatted: "0",
       formattedUSD: "0",
     });
+    localStorage.removeItem(INPUT_BALANCE)
     handleDone()
   }
 
@@ -784,22 +789,21 @@ export default function InteractionContainer({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
-    localStorage.removeItem(CROSS_CHAIN_TX_ID)
-    localStorage.removeItem(CROSS_CHAIN_INVEST_HASH)
+    resetTxLocalStorage()
   }
-  useEffect(() => {
-    if (Number(_inputBalance.value) > 0) {
-      resetTransactionState();
-    }
-  }, [_inputBalance.value]);
+  // useEffect(() => {
+  //   if (Number(_inputBalance.value) > 0) {
+  //     resetTransactionState();
+  //   }
+  // }, [_inputBalance.value]);
 
-  useEffect(() => {
-    resetTransactionState();
-  }, [_inputToken]);
+  // useEffect(() => {
+  //   resetTransactionState();
+  // }, [_inputToken]);
 
-  useEffect(() => {
-    resetTransactionState();
-  }, [isDeposit]);
+  // useEffect(() => {
+  //   resetTransactionState();
+  // }, [isDeposit]);
 
   // END
 
@@ -915,6 +919,7 @@ function Interaction({
   const walletContext = useWallet();
   const { selectedChain } = useMultiChain();
   const router = useRouter();
+  console.log(action);
 
   useEffect(() => {
     let newTransactionStepFeedback;
