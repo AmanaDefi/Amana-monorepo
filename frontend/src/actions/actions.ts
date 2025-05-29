@@ -861,9 +861,10 @@ export const Approvedeposit = async (
     });
     trackEvent("Approve Confirmed", {
       vaultId,
-      activeChain,
-      transactionAmount,
-      inputToken,
+      chainId: activeChain.id,
+      chainName: activeChain.name,
+      transactionAmount: transactionAmount.toString(),
+      inputTokenSymbol: inputToken,
     });
     console.log("Approval confirmed");
     return true;

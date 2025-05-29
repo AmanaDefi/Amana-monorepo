@@ -313,6 +313,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     width={24}
                     height={24}
                     className="rounded-full"
+                    sizes="24px"
                   />
                   <div className="flex items-center">
                     <span className="text-gray-400 md:block hidden">Protocol:</span>
@@ -338,6 +339,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     width={36}
                     height={36}
                     className="rounded-full"
+                    sizes="36px"
                   />
                   <div>
                     <span className="text-gray-400 text-xs">Lending Pool</span>
@@ -353,6 +355,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     width={36}
                     height={36}
                     className="rounded-full"
+                    sizes="36px"
                   />
                   <div>
                     <span className="text-gray-400 text-xs">Chain</span>
