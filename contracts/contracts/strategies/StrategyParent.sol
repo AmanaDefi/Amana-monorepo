@@ -169,6 +169,10 @@ abstract contract StrategyParent is
         return abi.encode(true);
     }
 
+    function processBufferedConfirmations() external onlyOwner {
+        _processBufferedConfirmations();
+    }
+
     function _processBufferedConfirmations() internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
