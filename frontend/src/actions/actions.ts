@@ -414,6 +414,12 @@ export async function calculateConvexEthereumRewardsAPY(
   const crvPerLpPerYear =
     (Number(crvRewardRate) / Number(totalSupply)) * secondsPerYear;
 
+  const rewardPoolContract = getContract({
+    client,
+    address: convexRewardPool,
+    chain: strategyChain,
+  });
+
   try {
     // Step 2: CVX rewards via extraRewards
     let cvxPerTokenPerYear = 0;
