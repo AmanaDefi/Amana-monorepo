@@ -318,20 +318,6 @@ export async function simulateConfirmDeposit(
     [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, ethers.constants.HashZero
     ]
   );
-  try {
-    await amanaVault.connect(gatewaySigner).callStatic.onCall(
-      {
-        origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
-        sender: strategyAddress,
-        chainID: strategyChainId,
-      },
-      strategyGasToken,
-      0,
-      confirmMessage
-    );
-  } catch (err) {
-    console.error("Static call reverted:", err);
-  }
   await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
@@ -437,7 +423,6 @@ export async function simulateConfirmWithdrawToConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   withdrawnAmount: BigNumber,
-  VaultSharesToBeBurnt: BigNumber,
   totalAssetsBefore: BigNumber,
   executionNonce: number,
   vaultAsset: string,

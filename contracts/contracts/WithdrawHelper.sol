@@ -526,7 +526,6 @@ contract WithdrawHelper is Revertable {
             gasLimit
         );
         IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
-        console.log("Gas fee for transaction: %s %s", gasFee, gasZRC20);
         approveOrIncreaseAllowance(IERC20(gasZRC20), GATEWAY_ADDRESS, gasFee);
     }
 

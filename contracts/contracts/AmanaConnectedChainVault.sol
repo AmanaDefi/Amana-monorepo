@@ -54,17 +54,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 confirmationNonce,
                 bytes32 txSucceeded
             ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
-            console.log("Last processed nonce:", lastProcessedNonce);
-            console.log(
-                "Received confirmation from strategy",
-                confirmationNonce
-            );
+
             if (confirmationNonce == lastProcessedNonce) {
                 // this is an update (totalAssetsAfter)
-                console.log(
-                    "Received totalAssetsAfter update from strategy",
-                    totalAssetsAfter
-                );
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
                 emit TotalAssetsUpdated(totalAssetsAfter, confirmationNonce);
             } else {
@@ -212,12 +204,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
             Transaction memory transaction = transactions[nextNonce];
-            console.log(
-                "Processing transaction with amount",
-                transaction.amount,
-                "and totalAssetsAfter",
-                transaction.totalAssetsAfter
-            );
+
             // if (
             //     (nextNonce >= vaultNonce) || // No more transactions to process
             //     (transaction.isDeposit && transaction.amount == 0) || // unconfirmed deposit
@@ -228,12 +215,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             // ) {
             //     break;
             // }
-            console.log(
-                "Processing transaction with nonce",
-                nextNonce,
-                "and user",
-                transaction.user
-            );
+
             if (transaction.txSucceeded != bytes32(0)) {
                 // A revert update from strategy
                 pendingWithdrawals[transaction.user] -= transaction
@@ -241,55 +223,26 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
             } else if (transaction.isDeposit) {
-                if (transaction.amount == 0) {
-                    console.log(
-                        "Skipping deposit with zero amount for nonce",
-                        nextNonce
-                    );
+                if (transaction.totalAssetsAfter == 0) {
                     break;
                 }
-                console.log(
-                    "Processing deposit for nonce",
-                    nextNonce,
-                    "with amount",
-                    transaction.amount
-                );
+
                 _confirmDepositAndMint();
             } else if (
                 transaction.user == address(0) &&
                 transaction.receiver == address(0)
             ) {
                 if (transaction.totalAssetsAfter == 0) {
-                    console.log(
-                        "Skipping switch strategy with zero totalAssetsAfter for nonce",
-                        nextNonce
-                    );
                     break;
                 }
-                console.log(
-                    "Processing switch strategy for nonce",
-                    nextNonce,
-                    "with new strategy",
-                    strategyAddress
-                );
                 emit StrategyUpdated(strategyAddress);
             } else {
                 if (transaction.amount == 0) {
-                    console.log(
-                        "Skipping withdrawal with zero amount for nonce",
-                        nextNonce
-                    );
                     break;
                 }
-                console.log(
-                    "Processing withdrawal for nonce",
-                    nextNonce,
-                    "with amount",
-                    transaction.amount
-                );
+
                 _confirmWithdrawAndBurn();
             }
-
             lastProcessedNonce = nextNonce;
             delete transactions[nextNonce];
             if (!processEntireBuffer) break;
@@ -455,6 +408,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
 
         uint256 shares = previewDeposit(txn.amount);
+
         _mint(txn.receiver, shares);
 
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
@@ -558,7 +512,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amendedTotalSupply = pendingShareChange >= 0
             ? totalSupply() + uint256(pendingShareChange)
             : totalSupply() - uint256(-pendingShareChange);
-
+        console.log("Total Supply:", totalSupply());
+        console.log("Amended Total Supply:", amendedTotalSupply);
+        console.log("Shares:", txn.vaultSharesToBeBurnt);
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleDivestCallToStrategy(
                 strategyAddress,
