@@ -7,7 +7,8 @@ import { AmanaConnectedChainVault } from "../typechain";
 const TxType = {
   Deposit: 0,
   Withdraw: 1,
-  Switch: 2
+  Switch: 2,
+  Revert: 3
 };
 
 const WHALE_ADDRESSES: Record<string, string> = {
@@ -189,6 +190,33 @@ export async function simulateSwitchCallFromVaultToStrategy(
   );
 }
 
+export async function simulateRevertCallToStrategy(
+  vaultAddress: string,
+  gatewaySigner: Signer,
+  strategy: any,
+  vaultNonce: number
+) {
+  const revertMessage = ethers.utils.defaultAbiCoder.encode(
+    ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity decode for Revert tx
+    [TxType.Revert, 0, 0, ethers.constants.AddressZero, vaultNonce]
+  );
+
+  const tx = await strategy.connect(gatewaySigner).onCall(
+    {
+      sender: vaultAddress,
+    },
+    revertMessage,
+    {
+      gasPrice: ethers.utils.parseUnits("150", "gwei"),
+    }
+  );
+
+  const receipt = await tx.wait();
+  console.log("🔁 Revert tx gas used:", receipt.gasUsed.toString());
+
+  return receipt.gasUsed;
+}
+
 export async function updatePythPrices(pythContract: any, signer: Signer): Promise<void> {
 
   const connection = new PriceServiceConnection("https://hermes.pyth.network", {
@@ -322,7 +350,6 @@ export async function simulateConfirmSwitch(
   transferredAmount: any,
   newStrategyAddress: any,
   executionNonce: any,
-  crossChainTxId: any,
   strategyChainId: any,
   strategyGasToken: any
 ): Promise<any> {

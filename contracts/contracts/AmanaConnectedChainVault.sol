@@ -54,22 +54,31 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 confirmationNonce,
                 bytes32 txSucceeded
             ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
+            console.log("Last processed nonce:", lastProcessedNonce);
+            console.log(
+                "Received confirmation from strategy",
+                confirmationNonce
+            );
             if (confirmationNonce == lastProcessedNonce) {
                 // this is an update (totalAssetsAfter)
+                console.log(
+                    "Received totalAssetsAfter update from strategy",
+                    totalAssetsAfter
+                );
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
                 emit TotalAssetsUpdated(totalAssetsAfter, confirmationNonce);
             } else {
                 transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
                 if (!transactions[confirmationNonce].isDeposit) {
-                    // this is a withdrawal confirmation (or revert)
+                    // this is a withdrawal confirmation
                     transactions[confirmationNonce].amount = withdrawnAmount;
-                    transactions[confirmationNonce].txSucceeded = txSucceeded;
+                    transactions[confirmationNonce].txSucceeded = txSucceeded; // non-zero means a revert
                 }
             }
             if (confirmationNonce == lastProcessedNonce + 1) {
                 // Process the confirmation immediately if it's the next one in line
-                _processBufferedConfirmations(true);
+                _processBufferedTransactions(true);
             }
         } else {
             Transaction storage txn = transactions[vaultNonce];
@@ -155,7 +164,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     //     ) revert ConfirmationAlreadyProcessed();
 
     //     // Attempt to process confirmations
-    //     _processBufferedConfirmations(true);
+    //     _processBufferedTransactions(true);
     // }
 
     /**
@@ -191,7 +200,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
 
         // Attempt to process confirmations
-        _processBufferedConfirmations(processEntireBuffer);
+        _processBufferedTransactions(processEntireBuffer);
     }
 
     /**
@@ -199,14 +208,32 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
      *      Once a transaction is processed, it is removed from the buffer.
      */
-    function _processBufferedConfirmations(bool processEntireBuffer) internal {
+    function _processBufferedTransactions(bool processEntireBuffer) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-            if (nextNonce >= vaultNonce) {
-                break;
-            }
             Transaction memory transaction = transactions[nextNonce];
-
+            console.log(
+                "Processing transaction with amount",
+                transaction.amount,
+                "and totalAssetsAfter",
+                transaction.totalAssetsAfter
+            );
+            // if (
+            //     (nextNonce >= vaultNonce) || // No more transactions to process
+            //     (transaction.isDeposit && transaction.amount == 0) || // unconfirmed deposit
+            //     (!transaction.isDeposit && transaction.amount == 0) || // unconfirmed withdrawal - this is knocking out switch as well!
+            //     (transaction.user == address(0) &&
+            //         transaction.receiver == address(0) &&
+            //         transaction.totalAssetsAfter == 0) // unconfirmed switch
+            // ) {
+            //     break;
+            // }
+            console.log(
+                "Processing transaction with nonce",
+                nextNonce,
+                "and user",
+                transaction.user
+            );
             if (transaction.txSucceeded != bytes32(0)) {
                 // A revert update from strategy
                 pendingWithdrawals[transaction.user] -= transaction
@@ -214,14 +241,52 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
             } else if (transaction.isDeposit) {
+                if (transaction.amount == 0) {
+                    console.log(
+                        "Skipping deposit with zero amount for nonce",
+                        nextNonce
+                    );
+                    break;
+                }
+                console.log(
+                    "Processing deposit for nonce",
+                    nextNonce,
+                    "with amount",
+                    transaction.amount
+                );
                 _confirmDepositAndMint();
             } else if (
                 transaction.user == address(0) &&
                 transaction.receiver == address(0)
             ) {
+                if (transaction.totalAssetsAfter == 0) {
+                    console.log(
+                        "Skipping switch strategy with zero totalAssetsAfter for nonce",
+                        nextNonce
+                    );
+                    break;
+                }
+                console.log(
+                    "Processing switch strategy for nonce",
+                    nextNonce,
+                    "with new strategy",
+                    strategyAddress
+                );
                 emit StrategyUpdated(strategyAddress);
             } else {
-                // This is a withdrawal confirmation
+                if (transaction.amount == 0) {
+                    console.log(
+                        "Skipping withdrawal with zero amount for nonce",
+                        nextNonce
+                    );
+                    break;
+                }
+                console.log(
+                    "Processing withdrawal for nonce",
+                    nextNonce,
+                    "with amount",
+                    transaction.amount
+                );
                 _confirmWithdrawAndBurn();
             }
 

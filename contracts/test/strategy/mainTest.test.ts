@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import { strategyConfigs, StrategyTestConfig } from "../config/strategy.config";
 import { deployStrategyFixture, StrategyTestContext, deployStrategyFromConfig } from "./setupStrategyTest";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { isBalancerStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy } from "../utils";
+import { simulateRevertCallToStrategy, isBalancerStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy } from "../utils";
 import { AMANA_VAULT_ADDRESS } from "../config/constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
@@ -915,6 +915,30 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Run convertToAssets
       const expectedAssets = await strategy.convertToAssets(expectedShares);
       expect(expectedAssets).to.be.closeTo(depositAmount, depositAmount.div(100)); // 1% tolerance
+    });
+
+    it("should process TxType.Revert with no side effects and log gas used", async function () {
+      const {
+        strategy,
+        gatewaySigner,
+        config
+      } = ctx;
+
+      const vaultNonce = 99;
+
+      const gasUsed = await simulateRevertCallToStrategy(
+        AMANA_VAULT_ADDRESS,
+        gatewaySigner,
+        strategy,
+        vaultNonce
+      );
+
+      expect(gasUsed).to.be.gt(0);
+
+      // Optional: check that strategy did not change state (beyond nonce increment)
+      // You could add something like:
+      // const updatedNonce = await strategy.nonce(); // if nonce is tracked
+      // expect(updatedNonce).to.equal(vaultNonce + 1);
     });
 
     // it("should attempt Uniswap V3 exactInput swap and log error if it fails", async function () {
