@@ -6,6 +6,7 @@ import {
   sendTransaction,
   readContract,
   defineChain,
+  waitForReceipt,
 } from "thirdweb";
 import { client } from "../utils/client";
 import {
@@ -59,6 +60,7 @@ import { apiService } from "@/service";
 import { trackEvent } from "@/utils/trackEvent";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
+import { CROSS_CHAIN_TX_ID } from "@/constants/localStorageKeys";
 
 dotenv.config();
 
@@ -1044,13 +1046,14 @@ const executeCrossChainDeposit = async (
       value: transactionAmount,
     });
 
-    receipt = await sendAndConfirmTransaction({
+    receipt = await sendTransaction({
       account: activeAccount,
       transaction: depositTx,
       // ...txOptions,
     });
     //console.log("Deposit executed");
     setcrossChainTxId(transactionId);
+    localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
     return receipt;
   } else {
     // Case 2: ERC20 token
@@ -1105,6 +1108,7 @@ const executeCrossChainDeposit = async (
 
       //console.log("Deposit executed");
       setcrossChainTxId(transactionId);
+      localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
       return receipt;
     } catch (error) {
       console.error("Transaction failed:", error);
@@ -1161,6 +1165,7 @@ const executeSolanaDeposit = async (
     );
     //console.log("Deposit executed");
     setcrossChainTxId(transactionId);
+    localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
     return { transactionHash: txHash };
   } else {
     // Case 2: SPL token
@@ -1178,6 +1183,7 @@ const executeSolanaDeposit = async (
     );
     //console.log("Deposit executed");
     setcrossChainTxId(transactionId);
+    localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
     return { transactionHash: txHash };
   }
 };
@@ -1234,6 +1240,7 @@ export const executeSolanaWithdrawal = async (
   const txHash = await client.solanaWithdrawal(vaultId, args);
   //console.log("Withdrawal executed");
   setcrossChainTxId(transactionId);
+  localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
   return { transactionHash: txHash };
 };
 
@@ -1403,6 +1410,7 @@ const executeCrossChainWithdrawal = async (
       // ...txOptions,
     });
 
+    localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
     setcrossChainTxId(transactionId);
     return receipt;
   } catch (error) {

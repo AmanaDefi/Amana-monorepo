@@ -41,6 +41,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+import { ACTION_STEP, ACTION_STEPS, CURRENT_ACTION } from "@/constants/localStorageKeys";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (balance: string | number, symbol: string): string => {
@@ -67,6 +68,7 @@ export interface VaultInputsProps {
   transactionCompleted: boolean;
   initialIsDeposit?: boolean;
   onTokenSelect?: (token: Token) => void;
+  selectedToken?: Token 
 }
 
 export type ConversionOutput = {
@@ -89,6 +91,7 @@ export default function VaultInputs({
   transactionCompleted,
   initialIsDeposit = true,
   onTokenSelect,
+  selectedToken
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -97,7 +100,6 @@ export default function VaultInputs({
   const [displayValue, setDisplayValue] = useState<string>("");
   const [debouncedInputBalance, setDebouncedInputBalance] =
     useState<Balance>(EMPTY_BALANCE);
-  const [inputTokenBalance, setInputTokenBalance] = useState<string>("0");
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [isSlippageExceedingLimit, setIsSlippageExceedingLimit] =
     useState<boolean>(true);
@@ -145,6 +147,21 @@ export default function VaultInputs({
     handlePerformanceFee();
   }, [vaultData]);
 
+  useEffect(() => {
+    const currentSteps = localStorage.getItem(ACTION_STEPS);
+    const currentStep = localStorage.getItem(ACTION_STEP);
+    const currentAction = localStorage.getItem(CURRENT_ACTION);
+    if (currentSteps) {
+      setSteps(JSON.parse(currentSteps))
+    }
+    if (currentStep) {
+      setStep(Number(currentStep))
+    }
+    if (currentAction) {
+      setAction(JSON.parse(currentAction))
+    }
+  }, [])
+
   // const initialOutputBalance: OutputBalance = useMemo(() => ({
   //   amountFormatted: '0',
   //   amountUSDFormatted: '0'
@@ -185,7 +202,9 @@ export default function VaultInputs({
 
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
-    if (activeChain?.id === 7001 || activeChain?.id === 7000) {
+    if (selectedToken) {
+      setInputToken(selectedToken);
+    } else if (activeChain?.id === 7001 || activeChain?.id === 7000) {
       // If on ZetaChain testnet, set inputToken to the vault token
       setInputToken(vaultData.inputToken);
     } else {
@@ -272,6 +291,7 @@ export default function VaultInputs({
           inputToken
         );
         setSteps(newStepsConfig);
+        localStorage.setItem(ACTION_STEPS, JSON.stringify(newStepsConfig))
         /*console.log(
           "SETTING ACTION STEPS: ",
           newStepsConfig,
@@ -279,6 +299,7 @@ export default function VaultInputs({
         );*/
       } else {
         setSteps([]);
+        localStorage.removeItem(ACTION_STEPS)
       }
     };
     // Call the async function
@@ -847,6 +868,7 @@ export default function VaultInputs({
           inputToken
         );
         setSteps(steps);
+        localStorage.setItem(ACTION_STEPS, JSON.stringify(steps))
       };
       fetchSteps();
     }

@@ -36,6 +36,20 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useInboundToCctxData } from "@/hooks/useInboundToCctxData";
 import { trackEvent } from "@/utils/trackEvent";
 import { getAssetsFromShares } from "@/actions/actions";
+import { ACTION_STEP, ACTION_STEPS, CROSS_CHAIN_INVEST_HASH, CROSS_CHAIN_TX_ID, CURRENT_ACTION, LAST_EVENT_TX_HASH, LAST_TX_STEP_FEEDBACK, SELECTED_TOKEN, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
+import { useRouter } from "next/navigation";
+
+const resetTxLocalStorage = () => {
+  localStorage.removeItem(CURRENT_ACTION);
+  localStorage.removeItem(ACTION_STEP);
+  localStorage.removeItem(ACTION_STEPS);
+  localStorage.removeItem(TX_STEP_FEEDBACK);
+  localStorage.removeItem(LAST_TX_STEP_FEEDBACK);
+  localStorage.removeItem(LAST_EVENT_TX_HASH);
+  localStorage.removeItem(CROSS_CHAIN_TX_ID);
+  localStorage.removeItem(CROSS_CHAIN_INVEST_HASH);
+  localStorage.removeItem(SELECTED_TOKEN);
+}
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -92,6 +106,8 @@ const handleDepositTransaction = async (
       `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`
     );
     setCrosschainInvestHash(receipt.transactionHash);
+    localStorage.setItem(CROSS_CHAIN_INVEST_HASH, receipt.transactionHash )
+    localStorage.setItem(LAST_EVENT_TX_HASH, `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}` )
 
     return true;
   } catch (error: any) {
@@ -156,7 +172,7 @@ const handleWithdrawTransaction = async (
       withdrawZRC20 as Token,
       setcrossChainTxId
     );
-
+    
     if (activeChain.id === CHAIN_ID.solana) {
       // await waitForReceiptSol(receipt.transactionHash)
     } else {
@@ -167,13 +183,16 @@ const handleWithdrawTransaction = async (
         chain: activeChain,
       };
       await waitForReceipt(receiptObject);
+  
+      const activeChainExplorerBaseUrl =
+        CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
+      setLastEventTxHash(
+        `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`
+      );
+      localStorage.setItem(LAST_EVENT_TX_HASH, `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}` )
+      setCrosschainInvestHash(receipt.transactionHash);
+      localStorage.setItem(CROSS_CHAIN_INVEST_HASH, receipt.transactionHash )
     }
-    const activeChainExplorerBaseUrl =
-      CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
-    setLastEventTxHash(
-      `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`
-    );
-    setCrosschainInvestHash(receipt.transactionHash);
     return true;
   } catch (error) {
     trackEvent("Withdraw Failed", {
@@ -228,6 +247,8 @@ export default function InteractionContainer({
   useEffect(() => {
     setAction(_action);
     setStep(0);
+    localStorage.removeItem(CURRENT_ACTION)
+    localStorage.removeItem(ACTION_STEP)
   }, [actions]);
 
   const [strategyAddress] = useState(vaultData.protocol.strategyAddress);
@@ -264,6 +285,14 @@ export default function InteractionContainer({
 
   const cctxData = useInboundToCctxData(crosschainInvestHash, action);
 
+
+  function handleDone() {
+    setLastTransactionStepFeedback({});
+    setFinishedTransaction(false);
+    refreshBalance();
+    resetTxLocalStorage()
+  }
+
   function completeTransactionProcess(
     feedbackSnapshot: TransactionStepMessages
   ) {
@@ -273,6 +302,8 @@ export default function InteractionContainer({
     setLastTransactionStepFeedback(feedbackSnapshot);
     setFinishedTransaction(true);
     setTransactionStepFeedback({});
+    localStorage.removeItem(TX_STEP_FEEDBACK)
+    localStorage.setItem(LAST_TX_STEP_FEEDBACK, JSON.stringify(feedbackSnapshot))
 
     setTransactionCompleted(true);
     setInputBalance({
@@ -280,6 +311,7 @@ export default function InteractionContainer({
       formatted: "0",
       formattedUSD: "0",
     });
+    handleDone()
   }
 
   const strategyExplorerBaseUrl = useMemo(() => {
@@ -303,7 +335,9 @@ export default function InteractionContainer({
           (el) => el == Action.CrossChainDepositFailed
         );
         setAction(actions[nextStep]);
+        localStorage.setItem(CURRENT_ACTION, JSON.stringify(actions[nextStep]) )
         setStep(nextStep);
+        localStorage.setItem(ACTION_STEP, nextStep.toString())
         return;
       }
     }
@@ -333,14 +367,18 @@ export default function InteractionContainer({
               isZetachain(activeChain.id))
           ) {
             setcrossChainTxId(last_event.args.crossChainTxId.toString());
+            localStorage.setItem(CROSS_CHAIN_TX_ID, last_event.args.crossChainTxId.toString() )
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.crosschainInvest
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -353,9 +391,12 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex((el) => el == Action.deposited);
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -367,9 +408,12 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = step + 1;
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -385,9 +429,12 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex((el) => el == Action.deposited);
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -404,12 +451,16 @@ export default function InteractionContainer({
               isZetachain(activeChain.id))
           ) {
             setcrossChainTxId(last_event.args.crossChainTxId.toString());
+            localStorage.setItem(CROSS_CHAIN_TX_ID, last_event.args.crossChainTxId.toString() )
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex((el) => el == Action.DivestSent);
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -425,6 +476,7 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) =>
                 el ==
@@ -433,7 +485,9 @@ export default function InteractionContainer({
                   : Action.ReturnFundsToUserSent)
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -444,11 +498,14 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.CrossChainInvestFailed
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -459,11 +516,14 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.DivestFailed
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -474,17 +534,47 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${vaultExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.ReturnFundsToUserFailed
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         }
       }
     }
   }, [vaultEvents, crosschainInvestHash, cctxData]);
+
+  useEffect(() => {
+    const txId = localStorage.getItem(CROSS_CHAIN_TX_ID )
+    if (txId) {
+      setcrossChainTxId(txId);
+    }
+
+    const investHash = localStorage.getItem(CROSS_CHAIN_INVEST_HASH)
+    if (investHash) {
+      setCrosschainInvestHash(investHash);
+    }
+
+    const txStepFeedBack = localStorage.getItem(TX_STEP_FEEDBACK)
+    if (txStepFeedBack) {
+      setTransactionStepFeedback(JSON.parse(txStepFeedBack));
+      setIsTransactionStarted(true);
+      setIsTransactionProcessing(true)
+    }
+  
+    const lastTxStepFeedBack = localStorage.getItem(LAST_TX_STEP_FEEDBACK)
+    if (lastTxStepFeedBack) {
+      setLastTransactionStepFeedback(JSON.parse(lastTxStepFeedBack));
+      setFinishedTransaction(true);
+      setTransactionCompleted(true);
+    }
+  
+  }, [])
 
   useEffect(() => {
     if (
@@ -510,11 +600,14 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.FundsInvest
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -525,11 +618,14 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.FundsDivested
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -540,11 +636,14 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.InvestConfirmFailed
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -555,11 +654,14 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${strategyExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.ReturnFundsFromStrategyFailed
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         }
@@ -591,11 +693,14 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex(
               (el) => el == Action.FundsReturnedError
             );
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;
           }
         } else if (
@@ -606,9 +711,12 @@ export default function InteractionContainer({
             setLastEventTxHash(
               `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}`
             );
+            localStorage.setItem(LAST_EVENT_TX_HASH, `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}` )
             const nextStep = actions.findIndex((el) => el == Action.withdrew);
             setAction(actions[nextStep]);
+            localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
             setStep(nextStep);
+            localStorage.setItem(ACTION_STEP, nextStep.toString());
             return;}
           } else if (
             last_event.eventName == "CrossChainDepositFailed" &&
@@ -618,11 +726,14 @@ export default function InteractionContainer({
               setLastEventTxHash(
                 `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}`
               );
+              localStorage.setItem(LAST_EVENT_TX_HASH, `${activeChainExplorerBaseUrl}/tx/${last_event.transactionHash}` )
               const nextStep = actions.findIndex(
                 (el) => el == Action.CrossChainDepositFailed
               );
               setAction(actions[nextStep]);
+              localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
               setStep(nextStep);
+              localStorage.setItem(ACTION_STEP, nextStep.toString());
               return;
             }
           } else if (
@@ -634,7 +745,9 @@ export default function InteractionContainer({
                 (el) => el == Action.CrossChainWithdrawFailed
               );
               setAction(actions[nextStep]);
+              localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
               setStep(nextStep);
+              localStorage.setItem(ACTION_STEP, nextStep.toString());
               return;
           }
         }
@@ -646,17 +759,20 @@ export default function InteractionContainer({
     actionIndex: Action,
     data: Partial<TransactionStepFeedback>
   ) {
-    setTransactionStepFeedback((prev) => ({
-      ...prev,
+    setTransactionStepFeedback((prev) => {
+      const newTransactions = {...prev,
       [actionIndex]: {
         ...prev[actionIndex],
         ...data,
-      },
-    }));
+      }}
+      localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactions))
+      return newTransactions
+    });
   }
 
   useEffect(() => {
     setTransactionStepFeedback({});
+    localStorage.removeItem(TX_STEP_FEEDBACK);
   }, [actions]);
 
   // Track user interaction to release last transaction logs
@@ -668,6 +784,8 @@ export default function InteractionContainer({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
+    localStorage.removeItem(CROSS_CHAIN_TX_ID)
+    localStorage.removeItem(CROSS_CHAIN_INVEST_HASH)
   }
   useEffect(() => {
     if (Number(_inputBalance.value) > 0) {
@@ -709,7 +827,6 @@ export default function InteractionContainer({
         errorMessage={errorMessage}
         lastTransactionStepFeedback={lastTransactionStepFeedback}
         setLastTransactionStepFeedback={setLastTransactionStepFeedback}
-        isTransactionStarted={isTransactionStarted}
         setIsTransactionStarted={setIsTransactionStarted}
         isTransactionProcessing={isTransactionProcessing}
         setIsTransactionProcessing={setIsTransactionProcessing}
@@ -746,7 +863,6 @@ function Interaction({
   errorMessage,
   lastTransactionStepFeedback,
   setLastTransactionStepFeedback,
-  isTransactionStarted,
   setIsTransactionStarted,
   isTransactionProcessing,
   setIsTransactionProcessing,
@@ -784,8 +900,7 @@ function Interaction({
   setLabel: (label: string) => void;
   errorMessage: string;
   lastTransactionStepFeedback: TransactionStepMessages;
-  setLastTransactionStepFeedback: (feedback: TransactionStepMessages) => void;
-  isTransactionStarted: boolean;
+  setLastTransactionStepFeedback: (feedback: TransactionStepMessages) => void
   setIsTransactionStarted: (started: boolean) => void;
   isTransactionProcessing: boolean;
   setIsTransactionProcessing: (processing: boolean) => void;
@@ -799,6 +914,7 @@ function Interaction({
   const activeAccount = useActiveAccount();
   const walletContext = useWallet();
   const { selectedChain } = useMultiChain();
+  const router = useRouter();
 
   useEffect(() => {
     let newTransactionStepFeedback;
@@ -806,6 +922,7 @@ function Interaction({
     let description: string;
     const localLastEventTxHash = lastEventTxHash;
     setLastEventTxHash("");
+    localStorage.removeItem(LAST_EVENT_TX_HASH)
     switch (action) {
       case Action.depositApprove:
         setTransactionStepFeedback({
@@ -815,6 +932,13 @@ function Interaction({
             status: TransactionStepStatus.pending,
           },
         });
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+          [Action.depositApprove]: {
+            label: "Approve",
+            description: "Transaction approval required",
+            status: TransactionStepStatus.pending,
+          },
+        }))
         setLabel("Approve");
         break;
       case Action.depositApproveConfirmed:
@@ -825,13 +949,35 @@ function Interaction({
             status: TransactionStepStatus.completed,
           },
         });
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+          [Action.depositApprove]: {
+            label: "Approve",
+            description: "Approval completed",
+            status: TransactionStepStatus.completed,
+          },
+        }))
         setIsTransactionProcessing(false);
         break;
       case Action.deposit:
         setLabel("Deposit");
         break;
       case Action.depositConfirmed:
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+            [Action.deposit]: {
+              label: "Deposit",
+              description: "Initial deposit transaction on local chain completed",
+              status: TransactionStepStatus.completed,
+              txHash: localLastEventTxHash,
+            },
+            [Action.depositConfirmed]: {
+              label: "Deposit",
+              description: "Cross chain transfer to vault in progress",
+              status: TransactionStepStatus.processing,
+            },
+          }))
+          return {
           ...prev,
           [Action.deposit]: {
             label: "Deposit",
@@ -844,10 +990,27 @@ function Interaction({
             description: "Cross chain transfer to vault in progress",
             status: TransactionStepStatus.processing,
           },
-        }));
+        }});
+        
         break;
       case Action.withdrawconfirmed:
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+          [Action.withdraw]: {
+            label: "Withdraw",
+            description:
+              "Initial withdraw transaction on local chain completed",
+            status: TransactionStepStatus.completed,
+            txHash: localLastEventTxHash,
+          },
+          [Action.withdrawconfirmed]: {
+            label: "Withdraw",
+            description: "Cross chain request to vault in progress",
+            status: TransactionStepStatus.processing,
+          },
+          }))
+          return{
           ...prev,
           [Action.withdraw]: {
             label: "Withdraw",
@@ -861,11 +1024,27 @@ function Interaction({
             description: "Cross chain request to vault in progress",
             status: TransactionStepStatus.processing,
           },
-        }));
+        }});
         break;
       case Action.crosschainInvest:
         if (isZetachain(activeChain.id)) {
-          setTransactionStepFeedback((prev) => ({
+          setTransactionStepFeedback((prev) => {
+            localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+              ...prev,
+              [Action.deposit]: {
+                label: "Deposit",
+                description: `Initial deposit transaction on ${activeChain.name} completed`,
+                status: TransactionStepStatus.completed,
+                txHash: localLastEventTxHash,
+              },
+              [Action.crosschainInvest]: {
+                label: "Deposit",
+                description:
+                  "Cross chain transfer and investment of funds in progress",
+                status: TransactionStepStatus.processing,
+              },
+            }))
+            return {
             ...prev,
             [Action.deposit]: {
               label: "Deposit",
@@ -879,9 +1058,25 @@ function Interaction({
                 "Cross chain transfer and investment of funds in progress",
               status: TransactionStepStatus.processing,
             },
-          }));
+          }});
         } else {
-          setTransactionStepFeedback((prev) => ({
+          setTransactionStepFeedback((prev) => {
+            localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+              ...prev,
+              [Action.depositConfirmed]: {
+                label: "Deposit",
+                description: "Cross chain transfer to vault completed",
+                status: TransactionStepStatus.completed,
+                txHash: localLastEventTxHash,
+              },
+              [Action.crosschainInvest]: {
+                label: "Deposit",
+                description:
+                  "Cross chain transfer and investment of funds in progress",
+                status: TransactionStepStatus.processing,
+              },
+            }))
+            return {
             ...prev,
             [Action.depositConfirmed]: {
               label: "Deposit",
@@ -895,11 +1090,28 @@ function Interaction({
                 "Cross chain transfer and investment of funds in progress",
               status: TransactionStepStatus.processing,
             },
-          }));
+          }});
         }
         break;
       case Action.FundsInvest:
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+          [Action.crosschainInvest]: {
+            label: "Deposit",
+            description:
+              "Cross chain transfer and investment of funds completed",
+            status: TransactionStepStatus.completed,
+            txHash: localLastEventTxHash,
+          },
+          [Action.FundsInvest]: {
+            label: "Deposit",
+            description:
+              "Final confirmation and issue of shares by vault in progress",
+            status: TransactionStepStatus.processing,
+          },
+          }))
+          return {
           ...prev,
           [Action.crosschainInvest]: {
             label: "Deposit",
@@ -914,7 +1126,7 @@ function Interaction({
               "Final confirmation and issue of shares by vault in progress",
             status: TransactionStepStatus.processing,
           },
-        }));
+        }});
         break;
       case Action.deposited:
         trackEvent("Deposit Crosschain Complete", {
@@ -962,6 +1174,7 @@ function Interaction({
           };
         }
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.InvestConfirmFailed:
@@ -975,6 +1188,7 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.CrossChainDepositFailed:
@@ -988,6 +1202,7 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.CrossChainWithdrawFailed:
@@ -1001,6 +1216,7 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.withdraw:
@@ -1014,7 +1230,22 @@ function Interaction({
           targetAction = Action.withdrawconfirmed;
           description = "Cross chain request to vault completed";
         }
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+            [targetAction]: {
+              label: "Withdraw",
+              description: description,
+              status: TransactionStepStatus.completed,
+              txHash: localLastEventTxHash,
+            },
+            [Action.DivestSent]: {
+              label: "Withdraw",
+              description: "Divestment of funds from strategy in progress",
+              status: TransactionStepStatus.processing,
+            },
+          }))
+          return {
           ...prev,
           [targetAction]: {
             label: "Withdraw",
@@ -1027,7 +1258,7 @@ function Interaction({
             description: "Divestment of funds from strategy in progress",
             status: TransactionStepStatus.processing,
           },
-        }));
+        }});
         break;
       case Action.ReturnFundsToUserSent:
         if (isZetachain(vaultData.protocol.chainId)) {
@@ -1037,7 +1268,22 @@ function Interaction({
           targetAction = Action.FundsDivested;
           description = "Withdrawal confirmation completed";
         }
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+            [targetAction]: {
+              label: "Withdraw",
+              description: description,
+              status: TransactionStepStatus.completed,
+              txHash: localLastEventTxHash,
+            },
+            [Action.ReturnFundsToUserSent]: {
+              label: "Withdraw",
+              description: "Return of funds in progress",
+              status: TransactionStepStatus.processing,
+            },
+          }))
+          return {
           ...prev,
           [targetAction]: {
             label: "Withdraw",
@@ -1050,7 +1296,7 @@ function Interaction({
             description: "Return of funds in progress",
             status: TransactionStepStatus.processing,
           },
-        }));
+        }});
         break;
       case Action.FundsDivested:
         if (isZetachain(activeChain.id)) {
@@ -1059,7 +1305,22 @@ function Interaction({
         } else {
           description = "Withdrawal confirmation in progress";
         }
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+            [Action.DivestSent]: {
+              label: "Withdraw",
+              description: "Divestment of funds from strategy completed",
+              status: TransactionStepStatus.completed,
+              txHash: localLastEventTxHash,
+            },
+            [Action.FundsDivested]: {
+              label: "Withdraw",
+              description: description,
+              status: TransactionStepStatus.processing,
+            },
+          }))
+          return {
           ...prev,
           [Action.DivestSent]: {
             label: "Withdraw",
@@ -1072,7 +1333,7 @@ function Interaction({
             description: description,
             status: TransactionStepStatus.processing,
           },
-        }));
+        }});
         break;
       case Action.withdrew:
         if (isZetachain(activeChain.id)) {
@@ -1097,10 +1358,26 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.CrossChainInvestFailed:
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+            [Action.crosschainInvest]: {
+              label: "Deposit",
+              description: "Cross chain transfer and investment of funds failed",
+              status: TransactionStepStatus.error,
+              txHash: localLastEventTxHash,
+            },
+            [Action.FundsReturnedError]: {
+              label: "Deposit",
+              description: "Return of funds in progress",
+              status: TransactionStepStatus.processing,
+            },
+          }))
+          return {
           ...prev,
           [Action.crosschainInvest]: {
             label: "Deposit",
@@ -1113,7 +1390,7 @@ function Interaction({
             description: "Return of funds in progress",
             status: TransactionStepStatus.processing,
           },
-        }));
+        }});
         break;
       case Action.FundsReturnedError:
         newTransactionStepFeedback = {
@@ -1126,6 +1403,7 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.DivestFailed:
@@ -1140,6 +1418,7 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.ReturnFundsFromStrategyFailed:
@@ -1154,6 +1433,7 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
       case Action.ReturnFundsToUserFailed:
@@ -1167,6 +1447,7 @@ function Interaction({
           },
         };
         setTransactionStepFeedback(newTransactionStepFeedback);
+        localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify(newTransactionStepFeedback))
         completeTransactionProcess(newTransactionStepFeedback);
         break;
     }
@@ -1177,10 +1458,14 @@ function Interaction({
       if (actions[step + 1] == Action.depositApproveConfirmed) {
         const nextStep = step + 1;
         setAction(actions[nextStep]);
+        localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
         setStep(nextStep);
+        localStorage.setItem(ACTION_STEP, nextStep.toString());
         setTimeout(() => {
           setAction(actions[nextStep + 1]);
+          localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep + 1]) )
           setStep(nextStep + 1);
+          localStorage.setItem(ACTION_STEP, (nextStep + 1).toString());
         }, 100);
       }
       if (
@@ -1189,7 +1474,9 @@ function Interaction({
       ) {
         const nextStep = step + 1;
         setAction(actions[nextStep]);
+        localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
         setStep(nextStep);
+        localStorage.setItem(ACTION_STEP, nextStep.toString());
       }
       if (
         action == Action.withdraw &&
@@ -1197,7 +1484,9 @@ function Interaction({
       ) {
         const nextStep = step + 1;
         setAction(actions[nextStep]);
+        localStorage.setItem(CURRENT_ACTION,JSON.stringify(actions[nextStep]) )
         setStep(nextStep);
+        localStorage.setItem(ACTION_STEP, nextStep.toString());
       }
     } else {
       if (action == Action.depositApprove) {
@@ -1207,24 +1496,42 @@ function Interaction({
         });
       }
       if (action == Action.deposit) {
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+            [action]: {
+              label: "Deposit",
+              description: "Local transaction failed, please try again",
+              status: TransactionStepStatus.error,
+            },
+          }))
+          return {
           ...prev,
           [action]: {
             label: "Deposit",
             description: "Local transaction failed, please try again",
             status: TransactionStepStatus.error,
           },
-        }));
+        }});
       }
       if (action == Action.withdraw) {
-        setTransactionStepFeedback((prev) => ({
+        setTransactionStepFeedback((prev) => {
+          localStorage.setItem(TX_STEP_FEEDBACK, JSON.stringify({
+            ...prev,
+            [action]: {
+              label: "Withdraw",
+              description: "Local transaction failed, please try again",
+              status: TransactionStepStatus.error,
+            },
+          }))
+          return {
           ...prev,
           [action]: {
             label: "Withdraw",
             description: "Local transaction failed, please try again",
             status: TransactionStepStatus.error,
           },
-        }));
+        }});
       }
       setIsTransactionProcessing(false);
     }
@@ -1232,6 +1539,7 @@ function Interaction({
 
   const handleMainAction = async () => {
     if (isTransactionProcessing) return;
+
     setIsTransactionProcessing(true);
     if (action == Action.depositApprove) {
       trackEvent("Approve Clicked", {
@@ -1304,10 +1612,8 @@ function Interaction({
     await interactionPostHook(!!success);
   };
 
-  function handleDone() {
-    setLastTransactionStepFeedback({});
-    setFinishedTransaction(false);
-    refreshBalance();
+  const handleGoBack = () => {
+    router.back();
   }
 
   return (
@@ -1396,7 +1702,7 @@ function Interaction({
               </>
             }
             {finishedTransaction ? (
-              <MainActionButton label="Done" handleClick={handleDone} />
+              <MainActionButton label="Back" handleClick={handleGoBack} />
             ) : (
               <MainActionButton
                 disabled={isTransactionProcessing}

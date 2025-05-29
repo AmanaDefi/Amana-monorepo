@@ -11,6 +11,26 @@ import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { SELECTED_TOKEN, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
+
+function bigIntReplacer(key: string, value: any) {
+  if (typeof value === 'bigint') {
+    console.log(key, 'key')
+    return value.toString(); 
+  }
+  return value;
+}
+
+function bigIntReviver(key: string, value: any) {
+  if (key === 'value') {
+      try {
+        return BigInt(value);
+      } catch (e) {
+        return value;
+      }
+  }
+  return value;
+}
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -43,12 +63,19 @@ const VaultsDetailContainer: React.FC<{
 
       if (foundVault) {
         setVaultData(foundVault);
-
-        // Explicitly reset selectedToken when vault changes
-        // This is critical to ensure proper auto-selection in child components
-        setSelectedToken(undefined);
       }
     }, [vaultID]);
+
+    useEffect(() => {
+      const token = localStorage.getItem(SELECTED_TOKEN)
+      const txStepFeedBack = localStorage.getItem(TX_STEP_FEEDBACK)
+      if (token) {
+        if (txStepFeedBack) {
+        setSelectedToken(JSON.parse(token, bigIntReviver));
+      } else {
+        localStorage.removeItem(SELECTED_TOKEN)
+      }}
+    }, [])
 
     const strategyExplorerBaseUrl = useMemo(() => {
       if (!vaultData?.protocol?.chainId) return "";
@@ -72,6 +99,8 @@ const VaultsDetailContainer: React.FC<{
             `VaultsDetailContainer: Token selection changed to ${token.symbol}`
         );*/
         setSelectedToken(token);
+        
+        localStorage.setItem(SELECTED_TOKEN, JSON.stringify(token, bigIntReplacer));
     }, []);
 
     return (
@@ -110,6 +139,7 @@ const VaultsDetailContainer: React.FC<{
                     transactionCompleted={transactionCompleted}
                     initialIsDeposit={initialIsDeposit}
                     onTokenSelect={handleTokenSelect}
+                    selectedToken={selectedToken}
                   />
                 </div>
               </div>
