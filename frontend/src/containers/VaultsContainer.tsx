@@ -53,7 +53,6 @@ const opTokenPrice = useTokenPriceBySymbol("OP");
 
   return (
     <VaultsGrid
-      loading={loading}
       vaults={vaults}
       vaultAPYs={vaultAPYs}
       userVaultBalances={userVaultBalances}

@@ -10,6 +10,8 @@ import {
 } from '@/types/types';
 import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
+import VaultCard from './VaultCard';
+// import VaultCard from './VaultCard';
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -37,7 +39,6 @@ const calculateCapacityPercentage = (vaultId: string): number => {
 };
 
 interface VaultsGridProps {
-  loading: boolean;
   vaults: VaultData[];
   vaultAPYs: VaultAPY[];
   userVaultBalances: UserVaultBalance[];
@@ -46,7 +47,6 @@ interface VaultsGridProps {
 }
 
 const VaultsGrid: React.FC<VaultsGridProps> = ({
-  loading,
   vaults,
   vaultAPYs,
   userVaultBalances,
@@ -164,7 +164,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     setSortOrder('desc');
   };
   
-  if (loading) {
+  // Show spinner for 500ms on mount, then always show vaults
+  const [showGrid, setShowGrid] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowGrid(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (!showGrid) {
     return <LoadingLogo />;
   }
   
@@ -293,151 +300,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       {/* Vaults Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {paginatedVaults.map((vault) => {
-          const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
-          const totalAssets = vaultTotalAssets.find((asset) => asset.vaultId === vault.id);
-          const riskLevel = calculateRiskLevel(vault);
-          const capacityPercentage = calculateCapacityPercentage(vault.id);
-          
+          const userBalance = userVaultBalances.find(b => b.vaultId === vault.id)?.balance;
+          const apyRaw = vaultAPYs.find(a => a.vaultId === vault.id)?.APY7d;
+          const tvlRaw = vaultTotalAssets.find(t => t.vaultId === vault.id)?.totalAssets;
+          const apy = typeof apyRaw === 'string' ? parseFloat(apyRaw) || 0 : apyRaw || 0;
+          const tvl = typeof tvlRaw === 'string' ? parseFloat(tvlRaw) || 0 : tvlRaw || 0;
+          console.log(`Vault: ${vault.name} (${vault.id}) - User Balance:`, userBalance);
           return (
-            <div 
-              key={vault.id}
-              className="bg-customNeutral200 rounded-lg overflow-hidden border border-customNeutral100 hover:border-cyan-400 transition-all cursor-pointer"
-              onClick={() => handleVaultClick(vault.id)}
-            >
-              {/* Card Header with Protocol and Risk (was Chain) */}
-              <div className="flex justify-between items-center p-3 bg-customNeutral300 border-b border-customNeutral100">
-                <div className="flex items-center gap-2 ml-[10px]">
-                  <Image
-                    src={vault.protocol.imgURL || ''}
-                    alt={vault.protocol.name}
-                    width={24}
-                    height={24}
-                    className="rounded-full"
-                  />
-                  <div className="flex items-center">
-                    <span className="text-gray-400 md:block hidden">Protocol:</span>
-                    <span className="text-white font-medium md:ml-1">{vault.protocol.name}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 mr-[10px]">
-                  <span className="text-gray-400 text-xs">Risk:</span>
-                  <div className={`w-3 h-3 rounded-full ${RISK_LEVELS[riskLevel].color}`}></div>
-                  <span className="text-white text-xs">{RISK_LEVELS[riskLevel].level}</span>
-                </div>
-              </div>
-              
-              {/* Card Content */}
-              <div className="p-4">
-                <div className='flex md:flex-row flex-col gap-2 justify-between'>
-
-                {/* Lending Pool with Logo (was Protocol) */}
-                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
-                  <Image
-                    src={vault.inputToken.imgURL}
-                    alt={vault.inputToken.symbol}
-                    width={36}
-                    height={36}
-                    className="rounded-full"
-                  />
-                  <div>
-                    <span className="text-gray-400 text-xs">Lending Pool</span>
-                    <p className="text-white font-medium">{vault.name}</p>
-                  </div>
-                </div>
-                
-                {/* Chain with Logo (was Lending Pool) */}
-                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
-                  <Image
-                    src={vault.imgURL || ''}
-                    alt={vault.protocol.network}
-                    width={36}
-                    height={36}
-                    className="rounded-full"
-                  />
-                  <div>
-                    <span className="text-gray-400 text-xs">Chain</span>
-                    <h3 className="text-white font-bold">{vault.protocol.network}</h3>
-                  </div>
-                </div>
-                </div>
-                
-                {/* APY and TVL */}
-                <div className="grid grid-cols-2 gap-2 p-3">
-                  <div className="bg-customNeutral300 p-3 rounded-md">
-                    <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
-                    <p className="text-cyan-400 font-bold text-xl">
-                      {(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%
-                    </p>
-                  </div>
-                  <div className="bg-customNeutral300 p-3 rounded-md">
-                    <p className="text-gray-400 text-xs mb-1">TVL</p>
-                    <p className="text-white font-bold text-xl">
-                      {formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Capacity Bar */}
-                <div className="mb-4">
-                  {/* <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>Capacity</span>
-                    <span>{capacityPercentage.toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-customNeutral300 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-[#262830] to-[#06afbc] h-2 rounded-full" 
-                      style={{ width: `${capacityPercentage}%` }}
-                    ></div>
-                  </div> */}
-
-                  {/* User Deposits */}
-                  {
-                    userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
-                    // Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && 
-                    (
-                      <div className="mt-2 px-3">
-                        <div className="flex justify-around text-[16px] mb-1">
-                          <span className="text-gray-400">Your Deposits:</span>
-                          <span className="text-white font-medium">
-                            {formatTokenBalance(
-                              userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance || 0, 
-                              vault.inputToken.symbol
-                            )} {vault.inputToken.symbol}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  }
-                </div>
-                
-                {/* Buttons */}
-                <div className="flex gap-2">
-                  <button 
-                    className="flex-1 fluid-hover-button text-white py-2 px-4 rounded-md transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent card click
-                      router.push(`/vaults/${vault.id}?tab=deposit`);
-                    }}
-                  >
-                    <span className="relative z-2">Deposit</span>
-                  </button>
-                  {
-                    userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance && 
-                    Number(userVaultBalances.find(balance => balance.vaultId === vault.id)?.balance) > 0 && (
-                      <button 
-                        className="flex-1 border border-customNeutral100 hover:border-cyan-400 text-white py-2 px-4 rounded-md transition-all"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent card click
-                          router.push(`/vaults/${vault.id}?tab=withdraw`);
-                        }}
-                      >
-                        Withdraw
-                      </button>
-                    )
-                  }
-                </div>
-              </div>
-            </div>
+            <VaultCard key={vault.id} vault={vault} userVaultBalance={userBalance} apy={apy} tvl={tvl} />
           );
         })}
       </div>
