@@ -2,100 +2,106 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as dotenv from "dotenv";
 
-dotenv.config(); // Load environment variables from .env
+dotenv.config();
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
-
   const [signer] = await hre.ethers.getSigners();
+
   if (!signer) {
-    throw new Error(
-      `Wallet not found. Please, run "npx hardhat account --save" or set PRIVATE_KEY env variable (for example, in a .env file)`
-    );
+    throw new Error("Wallet not found. Please set PRIVATE_KEY in .env");
   }
 
-  // Fetch the vault address argument required for the BaseAaveStrategy constructor
-  const contractName = args.contract;
-  const name = args.name;
-  const gatewayAddress = args.gateway; // This should be passed as an argument
-  const vault = args.vault; // This should be passed as an argument
-  const withdrawHelper = args.withdrawHelper;
-  const swapHelper = args.swapHelper;
-  const receiptToken = args.receiptToken;
-  const inputToken = args.inputToken;
-  const tokenIndex = args.tokenIndex;
-  const cvxRewardsPool = args.cvxRewardsPool;
-  const crvToken = args.crvToken;
-  const convexPid = args.convexPid;
-  const boosterAddress = args.boosterAddress;
-  const cvxToken = args.cvxToken;
+  const {
+    contract: contractName,
+    name,
+    gateway,
+    vault,
+    withdrawHelper,
+    swapHelper,
+    receiptToken,
+    inputToken,
+    cvxRewardsPool,
+    crvToken,
+    tokenIndex,
+    convexPid,
+    boosterAddress,
+    cvxToken
+  } = args;
 
-  if (!name) {
-    throw new Error("🚨 Strategy name is required");
-  }
-  if (!vault) {
-    throw new Error("🚨 Vault address is required");
-  }
-  if (!receiptToken) {
-    throw new Error("🚨 Receipt token address is required");
-  }
-  if (!contractName) {
-    throw new Error("🚨 Strategy contract name is required");
+  if (!name || !vault || !receiptToken || !contractName || !inputToken) {
+    throw new Error("🚨 Missing required parameters.");
   }
 
-  if (!inputToken) {
-    throw new Error("🚨 WETH address is required");
-  }
+  console.log(`🔑 Deploying with signer: ${signer.address}`);
 
-  // Deploy the BaseAaveStrategy contract
-  const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, gatewayAddress, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken);
-  console.log("Contract deployed, waiting for confirmations...");
+  const StrategyFactory = await hre.ethers.getContractFactory(contractName, signer);
 
-  // Wait for contract to be deployed before proceeding
-  await contract.deployed();
+  const proxy = await hre.upgrades.deployProxy(
+    StrategyFactory,
+    [
+      name,
+      gateway,
+      vault,
+      withdrawHelper,
+      swapHelper,
+      receiptToken,
+      inputToken,
+      cvxRewardsPool,
+      crvToken,
+      tokenIndex,
+      convexPid,
+      boosterAddress,
+      cvxToken
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups"
+    }
+  );
 
-  console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed ${name} on ${network}.`);
-  console.log(`📜 Contract address: ${contract.address}`); // Updated from contract.target
+  await proxy.deployed();
+  console.log(`✅ Proxy deployed at: ${proxy.address}`);
 
-  const etherscanApiKey = hre.config.etherscan.apiKey[network];
+  const implAddress = await hre.upgrades.erc1967.getImplementationAddress(proxy.address);
+  console.log(`📦 Implementation deployed at: ${implAddress}`);
+
+  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
   if (etherscanApiKey) {
-    console.log(`🛠 Verifying contract on ${network} explorer...`);
+    console.log(`🔍 Verifying implementation on Etherscan...`);
     try {
       await hre.run("verify:verify", {
-        address: contract.address, // Updated from contract.target
-        constructorArguments: [name, gatewayAddress, vault, withdrawHelper, swapHelper, receiptToken, inputToken, cvxRewardsPool, crvToken, tokenIndex, convexPid, boosterAddress, cvxToken],
+        address: implAddress,
+        constructorArguments: []
       });
-      console.log(`✅ Contract verified on ${network} explorer`);
-    } catch (err) {
-      console.error("❌ Contract verification failed:", err);
+      console.log("✅ Implementation verified on Etherscan");
+    } catch (err: any) {
+      console.error("❌ Verification failed:", err.message);
     }
   } else {
-    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
+    console.log("⚠️ No Etherscan API key for this network. Skipping verification.");
   }
 
   if (args.json) {
-    console.log(JSON.stringify(contract));
+    console.log(JSON.stringify({ proxyAddress: proxy.address, implementationAddress: implAddress }));
   }
 };
 
-// Define the Hardhat task for deployment
-task("deploy-convex-strategy", "Deploy a Strategy contract", main)
-  .addFlag("json", "Output in JSON")
-  .addParam("contract", "The name of the strategy contract to deploy")
-  .addParam("name", "The name of the strategy")
-  .addParam("gateway", "The address of the gateway contract")
-  .addParam("vault", "The address of the vault")
-  .addParam("withdrawHelper", "The address of the withdraw helper contract")
-  .addParam("swapHelper", "The address of the swap helper contract")
-  .addParam("receiptToken", "The address of the receipt token")
-  .addParam("inputToken", "The address of the WETH contract")
-  .addParam("cvxRewardsPool", "The address of the CVX rewards pool")
-  .addParam("crvToken", "The address of the CRV token")
-  .addParam("tokenIndex", "The index of the token in the gauge contract")
-  .addParam("convexPid", "The Convex PID")
-  .addParam("boosterAddress", "The address of the Convex booster")
-  .addParam("cvxToken", "The address of the CVX token");
+task("deploy-convex-strategy", "Deploy a UUPS upgradeable Convex strategy", main)
+  .addFlag("json", "Output as JSON")
+  .addParam("contract", "Contract name of the strategy to deploy")
+  .addParam("name", "Human-readable strategy name")
+  .addParam("gateway", "ZetaChain gateway address")
+  .addParam("vault", "AmanaVault address")
+  .addParam("withdrawHelper", "WithdrawHelper address")
+  .addParam("swapHelper", "SwapHelper address")
+  .addParam("receiptToken", "Curve/Compound receipt token address")
+  .addParam("inputToken", "Input ERC20 token address")
+  .addParam("cvxRewardsPool", "Convex reward pool address")
+  .addParam("crvToken", "CRV token address")
+  .addParam("tokenIndex", "Token index in pool")
+  .addParam("convexPid", "Convex PID for booster")
+  .addParam("boosterAddress", "Convex booster address")
+  .addParam("cvxToken", "CVX token address");
 
 export default {};

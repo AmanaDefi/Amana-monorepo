@@ -4,6 +4,8 @@ import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token, Balance } from "@/types/types";
 import { VAULT_DATA } from "@/constants";
+import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
+import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
@@ -69,11 +71,31 @@ const VaultsDetailContainer: React.FC<{
     // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
     useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
 
+    // Get token price for USD conversion
+    const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
+
+    // Log detailed vault deposit information
+    useEffect(() => {
+      if (userVaultBalance && vaultData) {
+        const rawBalance = typeof userVaultBalance === 'string' ? userVaultBalance : userVaultBalance.formatted;
+        const usdValue = Number(rawBalance) * (vaultTokenPrice || 0);
+
+        console.log(`Vault Deposit Details for ${vaultData.name}:`, {
+          vaultId: vaultData.id,
+          tokenSymbol: vaultData.inputToken.symbol,
+          rawBalance: rawBalance,
+          usdValue: `$${usdValue.toFixed(2)}`,
+          tokenPrice: `$${vaultTokenPrice || 0}`
+        });
+      }
+    }, [userVaultBalance, vaultData, vaultTokenPrice]);
+
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     const cvxTokenPrice = useTokenPriceBySymbol("CVX");
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
-    useUpdateAPYs(currentVault, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
+    const opTokenPrice = useTokenPriceBySymbol("OP");
+    useUpdateAPYs(currentVault, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, opTokenPrice);
 
     // Handle token selection from child components
     const handleTokenSelect = useCallback((token: Token) => {

@@ -13,13 +13,13 @@ export async function setupVaultFixture() {
   const config = vaultTestMatrix[0]; // ⬅️ use just the first config
 
   const { vaultConfig, strategyConfig, txConfig } = config;
-  const FORK_BLOCK_NUMBER = 7997959;
+  const FORK_BLOCK_NUMBER = 8483727;
   await network.provider.request({
     method: "hardhat_reset",
     params: [
       {
         forking: {
-          jsonRpcUrl: `https://zetachain-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+          jsonRpcUrl: "https://zetachain-mainnet.g.allthatnode.com/archive/evm",
           blockNumber: FORK_BLOCK_NUMBER,
         },
       },
@@ -47,7 +47,21 @@ export async function setupVaultFixture() {
   const treasury = await deployAndLog("Treasury", [owner.address]);
   const withdrawalReceiver = await deployAndLog("WithdrawalReceiver", [owner.address])
   const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS]);
-  const swapHelper = await deployAndLog("SwapHelper", [priceOracle.address], owner);
+  const SwapHelperFactory = await ethers.getContractFactory("SwapHelperZetachain", owner);
+
+  const swapHelper = await upgrades.deployProxy(
+    SwapHelperFactory,
+    [
+      priceOracle.address
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups",
+    }
+  );
+
+  await swapHelper.deployed();
+  console.log("✅ SwapHelperZetachain deployed at:", swapHelper.address);
   const gasTank = await deployAndLog("GasTank", []);
   const withdrawHelper = await deployAndLog("WithdrawHelper", [ZEVM_GATEWAY_ADDRESS]);
   const zapContract = await deployAndLog("ZapContract", [], owner);
@@ -55,7 +69,7 @@ export async function setupVaultFixture() {
     gasTank.address,
     treasury.address,
     withdrawHelper.address,
-    withdrawalReceiver.address,
+    withdrawalReceiver.address, // ,
     swapHelper.address,
     zapContract.address,
   ]);

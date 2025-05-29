@@ -1,92 +1,81 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import * as dotenv from "dotenv";
-
-dotenv.config(); // Load environment variables from .env
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
+  const { ethers, upgrades } = hre;
   const network = hre.network.name;
+  const [signer] = await ethers.getSigners();
 
-  const [signer] = await hre.ethers.getSigners();
   if (!signer) {
     throw new Error(
-      `Wallet not found. Please, run "npx hardhat account --save" or set PRIVATE_KEY env variable (for example, in a .env file)`
+      `Wallet not found. Please set PRIVATE_KEY in an .env file or run "npx hardhat account --save".`
     );
   }
 
-  // Fetch the vault address argument required for the BaseAaveStrategy constructor
-  const contractName = args.contract;
-  const name = args.name;
-  const vault = args.vault; // This should be passed as an argument
-  const receiptToken = args.receiptToken;
-  const gateway = args.gateway;
-  const wrappedTokenGateway = args.wrappedTokenGateway;
-  const weth = args.weth;
+  const {
+    contract,
+    name,
+    vault,
+    receiptToken,
+    gateway,
+    wrappedTokenGateway,
+    weth,
+    withdrawHelper
+  } = args;
 
-  if (!name) {
-    throw new Error("🚨 Strategy name is required");
-  }
-  if (!vault) {
-    throw new Error("🚨 Vault address is required");
-  }
-  if (!receiptToken) {
-    throw new Error("🚨 Receipt token address is required");
-  }
-  if (!contractName) {
-    throw new Error("🚨 Strategy contract name is required");
-  }
-  if (!gateway) {
-    throw new Error("🚨 Gateway address is required");
-  }
-  if (!wrappedTokenGateway) {
-    throw new Error("🚨 Wrapped token gateway address is required");
-  }
-  if (!weth) {
-    throw new Error("🚨 WETH address is required");
+  if (!contract || !name || !vault || !receiptToken || !gateway || !wrappedTokenGateway || !weth || !withdrawHelper) {
+    throw new Error("🚨 Missing required parameter. Check contract, name, vault, receiptToken, gateway, wrappedTokenGateway, weth, and withdrawHelper.");
   }
 
-  // Deploy the BaseAaveStrategy contract
-  const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, receiptToken, gateway, wrappedTokenGateway, weth);
-  console.log("Contract deployed, waiting for confirmations...");
+  console.log(`\uD83D\uDD11 Deploying ${name} with signer: ${signer.address}`);
 
-  // Wait for contract to be deployed before proceeding
-  await contract.deployed();
+  const StrategyFactory = await ethers.getContractFactory(contract, signer);
 
-  console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed ${name} on ${network}.`);
-  console.log(`📜 Contract address: ${contract.address}`); // Updated from contract.target
+  const proxy = await upgrades.deployProxy(
+    StrategyFactory,
+    [name, vault, receiptToken, gateway, wrappedTokenGateway, weth, withdrawHelper],
+    {
+      initializer: "initialize",
+      kind: "uups",
+    }
+  );
 
-  const etherscanApiKey = hre.config.etherscan.apiKey[network];
+  await proxy.deployed();
+  console.log(`\u2705 ${name} proxy deployed at: ${proxy.address}`);
+
+  const implAddress = await upgrades.erc1967.getImplementationAddress(proxy.address);
+  console.log(`\uD83D\uDCC6 Implementation deployed at: ${implAddress}`);
+
+  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
   if (etherscanApiKey) {
-    console.log(`🛠 Verifying contract on ${network} explorer...`);
+    console.log(`\uD83D\uDD0D Verifying implementation on Etherscan...`);
     try {
       await hre.run("verify:verify", {
-        address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, receiptToken, gateway, wrappedTokenGateway, weth],
+        address: implAddress,
+        constructorArguments: [],
       });
-      console.log(`✅ Contract verified on ${network} explorer`);
+      console.log(`\u2705 Implementation verified on Etherscan`);
     } catch (err) {
-      console.error("❌ Contract verification failed:", err);
+      console.error("\u274C Etherscan verification failed:", err.message);
     }
   } else {
-    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
+    console.log(`\u26A0\uFE0F No Etherscan API key for ${network}, skipping verification.`);
   }
 
   if (args.json) {
-    console.log(JSON.stringify(contract));
+    console.log(JSON.stringify({ proxyAddress: proxy.address, implementationAddress: implAddress }));
   }
 };
 
-// Define the Hardhat task for deployment
-task("deploy-evm-aave-eth-strategy", "Deploy a Strategy contract", main)
-  .addFlag("json", "Output in JSON")
-  .addParam("contract", "The name of the strategy contract to deploy")
-  .addParam("name", "The name of the strategy")
-  .addParam("vault", "The address of the vault")
-  .addParam("receiptToken", "The address of the receipt token")
-  .addParam("gateway", "The address of the gateway contract")
-  .addParam("wrappedTokenGateway", "The address of the wrapped token gateway contract")
-  .addParam("weth", "The address of the WETH contract");
+task("deploy-evm-aave-eth-strategy", "Deploy AaveEthStrategy (UUPS)", main)
+  .addFlag("json", "Output contract details as JSON")
+  .addParam("contract", "Strategy contract name, e.g., AaveEthStrategy")
+  .addParam("name", "The strategy name")
+  .addParam("vault", "Amana vault address")
+  .addParam("receiptToken", "Address of Aave aToken")
+  .addParam("gateway", "ZetaChain gateway address")
+  .addParam("wrappedTokenGateway", "Aave WrappedTokenGatewayV3 address")
+  .addParam("weth", "WETH token address")
+  .addParam("withdrawHelper", "Withdraw helper contract address");
 
 export default {};

@@ -189,6 +189,7 @@ export default function VaultHeader({
                 width={1200}
                 height={800}
                 className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                sizes="(max-width: 768px) 24px, 40px"
               />
             </div>
             <h2 className="font-bold text-white">
@@ -203,6 +204,7 @@ export default function VaultHeader({
                 width={1200}
                 height={800}
                 className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                sizes="(max-width: 768px) 24px, 40px"
               />
             </div>
             <h2 className="font-bold text-white">{vaultData.protocol.name}</h2>
@@ -215,6 +217,7 @@ export default function VaultHeader({
                 width={1200}
                 height={800}
                 className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                sizes="(max-width: 768px) 24px, 40px"
               />
             </div>
             <h2 className="font-bold text-white">{vaultData.name}</h2>

@@ -14,21 +14,18 @@ import "../interfaces/IConvexRewardPool.sol";
 contract ConvexEthStrategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePoolFixed public immutable receiptToken;
-    IConvexBooster public immutable booster;
-    IConvexRewardPool public immutable rewardPool;
+    ICurvePoolFixed public receiptToken;
+    IConvexBooster public booster;
+    IConvexRewardPool public rewardPool;
 
-    IWETH public immutable weth;
-    address public immutable cvxToken;
-    address public immutable crvToken;
+    IWETH public weth;
+    address public cvxToken;
+    address public crvToken;
 
-    address public swapHelperEthereum;
     uint256 public inputTokenIndex;
     uint256 public convexPid;
 
-    uint16 public harvestSwapSlippage = 500; // 5% slippage
-
-    constructor(
+    function initialize(
         string memory _name,
         address _gatewayAddress,
         address _amanaVault,
@@ -42,10 +39,17 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 _convexPid,
         address _boosterAddress,
         address _cvxToken
-    ) StrategyParent(_name, _amanaVault, _gatewayAddress, _withdrawHelper) {
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper
+        );
+
         receiptToken = ICurvePoolFixed(_receiptTokenAddress);
         weth = IWETH(_inputTokenAddress);
-        swapHelperEthereum = _swapHelper;
+        swapHelper = _swapHelper;
         booster = IConvexBooster(_boosterAddress);
         rewardPool = IConvexRewardPool(_rewardPoolAddress);
         crvToken = _crvToken;
@@ -54,42 +58,45 @@ contract ConvexEthStrategy is EthStrategyParent {
         convexPid = _convexPid;
     }
 
-    function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
-        harvestSwapSlippage = _slippage;
-    }
-
-    function setSwapHelperEthereum(address _swapHelper) external onlyOwner {
-        swapHelperEthereum = _swapHelper;
-    }
-
-    function swapToWeth(
+    function swapToInputToken(
         address token,
         uint256 amountIn,
-        uint16 slippageBps
+        uint16 initialSlippageBps
     ) internal returns (uint256 amountOut) {
-        require(amountIn > 0, "Amount must be greater than zero");
+        if (amountIn == 0) return 0;
 
-        SafeERC20.safeTransfer(IERC20(token), swapHelperEthereum, amountIn);
+        IERC20(token).safeTransfer(swapHelper, amountIn);
+
         uint16 maxDeadline = uint16(block.timestamp + 1 hours);
-        amountOut = ISwapHelper(swapHelperEthereum).swap(
-            token,
-            amountIn,
-            address(weth),
-            slippageBps,
-            address(this),
-            maxDeadline,
-            ""
-        );
+        uint16 slippage = initialSlippageBps;
 
-        require(
-            amountOut > 0,
-            "Swap failed: Amount out must be greater than zero"
-        );
+        // Retry with increasing slippage up to 10% (1000 bps)
+        while (slippage <= 1000) {
+            try
+                ISwapHelper(swapHelper).swap(
+                    token,
+                    amountIn,
+                    address(weth),
+                    slippage,
+                    address(this),
+                    maxDeadline,
+                    ""
+                )
+            returns (uint256 result) {
+                emit RewardsHarvested(token, amountIn, result);
+                return result;
+            } catch {
+                emit SwapFailed(token, amountIn, "Swap attempt failed");
+            }
 
-        return amountOut;
+            slippage += 100; // increase slippage by 1% (100 bps)
+        }
+
+        // Swap failed even after max attempts
+        return 0;
     }
 
-    function claimRewards() public returns (uint256 totalClaimed) {
+    function claimRewards() public override returns (uint256 totalClaimed) {
         // Track balances before
         uint256 crvBefore = IERC20(crvToken).balanceOf(address(this));
         uint256 cvxBefore = IERC20(cvxToken).balanceOf(address(this));
@@ -123,61 +130,45 @@ contract ConvexEthStrategy is EthStrategyParent {
         return totalClaimed;
     }
 
-    function harvest() public {
-        claimRewards();
-        _reinvestRewards();
+    function _reinvestRewards() internal override {
+        _handleRewardReinvestment(crvToken);
+        _handleRewardReinvestment(cvxToken);
     }
 
-    function _reinvestRewards() internal {
-        address[] memory rewardContracts = new address[](
-            1 + rewardPool.extraRewardsLength()
+    function _handleRewardReinvestment(address rewardToken) internal {
+        uint256 rewardBalance = IERC20(rewardToken).balanceOf(address(this));
+        if (rewardBalance < minClaimableReward) return; // skip small amounts
+
+        uint256 receivedInputToken = swapToInputToken(
+            rewardToken,
+            rewardBalance,
+            harvestSwapSlippage
         );
-        rewardContracts[0] = address(rewardPool);
 
-        for (uint256 i = 0; i < rewardContracts.length - 1; i++) {
-            rewardContracts[i + 1] = IConvexRewardPool(rewardPool).extraRewards(
-                i
+        if (receivedInputToken == 0) return;
+
+        emit RewardsHarvested(rewardToken, rewardBalance, receivedInputToken);
+
+        uint256[2] memory amounts;
+        amounts[inputTokenIndex] = receivedInputToken;
+
+        approveOrIncreaseAllowance(
+            weth,
+            address(receiptToken),
+            receivedInputToken
+        );
+
+        try receiptToken.add_liquidity(amounts, 0) returns (uint256 shares) {
+            approveOrIncreaseAllowance(receiptToken, address(booster), shares);
+            booster.deposit(convexPid, shares, true);
+        } catch Error(string memory reason) {
+            emit SwapFailed(rewardToken, receivedInputToken, reason);
+        } catch {
+            emit SwapFailed(
+                rewardToken,
+                receivedInputToken,
+                "Curve add_liquidity failed"
             );
-        }
-
-        for (uint256 i = 0; i < rewardContracts.length; i++) {
-            address rewardToken = IConvexRewardPool(rewardContracts[i])
-                .rewardToken();
-            uint256 rewardBalance = IERC20(rewardToken).balanceOf(
-                address(this)
-            );
-
-            if (rewardBalance > 0) {
-                uint256 receivedInputToken = swapToWeth(
-                    rewardToken,
-                    rewardBalance,
-                    harvestSwapSlippage
-                );
-
-                if (receivedInputToken > 0) {
-                    emit RewardsHarvested(
-                        rewardToken,
-                        rewardBalance,
-                        receivedInputToken
-                    );
-
-                    uint256[2] memory amounts;
-                    amounts[inputTokenIndex] = receivedInputToken;
-
-                    approveOrIncreaseAllowance(
-                        weth,
-                        address(receiptToken),
-                        receivedInputToken
-                    );
-                    uint256 shares = receiptToken.add_liquidity(amounts, 0);
-                    approveOrIncreaseAllowance(
-                        receiptToken,
-                        address(booster),
-                        shares
-                    );
-                    booster.deposit(convexPid, shares, true);
-                }
-            }
         }
     }
 
@@ -185,7 +176,7 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        harvest();
+        harvest(); // TO DO remove this from the deposit flow, rather do it manually
         weth.deposit{value: amount}();
 
         uint256[2] memory amounts;
@@ -210,7 +201,7 @@ contract ConvexEthStrategy is EthStrategyParent {
             fractionToWithdraw
         );
 
-        harvest();
+        harvest(); // TO DO remove this from the withdraw flow, rather do it manually - but it might still get called in the Convex contract?
         sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
         rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
 
@@ -222,14 +213,9 @@ contract ConvexEthStrategy is EthStrategyParent {
         weth.withdraw(amountWithdrawn);
     }
 
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault)
+    function _transferAssetsToNewStrategy() internal override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
         harvest();
 
@@ -242,18 +228,16 @@ contract ConvexEthStrategy is EthStrategyParent {
             address(rewardPool),
             withdrawnAmount
         );
-        rewardPool.stakeFor(newStrategy, withdrawnAmount);
-        IStrategy(newStrategy).depositFromOldStrategy(
+        rewardPool.stakeFor(txn.newStrategy, withdrawnAmount);
+        IStrategy(txn.newStrategy).depositFromOldStrategy(
             withdrawnAmount,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
+            txn.minimumOut,
+            lastProcessedNonce + 1
         );
         emit AssetsTransferredToNewStrategy(
-            newStrategy,
+            txn.newStrategy,
             withdrawnAmount,
-            currentExecutionNonce,
-            _crossChainTxId
+            lastProcessedNonce + 1
         );
     }
 
@@ -261,29 +245,20 @@ contract ConvexEthStrategy is EthStrategyParent {
      * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
      *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
      * @param currentExecutionNonce The current execution nonce from the old strategy.
-     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
      */
     function depositFromOldStrategy(
         uint256 amount,
         uint256,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
+        uint256 currentExecutionNonce
     ) external payable override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
-        executionNonce = currentExecutionNonce + 1;
-        _sendInvestConfirmation(
-            address(0),
-            amount,
-            totalUnderlyingAssets(),
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+        lastProcessedNonce = currentExecutionNonce;
+        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,
-            currentExecutionNonce,
-            _crossChainTxId
+            currentExecutionNonce
         );
         oldStrategy = address(0);
     }

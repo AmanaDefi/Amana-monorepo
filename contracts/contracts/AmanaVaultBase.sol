@@ -50,6 +50,30 @@ abstract contract AmanaVaultBase is
 
     mapping(address => uint256) internal userPrincipal;
 
+    uint256 latestTotalAssetsUpdateFromStrategy;
+    uint256 public lastProcessedNonce;
+
+    struct Transaction {
+        address user;
+        address receiver;
+        address withdrawZRC20;
+        address withdrawERC20;
+        uint256 amount;
+        uint256 vaultSharesToBeBurnt;
+        uint32 withdrawChainId;
+        bool isDeposit;
+        uint256 totalAssetsAfter;
+        bytes32 txSucceeded;
+        uint16 slippage;
+    }
+
+    mapping(uint256 => Transaction) transactions; // Buffer for out-of-order confirmations
+    mapping(address => uint256) public pendingWithdrawals;
+    bool public depositFeePaidFromGasTank;
+    int256 public pendingShareChange;
+    uint256 public vaultNonce; // TODO need to initialize this to 1!
+    mapping(uint256 => bytes) public nonEvmAddressByNonce;
+
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
         _;
@@ -79,15 +103,17 @@ abstract contract AmanaVaultBase is
         address indexed user,
         uint256 amount,
         uint256 shares,
-        bytes32 indexed crossChainTxId
+        uint256 indexed vaultNonce
     );
 
     event Withdrawn(
         address indexed user,
         uint256 amount,
         uint256 shares,
-        bytes32 indexed crossChainTxId
+        uint256 indexed vaultNonce
     );
+
+    event TotalAssetsUpdated(uint256 totalAssets, uint256 vaultNonce);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -119,6 +145,7 @@ abstract contract AmanaVaultBase is
         registry = registry_;
         perfFee = perfFee_;
         totalPrincipal = 1;
+        vaultNonce = 1;
         gasLimitForWithdrawAndCall = gasLimitWithdrawAndCall_;
         gasLimitForCall = gasLimitCall_;
     }
@@ -218,14 +245,6 @@ abstract contract AmanaVaultBase is
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
-    /**
-     * @dev Returns the total assets currently held by the vault, including assets directly held
-     *      and the latest update from the strategy's total assets.
-     * @return The total amount of assets held by the vault.
-     * @notice Overrides the {IERC4626-totalAssets} function.
-     */
-    function totalAssets() public view virtual override returns (uint256) {}
-
     /** @dev See {IERC4626-deposit}. */
     function deposit(
         uint256 assets,
@@ -276,60 +295,39 @@ abstract contract AmanaVaultBase is
 
     /**
      * @dev Handles deposits from a connected chain, processes swaps if necessary, and initiates cross-chain investment.
-     * @param receiver The address of the user receiving the shares.
-     * @param assets The amount of assets received from the connected chain.
-     * @param zrc20source The ZRC20 token address representing the assets being deposited.
      * @notice Performs token swaps if the ZRC20 source token differs from the vault's asset.
      */
     function _depositComingFromConnectedChain(
-        address receiver,
-        uint256 userChainId,
-        uint256 assets,
-        uint256 minimumOut,
-        address zrc20source,
-        address erc20source,
-        uint16 slippage,
-        bytes32 crossChainTxId
+        uint256 minimumOut
     ) internal whenNotPaused {
-        uint256 maxAssets = maxDeposit(receiver);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-        }
-        if (zrc20source == address(0)) {
-            zrc20source = ISystem(_SYSTEM_ADDRESS).gasCoinZRC20ByChainId(
-                userChainId
+        Transaction storage txn = transactions[vaultNonce];
+        uint256 maxAssets = maxDeposit(txn.receiver);
+        if (txn.amount > maxAssets) {
+            revert ERC4626ExceededMaxDeposit(
+                txn.receiver,
+                txn.amount,
+                maxAssets
             );
         }
-        uint256 outputAmount = zrc20source == address(asset())
-            ? assets
+        if (txn.withdrawZRC20 == address(0)) {
+            txn.withdrawZRC20 = ISystem(_SYSTEM_ADDRESS).gasCoinZRC20ByChainId(
+                txn.withdrawChainId
+            );
+        }
+        txn.amount = txn.withdrawZRC20 == address(asset())
+            ? txn.amount
             : swap(
-                zrc20source,
-                assets,
+                txn.withdrawZRC20,
+                txn.amount,
                 address(asset()),
-                slippage,
+                txn.slippage,
                 address(this),
                 200
             );
-        _investAssets(
-            outputAmount,
-            minimumOut,
-            receiver,
-            zrc20source,
-            erc20source,
-            uint32(IZRC20(zrc20source).CHAIN_ID()),
-            crossChainTxId
-        );
+        _investAssets(minimumOut);
     }
 
-    function _investAssets(
-        uint256 amount,
-        uint256 minimumOut,
-        address receiver,
-        address zrc20source,
-        address erc20source,
-        uint32 userChainId,
-        bytes32 crossChainTxId
-    ) internal virtual;
+    function _investAssets(uint256 minimumOut) internal virtual;
 
     function redeem(
         uint256 shares,
@@ -379,7 +377,6 @@ abstract contract AmanaVaultBase is
             shares,
             0
         );
-
         return shares;
     }
 
@@ -415,84 +412,47 @@ abstract contract AmanaVaultBase is
 
     /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
-     * @param user The address of the user receiving the withdrawn assets.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param assets The amount of assets being withdrawn.
-     * @param userChainId The chain ID of the user's connected chain.
      * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
      */
     function _withdrawComingFromConnectedChain(
-        address user,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 assets,
-        uint256 minimumOut,
-        uint32 userChainId,
-        uint16 slippage,
-        bytes32 crossChainTxId
+        uint256 minimumOut
     ) internal virtual;
 
-    function returnFundsToUser(
-        uint256 amount,
-        uint32 userChainId,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        bytes32 _crossChainTxId,
-        uint16 slippage
-    ) external onlyOwner {
-        _returnFundsToUser(
-            amount,
-            userChainId,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
-            _crossChainTxId,
-            slippage
-        );
+    function returnFundsToUser(uint256 nonce) external onlyOwner {
+        _returnFundsToUser(nonce);
     }
 
     /**
      * @dev Returns funds to the user, either on the same chain or a connected chain.
-     * @param amount The amount of assets to return to the user.
-     * @param userChainId The chain ID of the user's chain.
-     * @param receiver The address of the user receiving the funds.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
      * @notice Handles cross-chain transfers or same-chain asset transfers. Manages gas fees and token approvals.
      */
-    function _returnFundsToUser(
-        uint256 amount,
-        uint32 userChainId,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        bytes32 _crossChainTxId,
-        uint16 slippage
-    ) internal {
-        uint256 outputAmount = (userChainId == uint32(block.chainid) ||
-            address(asset()) == withdrawZRC20)
-            ? amount
+    function _returnFundsToUser(uint256 nonce) internal {
+        Transaction storage txn = transactions[nonce];
+
+        uint256 outputAmount = (txn.withdrawChainId == uint32(block.chainid) ||
+            address(asset()) == txn.withdrawZRC20)
+            ? txn.amount
             : swap(
                 address(asset()),
-                amount,
-                withdrawZRC20,
-                slippage,
+                txn.amount,
+                txn.withdrawZRC20,
+                txn.slippage,
                 address(this),
                 200
             );
-        if (userChainId == uint32(block.chainid)) {
+        if (txn.withdrawChainId == uint32(block.chainid)) {
             IERC20(address(asset())).approve(
                 IAmanaRegistry(registry).zapContract(),
-                amount
+                txn.amount
             );
             IZapContract(IAmanaRegistry(registry).zapContract())
                 .zapSwapAndReturnToUser(
-                    amount,
+                    txn.amount,
                     address(this),
                     address(asset()),
-                    withdrawZRC20,
-                    slippage,
-                    receiver
+                    txn.withdrawZRC20,
+                    txn.slippage,
+                    txn.receiver
                 );
         } else {
             // Cross-chain transfer
@@ -501,21 +461,24 @@ abstract contract AmanaVaultBase is
 
             // Step 1: Transfer tokens to the helper contract
             SafeERC20.safeTransfer(
-                IERC20(withdrawZRC20),
+                IERC20(txn.withdrawZRC20),
                 IAmanaRegistry(registry).withdrawHelper(),
                 outputAmount
             );
+            bytes memory recipient;
+            if (nonEvmAddressByNonce[nonce].length == 0) {
+                recipient = abi.encodePacked(txn.receiver);
+            } else {
+                recipient = abi.encodePacked(nonEvmAddressByNonce[nonce]);
+            }
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawToUser(
-                    receiver,
-                    withdrawZRC20,
-                    withdrawERC20,
-                    withdrawZRC20,
+                    recipient,
+                    txn.withdrawZRC20,
                     outputAmount,
-                    userChainId,
-                    _crossChainTxId,
-                    registry
+                    registry,
+                    vaultNonce
                 );
         }
     }
@@ -573,15 +536,25 @@ abstract contract AmanaVaultBase is
         address spender,
         uint256 amount
     ) internal {
-        uint256 currentAllowance = token.allowance(msg.sender, spender);
+        bytes memory approveCalldata = abi.encodeWithSelector(
+            IERC20.approve.selector,
+            spender,
+            amount
+        );
 
-        if (currentAllowance == 0) {
-            // First-time approval
-            token.approve(spender, amount);
-        } else {
-            // Handle USDT-like tokens by forcing reset to zero first
-            token.approve(spender, 0); // Reset to zero
-            token.approve(spender, amount); // Set new allowance
-        }
+        (bool success, ) = address(token).call(approveCalldata);
+        if (success) return;
+
+        // If initial approve failed, try resetting to zero first
+        bytes memory resetCalldata = abi.encodeWithSelector(
+            IERC20.approve.selector,
+            spender,
+            0
+        );
+        (bool resetSuccess, ) = address(token).call(resetCalldata);
+        require(resetSuccess, "Reset to 0 failed");
+
+        (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
+        require(secondApproveSuccess, "Second approve failed");
     }
 }

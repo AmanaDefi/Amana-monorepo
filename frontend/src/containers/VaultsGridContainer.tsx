@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { 
-  VaultData, 
-  VaultAPY, 
-  UserVaultBalance, 
-  VaultTotalAssets, 
-  VaultTotalAssetsinToken 
+import {
+  VaultData,
+  VaultAPY,
+  UserVaultBalance,
+  VaultTotalAssets,
+  VaultTotalAssetsinToken
 } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
@@ -35,9 +35,9 @@ interface VaultsGridContainerProps {
   defaultAccount?: Account; // Optional default account
 }
 
-const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({ 
-  activeChain, 
-  defaultAccount = ZERO_ACCOUNT 
+const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
+  activeChain,
+  defaultAccount = ZERO_ACCOUNT
 }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
@@ -52,10 +52,10 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
 
   // Fetch vault balances and total values
   useUpdateVaultBalanceAndTotal(
-    vaults, 
-    walletAddress, 
-    setUserVaultBalances, 
-    setVaultTotalAssets, 
+    vaults,
+    walletAddress,
+    setUserVaultBalances,
+    setVaultTotalAssets,
     setVaultTotalAssetsinToken
   );
   // Fetch token prices for APY calculations
@@ -63,9 +63,9 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
   const cvxTokenPrice = useTokenPriceBySymbol("CVX");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
-  
+  const opTokenPrice = useTokenPriceBySymbol("OP");
   // Calculate APYs
-  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, true);
+  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, opTokenPrice, true);
 
   return (
     <div className="container mx-auto">
@@ -81,4 +81,4 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
   );
 };
 
-export default VaultsGridContainer; 
+export default VaultsGridContainer;

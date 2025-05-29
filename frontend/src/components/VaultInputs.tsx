@@ -26,8 +26,7 @@ import {
   bigIntReviver,
   bigIntReplacer,
 } from "@/utils/utils";
-import { ethers } from "ethers";
-import InteractionContainer, { resetTxLocalStorage } from "./interact";
+import InteractionContainer, { resetTxLocalStorage } from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
@@ -43,6 +42,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+
 import { ACTION_STEP, ACTION_STEPS, CURRENT_ACTION, INPUT_BALANCE, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
 
 // Helper function for formatting token balances based on token type
@@ -1117,7 +1117,6 @@ export default function VaultInputs({
           </span>
         </div>
       </div>
-
 
 
       {inputToken && !loadingOutputToken && (
