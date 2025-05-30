@@ -381,10 +381,19 @@ export default function ChainTokenSelector({
     event.stopPropagation();
     event.preventDefault();
 
-
     // Check if wallet is connected
     if (!walletAddress) {
       warningToast("Please connect your wallet to select a token");
+      return;
+    }
+
+    // Check if user is trying to select Solana token while connected to EVM
+    const isSolanaChain = chain.id === 900 || chain.id === 901; // Solana mainnet/testnet
+    const isEVMWallet = activeChain?.id !== 900 && activeChain?.id !== 901; // Not on Solana
+    
+    if (isSolanaChain && isEVMWallet) {
+      warningToast("Connect Solana wallet to select Solana tokens");
+      setIsOpen(false);
       return;
     }
 

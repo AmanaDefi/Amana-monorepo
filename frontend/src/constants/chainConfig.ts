@@ -291,9 +291,10 @@ const bscChain = defineChain({
 
 const solanaChain = defineChain({
   chainId: CHAIN_ID.solana, // Solana uses string identifiers
-  name: deployEnv === "testnet" ? "devnet" : "mainnet",
+  name: deployEnv === "testnet" ? "Solana Devnet" : "Solana",
   shortName: "sol",
   chain: "Solana",
+  icon: CHAIN_ICONS[900],
   rpc: [
     solanaRpcUrl
   ],
@@ -367,8 +368,8 @@ const arbitrumChain = defineChain({
 
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"
-  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain] // always put Zetachain first
-  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain]; // always put Zetachain first
+  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain, solanaChain] // always put Zetachain first
+  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain, solanaChain]; // always put Zetachain first
 
 export const chainConfigs = {
   [CHAIN_ID.zetachain]: zetaChain,
@@ -970,7 +971,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: true,
-      ZRC20equivalent: "0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501"],
     },
     {
       symbol: "USDC",
@@ -980,7 +981,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
-      ZRC20equivalent: "0xD10932EB3616a937bd4a2652c87E9FeBbAce53e5",
+      ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0xD10932EB3616a937bd4a2652c87E9FeBbAce53e5"],
     }
   ],
 };
