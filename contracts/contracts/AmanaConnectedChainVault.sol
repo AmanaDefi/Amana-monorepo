@@ -54,6 +54,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 confirmationNonce,
                 bytes32 txSucceeded
             ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
+
             if (confirmationNonce == lastProcessedNonce) {
                 // this is an update (totalAssetsAfter)
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
@@ -62,14 +63,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
                 if (!transactions[confirmationNonce].isDeposit) {
-                    // this is a withdrawal confirmation (or revert)
+                    // this is a withdrawal confirmation
                     transactions[confirmationNonce].amount = withdrawnAmount;
-                    transactions[confirmationNonce].txSucceeded = txSucceeded;
+                    transactions[confirmationNonce].txSucceeded = txSucceeded; // non-zero means a revert
                 }
             }
             if (confirmationNonce == lastProcessedNonce + 1) {
                 // Process the confirmation immediately if it's the next one in line
-                _processBufferedConfirmations(true);
+                _processBufferedTransactions(true);
             }
         } else {
             Transaction storage txn = transactions[vaultNonce];
@@ -155,47 +156,27 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     //     ) revert ConfirmationAlreadyProcessed();
 
     //     // Attempt to process confirmations
-    //     _processBufferedConfirmations(true);
+    //     _processBufferedTransactions(true);
     // }
 
     /**
      * @dev Allows for manual input of a transaction message, mimicking _processConfirmationFromStrategy.
-     * @param user The address of the user associated with the transaction.
-     * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
-     * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
-     * @param withdrawChainId The chain ID of the withdrawal, if applicable.
-     * @param isDeposit A boolean indicating if the transaction is for a deposit (true) or withdrawal (false).
+     * @param amount The amount of the ZRC20 token to be withdrawn, if applicable.
      * @param totalAssetsAfter The total assets in the vault after the operation.
      * @param confirmationNonce A unique identifier for the transaction to ensure it is processed only once.
+     * @param _txSucceeded A bytes32 value indicating whether the transaction succeeded or failed.
      */
     function manuallyAddConfirmation(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 withdrawAmount,
-        uint256 vaultSharesToBeBurnt,
-        uint32 withdrawChainId,
-        bool isDeposit,
+        uint256 amount,
         uint256 totalAssetsAfter,
         uint256 confirmationNonce,
-        bytes32 _txSucceeded,
-        uint16 _slippage
+        bytes32 _txSucceeded
     ) external onlyOwner {
         // Store the transaction in the buffer
-        transactions[confirmationNonce] = Transaction({
-            user: user,
-            receiver: receiver,
-            withdrawZRC20: withdrawZRC20,
-            withdrawERC20: withdrawERC20,
-            amount: withdrawAmount,
-            vaultSharesToBeBurnt: vaultSharesToBeBurnt,
-            withdrawChainId: withdrawChainId,
-            isDeposit: isDeposit,
-            totalAssetsAfter: totalAssetsAfter,
-            txSucceeded: _txSucceeded,
-            slippage: _slippage
-        });
+        Transaction storage txn = transactions[confirmationNonce];
+        txn.amount = amount;
+        txn.totalAssetsAfter = totalAssetsAfter;
+        txn.txSucceeded = _txSucceeded;
     }
 
     function processExistingConfirmations(
@@ -211,7 +192,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
 
         // Attempt to process confirmations
-        _processBufferedConfirmations(processEntireBuffer);
+        _processBufferedTransactions(processEntireBuffer);
     }
 
     /**
@@ -219,13 +200,21 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
      *      Once a transaction is processed, it is removed from the buffer.
      */
-    function _processBufferedConfirmations(bool processEntireBuffer) internal {
+    function _processBufferedTransactions(bool processEntireBuffer) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-            if (nextNonce >= vaultNonce) {
-                break;
-            }
             Transaction memory transaction = transactions[nextNonce];
+
+            // if (
+            //     (nextNonce >= vaultNonce) || // No more transactions to process
+            //     (transaction.isDeposit && transaction.amount == 0) || // unconfirmed deposit
+            //     (!transaction.isDeposit && transaction.amount == 0) || // unconfirmed withdrawal - this is knocking out switch as well!
+            //     (transaction.user == address(0) &&
+            //         transaction.receiver == address(0) &&
+            //         transaction.totalAssetsAfter == 0) // unconfirmed switch
+            // ) {
+            //     break;
+            // }
 
             if (transaction.txSucceeded != bytes32(0)) {
                 // A revert update from strategy
@@ -234,17 +223,26 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
             } else if (transaction.isDeposit) {
+                if (transaction.totalAssetsAfter == 0) {
+                    break;
+                }
+
                 _confirmDepositAndMint();
             } else if (
                 transaction.user == address(0) &&
                 transaction.receiver == address(0)
             ) {
+                if (transaction.totalAssetsAfter == 0) {
+                    break;
+                }
                 emit StrategyUpdated(strategyAddress);
             } else {
-                // This is a withdrawal confirmation
+                if (transaction.amount == 0) {
+                    break;
+                }
+
                 _confirmWithdrawAndBurn();
             }
-
             lastProcessedNonce = nextNonce;
             delete transactions[nextNonce];
             if (!processEntireBuffer) break;
@@ -410,6 +408,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         }
 
         uint256 shares = previewDeposit(txn.amount);
+
         _mint(txn.receiver, shares);
 
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
@@ -513,7 +512,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 amendedTotalSupply = pendingShareChange >= 0
             ? totalSupply() + uint256(pendingShareChange)
             : totalSupply() - uint256(-pendingShareChange);
-
+        console.log("Total Supply:", totalSupply());
+        console.log("Amended Total Supply:", amendedTotalSupply);
+        console.log("Shares:", txn.vaultSharesToBeBurnt);
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleDivestCallToStrategy(
                 strategyAddress,

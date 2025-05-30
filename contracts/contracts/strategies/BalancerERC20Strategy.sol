@@ -120,20 +120,35 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         address[] memory poolTokens = IBalancerStablePool(receiptToken)
             .getTokens();
         address tokenToWithdraw = poolTokens[inputTokenIndex];
-        uint256 amountOut = liquidityRouter.removeLiquiditySingleTokenExactIn(
-            receiptToken, // pool (BPT)
-            sharesToWithdraw, // exact BPT in
-            tokenToWithdraw, // token you want to receive - change this to the wrapped version of the token?
-            minAmountOut, // minimum acceptable output
-            true, // wethIsEth
-            "" // userData (can be empty unless needed)
+        console.log("minAmountOut: %s", minAmountOut);
+
+        uint256 amountOutFromGauge = liquidityRouter
+            .removeLiquiditySingleTokenExactIn(
+                receiptToken, // pool (BPT)
+                sharesToWithdraw, // exact BPT in
+                tokenToWithdraw, // token you want to receive - change this to the wrapped version of the token?
+                1, // minimum acceptable output
+                true, // wethIsEth
+                "" // userData (can be empty unless needed)
+            );
+        console.log(
+            "Withdrew %s from liquidity gauge, received %s of token %s",
+            sharesToWithdraw,
+            amountOutFromGauge,
+            tokenToWithdraw
         );
-        I4626Vault(tokenToWithdraw).withdraw(
-            amountOut,
+        uint256 finalAmountOut = I4626Vault(tokenToWithdraw).redeem(
+            amountOutFromGauge,
             address(this),
             address(this)
         );
-        amountWithdrawn = amountOut;
+        console.log(
+            "Withdrew %s from ERC4626 vault, final amount out: %s",
+            amountOutFromGauge,
+            finalAmountOut
+        );
+        require(finalAmountOut >= minAmountOut, "Insufficient output amount");
+        amountWithdrawn = finalAmountOut;
     }
 
     function claimRewards() public override returns (uint256 totalClaimed) {
@@ -160,11 +175,14 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     function _reinvestRewards() internal override {
         uint256 totalConverted;
         try liquidityGauge.reward_count() returns (uint256 count) {
+            console.log("Reward count: %s", count);
             for (uint256 i = 0; i < count; i++) {
                 address reward = liquidityGauge.reward_tokens(i);
                 if (reward == address(0)) continue;
 
                 uint256 balance = IERC20(reward).balanceOf(address(this));
+                console.log("balance of reward %s: %s", reward, balance);
+                console.log("minClaimableReward: %s", minClaimableReward);
                 if (balance < minClaimableReward) continue;
 
                 uint256 converted = swapToInputToken(
