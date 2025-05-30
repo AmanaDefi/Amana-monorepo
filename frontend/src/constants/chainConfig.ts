@@ -961,6 +961,28 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       ZRC20equivalent: ZRC20_TOKENS_BY_ADDRESS["0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794"],
     },
   ],
+  // 901: [
+  //   {
+  //     symbol: "SOL",
+  //     address: "11111111111111111111111111111111",
+  //     decimals: 9,
+  //     imgURL: "/solana_logo.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: true,
+  //     ZRC20equivalent: "0xADF73ebA3Ebaa7254E859549A44c74eF7cff7501",
+  //   },
+  //   {
+  //     symbol: "USDC",
+  //     address: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  //     decimals: 6,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false,
+  //     ZRC20equivalent: "0xD10932EB3616a937bd4a2652c87E9FeBbAce53e5",
+  //   }
+  // ],
 };
 
 

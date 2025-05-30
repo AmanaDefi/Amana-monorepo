@@ -558,7 +558,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xb8F0fBee642638C11019139Dee02D1b18E91b28E",
+    id: "0x8b934de59fDE50a91DAa7E788389f8fCAD35A14F",
     name: "yUSD/USDC Pool",
     type: "Liquidity Pool",
     des: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer’s LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
@@ -576,7 +576,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "Balancer",
-      strategyAddress: "0xE870EDca08CA5422260445ab24ED8ff1419cE688",
+      strategyAddress: "0x4680e7443Dd40fB093F7b717F40bD653D0D65E1E",
       rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
       network: "Base",
       chainId: 8453,
