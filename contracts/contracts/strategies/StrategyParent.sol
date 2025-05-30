@@ -43,7 +43,8 @@ abstract contract StrategyParent is
     enum TxType {
         Deposit,
         Withdraw,
-        Switch
+        Switch,
+        Revert
     }
 
     struct BufferedTx {
@@ -168,6 +169,10 @@ abstract contract StrategyParent is
         return abi.encode(true);
     }
 
+    function processBufferedConfirmations() external onlyOwner {
+        _processBufferedConfirmations();
+    }
+
     function _processBufferedConfirmations() internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
@@ -189,6 +194,8 @@ abstract contract StrategyParent is
                 _divest();
             } else if (txData.txType == TxType.Switch) {
                 _transferAssetsToNewStrategy();
+            } else if (txData.txType == TxType.Revert) {
+                // nothing gets executed, but the nonce is incremented (below)
             } else {
                 revert("Unknown TxType");
             }

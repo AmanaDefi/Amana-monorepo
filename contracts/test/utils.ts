@@ -7,7 +7,8 @@ import { AmanaConnectedChainVault } from "../typechain";
 const TxType = {
   Deposit: 0,
   Withdraw: 1,
-  Switch: 2
+  Switch: 2,
+  Revert: 3
 };
 
 const WHALE_ADDRESSES: Record<string, string> = {
@@ -142,15 +143,10 @@ export async function simulateDepositCallFromVaultToStrategy(
 
 export async function simulateWithdrawCallFromVaultToStrategy(
   vaultAddress: string,
-  owner: string,
   gatewaySigner: Signer,
   strategy: any,
-  withdrawZRC20: any,
-  vaultSharesToBeBurnt: BigNumber,
   fractionOfTotalShares: BigNumber,
   minAmountOut: BigNumber,
-  slippage: number,
-  ORIGIN_CHAIN_ID: number,
   vaultNonce: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
@@ -192,6 +188,33 @@ export async function simulateSwitchCallFromVaultToStrategy(
       gasPrice: ethers.utils.parseUnits("150", "gwei")
     }
   );
+}
+
+export async function simulateRevertCallToStrategy(
+  vaultAddress: string,
+  gatewaySigner: Signer,
+  strategy: any,
+  vaultNonce: number
+) {
+  const revertMessage = ethers.utils.defaultAbiCoder.encode(
+    ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity decode for Revert tx
+    [TxType.Revert, 0, 0, ethers.constants.AddressZero, vaultNonce]
+  );
+
+  const tx = await strategy.connect(gatewaySigner).onCall(
+    {
+      sender: vaultAddress,
+    },
+    revertMessage,
+    {
+      gasPrice: ethers.utils.parseUnits("150", "gwei"),
+    }
+  );
+
+  const receipt = await tx.wait();
+  console.log("🔁 Revert tx gas used:", receipt.gasUsed.toString());
+
+  return receipt.gasUsed;
 }
 
 export async function updatePythPrices(pythContract: any, signer: Signer): Promise<void> {
@@ -295,20 +318,6 @@ export async function simulateConfirmDeposit(
     [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, ethers.constants.HashZero
     ]
   );
-  try {
-    await amanaVault.connect(gatewaySigner).callStatic.onCall(
-      {
-        origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
-        sender: strategyAddress,
-        chainID: strategyChainId,
-      },
-      strategyGasToken,
-      0,
-      confirmMessage
-    );
-  } catch (err) {
-    console.error("Static call reverted:", err);
-  }
   await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
@@ -327,7 +336,6 @@ export async function simulateConfirmSwitch(
   transferredAmount: any,
   newStrategyAddress: any,
   executionNonce: any,
-  crossChainTxId: any,
   strategyChainId: any,
   strategyGasToken: any
 ): Promise<any> {
@@ -415,7 +423,6 @@ export async function simulateConfirmWithdrawToConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   withdrawnAmount: BigNumber,
-  VaultSharesToBeBurnt: BigNumber,
   totalAssetsBefore: BigNumber,
   executionNonce: number,
   vaultAsset: string,
