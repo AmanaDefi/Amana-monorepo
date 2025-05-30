@@ -16,9 +16,8 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
-}> = ({
-  vaultID,
-}) => {
+  setVaultSymbol?: (symbol: string) => void;    
+}> = ({ vaultID, setVaultSymbol }) => {
     const [vaultData, setVaultData] = useState<VaultData>();
     const router = useRouter();
     const pathname = usePathname();
@@ -40,8 +39,17 @@ const VaultsDetailContainer: React.FC<{
 
     useEffect(() => {
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
-      setVaultData(foundVault)
-    }, []);
+      
+      if (foundVault) {
+        console.log(`VaultsDetailContainer: Switching to vault ${vaultID}`);
+        setVaultData(foundVault);
+        
+        // Explicitly reset selectedToken when vault changes
+        // This is critical to ensure proper auto-selection in child components
+        console.log(`VaultsDetailContainer: Resetting selected token for new vault`);
+        setSelectedToken(undefined);
+      }
+    }, [vaultID, vaults]);
 
     const strategyExplorerBaseUrl = useMemo(() => {
       if (!vaultData?.protocol?.chainId) return "";
@@ -53,12 +61,38 @@ const VaultsDetailContainer: React.FC<{
     // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
     useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     
+    // Get token price for USD conversion
+    const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
+    
+    // Log detailed vault deposit information
+    useEffect(() => {
+      if (userVaultBalance && vaultData) {
+        const rawBalance = typeof userVaultBalance === 'string' ? userVaultBalance : userVaultBalance.formatted;
+        const usdValue = Number(rawBalance) * (vaultTokenPrice || 0);
+        
+        console.log(`Vault Deposit Details for ${vaultData.name}:`, {
+          vaultId: vaultData.id,
+          tokenSymbol: vaultData.inputToken.symbol,
+          rawBalance: rawBalance,
+          usdValue: `$${usdValue.toFixed(2)}`,
+          tokenPrice: `$${vaultTokenPrice || 0}`
+        });
+      }
+    }, [userVaultBalance, vaultData, vaultTokenPrice]);
+    
     const crvTokenPrice = useTokenPriceBySymbol("CRV");
     const cvxTokenPrice = useTokenPriceBySymbol("CVX");
-    console.log("cvxTokenPrice: ", cvxTokenPrice)
     const ethTokenPrice = useTokenPriceBySymbol("ETH");
     const compTokenPrice = useTokenPriceBySymbol("COMP");
-    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice);
+    const opTokenPrice = useTokenPriceBySymbol("OP");
+    useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, opTokenPrice);
+
+    // Handle token selection from child components
+    const handleTokenSelect = (token: Token) => {
+      console.log(`VaultsDetailContainer: Token selection changed to ${token.symbol}`);
+      setSelectedToken(token);
+    };
+
     return (
 
       vaultData ? (
@@ -95,7 +129,7 @@ const VaultsDetailContainer: React.FC<{
                     vaultTotalAssetinToken={vaultTotalAssetinToken}
                     transactionCompleted={transactionCompleted}
                     initialIsDeposit={initialIsDeposit}
-                    onTokenSelect={setSelectedToken}
+                    onTokenSelect={handleTokenSelect}
                   />
                 </div>
               </div>

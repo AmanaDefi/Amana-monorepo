@@ -4,6 +4,19 @@ import { Signer, BigNumber } from "ethers";
 import { PriceServiceConnection } from "@pythnetwork/price-service-client";
 import { AmanaConnectedChainVault } from "../typechain";
 
+const TxType = {
+  Deposit: 0,
+  Withdraw: 1,
+  Switch: 2,
+  Revert: 3
+};
+
+const WHALE_ADDRESSES: Record<string, string> = {
+  // USDT Ethereum mainnet
+  "0xdAC17F958D2ee523a2206206994597C13D831ec7":
+    "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+};
+
 /**
  * Sets the token balance of an account in a local Hardhat network.
  *
@@ -20,20 +33,18 @@ export async function setTokenBalance(
   isNative: boolean = false
 ) {
   if (isNative) {
-    // If the token is native, use the hardhat_setBalance method
     await ethers.provider.send("hardhat_setBalance", [
       account,
       amount.toHexString()
     ]);
     return;
   }
+
   const normalizedAccount = ethers.utils.getAddress(account);
+  const token = await ethers.getContractAt("IERC20", tokenAddress);
 
   // Format the amount as a 32-byte hex string
-  const paddedValue = ethers.utils.hexZeroPad(
-    ethers.BigNumber.from(amount).toHexString(),
-    32
-  );
+  const paddedValue = ethers.utils.hexZeroPad(amount.toHexString(), 32);
 
   // Compute the storage slot: keccak256(abi.encode(account, balanceSlot))
   const rawSlot = ethers.utils.keccak256(
@@ -43,14 +54,42 @@ export async function setTokenBalance(
     )
   );
 
-  // Convert slot to a QUANTITY (unpadded hex string with 0x prefix)
-  const slot = ethers.BigNumber.from(rawSlot).toHexString();
+  const slot = BigNumber.from(rawSlot).toHexString();
+
   // Set the storage slot directly
   await network.provider.send("hardhat_setStorageAt", [
     tokenAddress,
     slot,
-    paddedValue,
+    paddedValue
   ]);
+
+  // Check if the balance was successfully set
+  const newBalance = await token.balanceOf(account);
+
+  if (newBalance.isZero() && WHALE_ADDRESSES[tokenAddress]) {
+    console.warn(`[setTokenBalance] Storage set failed. Falling back to whale transfer for ${tokenAddress}`);
+
+    const whale = WHALE_ADDRESSES[tokenAddress];
+
+    await network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [whale]
+    });
+
+    await network.provider.send("hardhat_setBalance", [
+      whale,
+      ethers.utils.parseEther("10").toHexString()
+    ]);
+
+    const whaleSigner = await ethers.getSigner(whale);
+    const tokenFromWhale = token.connect(whaleSigner);
+    await tokenFromWhale.transfer(account, amount);
+
+    const fallbackBalance = await token.balanceOf(account);
+    if (fallbackBalance.isZero()) {
+      throw new Error(`[setTokenBalance] Whale fallback also failed for token ${tokenAddress}`);
+    }
+  }
 }
 
 
@@ -74,18 +113,20 @@ export async function simulateDepositCallFromVaultToStrategy(
   minSharesOut: BigNumber,
   slippage: number,
   ORIGIN_CHAIN_ID: number,
+  vaultNonce: number
 ) {
-  // Attempt deposit from a non-gateway address
+
+
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, minSharesOut, ORIGIN_CHAIN_ID, true, 0, slippage]
+    ["uint8", "uint256", "uint256", "address", "uint256"], // Match the new tuple structure
+    [TxType.Deposit, depositAmount, minSharesOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
   );
+
   await network.provider.send("hardhat_setBalance", [
     await gatewaySigner.getAddress(),
     ethers.utils.parseEther("434").toHexString()
   ]);
-  const balance = await ethers.provider.getBalance(await gatewaySigner.getAddress());
-  await
+  const tx = await
     strategy.connect(gatewaySigner).onCall(
       {
         sender: vaultAddress,
@@ -96,25 +137,23 @@ export async function simulateDepositCallFromVaultToStrategy(
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
       }
     );
+  const receipt = await tx.wait();
+  console.log("📥 Deposit gas used:", receipt.gasUsed.toString());
 }
 
 export async function simulateWithdrawCallFromVaultToStrategy(
   vaultAddress: string,
-  owner: string,
   gatewaySigner: Signer,
   strategy: any,
-  withdrawZRC20: any,
-  vaultSharesToBeBurnt: BigNumber,
   fractionOfTotalShares: BigNumber,
   minAmountOut: BigNumber,
-  slippage: number,
-  ORIGIN_CHAIN_ID: number
+  vaultNonce: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [owner, owner, withdrawZRC20, ethers.constants.AddressZero, vaultSharesToBeBurnt, fractionOfTotalShares, minAmountOut, ORIGIN_CHAIN_ID, false, 1, slippage]
+    ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity onCall decode
+    [TxType.Withdraw, fractionOfTotalShares, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
   );
-  await
+  const tx = await
     strategy.connect(gatewaySigner).onCall(
       {
         sender: vaultAddress,
@@ -124,29 +163,21 @@ export async function simulateWithdrawCallFromVaultToStrategy(
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
       }
     )
+  const receipt = await tx.wait();
+  console.log("📥 Withdraw gas used:", receipt.gasUsed.toString());
 }
 
 export async function simulateSwitchCallFromVaultToStrategy(
   vaultAddress: string,
   gatewaySigner: Signer,
   strategy: any,
-  newStrategyAddress: any
+  newStrategyAddress: any,
+  vaultNonce: number
 ) {
+
   const switchMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint256", "uint32", "bool", "uint256", "uint16"],
-    [
-      ethers.constants.AddressZero, // userAddress set to zero to indicate a switch
-      ethers.constants.AddressZero, // receiverAddress set to zero to indicate a switch
-      newStrategyAddress,
-      ethers.constants.AddressZero,
-      0, // minAmountOut (is usually just amount)
-      0, // minSharesOut
-      0, // not used
-      0, // withdrawChainId
-      false, // isDeposit
-      0, //ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32), // crossChainTxId
-      0
-    ]
+    ["uint8", "uint256", "uint256", "address", "uint256"],
+    [TxType.Switch, 0, 0, newStrategyAddress, BigNumber.from(vaultNonce)]
   );
   return await strategy.connect(gatewaySigner).onCall(
     {
@@ -157,6 +188,33 @@ export async function simulateSwitchCallFromVaultToStrategy(
       gasPrice: ethers.utils.parseUnits("150", "gwei")
     }
   );
+}
+
+export async function simulateRevertCallToStrategy(
+  vaultAddress: string,
+  gatewaySigner: Signer,
+  strategy: any,
+  vaultNonce: number
+) {
+  const revertMessage = ethers.utils.defaultAbiCoder.encode(
+    ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity decode for Revert tx
+    [TxType.Revert, 0, 0, ethers.constants.AddressZero, vaultNonce]
+  );
+
+  const tx = await strategy.connect(gatewaySigner).onCall(
+    {
+      sender: vaultAddress,
+    },
+    revertMessage,
+    {
+      gasPrice: ethers.utils.parseUnits("150", "gwei"),
+    }
+  );
+
+  const receipt = await tx.wait();
+  console.log("🔁 Revert tx gas used:", receipt.gasUsed.toString());
+
+  return receipt.gasUsed;
 }
 
 export async function updatePythPrices(pythContract: any, signer: Signer): Promise<void> {
@@ -206,8 +264,8 @@ export async function simulateDepositCallFromConnChain(
   originChainZRC20Input: string,
   inputToken: string,
   originChainId: number,
-  slippage: number,
-): Promise<`0x${string}`> {
+  slippage: number
+): Promise<any> {
   // Update Pyth prices
   // await updatePythPrices(pythContract, user);
 
@@ -215,17 +273,17 @@ export async function simulateDepositCallFromConnChain(
   await setTokenBalance(originChainZRC20Input, amanaVault.address, depositAmount, 3);
 
   const minSharesOut = 0 // depositAmount.mul(1000).div(1001);
-
+  const nonEvmAddress = "0x"; // Placeholder for non-EVM address
   // Generate a transaction ID using your generateTransactionId function
-  const transactionId = generateTransactionId(await user.getAddress(), 8453);
+  // const transactionId = generateTransactionId(await user.getAddress(), 8453);
 
   // Encode the deposit message
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "uint256", "uint16", "bytes32"],
-    [inputToken, minSharesOut, slippage, transactionId]
+    ["address", "uint256", "uint16", "bytes"],
+    [inputToken, minSharesOut, slippage, nonEvmAddress]
   );
   // Execute the onCall function to simulate a deposit
-  await amanaVault.connect(gatewaySigner).onCall(
+  const tx = await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
       sender: await user.getAddress(),
@@ -235,20 +293,19 @@ export async function simulateDepositCallFromConnChain(
     depositAmount,
     depositMessage
   );
-
+  const receipt = await tx.wait();
+  console.log("📥 Deposit gas used:", receipt.gasUsed.toString());
   // Return the transaction ID
-  return transactionId;
+  return tx;
 }
 
 
 export async function simulateConfirmDeposit(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
-  user: Signer,
   depositAmount: any,
   totalAssetsBefore: any,
   executionNonce: any,
-  crossChainTxId: any,
   strategyAddress: any,
   strategyChainId: any,
   strategyGasToken: any
@@ -257,10 +314,10 @@ export async function simulateConfirmDeposit(
   const totalAssetsBeforeBN = BigNumber.from(totalAssetsBefore);
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
-    [ethers.constants.AddressZero, await user.getAddress(), ethers.constants.AddressZero, ethers.constants.AddressZero, depositAmount, 0, 0, true, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, crossChainTxId, 0]
+    ["uint256", "uint256", "uint256", "bytes32"],
+    [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, ethers.constants.HashZero
+    ]
   );
-
   await amanaVault.connect(gatewaySigner).onCall(
     {
       origin: ethers.utils.hexlify(ethers.utils.toUtf8Bytes("test_origin")),
@@ -279,15 +336,15 @@ export async function simulateConfirmSwitch(
   transferredAmount: any,
   newStrategyAddress: any,
   executionNonce: any,
-  crossChainTxId: any,
   strategyChainId: any,
   strategyGasToken: any
 ): Promise<any> {
   const transferredAmountBN = BigNumber.from(transferredAmount);
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
-    [ethers.constants.AddressZero, ethers.constants.AddressZero, newStrategyAddress, ethers.constants.AddressZero, transferredAmount, 0, 0, true, transferredAmountBN, executionNonce, crossChainTxId, 0]
+    ["uint256", "uint256", "uint256", "bytes32"],
+    [0, transferredAmountBN, executionNonce, ethers.constants.HashZero
+    ]
   );
 
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -309,12 +366,13 @@ export async function simulateConfirmAssetUpdate(
   totalAssetsAmount: any,
   strategyAddress: any,
   strategyChainId: any,
-  strategyGasToken: any
+  strategyGasToken: any,
+  vaultNonce: any
 ): Promise<any> {
-
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
-    [ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0, false, totalAssetsAmount, 0, 0, 0]
+    ["uint256", "uint256", "uint256", "bytes32"],
+    [0, totalAssetsAmount, vaultNonce, ethers.constants.HashZero
+    ]
   );
 
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -338,16 +396,15 @@ export async function simulateWithdrawCallFromConnChain(
   pythContract: any,
   originChainZRC20Input: string,
   originChainId: number,
-  originChainGasToken: string
+  originChainGasToken: string,
+  nonEvmUserAddress: string
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
   const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
-  const slippage = 0;
-  const transactionId = generateTransactionId(await user.getAddress(), 8453)
-
+  const slippage = 1000;
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
-    [originChainZRC20Input, ethers.constants.AddressZero, sharesToWithdraw, minAmountOut, slippage, transactionId]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    [originChainZRC20Input, ethers.constants.AddressZero, sharesToWithdraw, minAmountOut, slippage, nonEvmUserAddress]
   );
 
   await amanaVault.connect(gatewaySigner).onCall(
@@ -365,39 +422,24 @@ export async function simulateWithdrawCallFromConnChain(
 export async function simulateConfirmWithdrawToConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
-  user: Signer,
   withdrawnAmount: BigNumber,
-  fractionOfTotalShares: BigNumber,
   totalAssetsBefore: BigNumber,
   executionNonce: number,
-  crossChainTxId: number,
-  originChainZRC20Input: string,
-  originChainId: number,
-  originChainERC20Input: string,
   vaultAsset: string,
   strategyAddress: string,
   strategyChainId: number,
   strategyGasToken: string,
-  slippage: number,
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+    ["uint256", "uint256", "uint256", "bytes32"],
     [
-      await user.getAddress(),
-      await user.getAddress(),
-      originChainZRC20Input,
-      originChainERC20Input,
       withdrawnAmount,
-      fractionOfTotalShares,
-      originChainId,
-      false,
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
-      crossChainTxId,
-      slippage
+      ethers.constants.HashZero
+
     ]
   );
-
   // Mock token balance setup for the test environment
   await setTokenBalance(vaultAsset, amanaVault.address, withdrawnAmount, 3);
   // Return the transaction object so it can be awaited or used in tests
@@ -427,20 +469,13 @@ export async function simulateConfirmDirectWithdraw(
   strategyChainId: number
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+    ["uint256", "uint256", "uint256", "bytes32"],
     [
-      await user.getAddress(),
-      await user.getAddress(),
-      vaultAsset,
-      vaultAsset,
       withdrawnAmount,
-      vaultSharesBurnt,
-      7000,
-      false,
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
-      crossChainTxId,
-      500
+      ethers.constants.HashZero
+
     ]
   );
 
@@ -463,33 +498,23 @@ export async function simulateConfirmDirectWithdraw(
 export async function simulateConfirmRedeemToAnyToken(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
-  user: Signer,
-  withdrawZRC20: string,
   withdrawnAmount: BigNumber,
   fractionOfTotalShares: BigNumber,
   totalAssetsBefore: BigNumber,
   executionNonce: number,
-  crossChainTxId: number,
   vaultAsset: string,
   strategyAddress: string,
   strategyChainId: number,
 
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "uint256", "uint256", "uint32", "bool", "uint256", "uint256", "uint256", "uint16"],
+    ["uint256", "uint256", "uint256", "bytes32"],
     [
-      await user.getAddress(),
-      await user.getAddress(),
-      withdrawZRC20,
-      withdrawZRC20,
       withdrawnAmount,
-      fractionOfTotalShares,
-      7000,
-      false,
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
-      crossChainTxId,
-      500
+      ethers.constants.HashZero
+
     ]
   );
 
@@ -516,3 +541,8 @@ export function isConvexStrategy(name: string): boolean {
     "ConvexERC20StrategyArbitrum",
   ].includes(name);
 }
+
+export function isBalancerStrategy(name: string): boolean {
+  return name.toLowerCase().includes("balancer");
+}
+

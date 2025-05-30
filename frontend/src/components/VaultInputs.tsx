@@ -21,9 +21,10 @@ import {
   getVaultErrorMessage,
   isZetachain,
   selectActions,
+  convertUsdToEth,
+  getOnlyTokenSymbol,
 } from "@/utils/utils";
-import { ethers } from "ethers";
-import InteractionContainer from "./interact";
+import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
@@ -36,10 +37,14 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { trackEvent } from "@/utils/trackEvent";
+import { InformationCircleIcon } from "@heroicons/react/24/solid";
+import ResponsiveTooltip from "@/components/common/Tooltip";
+
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (balance: string | number, symbol: string): string => {
-  const num = Number(balance);
+  const num = Math.max(0, Number(balance));
   // Check if token is a stablecoin
   const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') || 
                     symbol?.includes('USDT') || symbol?.includes('USDC') ||
@@ -48,6 +53,11 @@ const formatTokenBalance = (balance: string | number, symbol: string): string =>
   const decimals = isStablecoin ? 2 : 4;
   return num.toFixed(decimals);
 };
+
+// When displaying USD value for outputs or net deposits, ensure it's never negative
+const formatUSDValue = (value: number): string => {
+  return formatCurrency(Math.max(0, value));
+}
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -64,6 +74,11 @@ export type ConversionOutput = {
   finalConvertedAmountInUSDFormatted: string;
   outputAmountFormatted: string;
   outputAmountInUSDFormatted: string;
+  gasFeeInVaultAsset?: string;
+  gasFeeInUSD?: string;
+  gasFeeInETH?: string;
+  netDepositToVaultUSD?: string;
+  inputAmountInUSDFormatted?: string;
 };
 
 export default function VaultInputs({
@@ -154,6 +169,7 @@ export default function VaultInputs({
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
+  const ethPriceUsd = useTokenPriceBySymbol("ETH");
 
   const vaultToken: Token = useMemo(() => {
     return {
@@ -199,6 +215,16 @@ export default function VaultInputs({
     }
   }, [activeChain?.id]);
 
+  // Force refresh token balance when token or chain changes
+  useEffect(() => {
+    if (inputToken && activeChain) {
+      fetchBalance();
+      // Reset input field when token changes
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+    }
+  }, [inputToken?.address, activeChain?.id, fetchBalance]);
+  
   // Trigger error message handling
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {
@@ -534,6 +560,9 @@ export default function VaultInputs({
       // 2. Fetch gas fee info from the ZRC20 token
 
       let gasFeeInVaultAsset = BigInt(0);
+      let gasFeeInUSD = "0";
+      let gasFeeInETH = "0";
+      let netDepositToVaultUSD = "0";
       if (!vaultData.depositFeePaidFromGasTank) {
         const vaultContract = getContract({
           client,
@@ -570,10 +599,19 @@ export default function VaultInputs({
             vaultData.id as Address
           );
         }
+        // Format gas fee in USD and ETH
+        const gasFeeInTokenUnits = Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
+        const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
+        gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
+        const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
+        gasFeeInETH = ethAmount.toFixed(5);
       }
 
       // 4. Subtract gas fee from converted amount
-      const finalConvertedAmount = assetsConversionAmount - gasFeeInVaultAsset;
+      const finalConvertedAmount =
+        assetsConversionAmount > gasFeeInVaultAsset
+          ? assetsConversionAmount - gasFeeInVaultAsset
+          : BigInt(0);
 
       console.log("Double Box - Final converted amount after gas fee:", {
         finalConvertedAmount: finalConvertedAmount.toString(),
@@ -605,22 +643,39 @@ export default function VaultInputs({
         finalConvertedAmountInUSD
       ).toString();
 
+      // Calculate slippage excluding gas fee
       const slippageActualValue = Math.max(
         0,
         100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD
       );
+
+      // === LOGGING FOR DEBUGGING ===
+      if (!vaultData.depositFeePaidFromGasTank) {
+        const slippageFeeUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
+        const slippageFeeETH = convertUsdToEth(slippageFeeUSD, ethPriceUsd);
+        const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ''));
+        const gasFeeETH = parseFloat(gasFeeInETH);
+        console.log("==== FEE BREAKDOWN ====");
+        console.log("Gas Fee (ETH):", gasFeeETH);
+        console.log("Gas Fee (USD):", gasFeeUSD);
+        console.log("Slippage Fee (USD):", slippageFeeUSD.toFixed(5));
+        console.log("Slippage Fee (ETH):", slippageFeeETH.toFixed(5));
+        console.log("Difference (Gas Fee USD - Slippage Fee USD):", (gasFeeUSD - slippageFeeUSD).toFixed(5));
+        console.log("Difference (Gas Fee ETH - Slippage Fee ETH):", (gasFeeETH - slippageFeeETH).toFixed(5));
+        console.log("=======================");
+      }
+
       if (inputAmountValue === debouncedInputBalance.value) {
-        console.log("Double Box - Conversion Output:", {
-          slippageActualValue: Number(slippageActualValue.toFixed(2)),
-          finalConvertedAmountInUSDFormatted,
-          outputAmountFormatted: sharesAmountFormatted,
-          outputAmountInUSDFormatted: finalConvertedAmountInUSDFormatted,
-        });
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
-          finalConvertedAmountInUSDFormatted,
+          finalConvertedAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
           outputAmountFormatted: sharesAmountFormatted,
-          outputAmountInUSDFormatted: finalConvertedAmountInUSDFormatted,
+          outputAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
+          gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
+          gasFeeInUSD,
+          gasFeeInETH,
+          netDepositToVaultUSD: formatUSDValue(finalConvertedAmountInUSD),
+          inputAmountInUSDFormatted: formatUSDValue(inputAmountValueInUSD),
         });
       }
       setLoadingOutputToken(false);
@@ -634,6 +689,7 @@ export default function VaultInputs({
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
+      ethPriceUsd,
     ]
   );
 
@@ -641,10 +697,23 @@ export default function VaultInputs({
 
   const checkSlippageExceedingLimit = () => {
     const userSlippage = getCurrentSlippage();
+    
+    // If slippage is over 100%, hide the display completely
+    if (conversionOutput.slippageActualValue !== null && conversionOutput.slippageActualValue > 100) {
+      setIsSlippageExceedingLimit(false);
+      setOutputBoxErrorMessage("");
+      return;
+    }
+    
     if (
       userSlippage &&
       conversionOutput.slippageActualValue !== null &&
-      userSlippage < conversionOutput.slippageActualValue
+      userSlippage < conversionOutput.slippageActualValue &&
+      !(isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) <
+          Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')))
     ) {
       setIsSlippageExceedingLimit(true);
       setOutputBoxErrorMessage(
@@ -658,6 +727,10 @@ export default function VaultInputs({
 
   // Ensure immediately change the conversion to 0 if user input is not valid
   useEffect(() => {
+    if (loadingOutputToken) {
+      setOutputBoxErrorMessage("");
+      return;
+    }
     if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(inputBalance);
@@ -666,15 +739,30 @@ export default function VaultInputs({
       return;
     }
 
-    checkSlippageExceedingLimit();
-
     if (
       inputBalance.value > 0n &&
-      Number(conversionOutput.outputAmountFormatted) == 0
+      Number(conversionOutput.outputAmountFormatted) == 0 &&
+      !(isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) <
+          Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')))
     ) {
       setOutputBoxErrorMessage("Swap route not found");
     }
   }, [conversionOutput, inputBalance]);
+
+  // Reset input state after transaction completes or fails
+  useEffect(() => {
+    if (transactionCompleted) {
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("");
+      setConversionOutput(initialConversionOutput);
+      setDebouncedInputBalance(EMPTY_BALANCE);
+      setOutputBoxErrorMessage("");
+      setIsSlippageExceedingLimit(false);
+    }
+  }, [transactionCompleted, initialConversionOutput, setInputBalance]);
 
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
@@ -762,15 +850,45 @@ export default function VaultInputs({
       };
       fetchSteps();
     }
+
   };
+
+  useEffect(() => {
+    if (
+      !loadingOutputToken &&
+      conversionOutput.outputAmountFormatted !== "0" &&
+      Number(debouncedInputBalance.value) > 0n
+    ) {
+      trackEvent("Estimated Output Calculated", {
+        isDeposit,
+        inputAmount: inputBalance.formatted,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        outputAmountUSD: conversionOutput.outputAmountInUSDFormatted,
+        slippagePercent: conversionOutput.slippageActualValue,
+        inputToken: inputToken?.symbol,
+        outputToken: isDeposit ? vaultData.symbol : inputToken?.symbol,
+        vaultAddress: vaultData.id,
+      });
+    }
+  }, [loadingOutputToken, conversionOutput, debouncedInputBalance]);
+
   return (
     <>
+      {/* Add prominent message about gas fees for Ethereum vaults */}
+      {isDeposit && !vaultData.depositFeePaidFromGasTank && (
+        <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5">
+          <p className="text-yellow-400 flex items-center">
+            <span className="font-normal">For Ethereum Vaults, Ethereum gas fees are deducted directly from your deposit amount and are not covered by Amana.</span>
+          </p>
+        </div>
+      )}
       <TabSelector
         className="mb-5"
         availableTabs={["Deposit", "Withdraw"]}
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
+      
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
         onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
@@ -832,7 +950,7 @@ export default function VaultInputs({
         setInputBalance={setInputBalance}
       />
       <div className="mt-4">
-        {conversionOutput.slippageActualValue !== null && (
+        {conversionOutput.slippageActualValue !== null && conversionOutput.slippageActualValue < 100 && (
           <p className="text-white font-bold mb-2 text-start">
             Estimated slippage value:
             <span
@@ -845,46 +963,142 @@ export default function VaultInputs({
             </span>
           </p>
         )}
+
+ {/* Net Deposit to Vault display with tooltip */}
+ {isDeposit && 
+         !vaultData.depositFeePaidFromGasTank && 
+         conversionOutput.netDepositToVaultUSD && 
+         Number(debouncedInputBalance.value) > 0 && (
+          <p className="text-white font-bold mb-2 text-start flex items-center">
+            <span>Net Deposit to Vault: ${conversionOutput.netDepositToVaultUSD}</span>
+            <button id="net-deposit-breakdown" className="group ml-2">
+              <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors" />
+            </button>
+            <ResponsiveTooltip
+              id={"net-deposit-breakdown"}
+              content={
+                <p className="w-60">
+                  Input amount (${conversionOutput.inputAmountInUSDFormatted}) - Gas fee (${conversionOutput.gasFeeInUSD}) = Net deposit (${conversionOutput.netDepositToVaultUSD})
+                </p>
+              }
+            />
+          </p>
+        )}
+
+ {/* Display gas fee warning for Ethereum vaults if deposit is too low in USD */}
+ {isDeposit &&
+   !vaultData.depositFeePaidFromGasTank &&
+   debouncedInputBalance.value > 0n &&
+   Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) <
+     Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, '')) && (
+    <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
+      <p className="text-red-400 font-medium">
+        Your deposit amount is too low to cover the deposit gas fee.
+      </p>
+    </div>
+  )}
+          
+
         <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
         <div className="bg-customNeutral200 py-2 px-4 rounded-lg">
-          <span className="flex flex-row items-center justify-between text-white py-1">
-            <p>Deposit Fee</p>
-            <span className="font-bold">0%</span>
-          </span>
-          <span className="flex flex-row items-center justify-between text-white py-1">
-            <p>Withdrawal Fee</p>
-            <span className="font-bold">0%</span>
-          </span>
-          <span className="flex flex-row items-center justify-between text-white py-1">
+          {/* Deposit Fee For Ethereum Vaults*/}
+          {isDeposit && !vaultData.depositFeePaidFromGasTank && 
+           conversionOutput.gasFeeInVaultAsset && 
+           Number(conversionOutput.gasFeeInVaultAsset) > 0 && conversionOutput.gasFeeInETH && conversionOutput.gasFeeInUSD && (
+            <span className="flex flex-row items-center justify-between text-white py-1">
+              <div className="flex items-center">
+                <p>Deposit Fee (deducted from your deposit)</p>
+                <button id="gas-fee-info" className="ml-2 group">
+                  <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors" />
+                </button>
+                <ResponsiveTooltip
+                  id="gas-fee-info"
+                  content={
+                    <p className="w-48">
+                      This fee is required for processing your deposit transaction on the Ethereum network. 
+                      It is deducted directly from your deposit amount and is not covered by Amana.
+                    </p>
+                  }
+                />
+              </div>
+              <span className="font-bold">
+                {conversionOutput.gasFeeInETH} {getOnlyTokenSymbol("ETH")} (~${conversionOutput.gasFeeInUSD})
+              </span>
+            </span>
+          )}
+           {/* Deposit Fee For Non-Ethereum Vaults*/}
+           {isDeposit && 
+           vaultData.depositFeePaidFromGasTank && (
+            <span className="flex flex-row items-center justify-between text-white py-1">
+              <p>Deposit Fee</p>
+              <span className="font-bold">0%</span>
+            </span>
+           )
+          }
+
+        
+          {/* Withdrawal Fee */}
+          {
+            !isDeposit && (<span className="flex flex-row items-center justify-between text-white py-1">
+              <p>Withdrawal Fee</p>
+              <span className="font-bold">0%</span>
+            </span>)
+          }
+
+          {/* <span className="flex flex-row items-center justify-between text-white py-1">
             <p>Management Fee</p>
             <span className="font-bold">0%</span>
-          </span>
+          </span> */}
+          {/* Performance Fee */}
           <span className="flex flex-row items-center justify-between text-white py-1">
-            <p>Performance Fee</p>
+            <div className="flex items-center">
+                <p>Performance Fee (deducted upon withdrawal)</p>
+                <button id="performance-fee-info" className="group ml-2">
+                  <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+                </button>
+                <ResponsiveTooltip
+                  id={"performance-fee-info"}
+                  content={
+                    <p className="w-60">
+                      15% deducted from the profit earned in the vault
+                    </p>
+                  }
+                />
+              </div>
             <span className="font-bold">{performanceFee}%</span>
           </span>
         </div>
       </div>
 
+
       {inputToken && !loadingOutputToken && (
-        <InteractionContainer
-          step={step}
-          setStep={setStep}
-          action={action}
-          setAction={setAction}
-          _inputToken={inputToken}
-          _inputBalance={inputBalance}
-          vaultData={vaultData}
-          setTransactionCompleted={setTransactionCompleted}
-          activeChain={activeChain as Chain}
-          _action={steps[0]}
-          actions={steps}
-          setInputBalance={setInputBalance}
-          errorMessage={errorMessage || outputBoxErrorMessage || ""}
-          isDeposit={isDeposit}
-          refreshBalance={fetchBalance}
-        />
+        !(isDeposit &&
+          !vaultData.depositFeePaidFromGasTank &&
+          conversionOutput.gasFeeInVaultAsset &&
+          debouncedInputBalance.value > 0n &&
+          Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, '')) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ''))
+        ) && (
+          <InteractionContainer
+            step={step}
+            setStep={setStep}
+            action={action}
+            setAction={setAction}
+            _inputToken={inputToken}
+            _inputBalance={inputBalance}
+            vaultData={vaultData}
+            setTransactionCompleted={setTransactionCompleted}
+            activeChain={activeChain as Chain}
+            _action={steps[0]}
+            actions={steps}
+            setInputBalance={setInputBalance}
+            errorMessage={errorMessage || outputBoxErrorMessage || ""}
+            isDeposit={isDeposit}
+            refreshBalance={fetchBalance}
+          />
+        )
       )}
     </>
   );
 }
+
+

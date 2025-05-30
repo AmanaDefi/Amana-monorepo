@@ -144,7 +144,6 @@ export const selectActions = async (
     spender: vaultData.id as Address,
     amount: value
   });
-  console.log("allowanceResult", allowanceResult)
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 7001 && chainID != 7000) {
@@ -332,11 +331,141 @@ export const selectActions = async (
 export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
   const approvedTokens = APPROVED_TOKENS[chainId];
   if (!approvedTokens?.length) return undefined;
-  const vaultTokenSymbol = vaultToken.symbol.split('.')[0];
-  return approvedTokens.find(el => {
-    const approvedTokenSymbol = el.symbol.split('.')[0];
-    return approvedTokenSymbol.toLowerCase() === vaultTokenSymbol.toLowerCase()
-  }) ?? approvedTokens[0];
+  
+  // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
+  const vaultTokenSymbol = vaultToken.symbol.split('.')[0].split(' ')[0];
+  
+  // Check if vault token is a native token (ETH, BNB, etc.)
+  const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+  
+  // Check if vault token is a stablecoin
+  const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
+  
+  
+  // Map of chain IDs to their symbol suffixes
+  const chainIdToSuffix: Record<number, string> = {
+    1: "ETH",   // Ethereum
+    8453: "BASE", // Base
+    137: "POL",   // Polygon
+    42161: "ARB",  // Arbitrum
+    43114: "AVAX", // Avalanche
+    56: "BSC"     // BNB Chain
+  };
+
+  // Get current chain suffix
+  const currentChainSuffix = chainIdToSuffix[chainId] || "";
+  
+  // If on ZetaChain and dealing with a stablecoin, look for chain-specific tokens first
+  if ((chainId === 7000 || chainId === 7001) && isStablecoin) {
+    // Look for tokens with this base symbol that have chain suffixes
+    const chainSpecificTokens = approvedTokens.filter(token => {
+      const tokenParts = token.symbol.split('.');
+      if (tokenParts.length === 2) {
+        const tokenBaseSymbol = tokenParts[0];
+        return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
+      }
+      return false;
+    });
+    
+    if (chainSpecificTokens.length > 0) {
+      // Extract the vault token's chain suffix if it has one
+      const vaultTokenParts = vaultToken.symbol.split('.');
+      const vaultTokenSuffix = vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
+      
+      // PRIORITY:
+      // 1. Connected chain's tokens (if on a specific chain)
+      // 2. The vault's original token suffix (if it has one)
+      // 3. For other tokens, use alphabetical order
+      
+      const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
+        const aSuffix = a.symbol.split('.')[1] || '';
+        const bSuffix = b.symbol.split('.')[1] || '';
+        
+        // If one token matches the current chain, it wins
+        if (aSuffix === currentChainSuffix && bSuffix !== currentChainSuffix) return -1;
+        if (bSuffix === currentChainSuffix && aSuffix !== currentChainSuffix) return 1;
+        
+        // If one token matches the vault token's original suffix, it comes next
+        if (vaultTokenSuffix) {
+          if (aSuffix === vaultTokenSuffix && bSuffix !== vaultTokenSuffix) return -1;
+          if (bSuffix === vaultTokenSuffix && aSuffix !== vaultTokenSuffix) return 1;
+        }
+        
+        // Otherwise, alphabetical order
+        return aSuffix.localeCompare(bSuffix);
+      });
+      
+      return sortedTokens[0];
+    }
+  }
+  
+  // For non-ZetaChain and non-stablecoin cases, proceed with original logic
+  // PRIORITY 1: First try to find token with matching chain suffix
+  if (currentChainSuffix && isStablecoin) {
+    const chainSuffixMatch = approvedTokens.find(token => {
+      const tokenParts = token.symbol.split('.');
+      if (tokenParts.length === 2) {
+        const tokenBaseSymbol = tokenParts[0];
+        const tokenSuffix = tokenParts[1];
+        return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase() && 
+               tokenSuffix === currentChainSuffix;
+      }
+      return false;
+    });
+    
+    if (chainSuffixMatch) {
+      return chainSuffixMatch;
+    }
+  }
+  
+  // PRIORITY 2: Look for exact symbol match (non-native tokens prioritized for stablecoins)
+  const exactMatches = approvedTokens.filter(token => {
+    const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+    return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
+  });
+  
+  if (exactMatches.length > 0) {
+    // For stablecoin vaults, prioritize non-native tokens
+    if (isStablecoin) {
+      const nonNativeMatch = exactMatches.find(token => 
+        token.address !== "0x0000000000000000000000000000000000000000" &&
+        token.address !== "11111111111111111111111111111111" // Solana native
+      );
+      
+      if (nonNativeMatch) {
+        return nonNativeMatch;
+      }
+    }
+    
+    return exactMatches[0];
+  }
+  
+  // PRIORITY 3: For stablecoin vaults, try to find any stablecoin
+  if (isStablecoin) {
+    const stablecoinMatch = approvedTokens.find(token => {
+      const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+      return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(tokenBaseSymbol.toUpperCase());
+    });
+    
+    if (stablecoinMatch) {
+      return stablecoinMatch;
+    }
+  }
+  
+  // PRIORITY 4: For native token vaults, prioritize native token
+  if (isNativeVaultToken) {
+    const nativeToken = approvedTokens.find(token => 
+      token.address === "0x0000000000000000000000000000000000000000" ||
+      token.address === "11111111111111111111111111111111" // Solana native
+    );
+    
+    if (nativeToken) {
+      return nativeToken;
+    }
+  }
+  
+  // PRIORITY 5: Default to first approved token if nothing else matched
+  return approvedTokens[0];
 }
 
 export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
@@ -389,7 +518,14 @@ export function getStoredSettings(): UserSettings {
 
 
 export function getCurrentSlippage(): number {
-  return getStoredSettings().slippage.value;
+  const settings = getStoredSettings();
+  return settings.slippage.value;
+}
+
+// Converts a USD amount to ETH based on current ETH price
+export function convertUsdToEth(usdAmount: number, ethPrice: number): number {
+  if (!ethPrice || ethPrice <= 0) return 0;
+  return usdAmount / ethPrice;
 }
 
 /**
@@ -420,7 +556,6 @@ export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: 
 
     // Don't try to get balance for the zero address (represents native token)
     if (tokenAddress === "0x0000000000000000000000000000000000000000") {
-      console.log("Skipping balance check for native token address, this should be handled separately");
       return {
         balance: 0n,
         decimals: 18

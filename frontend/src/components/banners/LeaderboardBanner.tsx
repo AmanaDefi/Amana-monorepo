@@ -10,6 +10,7 @@ export function LeaderboardBanner() {
                 height={200}
                 className="w-full h-auto object-cover"
                 priority
+                sizes="100vw"
             />
         </div>
     )

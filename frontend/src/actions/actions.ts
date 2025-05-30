@@ -23,6 +23,10 @@ import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
 import curvePoolABI from "../../abis/curvePoolABI.json";
 import convexRewardPoolABI from "../../abis/convexRewardPoolABI.json";
+import IBalancerStablePoolABI from "../../abis/IBalancerStablePoolABI.json";
+import IBalancerLiquidityGaugeABI from "../../abis/IBalancerLiquidityGauge.json";
+import IERC20MetadataABI from "../../abis/IERC20MetadataABI.json";
+
 import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
 import { keccak256 } from "thirdweb";
@@ -50,6 +54,7 @@ import type { IConnection } from 'codemelt-retro-api-sdk';
 import { ApiService } from "@/service";
 import { read } from "fs";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { trackEvent } from "@/utils/trackEvent";
 
 dotenv.config();
 const provider = new JsonRpcProvider(
@@ -449,6 +454,89 @@ export async function calculateConvexArbitrumRewardsAPY(
   }
 }
 
+export async function calculateCombinedBalancerAPY({
+  receiptTokenAddress,
+  liquidityGaugeAddress,
+  rewardTokenAddress,
+  inputTokenAddress,
+  opTokenPrice,
+  strategyChain
+}: {
+  receiptTokenAddress: Address;
+  liquidityGaugeAddress: Address;
+  rewardTokenAddress: Address;
+  inputTokenAddress: Address;
+  opTokenPrice: number;
+  strategyChain: Chain;
+}): Promise<{ baseAPY: number; rewardsAPY: number; totalAPY: number }> {
+  const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE);
+
+  const stablePool = new ethers.Contract(
+    receiptTokenAddress,
+    IBalancerStablePoolABI,
+    provider
+  );
+
+  const gauge = new ethers.Contract(
+    liquidityGaugeAddress,
+    IBalancerLiquidityGaugeABI,
+    provider
+  );
+
+  try {
+    // --- Base APY calculation ---
+    const currentRate = await stablePool.getRate();
+    const currentBlock = await provider.getBlockNumber();
+
+    const avgBlockTime = BLOCK_TIME[strategyChain.id] ?? 12;
+    const blocksIn7Days = Math.floor((7 * 24 * 60 * 60) / avgBlockTime);
+    const pastBlock = currentBlock - blocksIn7Days;
+
+    const pastRate = await stablePool.getRate({ blockTag: pastBlock });
+
+    const rateDelta = (BigInt(currentRate) - BigInt(pastRate)) * 1_000_000n / BigInt(pastRate);
+    const rateOfChange = Number(rateDelta) / 1_000_000;
+    const baseAPY = Math.pow(1 + rateOfChange, 52.14) - 1;
+    console.log("Base APY:", baseAPY);
+    // --- Rewards APY calculation ---
+    const rewardData = await gauge.reward_data(rewardTokenAddress);
+    const rewardRate = rewardData.rate;
+    const totalSupply = await gauge.totalSupply();
+
+    if (BigInt(totalSupply) === 0n) {
+      return { baseAPY, rewardsAPY: 0, totalAPY: baseAPY };
+    }
+
+    const rewardToken = new ethers.Contract(rewardTokenAddress, IERC20MetadataABI, provider);
+    const inputToken = new ethers.Contract(inputTokenAddress, IERC20MetadataABI, provider);
+
+    const [rewardDecimals, inputDecimals] = await Promise.all([
+      rewardToken.decimals(),
+      inputToken.decimals(),
+    ]);
+
+    const secondsPerYear = 365 * 24 * 60 * 60;
+
+    const rewardsPerYear =
+      Number(rewardRate) * secondsPerYear / Math.pow(10, Number(rewardDecimals));
+    console.log("Rewards per year:", rewardsPerYear);
+    const rewardsPerYearUSD = rewardsPerYear * opTokenPrice;
+    console.log("Rewards per year in USD:", rewardsPerYearUSD);
+    const rateDecimal = Number(currentRate) / 1e18; // assuming 18 decimals
+    const totalSupplyUSD = parseFloat(ethers.formatUnits(totalSupply, 18)) * rateDecimal;
+    console.log("Total supply in USD:", totalSupplyUSD);
+    const rewardsAPR = rewardsPerYearUSD / totalSupplyUSD;
+    const rewardsAPY = Math.pow(1 + rewardsAPR / 365, 365) - 1; // assumes daily compounding of the rewards
+
+    console.log("Rewards APY:", rewardsAPY);
+    return { baseAPY, rewardsAPY, totalAPY: baseAPY + rewardsAPY };
+  } catch (error) {
+    console.error("calculateCombinedBalancerAPY failed:", error);
+    return { baseAPY: 0, rewardsAPY: 0, totalAPY: 0 };
+  }
+}
+
+
 export async function calculateAaveRewardsAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain
@@ -772,6 +860,13 @@ export const Approvedeposit = async (
       account: activeAccount,
       transaction: approveTx,
     });
+    trackEvent("Approve Confirmed", {
+      vaultId,
+      chainId: activeChain.id,
+      chainName: activeChain.name,
+      transactionAmount: transactionAmount.toString(),
+      inputTokenSymbol: inputToken,
+    });
     console.log("Approval confirmed");
     return true;
   } catch (error: any) {
@@ -848,6 +943,7 @@ const getMinAmountOut = async (
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Direct Deposit");
   const minSharesOut: bigint = await getMinSharesOut(vaultData, inputToken, transactionAmount, activeChain);
+  console.log("minSharesOut", minSharesOut);
   let contract = getContract({
     client,
     chain: activeChain,
@@ -859,6 +955,10 @@ const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, act
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
     params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
+  console.log("assets", transactionAmount);
+  console.log("minSharesOut", minSharesOut);
+  console.log("receiver", activeAccount?.address);
+  console.log("supplyTx", supplyTx);
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx,
@@ -899,6 +999,7 @@ const executeCrossChainDeposit = async (
     activeChain
   );
 
+  const nonEvmAddress = "0x"
   // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
   const isNativeToken = inputToken.address === ZeroAddress;
 
@@ -909,13 +1010,13 @@ const executeCrossChainDeposit = async (
   // Prepare payload (calldata to pass to the receiver)
 
   payload = abiCoder.encode(
-    ["address", "uint256", "uint16", "bytes32"],
-    [inputToken.address, minSharesOut, slippageValue, transactionId]
+    ["address", "uint256", "uint16", "bytes"],
+    [inputToken.address, minSharesOut, slippageValue, nonEvmAddress]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(
-    ["string", "bytes32", "address"],
-    ["_crossChainDepositFailed", transactionId, activeAccount.address]
+    ["string", "bytes", "address"],
+    ["_crossChainDepositFailed", nonEvmAddress, activeAccount.address]
   );
 
   // Prepare revertOptions
@@ -954,7 +1055,7 @@ const executeCrossChainDeposit = async (
       // ...txOptions,
     });
     console.log("Deposit executed");
-    setcrossChainTxId(transactionId);
+    // setcrossChainTxId(transactionId);
     return receipt;
   } else {
     // Case 2: ERC20 token
@@ -1046,16 +1147,17 @@ const executeSolanaDeposit = async (
     signAllTransactions: walletContext.signAllTransactions,
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
+  const depositorBytes = walletContext.publicKey!.toBytes();
 
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
     const args = {
-      types: ["address", "uint256", "uint16", "bytes32"],
+      types: ["address", "uint256", "uint16", "bytes"],
       values: [
         getSolanaEVMAddress(inputToken.address),
         minSharesOut,
         slippageValue,
-        transactionId,
+        depositorBytes,
       ],
     };
     const txHash = await client.solanaDepositAndCall(
@@ -1070,8 +1172,8 @@ const executeSolanaDeposit = async (
     // Case 2: SPL token
     const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
-      types: ["address", "uint256", "uint16", "bytes32"],
-      values: [evmAddress, minSharesOut, slippageValue, transactionId],
+      types: ["address", "uint256", "uint16", "bytes"],
+      values: [evmAddress, minSharesOut, slippageValue, depositorBytes],
     };
     console.log("SPL token deposit detected");
     const txHash = await client.depositSplTokenAndCall(
@@ -1097,13 +1199,14 @@ export const executeSolanaWithdrawal = async (
   withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
-  console.log("Executing Cross-Chain Withdrawal");
+  console.log("Executing Solana Cross-Chain Withdrawal");
   const minAmountOut = await getMinAmountOut(
     vaultId,
     withdrawShareAmount,
     strategyAddress,
     strategyChainId
   );
+  const depositorBytes = walletContext.publicKey!.toBytes();
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1124,9 +1227,16 @@ export const executeSolanaWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
-    types: ["address", "bytes32", "uint256", "uint256", "uint16", "bytes32", "bytes32"],
-    values: [withdrawZRC20, splMint, withdrawShareAmount, minAmountOut, slippageValue, transactionId, walletContext.publicKey?.toBase58()]
-  }
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    values: [
+      withdrawZRC20,
+      getSolanaEVMAddress(splMint), // or just splMint?
+      withdrawShareAmount,
+      minAmountOut,
+      slippageValue,
+      depositorBytes
+    ],
+  };
 
   const txHash = await client.solanaWithdrawal(vaultId, args);
   console.log("Withdrawal executed");
@@ -1239,6 +1349,7 @@ const executeCrossChainWithdrawal = async (
     strategyAddress,
     strategyChainId
   );
+
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     activeAccount.address,
@@ -1250,18 +1361,18 @@ const executeCrossChainWithdrawal = async (
     chain: SUPPORTED_CHAINS[0], // this will always be Zetachain
     address: vaultId,
   });
-
+  const nonEvmAddress = "0x";
   const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes32"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
     [
       withdrawZRC20.address,
       withdrawERC20,
       withdrawShareAmount,
       minAmountOut,
       slippageValue,
-      transactionId,
+      nonEvmAddress
     ]
   ) as `0x${string}`;
   const revertMessage = abiCoder.encode(
@@ -1321,11 +1432,14 @@ export const fetchUserVaultBalance = async (
     contract,
     address: userAddress,
   });
+  console.log("shares", shares);
+  console.log("decimals", decimals);
   const balance = await readContract({
     contract,
     method: "function convertToAssets(uint256) view returns (uint256)",
     params: [shares],
   });
+  console.log("balance", balance);
   return formatUnits(balance, decimals);
 };
 
@@ -1521,19 +1635,24 @@ export const getAssetsFromShares = async (
   amount: bigint,
   vaultData: VaultData
 ) => {
+  console.log("amount", amount);
+  console.log("vault address", vaultData.id);
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0],
     address: vaultData.id as Address,
   });
-
+  console.log("contract", contract);
   try {
-    return await readContract({
+    const result = await readContract({
       contract,
       method: "function previewRedeem(uint shares) view returns (uint assets)",
       params: [amount],
     });
+    console.log("result", result);
+    return result;
   } catch (e) {
+    console.log("Error reading contract:", e);
     return BigInt("0");
   }
 };

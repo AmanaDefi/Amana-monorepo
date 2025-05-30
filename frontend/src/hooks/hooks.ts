@@ -14,7 +14,9 @@ import {
   fetchUserVaultMaxRedeem,
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
-  calculateConvexArbitrumRewardsAPY
+  calculateConvexArbitrumRewardsAPY,
+  calculateCombinedBalancerAPY
+
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
@@ -158,7 +160,8 @@ export const useUpdateAPYs = (
   crvTokenPrice: number,
   cvxTokenPrice: number,
   ethTokenPrice: number,
-  compTokenPrice: number
+  compTokenPrice: number,
+  opTokenPrice: number
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
@@ -197,6 +200,16 @@ export const useUpdateAPYs = (
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
+              } else if (vault.protocol.name === "Balancer") {
+                const { totalAPY } = await calculateCombinedBalancerAPY({
+                  receiptTokenAddress: receiptTokenAddress as Address,
+                  liquidityGaugeAddress: vault.protocol.rewardsContractAddress as Address,
+                  rewardTokenAddress: "0x994ac01750047B9d35431a7Ae4Ed312ee955E030",
+                  inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  opTokenPrice,
+                  strategyChain
+                });
+                APY7d = totalAPY;
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve-Convex") {
@@ -307,8 +320,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     enabled: isTransactionStarted && !(isZetachain(strategyChainID) && isZetachain(activeChainId)),
   });
 
-  // console.log({ vaultEvents, strategyEvents, withdrawalReceiverEvents }, { vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }, "HHHHHHHHHHHHHHHH");
-
   return {
     vaultEvents,
     strategyEvents,
@@ -318,7 +329,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
 
 export function useTokenPriceBySymbol(symbol: string | undefined) {
   const priceContext = useTokenPrices();
-
   return useMemo(() => {
     if (!priceContext || !symbol) {
       return 0;
@@ -360,7 +370,6 @@ export function useUserSettings() {
     if (saved) {
       setUserSettings(JSON.parse(saved));
     }
-    window.addEventListener('storage', () => console.log("EXECUTED UPDATE STORAGEEEEE!!!"));
   }, []);
 
   const updateSettings = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {

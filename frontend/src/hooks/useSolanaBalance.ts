@@ -16,7 +16,7 @@ export default function useSolanaBalance() {
   } = useQuery({
     queryKey: ["SolBalance", publicKey?.toBase58(), connected],
     queryFn: async () => {
-      console.log("Fetching Solana Address");
+     
       if (publicKey) {
         try {
           const balance = await connection.getBalance(publicKey);

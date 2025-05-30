@@ -19,7 +19,8 @@ const priceIdsZetachain = [
 
 const priceIdsBase = [
   "0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b", // WELL/USD
-  "0x5b2a4c542d4a74dd11784079ef337c0403685e3114ba0d9909b5c7a7e06fdc42" // MORPHO/USD
+  "0x5b2a4c542d4a74dd11784079ef337c0403685e3114ba0d9909b5c7a7e06fdc42", // MORPHO/USD
+  "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf" // OP/USD
 ];
 
 const priceIdsPolygon = [

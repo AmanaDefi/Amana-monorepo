@@ -385,17 +385,81 @@ export const chainConfigs = {
 
 // Define approved tokens per chain
 export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
-  // 7001: [
-  //   {
-  //     symbol: "ZETA",
-  //     address: "0x0000000000000000000000000000000000000001",
-  //     decimals: 18,
-  //     imgURL: "/path/to/zeta.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //   },
+  7001: [
+    {
+      symbol: "ZETA",
+      address: "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf",
+      decimals: 18,
+      imgURL: TOKEN_LOGO_URLS.ZETA,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+    {
+      symbol: "ETH.BASE",
+      address: "0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD",
+      decimals: 18,
+      imgURL: TOKEN_LOGO_URLS.ETH,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+    {
+      symbol: "ETH.ETH",
+      address: "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0",
+      decimals: 18,
+      imgURL: TOKEN_LOGO_URLS.ETH,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+    {
+      symbol: "USDC.ETH",
+      address: "0xcC683A782f4B30c138787CB5576a86AF66fdc31d",
+      decimals: 6,
+      imgURL: TOKEN_LOGO_URLS.USDC,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+    {
+      symbol: "POL.POL",
+      address: "0x777915D031d1e8144c90D025C594b3b8Bf07a08d",
+      decimals: 18,
+      imgURL: TOKEN_LOGO_URLS.POL,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+    {
+      symbol: "BNB.BSC",
+      address: "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
+      decimals: 18,
+      imgURL: TOKEN_LOGO_URLS.BNB,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+    {
+      symbol: "USDC.BSC",
+      address: "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7",
+      decimals: 18,
+      imgURL: TOKEN_LOGO_URLS.USDC,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+    {
+      symbol: "USDC.POL",
+      address: "0xe573a6e11f8506620F123DBF930222163D46BCB6",
+      decimals: 6,
+      imgURL: TOKEN_LOGO_URLS.USDC,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    },
+  ],
 
-  // ],
   7000: [
     {
       symbol: "ZETA",
@@ -943,6 +1007,7 @@ export const PRICE_IDS: { [key: string]: string } = {
   "AVAX": "0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7",
   "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
   "CVX": "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
+  "OP": "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf",
 
   // Chain-specific tokens - using the "(CHAIN)" format
   "ETH (BASE)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
@@ -972,6 +1037,12 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   [CHAIN_ID.solana]: "https://solscan.io",
   [CHAIN_ID.arbitrum]: "https://arbiscan.io",
   [CHAIN_ID.avalanche]: "https://snowtrace.io",
+}
+
+// Cross-chain explorer URLs for ZetaChain cross-chain transactions (cc/tx format)
+export const ZETACHAIN_CROSSCHAIN_EXPLORER_URLS = {
+  mainnet: "https://explorer.zetachain.com",
+  testnet: "https://zetachain-testnet.blockscout.com" // Keeping testnet as blockscout for now
 }
 
 export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
