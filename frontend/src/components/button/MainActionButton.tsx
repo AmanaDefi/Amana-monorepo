@@ -9,7 +9,6 @@ export interface ButtonProps {
   disabled?: boolean;
   hidden?: boolean;
   className?: string;
-  isLoading?: boolean
 }
 
 export default function MainActionButton({
@@ -19,7 +18,6 @@ export default function MainActionButton({
   className,
   disabled,
   hidden = false,
-  isLoading
 }: ButtonProps): JSX.Element {
   return (
     <button
@@ -32,19 +30,14 @@ export default function MainActionButton({
       type="button"
       disabled={disabled}
     >
-        {
-          isLoading ? (
-            <Spinner />
-        ) : (
-          <span className="flex flex-row items-center justify-center gap-2">
-            <span className="font-bold">{label}</span>
-            
-            {icon && <Image src={icon} width={1200}
-              height={800}
-              alt={label} className="w-5 h-5" />}
-           </span>
-          )
-        }
+      <span className="flex flex-row items-center justify-center gap-2">
+        <span className="font-bold">{label}</span>
+        
+        {icon && <Image src={icon} width={1200}
+          height={800}
+          alt={label} className="w-5 h-5" />}
+       </span>
+ 
     </button>
   );
 }
