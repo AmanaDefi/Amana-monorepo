@@ -392,7 +392,7 @@ export async function simulateWithdrawCallFromConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
-  sharesToWithdraw: BigNumber,
+  assetsToWithdraw: BigNumber,
   pythContract: any,
   originChainZRC20Input: string,
   originChainId: number,
@@ -400,13 +400,13 @@ export async function simulateWithdrawCallFromConnChain(
   nonEvmUserAddress: string
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
-  const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
+  const minAmountOut = assetsToWithdraw.mul(1000).div(1001);
   const slippage = 1000;
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
     [originChainZRC20Input,
       ethers.constants.AddressZero,
-      sharesToWithdraw,
+      assetsToWithdraw,
       minAmountOut,
       slippage,
       nonEvmUserAddress,
