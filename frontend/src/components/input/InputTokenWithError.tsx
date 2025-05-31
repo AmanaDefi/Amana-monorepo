@@ -4,11 +4,7 @@ import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import {
   formatCurrency,
-  formatBalance,
-  getOnlyTokenSymbol,
-  isZetachain,
 } from "@/utils/utils";
-import { useState, useEffect } from "react";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
 import TokenIcon from "@/components/common/TokenIcon";
@@ -133,7 +129,7 @@ export default function InputTokenWithError({
             <p className="hidden lg:block">Transaction settings</p>
           )}
           {!isOutput && (
-            <SlippageSettingsModal setInputBalance={setInputBalance} />
+            <SlippageSettingsModal setInputBalance={setInputBalance} vaultId={vaultData.id} />
           )}
         </div>
       </div>

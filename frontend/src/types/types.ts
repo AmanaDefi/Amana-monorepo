@@ -1,4 +1,4 @@
-import { ThirdwebClient } from "thirdweb";
+import { Chain, PreparedTransaction, ThirdwebClient } from "thirdweb";
 import { ChainOptions } from "thirdweb/chains";
 import { Address } from "viem";
 
@@ -201,4 +201,35 @@ export type Icon = {
   width: number;
   height: number;
   format: string;
+}
+
+export enum Tabs {
+  DEPOSIT = 'deposit',
+  WITHDRAW = 'withdraw',
+}
+
+export interface ITxLocalStorage {
+  tab: Tabs;
+  activeChain: Chain;
+
+  action: Action;
+  step: number;
+  steps: Action[];
+
+  selectedToken: string; //JSON.stringify fo save BigInt
+  inputBal: string;  //JSON.stringify fo save BigInt
+  displayValue: string
+
+  crosschainInvestHash: string;
+  lastEventTxHash: string;
+  crossChainTxId: string;
+  depositTx: PreparedTransaction;
+
+  isTransactionStarted: boolean;
+  isTransactionProcessing: boolean;
+  finishedTransaction: boolean;
+  transactionCompleted: boolean;
+  
+  transactionStepFeedback: TransactionStepMessages;
+  lastTransactionStepFeedback: TransactionStepMessages;
 }

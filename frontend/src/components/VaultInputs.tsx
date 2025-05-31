@@ -7,6 +7,7 @@ import {
   SmartVaultActionType,
   VaultTotalAssetsinToken,
   Action,
+  Tabs,
 } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -26,7 +27,7 @@ import {
   bigIntReviver,
   bigIntReplacer,
 } from "@/utils/utils";
-import InteractionContainer, { resetTxLocalStorage } from "./interactAPI";
+import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
@@ -42,8 +43,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-
-import { ACTION_STEP, ACTION_STEPS, CURRENT_ACTION, INPUT_BALANCE, TX_STEP_FEEDBACK } from "@/constants/localStorageKeys";
+import { CheckTheTxIsInProgress, getLocalStorageObject, updateLocalStorageObject } from "@/utils/localStorageUtils";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (balance: string | number, symbol: string): string => {
@@ -116,12 +116,16 @@ export default function VaultInputs({
 
   // Update isDeposit when URL tab parameter changes
   useEffect(() => {
+    const TxInfo = getLocalStorageObject(vaultData.id)
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
     const shouldBeDeposit = tabParam !== 'withdraw';
 
-    // Only update if the state is different from what it should be
-    if (isDeposit !== shouldBeDeposit) {
-      setIsDeposit(shouldBeDeposit);
+    if (isTxInProgress && TxInfo?.tab) {
+      setIsDeposit(TxInfo.tab === Tabs.DEPOSIT)
+    } else {
+       setIsDeposit(shouldBeDeposit);
     }
+    // Only update if the state is different from what it should be
   }, [tabParam, searchParams]);
 
   // // Check if user has balance for withdrawal if tab=withdraw
@@ -150,29 +154,24 @@ export default function VaultInputs({
   }, [vaultData]);
 
   useEffect(() => {
-    const currentSteps = localStorage.getItem(ACTION_STEPS);
-    const currentStep = localStorage.getItem(ACTION_STEP);
-    const currentAction = localStorage.getItem(CURRENT_ACTION);
-    const inputBal = localStorage.getItem(INPUT_BALANCE);
-    const txStep = localStorage.getItem(ACTION_STEP)
-    if (Number(txStep) > 0) {
-      if (currentSteps) {
-        setSteps(JSON.parse(currentSteps))
+    const TxInfo = getLocalStorageObject(vaultData.id)
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    if (isTxInProgress) {
+      if (TxInfo?.steps) {
+        setSteps(TxInfo?.steps)
       }
-      if (currentStep) {
-        setStep(Number(currentStep))
+      if (TxInfo?.step) {
+        setStep(TxInfo?.step)
       }
-      if (currentAction) {
-        setAction(JSON.parse(currentAction))
+      if (TxInfo?.action) {
+        setAction(TxInfo?.action)
       }
-      if (inputBal ) {
-        setInputBalance(JSON.parse(inputBal, bigIntReviver))
-        setDisplayValue(JSON.parse(inputBal, bigIntReviver)?.formatted ?? "")
+      if (TxInfo?.inputBal) {
+        setInputBalance(JSON.parse(TxInfo?.inputBal, bigIntReviver))
+        setDisplayValue(JSON.parse(TxInfo?.inputBal, bigIntReviver)?.formatted ?? "")
       }
-    } else {
-      resetTxLocalStorage()
     }
-  }, [])
+  }, [vaultData.id])
 
   // const initialOutputBalance: OutputBalance = useMemo(() => ({
   //   amountFormatted: '0',
@@ -214,7 +213,12 @@ export default function VaultInputs({
 
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
-    if (selectedToken) {
+    const vaultInfo = getLocalStorageObject(vaultData.id);
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+
+    if (isTxInProgress && vaultInfo?.selectedToken) {
+      setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+    } else if (selectedToken) {
       setInputToken(selectedToken);
     } else if (activeChain?.id === 7001 || activeChain?.id === 7000) {
       // If on ZetaChain testnet, set inputToken to the vault token
@@ -241,28 +245,34 @@ export default function VaultInputs({
     // Clear token selection and balance when the active chain changes
     // This prevents the app from attempting to use a token from the previous chain
     // which could cause AbiDecodingZeroDataError when fetching token balances
-    const txStep = localStorage.getItem(ACTION_STEP)
-    if (activeChain?.id && Number(txStep) === 0) {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    
+    if (activeChain?.id && !isTxInProgress) {
       setInputBalance(EMPTY_BALANCE);
-      localStorage.removeItem(INPUT_BALANCE)
+      updateLocalStorageObject(vaultData.id, {inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer)})
     }
   }, [activeChain?.id]);
 
   // Force refresh token balance when token or chain changes
   useEffect(() => {
-    const txStep = localStorage.getItem(ACTION_STEP)
-    if (inputToken && activeChain && Number(txStep) === 0) {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    if (inputToken && activeChain && !isTxInProgress) {
       fetchBalance();
       // Reset input field when token changes
       setInputBalance(EMPTY_BALANCE);
-      localStorage.removeItem(INPUT_BALANCE)
       setDisplayValue("");
+
+      updateLocalStorageObject(vaultData.id, {
+        inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer), 
+        displayValue: "",
+      })
     }
   }, [inputToken?.address, activeChain?.id, fetchBalance]);
 
   // Trigger error message handling
   useEffect(() => {
-    if (inputToken && vaultTotalAssetinToken) {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    if (inputToken && vaultTotalAssetinToken && !isTxInProgress) {
       if (isDeposit) {
         setErrorMessage(
           getVaultErrorMessage(
@@ -294,7 +304,7 @@ export default function VaultInputs({
   // Watch input balance and trigger steps config selection
   useEffect(() => {
     const fetchData = async () => {
-      if (Number(inputBalance.value) != 0 && inputToken) {
+      if (Number(inputBalance.value) !== 0 && inputToken) {
         const actionType = isDeposit
           ? SmartVaultActionType.Deposit
           : SmartVaultActionType.Withdrawal;
@@ -307,19 +317,17 @@ export default function VaultInputs({
           inputToken
         );
         setSteps(newStepsConfig);
-        localStorage.setItem(ACTION_STEPS, JSON.stringify(newStepsConfig))
-        /*console.log(
-          "SETTING ACTION STEPS: ",
-          newStepsConfig,
-          newStepsConfig.map((e) => Action[e])
-        );*/
+        updateLocalStorageObject(vaultData.id, {steps: newStepsConfig})
       } else {
         setSteps([]);
-        localStorage.removeItem(ACTION_STEPS)
+        updateLocalStorageObject(vaultData.id, {steps: []})
       }
     };
-    // Call the async function
-    fetchData();
+
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    if (!isTxInProgress) {
+      fetchData();
+    }
   }, [
     inputBalance,
     inputToken?.address,
@@ -333,19 +341,15 @@ export default function VaultInputs({
 
   // Replace the handleTokenSelect function with this improved version
   const handleTokenSelect = (selectedToken: Token) => {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    if (isTxInProgress) return;
     //console.log("Selected token:", selectedToken);
 
     // If the selected token is the vault token but from a different chain,
     // we should still use it directly without trying to find an equivalent
-    if (selectedToken.address === vaultData.inputToken.address) {
-      //console.log("Selected vault token directly");
-      setInputToken(selectedToken);
-      setAllowInput(true);
-    } else {
-      // Otherwise, use the token as selected
-      setInputToken(selectedToken);
-      setAllowInput(true);
-    }
+    setInputToken(selectedToken);
+    setAllowInput(true);
+    updateLocalStorageObject(vaultData.id, {selectedToken: JSON.stringify(selectedToken, bigIntReplacer)})
 
     // Notify parent component about token selection
     if (onTokenSelect) {
@@ -353,18 +357,61 @@ export default function VaultInputs({
     }
   };
 
+    // Handle tab selection from TabSelector
+    const handleTabChange = (tab: string) => {
+      const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+      if (isTxInProgress) return;
+  
+      localStorage.removeItem(vaultData.id)
+      const newIsDeposit = tab === "Deposit";
+      const newTab = newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW
+      
+      // Update URL first to ensure consistency
+      router.push(`${pathname}?tab=${newTab}`);
+      
+      // Reset input balance
+      setInputBalance(EMPTY_BALANCE);
+      updateLocalStorageObject(vaultData.id, {tab: newTab, inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer)})
+  
+      // Only attempt to set steps if we have a token and chain
+      if (inputToken && activeChain) {
+        const fetchSteps = async () => {
+          const newAction = newIsDeposit
+            ? SmartVaultActionType.Deposit
+            : SmartVaultActionType.Withdrawal;
+          const steps = await selectActions(
+            newAction,
+            vaultData,
+            activeChain,
+            walletAddress as any,
+            inputBalance,
+            inputToken
+          );
+          setSteps(steps);
+          updateLocalStorageObject(vaultData.id, { steps: steps, selectedToken: JSON.stringify(inputToken, bigIntReplacer), activeChain: activeChain })
+        };
+        fetchSteps();
+      }
+  
+    };
+
   const switchTokens = async () => {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    if (isTxInProgress) return;
     // Get the opposite tab of what's currently in the URL
     const currentTabFromURL = tabParam !== 'withdraw' ? 'deposit' : 'withdraw';
     const newTab = currentTabFromURL === 'deposit' ? 'withdraw' : 'deposit';
 
     // Update URL - React will handle state update via the useEffect
-    router.push(`${pathname}?tab=${newTab}`);
+    handleTabChange(newTab);
   };
 
   const handleChangeInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!inputToken) return;
+      const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+      if (isTxInProgress) return;
+
       let value = e.currentTarget.value;
 
       // Special case for empty input
@@ -374,7 +421,11 @@ export default function VaultInputs({
           formatted: "0",
           formattedUSD: "0",
         });
-        localStorage.removeItem(INPUT_BALANCE)
+        updateLocalStorageObject(vaultData.id, {inputBal: JSON.stringify({
+          value: 0n,
+          formatted: "0",
+          formattedUSD: "0",
+        }, bigIntReplacer), displayValue: ""})
         setDisplayValue("");
         return;
       }
@@ -386,7 +437,11 @@ export default function VaultInputs({
           formatted: "0",
           formattedUSD: "0",
         });
-        localStorage.removeItem(INPUT_BALANCE)
+        updateLocalStorageObject(vaultData.id, {inputBal: JSON.stringify({
+          value: 0n,
+          formatted: "0",
+          formattedUSD: "0",
+        }, bigIntReplacer), displayValue: "0."})
         setDisplayValue("0.");
         return;
       }
@@ -421,24 +476,29 @@ export default function VaultInputs({
         formatted: inputAmt,
         formattedUSD: String(Number(inputAmt) * inputTokenPrice),
       });
-      localStorage.setItem(INPUT_BALANCE, JSON.stringify({
+
+      setDisplayValue(inputAmt);
+
+      updateLocalStorageObject(vaultData.id, {inputBal: JSON.stringify({
         value: newAmt,
         formatted: inputAmt,
         formattedUSD: String(Number(inputAmt) * inputTokenPrice),
-      }, bigIntReplacer))
-
-      setDisplayValue(inputAmt);
+      }, bigIntReplacer), displayValue: inputAmt})
     },
     [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals]
   );
 
   const handleMaxClick = useCallback(() => {
-    if (!inputToken) return;
+    // localStorage.removeItem(vaultData.id)
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+
+    if (!inputToken || isTxInProgress) return;
+
     if (isDeposit) {
       // handleChangeInput({ currentTarget: { value: inputTokenBalance } } as React.ChangeEvent<HTMLInputElement>);
       setInputBalance(tokenBalance);
-      localStorage.setItem(INPUT_BALANCE, JSON.stringify(tokenBalance, bigIntReplacer))
       setDisplayValue(tokenBalance.formatted)
+      updateLocalStorageObject(vaultData.id, {inputBal: JSON.stringify(tokenBalance, bigIntReplacer), displayValue: tokenBalance.formatted})
     } else {
       handleChangeInput({
         currentTarget: { value: vaultTotalAssetinToken?.toString() },
@@ -801,12 +861,12 @@ export default function VaultInputs({
   useEffect(() => {
     if (transactionCompleted) {
       setInputBalance(EMPTY_BALANCE);
-      localStorage.removeItem(INPUT_BALANCE)
       setDisplayValue("");
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(EMPTY_BALANCE);
       setOutputBoxErrorMessage("");
       setIsSlippageExceedingLimit(false);
+      localStorage.removeItem(vaultData.id)
     }
   }, [transactionCompleted, initialConversionOutput, setInputBalance]);
 
@@ -857,6 +917,8 @@ export default function VaultInputs({
 
   // Create an adapter function for InputTokenWithError in Withdraw mode
   const handleWithdrawTokenSelect = (token: Token) => {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+    if (isTxInProgress) return;
     // In withdraw mode, we still want to update the input token
     // This ensures proper token selection in both modes
     //console.log("Selected withdraw token:", token);
@@ -868,38 +930,7 @@ export default function VaultInputs({
     }
   };
 
-  // Handle tab selection from TabSelector
-  const handleTabChange = (tab: string) => {
-    const newIsDeposit = tab === "Deposit";
 
-    // Update URL first to ensure consistency
-    router.push(`${pathname}?tab=${newIsDeposit ? 'deposit' : 'withdraw'}`);
-
-    // Reset input balance
-    setInputBalance(EMPTY_BALANCE);
-    localStorage.removeItem(INPUT_BALANCE)
-
-    // Only attempt to set steps if we have a token and chain
-    if (inputToken && activeChain) {
-      const fetchSteps = async () => {
-        const newAction = newIsDeposit
-          ? SmartVaultActionType.Deposit
-          : SmartVaultActionType.Withdrawal;
-        const steps = await selectActions(
-          newAction,
-          vaultData,
-          activeChain,
-          walletAddress as any,
-          inputBalance,
-          inputToken
-        );
-        setSteps(steps);
-        localStorage.setItem(ACTION_STEPS, JSON.stringify(steps))
-      };
-      fetchSteps();
-    }
-
-  };
 
   useEffect(() => {
     if (

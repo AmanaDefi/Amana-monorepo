@@ -7,6 +7,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "thirdweb";
 import '@/styles/ChainTokenSelector.css';
 import { warningToast } from "@/toasts/toastStyles";
+import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token, chain: Chain) => void;
@@ -171,7 +172,12 @@ export default function ChainTokenSelector({
 
   // Handle vault changes - reset token selection when vault changes
   useEffect(() => {
+    
     if (vaultData?.id && lastVaultIdRef.current !== vaultData.id) {
+
+      const isTxIsInProggress = CheckTheTxIsInProgress(vaultData.id);
+      if (isTxIsInProggress) return;
+
       lastVaultIdRef.current = vaultData.id;
       
       // Reset selected token when vault changes
@@ -187,6 +193,11 @@ export default function ChainTokenSelector({
 
   // Handle network changes - update token selection when network changes
   useEffect(() => {
+    if (vaultData?.id) {
+      const isTxIsInProggress = CheckTheTxIsInProgress(vaultData?.id);
+      if (isTxIsInProggress) return;
+    }
+
     if (activeChain && lastActiveChainRef.current !== null && lastActiveChainRef.current !== activeChain.id && walletAddress) {
       
       // Find the closest token on the new chain
@@ -277,10 +288,15 @@ export default function ChainTokenSelector({
     if (activeChain) {
       lastActiveChainRef.current = activeChain.id;
     }
-  }, [activeChain?.id, walletAddress, findClosestToken, onSelectToken, selectedToken]);
+  }, [activeChain?.id, walletAddress, findClosestToken, onSelectToken, selectedToken, vaultData?.id ]);
 
   // Set default token on component mount and when dependencies change
   useEffect(() => {
+    if (vaultData?.id) {
+      const isTxIsInProggress = CheckTheTxIsInProgress(vaultData?.id);
+      if (isTxIsInProggress) return;
+    }
+
     if (vaultData?.inputToken && activeChain && walletAddress && !selectedToken) {
       const closestToken = findClosestToken();
       
@@ -377,6 +393,10 @@ export default function ChainTokenSelector({
   };
 
   const handleTokenSelect = async (token: Token, chain: Chain, event: React.MouseEvent) => {
+    if (vaultData?.id) {
+      const isTxIsInProggress = CheckTheTxIsInProgress(vaultData?.id);
+      if (isTxIsInProggress) return;
+    }
     // Prevent the event from bubbling up
     event.stopPropagation();
     event.preventDefault();
@@ -500,6 +520,10 @@ export default function ChainTokenSelector({
       <button
         onClick={(e) => {
           e.stopPropagation();
+          if (vaultData?.id) {
+            const isTxIsInProggress = CheckTheTxIsInProgress(vaultData?.id);
+            if (isTxIsInProggress) return;
+          }
           setIsOpen(!isOpen);
         }}
         className={`fluid-hover-button flex items-center space-x-2 rounded-lg px-4 py-2 ${className}`}

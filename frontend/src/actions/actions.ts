@@ -6,21 +6,19 @@ import {
   sendTransaction,
   readContract,
   defineChain,
-  waitForReceipt,
 } from "thirdweb";
 import { client } from "../utils/client";
 import {
   CHAIN_ID,
   crossChainTxUrl,
   SUPPORTED_CHAINS,
-  zeroSolAddress,
   EVM_GATEWAY_ADDRESSES,
   chainConfigs,
   MULTICALL_ADDRS,
 } from "../constants/chainConfig";
 import { Account } from "thirdweb/wallets";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { ethers, getAddress, getBytes, Interface } from "ethers";
+import { ethers, getAddress, Interface } from "ethers";
 
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
@@ -65,7 +63,8 @@ import { trackEvent } from "@/utils/trackEvent";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
 import { RECEIPT_LOCAL_STORAGE_KEY } from "@/constants";
-import { CROSS_CHAIN_TX_ID } from "@/constants/localStorageKeys";
+import { updateLocalStorageObject } from "@/utils/localStorageUtils";
+import { AiOutlineConsoleSql } from "react-icons/ai";
 
 dotenv.config();
 
@@ -1058,10 +1057,6 @@ const executeDirectDeposit = async (
       "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
     params: [transactionAmount, minSharesOut, activeAccount?.address],
   });
-  /*console.log("assets", transactionAmount);
-  console.log("minSharesOut", minSharesOut);
-  console.log("receiver", activeAccount?.address);
-  console.log("supplyTx", supplyTx);*/
   const receipt = await sendTransaction({
     account: activeAccount,
     transaction: supplyTx,
@@ -1095,12 +1090,16 @@ const executeCrossChainDeposit = async (
     transactionAmount,
     activeChain,
   );
+  console.log('executeCrossChainDeposit', minSharesOut)
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     activeAccount.address,
     activeChain,
   );
+
+  console.log('transactionId', transactionId)
+
 
   const nonEvmAddress = "0x"
   // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
@@ -1122,6 +1121,9 @@ const executeCrossChainDeposit = async (
     ["_crossChainDepositFailed", nonEvmAddress, activeAccount.address]
   );
 
+  console.log('payload', payload)
+  console.log('revertMessage', revertMessage)
+
   // Prepare revertOptions
   revertOptions = [
     contractWithdrawalReceiverAddress, // revertAddress
@@ -1138,7 +1140,7 @@ const executeCrossChainDeposit = async (
 
   // Case 1: Native token (ETH, BNB, etc.)
   if (inputToken.isNative) {
-    //console.log("Native token deposit detected");
+    console.log("Native token deposit detected");
     contract = getContract({
       client,
       chain: activeChain,
@@ -1152,6 +1154,7 @@ const executeCrossChainDeposit = async (
       value: transactionAmount,
     });
 
+    console.log('depositTx', depositTx)
     receipt = await sendTransaction({
       account: activeAccount,
       transaction: depositTx,
@@ -1160,10 +1163,11 @@ const executeCrossChainDeposit = async (
     console.log("Deposit executed");
     // setcrossChainTxId(transactionId);
     //console.log("Deposit executed");
+    console.log('receipt', receipt)
     return receipt;
   } else {
     // Case 2: ERC20 token
-    //console.log("ERC20 token deposit detected");
+    console.log("ERC20 token deposit detected");
 
     // Step 1: Approve the tokens for the EVM Gateway contract
     // contract = getContract({
@@ -1205,6 +1209,8 @@ const executeCrossChainDeposit = async (
         revertOptions,
       ],
     });
+    console.log('depositTx', depositTx, 'transactionId', transactionId)
+    updateLocalStorageObject(vaultData.id, {depositTx, crossChainTxId: transactionId})
     try {
       const receipt = await sendAndConfirmTransaction({
         account: activeAccount,
@@ -1212,9 +1218,9 @@ const executeCrossChainDeposit = async (
         // ...txOptions,
       });
 
-      //console.log("Deposit executed");
+      console.log("Deposit executed");
+      console.log('receipt', receipt)
       setcrossChainTxId(transactionId);
-      localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
       return receipt;
     } catch (error) {
       console.error("Transaction failed:", error);
@@ -1253,6 +1259,7 @@ const executeSolanaDeposit = async (
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
   const depositorBytes = walletContext.publicKey!.toBytes();
+  updateLocalStorageObject(vaultData.id, {crossChainTxId: transactionId})
 
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
@@ -1272,7 +1279,6 @@ const executeSolanaDeposit = async (
     );
     //console.log("Deposit executed");
     setcrossChainTxId(transactionId);
-    localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
     return { transactionHash: txHash };
   } else {
     // Case 2: SPL token
@@ -1290,7 +1296,6 @@ const executeSolanaDeposit = async (
     );
     //console.log("Deposit executed");
     setcrossChainTxId(transactionId);
-    localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
     return { transactionHash: txHash };
   }
 };
@@ -1345,10 +1350,10 @@ export const executeSolanaWithdrawal = async (
     ],
   };
 
+  updateLocalStorageObject(vaultId, {crossChainTxId: transactionId})
   const txHash = await client.solanaWithdrawal(vaultId, args);
   //console.log("Withdrawal executed");
-  setcrossChainTxId(transactionId);
-  localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
+  setcrossChainTxId(transactionId)
   return { transactionHash: txHash };
 };
 
@@ -1508,18 +1513,18 @@ const executeCrossChainWithdrawal = async (
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function call(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+    "function call(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
     params: [vaultId, payload, revertOptions],
   });
 
+  updateLocalStorageObject(vaultId, {crossChainTxId: transactionId})
   try {
-    const receipt = await sendAndConfirmTransaction({
+    const receipt = await sendTransaction({
       account: activeAccount,
       transaction: withdrawTx,
       // ...txOptions,
     });
 
-    localStorage.setItem(CROSS_CHAIN_TX_ID, transactionId )
     setcrossChainTxId(transactionId);
     return receipt;
   } catch (error) {
