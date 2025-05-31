@@ -63,7 +63,7 @@ abstract contract AmanaVaultBase is
         uint32 withdrawChainId;
         bool isDeposit;
         uint256 totalAssetsAfter;
-        bytes32 txSucceeded;
+        bytes32 txStatus;
         uint16 slippage;
     }
 
@@ -73,6 +73,25 @@ abstract contract AmanaVaultBase is
     int256 public pendingShareChange;
     uint256 public vaultNonce; // TODO need to initialize this to 1!
     mapping(uint256 => bytes) public nonEvmAddressByNonce;
+
+    // Transaction type identifiers (simulate enum)
+    bytes32 internal constant TX_DEPOSIT_INITIATED =
+        keccak256("DepositInitiated");
+    bytes32 internal constant TX_DEPOSIT_CONFIRMED =
+        keccak256("DepositConfirmed");
+    bytes32 internal constant TX_WITHDRAW_INITIATED =
+        keccak256("WithdrawInitiated");
+    bytes32 internal constant TX_WITHDRAW_CONFIRMED =
+        keccak256("WithdrawConfirmed");
+    bytes32 internal constant TX_SWITCH_CONFIRMED =
+        keccak256("SwitchConfirmed");
+    bytes32 internal constant TX_DEPOSIT_REVERTED =
+        keccak256("DepositReverted");
+    bytes32 internal constant TX_WITHDRAW_REVERTED =
+        keccak256("WithdrawReverted");
+    bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted");
+    bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
+        keccak256("TotalAssetsUpdate");
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
