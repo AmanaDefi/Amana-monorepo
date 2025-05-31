@@ -450,7 +450,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             .handleDivestCallToStrategy(
                 strategyAddress,
                 gasLimitForCall,
-                totalSupply(),
                 address(asset()),
                 registry,
                 user,
@@ -493,7 +492,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             .handleDivestCallToStrategy(
                 strategyAddress,
                 gasLimitForCall,
-                totalSupply(),
                 address(asset()),
                 registry,
                 txn.user,

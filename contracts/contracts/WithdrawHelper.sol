@@ -339,7 +339,6 @@ contract WithdrawHelper is Revertable {
     function handleDivestCallToStrategy(
         address strategyAddress,
         uint256 gasLimitForCall,
-        uint256 totalSupply,
         address vaultAsset,
         address registry,
         address user,
