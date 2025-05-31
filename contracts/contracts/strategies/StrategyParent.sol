@@ -56,6 +56,20 @@ abstract contract StrategyParent is
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
 
+    bytes32 internal constant TX_DEPOSIT_CONFIRMED =
+        keccak256("DepositConfirmed");
+    bytes32 internal constant TX_WITHDRAW_CONFIRMED =
+        keccak256("WithdrawConfirmed");
+    bytes32 internal constant TX_SWITCH_CONFIRMED =
+        keccak256("SwitchConfirmed");
+    bytes32 internal constant TX_DEPOSIT_REVERTED =
+        keccak256("DepositReverted");
+    bytes32 internal constant TX_WITHDRAW_REVERTED =
+        keccak256("WithdrawReverted");
+    bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted");
+    bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
+        keccak256("TotalAssetsUpdated");
+
     event FundsInvested(
         uint256 indexed vaultNonce,
         uint256 amount,
@@ -341,7 +355,7 @@ abstract contract StrategyParent is
             0,
             totalUnderlyingAssetsAfter,
             vaultNonce,
-            bytes32(0)
+            TX_DEPOSIT_CONFIRMED
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -428,7 +442,7 @@ abstract contract StrategyParent is
             amountWithdrawn,
             totalUnderlyingAssetsAfter,
             vaultNonce,
-            bytes32(0)
+            TX_WITHDRAW_CONFIRMED
         );
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
@@ -485,15 +499,15 @@ abstract contract StrategyParent is
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        _sendUpdateToVault(lastProcessedNonce);
+        _sendUpdateToVault(lastProcessedNonce, TX_TOTAL_ASSETS_UPDATE);
     }
 
-    function _sendUpdateToVault(uint256 nonceToUse) internal {
+    function _sendUpdateToVault(uint256 nonceToUse, bytes32 txStatus) internal {
         bytes memory outgoingMessage = abi.encode(
             0,
             totalUnderlyingAssets(),
             nonceToUse,
-            bytes32("FAIL") // txSucceeded
+            txStatus
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -565,13 +579,14 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
+            _sendUpdateToVault(vaultNonce, TX_DEPOSIT_REVERTED);
             emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 0);
-            _sendUpdateToVault(vaultNonce); // To do - check this!
+            _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,
                 withdrawnAmount,
@@ -606,13 +621,14 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
+            _sendUpdateToVault(vaultNonce, TX_DEPOSIT_REVERTED);
             emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             // _depositFundsIntoYieldSource(context.amount, 0);
-            _sendUpdateToVault(vaultNonce);
+            _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,
                 withdrawnAmount,
