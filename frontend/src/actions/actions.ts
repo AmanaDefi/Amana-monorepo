@@ -1256,6 +1256,8 @@ export const executeWithdrawal = async (
   withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
+  console.log("Executing Withdrawal");
+  console.log("To chain ID:", activeChain.id);
   if (activeChain.id == CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(
@@ -1267,6 +1269,7 @@ export const executeWithdrawal = async (
       withdrawShareAmount
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
+    console.log("Solana withdrawal detected");
     return executeSolanaWithdrawal(
       vaultId,
       strategyAddress,
