@@ -52,20 +52,22 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 withdrawnAmount,
                 uint256 totalAssetsAfter,
                 uint256 confirmationNonce,
-                bytes32 txSucceeded
+                bytes32 txStatus
             ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
 
-            if (confirmationNonce == lastProcessedNonce) {
-                // this is an update (totalAssetsAfter)
+            if (
+                confirmationNonce == lastProcessedNonce &&
+                txStatus == TX_TOTAL_ASSETS_UPDATE
+            ) {
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
                 emit TotalAssetsUpdated(totalAssetsAfter, confirmationNonce);
             } else {
                 transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
+                transactions[confirmationNonce].txStatus = txStatus; // non-zero means a revert
                 if (!transactions[confirmationNonce].isDeposit) {
                     // this is a withdrawal confirmation
                     transactions[confirmationNonce].amount = withdrawnAmount;
-                    transactions[confirmationNonce].txSucceeded = txSucceeded; // non-zero means a revert
                 }
             }
             if (confirmationNonce == lastProcessedNonce + 1) {
@@ -75,11 +77,26 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         } else {
             Transaction storage txn = transactions[vaultNonce];
             if (context.sender == address(0)) revert InvalidAddress();
-
+            (
+                address withdrawZRC20,
+                address withdrawERC20,
+                uint256 vaultSharesToBeBurnt,
+                uint256 minimumOut,
+                uint16 slippage,
+                bytes memory nonEvmAddress,
+                bytes32 txStatus
+            ) = abi.decode(
+                    message,
+                    (address, address, uint256, uint256, uint16, bytes, bytes32)
+                );
             txn.user = context.sender; // common to both paths
             txn.receiver = context.sender; // could take in a different receiver?
             txn.amount = amount;
             txn.withdrawChainId = uint32(context.chainID);
+            txn.txStatus = txStatus;
+            txn.withdrawERC20 = withdrawERC20;
+            txn.slippage = slippage;
+            nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
             // if (context.senderEVM != address(0)) {
             //     // Handle EVM-style sender logic
             //     txn.user = context.senderEVM;
@@ -91,42 +108,17 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             //     txn.receiver = context.sender; // could take in a different receiver?
             // }
 
-            if (amount > 0) {
-                (
-                    address erc20source,
-                    uint256 minimumOut,
-                    uint16 slippage,
-                    bytes memory nonEvmAddress
-                ) = abi.decode(message, (address, uint256, uint16, bytes));
-
+            if (txStatus == TX_DEPOSIT_INITIATED) {
                 txn.withdrawZRC20 = zrc20;
-                txn.withdrawERC20 = erc20source;
-                txn.slippage = slippage;
                 txn.isDeposit = true;
-                nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
-
                 _depositComingFromConnectedChain(minimumOut);
-            } else {
-                (
-                    address withdrawZRC20,
-                    address withdrawERC20,
-                    uint256 vaultSharesToBeBurnt,
-                    uint256 minimumOut,
-                    uint16 slippage,
-                    bytes memory nonEvmAddress
-                ) = abi.decode(
-                        message,
-                        (address, address, uint256, uint256, uint16, bytes)
-                    );
-
-                txn.withdrawZRC20 = withdrawZRC20;
-                txn.withdrawERC20 = withdrawERC20;
+            } else if (txStatus == TX_WITHDRAW_INITIATED) {
+                txn.withdrawZRC20 = withdrawZRC20; // TODO why not just use zrc20 here, as with deposit?
                 txn.vaultSharesToBeBurnt = vaultSharesToBeBurnt;
-                txn.slippage = slippage;
                 txn.isDeposit = false;
-                nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
-
                 _withdrawComingFromConnectedChain(minimumOut);
+            } else {
+                revert InvalidMessage();
             }
             vaultNonce++;
         }
@@ -164,19 +156,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @param amount The amount of the ZRC20 token to be withdrawn, if applicable.
      * @param totalAssetsAfter The total assets in the vault after the operation.
      * @param confirmationNonce A unique identifier for the transaction to ensure it is processed only once.
-     * @param _txSucceeded A bytes32 value indicating whether the transaction succeeded or failed.
+     * @param _txStatus A bytes32 value indicating whether the transaction succeeded or failed.
      */
     function manuallyAddConfirmation(
         uint256 amount,
         uint256 totalAssetsAfter,
         uint256 confirmationNonce,
-        bytes32 _txSucceeded
+        bytes32 _txStatus
     ) external onlyOwner {
         // Store the transaction in the buffer
         Transaction storage txn = transactions[confirmationNonce];
         txn.amount = amount;
         txn.totalAssetsAfter = totalAssetsAfter;
-        txn.txSucceeded = _txSucceeded;
+        txn.txStatus = _txStatus;
     }
 
     function processExistingConfirmations(
@@ -216,32 +208,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             //     break;
             // }
 
-            if (transaction.txSucceeded != bytes32(0)) {
-                // A revert update from strategy
+            if (transaction.txStatus == TX_WITHDRAW_REVERTED) {
                 pendingWithdrawals[transaction.user] -= transaction
                     .vaultSharesToBeBurnt;
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
-            } else if (transaction.isDeposit) {
-                if (transaction.totalAssetsAfter == 0) {
-                    break;
-                }
-
+            } else if (transaction.txStatus == TX_DEPOSIT_CONFIRMED) {
                 _confirmDepositAndMint();
-            } else if (
-                transaction.user == address(0) &&
-                transaction.receiver == address(0)
-            ) {
-                if (transaction.totalAssetsAfter == 0) {
-                    break;
-                }
+            } else if (transaction.txStatus == TX_SWITCH_CONFIRMED) {
                 emit StrategyUpdated(strategyAddress);
-            } else {
-                if (transaction.amount == 0) {
-                    break;
-                }
-
+            } else if (transaction.txStatus == TX_WITHDRAW_CONFIRMED) {
                 _confirmWithdrawAndBurn();
+            } else {
+                break; // No valid transaction to process
             }
             lastProcessedNonce = nextNonce;
             delete transactions[nextNonce];

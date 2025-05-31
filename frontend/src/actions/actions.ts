@@ -1010,8 +1010,9 @@ const executeCrossChainDeposit = async (
   // Prepare payload (calldata to pass to the receiver)
 
   payload = abiCoder.encode(
-    ["address", "uint256", "uint16", "bytes"],
-    [inputToken.address, minSharesOut, slippageValue, nonEvmAddress]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    [ZeroAddress, inputToken.address, 0, minSharesOut, slippageValue, nonEvmAddress, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+    ]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(
@@ -1152,12 +1153,15 @@ const executeSolanaDeposit = async (
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
     const args = {
-      types: ["address", "uint256", "uint16", "bytes"],
+      types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
       values: [
+        ZeroAddress,
         getSolanaEVMAddress(inputToken.address),
+        0,
         minSharesOut,
         slippageValue,
         depositorBytes,
+        keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ],
     };
     const txHash = await client.solanaDepositAndCall(
@@ -1172,8 +1176,9 @@ const executeSolanaDeposit = async (
     // Case 2: SPL token
     const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
-      types: ["address", "uint256", "uint16", "bytes"],
-      values: [evmAddress, minSharesOut, slippageValue, depositorBytes],
+      types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+      values: [ZeroAddress, evmAddress, 0, minSharesOut, slippageValue, depositorBytes, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+      ],
     };
     console.log("SPL token deposit detected");
     const txHash = await client.depositSplTokenAndCall(
@@ -1227,14 +1232,16 @@ export const executeSolanaWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
-    types: ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
     values: [
       withdrawZRC20,
       getSolanaEVMAddress(splMint), // or just splMint?
       withdrawShareAmount,
       minAmountOut,
       slippageValue,
-      depositorBytes
+      depositorBytes,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
+
     ],
   };
 
@@ -1324,7 +1331,7 @@ const executeDirectWithdrawal = async (
       withdrawShareAmount,
       minAmountOut,
       activeAccount?.address,
-      activeAccount?.address,
+      activeAccount?.address
     ],
   });
   const receipt = await sendTransaction({
@@ -1368,14 +1375,15 @@ const executeCrossChainWithdrawal = async (
   const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
     [
       withdrawZRC20.address,
       withdrawERC20,
       withdrawShareAmount,
       minAmountOut,
       slippageValue,
-      nonEvmAddress
+      nonEvmAddress,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
     ]
   ) as `0x${string}`;
   const revertMessage = abiCoder.encode(
