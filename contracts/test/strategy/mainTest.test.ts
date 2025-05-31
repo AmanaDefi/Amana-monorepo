@@ -54,16 +54,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         1
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
       // Attempt withdraw from a non-gateway address
-      const withdrawAmountInShares = config.withdrawAmount;
-      const minAmountOut = config.minAmountOut;
-      const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount);
 
       await expect(simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         owner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        config.withdrawAmount,
+        config.minAmountOut,
         2
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
     });
@@ -102,16 +99,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
 
       // Attempt a withdrawal from a non-vault sender
-      const withdrawAmountInShares = config.withdrawAmount;
-      const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount);
-      const minAmountOut = config.minAmountOut;
 
       await expect(simulateWithdrawCallFromVaultToStrategy(
         await owner.getAddress(),
         gatewaySigner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        config.withdrawAmount,
+        config.minAmountOut,
         2
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
     });
@@ -204,28 +198,17 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(shares).to.be.gt(0); // Ensure shares were received
       const totalAssetsBefore = await strategy.totalUnderlyingAssets();
 
-      const withdrawAmount = ethers.BigNumber.from(config.withdrawAmount); // if not already a BigNumber
-      console.log(`Withdraw amount: ${withdrawAmount.toString()}`);
-      const precision = ethers.utils.parseEther("1"); // returns BigNumber
-
-      const totalAssets = ethers.BigNumber.from(totalAssetsBefore); // ensure it's a BigNumber
-      console.log(`Total assets before withdrawal: ${totalAssets.toString()}`);
-      const withdrawFractionOfTotalShares = withdrawAmount.mul(precision).div(totalAssets);
-      console.log(`Withdraw fraction of total shares: ${withdrawFractionOfTotalShares.toString()}`);
-      const minAmountOut = config.minAmountOut;
-      console.log(`Min amount out: ${minAmountOut.toString()}`);
-
       await simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        config.withdrawAmount,
+        config.minAmountOut,
         2
       );
 
       const totalAssetsAfter = await strategy.totalUnderlyingAssets();
-      expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(withdrawAmount, ERROR_MARGIN);
+      expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(config.withdrawAmount, ERROR_MARGIN);
       // let strategyBalance;
 
       // strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -319,16 +302,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       }
 
       // Step 6: Simulate Withdrawal
-      const withdrawAmountInShares = initialShares; // Represents full amount - note this is just vault shares - withdrawal is determined by fraction
-      const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(withdrawAmountInShares);
-      const minAmountOut = config.minAmountOut;
-
       await simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        config.withdrawAmount,
+        config.minAmountOut,
         2
       );
 

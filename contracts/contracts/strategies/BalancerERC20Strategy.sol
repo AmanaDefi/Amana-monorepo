@@ -101,14 +101,19 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     }
 
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest();
 
         uint256 totalStaked = liquidityGauge.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw * totalStaked + 5e17) /
-            1e18;
+        console.log("Total staked in liquidity gauge: %s", totalStaked);
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        console.log(
+            "Shares to withdraw based on asset amount %s: %s",
+            assetAmount,
+            sharesToWithdraw
+        );
 
         liquidityGauge.withdraw(sharesToWithdraw);
 

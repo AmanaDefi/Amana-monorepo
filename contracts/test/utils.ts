@@ -145,13 +145,13 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   vaultAddress: string,
   gatewaySigner: Signer,
   strategy: any,
-  fractionOfTotalShares: BigNumber,
+  assetAmount: BigNumber,
   minAmountOut: BigNumber,
   vaultNonce: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity onCall decode
-    [TxType.Withdraw, fractionOfTotalShares, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
+    [TxType.Withdraw, assetAmount, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
   );
   const tx = await
     strategy.connect(gatewaySigner).onCall(

@@ -49,7 +49,7 @@ abstract contract StrategyParent is
 
     struct BufferedTx {
         TxType txType;
-        uint256 amountOrFraction;
+        uint256 assetAmount;
         uint256 minimumOut;
         address newStrategy; // only for switch, optional otherwise
     }
@@ -163,7 +163,7 @@ abstract contract StrategyParent is
 
         (
             TxType txType,
-            uint256 amountOrFraction,
+            uint256 assetAmount,
             uint256 minimumOut,
             address newStrategy,
             uint256 vaultNonce
@@ -171,7 +171,7 @@ abstract contract StrategyParent is
 
         pendingByNonce[vaultNonce] = BufferedTx({
             txType: txType,
-            amountOrFraction: amountOrFraction,
+            assetAmount: assetAmount,
             minimumOut: minimumOut,
             newStrategy: newStrategy
         });
@@ -195,7 +195,7 @@ abstract contract StrategyParent is
             // Break if nothing is pending for this nonce
             if (
                 txData.txType == TxType(0) &&
-                txData.amountOrFraction == 0 &&
+                txData.assetAmount == 0 &&
                 txData.minimumOut == 0 &&
                 txData.newStrategy == address(0)
             ) {
@@ -388,7 +388,7 @@ abstract contract StrategyParent is
     function _divest() internal virtual {
         BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            txData.amountOrFraction,
+            txData.assetAmount,
             txData.minimumOut
         );
 
