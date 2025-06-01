@@ -189,12 +189,12 @@ const handleWithdrawTransaction = async (
   }
   
   try {
-    const withdrawShareAmount = inputBalance.value;
+    const withdrawAssetAmount = inputBalance.value;
     console.log("[Withdraw Debug] vault=", vaultData.id.toString(),
-      "shareAmount=", withdrawShareAmount.toString(),
+      "shareAmount=", withdrawAssetAmount.toString(),
       "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2)
     );
-    const assetsOut = await getAssetsFromShares(withdrawShareAmount, vaultData);
+    const assetsOut = await getAssetsFromShares(withdrawAssetAmount, vaultData);
     console.log("[Withdraw Debug] assetsOut=", assetsOut.toString());
     const withdrawAmountFormatted = Number(assetsOut) / 10 ** withdrawToken.decimals;
     console.log("[Withdraw Debug] withdrawAmountFormatted=", withdrawAmountFormatted.toString());
@@ -204,7 +204,7 @@ const handleWithdrawTransaction = async (
     // trackEvent("Withdraw Submitted", {
     //   vaultSymbol: vaultData.symbol,
     //   vault: vaultData.id.toString(),
-    //   amount: withdrawShareAmount.toString(),
+    //   amount: withdrawAssetAmount.toString(),
     //   amountUSD: amountUSD,
     //   withdrawToken: withdrawToken.symbol,
     //   user: activeAccount.address,
@@ -218,7 +218,7 @@ const handleWithdrawTransaction = async (
       walletContext,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawToken.address as Address,
       withdrawZRC20 as Token,
       setcrossChainTxId

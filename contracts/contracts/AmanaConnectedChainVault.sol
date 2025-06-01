@@ -65,10 +65,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
                 transactions[confirmationNonce].txStatus = txStatus; // non-zero means a revert
-                if (!transactions[confirmationNonce].isDeposit) {
-                    // this is a withdrawal confirmation
-                    transactions[confirmationNonce].amount = withdrawnAmount;
-                }
+                transactions[confirmationNonce].amount = withdrawnAmount;
             }
             if (confirmationNonce == lastProcessedNonce + 1) {
                 // Process the confirmation immediately if it's the next one in line
@@ -377,21 +374,29 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         // TODO -- insert a check here - is previewedShares approx equal to shares?
         userPrincipal[txn.receiver] += txn.amount;
         totalPrincipal += txn.amount;
-
-        if (txn.totalAssetsAfter >= txn.amount) {
-            latestTotalAssetsUpdateFromStrategy =
-                txn.totalAssetsAfter -
-                txn.amount;
-        } else {
-            latestTotalAssetsUpdateFromStrategy = 0;
-        }
-
+        console.log(
+            "txn.totalAssetsAfter=%s, txn.amount=%s",
+            txn.totalAssetsAfter,
+            txn.amount
+        );
+        // if (txn.totalAssetsAfter >= txn.amount) {
+        //     latestTotalAssetsUpdateFromStrategy =
+        //         txn.totalAssetsAfter -
+        //         txn.amount;
+        // } else {
+        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter - txn.amount;
+        // }
+        console.log(
+            "Confirming deposit: totalAssetsAfter=%s, amount=%s",
+            txn.totalAssetsAfter,
+            txn.amount
+        );
         uint256 shares = previewDeposit(txn.amount);
+        console.log("Shares to mint: %s, receiver: %s", shares, txn.receiver);
 
         _mint(txn.receiver, shares);
 
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
-        require(shares <= uint256(type(int256).max), "Overflow");
 
         emit Deposited(
             txn.receiver,

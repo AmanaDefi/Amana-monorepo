@@ -900,45 +900,16 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   return minSharesOut;
 };
 
-const getMinAmountOut = async (
-  vaultId: string,
-  transactionAmount: bigint,
-  strategyAddress: Address,
-  strategyChainId: number
-) => {
-  const vaultContract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0], // Zetachain
-    address: vaultId,
-  });
-  const vaultTotalSupply = await readContract({
-    contract: vaultContract,
-    method: "function totalSupply() view returns (uint256)",
-  });
-  const fractionOfTotalShares =
-    (transactionAmount * ethers.parseEther("1")) / vaultTotalSupply;
-  const strategyChain = defineChain(strategyChainId);
-  const contract = getContract({
-    client,
-    chain: strategyChain,
-    address: strategyAddress,
-  });
-  const strategyWithdrawShareAmount = await readContract({
-    contract,
-    method:
-      "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
-    params: [fractionOfTotalShares],
-  });
-  const amountOutForShares = await readContract({
-    contract,
-    method: "function convertToAssets(uint256) view returns (uint256)",
-    params: [strategyWithdrawShareAmount],
-  });
+const getMinAmountOut = (
+  transactionAmount: bigint // in asset units, e.g. 5e6 for 5 USDC
+): bigint => {
+  const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
   const minAmountOut =
-    (amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100)) /
-    BigInt(10000);
+    (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
+
   return minAmountOut;
 };
+
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Direct Deposit");
@@ -1199,17 +1170,14 @@ export const executeSolanaWithdrawal = async (
   strategyChainId: number,
   walletContext: WalletContextState,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   splMint: string,
   withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Solana Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
   const depositorBytes = walletContext.publicKey!.toBytes();
 
@@ -1236,7 +1204,7 @@ export const executeSolanaWithdrawal = async (
     values: [
       withdrawZRC20,
       getSolanaEVMAddress(splMint), // or just splMint?
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       slippageValue,
       depositorBytes,
@@ -1258,7 +1226,7 @@ export const executeWithdrawal = async (
   walletContext: WalletContextState,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function
@@ -1273,7 +1241,7 @@ export const executeWithdrawal = async (
       strategyChainId,
       activeAccount,
       activeChain,
-      withdrawShareAmount
+      withdrawAssetAmount
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
     console.log("Solana withdrawal detected");
@@ -1283,7 +1251,7 @@ export const executeWithdrawal = async (
       strategyChainId,
       walletContext,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
       withdrawZRC20.address as Address,
       setcrossChainTxId
@@ -1295,7 +1263,7 @@ export const executeWithdrawal = async (
       strategyChainId,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
       withdrawZRC20,
       setcrossChainTxId
@@ -1309,14 +1277,11 @@ const executeDirectWithdrawal = async (
   strategyChainId: number,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint
+  withdrawAssetAmount: bigint
 ) => {
   //vaultId: string
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
   let contract = getContract({
     client,
@@ -1328,7 +1293,7 @@ const executeDirectWithdrawal = async (
     method:
       "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
     params: [
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       activeAccount?.address,
       activeAccount?.address
@@ -1347,17 +1312,14 @@ const executeCrossChainWithdrawal = async (
   strategyChainId: number,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
 
   // Generate a unique transaction ID
@@ -1379,7 +1341,7 @@ const executeCrossChainWithdrawal = async (
     [
       withdrawZRC20.address,
       withdrawERC20,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       slippageValue,
       nonEvmAddress,

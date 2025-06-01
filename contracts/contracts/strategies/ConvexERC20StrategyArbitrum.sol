@@ -201,7 +201,11 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         IERC20(receiptToken).approve(address(booster), amount);
         booster.deposit(convexPid, amount); // This stakes on Arbitrum
 
-        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
+        _sendInvestConfirmation(
+            0,
+            totalUnderlyingAssets(),
+            currentExecutionNonce
+        );
 
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,

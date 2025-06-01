@@ -474,6 +474,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Mock data for the test
       const userAddress = await owner.getAddress();
       const amount = ethers.utils.parseEther("1000"); // 1000 tokens
+      const totalUnderlyingAssetsBefore = ethers.utils.parseEther("5000");
       const totalUnderlyingAssetsAfter = ethers.utils.parseEther("6000");
       const executionNonce = 1;
       const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
@@ -530,6 +531,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Call the function as the owner
       await expect(
         strategy.manualResendInvestConfirmation(
+          totalUnderlyingAssetsBefore,
           totalUnderlyingAssetsAfter,
           executionNonce
         )

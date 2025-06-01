@@ -256,7 +256,11 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         IERC20(receiptToken).approve(address(liquidityGauge), amount);
         liquidityGauge.deposit(amount);
 
-        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
+        _sendInvestConfirmation(
+            0,
+            totalUnderlyingAssets(),
+            currentExecutionNonce
+        );
 
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,

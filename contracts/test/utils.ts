@@ -315,7 +315,7 @@ export async function simulateConfirmDeposit(
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint256", "uint256", "bytes32"],
-    [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, keccak256(toUtf8Bytes("DepositConfirmed")) as `0x${string}`
+    [depositAmountBN, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, keccak256(toUtf8Bytes("DepositConfirmed")) as `0x${string}`
     ]
   );
   await amanaVault.connect(gatewaySigner).onCall(

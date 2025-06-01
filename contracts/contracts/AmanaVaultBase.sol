@@ -329,7 +329,7 @@ abstract contract AmanaVaultBase is
                 txn.withdrawChainId
             );
         }
-
+        console.log("Amount in to swap: %s", txn.amount);
         txn.amount = txn.withdrawZRC20 == address(asset())
             ? txn.amount
             : swap(
@@ -340,6 +340,7 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
+        console.log("Amount after swap: %s", txn.amount);
 
         _investAssets();
     }

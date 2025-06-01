@@ -331,10 +331,15 @@ abstract contract StrategyParent is
      * @param vaultNonce The execution nonce associated with the investment.
      */
     function manualResendInvestConfirmation(
+        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) external onlyOwner {
-        _sendInvestConfirmation(totalUnderlyingAssetsAfter, vaultNonce);
+        _sendInvestConfirmation(
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            vaultNonce
+        );
     }
 
     /**
@@ -348,11 +353,12 @@ abstract contract StrategyParent is
      * - Includes revert options in case of failure.
      */
     function _sendInvestConfirmation(
+        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            0,
+            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             vaultNonce,
             TX_DEPOSIT_CONFIRMED
@@ -585,7 +591,7 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount, 0);
+            _depositFundsIntoYieldSource(context.amount, 1);
             _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,
@@ -627,7 +633,7 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            // _depositFundsIntoYieldSource(context.amount, 0);
+            // _depositFundsIntoYieldSource(context.amount, 1);
             _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,

@@ -254,7 +254,11 @@ contract ConvexEthStrategy is EthStrategyParent {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         lastProcessedNonce = currentExecutionNonce;
-        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
+        _sendInvestConfirmation(
+            0,
+            totalUnderlyingAssets(),
+            currentExecutionNonce
+        );
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,

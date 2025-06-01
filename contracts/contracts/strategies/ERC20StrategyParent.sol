@@ -25,16 +25,18 @@ abstract contract ERC20StrategyParent is StrategyParent {
             inputToken,
             msg.sender,
             address(this),
-            txn.amountOrFraction
+            txn.assetAmount
         );
-        _depositFundsIntoYieldSource(txn.amountOrFraction, txn.minimumOut);
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+        _depositFundsIntoYieldSource(txn.assetAmount, txn.minimumOut);
         _sendInvestConfirmation(
+            totalUnderlyingAssets() - totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
             lastProcessedNonce + 1
         );
         emit FundsInvested(
             lastProcessedNonce + 1,
-            txn.amountOrFraction,
+            txn.assetAmount,
             totalUnderlyingAssets()
         );
     }
@@ -71,7 +73,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         }
         uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
             1e18, // Withdraw all
-            txn.amountOrFraction
+            txn.assetAmount
         );
         approveOrIncreaseAllowance(
             inputToken,
