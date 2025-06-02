@@ -452,13 +452,15 @@ export default function VaultInputs({
       console.log("Double Box - Starting getWithdrawOutputAmount:", {
         inputAmountValue: inputAmountValue.toString(),
       });
-      const assetsAmount = await getAssetsFromShares(
-        inputAmountValue,
-        vaultData
-      );
-      console.log("Double Box - Assets from shares:", {
+      
+      // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
+      // So we don't need to convert from shares to assets - the input IS the asset amount
+      let assetsAmount = inputAmountValue;
+      
+      console.log("Double Box - Assets amount (direct from input):", {
         assetsAmount: assetsAmount.toString(),
       });
+      
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;
