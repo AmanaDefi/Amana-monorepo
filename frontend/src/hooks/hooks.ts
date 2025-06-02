@@ -12,6 +12,7 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
+  fetchUserVaultMaxWithdraw,
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
@@ -39,8 +40,19 @@ export const useUpdateVaultBalanceAndTotal = (
 ) => {
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      // let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
+      // let address = isSolanaAddress(walletAddress) ? "0x5a55337a553557574C6E43506b48463373737669" : walletAddress
       let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
+      
+      // 🧪 DEBUG: Log address conversion process
+      console.log("=== ADDRESS CONVERSION DEBUG ===");
+      console.log(`Original walletAddress: ${walletAddress}`);
+      console.log(`Is Solana address? ${isSolanaAddress(walletAddress)}`);
+      if (isSolanaAddress(walletAddress)) {
+        console.log(`Converted EVM address: ${getSolanaEVMAddress(walletAddress!)}`);
+      }
+      console.log(`Final address used: ${address}`);
+      console.log("================================");
+      
       console.log("Updating vault balances and total assets for address:", address);
       try {
         const balancesAndAssets = await Promise.all(
@@ -53,7 +65,7 @@ export const useUpdateVaultBalanceAndTotal = (
                   address as Address,
                   vault.id as Address
                 )
-                newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
+                newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
                   vault.inputToken.decimals,
                   address as Address,
                   vault.id as Address
@@ -122,8 +134,14 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   const { selectedChain } = useMultiChain();
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      // const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
       const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
+      // 🧪 DEBUG: Address mapping in second hook
+      console.log("=== SECOND HOOK DEBUG ===");
+      console.log(`Original userAddress: ${userAddress}`);
+      console.log(`Is Solana address? ${isSolanaAddress(userAddress)}`);
+      console.log(`Final address: ${address}`);
+      console.log("========================");
+      
       console.log("Updating vault balances and total assets for address:", address);
       try {
         if (vault && vault.id) {
@@ -132,11 +150,30 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             vault.id as Address
           );
 
-          const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
+          const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
             vault.inputToken.decimals,
             address as Address,
             vault?.id as Address
           );
+
+          // 🧪 TESTING: Compare old vs new approach
+          console.log("=== MAXWITHDRAW TESTING ===");
+          try {
+            const oldMaxRedeem = await fetchUserVaultMaxRedeem(
+              vault.inputToken.decimals,
+              address as Address,
+              vault?.id as Address
+            );
+            console.log(`📊 Vault: ${vault.symbol}`);
+            console.log(`👤 User: ${address}`);
+            console.log(`🔄 OLD maxRedeem (shares): ${oldMaxRedeem}`);
+            console.log(`🆕 NEW maxWithdraw (assets): ${newTotalAssetsinToken}`);
+            console.log(`💰 Underlying token: ${vault.inputToken.symbol}`);
+            console.log(`🏦 Vault token: ${vault.symbol}`);
+            console.log("============================");
+          } catch (e) {
+            console.log("Error comparing old vs new:", e);
+          }
 
           setUserVaultBalance(balance);
 

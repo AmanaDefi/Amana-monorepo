@@ -1437,6 +1437,32 @@ export const fetchUserVaultMaxRedeem = async (
   return formatUnits(maxRedeem, decimals);
 };
 
+export const fetchUserVaultMaxWithdraw = async (
+  decimals: number,
+  userAddress: Address,
+  vaultAddress: Address
+) => {
+  console.log("🔍 Calling fetchUserVaultMaxWithdraw:", { userAddress, vaultAddress, decimals });
+  
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // Always Zetachain
+    address: vaultAddress,
+  });
+
+  const maxWithdraw = await readContract({
+    contract,
+    method: "function maxWithdraw(address) view returns (uint256)",
+    params: [userAddress],
+  });
+
+  const formatted = formatUnits(maxWithdraw, decimals);
+  console.log(`✅ maxWithdraw result: ${maxWithdraw.toString()} raw -> ${formatted} formatted`);
+
+  // Use formatUnits instead of Number conversion
+  return formatted;
+};
+
 export const fetchTotalAssets = async (vaultAddress: Address) => {
   const vaultData = await new ApiService().api.getVaultData(vaultAddress);
   return vaultData.total_assets;

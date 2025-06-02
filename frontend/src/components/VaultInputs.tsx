@@ -117,8 +117,16 @@ export default function VaultInputs({
     // Only update if the state is different from what it should be
     if (isDeposit !== shouldBeDeposit) {
       setIsDeposit(shouldBeDeposit);
+      
+      // 🧪 TESTING: Log UI state changes
+      console.log("=== UI STATE TESTING ===");
+      console.log(`🔄 Tab changed to: ${shouldBeDeposit ? 'DEPOSIT' : 'WITHDRAW'}`);
+      console.log(`💰 Vault underlying token: ${vaultData.inputToken.symbol}`);
+      console.log(`🏦 Vault share token: ${vaultData.symbol}`);
+      console.log(`📊 Balance shown will be: ${shouldBeDeposit ? 'user wallet balance' : 'maxWithdraw amount'}`);
+      console.log("========================");
     }
-  }, [tabParam, searchParams]);
+  }, [tabParam, searchParams, vaultData.inputToken.symbol, vaultData.symbol]);
 
   // // Check if user has balance for withdrawal if tab=withdraw
   // useEffect(() => {
@@ -872,6 +880,18 @@ export default function VaultInputs({
     }
   }, [loadingOutputToken, conversionOutput, debouncedInputBalance]);
 
+  // 🧪 TESTING: Log final values being displayed
+  useEffect(() => {
+    if (inputToken && vaultTotalAssetinToken) {
+      console.log("=== FINAL UI VALUES ===");
+      console.log(`🎯 Mode: ${isDeposit ? 'DEPOSIT' : 'WITHDRAW'}`);
+      console.log(`🪙 Selected token symbol: ${isDeposit ? inputToken?.symbol : vaultData.inputToken.symbol}`);
+      console.log(`💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : vaultTotalAssetinToken.toString()}`);
+      console.log(`📊 Balance type: ${isDeposit ? 'wallet balance' : 'maxWithdraw amount'}`);
+      console.log("=====================");
+    }
+  }, [isDeposit, inputToken?.symbol, vaultData.inputToken.symbol, tokenBalance.formatted, vaultTotalAssetinToken]);
+
   return (
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}
@@ -897,7 +917,7 @@ export default function VaultInputs({
         onMaxClick={handleMaxClick}
         value={displayValue}
         onChange={handleChangeInput}
-        selectedToken={isDeposit ? inputToken : vaultToken}
+        selectedToken={isDeposit ? inputToken : vaultData.inputToken}
         inputTokenbalance={
           isDeposit
             ? tokenBalance.formatted
