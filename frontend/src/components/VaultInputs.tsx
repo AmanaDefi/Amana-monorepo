@@ -885,9 +885,11 @@ export default function VaultInputs({
     if (inputToken && vaultTotalAssetinToken) {
       console.log("=== FINAL UI VALUES ===");
       console.log(`🎯 Mode: ${isDeposit ? 'DEPOSIT' : 'WITHDRAW'}`);
-      console.log(`🪙 Selected token symbol: ${isDeposit ? inputToken?.symbol : vaultData.inputToken.symbol}`);
+      console.log(`🪙 Input token: ${isDeposit ? inputToken?.symbol : vaultData.inputToken.symbol}`);
+      console.log(`🪙 Output token: ${vaultData.inputToken.symbol} (underlying asset)`);
       console.log(`💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : vaultTotalAssetinToken.toString()}`);
       console.log(`📊 Balance type: ${isDeposit ? 'wallet balance' : 'maxWithdraw amount'}`);
+      console.log(`✅ Consistent UX: Both modes show underlying asset!`);
       console.log("=====================");
     }
   }, [isDeposit, inputToken?.symbol, vaultData.inputToken.symbol, tokenBalance.formatted, vaultTotalAssetinToken]);
@@ -954,7 +956,7 @@ export default function VaultInputs({
         onMaxClick={() => {}}
         value={conversionOutput.outputAmountFormatted}
         onChange={() => {}}
-        selectedToken={isDeposit ? vaultToken : inputToken}
+        selectedToken={vaultData.inputToken}
         inputTokenbalance={
           isDeposit
             ? vaultTotalAssetinToken?.toString() ?? "0"
