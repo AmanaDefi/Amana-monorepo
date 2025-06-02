@@ -32,7 +32,6 @@ import {
   getAssetsFromShares,
   getPerformanceFee,
   getSharesFromDeposit,
-  fetchUserVaultMaxWithdraw,
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
@@ -111,9 +110,6 @@ export default function VaultInputs({
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
 
-  // Add state for max withdraw amount
-  const [maxWithdrawAmount, setMaxWithdrawAmount] = useState<string>("0");
-
   // Update isDeposit when URL tab parameter changes
   useEffect(() => {
     const shouldBeDeposit = tabParam !== 'withdraw';
@@ -170,51 +166,6 @@ export default function VaultInputs({
   );
 
   const { activeChain, walletAddress } = useMultiChain();
-
-  // Fetch max withdraw amount for withdrawal display
-  useEffect(() => {
-    const fetchMaxWithdraw = async () => {
-      console.log("🔍 [VaultInputs - fetchMaxWithdraw] Starting fetch with params:", {
-        walletAddress,
-        vaultId: vaultData.id,
-        isDeposit,
-        decimals: vaultData.inputToken.decimals,
-        timestamp: new Date().toISOString()
-      });
-
-      if (walletAddress && vaultData.id && !isDeposit) {
-        try {
-          console.log("🔍 [VaultInputs - fetchMaxWithdraw] Calling fetchUserVaultMaxWithdraw...");
-          
-          const maxWithdraw = await fetchUserVaultMaxWithdraw(
-            vaultData.inputToken.decimals,
-            walletAddress as Address,
-            vaultData.id as Address
-          );
-          
-          console.log("🔍 [VaultInputs - fetchMaxWithdraw] ✅ Success - Setting maxWithdrawAmount:", maxWithdraw);
-          setMaxWithdrawAmount(maxWithdraw);
-        } catch (error) {
-          console.error("🔍 [VaultInputs - fetchMaxWithdraw] ❌ Error fetching max withdraw amount:", {
-            error,
-            walletAddress,
-            vaultId: vaultData.id,
-            decimals: vaultData.inputToken.decimals,
-            errorMessage: error instanceof Error ? error.message : String(error)
-          });
-          setMaxWithdrawAmount("0");
-        }
-      } else {
-        console.log("🔍 [VaultInputs - fetchMaxWithdraw] Skipping fetch - conditions not met:", {
-          hasWalletAddress: !!walletAddress,
-          hasVaultId: !!vaultData.id,
-          isWithdrawMode: !isDeposit
-        });
-      }
-    };
-
-    fetchMaxWithdraw();
-  }, [walletAddress, vaultData.id, vaultData.inputToken.decimals, isDeposit]);
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
@@ -276,7 +227,7 @@ export default function VaultInputs({
   
   // Trigger error message handling
   useEffect(() => {
-    if (inputToken) {
+    if (inputToken && vaultTotalAssetinToken) {
       if (isDeposit) {
         setErrorMessage(
           getVaultErrorMessage(
@@ -289,7 +240,7 @@ export default function VaultInputs({
         setErrorMessage(
           getVaultErrorMessage(
             inputBalance.formatted,
-            maxWithdrawAmount,
+            vaultTotalAssetinToken.toString(),
             steps
           )
         );
@@ -301,8 +252,7 @@ export default function VaultInputs({
     isDeposit,
     vaultData.id,
     action,
-    maxWithdrawAmount,
-    tokenBalance.value,
+    vaultTotalAssetinToken,
     steps,
   ]);
 
@@ -416,7 +366,7 @@ export default function VaultInputs({
 
       const decimalsNumber = isDeposit
         ? inputToken.decimals
-        : vaultData.inputToken.decimals;
+        : vaultToken.decimals;
       if (decimals?.length > decimalsNumber) {
         inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
       }
@@ -435,7 +385,7 @@ export default function VaultInputs({
 
       setDisplayValue(inputAmt);
     },
-    [inputToken, inputTokenPrice, isDeposit, vaultData.inputToken.decimals]
+    [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals]
   );
 
   const handleMaxClick = useCallback(() => {
@@ -446,7 +396,7 @@ export default function VaultInputs({
       setDisplayValue(tokenBalance.formatted)
     } else {
       handleChangeInput({
-        currentTarget: { value: maxWithdrawAmount },
+        currentTarget: { value: vaultTotalAssetinToken?.toString() },
       } as React.ChangeEvent<HTMLInputElement>);
     }
   }, [
@@ -454,7 +404,7 @@ export default function VaultInputs({
     inputToken,
     tokenBalance,
     isDeposit,
-    maxWithdrawAmount,
+    vaultTotalAssetinToken,
   ]);
 
   const tokenList = useMemo(() => {
@@ -947,11 +897,11 @@ export default function VaultInputs({
         onMaxClick={handleMaxClick}
         value={displayValue}
         onChange={handleChangeInput}
-        selectedToken={isDeposit ? inputToken : vaultData.inputToken}
+        selectedToken={isDeposit ? inputToken : vaultToken}
         inputTokenbalance={
           isDeposit
             ? tokenBalance.formatted
-            : maxWithdrawAmount
+            : vaultTotalAssetinToken?.toString() ?? "0"
         }
         errorMessage={errorMessage}
         tokenList={isDeposit ? tokenList : []}
@@ -984,10 +934,10 @@ export default function VaultInputs({
         onMaxClick={() => {}}
         value={conversionOutput.outputAmountFormatted}
         onChange={() => {}}
-        selectedToken={isDeposit ? vaultData.inputToken : inputToken}
+        selectedToken={isDeposit ? vaultToken : inputToken}
         inputTokenbalance={
           isDeposit
-            ? maxWithdrawAmount
+            ? vaultTotalAssetinToken?.toString() ?? "0"
             : tokenBalance.formatted
         }
         errorMessage={!errorMessage ? outputBoxErrorMessage : ""}

@@ -900,45 +900,16 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   return minSharesOut;
 };
 
-const getMinAmountOut = async (
-  vaultId: string,
-  transactionAmount: bigint,
-  strategyAddress: Address,
-  strategyChainId: number
-) => {
-  const vaultContract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0], // Zetachain
-    address: vaultId,
-  });
-  const vaultTotalSupply = await readContract({
-    contract: vaultContract,
-    method: "function totalSupply() view returns (uint256)",
-  });
-  const fractionOfTotalShares =
-    (transactionAmount * ethers.parseEther("1")) / vaultTotalSupply;
-  const strategyChain = defineChain(strategyChainId);
-  const contract = getContract({
-    client,
-    chain: strategyChain,
-    address: strategyAddress,
-  });
-  const strategyWithdrawShareAmount = await readContract({
-    contract,
-    method:
-      "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
-    params: [fractionOfTotalShares],
-  });
-  const amountOutForShares = await readContract({
-    contract,
-    method: "function convertToAssets(uint256) view returns (uint256)",
-    params: [strategyWithdrawShareAmount],
-  });
+const getMinAmountOut = (
+  transactionAmount: bigint // in asset units, e.g. 5e6 for 5 USDC
+): bigint => {
+  const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
   const minAmountOut =
-    (amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100)) /
-    BigInt(10000);
+    (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
+
   return minAmountOut;
 };
+
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Direct Deposit");
@@ -1010,8 +981,9 @@ const executeCrossChainDeposit = async (
   // Prepare payload (calldata to pass to the receiver)
 
   payload = abiCoder.encode(
-    ["address", "uint256", "uint16", "bytes"],
-    [inputToken.address, minSharesOut, slippageValue, nonEvmAddress]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    [ZeroAddress, inputToken.address, 0, minSharesOut, slippageValue, nonEvmAddress, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+    ]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(
@@ -1152,12 +1124,15 @@ const executeSolanaDeposit = async (
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
     const args = {
-      types: ["address", "uint256", "uint16", "bytes"],
+      types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
       values: [
+        ZeroAddress,
         getSolanaEVMAddress(inputToken.address),
+        0,
         minSharesOut,
         slippageValue,
         depositorBytes,
+        keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ],
     };
     const txHash = await client.solanaDepositAndCall(
@@ -1172,8 +1147,9 @@ const executeSolanaDeposit = async (
     // Case 2: SPL token
     const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
-      types: ["address", "uint256", "uint16", "bytes"],
-      values: [evmAddress, minSharesOut, slippageValue, depositorBytes],
+      types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+      values: [ZeroAddress, evmAddress, 0, minSharesOut, slippageValue, depositorBytes, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+      ],
     };
     console.log("SPL token deposit detected");
     const txHash = await client.depositSplTokenAndCall(
@@ -1194,17 +1170,14 @@ export const executeSolanaWithdrawal = async (
   strategyChainId: number,
   walletContext: WalletContextState,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   splMint: string,
   withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Solana Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
   const depositorBytes = walletContext.publicKey!.toBytes();
 
@@ -1227,14 +1200,16 @@ export const executeSolanaWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
-    types: ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
     values: [
       withdrawZRC20,
       getSolanaEVMAddress(splMint), // or just splMint?
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       slippageValue,
-      depositorBytes
+      depositorBytes,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
+
     ],
   };
 
@@ -1251,11 +1226,13 @@ export const executeWithdrawal = async (
   walletContext: WalletContextState,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
+  console.log("Executing Withdrawal");
+  console.log("To chain ID:", activeChain.id);
   if (activeChain.id == CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(
@@ -1264,16 +1241,17 @@ export const executeWithdrawal = async (
       strategyChainId,
       activeAccount,
       activeChain,
-      withdrawShareAmount
+      withdrawAssetAmount
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
+    console.log("Solana withdrawal detected");
     return executeSolanaWithdrawal(
       vaultId,
       strategyAddress,
       strategyChainId,
       walletContext,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
       withdrawZRC20.address as Address,
       setcrossChainTxId
@@ -1285,7 +1263,7 @@ export const executeWithdrawal = async (
       strategyChainId,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
       withdrawZRC20,
       setcrossChainTxId
@@ -1299,14 +1277,11 @@ const executeDirectWithdrawal = async (
   strategyChainId: number,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint
+  withdrawAssetAmount: bigint
 ) => {
   //vaultId: string
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
   let contract = getContract({
     client,
@@ -1318,10 +1293,10 @@ const executeDirectWithdrawal = async (
     method:
       "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
     params: [
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       activeAccount?.address,
-      activeAccount?.address,
+      activeAccount?.address
     ],
   });
   const receipt = await sendTransaction({
@@ -1337,17 +1312,14 @@ const executeCrossChainWithdrawal = async (
   strategyChainId: number,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
 
   // Generate a unique transaction ID
@@ -1365,14 +1337,15 @@ const executeCrossChainWithdrawal = async (
   const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
     [
       withdrawZRC20.address,
       withdrawERC20,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       slippageValue,
-      nonEvmAddress
+      nonEvmAddress,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
     ]
   ) as `0x${string}`;
   const revertMessage = abiCoder.encode(
@@ -1423,61 +1396,24 @@ export const fetchUserVaultBalance = async (
   userAddress: Address,
   vaultAddress: Address
 ) => {
-  console.log("🔍 [fetchUserVaultBalance] Starting fetch with params:", {
-    userAddress,
-    vaultAddress,
-    timestamp: new Date().toISOString()
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
+    address: vaultAddress,
   });
-
-  try {
-    const contract = getContract({
-      client,
-      chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
-      address: vaultAddress,
-    });
-    
-    console.log("🔍 [fetchUserVaultBalance] Contract created:", {
-      chainId: SUPPORTED_CHAINS[0].id,
-      chainName: SUPPORTED_CHAINS[0].name,
-      contractAddress: vaultAddress
-    });
-
-    const { value: shares, decimals } = await getBalance({
-      contract,
-      address: userAddress,
-    });
-    
-    console.log("🔍 [fetchUserVaultBalance] Raw shares fetched:", {
-      shares: shares.toString(),
-      decimals,
-      sharesFormatted: formatUnits(shares, decimals)
-    });
-
-    const balance = await readContract({
-      contract,
-      method: "function convertToAssets(uint256) view returns (uint256)",
-      params: [shares],
-    });
-    
-    const formattedBalance = formatUnits(balance, decimals);
-    
-    console.log("🔍 [fetchUserVaultBalance] Assets conversion result:", {
-      rawBalance: balance.toString(),
-      formattedBalance,
-      conversionRate: shares > 0n ? Number(balance) / Number(shares) : 0
-    });
-
-    console.log("🔍 [fetchUserVaultBalance] ✅ Success - Final result:", formattedBalance);
-    return formattedBalance;
-  } catch (error) {
-    console.error("🔍 [fetchUserVaultBalance] ❌ Error:", {
-      error,
-      userAddress,
-      vaultAddress,
-      errorMessage: error instanceof Error ? error.message : String(error)
-    });
-    throw error;
-  }
+  const { value: shares, decimals } = await getBalance({
+    contract,
+    address: userAddress,
+  });
+  console.log("shares", shares);
+  console.log("decimals", decimals);
+  const balance = await readContract({
+    contract,
+    method: "function convertToAssets(uint256) view returns (uint256)",
+    params: [shares],
+  });
+  console.log("balance", balance);
+  return formatUnits(balance, decimals);
 };
 
 export const fetchUserVaultMaxRedeem = async (
@@ -1485,131 +1421,25 @@ export const fetchUserVaultMaxRedeem = async (
   userAddress: Address,
   vaultAddress: Address
 ) => {
-  console.log("🔍 [fetchUserVaultMaxRedeem] Starting fetch with params:", {
-    decimals,
-    userAddress,
-    vaultAddress,
-    timestamp: new Date().toISOString()
+  const contract = getContract({
+    client,
+    chain: SUPPORTED_CHAINS[0], // Always Zetachain
+    address: vaultAddress,
   });
 
-  try {
-    const contract = getContract({
-      client,
-      chain: SUPPORTED_CHAINS[0], // Always Zetachain
-      address: vaultAddress,
-    });
-
-    console.log("🔍 [fetchUserVaultMaxRedeem] Contract created:", {
-      chainId: SUPPORTED_CHAINS[0].id,
-      chainName: SUPPORTED_CHAINS[0].name,
-      contractAddress: vaultAddress
-    });
-
-    const maxRedeem = await readContract({
-      contract,
-      method: "function maxRedeem(address) view returns (uint256)",
-      params: [userAddress],
-    });
-
-    const formattedMaxRedeem = formatUnits(maxRedeem, decimals);
-
-    console.log("🔍 [fetchUserVaultMaxRedeem] Max redeem result:", {
-      rawMaxRedeem: maxRedeem.toString(),
-      formattedMaxRedeem,
-      decimals
-    });
-
-    console.log("🔍 [fetchUserVaultMaxRedeem] ✅ Success - Final result:", formattedMaxRedeem);
-    return formattedMaxRedeem;
-  } catch (error) {
-    console.error("🔍 [fetchUserVaultMaxRedeem] ❌ Error:", {
-      error,
-      decimals,
-      userAddress,
-      vaultAddress,
-      errorMessage: error instanceof Error ? error.message : String(error)
-    });
-    throw error;
-  }
-};
-
-export const fetchUserVaultMaxWithdraw = async (
-  decimals: number,
-  userAddress: Address,
-  vaultAddress: Address
-) => {
-  console.log("🔍 [fetchUserVaultMaxWithdraw] Starting fetch with params:", {
-    decimals,
-    userAddress,
-    vaultAddress,
-    timestamp: new Date().toISOString()
+  const maxRedeem = await readContract({
+    contract,
+    method: "function maxRedeem(address) view returns (uint256)",
+    params: [userAddress],
   });
 
-  try {
-    const contract = getContract({
-      client,
-      chain: SUPPORTED_CHAINS[0], // Always Zetachain
-      address: vaultAddress,
-    });
-
-    console.log("🔍 [fetchUserVaultMaxWithdraw] Contract created:", {
-      chainId: SUPPORTED_CHAINS[0].id,
-      chainName: SUPPORTED_CHAINS[0].name,
-      contractAddress: vaultAddress
-    });
-
-    const maxWithdraw = await readContract({
-      contract,
-      method: "function maxWithdraw(address) view returns (uint256)",
-      params: [userAddress],
-    });
-
-    const formattedMaxWithdraw = formatUnits(maxWithdraw, decimals);
-
-    console.log("🔍 [fetchUserVaultMaxWithdraw] Max withdraw result:", {
-      rawMaxWithdraw: maxWithdraw.toString(),
-      formattedMaxWithdraw,
-      decimals
-    });
-
-    console.log("🔍 [fetchUserVaultMaxWithdraw] ✅ Success - Final result:", formattedMaxWithdraw);
-    return formattedMaxWithdraw;
-  } catch (error) {
-    console.error("🔍 [fetchUserVaultMaxWithdraw] ❌ Error:", {
-      error,
-      decimals,
-      userAddress,
-      vaultAddress,
-      errorMessage: error instanceof Error ? error.message : String(error)
-    });
-    throw error;
-  }
+  // Use formatUnits instead of Number conversion
+  return formatUnits(maxRedeem, decimals);
 };
 
 export const fetchTotalAssets = async (vaultAddress: Address) => {
-  console.log("🔍 [fetchTotalAssets] Starting fetch with params:", {
-    vaultAddress,
-    timestamp: new Date().toISOString()
-  });
-
-  try {
-    const vaultData = await new ApiService().api.getVaultData(vaultAddress);
-    
-    console.log("🔍 [fetchTotalAssets] API response:", {
-      vaultData,
-      totalAssets: vaultData.total_assets
-    });
-
-    console.log("🔍 [fetchTotalAssets] ✅ Success - Final result:", vaultData.total_assets);
-    return vaultData.total_assets;
-  } catch (error) {
-    console.error("🔍 [fetchTotalAssets] ❌ Error:", {
-      error,
-      vaultAddress,
-      errorMessage: error instanceof Error ? error.message : String(error)
-    });
-    throw error;
-  }
+  const vaultData = await new ApiService().api.getVaultData(vaultAddress);
+  return vaultData.total_assets;
   // const contract = getContract({
   //   client,
   //   chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
