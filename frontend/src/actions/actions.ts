@@ -1179,8 +1179,7 @@ export const executeSolanaWithdrawal = async (
   const minAmountOut = getMinAmountOut(
     withdrawAssetAmount
   );
-  const depositorBytes = walletContext.publicKey!.toBytes();
-
+  const depositorBytes = new TextEncoder().encode(walletContext.publicKey!.toBase58());
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     walletContext.publicKey!.toBase58(),
@@ -1443,7 +1442,7 @@ export const fetchUserVaultMaxWithdraw = async (
   vaultAddress: Address
 ) => {
   console.log("🔍 Calling fetchUserVaultMaxWithdraw:", { userAddress, vaultAddress, decimals });
-  
+
   const contract = getContract({
     client,
     chain: SUPPORTED_CHAINS[0], // Always Zetachain
