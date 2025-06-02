@@ -485,7 +485,9 @@ abstract contract AmanaVaultBase is
             if (nonEvmAddressByNonce[nonce].length == 0) {
                 recipient = abi.encodePacked(txn.receiver);
             } else {
+                console.log("Non-EVM address for nonce %s: %s", nonce);
                 recipient = abi.encodePacked(nonEvmAddressByNonce[nonce]);
+                console.logBytes32(bytes32(recipient));
             }
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())

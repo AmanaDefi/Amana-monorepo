@@ -126,7 +126,11 @@ contract WithdrawHelper is Revertable {
             ),
             onRevertGasLimit: 0
         });
-
+        console.log(
+            "handleGasFeeAndWithdrawToUser: amount: %s, withdrawZRC20: %s",
+            amount,
+            withdrawZRC20
+        );
         IGatewayZEVM(GATEWAY_ADDRESS).withdraw(
             recipient,
             amount,
