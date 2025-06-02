@@ -28,6 +28,7 @@ import "./tasks/findConvexPid";
 import "./tasks/updateWithdrawHelperOnStrats";
 import "./tasks/deployStrategyImpl";
 import "./tasks/deployBalancerStrategy";
+import "./tasks/getTxStatusHash";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
