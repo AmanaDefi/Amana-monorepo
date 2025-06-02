@@ -67,7 +67,7 @@ abstract contract AmanaVaultBase is
         uint16 slippage;
     }
 
-    mapping(uint256 => Transaction) transactions; // Buffer for out-of-order confirmations
+    mapping(uint256 => Transaction) public transactions; // Buffer for out-of-order confirmations
     mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
     uint256 public vaultNonce; // TODO need to initialize this to 1!
