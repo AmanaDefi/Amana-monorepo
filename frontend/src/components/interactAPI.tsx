@@ -88,8 +88,8 @@ const handleDepositTransaction = async (
     console.log("Receipt.transactionHash:", receipt.transactionHash);
     
     if (activeChain.id === CHAIN_ID.solana) {
-      // Solana handling
-      console.log("Solana transaction handling");
+      // Solana handling - no waitForReceipt needed
+      console.log("Solana transaction handling - receipt confirmed on-chain");
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
       const receiptObject = {
