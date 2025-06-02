@@ -12,6 +12,7 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
+  fetchUserVaultMaxWithdraw,
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
@@ -39,42 +40,83 @@ export const useUpdateVaultBalanceAndTotal = (
 ) => {
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      // let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
-      let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
-      console.log("Updating vault balances and total assets for address:", address);
+      console.log("🔍 [useUpdateVaultBalanceAndTotal] Starting update with params:", {
+        vaultCount: vaults.length,
+        vaultIds: vaults.map(v => v.id),
+        walletAddress,
+        timestamp: new Date().toISOString()
+      });
+
+      let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
+      // let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
+      
+      console.log("🔍 [useUpdateVaultBalanceAndTotal] Processing address:", {
+        originalWalletAddress: walletAddress,
+        processedAddress: address,
+        isSolana: isSolanaAddress(walletAddress)
+      });
+
       try {
         const balancesAndAssets = await Promise.all(
-          vaults.map(async (vault) => {
+          vaults.map(async (vault, index) => {
+            console.log(`🔍 [useUpdateVaultBalanceAndTotal] Processing vault ${index + 1}/${vaults.length}:`, {
+              vaultId: vault?.id,
+              vaultSymbol: vault?.symbol
+            });
+
             try {
               let balance: any;
               let newTotalAssetsinToken: any;
               if (address && vault && vault.id) {
+                console.log(`🔍 [useUpdateVaultBalanceAndTotal] Fetching balance for vault ${vault.id}...`);
+                
                 balance = await fetchUserVaultBalance(
                   address as Address,
                   vault.id as Address
                 )
+                
+                console.log(`🔍 [useUpdateVaultBalanceAndTotal] Balance result for vault ${vault.id}:`, balance);
+                
+                console.log(`🔍 [useUpdateVaultBalanceAndTotal] Fetching max redeem for vault ${vault.id}...`);
+                
                 newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
                   vault.inputToken.decimals,
                   address as Address,
                   vault.id as Address
                 );
+                
+                console.log(`🔍 [useUpdateVaultBalanceAndTotal] Max redeem result for vault ${vault.id}:`, newTotalAssetsinToken);
               } else {
+                console.log(`🔍 [useUpdateVaultBalanceAndTotal] Skipping vault ${vault?.id} - missing address or vault`);
                 balance = EMPTY_BALANCE
                 newTotalAssetsinToken = "Error"
               }
+              
+              console.log(`🔍 [useUpdateVaultBalanceAndTotal] Fetching total assets for vault ${vault?.id}...`);
+              
               const newTotalAssets = vault && vault.id ? await fetchTotalAssets(vault.id as Address) : "Error";
+              
+              console.log(`🔍 [useUpdateVaultBalanceAndTotal] Total assets result for vault ${vault?.id}:`, newTotalAssets);
 
               const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
               const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
 
-              return {
+              const result = {
                 vaultId: vault?.id || "unknown",
                 balance,
                 totalAssets: totalAssetsStr,
                 totalAssetsinToken: totalAssetsinTokenStr,
               };
+              
+              console.log(`🔍 [useUpdateVaultBalanceAndTotal] ✅ Vault ${vault?.id} processed successfully:`, result);
+              
+              return result;
             } catch (error) {
-              console.error(`Error fetching user balance or total assets for vault ${vault?.id || "unknown"}:`, error);
+              console.error(`🔍 [useUpdateVaultBalanceAndTotal] ❌ Error fetching data for vault ${vault?.id || "unknown"}:`, {
+                error,
+                vaultId: vault?.id,
+                errorMessage: error instanceof Error ? error.message : String(error)
+              });
               return {
                 vaultId: vault?.id || "unknown",
                 balance: "Error",
@@ -84,6 +126,9 @@ export const useUpdateVaultBalanceAndTotal = (
             }
           })
         );
+        
+        console.log("🔍 [useUpdateVaultBalanceAndTotal] All vaults processed, organizing results...");
+        
         const balances = balancesAndAssets.map(({ vaultId, balance }) => ({
           vaultId,
           balance,
@@ -97,16 +142,33 @@ export const useUpdateVaultBalanceAndTotal = (
           vaultId,
           totalAssetsinToken,
         }));
+        
+        console.log("🔍 [useUpdateVaultBalanceAndTotal] Final results:", {
+          balances,
+          totalAssets,
+          totalAssetsinToken
+        });
+        
         setUserVaultBalances(balances); // Update user balances
         setVaultTotalAssets(totalAssets); // Update total assets
         setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
+        
+        console.log("🔍 [useUpdateVaultBalanceAndTotal] ✅ All state updated successfully");
       } catch (error) {
-        console.error("Error updating vault balances and total assets:", error);
+        console.error("🔍 [useUpdateVaultBalanceAndTotal] ❌ Error updating vault balances and total assets:", {
+          error,
+          vaultCount: vaults.length,
+          walletAddress,
+          errorMessage: error instanceof Error ? error.message : String(error)
+        });
       }
     };
 
     if (vaults.length > 0) {
+      console.log("🔍 [useUpdateVaultBalanceAndTotal] Triggering update for", vaults.length, "vaults");
       updateVaultBalanceAndTotal();
+    } else {
+      console.log("🔍 [useUpdateVaultBalanceAndTotal] Skipping update - no vaults");
     }
   }, [vaults, walletAddress, setUserVaultBalances, setVaultTotalAssets]);
 };
@@ -122,35 +184,75 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   const { selectedChain } = useMultiChain();
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      // const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
-      const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
-      console.log("Updating vault balances and total assets for address:", address);
+      console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Starting update with params:", {
+        vault: vault?.id,
+        userAddress,
+        transactionCompleted,
+        timestamp: new Date().toISOString()
+      });
+
+      const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
+      // const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
+      
+      console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Processing address:", {
+        originalUserAddress: userAddress,
+        processedAddress: address,
+        isSolana: isSolanaAddress(userAddress)
+      });
+
       try {
         if (vault && vault.id) {
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Fetching user vault balance...");
+          
           const balance = await fetchUserVaultBalance(
             address as Address,
             vault.id as Address
           );
+          
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] User balance result:", balance);
 
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Fetching max redeem...");
+          
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,
             address as Address,
             vault?.id as Address
           );
+          
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Max redeem result:", newTotalAssetsinToken);
 
           setUserVaultBalance(balance);
 
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Fetching total assets...");
+          
           const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+          
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Total assets result:", newTotalAssets);
+          
           setVaultTotalAsset(newTotalAssets);
-
           setVaultTotalAssetinToken(newTotalAssetsinToken);
+          
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] ✅ All vault data updated successfully");
+        } else {
+          console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Skipping - no vault or vault ID");
         }
       } catch (error) {
-        console.error("Error updating vault balances and total assets:", error);
+        console.error("🔍 [useUpdateVaultBalanceAndTotalPerVault] ❌ Error updating vault balances and total assets:", {
+          error,
+          vault: vault?.id,
+          userAddress,
+          errorMessage: error instanceof Error ? error.message : String(error)
+        });
       }
     };
     if (userAddress && vault) {
+      console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Triggering update...");
       updateVaultBalanceAndTotal();
+    } else {
+      console.log("🔍 [useUpdateVaultBalanceAndTotalPerVault] Skipping update - missing userAddress or vault:", {
+        hasUserAddress: !!userAddress,
+        hasVault: !!vault
+      });
     }
   }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
 };
