@@ -5,18 +5,29 @@ import {InformationCircleIcon} from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import {useSlippage} from "@/hooks/hooks";
 import {EMPTY_BALANCE} from "@/utils/helpers";
+import { CheckTheTxIsInProgress, updateLocalStorageObject } from "@/utils/localStorageUtils";
+import { bigIntReplacer } from "@/utils/utils";
 
-export default function SlippageSettingsModal({setInputBalance} : { setInputBalance: Function }) {
+export default function SlippageSettingsModal({setInputBalance, vaultId} : { setInputBalance: Function, vaultId: string }) {
     const { slippageValue, isAuto, setSlippage, toggleAuto } = useSlippage();
     const [openSlippageModal, setOpenSlippageModal] = useState(false);
     const [inputValue, setInputValue] = useState(slippageValue?.toString());
 
     useEffect(() => {
-        setInputValue(slippageValue?.toString());
-        setInputBalance(EMPTY_BALANCE);
-    }, [setInputBalance, slippageValue]);
+        const isTxIsInProggress = CheckTheTxIsInProgress(vaultId);
+        if (isTxIsInProggress) return;
+        
+        if (openSlippageModal) {
+            setInputValue(slippageValue?.toString());
+            setInputBalance(EMPTY_BALANCE);
+            updateLocalStorageObject(vaultId, {inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer)})
+        }
+    }, [setInputBalance, slippageValue, openSlippageModal]);
 
     const handleInputChange = (value: string) => {
+        const isTxIsInProggress = CheckTheTxIsInProgress(vaultId);
+        if (isTxIsInProggress) return;
+
         if (value === '') {
             setInputValue('');
             return;

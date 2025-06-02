@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import { Spinner } from "../Spinner";
 
 export interface ButtonProps {
   label: string;
@@ -31,10 +32,12 @@ export default function MainActionButton({
     >
       <span className="flex flex-row items-center justify-center gap-2">
         <span className="font-bold">{label}</span>
+        
         {icon && <Image src={icon} width={1200}
           height={800}
-          alt={label} className="w-5 h-5" sizes="20px" />}
-      </span>
+          alt={label} className="w-5 h-5" />}
+       </span>
+ 
     </button>
   );
 }

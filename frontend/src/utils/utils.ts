@@ -728,3 +728,21 @@ export const formatTokenBalance = (balance: string | number, symbol: string): st
   const decimals = isStablecoin ? 2 : 4;
   return num.toFixed(decimals);
 };
+
+export function bigIntReplacer(key: string, value: any) {
+  if (typeof value === 'bigint') {
+    return value.toString(); 
+  }
+  return value;
+}
+
+export function bigIntReviver(key: string, value: any) {
+  if (key === 'value') {
+      try {
+        return BigInt(value);
+      } catch (e) {
+        return value;
+      }
+  }
+  return value;
+}

@@ -2,10 +2,8 @@ import {useState, useEffect, useMemo, useCallback} from "react";
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
-import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token, Balance } from "@/types/types";
+import { VaultData, VaultAPY, VaultTotalAssets, VaultTotalAssetsinToken, Token, Balance, ITxLocalStorage, Tabs } from "@/types/types";
 import { VAULT_DATA } from "@/constants";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
-import { Account } from "thirdweb/wallets";
 import { useUpdateVaultBalanceAndTotalPerVault, useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
@@ -13,6 +11,8 @@ import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
+import { CheckTheTxIsInProgress, getLocalStorageObject, updateLocalStorageObject } from "@/utils/localStorageUtils";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -45,10 +45,20 @@ const VaultsDetailContainer: React.FC<{
 
       if (foundVault) {
         setVaultData(foundVault);
+      }
 
-        // Explicitly reset selectedToken when vault changes
-        // This is critical to ensure proper auto-selection in child components
-        setSelectedToken(undefined);
+      if (vaultID) {
+        const vaultInfo = getLocalStorageObject(vaultID.toString())
+        const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString())
+        if (isTxInProgress) {
+          if (vaultInfo?.selectedToken) {
+            setSelectedToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+          }
+          setTransactionCompleted(vaultInfo?.transactionCompleted ?? false)
+        } else {
+          localStorage.removeItem(vaultID.toString());
+          updateLocalStorageObject(vaultID.toString(), {tab: initialIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW})
+        }
       }
     }, [vaultID]);
 
@@ -90,11 +100,17 @@ const VaultsDetailContainer: React.FC<{
 
     // Handle token selection from child components
     const handleTokenSelect = useCallback((token: Token) => {
-        /*console.log(
-            `VaultsDetailContainer: Token selection changed to ${token.symbol}`
-        );*/
         setSelectedToken(token);
+        updateLocalStorageObject(vaultID.toString(), {selectedToken: JSON.stringify(token, bigIntReplacer)})
     }, []);
+
+    const handleBack = () => {
+      const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString())
+      if (!isTxInProgress) {
+        localStorage.removeItem(vaultID.toString())
+      }
+      router.push(backPath)
+    }
 
     return (
       vaultData ? (
@@ -102,7 +118,7 @@ const VaultsDetailContainer: React.FC<{
           <button
             className="fluid-hover-button rounded-lg flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0"
             type="button"
-            onClick={() => router.push(backPath)}
+            onClick={handleBack}
           >
             <div className="w-5 h-5 relative z-2">
               <LeftArrowIcon color="white" />
@@ -132,6 +148,7 @@ const VaultsDetailContainer: React.FC<{
                     transactionCompleted={transactionCompleted}
                     initialIsDeposit={initialIsDeposit}
                     onTokenSelect={handleTokenSelect}
+                    selectedToken={selectedToken}
                   />
                 </div>
               </div>

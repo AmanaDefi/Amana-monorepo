@@ -3,7 +3,6 @@ import {
   Action,
   Balance,
   Token,
-  TransactionStepFeedback,
   TransactionStepMessages,
   TransactionStepStatus,
   VaultData,
@@ -35,6 +34,7 @@ import {
 import { trackEvent } from "@/utils/trackEvent";
 import Blockpi from "@/service/blockpi";
 import { showWarningToast } from "@/toasts";
+import { CheckTheTxIsInProgress, getLocalStorageObject, updateLocalStorageObject } from "@/utils/localStorageUtils";
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -55,6 +55,7 @@ const handleDepositTransaction = async (
   console.log("Active Chain Name:", activeChain.name);
   
   setTransactionCompleted(false);
+  updateLocalStorageObject(vaultData.id, {transactionCompleted: false})
 
   try {
     const depositAmount = inputBalance.value;
@@ -87,6 +88,8 @@ const handleDepositTransaction = async (
     console.log("Receipt:", receipt);
     console.log("Receipt.transactionHash:", receipt.transactionHash);
     
+    const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
+    updateLocalStorageObject(vaultData.id, {lastEventTxHash: `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`, crosschainInvestHash: receipt.transactionHash})
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
       console.log("Solana transaction handling");
@@ -100,22 +103,21 @@ const handleDepositTransaction = async (
       await waitForReceipt(receiptObject);
       console.log("Receipt confirmed");
     }
-
-    const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
+    
     setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`);
     console.log("Explorer URL set:", `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`);
     
     // Enhanced logic for determining transaction type and setting correct hash for BlockPI
-    const isUserOnZetachain = isZetachain(activeChain.id);
+    const isUserOnZetachain = isZetachain(activeChain?.id);
     const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
     
     console.log("=== TRANSACTION TYPE DETECTION ===");
     console.log(`User on Zetachain: ${isUserOnZetachain}`);
     console.log(`Vault strategy on Zetachain: ${isVaultOnZetachain}`);
-    console.log(`Active Chain ID: ${activeChain.id}`);
+    console.log(`Active Chain ID: ${activeChain?.id}`);
     console.log(`Vault Strategy Chain ID: ${vaultData.protocol.chainId}`);
     console.log(`Receipt hash: ${receipt.transactionHash}`);
-    
+
     if (isUserOnZetachain && !isVaultOnZetachain) {
       // Type 2: Direct deposit from Zetachain to vault with non-Zetachain strategy
       // The receipt.transactionHash IS the localhash for BlockPI tracking
@@ -175,6 +177,7 @@ const handleWithdrawTransaction = async (
   setLastEventTxHash: Function
 ) => {
   setTransactionCompleted(false);
+  updateLocalStorageObject(vaultData.id, {transactionCompleted: false})
   
   let withdrawZRC20;
   if (activeChain.id === 7001 || activeChain.id === 7000) {
@@ -215,7 +218,9 @@ const handleWithdrawTransaction = async (
       withdrawZRC20 as Token,
       setcrossChainTxId
     );
-
+    
+    const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
+    updateLocalStorageObject(vaultData.id, {lastEventTxHash: `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`, crosschainInvestHash: receipt.transactionHash})
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
     } else {
@@ -227,7 +232,6 @@ const handleWithdrawTransaction = async (
       await waitForReceipt(receiptObject);
     }
     
-    const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
     setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`);
     
     // Enhanced logic for determining withdrawal transaction type and setting correct hash for BlockPI
@@ -235,7 +239,6 @@ const handleWithdrawTransaction = async (
     const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
     
     console.log(`[Withdrawal Type Detection] User on Zetachain: ${isUserOnZetachain}, Vault strategy on Zetachain: ${isVaultOnZetachain}`);
-    
     if (isUserOnZetachain && !isVaultOnZetachain) {
       // Type 2: Direct withdrawal from Zetachain from vault with non-Zetachain strategy
       // The receipt.transactionHash IS the localhash for BlockPI tracking
@@ -312,6 +315,22 @@ export default function InteractionContainer({
   // BlockPI-only feedback system
   const [transactionStepFeedback, setTransactionStepFeedback] = useState<TransactionStepMessages>({});
   const [lastTransactionStepFeedback, setLastTransactionStepFeedback] = useState<TransactionStepMessages>({});
+
+  useEffect(() => {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id)
+    const vaultTxData = getLocalStorageObject(vaultData.id);
+
+    if (isTxInProgress && vaultTxData) {
+      setCrosschainInvestHash(vaultTxData?.crosschainInvestHash ?? "")
+      setcrossChainTxId(vaultTxData?.crossChainTxId ?? "")
+      setIsTransactionStarted(vaultTxData?.isTransactionStarted ?? false)
+      setIsTransactionProcessing(vaultTxData?.isTransactionProcessing ?? false)
+      setFinishedTransaction(vaultTxData?.finishedTransaction ?? false)
+      setLastEventTxHash(vaultTxData?.lastEventTxHash ?? "")
+      setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {})
+      setLastTransactionStepFeedback(vaultTxData?.lastTransactionStepFeedback ?? {})
+    }
+  }, [])
   
   const blockpi = useMemo(() => new Blockpi(), []);
   
@@ -323,6 +342,7 @@ export default function InteractionContainer({
 
   // Button label management based on current action
   useEffect(() => {
+    console.log(action)
     switch (action) {
       case Action.depositApprove:
         setLabel("Approve");
@@ -334,6 +354,10 @@ export default function InteractionContainer({
         setLabel("Withdraw");
         break;
       default:
+        const isTxInProgress = CheckTheTxIsInProgress(vaultData.id)
+        if (isTxInProgress && !label) {
+          setLabel('Pending')
+        }
         // Keep existing label for other states
         break;
     }
@@ -429,6 +453,7 @@ export default function InteractionContainer({
           };
         }
       });
+      updateLocalStorageObject(vaultData.id, {transactionStepFeedback: updatedFeedback})
       
       return updatedFeedback;
     });
@@ -447,6 +472,15 @@ export default function InteractionContainer({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
+    updateLocalStorageObject(vaultData.id, {
+      action: finalAction, 
+      isTransactionProcessing: false, 
+      isTransactionStarted: false, 
+      crosschainInvestHash: "", 
+      crossChainTxId: "", 
+      finishedTransaction: true,
+      lastTransactionStepFeedback: feedbackSnapshot,
+    })
     
     // 5. Save the final feedback state for display
     setLastTransactionStepFeedback(feedbackSnapshot);
@@ -460,13 +494,22 @@ export default function InteractionContainer({
   }
 
   useEffect(() => {
+    const isTxIsInProggress = CheckTheTxIsInProgress(vaultData.id);
+    if (isTxIsInProggress) return;
+
     setAction(_action);
     setStep(0);
     
     // Reset transaction processing states when actions change (new vault)
     setIsTransactionProcessing(false);
     setIsTransactionStarted(false);
-    setFinishedTransaction(false);
+
+    updateLocalStorageObject(vaultData.id, {
+      action: _action, 
+      isTransactionProcessing: false, 
+      isTransactionStarted: false, 
+      step: 0, 
+    })
   }, [actions]);
 
   // Simplified BlockPI tracking without complex callbacks
@@ -499,7 +542,7 @@ export default function InteractionContainer({
     
     // Determine transaction details
     const transactionType: 'deposit' | 'withdrawal' = isDepositConfirmed ? 'deposit' : 'withdrawal';
-    const isUserOnZetachain = isZetachain(activeChain.id);
+    const isUserOnZetachain = isZetachain(activeChain?.id);
     const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
     const isType2 = isUserOnZetachain && !isVaultOnZetachain;
     
@@ -515,6 +558,12 @@ export default function InteractionContainer({
           setAction(finalAction);
           setStep(nextStep);
           setFinishedTransaction(true);
+
+          updateLocalStorageObject(vaultData.id, {
+            action: finalAction, 
+            step: nextStep, 
+            finishedTransaction: true, 
+          })
         }
       }, 1000);
       return;
@@ -541,10 +590,27 @@ export default function InteractionContainer({
           console.log(`[UI Progressive] Step ${stepIndex + 1} completed, updating UI`);
           
           const actionKey = actionMapping[stepIndex];
+          console.log('actionKey',actionKey, actionMapping);
           if (!actionKey) return;
           
           // Update just this step in real-time
-          setTransactionStepFeedback(prev => ({
+          setTransactionStepFeedback(prev => {
+            updateLocalStorageObject(vaultData.id, {
+              transactionStepFeedback: {
+                ...prev,
+                [actionKey]: {
+                  label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
+                  description: stepData.description,
+                  status: stepData.status === 'completed' ? TransactionStepStatus.completed :
+                         stepData.status === 'error' ? TransactionStepStatus.error :
+                         TransactionStepStatus.processing,
+                  txHash: stepData.txHash,
+                  isWaitingTooLong: stepData.isWaitingTooLong
+                }
+              }, 
+            })
+
+            return {
             ...prev,
             [actionKey]: {
               label: transactionType === 'deposit' ? "Deposit" : "Withdraw",
@@ -555,12 +621,15 @@ export default function InteractionContainer({
               txHash: stepData.txHash,
               isWaitingTooLong: stepData.isWaitingTooLong
             }
-          }));
+          }});
           
           // CRITICAL FIX: Only update step/action for completed steps, and avoid triggering useEffect
           if (stepData.status === 'completed' && stepIndex < actionMapping.length) {
             // Only update step, avoid updating action to prevent useEffect retrigger
             setStep(stepIndex);
+            updateLocalStorageObject(vaultData.id, {
+              step: stepIndex, 
+            })
             console.log(`[UI Progressive] Updated step to ${stepIndex}, avoiding action update to prevent useEffect retrigger`);
           }
         };
@@ -589,11 +658,22 @@ export default function InteractionContainer({
           setTransactionStepFeedback(prev => {
             // Save the current feedback to lastTransactionStepFeedback so steps stay visible
             setLastTransactionStepFeedback(prev);
+            updateLocalStorageObject(vaultData.id, {
+              transactionStepFeedback: prev, 
+              lastTransactionStepFeedback: prev
+            })
             return prev;
           });
           
           setFinishedTransaction(true);
           setIsTransactionProcessing(false);
+
+          updateLocalStorageObject(vaultData.id, {
+            step: actionMapping.length - 1, 
+            action: finalAction,
+            finishedTransaction: true,
+            isTransactionProcessing: false,
+          })
           
           trackEvent("Transaction Crosschain Complete", {
             vaultSymbol: vaultData.symbol,
@@ -607,7 +687,15 @@ export default function InteractionContainer({
           // IMPORTANT: Capture current transaction steps before clearing state (for failed transactions)
           setTransactionStepFeedback(prev => {
             // Save the current feedback to lastTransactionStepFeedback so error steps stay visible
+            console.log('set error in state')
             setLastTransactionStepFeedback(prev);
+            updateLocalStorageObject(vaultData.id, {
+              transactionStepFeedback: prev, 
+              lastTransactionStepFeedback: prev,
+              finishedTransaction: true,
+              isTransactionProcessing: false,
+              isTransactionStarted: false,
+            })
             return prev;
           });
           
@@ -621,6 +709,11 @@ export default function InteractionContainer({
         console.error('[BlockPI Progressive] Error during tracking:', error);
         setIsTransactionProcessing(false);
         setIsTransactionStarted(false);
+
+        updateLocalStorageObject(vaultData.id, {
+          isTransactionProcessing: false,
+          isTransactionStarted: false,
+        })
       } finally {
         // CRITICAL FIX: Always mark tracking as inactive when done, regardless of success/failure
         console.log('[BlockPI Progressive] Marking tracking as inactive');
@@ -719,12 +812,9 @@ function Interaction({
   setIsTransactionProcessing,
   finishedTransaction,
   setFinishedTransaction,
-  completeTransactionProcess,
-  lastEventTxHash,
   setLastEventTxHash,
   refreshBalance,
   crosschainInvestHash,
-  crossChainTxId,
   isComponentActiveRef,
   isTrackingActiveRef,
 }: {
@@ -769,6 +859,7 @@ function Interaction({
 }): JSX.Element {
   const activeAccount = useActiveAccount();
   const walletContext = useWallet();
+  const prevLebel = useRef(label);
 
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
@@ -793,6 +884,10 @@ function Interaction({
       };
       
       console.log(`[Local Feedback] Updated ${actionKey} while preserving other steps:`, updated);
+
+      updateLocalStorageObject(vaultData.id, {
+        transactionStepFeedback: updated,
+      })
       return updated;
     });
   }
@@ -822,10 +917,20 @@ function Interaction({
         const nextStep = step + 1;
         setAction(actions[nextStep]);
         setStep(nextStep);
+        updateLocalStorageObject(vaultData.id, {
+          isTransactionProcessing: false,
+          action: actions[nextStep],
+          step: nextStep,
+        })
         setTimeout(() => {
           setAction(actions[nextStep + 1]);
           setStep(nextStep + 1);
+          updateLocalStorageObject(vaultData.id, {
+            action: actions[nextStep + 1],
+            step: nextStep + 1,
+          })
         }, 100);
+
       }
       if (action == Action.deposit && actions[step + 1] == Action.depositConfirmed) {
         console.log("=== DEPOSIT TO DEPOSIT CONFIRMED TRANSITION ===");
@@ -859,6 +964,10 @@ function Interaction({
         
         // Reset transaction processing state - BlockPI will take over
         setIsTransactionProcessing(false);
+
+        updateLocalStorageObject(vaultData.id, {
+          isTransactionProcessing: false,
+        })
         console.log("Set isTransactionProcessing to false");
         
         const nextStep = step + 1;
@@ -875,6 +984,11 @@ function Interaction({
           console.log(`SAFE UPDATE: Setting action to ${actions[nextStep]} and step to ${nextStep}`);
           setAction(actions[nextStep]);
           setStep(nextStep);
+
+          updateLocalStorageObject(vaultData.id, {
+            action: actions[nextStep],
+            step: nextStep
+          })
           console.log("Action and step updated in sync - this should trigger BlockPI effect");
         }, 50);
       }
@@ -907,6 +1021,11 @@ function Interaction({
         const nextStep = step + 1;
         setAction(actions[nextStep]);
         setStep(nextStep);
+        updateLocalStorageObject(vaultData.id, {
+          action: actions[nextStep],
+          step: nextStep,
+          isTransactionProcessing: false,
+        })
       }
     } else {
       // Handle local transaction failures
@@ -935,6 +1054,11 @@ function Interaction({
       // Reset transaction state to allow retry
       setIsTransactionProcessing(false);
       setIsTransactionStarted(false);
+
+      updateLocalStorageObject(vaultData.id, {
+        isTransactionProcessing: false,
+        isTransactionStarted: false,
+      })
     }
   }
 
@@ -949,6 +1073,9 @@ function Interaction({
     }
     
     setIsTransactionProcessing(true);
+    updateLocalStorageObject(vaultData.id, {
+      isTransactionProcessing: true,
+    })
     console.log("Set isTransactionProcessing to true");
     
     // Ensure component is marked as active for new transactions
@@ -972,6 +1099,9 @@ function Interaction({
       );
     } else {
       setIsTransactionStarted(true);
+      updateLocalStorageObject(vaultData.id, {
+        isTransactionStarted: true,
+      })
     }
 
     if (action == Action.deposit) {
@@ -1068,6 +1198,17 @@ function Interaction({
     setCrosschainInvestHash("");
     setcrossChainTxId("");
     setLabel("");
+
+    updateLocalStorageObject(vaultData.id, {
+      lastTransactionStepFeedback: {}, 
+      transactionStepFeedback: {}, 
+      finishedTransaction: false, 
+      transactionCompleted: false,
+      isTransactionProcessing: false,
+      isTransactionStarted: false,
+      crosschainInvestHash: "",
+      crossChainTxId: "",
+    })
     
     // Reactivate component after clearing
     setTimeout(() => {
@@ -1078,6 +1219,13 @@ function Interaction({
     refreshBalance();
     console.log('[UI] All transaction state cleared, component reactivated');
   }
+
+  useEffect(() => {
+    if (prevLebel.current !== '' && prevLebel.current !== label) {
+      handleDone()
+    }
+    prevLebel.current = label;
+  }, [label])
 
   return (
     <>
@@ -1106,8 +1254,6 @@ function Interaction({
               const isDisabledByProcessing = isTransactionProcessing;
               const isDisabledByHash = crosschainInvestHash.length > 0 && !finishedTransaction;
               const isDisabled = isDisabledByProcessing || isDisabledByHash;
-              
-
               
               return (
                 <>
