@@ -174,6 +174,7 @@ const handleWithdrawTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function
 ) => {
+  console.log("=== WITHDRAW TRANSACTION START ===");
   setTransactionCompleted(false);
   
   let withdrawZRC20;
@@ -182,27 +183,34 @@ const handleWithdrawTransaction = async (
   } else {
     withdrawZRC20 = withdrawToken.ZRC20equivalent;
   }
-  
+  console.log("Withdraw ZRC20:", withdrawZRC20);
   if (!withdrawToken || !withdrawZRC20) {
     throw new Error("Withdraw token not found");
   }
   
   try {
-    const withdrawShareAmount = inputBalance.value;
-    const assetsOut = await getAssetsFromShares(withdrawShareAmount, vaultData);
+    const withdrawAssetAmount = inputBalance.value;
+    console.log("[Withdraw Debug] vault=", vaultData.id.toString(),
+      "shareAmount=", withdrawAssetAmount.toString(),
+      "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2)
+    );
+    const assetsOut = await getAssetsFromShares(withdrawAssetAmount, vaultData);
+    console.log("[Withdraw Debug] assetsOut=", assetsOut.toString());
     const withdrawAmountFormatted = Number(assetsOut) / 10 ** withdrawToken.decimals;
+    console.log("[Withdraw Debug] withdrawAmountFormatted=", withdrawAmountFormatted.toString());
     const amountUSD = (withdrawAmountFormatted * (withdrawToken.price || 0)).toFixed(2);
+    console.log("[Withdraw Debug] amountUSD=", amountUSD);
 
-    trackEvent("Withdraw Submitted", {
-      vaultSymbol: vaultData.symbol,
-      vault: vaultData.id.toString(),
-      amount: withdrawShareAmount.toString(),
-      amountUSD: amountUSD,
-      withdrawToken: withdrawToken.symbol,
-      user: activeAccount.address,
-      chain: activeChain.id,
-    });
-    
+    // trackEvent("Withdraw Submitted", {
+    //   vaultSymbol: vaultData.symbol,
+    //   vault: vaultData.id.toString(),
+    //   amount: withdrawAssetAmount.toString(),
+    //   amountUSD: amountUSD,
+    //   withdrawToken: withdrawToken.symbol,
+    //   user: activeAccount.address,
+    //   chain: activeChain.id,
+    // });
+    console.log("=== WITHDRAW TRANSACTION RECEIPT START ===");
     const receipt = await executeWithdrawal(
       vaultData.id as Address,
       vaultData.protocol.strategyAddress as Address,
@@ -210,12 +218,12 @@ const handleWithdrawTransaction = async (
       walletContext,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawToken.address as Address,
       withdrawZRC20 as Token,
       setcrossChainTxId
     );
-
+    console.log("=== WITHDRAW TRANSACTION RECEIPT RECEIVED ===");
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
     } else {

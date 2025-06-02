@@ -39,7 +39,6 @@ interface IWithdrawHelper {
     function handleDivestCallToStrategy(
         address strategyAddress,
         uint256 gasLimitForCall,
-        uint256 adjustedTotalSupply,
         address vaultAsset,
         address registry,
         address user,

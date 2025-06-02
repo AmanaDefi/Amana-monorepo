@@ -900,45 +900,16 @@ const getMinSharesOut = async (vaultData: VaultData, inputToken: Token, transact
   return minSharesOut;
 };
 
-const getMinAmountOut = async (
-  vaultId: string,
-  transactionAmount: bigint,
-  strategyAddress: Address,
-  strategyChainId: number
-) => {
-  const vaultContract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0], // Zetachain
-    address: vaultId,
-  });
-  const vaultTotalSupply = await readContract({
-    contract: vaultContract,
-    method: "function totalSupply() view returns (uint256)",
-  });
-  const fractionOfTotalShares =
-    (transactionAmount * ethers.parseEther("1")) / vaultTotalSupply;
-  const strategyChain = defineChain(strategyChainId);
-  const contract = getContract({
-    client,
-    chain: strategyChain,
-    address: strategyAddress,
-  });
-  const strategyWithdrawShareAmount = await readContract({
-    contract,
-    method:
-      "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
-    params: [fractionOfTotalShares],
-  });
-  const amountOutForShares = await readContract({
-    contract,
-    method: "function convertToAssets(uint256) view returns (uint256)",
-    params: [strategyWithdrawShareAmount],
-  });
+const getMinAmountOut = (
+  transactionAmount: bigint // in asset units, e.g. 5e6 for 5 USDC
+): bigint => {
+  const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
   const minAmountOut =
-    (amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100)) /
-    BigInt(10000);
+    (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
+
   return minAmountOut;
 };
+
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
   console.log("Executing Direct Deposit");
@@ -1010,8 +981,9 @@ const executeCrossChainDeposit = async (
   // Prepare payload (calldata to pass to the receiver)
 
   payload = abiCoder.encode(
-    ["address", "uint256", "uint16", "bytes"],
-    [inputToken.address, minSharesOut, slippageValue, nonEvmAddress]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    [ZeroAddress, inputToken.address, 0, minSharesOut, slippageValue, nonEvmAddress, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+    ]
   ) as `0x${string}`;
 
   const revertMessage = abiCoder.encode(
@@ -1152,12 +1124,15 @@ const executeSolanaDeposit = async (
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
     const args = {
-      types: ["address", "uint256", "uint16", "bytes"],
+      types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
       values: [
+        ZeroAddress,
         getSolanaEVMAddress(inputToken.address),
+        0,
         minSharesOut,
         slippageValue,
         depositorBytes,
+        keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ],
     };
     const txHash = await client.solanaDepositAndCall(
@@ -1172,8 +1147,9 @@ const executeSolanaDeposit = async (
     // Case 2: SPL token
     const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
-      types: ["address", "uint256", "uint16", "bytes"],
-      values: [evmAddress, minSharesOut, slippageValue, depositorBytes],
+      types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+      values: [ZeroAddress, evmAddress, 0, minSharesOut, slippageValue, depositorBytes, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+      ],
     };
     console.log("SPL token deposit detected");
     const txHash = await client.depositSplTokenAndCall(
@@ -1194,17 +1170,14 @@ export const executeSolanaWithdrawal = async (
   strategyChainId: number,
   walletContext: WalletContextState,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   splMint: string,
   withdrawZRC20: Address,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Solana Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
   const depositorBytes = walletContext.publicKey!.toBytes();
 
@@ -1227,14 +1200,16 @@ export const executeSolanaWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
-    types: ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
     values: [
       withdrawZRC20,
       getSolanaEVMAddress(splMint), // or just splMint?
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       slippageValue,
-      depositorBytes
+      depositorBytes,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
+
     ],
   };
 
@@ -1251,11 +1226,13 @@ export const executeWithdrawal = async (
   walletContext: WalletContextState,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
+  console.log("Executing Withdrawal");
+  console.log("To chain ID:", activeChain.id);
   if (activeChain.id == CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(
@@ -1264,16 +1241,17 @@ export const executeWithdrawal = async (
       strategyChainId,
       activeAccount,
       activeChain,
-      withdrawShareAmount
+      withdrawAssetAmount
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
+    console.log("Solana withdrawal detected");
     return executeSolanaWithdrawal(
       vaultId,
       strategyAddress,
       strategyChainId,
       walletContext,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
       withdrawZRC20.address as Address,
       setcrossChainTxId
@@ -1285,7 +1263,7 @@ export const executeWithdrawal = async (
       strategyChainId,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
       withdrawZRC20,
       setcrossChainTxId
@@ -1299,14 +1277,11 @@ const executeDirectWithdrawal = async (
   strategyChainId: number,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint
+  withdrawAssetAmount: bigint
 ) => {
   //vaultId: string
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
   let contract = getContract({
     client,
@@ -1318,10 +1293,10 @@ const executeDirectWithdrawal = async (
     method:
       "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
     params: [
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       activeAccount?.address,
-      activeAccount?.address,
+      activeAccount?.address
     ],
   });
   const receipt = await sendTransaction({
@@ -1337,17 +1312,14 @@ const executeCrossChainWithdrawal = async (
   strategyChainId: number,
   activeAccount: Account,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId
+  const minAmountOut = getMinAmountOut(
+    withdrawAssetAmount
   );
 
   // Generate a unique transaction ID
@@ -1365,14 +1337,15 @@ const executeCrossChainWithdrawal = async (
   const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
     [
       withdrawZRC20.address,
       withdrawERC20,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       slippageValue,
-      nonEvmAddress
+      nonEvmAddress,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
     ]
   ) as `0x${string}`;
   const revertMessage = abiCoder.encode(

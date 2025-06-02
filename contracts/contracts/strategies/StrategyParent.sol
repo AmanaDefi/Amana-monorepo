@@ -49,12 +49,26 @@ abstract contract StrategyParent is
 
     struct BufferedTx {
         TxType txType;
-        uint256 amountOrFraction;
+        uint256 assetAmount;
         uint256 minimumOut;
         address newStrategy; // only for switch, optional otherwise
     }
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
+
+    bytes32 internal constant TX_DEPOSIT_CONFIRMED =
+        keccak256("DepositConfirmed");
+    bytes32 internal constant TX_WITHDRAW_CONFIRMED =
+        keccak256("WithdrawConfirmed");
+    bytes32 internal constant TX_SWITCH_CONFIRMED =
+        keccak256("SwitchConfirmed");
+    bytes32 internal constant TX_DEPOSIT_REVERTED =
+        keccak256("DepositReverted");
+    bytes32 internal constant TX_WITHDRAW_REVERTED =
+        keccak256("WithdrawReverted");
+    bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted");
+    bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
+        keccak256("TotalAssetsUpdated");
 
     event FundsInvested(
         uint256 indexed vaultNonce,
@@ -149,7 +163,7 @@ abstract contract StrategyParent is
 
         (
             TxType txType,
-            uint256 amountOrFraction,
+            uint256 assetAmount,
             uint256 minimumOut,
             address newStrategy,
             uint256 vaultNonce
@@ -157,7 +171,7 @@ abstract contract StrategyParent is
 
         pendingByNonce[vaultNonce] = BufferedTx({
             txType: txType,
-            amountOrFraction: amountOrFraction,
+            assetAmount: assetAmount,
             minimumOut: minimumOut,
             newStrategy: newStrategy
         });
@@ -181,7 +195,7 @@ abstract contract StrategyParent is
             // Break if nothing is pending for this nonce
             if (
                 txData.txType == TxType(0) &&
-                txData.amountOrFraction == 0 &&
+                txData.assetAmount == 0 &&
                 txData.minimumOut == 0 &&
                 txData.newStrategy == address(0)
             ) {
@@ -317,10 +331,15 @@ abstract contract StrategyParent is
      * @param vaultNonce The execution nonce associated with the investment.
      */
     function manualResendInvestConfirmation(
+        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) external onlyOwner {
-        _sendInvestConfirmation(totalUnderlyingAssetsAfter, vaultNonce);
+        _sendInvestConfirmation(
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            vaultNonce
+        );
     }
 
     /**
@@ -334,14 +353,15 @@ abstract contract StrategyParent is
      * - Includes revert options in case of failure.
      */
     function _sendInvestConfirmation(
+        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            0,
+            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             vaultNonce,
-            bytes32(0)
+            TX_DEPOSIT_CONFIRMED
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -374,7 +394,7 @@ abstract contract StrategyParent is
     function _divest() internal virtual {
         BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            txData.amountOrFraction,
+            txData.assetAmount,
             txData.minimumOut
         );
 
@@ -428,7 +448,7 @@ abstract contract StrategyParent is
             amountWithdrawn,
             totalUnderlyingAssetsAfter,
             vaultNonce,
-            bytes32(0)
+            TX_WITHDRAW_CONFIRMED
         );
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
@@ -485,15 +505,15 @@ abstract contract StrategyParent is
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        _sendUpdateToVault(lastProcessedNonce);
+        _sendUpdateToVault(lastProcessedNonce, TX_TOTAL_ASSETS_UPDATE);
     }
 
-    function _sendUpdateToVault(uint256 nonceToUse) internal {
+    function _sendUpdateToVault(uint256 nonceToUse, bytes32 txStatus) internal {
         bytes memory outgoingMessage = abi.encode(
             0,
             totalUnderlyingAssets(),
             nonceToUse,
-            bytes32("FAIL") // txSucceeded
+            txStatus
         );
 
         RevertOptions memory revertOptions = RevertOptions(
@@ -565,13 +585,14 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
+            _sendUpdateToVault(vaultNonce, TX_DEPOSIT_REVERTED);
             emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount, 0);
-            _sendUpdateToVault(vaultNonce); // To do - check this!
+            _depositFundsIntoYieldSource(context.amount, 1);
+            _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,
                 withdrawnAmount,
@@ -606,13 +627,14 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
+            _sendUpdateToVault(vaultNonce, TX_DEPOSIT_REVERTED);
             emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            // _depositFundsIntoYieldSource(context.amount, 0);
-            _sendUpdateToVault(vaultNonce);
+            // _depositFundsIntoYieldSource(context.amount, 1);
+            _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,
                 withdrawnAmount,

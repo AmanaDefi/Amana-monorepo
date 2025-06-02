@@ -826,7 +826,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const excessiveWithdrawAmount = txConfig.crossChainDepositAmount1.mul(2); // Double the deposited amount
 
     await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, excessiveWithdrawAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress))
-      .to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxRedeem");
+      .to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
   });
 
   it("should update user shares correctly after multiple deposits and withdrawals", async function () {
@@ -906,7 +906,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const finalAssets = await amanaVault.totalAssets();
 
     expect(finalShares).to.equal(0); // User should have no shares left
-    expect(finalAssets).to.equal(1); // Vault should only have 1 virtual share left
+    expect(finalAssets).to.equal(1); // Vault should only have 1 virtual asset unit left
     // Step 4: Ensure further withdrawals fail
     await expect(
       amanaVault.connect(user1)["redeem(uint256,uint256,address,address)"](1, 0, await user1.getAddress(), await user1.getAddress())
@@ -1222,7 +1222,6 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     let vaultNonce = 1;
     let totalAssets = BigNumber.from(0);
-    let strategyAssets = BigNumber.from(0);
 
     // Step 1: User1 Deposit #1 (confirmed)
     const tx1 = await simulateDepositCallFromConnChain(
@@ -1234,7 +1233,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     const log1 = receipt1.logs.find((log) => log.topics[0] === topic)!;
     const depositAmount1 = iface.decodeEventLog("CrossChainInvestSent", log1.data, log1.topics).amount;
     const nonce1 = vaultNonce++;
-    strategyAssets = strategyAssets.add(depositAmount1);
     await simulateConfirmDeposit(amanaVault, gatewaySigner, depositAmount1, 0, nonce1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     totalAssets = totalAssets.add(depositAmount1);
 
@@ -1248,7 +1246,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     const log2 = receipt2.logs.find((log) => log.topics[0] === topic)!;
     const depositAmount2 = iface.decodeEventLog("CrossChainInvestSent", log2.data, log2.topics).amount;
     const nonce2 = vaultNonce++;
-    strategyAssets = strategyAssets.add(depositAmount2);
 
     // Step 3: User1 Withdraw #1
     const shares1 = await amanaVault.balanceOf(await user1.getAddress());
@@ -1260,7 +1257,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.originGasToken, txConfig.originNonEvmUserAddress
     );
     const nonce3 = vaultNonce++;
-    strategyAssets = strategyAssets.sub(expectedOut1);
 
     // Step 4: User1 Deposit #2 (not confirmed yet)
     const tx3 = await simulateDepositCallFromConnChain(
@@ -1272,7 +1268,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     const log3 = receipt3.logs.find((log) => log.topics[0] === topic)!;
     const depositAmount3 = iface.decodeEventLog("CrossChainInvestSent", log3.data, log3.topics).amount;
     const nonce4 = vaultNonce++;
-    strategyAssets = strategyAssets.add(depositAmount3);
 
     // Step 5: Confirm User2's deposit now
     await simulateConfirmDeposit(amanaVault, gatewaySigner, depositAmount2, depositAmount1, nonce2, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
@@ -1287,7 +1282,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.originGasToken, txConfig.originNonEvmUserAddress
     );
     const nonce5 = vaultNonce++;
-    strategyAssets = strategyAssets.sub(expectedOut2);
 
     // Step 7: Confirm User1's Withdraw #1
     await simulateConfirmWithdrawToConnChain(
@@ -1344,9 +1338,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const topic = iface.getEventTopic("CrossChainInvestSent");
 
     let vaultNonce = 1;
-    let strategyAssets = BigNumber.from(0);
     let totalAssets = BigNumber.from(0);
-
+    console.log("User initiates a deposit of amount:", txConfig.crossChainDepositAmount1.toString());
     // Step 1: Deposit #1 (confirmed)
     const tx1 = await simulateDepositCallFromConnChain(
       amanaVault,
@@ -1363,7 +1356,6 @@ describe("AmanaConnectedChainVault Tests", function () {
     const log1 = receipt1.logs.find((log) => log.topics[0] === topic)!;
     const depositAmount1 = iface.decodeEventLog("CrossChainInvestSent", log1.data, log1.topics).amount;
     const nonce1 = vaultNonce++;
-    strategyAssets = strategyAssets.add(depositAmount1);
 
     await simulateConfirmDeposit(
       amanaVault,
@@ -1376,9 +1368,10 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig.gasToken
     );
     totalAssets = totalAssets.add(depositAmount1);
-
+    console.log("Deposit #1 confirmed with amount:", depositAmount1.toString());
     // Step 2: Deposit #2 (not confirmed yet, 10x bigger)
     const largeDepositAmount = txConfig.crossChainDepositAmount1.mul(10);
+    console.log("User initiates a second deposit of amount:", largeDepositAmount.toString());
     const tx2 = await simulateDepositCallFromConnChain(
       amanaVault,
       gatewaySigner,
@@ -1394,20 +1387,21 @@ describe("AmanaConnectedChainVault Tests", function () {
     const log2 = receipt2.logs.find((log) => log.topics[0] === topic)!;
     const depositAmount2 = iface.decodeEventLog("CrossChainInvestSent", log2.data, log2.topics).amount;
     const nonce2 = vaultNonce++;
-    strategyAssets = strategyAssets.add(depositAmount2);
 
     // Step 3: Withdraw initiated before confirming deposit #2
     const userShares = await amanaVault.balanceOf(await user1.getAddress());
     console.log("User shares before withdrawal:", formatUnits(userShares, 6));
 
-    const withdrawShares = userShares.div(2);
-    const expectedAssetsOut = await amanaVault.previewRedeem(withdrawShares);
+    const userAssets = await amanaVault.convertToAssets(userShares);
+    console.log("User assets before withdrawal:", formatUnits(userAssets, 6));
 
+    const assetsToWithdraw = userAssets.div(2);
+    console.log("User initiates a withdraw of amount:", formatUnits(assetsToWithdraw, 6));
     await simulateWithdrawCallFromConnChain(
       amanaVault,
       gatewaySigner,
       user1,
-      withdrawShares,
+      assetsToWithdraw,
       pythContract,
       txConfig.originZRC20Input,
       txConfig.originChainId,
@@ -1415,10 +1409,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.originNonEvmUserAddress
     );
     const nonce3 = vaultNonce++;
-    strategyAssets = strategyAssets.sub(expectedAssetsOut); // Update running total
-
-    const previewBefore = await amanaVault.previewRedeem(withdrawShares);
-    console.log("previewRedeem BEFORE confirmations:", formatUnits(previewBefore, 6));
 
     // Step 4: Confirm deposit #2
     await simulateConfirmDeposit(
@@ -1432,13 +1422,13 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig.gasToken
     );
     totalAssets = totalAssets.add(depositAmount2);
-
+    console.log("Deposit #2 confirmed with amount:", depositAmount2.toString());
     // Step 5: Confirm withdraw
-    const totalBeforeWithdraw = depositAmount1; // Deposit #2 not counted yet at time of withdraw
+    const totalBeforeWithdraw = totalAssets; // Deposit #2 not counted yet at time of withdraw
     await simulateConfirmWithdrawToConnChain(
       amanaVault,
       gatewaySigner,
-      expectedAssetsOut,
+      assetsToWithdraw,
       totalBeforeWithdraw,
       nonce3,
       vaultConfig.asset,
@@ -1446,23 +1436,20 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig.chainId,
       strategyConfig.gasToken
     );
-    totalAssets = totalAssets.sub(expectedAssetsOut);
-
-    const previewAfter = await amanaVault.previewRedeem(withdrawShares);
-    console.log("previewRedeem AFTER confirmations:", formatUnits(previewAfter, 6));
+    totalAssets = totalAssets.sub(assetsToWithdraw);
+    console.log("Withdraw confirmed with amount:", assetsToWithdraw.toString());
 
     const actualUserShares = await amanaVault.balanceOf(await user1.getAddress());
     const actualAssets = await amanaVault.convertToAssets(actualUserShares);
 
     console.log("Deposit #1 Amount:", formatUnits(depositAmount1, 6));
     console.log("Deposit #2 Amount:", formatUnits(depositAmount2, 6));
-    console.log("Withdraw Shares Requested:", withdrawShares.toString());
-    console.log("Expected Assets Out:", formatUnits(expectedAssetsOut, 6));
+
     console.log("Remaining Shares After Withdraw:", actualUserShares.toString());
     console.log("Remaining Assets After Withdraw:", formatUnits(actualAssets, 6));
 
     // Validate user’s final position
-    expect(actualUserShares.add(withdrawShares)).to.be.closeTo(depositAmount1.add(depositAmount2), 10); // rounding
+    expect(actualAssets.add(assetsToWithdraw)).to.be.closeTo(depositAmount1.add(depositAmount2), 10); // rounding
   });
 
 

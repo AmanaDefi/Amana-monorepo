@@ -145,13 +145,13 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   vaultAddress: string,
   gatewaySigner: Signer,
   strategy: any,
-  fractionOfTotalShares: BigNumber,
+  assetAmount: BigNumber,
   minAmountOut: BigNumber,
   vaultNonce: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity onCall decode
-    [TxType.Withdraw, fractionOfTotalShares, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
+    [TxType.Withdraw, assetAmount, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
   );
   const tx = await
     strategy.connect(gatewaySigner).onCall(
@@ -279,8 +279,8 @@ export async function simulateDepositCallFromConnChain(
 
   // Encode the deposit message
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "uint256", "uint16", "bytes"],
-    [inputToken, minSharesOut, slippage, nonEvmAddress]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    [ethers.constants.AddressZero, inputToken, 0, minSharesOut, slippage, nonEvmAddress, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`]
   );
   // Execute the onCall function to simulate a deposit
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -315,7 +315,7 @@ export async function simulateConfirmDeposit(
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint256", "uint256", "bytes32"],
-    [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, ethers.constants.HashZero
+    [depositAmountBN, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, keccak256(toUtf8Bytes("DepositConfirmed")) as `0x${string}`
     ]
   );
   await amanaVault.connect(gatewaySigner).onCall(
@@ -343,7 +343,7 @@ export async function simulateConfirmSwitch(
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint256", "uint256", "bytes32"],
-    [0, transferredAmountBN, executionNonce, ethers.constants.HashZero
+    [0, transferredAmountBN, executionNonce, keccak256(toUtf8Bytes("SwitchConfirmed")) as `0x${string}`
     ]
   );
 
@@ -371,7 +371,7 @@ export async function simulateConfirmAssetUpdate(
 ): Promise<any> {
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint256", "uint256", "bytes32"],
-    [0, totalAssetsAmount, vaultNonce, ethers.constants.HashZero
+    [0, totalAssetsAmount, vaultNonce, keccak256(toUtf8Bytes("TotalAssetsUpdate")) as `0x${string}`
     ]
   );
 
@@ -392,7 +392,7 @@ export async function simulateWithdrawCallFromConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
-  sharesToWithdraw: BigNumber,
+  assetsToWithdraw: BigNumber,
   pythContract: any,
   originChainZRC20Input: string,
   originChainId: number,
@@ -400,11 +400,17 @@ export async function simulateWithdrawCallFromConnChain(
   nonEvmUserAddress: string
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
-  const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
+  const minAmountOut = assetsToWithdraw.mul(1000).div(1001);
   const slippage = 1000;
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes"],
-    [originChainZRC20Input, ethers.constants.AddressZero, sharesToWithdraw, minAmountOut, slippage, nonEvmUserAddress]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    [originChainZRC20Input,
+      ethers.constants.AddressZero,
+      assetsToWithdraw,
+      minAmountOut,
+      slippage,
+      nonEvmUserAddress,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`]
   );
 
   await amanaVault.connect(gatewaySigner).onCall(
@@ -436,7 +442,7 @@ export async function simulateConfirmWithdrawToConnChain(
       withdrawnAmount,
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
-      ethers.constants.HashZero
+      keccak256(toUtf8Bytes("WithdrawConfirmed")) as `0x${string}`
 
     ]
   );
@@ -474,7 +480,7 @@ export async function simulateConfirmDirectWithdraw(
       withdrawnAmount,
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
-      ethers.constants.HashZero
+      keccak256(toUtf8Bytes("WithdrawConfirmed")) as `0x${string}`
 
     ]
   );
@@ -513,7 +519,7 @@ export async function simulateConfirmRedeemToAnyToken(
       withdrawnAmount,
       totalAssetsBefore.sub(withdrawnAmount),
       executionNonce,
-      ethers.constants.HashZero
+      keccak256(toUtf8Bytes("WithdrawConfirmed")) as `0x${string}`
 
     ]
   );
