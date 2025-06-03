@@ -138,7 +138,7 @@ export async function simulateDepositCallFromVaultToStrategy(
       },
       depositMessage,
       {
-        value: depositAmount,
+        // value: depositAmount,
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
       }
     );

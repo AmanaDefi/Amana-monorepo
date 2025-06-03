@@ -20,6 +20,7 @@ import "./interfaces/ICurveRegistry.sol";
 
 import "./interfaces/ICurvePoolDynamic.sol";
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 abstract contract SwapHelperParent is
     Initializable,
@@ -490,7 +491,7 @@ abstract contract SwapHelperParent is
         uint256 amount,
         address outputToken,
         uint16 slippageBps,
-        address vault,
+        address receiver,
         uint16 maxDeadline,
         bytes calldata data
     ) external virtual returns (uint256 amountOut) {
@@ -505,31 +506,40 @@ abstract contract SwapHelperParent is
             amount,
             slippageBps
         );
-
+        console.log("Minimum output amount: %s", minimumOut);
         (
             address[] memory pathV3,
             uint24[] memory feeTiers,
             bytes memory encodedPath
         ) = getPathV3(inputToken, outputToken);
-
+        console.log(
+            "Uniswap V3 path: %s, fee tiers: %s",
+            pathV3.length,
+            feeTiers.length
+        );
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
-
+            console.log("Attempting Uniswap V3 swap");
             try
                 ISwapRouter(UNISWAP_V3_ROUTER).exactInput(
                     ISwapRouter.ExactInputParams({
                         path: encodedPath,
-                        recipient: vault,
-                        deadline: 99999999999,
+                        recipient: receiver,
+                        deadline: maxDeadline,
                         amountIn: amount,
-                        amountOutMinimum: 0
+                        amountOutMinimum: minimumOut
                     })
                 )
             returns (uint256 out) {
                 amountOut = out;
+                console.log(
+                    "Uniswap V3 swap successful, amount out: %s",
+                    amountOut
+                );
                 return amountOut;
             } catch {
+                console.log("Uniswap V3 swap failed");
                 return 0;
             }
         }
@@ -537,23 +547,30 @@ abstract contract SwapHelperParent is
         // Uniswap V2 fallback
         address[] memory path = getPathV2(inputToken, outputToken);
         if (path.length < 2) {
+            console.log("No valid Uniswap V2 path found");
             // No valid path found
             return 0;
         }
         IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
+        console.log("Attempting Uniswap V2 swap");
 
         try
             IUniswapV2Router02(UNISWAP_V2_ROUTER).swapExactTokensForTokens(
                 amount,
                 minimumOut,
                 path,
-                vault,
+                receiver,
                 block.timestamp + maxDeadline
             )
         returns (uint256[] memory amounts) {
             amountOut = amounts[amounts.length - 1];
+            console.log(
+                "Uniswap V2 swap successful, amount out: %s",
+                amountOut
+            );
             return amountOut;
         } catch {
+            console.log("Uniswap V2 swap failed");
             return 0;
         }
     }
@@ -564,7 +581,7 @@ abstract contract SwapHelperParent is
         uint256 amountOut,
         address outputToken,
         uint16 slippageBps,
-        address vault,
+        address receiver,
         uint16 maxDeadline,
         bytes calldata data
     ) external virtual returns (uint256 amountIn) {
@@ -594,7 +611,7 @@ abstract contract SwapHelperParent is
                 ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(
                     ISwapRouter.ExactOutputParams({
                         path: encodedPath,
-                        recipient: vault,
+                        recipient: receiver,
                         deadline: block.timestamp,
                         amountOut: amountOut,
                         amountInMaximum: maxAmountIn
@@ -618,7 +635,7 @@ abstract contract SwapHelperParent is
                     amountOut,
                     maxAmountIn,
                     path,
-                    vault,
+                    receiver,
                     block.timestamp + maxDeadline
                 )
             returns (uint256[] memory amounts) {
@@ -628,9 +645,12 @@ abstract contract SwapHelperParent is
             }
         }
 
-        // Transfer any excess input token to vault (only if swap succeeded)
+        // Transfer any excess input token to receiver (only if swap succeeded)
         if (amountIn > 0 && totalAmountAvailable > amountIn) {
-            IERC20(inputToken).transfer(vault, totalAmountAvailable - amountIn);
+            IERC20(inputToken).transfer(
+                receiver,
+                totalAmountAvailable - amountIn
+            );
         }
 
         return amountIn;

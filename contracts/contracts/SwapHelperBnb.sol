@@ -21,7 +21,7 @@ contract SwapHelperBnb is SwapHelperParent {
     bytes32 constant bnbUsdPriceFeedId =
         0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f;
 
-    uint24 constant V3_FEE_TIER_LOW = 500;
+    uint24 constant V3_FEE_TIER_LOW = 100;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
 
     function initialize(address _priceOracle) external initializer {

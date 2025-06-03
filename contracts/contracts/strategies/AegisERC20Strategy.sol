@@ -54,18 +54,27 @@ contract AegisERC20Strategy is ERC20StrategyParent {
         // check min out
         require(amount > 0, "Deposit amount must be greater than zero");
 
-        // Approve the swap helper to spend input tokens
-        IERC20(inputToken).approve(address(swapHelper), type(uint256).max);
-
+        IERC20(inputToken).transfer(address(swapHelper), amount);
+        console.log(
+            "Depositing %s of input token %s into swapHelper",
+            amount,
+            address(inputToken)
+        );
         // Swap input token to receipt token (YUSD)
         uint256 amountOut = ISwapHelper(swapHelper).swap(
             address(inputToken),
             amount,
             receiptToken,
-            10000,
+            500,
             address(this),
             9999,
             "0x"
+        );
+        console.log(
+            "Amount out after swap from %s to %s: %s",
+            address(inputToken),
+            receiptToken,
+            amountOut
         );
         require(amountOut >= minAmountOut, "Insufficient output amount");
     }
@@ -90,13 +99,13 @@ contract AegisERC20Strategy is ERC20StrategyParent {
                 yusdToWithdraw
             );
         }
-        IERC20(inputToken).approve(address(swapHelper), type(uint256).max);
+        IERC20(receiptToken).transfer(address(swapHelper), yusdToWithdraw);
 
         uint256 amountOut = ISwapHelper(swapHelper).swap(
             receiptToken,
             yusdToWithdraw,
             address(inputToken),
-            10000,
+            500,
             address(this),
             9999,
             "0x"
