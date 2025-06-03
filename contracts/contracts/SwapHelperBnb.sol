@@ -10,7 +10,7 @@ import "hardhat/console.sol";
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
-contract SwapHelperOnBnb is SwapHelperParent {
+contract SwapHelperBnb is SwapHelperParent {
     address constant USDC = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d; // USDC on BNB
     address constant USDT = 0x55d398326f99059fF775485246999027B3197955; // USDT on BNB
     address constant WBNB_ADDRESS = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;

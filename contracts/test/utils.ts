@@ -14,7 +14,10 @@ const TxType = {
 const WHALE_ADDRESSES: Record<string, string> = {
   // USDT Ethereum mainnet
   "0xdAC17F958D2ee523a2206206994597C13D831ec7":
-    "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+    "0xF977814e90dA44bFA03b6295A0616a897441aceC",
+  // USDC BNB
+  "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d":
+    "0x8894E0a0c962CB723c1976a4421c95949bE2D4E3"
 };
 
 /**
@@ -65,7 +68,9 @@ export async function setTokenBalance(
 
   // Check if the balance was successfully set
   const newBalance = await token.balanceOf(account);
-
+  console.log(
+    `[setTokenBalance] New balance for ${tokenAddress} at ${account}: ${newBalance.toString()}`
+  );
   if (newBalance.isZero() && WHALE_ADDRESSES[tokenAddress]) {
     console.warn(`[setTokenBalance] Storage set failed. Falling back to whale transfer for ${tokenAddress}`);
 
