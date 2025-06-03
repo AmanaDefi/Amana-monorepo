@@ -191,12 +191,12 @@ const handleWithdrawTransaction = async (
   try {
     const withdrawAssetAmount = inputBalance.value;
     console.log("[Withdraw Debug] vault=", vaultData.id.toString(),
-      "shareAmount=", withdrawAssetAmount.toString(),
+      "assetAmount=", withdrawAssetAmount.toString(),
       "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2)
     );
-    const assetsOut = await getAssetsFromShares(withdrawAssetAmount, vaultData);
-    console.log("[Withdraw Debug] assetsOut=", assetsOut.toString());
-    const withdrawAmountFormatted = Number(assetsOut) / 10 ** withdrawToken.decimals;
+    
+    // 🔄 FIXED: No longer converting from shares to assets since withdrawAssetAmount IS already in asset terms
+    const withdrawAmountFormatted = Number(withdrawAssetAmount) / 10 ** withdrawToken.decimals;
     console.log("[Withdraw Debug] withdrawAmountFormatted=", withdrawAmountFormatted.toString());
     const amountUSD = (withdrawAmountFormatted * (withdrawToken.price || 0)).toFixed(2);
     console.log("[Withdraw Debug] amountUSD=", amountUSD);
