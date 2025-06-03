@@ -65,6 +65,23 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
                 transactions[confirmationNonce].txStatus = txStatus; // non-zero means a revert
+                if (
+                    txStatus == TX_WITHDRAW_REVERTED ||
+                    txStatus == TX_WITHDRAW_CONFIRMED
+                ) {
+                    // If the withdrawal reverted, we need to return the funds to the user
+                    address user = transactions[confirmationNonce].user;
+                    if (
+                        transactions[confirmationNonce].amount >=
+                        pendingWithdrawals[user]
+                    ) {
+                        pendingWithdrawals[user] = 0;
+                    } else {
+                        pendingWithdrawals[user] -= transactions[
+                            confirmationNonce
+                        ].amount;
+                    }
+                }
                 transactions[confirmationNonce].amount = withdrawnAmount;
             }
             if (confirmationNonce == lastProcessedNonce + 1) {
@@ -134,22 +151,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     }
 
     /**
-     * @dev Processes a transaction message from the strategy.
-     *      This function validates and stores the transaction details for deposit, withdrawal or totalAsset update actions
-     *      and then attempts to process all pending confirmations in order.
-     */
-    // function _processConfirmationFromStrategy(uint256 confirmationNonce) internal {
-    //     // Ensure no duplicate processing
-    //     if (
-    //         transactions[confirmationNonce].amount != 0 &&
-    //         transactions[confirmationNonce].totalAssetsAfter != 0
-    //     ) revert ConfirmationAlreadyProcessed();
-
-    //     // Attempt to process confirmations
-    //     _processBufferedTransactions(true);
-    // }
-
-    /**
      * @dev Allows for manual input of a transaction message, mimicking _processConfirmationFromStrategy.
      * @param amount The amount of the ZRC20 token to be withdrawn, if applicable.
      * @param totalAssetsAfter The total assets in the vault after the operation.
@@ -195,19 +196,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256 nextNonce = lastProcessedNonce + 1;
             Transaction memory transaction = transactions[nextNonce];
 
-            // if (
-            //     (nextNonce >= vaultNonce) || // No more transactions to process
-            //     (transaction.isDeposit && transaction.amount == 0) || // unconfirmed deposit
-            //     (!transaction.isDeposit && transaction.amount == 0) || // unconfirmed withdrawal - this is knocking out switch as well!
-            //     (transaction.user == address(0) &&
-            //         transaction.receiver == address(0) &&
-            //         transaction.totalAssetsAfter == 0) // unconfirmed switch
-            // ) {
-            //     break;
-            // }
-
             if (transaction.txStatus == TX_WITHDRAW_REVERTED) {
-                pendingWithdrawals[transaction.user] -= transaction.amount;
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
             } else if (transaction.txStatus == TX_DEPOSIT_CONFIRMED) {
@@ -367,32 +356,15 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     /**
      * @dev Confirms a deposit and mints shares for the receiver.
      *      Updates the total assets and receiver's principal accordingly.
-
      */
     function _confirmDepositAndMint() internal {
         Transaction storage txn = transactions[lastProcessedNonce + 1];
-        // TODO -- insert a check here - is previewedShares approx equal to shares?
         userPrincipal[txn.receiver] += txn.amount;
         totalPrincipal += txn.amount;
-        console.log(
-            "txn.totalAssetsAfter=%s, txn.amount=%s",
-            txn.totalAssetsAfter,
-            txn.amount
-        );
-        // if (txn.totalAssetsAfter >= txn.amount) {
-        //     latestTotalAssetsUpdateFromStrategy =
-        //         txn.totalAssetsAfter -
-        //         txn.amount;
-        // } else {
+
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter - txn.amount;
-        // }
-        console.log(
-            "Confirming deposit: totalAssetsAfter=%s, amount=%s",
-            txn.totalAssetsAfter,
-            txn.amount
-        );
+
         uint256 shares = previewDeposit(txn.amount);
-        console.log("Shares to mint: %s, receiver: %s", shares, txn.receiver);
 
         _mint(txn.receiver, shares);
 
@@ -426,13 +398,12 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 assets,
         uint16 slippage
     ) internal override {
-        // uint256 maxShares = maxRedeem(user);
-
-        // if (shares > maxShares - pendingWithdrawals[user]) {
-        //     revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
-        // }
-
         Transaction storage txn = transactions[vaultNonce];
+
+        uint256 maxAmount = maxWithdraw(txn.user);
+        if (txn.amount > maxAmount - pendingWithdrawals[txn.user]) {
+            revert ERC4626ExceededMaxWithdraw(txn.user, txn.amount, maxAmount);
+        }
 
         txn.user = caller;
         txn.receiver = receiver;
@@ -481,16 +452,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (txn.amount > maxAmount - pendingWithdrawals[txn.user]) {
             revert ERC4626ExceededMaxWithdraw(txn.user, txn.amount, maxAmount);
         }
-        // uint256 maxShares = maxRedeem(txn.user);
-        // if (
-        //     txn.vaultSharesToBeBurnt > maxShares - pendingWithdrawals[txn.user]
-        // ) {
-        //     revert ERC4626ExceededMaxRedeem(
-        //         txn.user,
-        //         txn.vaultSharesToBeBurnt,
-        //         maxShares
-        //     );
-        // }
         pendingWithdrawals[txn.user] += txn.amount;
 
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
@@ -551,12 +512,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
         userPrincipal[txn.user] -= principalWithdrawn;
         totalPrincipal -= principalWithdrawn;
-
-        if (txn.amount >= pendingWithdrawals[txn.user]) {
-            pendingWithdrawals[txn.user] = 0;
-        } else {
-            pendingWithdrawals[txn.user] -= txn.amount;
-        }
 
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
         _burn(txn.user, vaultSharesToBeBurnt);
