@@ -271,6 +271,17 @@ export default function VaultInputs({
         const actionType = isDeposit
           ? SmartVaultActionType.Deposit
           : SmartVaultActionType.Withdrawal;
+        
+        console.log("🔧 [ACTIONS] === SELECTING ACTIONS ===");
+        console.log("🔧 [ACTIONS] - actionType:", actionType === SmartVaultActionType.Deposit ? 'Deposit' : 'Withdrawal');
+        console.log("🔧 [ACTIONS] - vaultData.symbol:", vaultData.symbol);
+        console.log("🔧 [ACTIONS] - activeChain:", activeChain?.name, `(${activeChain?.id})`);
+        console.log("🔧 [ACTIONS] - walletAddress:", walletAddress);
+        console.log("🔧 [ACTIONS] - inputBalance.value:", inputBalance.value.toString());
+        console.log("🔧 [ACTIONS] - inputToken.symbol:", inputToken.symbol);
+        console.log("🔧 [ACTIONS] - inputToken.address:", inputToken.address);
+        console.log("🔧 [ACTIONS] - inputToken.isNative:", inputToken.isNative);
+        
         const newStepsConfig = await selectActions(
           actionType,
           vaultData,
@@ -279,14 +290,17 @@ export default function VaultInputs({
           inputBalance,
           inputToken
         );
+        
         setSteps(newStepsConfig);
-        console.log(
-          "SETTING ACTION STEPS: ",
-          newStepsConfig,
-          newStepsConfig.map((e) => Action[e])
-        );
+        console.log("🔧 [ACTIONS] === ACTIONS SELECTED ===");
+        console.log("🔧 [ACTIONS] Raw actions:", newStepsConfig);
+        console.log("🔧 [ACTIONS] Mapped actions:", newStepsConfig.map((e, i) => `${i}: ${Action[e]}`));
+        console.log("🔧 [ACTIONS] First action:", Action[newStepsConfig[0]]);
+        console.log("🔧 [ACTIONS] Second action:", newStepsConfig[1] ? Action[newStepsConfig[1]] : 'undefined');
+        console.log("🔧 [ACTIONS] === END ACTION SELECTION ===");
       } else {
         setSteps([]);
+        console.log("🔧 [ACTIONS] No valid input, clearing steps");
       }
     };
     // Call the async function
