@@ -8,23 +8,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./ERC20StrategyParent.sol";
 
 import "../interfaces/ISwapHelper.sol";
-import "../interfaces/IBalancerLiquidityGauge.sol";
-import "../interfaces/IBalancerCompositeLiquidityRouter.sol";
-import "../interfaces/IBalancerRouter.sol";
-import "../interfaces/IPermit2.sol";
 import "../interfaces/I4626Vault.sol";
-import "../interfaces/IBalancerStablePool.sol";
 
 import "hardhat/console.sol";
 
-contract BalancerERC20Strategy is ERC20StrategyParent {
+contract AegisERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
-
-    IBalancerCompositeLiquidityRouter public compositeLiquidityRouter;
-    IBalancerRouter public liquidityRouter;
-    IBalancerLiquidityGauge public liquidityGauge;
-
-    address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     address public receiptToken;
     uint256 public inputTokenIndex;
@@ -35,11 +24,11 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         address _amanaVault,
         address _withdrawHelper,
         address _swapHelper,
-        address _receiptTokenAddress, // receiptTokenAddress
+        address _receiptTokenAddress, // this is YUSD
         address _inputTokenAddress, // inputToken
-        address _liquidityGaugeAddress,
+        address _liquidityGaugeAddress, // this is the YUSD staking gauge
         address /* _rewardsTokenAddress — not needed */,
-        uint256 _inputTokenIndex
+        uint256 // _inputTokenIndex - not needed
     ) external initializer {
         __StrategyParent_init(
             _name,
@@ -50,53 +39,19 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         __ERC20StrategyParent_init(_inputTokenAddress);
 
         swapHelper = _swapHelper;
-        liquidityRouter = IBalancerRouter(
-            0x3f170631ed9821Ca51A59D996aB095162438DC10
-        );
-        compositeLiquidityRouter = IBalancerCompositeLiquidityRouter(
-            0x9dA18982a33FD0c7051B19F0d7C76F2d5E7e017c // this is on Base, I can always change it later
-        );
-        liquidityGauge = IBalancerLiquidityGauge(_liquidityGaugeAddress);
 
         receiptToken = _receiptTokenAddress;
-        inputTokenIndex = _inputTokenIndex;
     }
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
         uint256 minBptOut
     ) internal override {
-        permit2ApproveIfNeeded(
-            address(inputToken),
-            address(compositeLiquidityRouter),
-            amount
-        );
-
-        uint256 numTokensInPool = 2;
-        uint256[] memory exactAmountsIn = new uint256[](numTokensInPool);
-        bool[] memory wrapUnderlying = new bool[](numTokensInPool);
-
-        // Assuming inputTokenIndex is 1 for ERC4626 vault wrapping USDC
-        exactAmountsIn[inputTokenIndex] = amount;
-        wrapUnderlying[inputTokenIndex] = true;
-
-        bytes memory userData = ""; // or some encoded value if needed
-
-        uint256 bptReceived = compositeLiquidityRouter
-            .addLiquidityUnbalancedToERC4626Pool(
-                receiptToken,
-                wrapUnderlying,
-                exactAmountsIn,
-                minBptOut,
-                false,
-                userData
-            );
-
-        IERC20(receiptToken).safeIncreaseAllowance(
-            address(liquidityGauge),
-            bptReceived
-        );
-        liquidityGauge.deposit(bptReceived);
+        // need to check if we swap USDC into YUSD first, or if we can directly deposit USDC into the sYUSD 4626 vault
+        // swap USDC into YUSD - either uniswap or curve on BNB
+        // need to create a BNB swapHelper for this
+        // stake YUSD into sYUSD
+        // check min out
     }
 
     function _withdrawFundsFromYieldSource(
