@@ -114,7 +114,13 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             assetAmount,
             sharesToWithdraw
         );
-
+        if (totalStaked > 0 && totalStaked - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalStaked;
+            console.log(
+                "Rounding up to withdraw full staked balance: %s",
+                sharesToWithdraw
+            );
+        }
         liquidityGauge.withdraw(sharesToWithdraw);
 
         IERC20(receiptToken).approve(
