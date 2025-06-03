@@ -7,6 +7,7 @@ import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useEffect } from "react";
+
 export default function MultiConnectButton() {
   const {
     selectedChain,
@@ -17,7 +18,16 @@ export default function MultiConnectButton() {
     connectEthereum,
     disconnectWallet,
     setIsModalOpen,
+    isHydrated,
   } = useMultiChain();
+
+  if (!isHydrated) {
+    return (
+      <div className="p-2 bg-grayBtn rounded-lg border border-borderBtn w-[165px] h-[50px] animate-pulse">
+        <div className="text-white text-center">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -70,20 +80,22 @@ export default function MultiConnectButton() {
           )}
         </div>
       )}
-      <SelectNetworkModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        selectedChain={selectedChain}
-        walletAddress={walletAddress}
-        onSelectNetwork={(network) => {
-          if (network === "solana") {
-            connectSolana();
-          } else {
-            connectEthereum();
-          }
-        }}
-        disconnectWallet={disconnectWallet}
-      />
+      {isHydrated && (
+        <SelectNetworkModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          selectedChain={selectedChain}
+          walletAddress={walletAddress}
+          onSelectNetwork={(network) => {
+            if (network === "solana") {
+              connectSolana();
+            } else {
+              connectEthereum();
+            }
+          }}
+          disconnectWallet={disconnectWallet}
+        />
+      )}
     </>
   );
 }
