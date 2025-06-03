@@ -26,7 +26,7 @@ contract AegisERC20Strategy is ERC20StrategyParent {
         address _swapHelper,
         address _receiptTokenAddress, // this is YUSD
         address _inputTokenAddress, // inputToken
-        address _liquidityGaugeAddress, // this is the YUSD staking gauge
+        address, // _liquidityGaugeAddress, // this is the YUSD staking gauge
         address /* _rewardsTokenAddress — not needed */,
         uint256 // _inputTokenIndex - not needed
     ) external initializer {
@@ -45,13 +45,29 @@ contract AegisERC20Strategy is ERC20StrategyParent {
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minBptOut
+        uint256 minAmountOut
     ) internal override {
         // need to check if we swap USDC into YUSD first, or if we can directly deposit USDC into the sYUSD 4626 vault
         // swap USDC into YUSD - either uniswap or curve on BNB
         // need to create a BNB swapHelper for this
         // stake YUSD into sYUSD
         // check min out
+        require(amount > 0, "Deposit amount must be greater than zero");
+
+        // Approve the swap helper to spend input tokens
+        IERC20(inputToken).approve(address(swapHelper), type(uint256).max);
+
+        // Swap input token to receipt token (YUSD)
+        uint256 amountOut = ISwapHelper(swapHelper).swap(
+            address(inputToken),
+            amount,
+            receiptToken,
+            10000,
+            address(this),
+            9999,
+            "0x"
+        );
+        require(amountOut >= minAmountOut, "Insufficient output amount");
     }
 
     function _withdrawFundsFromYieldSource(
@@ -60,113 +76,34 @@ contract AegisERC20Strategy is ERC20StrategyParent {
     ) internal override returns (uint256 amountWithdrawn) {
         harvest();
 
-        uint256 totalStaked = liquidityGauge.balanceOf(address(this));
-        console.log("Total staked in liquidity gauge: %s", totalStaked);
-        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
+        uint256 yusdToWithdraw = convertToShares(assetAmount);
         console.log(
             "Shares to withdraw based on asset amount %s: %s",
             assetAmount,
-            sharesToWithdraw
+            yusdToWithdraw
         );
-        if (totalStaked > 0 && totalStaked - sharesToWithdraw <= 1e3) {
-            sharesToWithdraw = totalStaked;
+        if (totalinYusd > 0 && totalinYusd - yusdToWithdraw <= 1e3) {
+            yusdToWithdraw = totalinYusd;
             console.log(
                 "Rounding up to withdraw full staked balance: %s",
-                sharesToWithdraw
+                yusdToWithdraw
             );
         }
-        liquidityGauge.withdraw(sharesToWithdraw);
+        IERC20(inputToken).approve(address(swapHelper), type(uint256).max);
 
-        IERC20(receiptToken).approve(
-            address(liquidityRouter),
-            type(uint256).max
-        );
-
-        address[] memory poolTokens = IBalancerStablePool(receiptToken)
-            .getTokens();
-        address tokenToWithdraw = poolTokens[inputTokenIndex];
-        console.log("minAmountOut: %s", minAmountOut);
-
-        uint256 amountOutFromGauge = liquidityRouter
-            .removeLiquiditySingleTokenExactIn(
-                receiptToken, // pool (BPT)
-                sharesToWithdraw, // exact BPT in
-                tokenToWithdraw, // token you want to receive - change this to the wrapped version of the token?
-                1, // minimum acceptable output
-                true, // wethIsEth
-                "" // userData (can be empty unless needed)
-            );
-        console.log(
-            "Withdrew %s from liquidity gauge, received %s of token %s",
-            sharesToWithdraw,
-            amountOutFromGauge,
-            tokenToWithdraw
-        );
-        uint256 finalAmountOut = I4626Vault(tokenToWithdraw).redeem(
-            amountOutFromGauge,
+        uint256 amountOut = ISwapHelper(swapHelper).swap(
+            receiptToken,
+            yusdToWithdraw,
+            address(inputToken),
+            10000,
             address(this),
-            address(this)
+            9999,
+            "0x"
         );
-        console.log(
-            "Withdrew %s from ERC4626 vault, final amount out: %s",
-            amountOutFromGauge,
-            finalAmountOut
-        );
-        require(finalAmountOut >= minAmountOut, "Insufficient output amount");
-        amountWithdrawn = finalAmountOut;
-    }
 
-    function claimRewards() public override returns (uint256 totalClaimed) {
-        try liquidityGauge.claim_rewards() {
-            try liquidityGauge.reward_count() returns (uint256 count) {
-                for (uint256 i = 0; i < count; i++) {
-                    address token = liquidityGauge.reward_tokens(i);
-                    if (token == address(0)) continue;
-
-                    uint256 balance = IERC20(token).balanceOf(address(this));
-                    if (balance > 0) {
-                        emit RewardsClaimed(address(this), token, balance);
-                        totalClaimed += balance;
-                    }
-                }
-            } catch {
-                emit RewardClaimFailed("Could not read reward_count");
-            }
-        } catch {
-            emit RewardClaimFailed("claim_rewards() failed");
-        }
-    }
-
-    function _reinvestRewards() internal override {
-        uint256 totalConverted;
-        try liquidityGauge.reward_count() returns (uint256 count) {
-            console.log("Reward count: %s", count);
-            for (uint256 i = 0; i < count; i++) {
-                address reward = liquidityGauge.reward_tokens(i);
-                if (reward == address(0)) continue;
-
-                uint256 balance = IERC20(reward).balanceOf(address(this));
-                console.log("balance of reward %s: %s", reward, balance);
-                console.log("minClaimableReward: %s", minClaimableReward);
-                if (balance < minClaimableReward) continue;
-
-                uint256 converted = swapToInputToken(
-                    reward,
-                    balance,
-                    harvestSwapSlippage
-                );
-                if (converted > 0) {
-                    emit RewardsHarvested(reward, balance, converted);
-                    totalConverted += converted;
-                }
-            }
-        } catch {
-            emit RewardClaimFailed("Failed to iterate reward_count");
-        }
-
-        if (totalConverted > minClaimableReward) {
-            _depositFundsIntoYieldSource(totalConverted, 0);
-        }
+        require(amountOut >= minAmountOut, "Insufficient output amount");
+        amountWithdrawn = amountOut;
     }
 
     function _transferAssetsToNewStrategy() internal override {
@@ -178,21 +115,20 @@ contract AegisERC20Strategy is ERC20StrategyParent {
         harvest();
 
         // Withdraw all BPT from the liquidity gauge
-        uint256 stakedAmount = liquidityGauge.balanceOf(address(this));
-        liquidityGauge.withdraw(stakedAmount);
+        uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
 
         // Transfer the LP tokens to the new strategy
-        IERC20(receiptToken).transfer(txn.newStrategy, stakedAmount);
+        IERC20(receiptToken).transfer(txn.newStrategy, totalinYusd);
 
         IStrategy(txn.newStrategy).depositFromOldStrategy(
-            stakedAmount,
+            totalinYusd,
             txn.minimumOut,
             lastProcessedNonce + 1
         );
 
         emit AssetsTransferredToNewStrategy(
             txn.newStrategy,
-            stakedAmount,
+            totalinYusd,
             lastProcessedNonce + 1
         );
     }
@@ -212,16 +148,6 @@ contract AegisERC20Strategy is ERC20StrategyParent {
 
         lastProcessedNonce = currentExecutionNonce;
 
-        // Stake LP tokens in the Balancer gauge
-        IERC20(receiptToken).approve(address(liquidityGauge), amount);
-        liquidityGauge.deposit(amount);
-
-        _sendInvestConfirmation(
-            0,
-            totalUnderlyingAssets(),
-            currentExecutionNonce
-        );
-
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,
@@ -232,83 +158,71 @@ contract AegisERC20Strategy is ERC20StrategyParent {
     }
 
     function totalUnderlyingAssets() public view override returns (uint256) {
-        uint256 staked = liquidityGauge.balanceOf(address(this));
-        uint256 held = IERC20(receiptToken).balanceOf(address(this));
-        uint256 total = staked + held;
+        uint256 total = IERC20(receiptToken).balanceOf(address(this));
         return total > 0 ? convertToAssets(total) : 0;
-    }
-
-    function getStrategyWithdrawShareAmount(
-        uint256 fraction
-    ) public view override returns (uint256) {
-        uint256 totalShares = liquidityGauge.balanceOf(address(this));
-        return (fraction * totalShares + 5e17) / 1e18;
     }
 
     function convertToAssets(
         uint256 shares
-    ) public view override returns (uint256) {
-        uint256 rate = IBalancerStablePool(receiptToken).getRate(); // BPT rate, 18 decimals
-        uint8 inputTokenDecimals = IERC20Metadata(address(inputToken))
-            .decimals();
-
-        uint256 assets = (shares * rate) / 1e18;
-
-        if (inputTokenDecimals < 18) {
-            assets = assets / (10 ** (18 - inputTokenDecimals));
-        } else if (inputTokenDecimals > 18) {
-            assets = assets * (10 ** (inputTokenDecimals - 18));
+    ) public view override returns (uint256 assets) {
+        if (address(inputToken) == receiptToken || shares == 0) {
+            return shares;
         }
 
-        return assets;
+        try
+            ISwapHelper(swapHelper).getPathV3(receiptToken, address(inputToken))
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory /* encodedPath */
+        ) {
+            if (path.length == 0 || feeTiers.length == 0) {
+                return shares; // fallback to 1:1 if no path found
+            }
+
+            try
+                ISwapHelper(swapHelper).getAmountOutV3(shares, path, feeTiers)
+            returns (uint amountOut) {
+                return amountOut;
+            } catch {
+                return shares; // fallback if price estimation fails
+            }
+        } catch {
+            return shares; // fallback if path retrieval fails
+        }
     }
 
     function convertToShares(
         uint256 assets
-    ) public view override returns (uint256) {
-        uint256 rate = IBalancerStablePool(receiptToken).getRate(); // BPT rate, 18 decimals
-        uint8 inputTokenDecimals = IERC20Metadata(address(inputToken))
-            .decimals();
-
-        if (inputTokenDecimals < 18) {
-            assets = assets * (10 ** (18 - inputTokenDecimals));
-        } else if (inputTokenDecimals > 18) {
-            assets = assets / (10 ** (inputTokenDecimals - 18));
+    ) public view override returns (uint256 shares) {
+        if (address(inputToken) == receiptToken || assets == 0) {
+            return assets;
         }
 
-        uint256 shares = (assets * 1e18) / rate;
-        return shares;
-    }
+        try
+            ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptToken)
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory /* encodedPath */
+        ) {
+            if (path.length == 0 || feeTiers.length == 0) {
+                return assets; // fallback to 1:1 if no path found
+            }
 
-    function permit2ApproveIfNeeded(
-        address token,
-        address spender,
-        uint256 amount
-    ) internal {
-        // Step 1: Approve Permit2 to pull tokens
-        uint256 permit2Allowance = IERC20(token).allowance(
-            address(this),
-            PERMIT2
-        );
-        if (permit2Allowance < amount) {
-            IERC20(token).approve(PERMIT2, type(uint256).max);
-        }
-
-        // Step 2: Approve Router via Permit2
-        (uint160 result, ) = IPermit2(PERMIT2).allowance(
-            address(this),
-            token,
-            spender
-        );
-        uint256 routerAllowance = uint256(result);
-
-        if (routerAllowance < amount) {
-            IPermit2(PERMIT2).approve(
-                token,
-                spender,
-                type(uint160).max,
-                type(uint48).max
-            );
+            try
+                ISwapHelper(swapHelper).getAmountOutV3(assets, path, feeTiers)
+            returns (uint amountOut) {
+                return amountOut;
+            } catch {
+                return assets; // fallback if price estimation fails
+            }
+        } catch {
+            return assets; // fallback if path retrieval fails
         }
     }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256 withdrawShareAmount) {}
 }

@@ -381,7 +381,7 @@ abstract contract SwapHelperParent is
         uint amountIn,
         address[] memory path,
         uint24[] memory feeTiers
-    ) internal view returns (uint amountOut) {
+    ) public view returns (uint amountOut) {
         if (
             amountIn == 0 ||
             path.length < 2 ||

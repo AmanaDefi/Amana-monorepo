@@ -14,6 +14,7 @@ contract SwapHelperOnBnb is SwapHelperParent {
     address constant USDC = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d; // USDC on BNB
     address constant USDT = 0x55d398326f99059fF775485246999027B3197955; // USDT on BNB
     address constant WBNB_ADDRESS = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address constant YUSD = 0xAB3dBcD9B096C3fF76275038bf58eAC10D22C61f; // YUSD on BNB
 
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
@@ -56,7 +57,7 @@ contract SwapHelperOnBnb is SwapHelperParent {
      * @return True if the token is a stablecoin, false otherwise.
      */
     function isStablecoin(address token) internal pure override returns (bool) {
-        return (token == USDC || token == USDT);
+        return (token == USDC || token == USDT || token == YUSD);
     }
 
     /**

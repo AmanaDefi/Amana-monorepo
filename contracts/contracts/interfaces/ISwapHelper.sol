@@ -38,4 +38,22 @@ interface ISwapHelper {
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountIn);
+
+    function getPathV3(
+        address zrc20,
+        address targetZRC20
+    )
+        external
+        view
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory /* encodedPath */
+        );
+
+    function getAmountOutV3(
+        uint256 amountIn,
+        address[] memory path,
+        uint24[] memory feeTiers
+    ) external view returns (uint256 amountOut);
 }
