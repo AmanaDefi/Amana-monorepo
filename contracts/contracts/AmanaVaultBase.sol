@@ -329,7 +329,6 @@ abstract contract AmanaVaultBase is
                 txn.withdrawChainId
             );
         }
-        console.log("Amount in to swap: %s", txn.amount);
         txn.amount = txn.withdrawZRC20 == address(asset())
             ? txn.amount
             : swap(
@@ -340,7 +339,6 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        console.log("Amount after swap: %s", txn.amount);
 
         _investAssets();
     }
@@ -356,10 +354,7 @@ abstract contract AmanaVaultBase is
         if (shares == 0) {
             revert AmountCantBeZero();
         }
-        uint256 maxShares = maxRedeem(owner);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-        }
+
         redeemToAnyToken(
             shares,
             minimumOut,
@@ -406,6 +401,10 @@ abstract contract AmanaVaultBase is
         address withdrawZRC20,
         uint16 slippage
     ) public {
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
         uint256 assets = previewRedeem(shares);
         _withdraw(
             _msgSender(),
@@ -485,9 +484,7 @@ abstract contract AmanaVaultBase is
             if (nonEvmAddressByNonce[nonce].length == 0) {
                 recipient = abi.encodePacked(txn.receiver);
             } else {
-                console.log("Non-EVM address for nonce %s: %s", nonce);
                 recipient = abi.encodePacked(nonEvmAddressByNonce[nonce]);
-                console.logBytes32(bytes32(recipient));
             }
             // Step 2: Call helper with required arguments
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
