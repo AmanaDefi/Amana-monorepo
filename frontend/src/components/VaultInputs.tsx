@@ -958,7 +958,7 @@ export default function VaultInputs({
         onMaxClick={() => {}}
         value={conversionOutput.outputAmountFormatted}
         onChange={() => {}}
-        selectedToken={vaultData.inputToken}
+        selectedToken={isDeposit ? vaultData.inputToken : inputToken}
         inputTokenbalance={
           isDeposit
             ? vaultTotalAssetinToken?.toString() ?? "0"
