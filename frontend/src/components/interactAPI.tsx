@@ -63,6 +63,7 @@ const handleDepositTransaction = async (
       "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2)
     );
     
+    console.log("🚀 [DEPOSIT] About to call executeDeposit...");
     const receipt = await executeDeposit(
       vaultData,
       inputToken,
@@ -73,15 +74,29 @@ const handleDepositTransaction = async (
       setcrossChainTxId
     );
 
-    trackEvent("Deposit Initiated", {
-      vaultSymbol: vaultData.symbol,
-      vault: vaultData.id.toString(),
-      amount: depositAmount.toString(),
-      inputToken: inputToken.symbol,
-      amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
-      user: activeAccount.address,
-      chain: activeChain.id,
-    });
+    console.log("✅ [DEPOSIT] executeDeposit completed successfully!");
+    console.log("📋 [DEPOSIT] Receipt received:", receipt);
+    console.log("🔗 [DEPOSIT] Receipt.transactionHash:", receipt.transactionHash);
+    console.log("🆔 [DEPOSIT] Receipt type:", typeof receipt.transactionHash);
+    console.log("📏 [DEPOSIT] Receipt hash length:", receipt.transactionHash?.length);
+
+    // 🔧 ARCHITECTURAL FIX: Wrap analytics in its own try-catch so it can't break core functionality
+    try {
+      trackEvent("Deposit Initiated", {
+        vaultSymbol: vaultData.symbol,
+        vault: vaultData.id.toString(),
+        amount: depositAmount.toString(),
+        inputToken: inputToken.symbol,
+        amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
+        user: activeChain.id === CHAIN_ID.solana 
+          ? walletContext.publicKey?.toBase58() 
+          : activeAccount.address,
+        chain: activeChain.id,
+      });
+    } catch (analyticsError) {
+      // 📊 Analytics failures should not affect core transaction logic
+      console.warn("📊 [ANALYTICS] Failed to track deposit event:", analyticsError);
+    }
 
     console.log("=== DEPOSIT TRANSACTION RECEIPT RECEIVED ===");
     console.log("Receipt:", receipt);
@@ -89,21 +104,22 @@ const handleDepositTransaction = async (
     
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling - no waitForReceipt needed
-      console.log("Solana transaction handling - receipt confirmed on-chain");
+      console.log("🌊 [SOLANA] Solana transaction handling - receipt confirmed on-chain");
     } else {
-      console.log("EVM transaction, waiting for receipt confirmation");
+      console.log("⛓️ [EVM] EVM transaction, waiting for receipt confirmation");
       const receiptObject = {
         transactionHash: receipt.transactionHash as `0x${string}`,
         client,
         chain: activeChain,
       };
       await waitForReceipt(receiptObject);
-      console.log("Receipt confirmed");
+      console.log("✅ [EVM] Receipt confirmed");
     }
 
     const activeChainExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
-    setLastEventTxHash(`${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`);
-    console.log("Explorer URL set:", `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`);
+    const explorerUrl = `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`;
+    setLastEventTxHash(explorerUrl);
+    console.log("🔍 [EXPLORER] Explorer URL set:", explorerUrl);
     
     // Enhanced logic for determining transaction type and setting correct hash for BlockPI
     const isUserOnZetachain = isZetachain(activeChain.id);
@@ -146,17 +162,29 @@ const handleDepositTransaction = async (
       console.log("setCrosschainInvestHash called with:", receipt.transactionHash);
     }
 
-    console.log("=== DEPOSIT TRANSACTION RETURNING TRUE ===");
+    console.log("🎉 [DEPOSIT] DEPOSIT TRANSACTION RETURNING TRUE ===");
     return true;
   } catch (error: any) {
-    if (!error.message.includes("User denied transaction")) {
-      trackEvent("Deposit Failed", {
-        vaultSymbol: vaultData.symbol,
-        vault: vaultData.id.toString(),
-        amount: inputBalance.value.toString(),
-        amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
-      });
+    console.error("❌ [DEPOSIT] DEPOSIT TRANSACTION FAILED ===");
+    console.error("🔥 [DEPOSIT] Error details:", error);
+    console.error("🔥 [DEPOSIT] Error message:", error.message);
+    console.error("🔥 [DEPOSIT] Error stack:", error.stack);
+    
+    // 🔧 ARCHITECTURAL FIX: Only track actual transaction failures, not analytics failures
+    try {
+      if (!error.message.includes("User denied transaction")) {
+        trackEvent("Deposit Failed", {
+          vaultSymbol: vaultData.symbol,
+          vault: vaultData.id.toString(),
+          amount: inputBalance.value.toString(),
+          amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
+        });
+      }
+    } catch (analyticsError) {
+      console.warn("📊 [ANALYTICS] Failed to track deposit failure event:", analyticsError);
     }
+    
+    console.log("🔴 [DEPOSIT] DEPOSIT TRANSACTION RETURNING FALSE ===");
     return false;
   }
 };
@@ -266,10 +294,16 @@ const handleWithdrawTransaction = async (
     
     return true;
   } catch (error) {
-    trackEvent("Withdraw Failed", {
-      vault: vaultData.id.toString(),
-      vaultSymbol: vaultData.symbol,
-    });
+    // 🔧 ARCHITECTURAL FIX: Wrap analytics in its own try-catch so it can't break core functionality
+    try {
+      trackEvent("Withdraw Failed", {
+        vault: vaultData.id.toString(),
+        vaultSymbol: vaultData.symbol,
+      });
+    } catch (analyticsError) {
+      console.warn("📊 [ANALYTICS] Failed to track withdraw failure event:", analyticsError);
+    }
+    
     return false;
   }
 };
@@ -807,16 +841,18 @@ function Interaction({
 
   async function interactionPostHook(success: boolean) {
     console.log("=== INTERACTION POST HOOK CALLED ===");
-    console.log("Success:", success);
-    console.log("Current action:", action);
-    console.log("Current step:", step);
-    console.log("Actions array:", actions);
+    console.log("🔍 [POST-HOOK] Success:", success);
+    console.log("🎯 [POST-HOOK] Current action:", action, `(${Action[action]})`);
+    console.log("📍 [POST-HOOK] Current step:", step);
+    console.log("📋 [POST-HOOK] Actions array:", actions.map((a, i) => `${i}: ${Action[a]}`));
+    console.log("➡️ [POST-HOOK] Next action would be:", actions[step + 1] ? Action[actions[step + 1]] : 'undefined');
     
     if (success) {
-      console.log("=== SUCCESS BRANCH ===");
+      console.log("✅ [POST-HOOK] === SUCCESS BRANCH ===");
       
+      // Check approval flow
       if (actions[step + 1] == Action.depositApproveConfirmed) {
-        console.log("=== APPROVAL CONFIRMED BRANCH ===");
+        console.log("💰 [POST-HOOK] === APPROVAL CONFIRMED BRANCH ===");
         // Update approval feedback to completed before moving to next step
         updateLocalTransactionFeedback(
           Action.depositApprove,
@@ -835,58 +871,88 @@ function Interaction({
           setStep(nextStep + 1);
         }, 100);
       }
+      
+      // Check deposit flow
+      console.log("🔍 [POST-HOOK] Checking deposit conditions:");
+      console.log("🔍 [POST-HOOK] - action == Action.deposit:", action == Action.deposit);
+      console.log("🔍 [POST-HOOK] - actions[step + 1]:", actions[step + 1], actions[step + 1] ? `(${Action[actions[step + 1]]})` : 'undefined');
+      console.log("🔍 [POST-HOOK] - Action.depositConfirmed:", Action.depositConfirmed);
+      console.log("🔍 [POST-HOOK] - actions[step + 1] == Action.depositConfirmed:", actions[step + 1] == Action.depositConfirmed);
+      
       if (action == Action.deposit && actions[step + 1] == Action.depositConfirmed) {
-        console.log("=== DEPOSIT TO DEPOSIT CONFIRMED TRANSITION ===");
-        console.log('Current step:', step, 'Next step:', step + 1);
-        console.log('Next action should be:', actions[step + 1]);
+        console.log("🏦 [POST-HOOK] === DEPOSIT TO DEPOSIT CONFIRMED TRANSITION ===");
+        console.log('📍 [POST-HOOK] Current step:', step, 'Next step:', step + 1);
+        console.log('➡️ [POST-HOOK] Next action should be:', actions[step + 1], `(${Action[actions[step + 1]]})`);
         
         // Update deposit feedback to completed before moving to next step
         const isUserOnZetachain = isZetachain(activeChain.id);
         const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
         
+        console.log("🔍 [POST-HOOK] Chain analysis:");
+        console.log("🔍 [POST-HOOK] - isUserOnZetachain:", isUserOnZetachain);
+        console.log("🔍 [POST-HOOK] - isVaultOnZetachain:", isVaultOnZetachain);
+        console.log("🔍 [POST-HOOK] - activeChain.id:", activeChain.id);
+        console.log("🔍 [POST-HOOK] - activeChain.name:", activeChain.name);
+        
         let successMessage;
         if (isUserOnZetachain && !isVaultOnZetachain) {
           // Type 2: Direct deposit from Zetachain to vault with non-Zetachain strategy
           successMessage = "Initial deposit transaction on Zetachain completed";
-          console.log('[Action Transition] Type 2 detected - BlockPI should start after action change');
+          console.log('🔗 [POST-HOOK] Type 2 detected - BlockPI should start after action change');
         } else if (isUserOnZetachain && isVaultOnZetachain) {
           // Type 1: Direct deposit from Zetachain to vault with Zetachain strategy
           successMessage = "Deposit transaction completed";
-          console.log('[Action Transition] Type 1 detected - no BlockPI needed');
+          console.log('✅ [POST-HOOK] Type 1 detected - no BlockPI needed');
         } else {
-          // Type 3 & 4: Cross-chain deposits
-          successMessage = "Initial deposit transaction on local chain completed";
-          console.log('[Action Transition] Type 3/4 detected - BlockPI should start after action change');
+          // Type 3 & 4: Cross-chain deposits (including Solana)
+          const chainName = activeChain.name || 'local chain';
+          successMessage = `Initial deposit transaction on ${chainName} completed`;
+          console.log('🌐 [POST-HOOK] Type 3/4 detected - BlockPI should start after action change');
         }
         
+        console.log("💬 [POST-HOOK] Success message:", successMessage);
+        console.log("🔗 [POST-HOOK] lastEventTxHash:", lastEventTxHash);
+        
+        // CRITICAL FIX: Pass the transaction hash from lastEventTxHash for completed feedback
         updateLocalTransactionFeedback(
           Action.deposit,
           TransactionStepStatus.completed,
-          successMessage
+          successMessage,
+          lastEventTxHash // Pass the transaction hash to show in UI
         );
         
         // Reset transaction processing state - BlockPI will take over
         setIsTransactionProcessing(false);
-        console.log("Set isTransactionProcessing to false");
+        console.log("⏸️ [POST-HOOK] Set isTransactionProcessing to false");
         
         const nextStep = step + 1;
-        console.log('Setting action to:', actions[nextStep], 'and step to:', nextStep);
+        console.log('➡️ [POST-HOOK] Setting action to:', actions[nextStep], `(${Action[actions[nextStep]]})`, 'and step to:', nextStep);
         
         // CRITICAL FIX: Ensure the next action exists before updating state
         if (actions[nextStep] === undefined) {
-          console.error(`CRITICAL ERROR: Action at index ${nextStep} is undefined. actions array:`, actions);
+          console.error(`🚨 [POST-HOOK] CRITICAL ERROR: Action at index ${nextStep} is undefined. actions array:`, actions);
           return; // Don't update state if the next action is undefined
         }
         
         // Set both state updates in a single render cycle to prevent inconsistency
         setTimeout(() => {
-          console.log(`SAFE UPDATE: Setting action to ${actions[nextStep]} and step to ${nextStep}`);
+          console.log(`✅ [POST-HOOK] SAFE UPDATE: Setting action to ${Action[actions[nextStep]]} and step to ${nextStep}`);
           setAction(actions[nextStep]);
           setStep(nextStep);
-          console.log("Action and step updated in sync - this should trigger BlockPI effect");
+          console.log("🔄 [POST-HOOK] Action and step updated in sync - this should trigger BlockPI effect");
         }, 50);
+      } else {
+        console.log("⏭️ [POST-HOOK] Deposit condition not met, checking withdraw...");
       }
+      
+      // Check withdraw flow
+      console.log("🔍 [POST-HOOK] Checking withdraw conditions:");
+      console.log("🔍 [POST-HOOK] - action == Action.withdraw:", action == Action.withdraw);
+      console.log("🔍 [POST-HOOK] - actions[step + 1] == Action.withdrawconfirmed:", actions[step + 1] == Action.withdrawconfirmed);
+      
       if (action == Action.withdraw && actions[step + 1] == Action.withdrawconfirmed) {
+        console.log("🏧 [POST-HOOK] === WITHDRAW TO WITHDRAW CONFIRMED TRANSITION ===");
+        
         // Update withdraw feedback to completed before moving to next step
         const isUserOnZetachain = isZetachain(activeChain.id);
         const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
@@ -899,14 +965,19 @@ function Interaction({
           // Type 1: Direct withdrawal from Zetachain from vault with Zetachain strategy
           successMessage = "Withdraw transaction completed";
         } else {
-          // Type 3 & 4: Cross-chain withdrawals
-          successMessage = "Initial withdraw transaction on local chain completed";
+          // Type 3 & 4: Cross-chain withdrawals (including Solana)
+          const chainName = activeChain.name || 'local chain';
+          successMessage = `Initial withdraw transaction on ${chainName} completed`;
         }
         
+        console.log("💬 [POST-HOOK] Withdraw success message:", successMessage);
+        
+        // CRITICAL FIX: Pass the transaction hash from lastEventTxHash for completed feedback
         updateLocalTransactionFeedback(
           Action.withdraw,
           TransactionStepStatus.completed,
-          successMessage
+          successMessage,
+          lastEventTxHash // Pass the transaction hash to show in UI
         );
         
         // Reset transaction processing state - BlockPI will take over
@@ -915,10 +986,23 @@ function Interaction({
         const nextStep = step + 1;
         setAction(actions[nextStep]);
         setStep(nextStep);
+      } else {
+        console.log("⏭️ [POST-HOOK] Withdraw condition not met");
       }
+      
+      // If no conditions were met, log it
+      if (!(actions[step + 1] == Action.depositApproveConfirmed) && 
+          !(action == Action.deposit && actions[step + 1] == Action.depositConfirmed) &&
+          !(action == Action.withdraw && actions[step + 1] == Action.withdrawconfirmed)) {
+        console.log("🤔 [POST-HOOK] NO SUCCESS CONDITIONS MET!");
+        console.log("🤔 [POST-HOOK] This might be why the UI shows failure even though transaction succeeded");
+      }
+      
     } else {
+      console.log("❌ [POST-HOOK] === FAILURE BRANCH ===");
       // Handle local transaction failures
       if (action == Action.depositApprove) {
+        console.log("💸 [POST-HOOK] Handling deposit approve failure");
         updateLocalTransactionFeedback(
           action,
           TransactionStepStatus.error,
@@ -926,6 +1010,7 @@ function Interaction({
         );
       }
       if (action == Action.deposit) {
+        console.log("🏦 [POST-HOOK] Handling deposit failure");
         updateLocalTransactionFeedback(
           action,
           TransactionStepStatus.error,
@@ -933,6 +1018,7 @@ function Interaction({
         );
       }
       if (action == Action.withdraw) {
+        console.log("🏧 [POST-HOOK] Handling withdraw failure");
         updateLocalTransactionFeedback(
           action,
           TransactionStepStatus.error,
@@ -944,24 +1030,26 @@ function Interaction({
       setIsTransactionProcessing(false);
       setIsTransactionStarted(false);
     }
+    
+    console.log("🏁 [POST-HOOK] === INTERACTION POST HOOK COMPLETED ===");
   }
 
   const handleMainAction = async () => {
     console.log("=== HANDLE MAIN ACTION CALLED ===");
-    console.log("Current action:", action);
-    console.log("isTransactionProcessing:", isTransactionProcessing);
+    console.log("🎯 [MAIN-ACTION] Current action:", action, `(${Action[action]})`);
+    console.log("🔄 [MAIN-ACTION] isTransactionProcessing:", isTransactionProcessing);
     
     if (isTransactionProcessing) {
-      console.log("=== EARLY RETURN - ALREADY PROCESSING ===");
+      console.log("⏸️ [MAIN-ACTION] === EARLY RETURN - ALREADY PROCESSING ===");
       return;
     }
     
     setIsTransactionProcessing(true);
-    console.log("Set isTransactionProcessing to true");
+    console.log("▶️ [MAIN-ACTION] Set isTransactionProcessing to true");
     
     // Ensure component is marked as active for new transactions
     isComponentActiveRef.current = true;
-    console.log("Set component as active");
+    console.log("🔛 [MAIN-ACTION] Set component as active");
     
     // Show warning toast to inform users not to leave the page during transaction processing
     if (action === Action.deposit || action === Action.withdraw) {
@@ -980,6 +1068,7 @@ function Interaction({
       );
     } else {
       setIsTransactionStarted(true);
+      console.log("🚀 [MAIN-ACTION] Set isTransactionStarted to true");
     }
 
     if (action == Action.deposit) {
@@ -1004,6 +1093,7 @@ function Interaction({
         description = `Initial deposit transaction on ${activeChain.name} in progress`;
       }
       
+      console.log("🏦 [MAIN-ACTION] Deposit description:", description);
       updateLocalTransactionFeedback(
         action,
         TransactionStepStatus.processing,
@@ -1028,6 +1118,7 @@ function Interaction({
         description = `Initial withdraw transaction on ${activeChain.name} in progress`;
       }
       
+      console.log("🏧 [MAIN-ACTION] Withdraw description:", description);
       updateLocalTransactionFeedback(
         action,
         TransactionStepStatus.processing,
@@ -1035,7 +1126,16 @@ function Interaction({
       );
     }
 
-    console.log("=== CALLING HANDLE INTERACTION ===");
+    console.log("🔄 [MAIN-ACTION] === CALLING HANDLE INTERACTION ===");
+    console.log("📋 [MAIN-ACTION] About to call handleInteraction with:");
+    console.log("📋 [MAIN-ACTION] - vaultData:", vaultData.symbol);
+    console.log("📋 [MAIN-ACTION] - inputBalance:", inputBalance.formatted);
+    console.log("📋 [MAIN-ACTION] - inputToken:", inputToken.symbol);
+    console.log("📋 [MAIN-ACTION] - activeAccount:", activeAccount?.address);
+    console.log("📋 [MAIN-ACTION] - walletContext public key:", walletContext.publicKey?.toBase58());
+    console.log("📋 [MAIN-ACTION] - activeChain:", activeChain.name, `(${activeChain.id})`);
+    console.log("📋 [MAIN-ACTION] - action:", Action[action]);
+    
     const success = await handleInteraction(
       vaultData,
       inputBalance,
@@ -1051,11 +1151,14 @@ function Interaction({
       setLastEventTxHash
     )();
     
-    console.log("=== HANDLE INTERACTION COMPLETED ===");
-    console.log("Success result:", success);
+    console.log("✅ [MAIN-ACTION] === HANDLE INTERACTION COMPLETED ===");
+    console.log("🎯 [MAIN-ACTION] Success result:", success);
+    console.log("🆔 [MAIN-ACTION] Success result type:", typeof success);
+    console.log("🔢 [MAIN-ACTION] Success result as boolean:", !!success);
     
-    console.log("=== CALLING INTERACTION POST HOOK ===");
+    console.log("📞 [MAIN-ACTION] === CALLING INTERACTION POST HOOK ===");
     await interactionPostHook(!!success);
+    console.log("🏁 [MAIN-ACTION] === MAIN ACTION COMPLETED ===");
   };
 
   function handleDone() {
