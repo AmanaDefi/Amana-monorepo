@@ -15,6 +15,7 @@ import { calculateRiskLevel } from "..";
 import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
+import { AppButton } from "@/components/button/AppButton";
 
 const RISK_LEVELS: Record<number, { level: string; color: string }> = {
   1: { level: "Low", color: "bg-green-accent" },
@@ -227,19 +228,22 @@ export const VaultCard: FC<Props> = React.memo(
         </div>
 
         <p className="font-normal text-xs leading-4 text-white mb-6">
-          This vault auto-compounds Lenders Tokens on <p className="flex flex-row gap-1">{vault.protocol.name} <InfoIcon /></p>
+          This vault auto-compounds Lenders Tokens on{" "}
+          <p className="flex flex-row gap-1">
+            {vault.protocol.name} <InfoIcon />
+          </p>
         </p>
         {/* Buttons */}
         <div className="flex gap-4">
-          <button
-            className="flex-1 bg-blue-button text-white py-[10px] px-4 rounded-lg transition-all"
+          <AppButton
+            isBlue
             onClick={(e) => {
               e.stopPropagation();
               router.push(`/vaults/${vault.id}?tab=deposit`);
             }}
           >
-            <span className="relative z-2">Deposit</span>
-          </button>
+            Deposit
+          </AppButton>
           {userVaultBalances.find(
             (balance: UserVaultBalance) => balance.vaultId === vault.id,
           )?.balance &&
@@ -248,15 +252,14 @@ export const VaultCard: FC<Props> = React.memo(
                 (balance: UserVaultBalance) => balance.vaultId === vault.id,
               )?.balance,
             ) > 0 && (
-              <button
-                className="flex-1 bg-[#0C1015] border border-[#3E73C4] hover:border-cyan-400 text-white py-[10px] px-4 rounded-lg transition-all"
+              <AppButton
                 onClick={(e) => {
                   e.stopPropagation();
                   router.push(`/vaults/${vault.id}?tab=withdraw`);
                 }}
               >
                 Withdraw
-              </button>
+              </AppButton>
             )}
         </div>
       </div>

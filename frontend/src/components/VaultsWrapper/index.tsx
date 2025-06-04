@@ -10,6 +10,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import LoadingLogo from "../LoadingLogo";
 import { VaultFilters } from "./components/VaultFilters";
 import { VaultCard } from "./components/VaultCard";
+import { VaultRow } from "./components/VaultRow";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
@@ -151,19 +152,34 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         displayType={displayType}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {paginatedVaults.map((vault) => {
-          return (
-            <VaultCard
-              key={vault.id}
-              vault={vault}
-              vaultAPYs={vaultAPYs}
-              vaultTotalAssets={vaultTotalAssets}
-              userVaultBalances={userVaultBalances}
-            />
-          );
-        })}
-      </div>
+      {displayType === "cards" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {paginatedVaults.map((vault) => {
+            return (
+              <VaultCard
+                key={vault.id}
+                vault={vault}
+                vaultAPYs={vaultAPYs}
+                vaultTotalAssets={vaultTotalAssets}
+                userVaultBalances={userVaultBalances}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {paginatedVaults.map((vault) => {
+            return (
+              <VaultRow
+                key={vault.id}
+                vault={vault}
+                vaultAPYs={vaultAPYs}
+                vaultTotalAssets={vaultTotalAssets}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Empty State */}
       {paginatedVaults.length === 0 && (

@@ -88,18 +88,6 @@ export const VaultFilters: FC<Props> = ({
   };
 
   return (
-    <div>
-      {/* Mobile Filter Button */}
-      {/* <div className="md:hidden mb-4">
-        <button
-          onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="w-full p-3 bg-customNeutral200 text-white rounded-lg flex justify-between items-center"
-        >
-          <span>Filter & Sort Vaults</span>
-          <span>{showMobileFilters ? "↑" : "↓"}</span>
-        </button>
-      </div> */}
-      {/* Filters and Sort Section */}
       <div
         ref={filterRef}
         className={` ${showMobileFilters ? "block" : "hidden md:block"}`}
@@ -173,6 +161,5 @@ export const VaultFilters: FC<Props> = ({
           </div>
         </div>
       </div>
-    </div>
   );
 };
