@@ -92,6 +92,8 @@ abstract contract AmanaVaultBase is
     bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
         keccak256("TotalAssetsUpdate");
 
+    mapping(uint256 => bytes) public swapDataByNonce;
+
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
         _;
@@ -337,7 +339,8 @@ abstract contract AmanaVaultBase is
                 address(asset()),
                 txn.slippage,
                 address(this),
-                200
+                200,
+                swapDataByNonce[vaultNonce]
             );
 
         _investAssets();
@@ -453,7 +456,8 @@ abstract contract AmanaVaultBase is
                 txn.withdrawZRC20,
                 txn.slippage,
                 address(this),
-                200
+                200,
+                swapDataByNonce[nonce]
             );
         if (txn.withdrawChainId == uint32(block.chainid)) {
             IERC20(address(asset())).approve(
@@ -516,7 +520,8 @@ abstract contract AmanaVaultBase is
         address targetZRC20,
         uint16 slippageBps,
         address vault,
-        uint16 maxDeadline
+        uint16 maxDeadline,
+        bytes memory swapData
     ) internal returns (uint256 amountOut) {
         if (IAmanaRegistry(registry).swapHelper() == address(0))
             revert InvalidAddress();
@@ -535,7 +540,7 @@ abstract contract AmanaVaultBase is
             slippageBps,
             vault,
             maxDeadline,
-            "" // empty bytes param for future-proofing
+            swapData // empty bytes param for future-proofing
         );
     }
 

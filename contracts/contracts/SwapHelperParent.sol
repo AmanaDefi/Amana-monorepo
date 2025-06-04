@@ -492,7 +492,7 @@ abstract contract SwapHelperParent is
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline,
-        bytes calldata data
+        bytes calldata swapData
     ) external virtual returns (uint256 amountOut) {
         require(
             IERC20(inputToken).balanceOf(address(this)) >= amount,
@@ -506,24 +506,18 @@ abstract contract SwapHelperParent is
             slippageBps
         );
 
-        (
-            address[] memory pathV3,
-            uint24[] memory feeTiers,
-            bytes memory encodedPath
-        ) = getPathV3(inputToken, outputToken);
-
-        if (encodedPath.length > 0) {
+        if (swapData.length > 0) {
             // Uniswap V3 Swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
 
             try
                 ISwapRouter(UNISWAP_V3_ROUTER).exactInput(
                     ISwapRouter.ExactInputParams({
-                        path: encodedPath,
+                        path: swapData,
                         recipient: vault,
-                        deadline: 99999999999,
+                        deadline: maxDeadline,
                         amountIn: amount,
-                        amountOutMinimum: 0
+                        amountOutMinimum: minimumOut
                     })
                 )
             returns (uint256 out) {

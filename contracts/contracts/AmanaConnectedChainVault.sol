@@ -98,10 +98,20 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 minimumOut,
                 uint16 slippage,
                 bytes memory nonEvmAddress,
+                bytes memory swapData,
                 bytes32 txStatus
             ) = abi.decode(
                     message,
-                    (address, address, uint256, uint256, uint16, bytes, bytes32)
+                    (
+                        address,
+                        address,
+                        uint256,
+                        uint256,
+                        uint16,
+                        bytes,
+                        bytes,
+                        bytes32
+                    )
                 );
             txn.user = context.sender; // common to both paths
             txn.receiver = context.sender; // could take in a different receiver?
@@ -111,6 +121,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             txn.withdrawERC20 = withdrawERC20;
             txn.slippage = slippage;
             nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
+            swapDataByNonce[vaultNonce] = swapData;
             // if (context.senderEVM != address(0)) {
             //     // Handle EVM-style sender logic
             //     txn.user = context.senderEVM;
