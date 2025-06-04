@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
-import VaultsGrid from "../components/VaultsGrid";
+import VaultsGrid from "../components/VaultsWrapper";
 import {
   VaultData,
   VaultAPY,
@@ -89,7 +89,6 @@ const opTokenPrice = useTokenPriceBySymbol("OP");
       vaultAPYs={vaultAPYs}
       userVaultBalances={userVaultBalances}
       vaultTotalAssets={vaultTotalAssets}
-      vaultTotalAssetsinToken={vaultTotalAssetsinToken}
     />
   );
 };

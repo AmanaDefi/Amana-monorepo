@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss";
-import {colors} from "./src/utils/colors";
+import { colors } from "./src/utils/colors";
 
 const config: Config = {
   content: [
@@ -11,12 +11,12 @@ const config: Config = {
   ],
   theme: {
     screens: {
-      'xs': '480px',
-      'sm': '640px',
-      'md': '768px',
-      'lg': '1024px',
-      'xl': '1280px',
-      '2xl': '1536px',
+      xs: "480px",
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
     },
     extend: {
       backgroundImage: {
@@ -51,9 +51,9 @@ const config: Config = {
 
       fontFamily: {
         khTeka: ["'KH Teka'", "sans-serif"],
-        fustat: ['var(--font-fustat)'],
-        mono: ['var(--font-space-mono)'],
-        sans: ['var(--font-inter)'],
+        fustat: ["var(--font-fustat)"],
+        mono: ["var(--font-space-mono)"],
+        sans: ["var(--font-inter)"],
       },
       letterSpacing: {
         1: "1px",
@@ -67,7 +67,7 @@ const config: Config = {
         dot1: "dot1 2s steps(1, end) infinite",
         dot2: "dot2 2s steps(1, end) infinite",
         dot3: "dot3 2s steps(1, end) infinite",
-      }
+      },
     },
   },
   plugins: [],
