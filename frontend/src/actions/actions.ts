@@ -1546,7 +1546,7 @@ export const getAmountOutFromSwap = async (
         beamConnection,
         swapDetails
       );
-
+      console.log("Beam quote response:", beamQuote);
       if (!beamQuote.success) {
         console.warn("⚠️ Beam quote unsuccessful, falling back to Eddy");
       } else if (

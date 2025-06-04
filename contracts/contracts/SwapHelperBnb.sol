@@ -4,6 +4,9 @@ pragma solidity 0.8.26;
 import "./SwapHelperParent.sol";
 
 import "./interfaces/ICurvePoolDynamic.sol";
+import "./interfaces/IV4SwapRouter.sol";
+import "./interfaces/IUniversalRouter.sol";
+import "./interfaces/IPermit2.sol";
 
 import "./CurvePoolRegistry.sol";
 import "hardhat/console.sol";
@@ -15,6 +18,10 @@ contract SwapHelperBnb is SwapHelperParent {
     address constant USDT = 0x55d398326f99059fF775485246999027B3197955; // USDT on BNB
     address constant WBNB_ADDRESS = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address constant YUSD = 0xAB3dBcD9B096C3fF76275038bf58eAC10D22C61f; // YUSD on BNB
+    address constant UNIVERSAL_ROUTER =
+        0x1906c1d672b88cD1B9aC7593301cA990F94Eae07; // Uniswap Universal Router address on BNB
+    IPermit2 constant permit2 =
+        IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3); // Permit2 address on BNB
 
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
@@ -128,6 +135,97 @@ contract SwapHelperBnb is SwapHelperParent {
 
         (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
         require(secondApproveSuccess, "Second approve failed");
+    }
+
+    function swap(
+        address inputToken,
+        uint256 amount,
+        address outputToken,
+        uint16 slippageBps,
+        address receiver,
+        uint16 maxDeadline,
+        bytes calldata /* data */
+    ) external override returns (uint256 amountOut) {
+        require(
+            IERC20(inputToken).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+
+        uint256 minAmountOut = calculateMinAmountOut(
+            inputToken,
+            outputToken,
+            amount,
+            slippageBps
+        );
+
+        approveTokenWithPermit2(
+            inputToken,
+            uint160(amount),
+            uint48(block.timestamp + maxDeadline)
+        );
+
+        // === STEP 1: Command byte ===
+        bytes memory commands = abi.encodePacked(uint8(0x0b)); // V4_SWAP
+
+        // === STEP 2: Action list for V4Router ===
+        bytes memory actions = abi.encodePacked(
+            uint8(0x00), // SWAP_EXACT_IN_SINGLE
+            uint8(0x01), // SETTLE_ALL
+            uint8(0x02) // TAKE_ALL
+        );
+
+        // === STEP 3: Setup PoolKey ===
+        IV4SwapRouter.PoolKey memory key = IV4SwapRouter.PoolKey({
+            currency0: inputToken,
+            currency1: outputToken,
+            fee: 100,
+            tickSpacing: 60, // or whatever the tick spacing is
+            hooks: address(0)
+        });
+
+        // === STEP 4: Setup Params for actions ===
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(
+            IV4SwapRouter.ExactInputSingleParams({
+                poolKey: key,
+                zeroForOne: true, // ← double-check direction!
+                amountIn: uint128(amount),
+                amountOutMinimum: uint128(minAmountOut),
+                hookData: bytes("")
+            })
+        );
+
+        params[1] = abi.encode(inputToken, amount);
+        params[2] = abi.encode(outputToken, minAmountOut);
+
+        // === STEP 5: Combine into inputs array ===
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(actions, params);
+
+        // === STEP 6: Call Universal Router ===
+        try
+            IUniversalRouter(UNIVERSAL_ROUTER).execute(
+                commands,
+                inputs,
+                block.timestamp + maxDeadline
+            )
+        {
+            console.log("Universal Router V4 swap executed");
+            amountOut = IERC20(outputToken).balanceOf(receiver);
+        } catch (bytes memory errorData) {
+            console.log("Universal Router V4 swap failed");
+            console.logBytes(errorData);
+            amountOut = 0;
+        }
+    }
+
+    function approveTokenWithPermit2(
+        address token,
+        uint160 amount,
+        uint48 expiration
+    ) internal {
+        IERC20(token).approve(address(permit2), type(uint256).max);
+        permit2.approve(token, address(UNIVERSAL_ROUTER), amount, expiration);
     }
 
     // function getAmountOutCurveOrUniswap(
