@@ -1138,6 +1138,7 @@ export default class Blockpi {
     const ZETACHAIN_ID = deployEnv === "testnet" ? 7001 : 7000; // Use correct ZetaChain ID based on environment
     
     const isType2 = transactionTypeData?.isType2 === true;
+    const isSolana = activeChainId === 900 || activeChainId === 901; // Solana mainnet/testnet
     
     if (isType2) {
       // Type 2: 3 steps (User on ZetaChain → Vault on Non-ZetaChain)
@@ -1170,49 +1171,107 @@ export default class Blockpi {
       }
     } else {
       // Type 4: 5-6 steps (Cross-chain from Non-ZetaChain)
-      switch (stepIndex) {
-        case 0: // Initial transaction on user's chain
-          return `${explorerUrls[activeChainId]}/tx/${stepHash}`;
+      if (isSolana) {
+        // Special handling for Solana transactions - use cctx_index from step data
+        const zetaExplorerBaseUrl = deployEnv === "testnet" 
+          ? ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.testnet 
+          : ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.mainnet;
           
-        case 1: // Cross-chain to ZetaChain vault
-          // This is a CCTX index, link to ZetaChain explorer
-          return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
-          
-        case 2: // Cross-chain from vault to strategy - FIXED: Use cc/tx format for CCTX
-          // FIXED: Use ZetaChain's cross-chain transaction explorer format with proper configuration
-          const zetaExplorerBaseUrl = deployEnv === "testnet" 
-            ? ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.testnet 
-            : ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.mainnet;
-          return `${zetaExplorerBaseUrl}/cc/tx/${stepHash}`;
-          
-        case 3: // Strategy chain transaction (extracted hash)
-          // This is the actual strategy chain transaction hash
-          if (explorerUrls[vaultProtocolChainId]) {
-            return `${explorerUrls[vaultProtocolChainId]}/tx/${stepHash}`;
-          }
-          return stepHash; // Fallback
-          
-        case 4: // Return from strategy to vault (ZetaChain)
-          return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
-          
-        case 5: // Final withdraw to user (withdrawal only) - FIXED: Should be strategy chain
-          if (transactionType === 'withdrawal') {
-            // FIXED: Return of funds happens on strategy chain, not ZetaChain
-            const finalTxHash = stepData?.data?.CrossChainTx?.outbound_params?.[0]?.hash;
-            if (finalTxHash && explorerUrls[vaultProtocolChainId]) {
-              return `${explorerUrls[vaultProtocolChainId]}/tx/${finalTxHash}`;
+        switch (stepIndex) {
+          case 0: // Step 1: Local transaction on Solana
+            return `${explorerUrls[activeChainId]}/tx/${stepHash}`;
+            
+          case 1: // Step 2: Cross-chain to ZetaChain vault - Use cctx_index
+            const cctxIndex1 = stepData?.data?.cctxIndex || stepData?.cctxIndex;
+            if (cctxIndex1) {
+              return `${zetaExplorerBaseUrl}/cc/tx/${cctxIndex1}`;
             }
-            // Use stepHash on strategy chain as fallback
+            console.warn('[Solana URL] No cctx_index found in step data for step 2');
+            return `${zetaExplorerBaseUrl}/cc/tx/${stepHash}`;
+            
+          case 2: // Step 3: Cross-chain from vault to strategy - Use cctx_index
+            const cctxIndex2 = stepData?.data?.cctxIndex || stepData?.cctxIndex;
+            if (cctxIndex2) {
+              return `${zetaExplorerBaseUrl}/cc/tx/${cctxIndex2}`;
+            }
+            console.warn('[Solana URL] No cctx_index found in step data for step 3');
+            return `${zetaExplorerBaseUrl}/cc/tx/${stepHash}`;
+            
+          case 3: // Step 4: Strategy chain transaction (extracted outbound hash)
             if (explorerUrls[vaultProtocolChainId]) {
               return `${explorerUrls[vaultProtocolChainId]}/tx/${stepHash}`;
             }
-            // Last resort fallback to ZetaChain
-            return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
-          }
-          return stepHash; // Fallback
+            return stepHash; // Fallback
+            
+          case 4: // Step 5: Return from strategy to vault - Use cctx_index
+            const cctxIndex4 = stepData?.data?.cctxIndex || stepData?.cctxIndex;
+            if (cctxIndex4) {
+              return `${zetaExplorerBaseUrl}/cc/tx/${cctxIndex4}`;
+            }
+            console.warn('[Solana URL] No cctx_index found in step data for step 5');
+            return `${zetaExplorerBaseUrl}/cc/tx/${stepHash}`;
+            
+          case 5: // Step 6: Final withdraw to user - Use ZetaChain blockscout
+            if (transactionType === 'withdrawal') {
+              const zetaBlockscoutUrl = deployEnv === "testnet" 
+                ? "https://zetachain-athens-3.blockscout.com" 
+                : "https://zetachain.blockscout.com";
+              
+              const finalTxHash = stepData?.data?.CrossChainTx?.outbound_params?.[0]?.hash || stepHash;
+              return `${zetaBlockscoutUrl}/tx/${finalTxHash}`;
+            }
+            return stepHash; // Fallback
+            
+          default:
+            return stepHash; // Fallback
+        }
+      } else {
+        // EVM transactions - RESTORED to previous working logic
+        const zetaExplorerBaseUrl = deployEnv === "testnet" 
+          ? ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.testnet 
+          : ZETACHAIN_CROSSCHAIN_EXPLORER_URLS.mainnet;
           
-        default:
-          return stepHash; // Fallback
+        switch (stepIndex) {
+          case 0: // Initial transaction on user's chain
+            return `${explorerUrls[activeChainId]}/tx/${stepHash}`;
+            
+          case 1: // Cross-chain to ZetaChain vault
+            // This is a CCTX index, link to ZetaChain explorer
+            return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+            
+          case 2: // Cross-chain from vault to strategy - Use cc/tx format for CCTX
+            // Use ZetaChain's cross-chain transaction explorer format
+            return `${zetaExplorerBaseUrl}/cc/tx/${stepHash}`;
+            
+          case 3: // Strategy chain transaction (extracted hash)
+            // This is the actual strategy chain transaction hash
+            if (explorerUrls[vaultProtocolChainId]) {
+              return `${explorerUrls[vaultProtocolChainId]}/tx/${stepHash}`;
+            }
+            return stepHash; // Fallback
+            
+          case 4: // Return from strategy to vault (ZetaChain)
+            return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+            
+          case 5: // Final withdraw to user (withdrawal only)
+            if (transactionType === 'withdrawal') {
+              // Return of funds happens on strategy chain, not ZetaChain
+              const finalTxHash = stepData?.data?.CrossChainTx?.outbound_params?.[0]?.hash;
+              if (finalTxHash && explorerUrls[vaultProtocolChainId]) {
+                return `${explorerUrls[vaultProtocolChainId]}/tx/${finalTxHash}`;
+              }
+              // Use stepHash on strategy chain as fallback
+              if (explorerUrls[vaultProtocolChainId]) {
+                return `${explorerUrls[vaultProtocolChainId]}/tx/${stepHash}`;
+              }
+              // Last resort fallback to ZetaChain
+              return `${explorerUrls[ZETACHAIN_ID]}/tx/${stepHash}`;
+            }
+            return stepHash; // Fallback
+            
+          default:
+            return stepHash; // Fallback
+        }
       }
     }
   }

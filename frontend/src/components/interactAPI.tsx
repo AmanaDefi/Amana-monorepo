@@ -1309,7 +1309,7 @@ function renderTransactionSteps(
                   </p>
                 )}
               </div>
-              {actionFeedback?.txHash && (
+              {actionFeedback?.txHash && actionFeedback.status === TransactionStepStatus.completed && (
                 <Link
                   href={actionFeedback.txHash}
                   className="flex items-center gap-1 group text-white hover:text-blue-600"
