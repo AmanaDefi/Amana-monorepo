@@ -429,7 +429,9 @@ export default function InteractionContainer({
         Action.depositConfirmed,  // Step 1
         Action.crosschainInvest,  // Step 2
         Action.FundsInvest,       // Step 3
-        Action.deposited          // Step 4
+        Action.ReturnFundsToUserSent, // Step 4
+        Action.FundsReturned,     // Step 5 - Confirmation message from strategy to vault
+        Action.deposited          // Step 6 - Minting of shares on vault
       ] : [
         Action.withdraw,              // Step 0
         Action.withdrawconfirmed,     // Step 1
@@ -441,17 +443,18 @@ export default function InteractionContainer({
 
       stepDescriptions = isDeposit ? [
         'Initial deposit transaction on local chain completed',
-        'Cross chain transfer to vault completed',
-        'Cross chain transfer and investment of funds completed',
-        'Funds investment on strategy chain completed',
-        'Final confirmation completed, shares issued by vault'
+        'Cross chain transfer of funds to vault completed',
+        'Transfer of funds from vault to strategy completed',
+        'Investment of funds into yield source completed',
+        'Confirmation message from strategy to vault completed',
+        'Minting of shares on vault completed'
       ] : [
         'Initial withdraw transaction on local chain completed',
         'Cross chain request to vault completed',
-        'Divestment of funds from strategy completed',
-        'Withdrawal confirmation completed',
-        'Return of funds completed',
-        'Final withdraw to user completed'
+        'Request from vault to strategy completed',
+        'Divestment of funds from yield source completed',
+        'Return of funds from strategy to vault completed',
+        'Return of funds from vault to user completed'
       ];
     }
     
@@ -593,7 +596,7 @@ export default function InteractionContainer({
               ? [Action.deposit, Action.crosschainInvest, Action.deposited]
               : [Action.withdraw, Action.DivestSent, Action.withdrew])
           : (transactionType === 'deposit' 
-              ? [Action.deposit, Action.depositConfirmed, Action.crosschainInvest, Action.FundsInvest, Action.deposited]
+              ? [Action.deposit, Action.depositConfirmed, Action.crosschainInvest, Action.FundsInvest, Action.ReturnFundsToUserSent, Action.FundsReturned, Action.deposited]
               : [Action.withdraw, Action.withdrawconfirmed, Action.DivestSent, Action.FundsDivested, Action.ReturnFundsToUserSent, Action.withdrew]);
         
         // Define callback for real-time step updates
@@ -629,7 +632,7 @@ export default function InteractionContainer({
           crosschainInvestHash,
           transactionType,
           onStepComplete,
-          { isType2, totalSteps: isType2 ? 3 : (transactionType === 'deposit' ? 5 : 6) },
+          { isType2, totalSteps: isType2 ? 3 : (transactionType === 'deposit' ? 6 : 6) },
           activeChain.id,
           vaultData.protocol.chainId
         );
