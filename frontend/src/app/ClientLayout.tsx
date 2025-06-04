@@ -44,15 +44,16 @@ const ClientLayout = ({
                 <MultiChainProvider>
                   <TokenPriceProvider>
                     <main className="min-h-screen flex flex-col relative overflow-hidden py-[40px]">
-                      <div className="flex flex-col flex-1 mx-auto container max-w-[1360px] justify-end">
-                        <div className="pr-[64px]">
-                          <Header />
+                      <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px]">
+                        <Header />
+                        <div className="flex flex-1 ml-16">
+                          <div className="w-full"> {children}</div>
                         </div>
-                        <div className="flex flex-1 max-w-[1360px] justify-end">
-                          {children}
+                        <div className="ml-16">
+                          <div className="w-full">
+                            <Footer />
+                          </div>
                         </div>
-                        {/* Footer aligned with the main content */}
-                        <Footer />
                       </div>
                     </main>
                   </TokenPriceProvider>

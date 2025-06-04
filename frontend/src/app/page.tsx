@@ -25,9 +25,8 @@ export default function Page() {
       <div className='py-4'>
         <BannersCarousel />
       </div>
-      {/* <Note /> */}
       <div className="flex-1 flex flex-col w-full justify-between pb-10">
-        <div className="flex-1 p-4 container mx-auto gap-5">
+        <div className="flex-1 p-4 w-full gap-5">
           <VaultsContainer />
         </div>
       </div>
