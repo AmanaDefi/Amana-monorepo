@@ -5,6 +5,7 @@ import { wallets } from "./header";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
+import Button from "./Button";
 
 export default function ConnectButton() {
   const {
@@ -60,12 +61,9 @@ export default function ConnectButton() {
               </button>
             </div>
           ) : (
-            <button
-              className="p-2 bg-grayBtn rounded-lg border border-borderBtn hover:bg-grayBtnHover w-[165px] h-[50px] text-white"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Connect
-            </button>
+            <Button variant="signIn" onClick={() => setIsModalOpen(true)}>
+              Sign in
+            </Button>
           )}
         </div>
       )}

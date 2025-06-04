@@ -43,9 +43,11 @@ const ClientLayout = ({
               <AccountProvider>
                 <MultiChainProvider>
                   <TokenPriceProvider>
-                    <main className="min-h-screen flex flex-col relative overflow-hidden">
+                    <main className="min-h-screen flex flex-col relative overflow-hidden py-[40px]">
                       <div className="flex flex-col flex-1">
-                        <Header />
+                        <div className="pl-[44px] pr-[108px]">
+                          <Header />
+                        </div>
                         <div className="flex flex-1 mx-auto container">
                           {children}
                         </div>

@@ -194,3 +194,21 @@ body .page-container {
 .custom-toast .Toastify__progress-bar {
   height: 4px;
 }
+.thirdweb-connect-override button {
+  background: #0A0A0A !important;
+  color: white !important;
+  border: 1px solid #9CA3AF !important;
+  border-radius: 8px !important;
+  padding: 17px 16px !important;
+  width: 192px !important;
+  height: 56px !important;
+  font-size: 18px !important;
+  font-weight: normal !important;
+  transition: all 0.3s ease !important;
+}
+.thirdweb-connect-override button:hover,
+.thirdweb-connect-override button:active {
+  background: 
+    linear-gradient(135deg, #14171f 0%, #14171f 60%, rgba(27, 70, 224, 0.3) 85%, #1b46e0 100%) !important;
+    
+}
