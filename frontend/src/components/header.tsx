@@ -40,7 +40,7 @@ const Header = () => {
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   return (
     // <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">
-    <header className="w-full h-[80px] flex items-center justify-between mx-auto px-6 lg:px-0">
+    <header className="min-w-[1360px] h-[80px] flex items-center justify-between px-6 w-full lg:px-0">
       <div className="flex items-center gap-[41px]">
         {!isConnected && (
           <Link href="/" className="flex items-center">

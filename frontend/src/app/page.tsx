@@ -7,6 +7,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { BannersCarousel } from "@/components/banners/BannersCarousel";
 import { Note } from "@/components/Note";
+import InvestBlock from "@/components/InvestBlock";
 
 
 export default function Page() {
@@ -14,6 +15,7 @@ export default function Page() {
   const wallet = useWallet();
   return (
     <div className='flex flex-col w-full'>
+      <InvestBlock />
       <div className='w-full text-center bg-amber-50'>
         {/* <span className='py-2 lg:py-4 px-4 text-black text-sm'>
           This site is currently in beta and may contain bugs 🐞. Report any bugs or give feedback <Link

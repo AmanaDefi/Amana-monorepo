@@ -1,5 +1,29 @@
 import type { Config } from "tailwindcss";
-import {colors} from "./src/utils/colors";
+import plugin from "tailwindcss/plugin";
+import { colors } from "./src/utils/colors";
+
+const beforeGradientBorder = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".before-gradient-border": {
+      position: "relative",
+      zIndex: "0",
+    },
+    ".before-gradient-border::before": {
+      content: '""',
+      position: "absolute",
+      inset: "0",
+      padding: "1px", 
+      borderRadius: "16px", 
+      background: "linear-gradient(180deg, #162559 0%, #1B46E0 100%)",
+      pointerEvents: "none",
+      zIndex: "-1",
+      maskComposite: "exclude",
+      WebkitMask:
+        "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+      WebkitMaskComposite: "xor",
+    },
+  });
+});
 
 const config: Config = {
   content: [
@@ -11,18 +35,20 @@ const config: Config = {
   ],
   theme: {
     screens: {
-      'xs': '480px',
-      'sm': '640px',
-      'md': '768px',
-      'lg': '1024px',
-      'xl': '1280px',
-      '2xl': '1536px',
+      xs: "480px",
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
     },
     extend: {
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        "deep-blue-gradient":
+          "linear-gradient(90deg, rgba(20, 23, 31, 0.15), #1B46E0)",
       },
       borderRadius: {
         "4xl": "2rem",
@@ -51,9 +77,9 @@ const config: Config = {
 
       fontFamily: {
         khTeka: ["'KH Teka'", "sans-serif"],
-        fustat: ['var(--font-fustat)'],
-        mono: ['var(--font-space-mono)'],
-        sans: ['var(--font-inter)'],
+        fustat: ["var(--font-fustat)"],
+        mono: ["var(--font-space-mono)"],
+        sans: ["var(--font-inter)"],
       },
       letterSpacing: {
         1: "1px",
@@ -67,9 +93,9 @@ const config: Config = {
         dot1: "dot1 2s steps(1, end) infinite",
         dot2: "dot2 2s steps(1, end) infinite",
         dot3: "dot3 2s steps(1, end) infinite",
-      }
+      },
     },
   },
-  plugins: [],
+  plugins: [beforeGradientBorder],
 };
 export default config;
