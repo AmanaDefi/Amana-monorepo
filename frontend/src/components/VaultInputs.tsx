@@ -778,13 +778,38 @@ export default function VaultInputs({
 
   // Reset input state after transaction completes or fails
   useEffect(() => {
+    console.log('🔄 [VAULT-INPUTS] transactionCompleted effect triggered:', {
+      transactionCompleted,
+      timestamp: new Date().toISOString(),
+      inputBalance: inputBalance.formatted,
+      displayValue
+    });
+    
     if (transactionCompleted) {
+      console.log('✅ [VAULT-INPUTS] Transaction completed - resetting input state...', {
+        timestamp: new Date().toISOString(),
+        previousInputBalance: inputBalance.formatted,
+        previousDisplayValue: displayValue
+      });
+      
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(EMPTY_BALANCE);
       setOutputBoxErrorMessage("");
       setIsSlippageExceedingLimit(false);
+      
+      console.log('🧹 [VAULT-INPUTS] Input state reset completed!', {
+        timestamp: new Date().toISOString()
+      });
+      
+      // Reset transactionCompleted to false after processing
+      setTimeout(() => {
+        console.log('⏰ [VAULT-INPUTS] Resetting transactionCompleted to false after timeout...', {
+          timestamp: new Date().toISOString()
+        });
+        setTransactionCompleted(false);
+      }, 1000);
     }
   }, [transactionCompleted, initialConversionOutput, setInputBalance]);
 
