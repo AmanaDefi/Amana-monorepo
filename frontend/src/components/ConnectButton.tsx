@@ -1,11 +1,11 @@
 import { client } from "@/app/client";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { ConnectButton as ThirdwebConnectButton } from "thirdweb/react";
-import { wallets } from "./header";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
 import Button from "./Button";
+import { wallets } from "@/constants/wallets";
 
 export default function ConnectButton() {
   const {

@@ -221,3 +221,10 @@ body .page-container {
     #1b46e0 100%
   ) !important;
 }
+.thirdweb-invest-button button,
+.thirdweb-invest-button button:hover,
+.thirdweb-invest-button button:active {
+  background: #1B46E0 !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.15), inset 0 2px 4px 0 #5251c5 !important;
+}

@@ -16,21 +16,7 @@ import {
 } from "@/constants/chainConfig";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-
-export const wallets = [
-  inAppWallet({
-    auth: {
-      options: ["google", "email", "passkey"],
-    },
-    //smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
-  }),
-  createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet"),
-  createWallet("me.rainbow"),
-  createWallet("io.rabby"),
-  createWallet("com.trustwallet.app"),
-  createWallet("com.ledger"),
-];
+import { wallets } from "@/constants/wallets";
 
 const Header = () => {
   const path = usePathname();
