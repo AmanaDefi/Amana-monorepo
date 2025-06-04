@@ -10,10 +10,9 @@ import React, { useState } from "react";
 import AccountProvider from "@/providers/AccountProvider";
 import TokenPriceProvider from "@/providers/TokenPriceProvider";
 import { fustat } from "@/styles/fonts";
-import Header from "@/components/header";
-import Footer from "@/components/Footer";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
+import ConditionalLayout from "./ConditionalLayout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,18 +42,8 @@ const ClientLayout = ({
               <AccountProvider>
                 <MultiChainProvider>
                   <TokenPriceProvider>
-                    <main className="min-h-screen flex flex-col relative overflow-hidden py-[40px]">
-                      <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px]">
-                        <Header />
-                        <div className="flex flex-1 ml-16">
-                          <div className="w-full"> {children}</div>
-                        </div>
-                        <div className="ml-16">
-                          <div className="w-full">
-                            <Footer />
-                          </div>
-                        </div>
-                      </div>
+                    <main className="min-h-screen flex flex-col relative overflow-hidden">
+                      <ConditionalLayout>{children}</ConditionalLayout>
                     </main>
                   </TokenPriceProvider>
                 </MultiChainProvider>

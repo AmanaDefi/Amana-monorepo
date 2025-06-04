@@ -24,6 +24,14 @@ const beforeGradientBorder = plugin(({ addUtilities }) => {
     },
   });
 });
+const menuItemHover = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".menu-item-hover": {
+      boxShadow: "0 2px 4px 0 rgba(0, 0, 0, 0.15)",
+      background: "linear-gradient(139deg, #14171f 0%, #1b46e0 100%)",
+    },
+  });
+});
 
 const config: Config = {
   content: [
@@ -96,6 +104,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [beforeGradientBorder],
+  plugins: [beforeGradientBorder, menuItemHover],
 };
 export default config;
