@@ -107,4 +107,10 @@ export const colors = {
     button: "#1B46E0",
     digits: "#4A77E0",
   },
+  green: {
+    accent: '#05D47F'
+  },
+  red: {
+    error: "#FF1E1E"
+  }
 };

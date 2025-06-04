@@ -1,7 +1,14 @@
-import { VaultData } from "@/types/types";
-import { SetStateAction } from "jotai";
 import { Dispatch, FC, useEffect, useMemo, useRef, useState } from "react";
+import { SetStateAction } from "jotai";
+
+import { VaultData } from "@/types/types";
 import { Dropdown } from "./Dropdown";
+import FiltersIcon from "@/components/svg/Filters";
+import CardsMenuIcon from "@/components/svg/ListMenuCards";
+import ListMenuIcon from "@/components/svg/ListMenuIcon";
+import SearchIcon from "@/components/svg/Search";
+
+const SORT_BY_LIST = ["APY", "TVL", "RISK"];
 
 type Props = {
   vaults: VaultData[];
@@ -16,6 +23,8 @@ type Props = {
   sortOrder: "asc" | "desc";
   setSortBy: Dispatch<SetStateAction<string>>;
   clearAllFilters: () => void;
+  displayType: "cards" | "list";
+  setDisplayType: Dispatch<SetStateAction<"cards" | "list">>;
 };
 
 export const VaultFilters: FC<Props> = ({
@@ -28,12 +37,14 @@ export const VaultFilters: FC<Props> = ({
   setSearchTerm,
   protocolFilter,
   sortBy,
-  sortOrder,
   setSortBy,
   clearAllFilters,
+  displayType,
+  setDisplayType,
 }) => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const chains = useMemo(() => {
     return Array.from(new Set(vaults.map((vault) => vault.protocol.network)));
@@ -63,10 +74,23 @@ export const VaultFilters: FC<Props> = ({
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
+  const handleFilterClick = (filter: string) => {
+    if (sortBy === filter) {
+      toggleSortOrder();
+    } else {
+      setSortBy(filter);
+      setSortOrder("desc");
+    }
+  };
+
+  const handleChangeVaultsDisplay = (display: "cards" | "list") => {
+    setDisplayType(display);
+  };
+
   return (
     <div>
       {/* Mobile Filter Button */}
-      <div className="md:hidden mb-4">
+      {/* <div className="md:hidden mb-4">
         <button
           onClick={() => setShowMobileFilters(!showMobileFilters)}
           className="w-full p-3 bg-customNeutral200 text-white rounded-lg flex justify-between items-center"
@@ -74,35 +98,14 @@ export const VaultFilters: FC<Props> = ({
           <span>Filter & Sort Vaults</span>
           <span>{showMobileFilters ? "↑" : "↓"}</span>
         </button>
-      </div>
+      </div> */}
       {/* Filters and Sort Section */}
       <div
         ref={filterRef}
-        className={`bg-customNeutral200 p-4 rounded-lg mb-6 ${showMobileFilters ? "block" : "hidden md:block"}`}
+        className={` ${showMobileFilters ? "block" : "hidden md:block"}`}
       >
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search vaults..."
-              className="w-full p-2 rounded-md bg-customNeutral300 text-white border border-customNeutral100 focus:border-cyan-400 focus:outline-none"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <select
-              className="p-2 rounded-md bg-customNeutral300 text-white border border-customNeutral100 focus:border-cyan-400 focus:outline-none"
-              value={chainFilter}
-              onChange={(e) => setChainFilter(e.target.value)}
-            >
-              <option value="">All Chains</option>
-              {chains.map((chain) => (
-                <option key={chain} value={chain}>
-                  {chain}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:items-end lg:justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
             <Dropdown
               emptyLabel="All Chains"
               options={chains}
@@ -110,95 +113,65 @@ export const VaultFilters: FC<Props> = ({
               setSelectedOption={setChainFilter}
               width={150}
             />
-            <select
-              className="p-2 rounded-md bg-customNeutral300 text-white border border-customNeutral100 focus:border-cyan-400 focus:outline-none"
-              value={protocolFilter}
-              onChange={(e) => setProtocolFilter(e.target.value)}
-            >
-              <option value="">All Protocols</option>
-              {protocols.map((protocol) => (
-                <option key={protocol} value={protocol}>
-                  {protocol}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-2">
-          <div className="text-white mr-2 flex items-center">Sort by:</div>
-          {["apy", "tvl", "risk"].map((option) => (
+            <Dropdown
+              emptyLabel="All Protocols"
+              options={protocols}
+              selectedOption={protocolFilter}
+              setSelectedOption={setProtocolFilter}
+              width={210}
+            />
             <button
-              key={option}
-              onClick={() => {
-                if (sortBy === option) {
-                  toggleSortOrder();
-                } else {
-                  setSortBy(option);
-                  setSortOrder("desc");
-                }
-              }}
-              className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${
-                sortBy === option
-                  ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
-                  : "bg-customNeutral300 text-white"
-              }`}
-            >
-              {option.toUpperCase()}
-              {sortBy === option && (
-                <span className="ml-1">{sortOrder === "desc" ? "↓" : "↑"}</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Active filters display and clear button */}
-        {(searchTerm || chainFilter || protocolFilter) && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-customNeutral100">
-            <div className="text-white mr-2 flex items-center text-sm">
-              Active filters:
-            </div>
-            {searchTerm && (
-              <div className="px-2 py-1 bg-customNeutral300 rounded-md text-xs text-white flex items-center gap-1">
-                <span>Search: {searchTerm}</span>
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="ml-1 text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            {chainFilter && (
-              <div className="px-2 py-1 bg-customNeutral300 rounded-md text-xs text-white flex items-center gap-1">
-                <span>Chain: {chainFilter}</span>
-                <button
-                  onClick={() => setChainFilter("")}
-                  className="ml-1 text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            {protocolFilter && (
-              <div className="px-2 py-1 bg-customNeutral300 rounded-md text-xs text-white flex items-center gap-1">
-                <span>Protocol: {protocolFilter}</span>
-                <button
-                  onClick={() => setProtocolFilter("")}
-                  className="ml-1 text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            <button
+              type="button"
               onClick={clearAllFilters}
-              className="px-2 py-1 text-xs text-cyan-400 hover:text-cyan-300"
+              className="underline font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-white active:scale-90"
             >
-              Clear all
+              Clear Filters
             </button>
           </div>
-        )}
+
+          <div className="flex flex-row gap-6 items-center">
+            <div className="flex flex-row gap-2 items-center">
+              <button
+                type="button"
+                onClick={() => handleChangeVaultsDisplay("list")}
+              >
+                <ListMenuIcon
+                  color={displayType !== "list" ? "#535E73" : "#1B46E0"}
+                />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChangeVaultsDisplay("cards")}
+              >
+                <CardsMenuIcon
+                  color={displayType !== "cards" ? "#535E73" : "#1B46E0"}
+                />
+              </button>
+              <Dropdown
+                options={SORT_BY_LIST}
+                selectedOption={sortBy}
+                setSelectedOption={handleFilterClick}
+                IconButton={FiltersIcon}
+              />
+            </div>
+            <div
+              onClick={() => inputRef?.current?.focus()}
+              className="focus-within:border-blue-button bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search name or paste address"
+                className="text-white focus:outline-none bg-transparent w-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <div className="absolute left-4 top-3">
+                <SearchIcon />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
