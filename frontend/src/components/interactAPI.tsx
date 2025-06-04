@@ -557,6 +557,24 @@ export default function InteractionContainer({
           setAction(finalAction);
           setStep(nextStep);
           setFinishedTransaction(true);
+          
+          // 🔄 NEW: Trigger automatic balance refresh for Type 1 transactions
+          console.log('🎯 [AUTO-REFRESH-TYPE1] Type 1 transaction completed - triggering automatic balance refresh...', {
+            finalAction,
+            transactionType,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Set transactionCompleted to true to trigger balance refresh
+          setTransactionCompleted(true);
+          
+          // Also call manual refresh for good measure
+          setTimeout(() => {
+            console.log('💰 [AUTO-REFRESH-TYPE1] Calling manual refreshBalance after Type 1 transaction completion...', {
+              timestamp: new Date().toISOString()
+            });
+            refreshBalance();
+          }, 2000); // Wait 2 seconds for the blockchain to update
         }
       }, 1000);
       return;
@@ -636,6 +654,24 @@ export default function InteractionContainer({
           
           setFinishedTransaction(true);
           setIsTransactionProcessing(false);
+          
+          // 🔄 NEW: Trigger automatic balance refresh when transaction completes
+          console.log('🎯 [AUTO-REFRESH] Transaction completed successfully - triggering automatic balance refresh...', {
+            finalAction,
+            transactionType,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Set transactionCompleted to true to trigger balance refresh
+          setTransactionCompleted(true);
+          
+          // Also call manual refresh for good measure
+          setTimeout(() => {
+            console.log('💰 [AUTO-REFRESH] Calling manual refreshBalance after transaction completion...', {
+              timestamp: new Date().toISOString()
+            });
+            refreshBalance();
+          }, 2000); // Wait 2 seconds for the blockchain to update
           
           trackEvent("Transaction Crosschain Complete", {
             vaultSymbol: vaultData.symbol,
@@ -1163,6 +1199,14 @@ function Interaction({
 
   function handleDone() {
     console.log('[UI] handleDone called - clearing all transaction state');
+    console.log('🎯 [TRANSACTION-COMPLETE] User clicked Done button, starting cleanup...', {
+      timestamp: new Date().toISOString(),
+      transactionStepFeedback: Object.keys(transactionStepFeedback).length,
+      lastTransactionStepFeedback: Object.keys(lastTransactionStepFeedback).length,
+      crosschainInvestHash: !!crosschainInvestHash,
+      isTransactionProcessing,
+      finishedTransaction
+    });
     
     // Mark component as inactive to prevent any ongoing BlockPI updates
     isComponentActiveRef.current = false;
@@ -1173,7 +1217,12 @@ function Interaction({
     setLastTransactionStepFeedback({});
     setTransactionStepFeedback({});
     setFinishedTransaction(false);
-    setTransactionCompleted(false);
+    
+    console.log('🔄 [TRANSACTION-COMPLETE] Setting transactionCompleted to true - this should trigger balance refresh...', {
+      timestamp: new Date().toISOString()
+    });
+    setTransactionCompleted(true);
+    
     setIsTransactionProcessing(false);
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
@@ -1183,11 +1232,21 @@ function Interaction({
     // Reactivate component after clearing
     setTimeout(() => {
       isComponentActiveRef.current = true;
+      console.log('⏰ [TRANSACTION-COMPLETE] Component reactivated after timeout', {
+        timestamp: new Date().toISOString()
+      });
     }, 100);
     
     // Refresh balance
+    console.log('💰 [TRANSACTION-COMPLETE] Calling refreshBalance manually...', {
+      timestamp: new Date().toISOString()
+    });
     refreshBalance();
+    
     console.log('[UI] All transaction state cleared, component reactivated');
+    console.log('✅ [TRANSACTION-COMPLETE] Done button processing completed!', {
+      timestamp: new Date().toISOString()
+    });
   }
 
   return (
