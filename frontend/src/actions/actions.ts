@@ -1119,7 +1119,7 @@ const executeSolanaDeposit = async (
     signAllTransactions: walletContext.signAllTransactions,
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
-  const depositorBytes = walletContext.publicKey!.toBytes();
+  const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
 
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
@@ -1131,7 +1131,7 @@ const executeSolanaDeposit = async (
         0,
         minSharesOut,
         slippageValue,
-        depositorBytes,
+        solanaWalletAddress,
         keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ],
     };
@@ -1148,7 +1148,7 @@ const executeSolanaDeposit = async (
     const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
       types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
-      values: [ZeroAddress, evmAddress, 0, minSharesOut, slippageValue, depositorBytes, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+      values: [ZeroAddress, evmAddress, 0, minSharesOut, slippageValue, solanaWalletAddress, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ],
     };
     console.log("SPL token deposit detected");
@@ -1179,7 +1179,7 @@ export const executeSolanaWithdrawal = async (
   const minAmountOut = getMinAmountOut(
     withdrawAssetAmount
   );
-  const depositorBytes = new TextEncoder().encode(walletContext.publicKey!.toBase58());
+  const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     walletContext.publicKey!.toBase58(),
@@ -1206,7 +1206,7 @@ export const executeSolanaWithdrawal = async (
       withdrawAssetAmount,
       minAmountOut,
       slippageValue,
-      depositorBytes,
+      solanaWalletAddress,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
 
     ],
