@@ -250,7 +250,7 @@ export const VaultCard: FC<Props> = React.memo(
               router.push(`/vaults/${vault.id}?tab=deposit`);
             }}
           >
-            Deposit
+            {!!walletAddress ? 'Deposit' : "Invest"}
           </AppButton>
           {userVaultBalances.find(
             (balance: UserVaultBalance) => balance.vaultId === vault.id,
