@@ -2,11 +2,49 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
+import CloseSidebarIcon from "./svg/CloseSidebarIcon";
 import { bottomMenuItems, menuItems } from "@/constants/sidebarMenu";
+import { NAV_LINKS } from "@/constants/navigation";
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useSidebarActions } from "@/hooks/useSidebarActions";
+
+interface MobileNavItemProps {
+  label: string;
+  href: string;
+  isActive: boolean;
+  onItemClick: () => void;
+}
+
+const MobileNavItem: React.FC<MobileNavItemProps> = ({
+  label,
+  href,
+  isActive,
+  onItemClick,
+}) => {
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push(href);
+    onItemClick();
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`flex items-center px-[22px] rounded-lg h-12 font-bold text-lg transition-all duration-300 ease-in-out w-[240px] relative text-white hover:menu-item-hover ${
+        isActive ? "menu-item-hover text-white" : ""
+      }`}
+    >
+      <span>{label}</span>
+      {isActive && (
+        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm"></div>
+      )}
+    </button>
+  );
+};
 
 interface MobileSidebarMenuItemProps {
   item: {
@@ -150,9 +188,14 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
   onClose,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
   const actions = useSidebarActions();
+
+  const navLinks = isConnected
+    ? [{ label: "Home", href: "/" }, ...NAV_LINKS.slice(1)]
+    : NAV_LINKS;
 
   const enhancedMenuItems = menuItems.map((item) =>
     item.type === "button"
@@ -204,21 +247,16 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
         <div className="flex items-center justify-between py-[54px] px-[29px] text-white">
           <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
         </div>
+
         <div className="flex-1 overflow-y-auto px-[29px] text-white">
           <div className="mb-8">
-            <span className="text-[24px] font-bold text-white mb-8 block">
-              Explore Amana
-            </span>
-
             <nav className="space-y-4">
-              {enhancedMenuItems.map((item) => (
-                <MobileSidebarMenuItem
-                  key={item.id}
-                  item={item}
-                  isActive={
-                    activeSection === item.id ||
-                    (!activeSection && item.id === "earn")
-                  }
+              {navLinks.map(({ label, href }) => (
+                <MobileNavItem
+                  key={href}
+                  label={label}
+                  href={href}
+                  isActive={pathname === href}
                   onItemClick={onClose}
                 />
               ))}

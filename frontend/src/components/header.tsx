@@ -110,16 +110,20 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
               connectButton={{ label: "Sign in" }}
             />
           </div>
-          <div className="md:hidden thirdweb-connect-override">
-            <ConnectButton
-              wallets={wallets}
-              chains={SUPPORTED_CHAINS}
-              client={client}
-              connectButton={{ label: "Sign in" }}
-            />
-          </div>
+
+          {path === "/" && (
+            <div className="md:hidden thirdweb-connect-override">
+              <ConnectButton
+                wallets={wallets}
+                chains={SUPPORTED_CHAINS}
+                client={client}
+                connectButton={{ label: "Sign in" }}
+              />
+            </div>
+          )}
         </div>
       </header>
+
       {isConnected && (
         <MobileSidebar
           activeSection={activeSection}
