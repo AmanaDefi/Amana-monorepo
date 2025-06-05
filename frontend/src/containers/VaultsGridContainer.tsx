@@ -5,7 +5,7 @@ import {
   VaultAPY,
   UserVaultBalance,
   VaultTotalAssets,
-  VaultTotalAssetsinToken
+  VaultTotalAssetsinToken,
 } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
@@ -14,7 +14,7 @@ import { Account } from "thirdweb/wallets";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useActiveAccount } from "thirdweb/react";
-import VaultsGrid from "../components/VaultsGrid";
+import VaultsGrid from "../components/VaultsWrapper";
 
 // Zero account for default value
 export const ZERO_ACCOUNT: Account = {
@@ -37,13 +37,19 @@ interface VaultsGridContainerProps {
 
 const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
   activeChain,
-  defaultAccount = ZERO_ACCOUNT
+  defaultAccount = ZERO_ACCOUNT,
 }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
-  const [userVaultBalances, setUserVaultBalances] = useState<UserVaultBalance[]>([]);
-  const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>([]);
-  const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
+  const [userVaultBalances, setUserVaultBalances] = useState<
+    UserVaultBalance[]
+  >([]);
+  const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>(
+    [],
+  );
+  const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<
+    VaultTotalAssetsinToken[]
+  >([]);
   const pathname = usePathname();
 
   const vaults: VaultData[] = VAULT_DATA;
@@ -56,7 +62,7 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
     walletAddress,
     setUserVaultBalances,
     setVaultTotalAssets,
-    setVaultTotalAssetsinToken
+    setVaultTotalAssetsinToken,
   );
   // Fetch token prices for APY calculations
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
@@ -65,7 +71,17 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
   // Calculate APYs
-  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, opTokenPrice, true);
+  useUpdateAPYs(
+    vaults,
+    setVaultAPYs,
+    setLoading,
+    crvTokenPrice,
+    cvxTokenPrice,
+    ethTokenPrice,
+    compTokenPrice,
+    opTokenPrice,
+    true,
+  );
 
   return (
     <div className="container mx-auto">
@@ -75,7 +91,6 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
         vaultAPYs={vaultAPYs}
         userVaultBalances={userVaultBalances}
         vaultTotalAssets={vaultTotalAssets}
-        vaultTotalAssetsinToken={vaultTotalAssetsinToken}
       />
     </div>
   );
