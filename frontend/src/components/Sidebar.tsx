@@ -98,7 +98,13 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="w-[302px] h-[972px] rounded-3xl py-[54px] px-[31px] sidebar-shadow bg-[#0D1117] flex flex-col">
+    <div
+      className="w-[302px] h-[972px] rounded-3xl py-[54px] px-[31px] sidebar-shadow bg-[#0D1117] flex flex-col justify-between"
+      style={{
+        boxShadow:
+          "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
+      }}
+    >
       <div className="text-white">
         <div className="flex items-center justify-between mb-[65px]">
           <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
@@ -111,7 +117,7 @@ const Sidebar = () => {
           <span className="text-[24px] font-bold text-white mb-8 block">
             Explore Amana
           </span>
-          <nav className="space-y-2">
+          <nav className="space-y-4">
             {menuItems.map((item) => (
               <SidebarMenuItem
                 key={item.id}
@@ -121,8 +127,10 @@ const Sidebar = () => {
             ))}
           </nav>
         </div>
-        <div className="border-t border-gray-700 my-6"></div>
-        <nav className="space-y-2 mt-auto">
+      </div>
+      <div>
+        <div className="border-t border-[#535E73] my-4"></div>
+        <nav className="space-y-1 mt-auto">
           {bottomMenuItems.map((item) => (
             <SidebarMenuItem
               key={item.id}
