@@ -22,11 +22,11 @@ export default function Page() {
             href='mailto:info@amanadefi.com' className='underline-offset-2 underline'>here</Link>
         </span> */}
       </div>
-      <div className='py-4'>
+      {/* <div className='py-4'>
         <BannersCarousel />
-      </div>
+      </div> */}
       <div className="flex-1 flex flex-col w-full justify-between pb-10">
-        <div className="flex-1 p-4 w-full gap-5">
+        <div className="flex-1 w-full gap-5 my-6">
           <VaultsContainer />
         </div>
       </div>

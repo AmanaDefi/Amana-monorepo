@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useState } from "react";
 import AccountProvider from "@/providers/AccountProvider";
 import TokenPriceProvider from "@/providers/TokenPriceProvider";
-import { fustat } from "@/styles/fonts";
+import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
@@ -33,7 +33,7 @@ const ClientLayout = ({
   return (
     <html
       lang="en"
-      className={`${fustat.variable} ${inter.variable} ${spaceMono.variable}`}
+      className={`${fustat.variable} ${gotham.variable} ${inter.variable} ${spaceMono.variable}`}
     >
       <body className="font-sans font-light">
         <QueryClientProvider client={queryClient}>

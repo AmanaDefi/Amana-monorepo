@@ -1,0 +1,115 @@
+import { Dispatch, useEffect, useRef, useState } from "react";
+
+import classNames from "classnames";
+import { SetStateAction } from "jotai";
+
+import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
+import { DropdownList } from "./DropdownList";
+
+type Props = {
+  options: string[];
+  selectedOption: string;
+  setSelectedOption:
+    | Dispatch<SetStateAction<string>>
+    | ((filter: string) => void);
+  width?: number;
+  emptyLabel?: string;
+  IconButton?: React.ElementType;
+};
+
+export const Dropdown: React.FC<Props> = ({
+  options,
+  selectedOption,
+  setSelectedOption,
+  width,
+  emptyLabel,
+  IconButton,
+}) => {
+  const [isShownList, setIsShownList] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      console.log('handleClick')
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        console.log('handleClick setIsShownList(false)' )
+        setIsShownList(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleToggleDropdown = () => {
+    setIsShownList(!isShownList);
+  };
+
+  const handleSelectedOption = (
+    event:
+      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
+      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    option: string,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setSelectedOption(option);
+
+    setIsShownList(false);
+  };
+
+  const handleOnBlur = () => {
+    setTimeout(() => setIsShownList(false), 150);
+  };
+
+  return (
+    <div ref={dropdownRef} className="flex relative font-bold text-lg leading-[19px] tracking-1 text-white ">
+      {IconButton ? (
+        <button type="button" onClick={handleToggleDropdown}>
+          <IconButton color={!isShownList ? "#535E73" : "#1B46E0"} />
+        </button>
+      ) : (
+        <div
+          style={{ width: width }}
+          className="flex hover:cursor-pointer hover:border-[#535E73] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1 border-blue-button h-fit"
+          onClick={handleToggleDropdown}
+        >
+          <input
+            type="dropdown"
+            className="w-4/5 hover:cursor-pointer bg-transparent outline-none"
+            value={selectedOption ? selectedOption : emptyLabel}
+            onBlur={handleOnBlur}
+            readOnly
+          />
+          <button
+            aria-label="dropdown-arrow"
+            type="button"
+            className={classNames("w-3", {
+              "rotate-90": isShownList,
+              "-rotate-90": !isShownList,
+            })}
+          >
+            <LeftArrowIcon color="white" strokeWidth={3} />
+          </button>
+        </div>
+      )}
+
+      {isShownList && (
+        <DropdownList
+          isIconButton={!!IconButton}
+          options={options}
+          handleSelectedOption={handleSelectedOption}
+          handleToggleDropdown={handleToggleDropdown}
+          selectedOption={selectedOption}
+          width={!width ? 200 : width + 20}
+        />
+      )}
+    </div>
+  );
+};
