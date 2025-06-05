@@ -16,7 +16,6 @@ import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
-import { InfoPopup } from "./InfoBlock.tsx/InfoPopup";
 import { InfoBlock } from "./InfoBlock.tsx";
 
 const RISK_LEVELS: Record<number, { level: string; color: string }> = {
@@ -129,7 +128,7 @@ export const VaultCard: FC<Props> = React.memo(
                     by all users across all chains.
                   </InfoBlock>
                 </div>
-                <p className="text-blue-digits font-bold text-xl leading-5">
+                <p className="text-blue-digits font-bold text-xl leading-6">
                   $
                   {formatNumberWithSuffix(
                     Number(totalAssets?.totalAssets || 0),
@@ -138,8 +137,8 @@ export const VaultCard: FC<Props> = React.memo(
               </div>
               <div className="flex flex-col gap-2 items-center">
                 <div className="flex flex-row gap-1 items-center">
-                  <p className="font-normal text-base leading-4 uppercase text-white">
-                    RISK
+                  <p className="font-normal text-base leading-4 text-white">
+                    Risk
                   </p>
                   <InfoBlock isMiddle>
                     💡 Risk Rating: A <br />
@@ -165,7 +164,7 @@ export const VaultCard: FC<Props> = React.memo(
                 </div>
                 <p
                   className={classNames(
-                    "font-bold text-xl leading-5",
+                    "font-bold text-xl leading-6",
                     { "text-green-accent": Number(vaultAPY?.APY7d) > 0 },
                     { "text-red-error": Number(vaultAPY?.APY7d) <= 0 },
                   )}
@@ -179,7 +178,7 @@ export const VaultCard: FC<Props> = React.memo(
           {/*MOCK APY 30d and predictions */}
           <div className="flex flex-row gap-4">
             <VaultCardInfoBlock>
-              <div className="flex flex-col gap-2 w-full relative">
+              <div className="flex flex-col gap-2 w-full relative pr-6">
                 <p className="font-normal text-sm leading-4 text-white">
                   30d avg APY
                 </p>
@@ -206,7 +205,7 @@ export const VaultCard: FC<Props> = React.memo(
             </VaultCardInfoBlock>
 
             <VaultCardInfoBlock>
-              <div className="flex flex-col gap-2  w-full relative">
+              <div className="flex flex-col gap-2  w-full relative pr-6">
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
@@ -251,7 +250,7 @@ export const VaultCard: FC<Props> = React.memo(
               router.push(`/vaults/${vault.id}?tab=deposit`);
             }}
           >
-            Deposit
+            {!!walletAddress ? 'Deposit' : "Invest"}
           </AppButton>
           {userVaultBalances.find(
             (balance: UserVaultBalance) => balance.vaultId === vault.id,

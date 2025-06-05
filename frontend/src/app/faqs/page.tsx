@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, {useEffect } from "react";
 import Link from "next/link";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
+import { useActiveAccount } from "thirdweb/react";
 import { useRouter } from 'next/navigation';
 
 export default function FAQ() {
@@ -11,9 +11,7 @@ export default function FAQ() {
     if (!account) {
       router.push("/");
     }
-  }, [account]);
-
-
+  }, [account, router]);
 
   return (
       <>

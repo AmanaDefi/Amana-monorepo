@@ -7,7 +7,7 @@ import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import { DropdownList } from "./DropdownList";
 
 type Props = {
-  options: string[];
+  options: { value: string; icon?: string }[];
   selectedOption: string;
   setSelectedOption:
     | Dispatch<SetStateAction<string>>
@@ -26,16 +26,16 @@ export const Dropdown: React.FC<Props> = ({
   IconButton,
 }) => {
   const [isShownList, setIsShownList] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      console.log('handleClick')
+      console.log("handleClick");
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        console.log('handleClick setIsShownList(false)' )
+        console.log("handleClick setIsShownList(false)");
         setIsShownList(false);
       }
     }
@@ -69,7 +69,10 @@ export const Dropdown: React.FC<Props> = ({
   };
 
   return (
-    <div ref={dropdownRef} className="flex relative font-bold text-lg leading-[19px] tracking-1 text-white ">
+    <div
+      ref={dropdownRef}
+      className="flex relative font-bold text-lg leading-[19px] tracking-1 text-white "
+    >
       {IconButton ? (
         <button type="button" onClick={handleToggleDropdown}>
           <IconButton color={!isShownList ? "#535E73" : "#1B46E0"} />
@@ -100,16 +103,14 @@ export const Dropdown: React.FC<Props> = ({
         </div>
       )}
 
-      {isShownList && (
-        <DropdownList
-          isIconButton={!!IconButton}
-          options={options}
-          handleSelectedOption={handleSelectedOption}
-          handleToggleDropdown={handleToggleDropdown}
-          selectedOption={selectedOption}
-          width={!width ? 200 : width + 20}
-        />
-      )}
+      <DropdownList
+        isIconButton={!!IconButton}
+        options={options}
+        handleSelectedOption={handleSelectedOption}
+        selectedOption={selectedOption}
+        width={!width ? 200 : width + 20}
+        isShownList={isShownList}
+      />
     </div>
   );
 };

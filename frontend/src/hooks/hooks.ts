@@ -228,7 +228,16 @@ export const useUpdateVaultBalanceAndTotal = (
       localStorage.setItem(HAS_CHANGE_DEPOSIT, "false");
     } finally {
     }
-  }, [provider, vaults, walletAddress]);
+  }, [
+    provider,
+    vaults,
+    walletAddress,
+    mcInterface,
+    setUserVaultBalances,
+    setVaultTotalAssets,
+    setVaultTotalAssetsinToken,
+    vaultInterface,
+  ]);
   useEffect(() => {
     update();
   }, [update]);
@@ -463,7 +472,7 @@ export const useUpdateAPYs = (
         updateAPYs();
       }
     }
-  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, isFromVaultGrid]);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, isFromVaultGrid, cvxTokenPrice, opTokenPrice, setLoading, setVaultAPYs]);
 };
 
 export const useInteractionEvents = ({

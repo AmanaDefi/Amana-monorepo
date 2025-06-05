@@ -7,6 +7,7 @@ import { formatNumberWithSuffix } from "@/utils/utils";
 import FlashIcon from "@/components/svg/Flash";
 import { AppButton } from "@/components/button/AppButton";
 import classNames from "classnames";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 type Props = {
   vault: VaultData;
@@ -17,6 +18,7 @@ type Props = {
 export const VaultRow: FC<Props> = React.memo(
   ({ vault, vaultAPYs, vaultTotalAssets }) => {
     const router = useRouter();
+    const { walletAddress } = useMultiChain();
 
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
@@ -96,7 +98,7 @@ export const VaultRow: FC<Props> = React.memo(
               />
             </div>
             <div className="w-[50%]">
-              <AppButton onClick={handleNavigate}>Details</AppButton>
+              <AppButton onClick={handleNavigate}>{!!walletAddress ? 'Details' : "Invest"}</AppButton>
             </div>
           </div>
         </div>

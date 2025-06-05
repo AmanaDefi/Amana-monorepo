@@ -8,7 +8,7 @@ import CardsMenuIcon from "@/components/svg/ListMenuCards";
 import ListMenuIcon from "@/components/svg/ListMenuIcon";
 import SearchIcon from "@/components/svg/Search";
 
-const SORT_BY_LIST = ["APY", "TVL", "RISK"];
+const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "RISK" }];
 
 type Props = {
   vaults: VaultData[];
@@ -47,11 +47,33 @@ export const VaultFilters: FC<Props> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const chains = useMemo(() => {
-    return Array.from(new Set(vaults.map((vault) => vault.protocol.network)));
+    const uniqueNetworksMap = new Map();
+
+    vaults.forEach((vault) => {
+      if (vault && vault.protocol && typeof vault.protocol.network === 'string') {
+        const networkName = vault.protocol.network;
+        const iconUrl = vault.imgURL; 
+  
+        if (!uniqueNetworksMap.has(networkName)) {
+          uniqueNetworksMap.set(networkName, {
+            value: networkName,
+            icon: iconUrl, 
+          });
+        }
+      }
+    });
+  
+    return Array.from(uniqueNetworksMap.values());
   }, [vaults]);
 
   const protocols = useMemo(() => {
-    return Array.from(new Set(vaults.map((vault) => vault.protocol.name)));
+    return Array.from(
+      new Set(
+        vaults.map((vault) => {
+          return { value: vault.protocol.name };
+        }),
+      ),
+    );
   }, [vaults]);
 
   useEffect(() => {
@@ -88,78 +110,78 @@ export const VaultFilters: FC<Props> = ({
   };
 
   return (
-      <div
-        ref={filterRef}
-        className={` ${showMobileFilters ? "block" : "hidden md:block"}`}
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Dropdown
-              emptyLabel="All Chains"
-              options={chains}
-              selectedOption={chainFilter}
-              setSelectedOption={setChainFilter}
-              width={150}
-            />
-            <Dropdown
-              emptyLabel="All Protocols"
-              options={protocols}
-              selectedOption={protocolFilter}
-              setSelectedOption={setProtocolFilter}
-              width={210}
-            />
+    <div
+      ref={filterRef}
+      className={` ${showMobileFilters ? "block" : "hidden md:block"}`}
+    >
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <Dropdown
+            emptyLabel="All Chains"
+            options={chains}
+            selectedOption={chainFilter}
+            setSelectedOption={setChainFilter}
+            width={210}
+          />
+          <Dropdown
+            emptyLabel="All Protocols"
+            options={protocols}
+            selectedOption={protocolFilter}
+            setSelectedOption={setProtocolFilter}
+            width={210}
+          />
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="underline font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-blue-button active:scale-90"
+          >
+            Clear Filters
+          </button>
+        </div>
+
+        <div className="flex flex-row gap-6 items-center">
+          <div className="flex flex-row gap-2 items-center">
             <button
               type="button"
-              onClick={clearAllFilters}
-              className="underline font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-blue-button active:scale-90"
+              onClick={() => handleChangeVaultsDisplay("list")}
             >
-              Clear Filters
+              <ListMenuIcon
+                color={displayType !== "list" ? "#535E73" : "#1B46E0"}
+              />
             </button>
-          </div>
-
-          <div className="flex flex-row gap-6 items-center">
-            <div className="flex flex-row gap-2 items-center">
-              <button
-                type="button"
-                onClick={() => handleChangeVaultsDisplay("list")}
-              >
-                <ListMenuIcon
-                  color={displayType !== "list" ? "#535E73" : "#1B46E0"}
-                />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleChangeVaultsDisplay("cards")}
-              >
-                <CardsMenuIcon
-                  color={displayType !== "cards" ? "#535E73" : "#1B46E0"}
-                />
-              </button>
-              <Dropdown
-                options={SORT_BY_LIST}
-                selectedOption={sortBy}
-                setSelectedOption={handleFilterClick}
-                IconButton={FiltersIcon}
-              />
-            </div>
-            <div
-              onClick={() => inputRef?.current?.focus()}
-              className="focus-within:border-blue-button  bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            <button
+              type="button"
+              onClick={() => handleChangeVaultsDisplay("cards")}
             >
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Search name or paste address"
-                className="text-white focus:outline-none bg-transparent w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              <CardsMenuIcon
+                color={displayType !== "cards" ? "#535E73" : "#1B46E0"}
               />
-              <div className="absolute left-4 top-3">
-                <SearchIcon />
-              </div>
+            </button>
+            <Dropdown
+              options={SORT_BY_LIST}
+              selectedOption={sortBy}
+              setSelectedOption={handleFilterClick}
+              IconButton={FiltersIcon}
+            />
+          </div>
+          <div
+            onClick={() => inputRef?.current?.focus()}
+            className="focus-within:border-blue-button  bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search name or paste address"
+              className="text-white focus:outline-none bg-transparent w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="absolute left-4 top-3">
+              <SearchIcon />
             </div>
           </div>
         </div>
       </div>
+    </div>
   );
 };
