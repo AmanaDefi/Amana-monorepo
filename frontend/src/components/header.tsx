@@ -16,21 +16,7 @@ import {
 } from "@/constants/chainConfig";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-
-export const wallets = [
-  inAppWallet({
-    auth: {
-      options: ["google", "email", "passkey"],
-    },
-    //smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
-  }),
-  createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet"),
-  createWallet("me.rainbow"),
-  createWallet("io.rabby"),
-  createWallet("com.trustwallet.app"),
-  createWallet("com.ledger"),
-];
+import { wallets } from "@/constants/wallets";
 
 const Header = () => {
   const path = usePathname();
@@ -39,8 +25,7 @@ const Header = () => {
   const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   return (
-    // <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">
-    <header className="w-full h-[80px] flex items-center justify-between mx-auto px-6 lg:px-0">
+    <header className="w-full h-[80px] flex items-center justify-between mb-6">
       <div className="flex items-center gap-[41px]">
         {!isConnected && (
           <Link href="/" className="flex items-center">

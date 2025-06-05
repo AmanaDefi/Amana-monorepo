@@ -30,7 +30,7 @@
   /* Blue progress bar */
 
   --header-height: 71px;
-  
+
   /* Fluid button animation variables */
   --fluid-button-bg-from: #262830;
   --fluid-button-bg-to: #06afbc;
@@ -55,13 +55,17 @@
 .fluid-hover-button {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(to right, var(--fluid-button-bg-from), var(--fluid-button-bg-to));
+  background: linear-gradient(
+    to right,
+    var(--fluid-button-bg-from),
+    var(--fluid-button-bg-to)
+  );
   transition: all 0.3s ease;
 }
 
 /* The flowing overlay element */
 .fluid-hover-button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   right: 0;
@@ -181,7 +185,7 @@ body .page-container {
 }
 
 .custom-toast .Toastify__close-button {
-  color: #8A8F98;
+  color: #8a8f98;
   opacity: 1;
   margin-top: -5px;
   margin-right: -5px;
@@ -194,10 +198,11 @@ body .page-container {
 .custom-toast .Toastify__progress-bar {
   height: 4px;
 }
+
 .thirdweb-connect-override button {
-  background: #0A0A0A !important;
+  background: #0a0a0a !important;
   color: white !important;
-  border: 1px solid #9CA3AF !important;
+  border: 1px solid #9ca3af !important;
   border-radius: 8px !important;
   padding: 17px 16px !important;
   width: 192px !important;
@@ -208,7 +213,18 @@ body .page-container {
 }
 .thirdweb-connect-override button:hover,
 .thirdweb-connect-override button:active {
-  background: 
-    linear-gradient(135deg, #14171f 0%, #14171f 60%, rgba(27, 70, 224, 0.3) 85%, #1b46e0 100%) !important;
-    
+  background: linear-gradient(
+    135deg,
+    #14171f 0%,
+    #14171f 60%,
+    rgba(27, 70, 224, 0.3) 85%,
+    #1b46e0 100%
+  ) !important;
+}
+.thirdweb-invest-button button,
+.thirdweb-invest-button button:hover,
+.thirdweb-invest-button button:active {
+  background: #1B46E0 !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.15), inset 0 2px 4px 0 #5251c5 !important;
 }

@@ -26,12 +26,12 @@ import {
   useWalletBalance,
 } from "thirdweb/react";
 import { client } from "@/utils/client";
-import { wallets } from "@/components/header";
 import useSolanaBalance from "@/hooks/useSolanaBalance";
 import { Chain } from "thirdweb";
 import { Balance } from "@/types/types";
 import { format } from "@/utils/utils";
 import { EMPTY_BALANCE } from "@/utils/helpers";
+import { wallets } from "@/constants/wallets";
 declare global {
   interface Window {
     solana?: any;
