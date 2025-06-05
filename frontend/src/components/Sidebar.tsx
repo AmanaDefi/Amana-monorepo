@@ -8,6 +8,7 @@ import CloseSidebarIcon from "./svg/CloseSidebarIcon";
 import OpenSidebarIcon from "./svg/sidebar/OpenSidebarIcon";
 import { bottomMenuItems, menuItems } from "@/config.ts/sidebarMenu";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useSidebarActions } from "@/hooks/useSidebarActions";
 
 interface SidebarMenuItemProps {
   item: {
@@ -154,8 +155,23 @@ const Sidebar = ({
   const pathname = usePathname();
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
-
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const actions = useSidebarActions();
+
+  const enhancedMenuItems = menuItems.map((item) =>
+    item.type === "button"
+      ? { ...item, action: actions[item.id as keyof typeof actions] }
+      : item,
+  );
+
+  const enhancedBottomItems = bottomMenuItems.map((item) =>
+    item.id === "logout"
+      ? { ...item, action: actions.logout }
+      : {
+          ...item,
+          action: actions[item.id as keyof typeof actions],
+        },
+  );
 
   if (!isConnected) return null;
 
@@ -220,7 +236,7 @@ const Sidebar = ({
               isCollapsed ? "space-y-4 flex flex-col items-center" : "space-y-4"
             }
           >
-            {menuItems.map((item) => (
+            {enhancedMenuItems.map((item) => (
               <SidebarMenuItem
                 key={item.id}
                 item={item}
@@ -243,7 +259,7 @@ const Sidebar = ({
               : "space-y-1 mt-auto"
           }
         >
-          {bottomMenuItems.map((item) => (
+          {enhancedBottomItems.map((item) => (
             <SidebarMenuItem
               key={item.id}
               item={item}
