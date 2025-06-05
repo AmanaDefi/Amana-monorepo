@@ -587,13 +587,15 @@ contract WithdrawHelper is Revertable {
             } else {
                 recipient = abi.encodePacked(receiver);
             }
-            handleGasFeeAndWithdrawToUser(
-                recipient,
-                withdrawZRC20,
-                context.amount,
-                registry,
-                vaultNonce
-            );
+            if (context.amount > 0) {
+                handleGasFeeAndWithdrawToUser(
+                    recipient,
+                    withdrawZRC20,
+                    context.amount,
+                    registry,
+                    vaultNonce
+                );
+            }
             _sendRevertToStrategy(
                 strategyAddress,
                 vaultAsset,
@@ -683,13 +685,15 @@ contract WithdrawHelper is Revertable {
             } else {
                 recipient = abi.encodePacked(receiver);
             }
-            handleGasFeeAndWithdrawToUser(
-                recipient,
-                withdrawZRC20,
-                context.amount,
-                registry,
-                vaultNonce
-            );
+            if (context.amount > 0) {
+                handleGasFeeAndWithdrawToUser(
+                    recipient,
+                    withdrawZRC20,
+                    context.amount,
+                    registry,
+                    vaultNonce
+                );
+            }
             _sendRevertToStrategy(
                 strategyAddress,
                 vaultAsset,

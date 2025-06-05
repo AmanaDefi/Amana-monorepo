@@ -31,8 +31,13 @@ contract AaveERC20Strategy is ERC20StrategyParent {
         address _gateway,
         address _withdrawHelper
     ) external initializer {
-        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
-        __ERC20StrategyParent_init(_inputTokenAddress);
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gateway,
+            _withdrawHelper,
+            _inputTokenAddress
+        );
 
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());

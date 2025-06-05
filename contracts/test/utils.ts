@@ -133,7 +133,7 @@ export async function simulateDepositCallFromVaultToStrategy(
       },
       depositMessage,
       {
-        value: depositAmount,
+        // value: depositAmount, - this is only if we are testing a strategy that accepts native tokens
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
       }
     );

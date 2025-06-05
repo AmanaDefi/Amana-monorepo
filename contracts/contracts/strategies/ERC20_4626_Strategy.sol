@@ -28,8 +28,13 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
         address _gateway,
         address _withdrawHelper
     ) external initializer {
-        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
-        __ERC20StrategyParent_init(_inputTokenAddress);
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gateway,
+            _withdrawHelper,
+            _inputTokenAddress
+        );
 
         receiptToken = I4626Vault(_receiptTokenAddress);
     }

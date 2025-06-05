@@ -13,6 +13,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IDistributor.sol";
 import "../interfaces/ISwapHelper.sol";
+import "hardhat/console.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -55,6 +56,8 @@ abstract contract StrategyParent is
     }
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
+
+    IERC20 public inputToken;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");
@@ -135,13 +138,15 @@ abstract contract StrategyParent is
         string memory _name,
         address _amanaVault,
         address _gateway,
-        address _withdrawHelper
+        address _withdrawHelper,
+        address _inputTokenAddress
     ) internal onlyInitializing {
         __Ownable_init(msg.sender);
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
         withdrawHelper = _withdrawHelper;
+        inputToken = IERC20(_inputTokenAddress);
         minClaimableReward = 5 * 10 ** 15; // 0.005
     }
 
@@ -168,7 +173,26 @@ abstract contract StrategyParent is
             address newStrategy,
             uint256 vaultNonce
         ) = abi.decode(message, (TxType, uint256, uint256, address, uint256));
-
+        console.log(
+            "onCall: txType: %s, assetAmount: %s",
+            uint256(txType),
+            assetAmount
+        );
+        console.log("msg.value: %s", msg.value);
+        if (txType == TxType.Deposit && msg.value == 0) {
+            console.log(
+                "Deposit called with zero value, using input token transfer"
+            );
+            SafeERC20.safeTransferFrom(
+                inputToken,
+                msg.sender,
+                address(this),
+                assetAmount
+            );
+            console.log(
+                "Deposit called with zero value, input token transferred"
+            );
+        }
         pendingByNonce[vaultNonce] = BufferedTx({
             txType: txType,
             assetAmount: assetAmount,
@@ -177,17 +201,17 @@ abstract contract StrategyParent is
         });
 
         if (vaultNonce == lastProcessedNonce + 1) {
-            _processBufferedConfirmations();
+            _processBufferedTransactions();
         }
 
         return abi.encode(true);
     }
 
-    function processBufferedConfirmations() external onlyOwner {
-        _processBufferedConfirmations();
+    function processBufferedTransactions() external onlyOwner {
+        _processBufferedTransactions();
     }
 
-    function _processBufferedConfirmations() internal {
+    function _processBufferedTransactions() internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
             BufferedTx storage txData = pendingByNonce[nextNonce];
