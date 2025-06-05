@@ -19,7 +19,7 @@ export const menuItems = [
     label: "Earn",
     icon: EarnIcon,
     type: "link" as const,
-    href: "/earn",
+    href: "/",
   },
   {
     id: "wallet",
