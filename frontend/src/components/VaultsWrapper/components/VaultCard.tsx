@@ -16,6 +16,8 @@ import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
+import { InfoPopup } from "./InfoBlock.tsx/InfoPopup";
+import { InfoBlock } from "./InfoBlock.tsx";
 
 const RISK_LEVELS: Record<number, { level: string; color: string }> = {
   1: { level: "Low", color: "bg-green-accent" },
@@ -52,7 +54,7 @@ export const VaultCard: FC<Props> = React.memo(
 
     return (
       <div
-        className="bg-[#14171F] p-6 rounded-2xl overflow-hidden border border-blue-button transition-all cursor-pointer"
+        className="bg-[#14171F] p-6 rounded-2xl border border-blue-button transition-all cursor-pointer"
         onClick={() => handleVaultClick(vault.id)}
       >
         <div className="flex md:flex-row flex-col gap-1 justify-between">
@@ -121,9 +123,11 @@ export const VaultCard: FC<Props> = React.memo(
                   <p className="font-normal text-base leading-4 uppercase text-white">
                     TVL
                   </p>
-                  <div className="hover:cursor-pointer">
-                    <InfoIcon />
-                  </div>
+                  <InfoBlock>
+                    💡 TVL (Total Value Locked) <br />
+                    This is the total amount of assets deposited in this vault
+                    by all users across all chains.
+                  </InfoBlock>
                 </div>
                 <p className="text-blue-digits font-bold text-xl leading-5">
                   $
@@ -137,9 +141,12 @@ export const VaultCard: FC<Props> = React.memo(
                   <p className="font-normal text-base leading-4 uppercase text-white">
                     RISK
                   </p>
-                  <div className="hover:cursor-pointer">
-                    <InfoIcon />
-                  </div>
+                  <InfoBlock isMiddle>
+                    💡 Risk Rating: A <br />
+                    This vault has low protocol and slippage risk. Risk scores
+                    are based on volatility, smart contract audits, and
+                    liquidity depth.
+                  </InfoBlock>
                 </div>
                 <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
                   <p className="text-white font-bold text-lg leading-5 ">A</p>
@@ -150,9 +157,11 @@ export const VaultCard: FC<Props> = React.memo(
                   <p className="font-normal text-base leading-4 uppercase text-white">
                     APY (7d)
                   </p>
-                  <div className="hover:cursor-pointer">
-                    <InfoIcon />
-                  </div>
+                  <InfoBlock isRight >
+                    💡 APY (Annual Percentage Yield) <br />
+                    Estimated yearly return with compounding. It may vary based
+                    on rewards, liquidity, and market changes.
+                  </InfoBlock>
                 </div>
                 <p
                   className={classNames(
