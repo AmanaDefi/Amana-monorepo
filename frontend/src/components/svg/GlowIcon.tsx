@@ -4,10 +4,10 @@ const GlowIcon = ({
   position?: "top-right" | "bottom-left";
 }) => {
   const commonClasses =
-    "pointer-events-none blur-[80px] absolute z-[-1] rounded-full";
+    "pointer-events-none blur-[200px] absolute z-[-1] rounded-full";
   const styles =
     position === "top-right"
-      ? "top-[-100px] right-[-80px] w-[533px] h-[637px]"
+      ? "top-[100px] right-[-80px] w-[533px] h-[637px]"
       : "bottom-[-300px] left-[-220px] w-[533px] h-[637px]";
 
   return (
@@ -24,7 +24,7 @@ const GlowIcon = ({
           r="249"
           transform="rotate(66.8568 449.827 187.827)"
           fill="url(#paint0_linear)"
-          fillOpacity="0.9"
+          fillOpacity="1"
         />
       </g>
       <defs>
@@ -49,7 +49,7 @@ const GlowIcon = ({
           y2="187.827"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0.336407" stopColor="#101219" />
+          <stop offset="0.336407" stopColor="#1a368f" />
           <stop offset="1" stopColor="#1B46E0" />
         </linearGradient>
       </defs>

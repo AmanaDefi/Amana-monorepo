@@ -24,6 +24,11 @@ const Header = () => {
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
+
+  const navLinks = isConnected
+    ? [{ label: "Home", href: "/" }, ...NAV_LINKS.slice(1)]
+    : NAV_LINKS;
+  
   return (
     <header
       className={`w-full flex items-center justify-between  ${isConnected ? "px-11 mb-7 h-[40px]" : "mb-9 h-[80px]"}`}
@@ -35,11 +40,11 @@ const Header = () => {
           </Link>
         )}
         <nav className="hidden lg:flex items-center min-w-[427px]">
-          {NAV_LINKS.map(({ label, href }) => (
+          {navLinks.map(({ label, href }) => (
             <span
               key={href}
               className={`cursor-pointer transition font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center ${
-                path === href ? "border-[#1B46E0] " : "border-transparent"
+                path === href ? "border-[#1B46E0]" : "border-transparent"
               }`}
               onClick={() => router.push(href)}
             >
