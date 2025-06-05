@@ -275,3 +275,5 @@ export const VaultCard: FC<Props> = React.memo(
     );
   },
 );
+
+VaultCard.displayName = "VaultCard";

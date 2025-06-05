@@ -104,3 +104,5 @@ export const VaultRow: FC<Props> = React.memo(
     );
   },
 );
+
+VaultRow.displayName = "VaultRow";
