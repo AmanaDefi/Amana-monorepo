@@ -13,7 +13,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
   if (isConnected) {
     return (
-      <div className="flex flex-col mx-auto w-full max-w-[1512px] pt-[60px] pb-[30px]">
+      <div className="flex flex-col mx-auto w-full max-w-[1512px] pt-[60px] pb-[30px] px-4">
         <Header />
 
         <div className="flex flex-1">
@@ -41,7 +41,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px] py-[40px]">
+    <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px] pr-9 py-[40px]">
       <Header />
       <div className="flex-1 ml-16">{children}</div>
       <div className="ml-16">

@@ -12,6 +12,7 @@ import { VaultFilters } from "./components/VaultFilters";
 import { VaultCard } from "./components/VaultCard";
 import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
+import classNames from "classnames";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
@@ -33,7 +34,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   userVaultBalances,
   vaultTotalAssets,
 }) => {
-  const router = useRouter();
+  const { walletAddress } = useMultiChain();
+  const isConnected = !!walletAddress;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [chainFilter, setChainFilter] = useState<string>("");
@@ -113,14 +115,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
   const totalPages = Math.ceil(sortedVaults.length / itemsPerPage);
 
-  // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, chainFilter, protocolFilter, sortBy, sortOrder]);
-
-  const handleVaultClick = (vaultId: string) => {
-    router.push(`/vaults/${vaultId}`);
-  };
 
   const clearAllFilters = () => {
     setSearchTerm("");
@@ -157,7 +154,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         Showing {paginatedVaults.length} of {filteredVaults.length} vaults
       </div>
       {displayType === "cards" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className={classNames("flex flex-row gap-4 flex-wrap")}>
           {paginatedVaults.map((vault) => {
             return (
               <VaultCard

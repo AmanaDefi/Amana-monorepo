@@ -26,7 +26,7 @@ const Header = () => {
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   return (
     <header
-      className={`w-full flex items-center justify-between  ${isConnected ? "px-11 mb-7 h-[40px]" : "mb-9 h-[80px]"}`}
+      className={`w-full flex items-center justify-between  ${isConnected ? "px-11 mb-7 h-[40px]" : "pl-11 mb-9 h-[80px]"}`}
     >
       <div className="flex items-center gap-[41px]">
         {!isConnected && (

@@ -92,7 +92,7 @@ export const VaultFilters: FC<Props> = ({
         ref={filterRef}
         className={` ${showMobileFilters ? "block" : "hidden md:block"}`}
       >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <Dropdown
               emptyLabel="All Chains"

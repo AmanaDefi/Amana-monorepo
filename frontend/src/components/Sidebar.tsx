@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import CloseSidebarIcon from "./svg/CloseSidebarIcon";
-import { bottomMenuItems, menuItems } from "@/config.ts/sidebarMenu";
+import { bottomMenuItems, menuItems } from "@/constants/sidebarMenu";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 
 interface SidebarMenuItemProps {

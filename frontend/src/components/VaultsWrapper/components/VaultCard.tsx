@@ -54,7 +54,7 @@ export const VaultCard: FC<Props> = React.memo(
 
     return (
       <div
-        className="bg-[#14171F] p-6 rounded-2xl border border-blue-button transition-all cursor-pointer"
+        className="bg-[#14171F] flex-1 p-6 min-w-[380px] rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
         onClick={() => handleVaultClick(vault.id)}
       >
         <div className="flex md:flex-row flex-col gap-1 justify-between">
@@ -183,7 +183,7 @@ export const VaultCard: FC<Props> = React.memo(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d avg APY
                 </p>
-                <div className="flex flex-row gap-8">
+                <div className="flex flex-row justify-between">
                   <p
                     className={classNames(
                       "font-bold text-xl leading-5",
@@ -210,7 +210,7 @@ export const VaultCard: FC<Props> = React.memo(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
-                <div className="flex flex-row gap-10">
+                <div className="flex flex-row justify-between">
                   <p
                     className={classNames(
                       "font-bold text-xl leading-5",
