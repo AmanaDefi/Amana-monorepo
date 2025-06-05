@@ -1482,7 +1482,7 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 };
 
 const beamConnection: IConnection = {
-  host: "https://public-beam-backend-mainnet.codemelt.codes", // Replace with actual Beam API host
+  host: "https://public-beam-backend-mainnet.codemelt.codes",
   headers: {
     "x-api-key": process.env.NEXT_PUBLIC_BEAM_API_KEY!,
   },
@@ -1546,7 +1546,7 @@ export const getAmountOutFromSwap = async (
         beamConnection,
         swapDetails
       );
-
+      console.log("Beam quote response:", beamQuote);
       if (!beamQuote.success) {
         console.warn("⚠️ Beam quote unsuccessful, falling back to Eddy");
       } else if (
@@ -1559,6 +1559,16 @@ export const getAmountOutFromSwap = async (
           beamQuote.data?.message || "Unknown error"
         );
       } else {
+        const transactions = beamQuote.data.data.transactions;
+        const swapTx = transactions.find((tx: any) => tx.type === "swap");
+
+        if (!swapTx || !swapTx.data) {
+          throw new Error("Swap transaction data missing in Beam quote");
+        }
+
+        const encodedSwapData = swapTx.data; // This is a hex string like "0x08a5..."
+        console.log("Encoded swap data:", encodedSwapData);
+
         const quoteAmount = beamQuote.data.data.expectedAmountOut;
 
         if (quoteAmount > 0) {

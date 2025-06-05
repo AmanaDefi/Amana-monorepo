@@ -264,7 +264,8 @@ export async function simulateDepositCallFromConnChain(
   originChainZRC20Input: string,
   inputToken: string,
   originChainId: number,
-  slippage: number
+  slippage: number,
+  swapData: string = "0x" // Placeholder for swap data, if needed
 ): Promise<any> {
   // Update Pyth prices
   // await updatePythPrices(pythContract, user);
@@ -279,8 +280,8 @@ export async function simulateDepositCallFromConnChain(
 
   // Encode the deposit message
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
-    [ethers.constants.AddressZero, inputToken, 0, minSharesOut, slippage, nonEvmAddress, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
+    [ethers.constants.AddressZero, inputToken, 0, minSharesOut, slippage, nonEvmAddress, swapData, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`]
   );
   // Execute the onCall function to simulate a deposit
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -397,19 +398,21 @@ export async function simulateWithdrawCallFromConnChain(
   originChainZRC20Input: string,
   originChainId: number,
   originChainGasToken: string,
-  nonEvmUserAddress: string
+  nonEvmUserAddress: string,
+  swapData: string = "0x" // Placeholder for swap data, if needed
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
   const minAmountOut = assetsToWithdraw.mul(1000).div(1001);
   const slippage = 1000;
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
     [originChainZRC20Input,
       ethers.constants.AddressZero,
       assetsToWithdraw,
       minAmountOut,
       slippage,
       nonEvmUserAddress,
+      swapData,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`]
   );
 
@@ -551,4 +554,3 @@ export function isConvexStrategy(name: string): boolean {
 export function isBalancerStrategy(name: string): boolean {
   return name.toLowerCase().includes("balancer");
 }
-

@@ -441,8 +441,9 @@ contract SwapHelperZetachain is SwapHelperParent {
         uint16 slippageBps,
         address vault,
         uint16 maxDeadline,
-        bytes calldata data
+        bytes calldata swapData
     ) external override returns (uint256 amountOut) {
+        console.log("Initiating swap");
         require(
             IERC20(zrc20).balanceOf(address(this)) >= amount,
             "Insufficient balance"
@@ -455,7 +456,7 @@ contract SwapHelperZetachain is SwapHelperParent {
         );
         (
             address[] memory path,
-            uint24[] memory feeTiers,
+            ,
             bytes memory encodedPath,
             SwapType swapType
         ) = getPathV3BeamOrEddy(zrc20, targetZRC20);
@@ -472,6 +473,15 @@ contract SwapHelperZetachain is SwapHelperParent {
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else if (swapType == SwapType.Beam) {
             IZRC20(zrc20).approve(SWAPROUTER_BEAM, amount);
+
+            if (swapData.length > 0) {
+                // If swapData is provided, it should be the encoded path
+                console.log("Using provided swapData for Beam");
+                encodedPath = swapData;
+                console.log("Encoded path length:", encodedPath.length);
+            } else {
+                console.log("No swapData provided, using default path");
+            }
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
                     path: encodedPath,
@@ -480,7 +490,9 @@ contract SwapHelperZetachain is SwapHelperParent {
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
+            console.log("Executing Beam swap");
             amountOut = ISwapRouter(SWAPROUTER_BEAM).exactInput(params);
+            console.log("Beam swap completed, amountOut:", amountOut);
         } else {
             // fallback to V2 or revert
             path = getPathV2(zrc20, targetZRC20);

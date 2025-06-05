@@ -5,6 +5,8 @@ import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from ".
 import { setTokenBalance } from "../utils";
 import { AmanaConnectedChainVault } from "../../typechain";
 import { vaultTestMatrix } from "../config/vault.config";
+import { getBeamSwapDataFromVaultConfig } from "./getBeamSwapData";
+import axios from "axios";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43";
@@ -116,6 +118,7 @@ export async function setupVaultFixture() {
   // supply the owner address with an amount of origin chain input ZRC20 token, so they can make deposits
   await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
   await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), txConfig.directDepositAmount1.mul(200).div(1), 3);
+  const depositSwapData = await getBeamSwapDataFromVaultConfig();
   console.log("Setup done, returning values")
   return {
     amanaVault,
@@ -136,6 +139,7 @@ export async function setupVaultFixture() {
     vaultConfig,
     strategyConfig,
     txConfig,
+    depositSwapData
   };
 }
 
@@ -164,4 +168,39 @@ async function deployAndLog(name: string, factoryArgs: any[] = [], signer?: Sign
   await contract.deployed();
   console.log(`${name} deployed at: ${contract.address}`);
   return contract;
+}
+
+async function getBeamSwapDataForTest(
+  inputToken: string,
+  outputToken: string,
+  amountIn: any,
+  userAddress: string
+): Promise<string> {
+  try {
+    const beamSwapRequest = {
+      tokenAId: inputToken,
+      tokenBId: outputToken,
+      slippage: 500, // 5% slippage
+      amount: Number(amountIn.toString()) / 1e18, // Adjust this if inputToken has different decimals
+      sender: userAddress,
+      recipient: userAddress,
+    };
+
+    const response = await axios.post(
+      "https://api.beam.exchange/swap/native/getSwapData",
+      beamSwapRequest
+    );
+
+    const transactions = response.data?.data?.transactions;
+    const swapTx = transactions?.find((tx: any) => tx.type === "swap");
+
+    if (!swapTx || !swapTx.data) {
+      throw new Error("Swap transaction data missing in Beam quote");
+    }
+
+    return swapTx.data; // This is a hex string
+  } catch (e: any) {
+    console.error("❌ Beam swap fetch failed:", e.message);
+    throw e;
+  }
 }

@@ -33,6 +33,8 @@ export const vaultTestMatrix = [
       gasTankAmount: ethers.utils.parseUnits("10", 18),
     },
     txConfig: {
+      depositSwapData: "0x8344d6f84d26f998fa070bbea6d2e15e359e26410cbe0df132a6c6b4a2974fa1b7fb953cf0cc798a0327f0660525b15cdb8f1f5fbf0dd7cd5ba182ad",
+      withdrawSwapData: "0x",
       originChainId: 900,
       originGasToken: ZC_SOL_SOL_ADDRESS,
       originERC20Input: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // user deposits on origin chain using this

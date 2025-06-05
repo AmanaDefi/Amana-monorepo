@@ -105,13 +105,13 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a basic cross chain deposit", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, owner, gasTank, vaultConfig, txConfig, strategyConfig } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, owner, gasTank, vaultConfig, txConfig, strategyConfig, depositSwapData } = await loadFixture(setupVaultFixture);
 
     // supply the owner address with an amount of origin chain input ZRC20 token, so they can make deposits
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -134,12 +134,12 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a basic direct withdraw of max amount", async function () {
-    const { user1, amanaVault, pythContract, vaultAsset, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, vaultAsset, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
     const minAmountOut = txConfig.crossChainDepositAmount1.mul(1000).div(1001);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -165,12 +165,12 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a basic cross chain withdraw", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -188,7 +188,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
     const userExpectedAmountWithdrawn = await amanaVault.convertToAssets(userMaxRedeem);
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
 
     await simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, userExpectedAmountWithdrawn, emittedAmount, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
@@ -197,13 +197,13 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a basic direct redeem", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultAsset, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultAsset, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
     const minAmountOut = txConfig.crossChainDepositAmount1.mul(1000).div(1001);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -236,13 +236,13 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a basic direct redeemToAnyToken", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
     const minAmountOut = txConfig.crossChainDepositAmount1.mul(1000).div(1001);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -270,13 +270,13 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a basic direct redeemToAnyToken to ZETA", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
     const minAmountOut = txConfig.crossChainDepositAmount1.mul(1000).div(1001);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -308,7 +308,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should initiate switch to a new strategy successfully", async function () {
-    const { amanaVault, owner, gatewayZEVM, user1, pythContract, gatewaySigner, txConfig, strategyConfig, gasTank } = await loadFixture(setupVaultFixture);
+    const { amanaVault, owner, gatewayZEVM, user1, pythContract, gatewaySigner, txConfig, strategyConfig, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
     const minAmountOut = txConfig.crossChainDepositAmount1.mul(1000).div(1001);
     const newStrategyAddress = ethers.Wallet.createRandom().address;
     const invalidStrategyAddress = ethers.constants.AddressZero;
@@ -332,7 +332,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -388,13 +388,13 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should calculate and deduct the performance fee on withdrawal", async function () {
-    const { user1, user2, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, user2, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
 
     // Step 1: Simulate a deposit by User1
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
 
     let receipt = await tx.wait(); // Wait for the tx receipt
 
@@ -416,7 +416,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx2 = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user2, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx2 = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user2, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt2 = await tx2.wait(); // Wait for the tx receipt
 
     const log2 = receipt2.logs.find((log) => log.topics[0] === topic);
@@ -438,7 +438,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const totalSharesUser1 = await amanaVault.balanceOf(await user1.getAddress());
     const sharesToWithdraw = totalSharesUser1;
 
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, sharesToWithdraw, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, sharesToWithdraw, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
     await expect(simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, withdrawAmount, updatedTotalAssets, 3, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken,))
       .to.emit(amanaVault, "PerformanceFeePaid")
       .withArgs(await user1.getAddress(), expectedFee);
@@ -469,7 +469,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should correctly handle _crossChainInvest revert during cross-chain deposits", async function () {
-    const { user1, amanaVault, vaultAsset, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, amanaRegistry } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, vaultAsset, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, withdrawHelper, amanaRegistry } = await loadFixture(setupVaultFixture);
 
     await simulateDepositCallFromConnChain(amanaVault, gatewaySigner,
       user1,
@@ -509,17 +509,18 @@ describe("AmanaConnectedChainVault Tests", function () {
       owner,
       gasTank,
       pythContract,
-      vaultAsset
+      vaultAsset,
+      depositSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
 
     await simulateConfirmDeposit(amanaVault, gatewaySigner, txConfig.crossChainDepositAmount1, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
 
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
@@ -601,7 +602,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should correctly handle _crossChainInvest abort during cross-chain deposits", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, amanaRegistry, vaultAsset } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, amanaRegistry, vaultAsset, depositSwapData } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
@@ -609,7 +610,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const txId = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner,
       user1,
       txConfig.crossChainDepositAmount1,
-      pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage
+      pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData
     )
     // Simulate _crossChainInvest reverting
     const vaultNonce = 1;
@@ -646,18 +647,19 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig,
       gasTank,
       pythContract,
-      vaultAsset
+      vaultAsset,
+      depositSwapData
     } = await loadFixture(setupVaultFixture);
 
     const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
 
     await simulateConfirmDeposit(amanaVault, gatewaySigner, txConfig.crossChainDepositAmount1, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
 
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
@@ -762,7 +764,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should withdraw the maximum amount possible for a user", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, depositSwapData } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
@@ -770,7 +772,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner,
       user1,
       txConfig.crossChainDepositAmount1,
-      pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage
+      pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData
     )
     const receipt = await tx.wait(); // Wait for the tx receipt
 
@@ -789,7 +791,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     // Withdraw the maximum amount
     const maxRedeemAmount = await amanaVault.maxRedeem(await user1.getAddress());
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, maxRedeemAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress)
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, maxRedeemAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData)
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const totalAssets = await amanaVault.convertToAssets(totalShares);
     await expect(simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, maxRedeemAmount, totalAssets, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken))
@@ -798,14 +800,14 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should fail to withdraw more than the user balance", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, txConfig, strategyConfig, owner, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
     const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner,
       user1,
-      txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage
+      txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData
     )
     const receipt = await tx.wait(); // Wait for the tx receipt
 
@@ -825,7 +827,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     // Attempt to withdraw more than balance
     const excessiveWithdrawAmount = txConfig.crossChainDepositAmount1.mul(2); // Double the deposited amount
 
-    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, excessiveWithdrawAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress))
+    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, excessiveWithdrawAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData))
       .to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
   });
 
@@ -924,7 +926,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await expect(amanaVault.connect(user1)["redeem(uint256,uint256,address,address)"](zeroAmount, 0, await user1.getAddress(), await user1.getAddress())).to.be
       .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
-    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, zeroAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress)).to.be
+    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, zeroAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData)).to.be
       .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
     // Deposit and then withdraw entire balance
@@ -934,7 +936,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should distribute and claim rewards (time-based)", async function () {
-    const { user1, rewardToken, amanaVault, owner, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, rewardToken, amanaVault, owner, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
 
     // Get the current block timestamp to calculate the reward period
     const currentBlock = await ethers.provider.getBlock("latest");
@@ -952,7 +954,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -994,7 +996,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should correctly distribute rewards proportional to user shares using precise timestamps", async function () {
-    const { user1, user2, rewardToken, amanaVault, owner, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, gasTank } = await loadFixture(setupVaultFixture);
+    const { user1, user2, rewardToken, amanaVault, owner, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
 
     const rewardDuration = 3600; // 1 hour in seconds
 
@@ -1014,7 +1016,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt = await tx.wait(); // Wait for the tx receipt
 
     const iface = new ethers.utils.Interface([
@@ -1033,7 +1035,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
 
-    const tx2 = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user2, txConfig.crossChainDepositAmount2, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage);
+    const tx2 = await simulateDepositCallFromConnChain(amanaVault, gatewaySigner, user2, txConfig.crossChainDepositAmount2, pythContract, txConfig.originZRC20Input, txConfig.originERC20Input, txConfig.originChainId, txConfig.slippage, depositSwapData);
     const receipt2 = await tx2.wait(); // Wait for the tx receipt
 
     // Find the CrossChainInvestSent event
@@ -1081,7 +1083,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig,
       strategyConfig,
       owner,
-      gasTank
+      gasTank,
+      depositSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(1000), 3);
@@ -1100,7 +1103,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const tx1 = await simulateDepositCallFromConnChain(
       amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1,
       pythContract, txConfig.originZRC20Input, txConfig.originERC20Input,
-      txConfig.originChainId, txConfig.slippage
+      txConfig.originChainId, txConfig.slippage, depositSwapData
     );
     const receipt1 = await tx1.wait();
     const log1 = receipt1.logs.find((log) => log.topics[0] === topic);
@@ -1122,7 +1125,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const tx2 = await simulateDepositCallFromConnChain(
       amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1,
       pythContract, txConfig.originZRC20Input, txConfig.originERC20Input,
-      txConfig.originChainId, txConfig.slippage
+      txConfig.originChainId, txConfig.slippage, depositSwapData
     );
     const receipt2 = await tx2.wait();
     const log2 = receipt2.logs.find((log) => log.topics[0] === topic);
@@ -1141,7 +1144,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user1, halfShares,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
     );
     await simulateConfirmWithdrawToConnChain(
       amanaVault, gatewaySigner, expectedOut1, totalAssets,
@@ -1175,7 +1178,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user1, remainingShares,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
     );
     await simulateConfirmWithdrawToConnChain(
       amanaVault, gatewaySigner, expectedOut2, totalAssets,
@@ -1209,7 +1212,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig,
       strategyConfig,
       owner,
-      gasTank
+      gasTank,
+      depositSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(1000), 3);
@@ -1227,7 +1231,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const tx1 = await simulateDepositCallFromConnChain(
       amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1,
       pythContract, txConfig.originZRC20Input, txConfig.originERC20Input,
-      txConfig.originChainId, txConfig.slippage
+      txConfig.originChainId, txConfig.slippage, depositSwapData
     );
     const receipt1 = await tx1.wait();
     const log1 = receipt1.logs.find((log) => log.topics[0] === topic)!;
@@ -1240,7 +1244,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const tx2 = await simulateDepositCallFromConnChain(
       amanaVault, gatewaySigner, user2, txConfig.crossChainDepositAmount1,
       pythContract, txConfig.originZRC20Input, txConfig.originERC20Input,
-      txConfig.originChainId, txConfig.slippage
+      txConfig.originChainId, txConfig.slippage, depositSwapData
     );
     const receipt2 = await tx2.wait();
     const log2 = receipt2.logs.find((log) => log.topics[0] === topic)!;
@@ -1254,7 +1258,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user1, halfShares1,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
     );
     const nonce3 = vaultNonce++;
 
@@ -1262,7 +1266,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const tx3 = await simulateDepositCallFromConnChain(
       amanaVault, gatewaySigner, user1, txConfig.crossChainDepositAmount1,
       pythContract, txConfig.originZRC20Input, txConfig.originERC20Input,
-      txConfig.originChainId, txConfig.slippage
+      txConfig.originChainId, txConfig.slippage, depositSwapData
     );
     const receipt3 = await tx3.wait();
     const log3 = receipt3.logs.find((log) => log.topics[0] === topic)!;
@@ -1279,7 +1283,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user2, shares2,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
     );
     const nonce5 = vaultNonce++;
 
@@ -1317,6 +1321,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig,
       owner,
       gasTank,
+      depositSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(
@@ -1350,7 +1355,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.originZRC20Input,
       txConfig.originERC20Input,
       txConfig.originChainId,
-      txConfig.slippage
+      txConfig.slippage,
+      depositSwapData
     );
     const receipt1 = await tx1.wait();
     const log1 = receipt1.logs.find((log) => log.topics[0] === topic)!;
@@ -1381,7 +1387,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.originZRC20Input,
       txConfig.originERC20Input,
       txConfig.originChainId,
-      txConfig.slippage
+      txConfig.slippage,
+      depositSwapData
     );
     const receipt2 = await tx2.wait();
     const log2 = receipt2.logs.find((log) => log.topics[0] === topic)!;
@@ -1406,7 +1413,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.originZRC20Input,
       txConfig.originChainId,
       txConfig.originGasToken,
-      txConfig.originNonEvmUserAddress
+      txConfig.originNonEvmUserAddress, depositSwapData
     );
     const nonce3 = vaultNonce++;
 
