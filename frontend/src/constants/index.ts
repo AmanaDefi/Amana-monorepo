@@ -634,7 +634,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       symbol: "USDT.ETH",
       decimals: 6,
       address: ZC_USDT_ETH_ADDRESS,
-      imgURL: "/USDT.png",
+      imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false

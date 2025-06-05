@@ -16,7 +16,6 @@ import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
-import { InfoPopup } from "./InfoBlock.tsx/InfoPopup";
 import { InfoBlock } from "./InfoBlock.tsx";
 
 const RISK_LEVELS: Record<number, { level: string; color: string }> = {
