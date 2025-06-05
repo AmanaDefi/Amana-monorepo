@@ -68,7 +68,7 @@ export const VaultCard: FC<Props> = React.memo(
             <div className="flex flex-col gap-1">
               <div className="flex flex-row gap-2 items-baseline">
                 <p className="text-white font-bold text-xl leading-5 -tracking-1">
-                  {vault.name.replace("Pool", "")}
+                  {vault.name.replace("Pool", "").replace("Lend", "")}
                 </p>
                 <p className="text-white text-sm leading-4">Lend Pool</p>
               </div>

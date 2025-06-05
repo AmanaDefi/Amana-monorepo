@@ -23,9 +23,21 @@ export const VaultRow: FC<Props> = React.memo(
       (asset) => asset.vaultId === vault.id,
     );
 
+    const handleNavigate = (
+      e:
+        | React.MouseEvent<HTMLButtonElement, MouseEvent>
+        | React.MouseEvent<HTMLDivElement, MouseEvent>,
+    ) => {
+      e.stopPropagation();
+      router.push(`/vaults/${vault.id}?tab=withdraw`);
+    };
+
     return (
-      <div className="flex flex-row justify-between items-center w-full rounded-lg p-4 bg-[#3E73C40D] border border-[#3E3C59]">
-        <div className="flex flex-row gap-6 items-center">
+      <div
+        onClick={handleNavigate}
+        className="flex flex-row justify-between items-center w-full rounded-lg p-4 bg-[#3E73C40D] border border-[#3E3C59] hover:cursor-pointer hover:border-[#3E73C4]"
+      >
+        <div className="flex flex-row gap-6 items-center w-[30%]">
           <Image
             src={vault.imgURL || ""}
             alt={vault.protocol.network}
@@ -54,41 +66,38 @@ export const VaultRow: FC<Props> = React.memo(
             </div>
           </div>
         </div>
-        <div className="flex flex-row gap-6 items-center justify-end">
-          <p className="text-white font-bold text-lg leading-5 -tracking-1">
-            ${formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
-          </p>
-          <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
-            <p className="text-white font-bold text-lg leading-5 ">A</p>
-          </div>
-          <div className="flex flex-row gap-1 items-center">
-            <p>up to</p>
-            <p
-              className={classNames(
-                "font-bold text-lg leading-5 ",
-                {
-                  "text-[#05D47F]": Number(vaultAPY?.APY7d || 0) > 0,
-                },
-                {
-                  "text-[#FF1E1E]": Number(vaultAPY?.APY7d || 0) <= 0,
-                },
-              )}
-            >
-              {(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%
+        <div className="flex w-[60%] flex-row xl:gap-14 gap-10 items-center justify-end">
+          <div className="w-[40%] flex flex-row gap-14 items-center justify-end">
+            <p className="text-white font-bold text-lg leading-5 -tracking-1">
+              ${formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
             </p>
-            <FlashIcon
-              color={Number(vaultAPY?.APY7d || 0) > 0 ? "#05D47F" : "#FF1E1E"}
-            />
+            <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
+              <p className="text-white font-bold text-lg leading-5 ">A</p>
+            </div>
           </div>
-          <div className="w-[192px]">
-            <AppButton
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(`/vaults/${vault.id}?tab=withdraw`);
-              }}
-            >
-              Details
-            </AppButton>
+          <div className="xl:w-[55%] w-[60%] flex flex-row items-center gap-2 xl:gap-6 justify-between">
+            <div className="flex flex-row gap-1 items-center">
+              <p>up to</p>
+              <p
+                className={classNames(
+                  "font-bold text-lg leading-5 ",
+                  {
+                    "text-[#05D47F]": Number(vaultAPY?.APY7d || 0) > 0,
+                  },
+                  {
+                    "text-[#FF1E1E]": Number(vaultAPY?.APY7d || 0) <= 0,
+                  },
+                )}
+              >
+                {(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%
+              </p>
+              <FlashIcon
+                color={Number(vaultAPY?.APY7d || 0) > 0 ? "#05D47F" : "#FF1E1E"}
+              />
+            </div>
+            <div className="w-[50%]">
+              <AppButton onClick={handleNavigate}>Details</AppButton>
+            </div>
           </div>
         </div>
       </div>

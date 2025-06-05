@@ -36,16 +36,18 @@ export const DropdownList = ({
       </button>
       {isIconButton && (
         <div className="flex w-full justify-start">
-          <p className="text-sm leading-4 text-[#535E73] font-normal">Filters</p>
+          <p className="text-sm leading-4 text-[#535E73] font-normal">
+            Filters
+          </p>
         </div>
       )}
       {options.map((option) => (
         <div
-          className="group hover:cursor-pointer flex py-3 w-full flex-row justify-between items-center"
           key={option}
+          className="group hover:cursor-pointer flex py-3 w-full flex-row justify-between items-center"
           onClick={(event) => handleSelectedOption(event, option)}
         >
-          <p className="group-hover:underline">{option}</p>
+          <p className="group-hover:text-blue-button">{option}</p>
           <CheckBox isSelected={option === selectedOption} />
         </div>
       ))}
@@ -53,7 +55,7 @@ export const DropdownList = ({
       <button
         type="button"
         onClick={(event) => handleSelectedOption(event, "")}
-        className="underline font-normal text-sm leading-4 text-[#535E73] hover:text-white active:scale-90"
+        className="underline font-normal text-sm leading-4 text-[#535E73] hover:text-blue-button active:scale-90"
       >
         Reset to default
       </button>

@@ -11,6 +11,7 @@ import LoadingLogo from "../LoadingLogo";
 import { VaultFilters } from "./components/VaultFilters";
 import { VaultCard } from "./components/VaultCard";
 import { VaultRow } from "./components/VaultRow";
+import { AppButton } from "../button/AppButton";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
@@ -152,6 +153,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         displayType={displayType}
       />
 
+      <div className="text-gray-400 mb-4 text-sm">
+        Showing {paginatedVaults.length} of {filteredVaults.length} vaults
+      </div>
       {displayType === "cards" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {paginatedVaults.map((vault) => {
@@ -168,6 +172,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between">
+            <p className="w-[30%] mr-[10%] text-center">Pool</p>
+
+            <div className="w-[60%] flex flex-row items-center ">
+              <p className="w-[40%] text-center xl:pl-[10%]">TVL</p>
+              <p className="w-[60%] text-center pr-[20%]">APY</p>
+            </div>
+          </div>
           {paginatedVaults.map((vault) => {
             return (
               <VaultRow
@@ -183,62 +195,56 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       {/* Empty State */}
       {paginatedVaults.length === 0 && (
-        <div className="text-center py-12 bg-customNeutral200 rounded-lg">
+        <div className="flex flex-col items-center py-12 gap-3">
           <p className="text-white text-lg">
             No vaults found matching your filters
           </p>
-          <button
-            onClick={clearAllFilters}
-            className="mt-4 fluid-hover-button text-white py-2 px-4 rounded-md"
-          >
-            <span className="relative z-2">Clear Filters</span>
-          </button>
+          <div className="w-[180px]">
+            <AppButton onClick={clearAllFilters}>
+              <span className="relative z-2">Clear Filters</span>
+            </AppButton>
+          </div>
         </div>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-6">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === 1
-                  ? "bg-customNeutral300 text-gray-500 cursor-not-allowed"
-                  : "bg-customNeutral300 text-white hover:bg-customNeutral100"
-              }`}
-            >
-              ←
-            </button>
+          <div className="flex gap-2 flex-row items-center">
+            <div className={`${currentPage === 1 && "cursor-not-allowed"}`}>
+              <AppButton
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                ←
+              </AppButton>
+            </div>
 
             {Array.from({ length: totalPages }).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentPage(index + 1)}
-                className={`px-3 py-1 rounded-md ${
-                  currentPage === index + 1
-                    ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
-                    : "bg-customNeutral300 text-white hover:bg-customNeutral100"
-                }`}
-              >
-                {index + 1}
-              </button>
+              <div key={index} className="w-12">
+                <AppButton
+                  isBlue={index + 1 === currentPage}
+                  onClick={() => setCurrentPage(index + 1)}
+                >
+                  {index + 1}
+                </AppButton>
+              </div>
             ))}
 
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === totalPages
-                  ? "bg-customNeutral300 text-gray-500 cursor-not-allowed"
-                  : "bg-customNeutral300 text-white hover:bg-customNeutral100"
+            <div
+              className={`${
+                currentPage === totalPages && "cursor-not-allowed"
               }`}
             >
-              →
-            </button>
+              <AppButton
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
+                →
+              </AppButton>
+            </div>
           </div>
         </div>
       )}

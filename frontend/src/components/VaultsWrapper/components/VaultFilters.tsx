@@ -111,7 +111,7 @@ export const VaultFilters: FC<Props> = ({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="underline font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-white active:scale-90"
+              className="underline font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-blue-button active:scale-90"
             >
               Clear Filters
             </button>
@@ -144,7 +144,7 @@ export const VaultFilters: FC<Props> = ({
             </div>
             <div
               onClick={() => inputRef?.current?.focus()}
-              className="focus-within:border-blue-button bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+              className="focus-within:border-blue-button  bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
             >
               <input
                 ref={inputRef}
