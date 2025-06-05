@@ -507,7 +507,7 @@ contract WithdrawHelper is Revertable {
         uint256 vaultNonce,
         address registry
     ) private {
-        _handleGasFee(gasLimitForRevertCall, vaultAsset, registry); // we combine these two limits as this tx involves a divest and an invest
+        _handleGasFee(gasLimitForRevertCall, vaultAsset, registry);
 
         bytes memory outgoingMessage = abi.encode(
             TxType.Revert,
@@ -581,13 +581,13 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            bytes memory recipient;
-            if (nonEvmAddress.length > 0) {
-                recipient = abi.encode(nonEvmAddress);
-            } else {
-                recipient = abi.encodePacked(receiver);
-            }
             if (context.amount > 0) {
+                bytes memory recipient;
+                if (nonEvmAddress.length > 0) {
+                    recipient = abi.encode(nonEvmAddress);
+                } else {
+                    recipient = abi.encodePacked(receiver);
+                }
                 handleGasFeeAndWithdrawToUser(
                     recipient,
                     withdrawZRC20,
@@ -679,13 +679,13 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            bytes memory recipient;
-            if (nonEvmAddress.length > 0) {
-                recipient = abi.encode(nonEvmAddress);
-            } else {
-                recipient = abi.encodePacked(receiver);
-            }
             if (context.amount > 0) {
+                bytes memory recipient;
+                if (nonEvmAddress.length > 0) {
+                    recipient = abi.encode(nonEvmAddress);
+                } else {
+                    recipient = abi.encodePacked(receiver);
+                }
                 handleGasFeeAndWithdrawToUser(
                     recipient,
                     withdrawZRC20,

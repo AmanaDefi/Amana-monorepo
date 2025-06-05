@@ -64,12 +64,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             } else {
                 transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
-                transactions[confirmationNonce].txStatus = txStatus; // non-zero means a revert
+                transactions[confirmationNonce].txStatus = txStatus;
                 if (
                     txStatus == TX_WITHDRAW_REVERTED ||
                     txStatus == TX_WITHDRAW_CONFIRMED
                 ) {
-                    // If the withdrawal reverted, we need to return the funds to the user
                     address user = transactions[confirmationNonce].user;
                     if (
                         transactions[confirmationNonce].amount >=
@@ -207,9 +206,17 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256 nextNonce = lastProcessedNonce + 1;
             Transaction memory transaction = transactions[nextNonce];
 
-            if (transaction.txStatus == TX_WITHDRAW_REVERTED) {
+            if (
+                transaction.txStatus == TX_WITHDRAW_REVERTED ||
+                transaction.txStatus == TX_TOTAL_ASSETS_UPDATE ||
+                transaction.txStatus == TX_DEPOSIT_REVERTED
+            ) {
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
+                emit TotalAssetsUpdated(
+                    transaction.totalAssetsAfter,
+                    nextNonce
+                );
             } else if (transaction.txStatus == TX_DEPOSIT_CONFIRMED) {
                 _confirmDepositAndMint();
             } else if (transaction.txStatus == TX_SWITCH_CONFIRMED) {
@@ -264,6 +271,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     function toggleDepositFeePaidFromGasTank() external onlyOwner {
         depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
+    }
+
+    function incrementLastProcessedNonce() external onlyOwner {
+        lastProcessedNonce++;
     }
 
     /**

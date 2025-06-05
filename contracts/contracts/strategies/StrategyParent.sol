@@ -13,7 +13,6 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IDistributor.sol";
 import "../interfaces/ISwapHelper.sol";
-import "hardhat/console.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -173,24 +172,13 @@ abstract contract StrategyParent is
             address newStrategy,
             uint256 vaultNonce
         ) = abi.decode(message, (TxType, uint256, uint256, address, uint256));
-        console.log(
-            "onCall: txType: %s, assetAmount: %s",
-            uint256(txType),
-            assetAmount
-        );
-        console.log("msg.value: %s", msg.value);
+
         if (txType == TxType.Deposit && msg.value == 0) {
-            console.log(
-                "Deposit called with zero value, using input token transfer"
-            );
             SafeERC20.safeTransferFrom(
                 inputToken,
                 msg.sender,
                 address(this),
                 assetAmount
-            );
-            console.log(
-                "Deposit called with zero value, input token transferred"
             );
         }
         pendingByNonce[vaultNonce] = BufferedTx({
@@ -233,7 +221,7 @@ abstract contract StrategyParent is
             } else if (txData.txType == TxType.Switch) {
                 _transferAssetsToNewStrategy();
             } else if (txData.txType == TxType.Revert) {
-                // nothing gets executed, but the nonce is incremented (below)
+                _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
             } else {
                 revert("Unknown TxType");
             }

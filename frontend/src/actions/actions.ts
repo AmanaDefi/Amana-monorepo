@@ -1342,7 +1342,7 @@ const executeDirectWithdrawal = async (
   const withdrawTx = prepareContractCall({
     contract,
     method:
-      "function redeem(uint256 shares, uint256 minAmountOut, address receiver, address owner)",
+      "function withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner)",
     params: [
       withdrawAssetAmount,
       minAmountOut,
