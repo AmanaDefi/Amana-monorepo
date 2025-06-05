@@ -111,7 +111,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Solana connection error:", error);
     }
-  }, [selectedChain, activeAccount, evmDisconnect]);
+  }, [selectedChain, activeAccount, evmDisconnect, setVisible]);
   // Connect Ethereum Wallet
   const connectEthereum = useCallback(async () => {
     setIsModalOpen(false);
@@ -132,7 +132,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Ethereum connection error:", error);
     }
-  }, [chain]);
+  }, [chain, disconnect]);
 
   //  Disconnect Wallet
   const disconnectWallet = useCallback(async () => {
@@ -177,7 +177,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       setWalletAddress(account.address);
       setIsModalOpen(false);
     }
-  }, [account, publicKey]);
+  }, [account, publicKey, disconnectWallet]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {

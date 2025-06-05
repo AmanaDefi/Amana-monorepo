@@ -60,7 +60,7 @@ const VaultsDetailContainer: React.FC<{
           updateLocalStorageObject(vaultID.toString(), {tab: initialIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW})
         }
       }
-    }, [vaultID]);
+    }, [vaultID, initialIsDeposit, vaults]);
 
     const strategyExplorerBaseUrl = useMemo(() => {
       if (!vaultData?.protocol?.chainId) return "";
@@ -102,7 +102,7 @@ const VaultsDetailContainer: React.FC<{
     const handleTokenSelect = useCallback((token: Token) => {
         setSelectedToken(token);
         updateLocalStorageObject(vaultID.toString(), {selectedToken: JSON.stringify(token, bigIntReplacer)})
-    }, []);
+    }, [vaultID]);
 
     const handleBack = () => {
       const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString())

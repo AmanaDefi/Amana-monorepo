@@ -13,7 +13,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 
 export const useMultichainTokenBalance = (token: Token | undefined) => {
-  const currentToken = useMemo(() => token, [token?.address]);
+  const currentToken = useMemo(() => token, [token]);
 
   const {
     walletAddress,

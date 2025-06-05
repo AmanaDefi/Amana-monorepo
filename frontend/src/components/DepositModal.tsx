@@ -50,7 +50,7 @@ const DepositModal: React.FC<{
       };
       fetchTokenBalance();
       }
-    }, [selectedVault, activeAccount]);
+    }, [selectedVault, activeAccount, activeChain]);
 
     if (!isOpen || !selectedVault) return null;
 

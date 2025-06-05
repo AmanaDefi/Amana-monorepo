@@ -29,18 +29,29 @@ export default function SolanaWalletProvider({
 }) {
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-  const wallets = useMemo(
-    () => [
-      // manually add any legacy wallet adapters here
-      // new UnsafeBurnerWalletAdapter(),
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new MathWalletAdapter(),
-      new TrustWalletAdapter(),
-      new CoinbaseWalletAdapter(),
-    ],
-    [network]
-  );
+  const wallets = useMemo(() => {
+    if (network) {
+      return [
+        // manually add any legacy wallet adapters here
+        // new UnsafeBurnerWalletAdapter(),
+        new PhantomWalletAdapter(),
+        new SolflareWalletAdapter(),
+        new MathWalletAdapter(),
+        new TrustWalletAdapter(),
+        new CoinbaseWalletAdapter(),
+      ];
+    } else {
+      return [
+        // manually add any legacy wallet adapters here
+        // new UnsafeBurnerWalletAdapter(),
+        new PhantomWalletAdapter(),
+        new SolflareWalletAdapter(),
+        new MathWalletAdapter(),
+        new TrustWalletAdapter(),
+        new CoinbaseWalletAdapter(),
+      ];
+    }
+  }, [network]);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
