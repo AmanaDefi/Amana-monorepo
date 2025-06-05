@@ -26,7 +26,6 @@ export const menuItems = [
     label: "Wallet",
     icon: WalletIcon,
     type: "button" as const,
-    href: "/wallet",
   },
   {
     id: "activity",

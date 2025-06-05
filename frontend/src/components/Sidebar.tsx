@@ -190,7 +190,7 @@ const Sidebar = ({
     <div
       ref={sidebarRef}
       onClick={handleClick}
-      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 relative ${
+      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 relative font-gotham ${
         isCollapsed
           ? "w-[136px] h-[1001px] py-[48px] px-[20px]"
           : "w-[302px] h-[972px] py-[54px] px-[29px]"

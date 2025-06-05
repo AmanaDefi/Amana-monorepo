@@ -7,7 +7,7 @@ export const useSidebarActions = () => {
 
   const actionMap = {
     dashboard: () => router.push("/dashboard"),
-    wallet: () => router.push("/wallet"),
+    wallet: () => {},
     activity: () => router.push("/activity"),
     settings: () => router.push("/settings"),
     qa: () => router.push("/qa"),
