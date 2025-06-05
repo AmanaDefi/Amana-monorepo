@@ -24,6 +24,20 @@ const beforeGradientBorder = plugin(({ addUtilities }) => {
     },
   });
 });
+const menuItemHover = plugin(function ({ addUtilities }) {
+  addUtilities({
+    ".menu-item-hover": {
+        background: 'linear-gradient(159deg, #14171f 0%, #14171f 60%, rgba(27, 70, 224, 0.3) 80%, rgba(27, 70, 224, 0.5) 100%) !important',
+      },
+  });
+});
+const sidebarShadow = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".sidebar-shadow": {
+      boxShadow: "0 2px 2px 0 rgba(0, 0, 0, 0.1)",
+    },
+  });
+});
 
 const config: Config = {
   content: [
@@ -94,8 +108,12 @@ const config: Config = {
         dot2: "dot2 2s steps(1, end) infinite",
         dot3: "dot3 2s steps(1, end) infinite",
       },
+      boxShadow: {
+        sidebar:
+          "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
+      },
     },
   },
-  plugins: [beforeGradientBorder],
+  plugins: [beforeGradientBorder, menuItemHover, sidebarShadow],
 };
 export default config;

@@ -43,7 +43,7 @@
 
 @layer base {
   body {
-    @apply bg-zinc-950 text-neutral-200;
+    @apply bg-[#0C1015] text-neutral-200;
   }
 
   .flex-center {
@@ -214,11 +214,12 @@ body .page-container {
 .thirdweb-connect-override button:hover,
 .thirdweb-connect-override button:active {
   background: linear-gradient(
-    135deg,
+    139deg,
     #14171f 0%,
-    #14171f 60%,
-    rgba(27, 70, 224, 0.3) 85%,
-    #1b46e0 100%
+    #14171f 55%,
+    rgba(27, 70, 224, 0.25) 70%,
+    rgba(27, 70, 224, 0.5) 90%,
+    #1b46e0 120%
   ) !important;
 }
 .thirdweb-invest-button button,
