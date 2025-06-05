@@ -185,11 +185,13 @@ const Sidebar = ({
     <div
       ref={sidebarRef}
       onClick={handleClick}
-      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham ${
-        isCollapsed
-          ? "w-[136px] h-[972px] py-[48px] px-[20px]"
-          : "w-[302px] h-[972px] py-[54px] px-[29px]"
-      }`}
+      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham
+        hidden md:flex
+        ${
+          isCollapsed
+            ? "w-[136px] h-[972px] py-[48px] px-[20px]"
+            : "w-[302px] h-[972px] py-[54px] px-[29px]"
+        }`}
       style={{
         boxShadow:
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",

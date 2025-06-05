@@ -5,12 +5,30 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/header";
 import GlowIcon from "@/components/svg/GlowIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Перевіряємо при завантаженні
+    checkIsMobile();
+
+    // Додаємо слухач для зміни розміру
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
 
   return (
     <div className="relative overflow-hidden min-h-screen z-0">
@@ -18,24 +36,38 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       <GlowIcon position="bottom-left" />
 
       {isConnected ? (
-        <div className="flex flex-col mx-auto w-full max-w-[1512px] pt-[60px] pb-[30px]">
-          <Header />
+        <div className="flex flex-col mx-auto w-full max-w-[1512px] pt-[60px] pb-[30px] px-4 md:px-0">
+          <Header 
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+          />
           <div className="flex flex-1">
+            {/* Sidebar - показується тільки на планшеті та десктопі */}
             <div className="flex-shrink-0">
               <Sidebar
+                activeSection={activeSection}
+                onSectionChange={setActiveSection}
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
               />
             </div>
+            
+            {/* Main Content */}
             <div
               className="flex-1"
-              style={{
-                paddingLeft: isCollapsed ? "20px" : "29px",
-                paddingRight: "16px",
-                maxWidth: `calc(100% - ${isCollapsed ? 136 : 302}px - ${
-                  isCollapsed ? 20 : 29
-                }px)`,
-              }}
+              style={
+                !isMobile
+                  ? {
+                      paddingLeft: isCollapsed ? "20px" : "29px",
+                      paddingRight: "16px",
+                      maxWidth: `calc(100% - ${isCollapsed ? 136 : 302}px - ${
+                        isCollapsed ? 20 : 29
+                      }px)`,
+                    }
+                  : {
+                      padding: "0 16px",
+                    }
+              }
             >
               {children}
             </div>
@@ -43,10 +75,13 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           <Footer isConnected />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px] py-[40px]">
-          <Header />
-          <div className="flex-1 ml-16">{children}</div>
-          <div className="ml-16">
+        <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px] py-[40px] px-4 md:px-0">
+          <Header 
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+          />
+          <div className="flex-1 md:ml-16">{children}</div>
+          <div className="md:ml-16">
             <Footer isConnected={false} />
           </div>
         </div>
@@ -54,5 +89,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     </div>
   );
 };
+
 
 export default ConditionalLayout;
