@@ -46,7 +46,7 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
 
   const menuItemContent = (
     <>
-      <div data-toggle="ignore" className="flex items-center">
+      <div className="flex items-center">
         <item.icon />
         <span
           className={`ml-3 transition-all duration-300 ease-in-out ${
@@ -66,7 +66,6 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
     if (item.type === "button") {
       return (
         <button
-          data-toggle="ignore"
           className={baseClasses}
           onClick={isDisabled ? undefined : item.action}
           title={isCollapsed ? item.label : undefined}
@@ -80,7 +79,6 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
     if (item.type === "link" && item.href) {
       return (
         <Link
-          data-toggle="ignore"
           href={isDisabled ? "#" : item.href}
           className={baseClasses}
           title={isCollapsed ? item.label : undefined}
@@ -111,7 +109,6 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   if (item.type === "button") {
     return (
       <button
-        data-toggle="ignore"
         className={`${itemSpecificClasses} relative`}
         onClick={isDisabled ? undefined : item.action}
         title={isCollapsed ? item.label : undefined}
@@ -124,7 +121,6 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
 
   return (
     <Link
-      data-toggle="ignore"
       href={isDisabled ? "#" : item.href!}
       className={`${itemSpecificClasses} relative`}
       onClick={(e) => {
@@ -174,17 +170,9 @@ const Sidebar = ({
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest("[data-toggle='ignore']")) {
-      toggleSidebar();
-    }
-  };
-
   return (
     <div
       ref={sidebarRef}
-      onClick={handleClick}
       className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham
         hidden md:flex
         ${
@@ -208,7 +196,6 @@ const Sidebar = ({
           <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
 
           <button
-            data-toggle="ignore"
             onClick={toggleSidebar}
             className={`transition-opacity duration-300 ease-in-out ${
               isCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -223,7 +210,7 @@ const Sidebar = ({
             isCollapsed ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          <button data-toggle="ignore" onClick={toggleSidebar}>
+          <button onClick={toggleSidebar}>
             <OpenSidebarIcon width={24} height={25} />
           </button>
         </div>
