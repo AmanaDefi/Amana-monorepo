@@ -136,14 +136,17 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
 const Sidebar = ({
   activeSection,
   onSectionChange,
+  isCollapsed,
+  setIsCollapsed,
 }: {
   activeSection?: string;
   onSectionChange?: (section: string) => void;
+  isCollapsed: boolean;
+  setIsCollapsed: (val: boolean) => void;
 }) => {
   const pathname = usePathname();
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   if (!isConnected) {
     return null;

@@ -2,14 +2,14 @@ import React from "react";
 import ZetaChainLogo from "@public/logo/zetachain.svg";
 import DiscordLogo from "@public/logo/discord.svg";
 import XLogo from "@public/logo/x.svg";
-import LinkedInLogo from "@public/logo/linkedIn.svg"; 
+import LinkedInLogo from "@public/logo/linkedIn.svg";
 import Link from "next/link";
 
 const Footer = ({ isConnected }: { isConnected: boolean }) => {
   return (
     <footer
-      className={`flex justify-between items-center w-full mx-auto ${
-        isConnected ? "max-w-[1512px] px-[44px] " : "max-w-[1296px] ml-16"
+      className={`flex justify-between items-center w-full ${
+        isConnected ? "max-w-[1512px] px-[44px]" : "max-w-[1360px]"
       }`}
     >
       <div className="flex items-center gap-4">
@@ -50,6 +50,5 @@ const Footer = ({ isConnected }: { isConnected: boolean }) => {
     </footer>
   );
 };
-
 
 export default Footer;
