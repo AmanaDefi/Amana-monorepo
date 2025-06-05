@@ -1161,7 +1161,8 @@ const executeSolanaDeposit = async (
     transactionAmount,
     activeChain
   );
-
+  console.log("swapPath", swapPath);
+  console.log("minSharesOut", minSharesOut);
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID
@@ -1231,7 +1232,7 @@ export const executeSolanaWithdrawal = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Solana Cross-Chain Withdrawal");
-  const minAmountOut = getPathDataAndMinAmountOut(
+  const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
     withdrawZRC20,
     withdrawAssetAmount,
@@ -1257,7 +1258,7 @@ export const executeSolanaWithdrawal = async (
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
-    types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
     values: [
       withdrawZRC20,
       getSolanaEVMAddress(splMint), // or just splMint?
@@ -1265,6 +1266,7 @@ export const executeSolanaWithdrawal = async (
       minAmountOut,
       slippageValue,
       solanaWalletAddress,
+      swapPath,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
     ],
   };
@@ -1365,7 +1367,7 @@ const executeCrossChainWithdrawal = async (
   setcrossChainTxId: Function
 ) => {
   console.log("Executing Cross-Chain Withdrawal");
-  const minAmountOut = getPathDataAndMinAmountOut(
+  const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
     withdrawZRC20,
     withdrawAssetAmount,
@@ -1387,7 +1389,7 @@ const executeCrossChainWithdrawal = async (
   const slippageValue = (slippage * 100).toFixed(0);
   // Prepare payload (calldata to pass to the receiver)
   const payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
     [
       withdrawZRC20.address,
       withdrawERC20,
@@ -1395,6 +1397,7 @@ const executeCrossChainWithdrawal = async (
       minAmountOut,
       slippageValue,
       nonEvmAddress,
+      swapPath,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
     ]
   ) as `0x${string}`;
@@ -1562,7 +1565,7 @@ export const getBeamTokenId = async (
   }
 };
 
-const getPathDataAndAmountOut = async (
+export const getPathDataAndAmountOut = async (
   amount: bigint,
   inputToken: Token,
   outputToken: Token,
