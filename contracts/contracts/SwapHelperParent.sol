@@ -20,7 +20,6 @@ import "./interfaces/ICurveRegistry.sol";
 
 import "./interfaces/ICurvePoolDynamic.sol";
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 abstract contract SwapHelperParent is
     Initializable,
@@ -510,10 +509,8 @@ abstract contract SwapHelperParent is
 
         if (swapData.length == 0) {
             (, , encodedPath) = getPathV3(inputToken, outputToken);
-            console.log("Using swapData from getPathV3");
         } else {
             encodedPath = swapData;
-            console.log("Using provided swapData");
         }
 
         if (encodedPath.length > 0) {

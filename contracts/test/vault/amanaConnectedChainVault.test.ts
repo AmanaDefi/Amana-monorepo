@@ -165,7 +165,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should execute a basic cross chain withdraw", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData, withdrawSwapData } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
@@ -188,7 +188,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
     const userExpectedAmountWithdrawn = await amanaVault.convertToAssets(userMaxRedeem);
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData);
 
     await simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, userExpectedAmountWithdrawn, emittedAmount, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
@@ -388,7 +388,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should calculate and deduct the performance fee on withdrawal", async function () {
-    const { user1, user2, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
+    const { user1, user2, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, depositSwapData, withdrawSwapData } = await loadFixture(setupVaultFixture);
 
     // Step 1: Simulate a deposit by User1
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
@@ -438,7 +438,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const totalSharesUser1 = await amanaVault.balanceOf(await user1.getAddress());
     const sharesToWithdraw = totalSharesUser1;
 
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, sharesToWithdraw, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, sharesToWithdraw, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData);
     await expect(simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, withdrawAmount, updatedTotalAssets, 3, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken,))
       .to.emit(amanaVault, "PerformanceFeePaid")
       .withArgs(await user1.getAddress(), expectedFee);
@@ -510,7 +510,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       gasTank,
       pythContract,
       vaultAsset,
-      depositSwapData
+      depositSwapData, withdrawSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
@@ -520,7 +520,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     await simulateConfirmDeposit(amanaVault, gatewaySigner, txConfig.crossChainDepositAmount1, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData);
 
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
@@ -648,7 +648,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       gasTank,
       pythContract,
       vaultAsset,
-      depositSwapData
+      depositSwapData, withdrawSwapData
     } = await loadFixture(setupVaultFixture);
 
     const txId = ethers.utils.hexlify(ethers.utils.randomBytes(32));
@@ -659,7 +659,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     await simulateConfirmDeposit(amanaVault, gatewaySigner, txConfig.crossChainDepositAmount1, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     const userMaxRedeem = await amanaVault.maxRedeem(await user1.getAddress());
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData);
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, userMaxRedeem, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData);
 
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
@@ -764,7 +764,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should withdraw the maximum amount possible for a user", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, depositSwapData } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, vaultConfig, txConfig, strategyConfig, owner, gasTank, withdrawHelper, depositSwapData, withdrawSwapData } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
@@ -791,7 +791,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     // Withdraw the maximum amount
     const maxRedeemAmount = await amanaVault.maxRedeem(await user1.getAddress());
-    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, maxRedeemAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData)
+    await simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, maxRedeemAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData)
     const totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const totalAssets = await amanaVault.convertToAssets(totalShares);
     await expect(simulateConfirmWithdrawToConnChain(amanaVault, gatewaySigner, maxRedeemAmount, totalAssets, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken))
@@ -800,7 +800,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should fail to withdraw more than the user balance", async function () {
-    const { user1, amanaVault, pythContract, gatewaySigner, txConfig, strategyConfig, owner, gasTank, depositSwapData } = await loadFixture(setupVaultFixture);
+    const { user1, amanaVault, pythContract, gatewaySigner, txConfig, strategyConfig, owner, gasTank, depositSwapData, withdrawSwapData } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
     await setTokenBalance(strategyConfig.gasToken, gasTank.address, strategyConfig.gasTankAmount, 3);
@@ -827,7 +827,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     // Attempt to withdraw more than balance
     const excessiveWithdrawAmount = txConfig.crossChainDepositAmount1.mul(2); // Double the deposited amount
 
-    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, excessiveWithdrawAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData))
+    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, excessiveWithdrawAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData))
       .to.be.revertedWithCustomError(amanaVault, "ERC4626ExceededMaxWithdraw");
   });
 
@@ -837,11 +837,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     await setTokenBalance(vaultConfig.asset, await user1.getAddress(), txConfig.directDepositAmount1, 3);
 
     await vaultAsset.connect(user1).approve(amanaVault.address, txConfig.directDepositAmount1);
-    // console.log("TEST: User1 deposits", txConfig.directDepositAmount1.toString(), "tokens");
     await amanaVault.connect(user1)["deposit(uint256,uint256,address)"](txConfig.directDepositAmount1, txConfig.minSharesOut1, await user1.getAddress());
-    // console.log("TEST: User1 deposit 1 completed");
     await simulateConfirmDeposit(amanaVault, gatewaySigner, txConfig.directDepositAmount1, 0, 1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
-    // console.log("TEST: User1 deposit 1 confirmed");
     await setTokenBalance(vaultConfig.asset, await user2.getAddress(), txConfig.directDepositAmount2, 3);
 
     await vaultAsset.connect(user2).approve(amanaVault.address, txConfig.directDepositAmount2);
@@ -916,7 +913,7 @@ describe("AmanaConnectedChainVault Tests", function () {
   });
 
   it("should handle zero balances without errors", async function () {
-    const { user1, vaultAsset, amanaVault, pythContract, gatewaySigner, txConfig } = await loadFixture(setupVaultFixture);
+    const { user1, vaultAsset, amanaVault, pythContract, gatewaySigner, txConfig, withdrawSwapData } = await loadFixture(setupVaultFixture);
 
     // Simulate a withdrawal for a user with zero balance
     const zeroAmount = BigNumber.from(0);
@@ -926,7 +923,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await expect(amanaVault.connect(user1)["redeem(uint256,uint256,address,address)"](zeroAmount, 0, await user1.getAddress(), await user1.getAddress())).to.be
       .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
-    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, zeroAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData)).to.be
+    await expect(simulateWithdrawCallFromConnChain(amanaVault, gatewaySigner, user1, zeroAmount, pythContract, txConfig.originZRC20Input, txConfig.originChainId, txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData)).to.be
       .revertedWithCustomError(amanaVault, "AmountCantBeZero");
 
     // Deposit and then withdraw entire balance
@@ -1084,7 +1081,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig,
       owner,
       gasTank,
-      depositSwapData
+      depositSwapData, withdrawSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(1000), 3);
@@ -1110,13 +1107,11 @@ describe("AmanaConnectedChainVault Tests", function () {
     const decoded1 = iface.decodeEventLog("CrossChainInvestSent", log1!.data, log1!.topics);
     const depositAmount1 = decoded1.amount;
     txAmounts.push(depositAmount1);
-    console.log("Confirming Deposit #1 with amount:", depositAmount1.toString());
     await simulateConfirmDeposit(amanaVault, gatewaySigner, depositAmount1, 0, vaultNonce, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken);
     totalAssets = totalAssets.add(depositAmount1);
 
     // Step 2: Update #1
     const updateAmount1 = totalAssets.add(depositAmount1.div(10)); // Add 10% of the deposit amount
-    console.log("Confirming Asset Update #1 with amount:", updateAmount1.toString());
     await simulateConfirmAssetUpdate(amanaVault, gatewaySigner, updateAmount1, strategyConfig.address, strategyConfig.chainId, strategyConfig.gasToken, vaultNonce++);
     totalAssets = updateAmount1;
     expect(await amanaVault.totalAssets()).to.equal(updateAmount1);
@@ -1144,7 +1139,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user1, halfShares,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData
     );
     await simulateConfirmWithdrawToConnChain(
       amanaVault, gatewaySigner, expectedOut1, totalAssets,
@@ -1178,7 +1173,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user1, remainingShares,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData
     );
     await simulateConfirmWithdrawToConnChain(
       amanaVault, gatewaySigner, expectedOut2, totalAssets,
@@ -1213,7 +1208,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig,
       owner,
       gasTank,
-      depositSwapData
+      depositSwapData, withdrawSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(1000), 3);
@@ -1258,7 +1253,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user1, halfShares1,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData
     );
     const nonce3 = vaultNonce++;
 
@@ -1283,7 +1278,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     await simulateWithdrawCallFromConnChain(
       amanaVault, gatewaySigner, user2, shares2,
       pythContract, txConfig.originZRC20Input, txConfig.originChainId,
-      txConfig.originGasToken, txConfig.originNonEvmUserAddress, depositSwapData
+      txConfig.originGasToken, txConfig.originNonEvmUserAddress, withdrawSwapData
     );
     const nonce5 = vaultNonce++;
 
@@ -1321,7 +1316,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig,
       owner,
       gasTank,
-      depositSwapData
+      depositSwapData, withdrawSwapData
     } = await loadFixture(setupVaultFixture);
 
     await setTokenBalance(
@@ -1344,7 +1339,6 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     let vaultNonce = 1;
     let totalAssets = BigNumber.from(0);
-    console.log("User initiates a deposit of amount:", txConfig.crossChainDepositAmount1.toString());
     // Step 1: Deposit #1 (confirmed)
     const tx1 = await simulateDepositCallFromConnChain(
       amanaVault,
@@ -1374,10 +1368,8 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig.gasToken
     );
     totalAssets = totalAssets.add(depositAmount1);
-    console.log("Deposit #1 confirmed with amount:", depositAmount1.toString());
     // Step 2: Deposit #2 (not confirmed yet, 10x bigger)
     const largeDepositAmount = txConfig.crossChainDepositAmount1.mul(10);
-    console.log("User initiates a second deposit of amount:", largeDepositAmount.toString());
     const tx2 = await simulateDepositCallFromConnChain(
       amanaVault,
       gatewaySigner,
@@ -1397,13 +1389,10 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     // Step 3: Withdraw initiated before confirming deposit #2
     const userShares = await amanaVault.balanceOf(await user1.getAddress());
-    console.log("User shares before withdrawal:", formatUnits(userShares, 6));
 
     const userAssets = await amanaVault.convertToAssets(userShares);
-    console.log("User assets before withdrawal:", formatUnits(userAssets, 6));
 
     const assetsToWithdraw = userAssets.div(2);
-    console.log("User initiates a withdraw of amount:", formatUnits(assetsToWithdraw, 6));
     await simulateWithdrawCallFromConnChain(
       amanaVault,
       gatewaySigner,
@@ -1413,7 +1402,7 @@ describe("AmanaConnectedChainVault Tests", function () {
       txConfig.originZRC20Input,
       txConfig.originChainId,
       txConfig.originGasToken,
-      txConfig.originNonEvmUserAddress, depositSwapData
+      txConfig.originNonEvmUserAddress, withdrawSwapData
     );
     const nonce3 = vaultNonce++;
 
@@ -1429,7 +1418,6 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig.gasToken
     );
     totalAssets = totalAssets.add(depositAmount2);
-    console.log("Deposit #2 confirmed with amount:", depositAmount2.toString());
     // Step 5: Confirm withdraw
     const totalBeforeWithdraw = totalAssets; // Deposit #2 not counted yet at time of withdraw
     await simulateConfirmWithdrawToConnChain(
@@ -1444,16 +1432,9 @@ describe("AmanaConnectedChainVault Tests", function () {
       strategyConfig.gasToken
     );
     totalAssets = totalAssets.sub(assetsToWithdraw);
-    console.log("Withdraw confirmed with amount:", assetsToWithdraw.toString());
 
     const actualUserShares = await amanaVault.balanceOf(await user1.getAddress());
     const actualAssets = await amanaVault.convertToAssets(actualUserShares);
-
-    console.log("Deposit #1 Amount:", formatUnits(depositAmount1, 6));
-    console.log("Deposit #2 Amount:", formatUnits(depositAmount2, 6));
-
-    console.log("Remaining Shares After Withdraw:", actualUserShares.toString());
-    console.log("Remaining Assets After Withdraw:", formatUnits(actualAssets, 6));
 
     // Validate user’s final position
     expect(actualAssets.add(assetsToWithdraw)).to.be.closeTo(depositAmount1.add(depositAmount2), 10); // rounding

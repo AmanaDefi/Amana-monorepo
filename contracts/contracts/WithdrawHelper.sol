@@ -11,7 +11,6 @@ import "./interfaces/IAmanaRegistry.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
-import "hardhat/console.sol";
 
 contract WithdrawHelper is Revertable {
     using SafeERC20 for IERC20;
@@ -126,11 +125,6 @@ contract WithdrawHelper is Revertable {
             ),
             onRevertGasLimit: 0
         });
-        console.log(
-            "handleGasFeeAndWithdrawToUser: amount: %s, withdrawZRC20: %s",
-            amount,
-            withdrawZRC20
-        );
         IGatewayZEVM(GATEWAY_ADDRESS).withdraw(
             recipient,
             amount,

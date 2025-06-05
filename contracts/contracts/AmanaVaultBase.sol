@@ -16,7 +16,6 @@ import "./interfaces/IZRC20.sol";
 import "./interfaces/IWithdrawHelper.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaRegistry.sol";
-import "hardhat/console.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
@@ -447,11 +446,6 @@ abstract contract AmanaVaultBase is
      */
     function _returnFundsToUser(uint256 nonce) internal {
         Transaction storage txn = transactions[nonce];
-        console.log("Returning funds to user for nonce:", nonce);
-        console.log(
-            "swapDataByNonce[nonce].length:",
-            swapDataByNonce[nonce].length
-        );
         uint256 outputAmount = (txn.withdrawChainId == uint32(block.chainid) ||
             address(asset()) == txn.withdrawZRC20)
             ? txn.amount

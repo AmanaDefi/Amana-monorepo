@@ -443,7 +443,6 @@ contract SwapHelperZetachain is SwapHelperParent {
         uint16 maxDeadline,
         bytes calldata swapData
     ) external override returns (uint256 amountOut) {
-        console.log("Initiating swap");
         require(
             IERC20(zrc20).balanceOf(address(this)) >= amount,
             "Insufficient balance"
@@ -476,11 +475,7 @@ contract SwapHelperZetachain is SwapHelperParent {
 
             if (swapData.length > 0) {
                 // If swapData is provided, it should be the encoded path
-                console.log("Using provided swapData for Beam");
                 encodedPath = swapData;
-                console.log("Encoded path length:", encodedPath.length);
-            } else {
-                console.log("No swapData provided, using default path");
             }
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
@@ -490,9 +485,7 @@ contract SwapHelperZetachain is SwapHelperParent {
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
-            console.log("Executing Beam swap");
             amountOut = ISwapRouter(SWAPROUTER_BEAM).exactInput(params);
-            console.log("Beam swap completed, amountOut:", amountOut);
         } else {
             // fallback to V2 or revert
             path = getPathV2(zrc20, targetZRC20);
