@@ -5,9 +5,13 @@ import XLogo from "@public/logo/x.svg";
 import LinkedInLogo from "@public/logo/linkedIn.svg"; 
 import Link from "next/link";
 
-const Footer = () => {
+const Footer = ({ isConnected }: { isConnected: boolean }) => {
   return (
-    <footer className="flex justify-between items-center max-w-[1536px] mx-auto w-full">
+    <footer
+      className={`flex justify-between items-center w-full mx-auto ${
+        isConnected ? "max-w-[1512px] px-[44px] " : "max-w-[1296px] ml-16"
+      }`}
+    >
       <div className="flex items-center gap-4">
         <span
           className="uppercase text-white text-sm font-normal tracking-wide"
@@ -16,13 +20,13 @@ const Footer = () => {
           Backed by
         </span>
         <Link href="https://www.zetachain.com/" target="_blank">
-          <ZetaChainLogo height={28} className="w-auto h-[28px]" />
+          <ZetaChainLogo height={30} className="w-auto h-[30px]" />
         </Link>
       </div>
 
       <div className="flex items-center gap-4">
         <Link
-          href="https://www.linkedin.com/company/amana-defi" 
+          href="https://www.linkedin.com/company/amana-defi"
           target="_blank"
           className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
         >
@@ -46,5 +50,6 @@ const Footer = () => {
     </footer>
   );
 };
+
 
 export default Footer;
