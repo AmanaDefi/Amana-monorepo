@@ -28,8 +28,7 @@ import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
-  getAmountOutFromSwap,
-  getAssetsFromShares,
+  getPathDataAndAmountOut,
   getPerformanceFee,
   getSharesFromDeposit,
 } from "@/actions/actions";
@@ -486,12 +485,13 @@ export default function VaultInputs({
       });
       let tokenConversionAmount = assetsAmount;
       if (actualInputToken.address !== vaultData.inputToken.address) {
-        tokenConversionAmount = await getAmountOutFromSwap(
+         const result = await getPathDataAndAmountOut(
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
           vaultData.id as Address
         );
+        tokenConversionAmount = result.amountOut
       }
       console.log("Double Box - Conversion amounts:", {
         tokenConversionAmount: tokenConversionAmount.toString(),
@@ -569,12 +569,13 @@ export default function VaultInputs({
       });
       let assetsConversionAmount: bigint = inputAmountValue;
       if (actualInputToken.address !== vaultData.inputToken.address) {
-        assetsConversionAmount = await getAmountOutFromSwap(
+         const result = await getPathDataAndAmountOut(
           inputAmountValue,
           actualInputToken,
           vaultData.inputToken,
           vaultData.id as Address
         );
+        assetsConversionAmount = result.amountOut;
       }
 
       console.log("Double Box - Pre Gas Conversion amounts:", {
@@ -616,12 +617,13 @@ export default function VaultInputs({
 
         if (gasZRC20 !== vaultData.inputToken.address) {
           // Convert fee from gas token into vault asset terms
-          gasFeeInVaultAsset = await getAmountOutFromSwap(
+          const result = await getPathDataAndAmountOut(
             gasFee,
             ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
             vaultData.inputToken,
             vaultData.id as Address
           );
+          gasFeeInVaultAsset =result.amountOut;
         }
         // Format gas fee in USD and ETH
         const gasFeeInTokenUnits = Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;

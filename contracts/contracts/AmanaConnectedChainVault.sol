@@ -64,12 +64,11 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             } else {
                 transactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
-                transactions[confirmationNonce].txStatus = txStatus; // non-zero means a revert
+                transactions[confirmationNonce].txStatus = txStatus;
                 if (
                     txStatus == TX_WITHDRAW_REVERTED ||
                     txStatus == TX_WITHDRAW_CONFIRMED
                 ) {
-                    // If the withdrawal reverted, we need to return the funds to the user
                     address user = transactions[confirmationNonce].user;
                     if (
                         transactions[confirmationNonce].amount >=
@@ -98,10 +97,20 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 minimumOut,
                 uint16 slippage,
                 bytes memory nonEvmAddress,
+                bytes memory swapData,
                 bytes32 txStatus
             ) = abi.decode(
                     message,
-                    (address, address, uint256, uint256, uint16, bytes, bytes32)
+                    (
+                        address,
+                        address,
+                        uint256,
+                        uint256,
+                        uint16,
+                        bytes,
+                        bytes,
+                        bytes32
+                    )
                 );
             txn.user = context.sender; // common to both paths
             txn.receiver = context.sender; // could take in a different receiver?
@@ -111,6 +120,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             txn.withdrawERC20 = withdrawERC20;
             txn.slippage = slippage;
             nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
+            swapDataByNonce[vaultNonce] = swapData;
             // if (context.senderEVM != address(0)) {
             //     // Handle EVM-style sender logic
             //     txn.user = context.senderEVM;
@@ -196,9 +206,17 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             uint256 nextNonce = lastProcessedNonce + 1;
             Transaction memory transaction = transactions[nextNonce];
 
-            if (transaction.txStatus == TX_WITHDRAW_REVERTED) {
+            if (
+                transaction.txStatus == TX_WITHDRAW_REVERTED ||
+                transaction.txStatus == TX_TOTAL_ASSETS_UPDATE ||
+                transaction.txStatus == TX_DEPOSIT_REVERTED
+            ) {
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
+                emit TotalAssetsUpdated(
+                    transaction.totalAssetsAfter,
+                    nextNonce
+                );
             } else if (transaction.txStatus == TX_DEPOSIT_CONFIRMED) {
                 _confirmDepositAndMint();
             } else if (transaction.txStatus == TX_SWITCH_CONFIRMED) {
@@ -253,6 +271,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     function toggleDepositFeePaidFromGasTank() external onlyOwner {
         depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
+    }
+
+    function incrementLastProcessedNonce() external onlyOwner {
+        lastProcessedNonce++;
     }
 
     /**

@@ -56,6 +56,8 @@ abstract contract StrategyParent is
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
 
+    IERC20 public inputToken;
+
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");
     bytes32 internal constant TX_WITHDRAW_CONFIRMED =
@@ -135,13 +137,15 @@ abstract contract StrategyParent is
         string memory _name,
         address _amanaVault,
         address _gateway,
-        address _withdrawHelper
+        address _withdrawHelper,
+        address _inputTokenAddress
     ) internal onlyInitializing {
         __Ownable_init(msg.sender);
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
         withdrawHelper = _withdrawHelper;
+        inputToken = IERC20(_inputTokenAddress);
         minClaimableReward = 5 * 10 ** 15; // 0.005
     }
 
@@ -169,6 +173,14 @@ abstract contract StrategyParent is
             uint256 vaultNonce
         ) = abi.decode(message, (TxType, uint256, uint256, address, uint256));
 
+        if (txType == TxType.Deposit && msg.value == 0) {
+            SafeERC20.safeTransferFrom(
+                inputToken,
+                msg.sender,
+                address(this),
+                assetAmount
+            );
+        }
         pendingByNonce[vaultNonce] = BufferedTx({
             txType: txType,
             assetAmount: assetAmount,
@@ -177,17 +189,17 @@ abstract contract StrategyParent is
         });
 
         if (vaultNonce == lastProcessedNonce + 1) {
-            _processBufferedConfirmations();
+            _processBufferedTransactions();
         }
 
         return abi.encode(true);
     }
 
-    function processBufferedConfirmations() external onlyOwner {
-        _processBufferedConfirmations();
+    function processBufferedTransactions() external onlyOwner {
+        _processBufferedTransactions();
     }
 
-    function _processBufferedConfirmations() internal {
+    function _processBufferedTransactions() internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
             BufferedTx storage txData = pendingByNonce[nextNonce];
@@ -209,7 +221,7 @@ abstract contract StrategyParent is
             } else if (txData.txType == TxType.Switch) {
                 _transferAssetsToNewStrategy();
             } else if (txData.txType == TxType.Revert) {
-                // nothing gets executed, but the nonce is incremented (below)
+                _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
             } else {
                 revert("Unknown TxType");
             }

@@ -240,9 +240,7 @@ const handleWithdrawTransaction = async (
     // });
     console.log("=== WITHDRAW TRANSACTION RECEIPT START ===");
     const receipt = await executeWithdrawal(
-      vaultData.id as Address,
-      vaultData.protocol.strategyAddress as Address,
-      vaultData.protocol.chainId as number,
+      vaultData,
       walletContext,
       activeAccount,
       activeChain,

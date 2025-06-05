@@ -15,7 +15,7 @@ contract UpgradeVault is Script {
         // address newImpl = 0xBDC27D4Bd051b774fB33AEFae10Bb6D698bAcEA6; // AmanaConnectedChainVault: 0x502881c6f25340e62757a7be556b0e8ccbdb195d
         // address newImpl = 0x6fE22F986797F16aabb461df546ed3317932213f; // V1 vault (old version)
 
-        address newImpl = 0xcd0DcA0347b1a05B98194950683afe112C44DB9f; // V1 vault (older version)
+        address newImpl = 0x90f8ef87a011194CF8E0426cA45034D0b54DB6bA; // V1 vault (older version)
 
         // ✅ Fetch the PRIVATE_KEY from environment and ensure it starts with "0x"
         string memory rawPrivateKey = vm.envString("PRIVATE_KEY");

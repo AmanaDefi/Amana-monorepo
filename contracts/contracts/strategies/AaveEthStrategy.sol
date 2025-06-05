@@ -46,7 +46,13 @@ contract AaveEthStrategy is EthStrategyParent {
         address _wethAddress,
         address _withdrawHelper
     ) external initializer {
-        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gateway,
+            _withdrawHelper,
+            address(0)
+        );
 
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);
         aavePool = IAavePool(receiptToken.POOL());

@@ -9,24 +9,11 @@ import "./StrategyParent.sol";
 abstract contract ERC20StrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
-    IERC20 public inputToken;
-
-    function __ERC20StrategyParent_init(
-        address _inputTokenAddress
-    ) internal onlyInitializing {
-        inputToken = IERC20(_inputTokenAddress);
-    }
-
     /// @notice Invests ERC20 into the yield source.
 
     function _invest() internal virtual override {
         BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
-        SafeERC20.safeTransferFrom(
-            inputToken,
-            msg.sender,
-            address(this),
-            txn.assetAmount
-        );
+
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
         _depositFundsIntoYieldSource(txn.assetAmount, txn.minimumOut);
         _sendInvestConfirmation(
