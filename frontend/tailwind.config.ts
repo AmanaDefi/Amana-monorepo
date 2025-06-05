@@ -1,5 +1,43 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 import { colors } from "./src/utils/colors";
+
+const beforeGradientBorder = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".before-gradient-border": {
+      position: "relative",
+      zIndex: "0",
+    },
+    ".before-gradient-border::before": {
+      content: '""',
+      position: "absolute",
+      inset: "0",
+      padding: "1px", 
+      borderRadius: "16px", 
+      background: "linear-gradient(180deg, #162559 0%, #1B46E0 100%)",
+      pointerEvents: "none",
+      zIndex: "-1",
+      maskComposite: "exclude",
+      WebkitMask:
+        "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+      WebkitMaskComposite: "xor",
+    },
+  });
+});
+const menuItemHover = plugin(function ({ addUtilities }) {
+  addUtilities({
+    ".menu-item-hover": {
+        background: 'linear-gradient(159deg, #14171f 0%, #14171f 60%, rgba(27, 70, 224, 0.3) 80%, rgba(27, 70, 224, 0.5) 100%) !important',
+      },
+  });
+});
+const sidebarShadow = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".sidebar-shadow": {
+      boxShadow: "0 2px 2px 0 rgba(0, 0, 0, 0.1)",
+    },
+  });
+});
 
 const config: Config = {
   content: [
@@ -23,6 +61,8 @@ const config: Config = {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        "deep-blue-gradient":
+          "linear-gradient(90deg, rgba(20, 23, 31, 0.15), #1B46E0)",
       },
       borderRadius: {
         "4xl": "2rem",
@@ -68,8 +108,12 @@ const config: Config = {
         dot2: "dot2 2s steps(1, end) infinite",
         dot3: "dot3 2s steps(1, end) infinite",
       },
+      boxShadow: {
+        sidebar:
+          "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
+      },
     },
   },
-  plugins: [],
+  plugins: [beforeGradientBorder, menuItemHover, sidebarShadow],
 };
 export default config;

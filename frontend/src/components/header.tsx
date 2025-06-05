@@ -14,94 +14,65 @@ import {
   ACCOUNT_ABSTRACTION_CONFIG,
   SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
-
-export const wallets = [
-  inAppWallet({
-    auth: {
-      options: ["google", "email", "passkey"],
-    },
-    //smartAccount: ACCOUNT_ABSTRACTION_CONFIG,
-  }),
-  createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet"),
-  createWallet("me.rainbow"),
-  createWallet("io.rabby"),
-  createWallet("com.trustwallet.app"),
-  createWallet("com.ledger"),
-];
+import { NAV_LINKS } from "@/constants/navigation";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { wallets } from "@/constants/wallets";
 
 const Header = () => {
   const path = usePathname();
   const router = useRouter();
+  const { walletAddress } = useMultiChain();
+  const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   return (
-    <header className="z-[5] text-white px-6 py-2.5 flex justify-between items-center border-b border-tuatara-900 lg:px-8 lg:py-7 max-w-[1536px] mx-auto w-full">
-      <Link href="/" className="flex items-center gap-2 lg:gap-3">
-        <AmanaLogo
-          height={30}
-          className="h-[25px] w-auto md:h-[54px] text-white"
-        />
-        <h1 className="text-xl lg:text-3xl lg:leading-[44px] font-bold font-mono tracking-tighter text-zinc-100">
-          AMANA
-        </h1>
-      </Link>
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3 lg:gap-16">
-          <nav className="hidden lg:flex gap-16">
+    <header
+      className={`w-full flex items-center justify-between  ${isConnected ? "px-11 mb-7 h-[40px]" : "mb-9 h-[80px]"}`}
+    >
+      <div className="flex items-center gap-[41px]">
+        {!isConnected && (
+          <Link href="/" className="flex items-center">
+            <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
+          </Link>
+        )}
+        <nav className="hidden lg:flex items-center min-w-[427px]">
+          {NAV_LINKS.map(({ label, href }) => (
             <span
-              className={`cursor-pointer ${
-                path === "/" ? "font-bold text-themeColor" : ""
+              key={href}
+              className={`cursor-pointer transition font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center ${
+                path === href ? "border-[#1B46E0] " : "border-transparent"
               }`}
-              onClick={() => router.push("/")}
+              onClick={() => router.push(href)}
             >
-              Vaults
+              {label}
             </span>
-            <span
-              className={`cursor-pointer ${
-                path === "/about" ? "font-bold text-themeColor" : ""
-              }`}
-              onClick={() => router.push("/about")}
-            >
-              About
-            </span>
-            <span
-              className={`cursor-pointer ${
-                path === "/leaderboard" ? "font-bold text-themeColor" : ""
-              }`}
-              onClick={() => router.push("/leaderboard")}
-            >
-              Leaderboard
-            </span>
-            <span
-              className={`cursor-pointer ${
-                path === "/roadmap" ? "font-bold text-themeColor" : ""
-              }`}
-              onClick={() => router.push("/roadmap")}
-            >
-              Roadmap
-            </span>
-            {/* <span
+          ))}
+        </nav>
+      </div>
+
+      <div className="flex items-center gap-6">
+        {/* <span
               className={`cursor-pointer ${path === "/transaction-flow" ? "font-bold text-themeColor" : ""
                 }`}
               onClick={() => router.push("/transaction-flow")}
             >
               Transaction Flow
             </span> */}
-            {/* <span
+        {/* <span
               className={`cursor-pointer ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
                 }`}
               onClick={() => router.push("/old-vaults")}
             >
               Old Vaults
             </span> */}
-          </nav>
-          {/* Select Network Modal */}
-          {/* <ChainSwitcher/> */}
-          {/* <ConnectButton /> */}
+        {/* Select Network Modal */}
+        {/* <ChainSwitcher/> */}
+        {/* <ConnectButton /> */}
+        <div className="hidden lg:block thirdweb-connect-override">
           <ConnectButton
             wallets={wallets}
             chains={SUPPORTED_CHAINS}
             client={client}
+            connectButton={{ label: "Sign in" }}
           />
         </div>
         <MobileMenuModal />
