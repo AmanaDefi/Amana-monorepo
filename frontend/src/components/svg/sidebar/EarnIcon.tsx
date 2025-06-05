@@ -1,10 +1,11 @@
-export const EarnIcon = () => (
+export const EarnIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
     width="24"
     height="25"
     viewBox="0 0 24 25"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
+    {...props}
   >
     <path
       d="M20.25 18.6675H3.75C3.19772 18.6675 2.75 19.1152 2.75 19.6675V20.6675C2.75 21.2198 3.19772 21.6675 3.75 21.6675H20.25C20.8023 21.6675 21.25 21.2198 21.25 20.6675V19.6675C21.25 19.1152 20.8023 18.6675 20.25 18.6675Z"

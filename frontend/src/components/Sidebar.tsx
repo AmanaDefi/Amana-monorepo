@@ -19,31 +19,73 @@ interface SidebarMenuItemProps {
   };
   isActive: boolean;
   isBottomMenu?: boolean;
+  isCollapsed?: boolean;
 }
 
 const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   item,
   isActive,
   isBottomMenu = false,
+  isCollapsed = false,
 }) => {
-  if (isBottomMenu) {
-    const bottomClasses =
-      "flex items-center gap-3 rounded-lg px-[22px] py-2 w-[240px] h-12 font-bold text-lg text-gray-400 transition-all hover:text-white";
+  const isDisabled = item.id !== "wallet" && item.id !== "logout";
 
+  const commonClasses = isCollapsed
+    ? "flex items-center justify-center rounded-lg w-16 h-12 font-bold text-lg transition-all"
+    : "flex items-center gap-3 rounded-lg px-[22px] py-2 w-[240px] h-12 font-bold text-lg transition-all";
+
+  const enabledClasses = "hover:text-white text-gray-400";
+  const disabledClasses = "bg-[#35383D] text-gray-400 cursor-not-allowed";
+
+  const baseClasses = `${commonClasses} ${isDisabled ? disabledClasses : enabledClasses}`;
+
+  const menuItemContent = (
+    <>
+      <div
+        className={
+          isCollapsed
+            ? "flex items-center justify-center"
+            : "flex items-center gap-3 px-3"
+        }
+      >
+        <item.icon />
+        {!isCollapsed && <span>{item.label}</span>}
+      </div>
+      {isActive && !isDisabled && (
+        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm"></div>
+      )}
+    </>
+  );
+
+  if (isBottomMenu) {
     if (item.type === "button") {
       return (
-        <button className={bottomClasses} onClick={item.action}>
+        <button
+          className={baseClasses}
+          onClick={isDisabled ? undefined : item.action}
+          title={isCollapsed ? item.label : undefined}
+          disabled={isDisabled}
+          style={isCollapsed ? { padding: "12px 20px" } : undefined}
+        >
           <item.icon />
-          <span>{item.label}</span>
+          {!isCollapsed && <span>{item.label}</span>}
         </button>
       );
     }
 
     if (item.type === "link" && item.href) {
       return (
-        <Link href={item.href} className={bottomClasses}>
+        <Link
+          href={isDisabled ? "#" : item.href}
+          className={baseClasses}
+          title={isCollapsed ? item.label : undefined}
+          style={isCollapsed ? { padding: "12px 20px" } : undefined}
+          onClick={(e) => {
+            if (isDisabled) e.preventDefault();
+          }}
+        >
           <item.icon />
-          <span>{item.label}</span>
+          {!isCollapsed && <span>{item.label}</span>}
         </Link>
       );
     }
@@ -51,78 +93,115 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
     return null;
   }
 
-  const baseClasses =
-    "flex items-center gap-3 rounded-lg w-[240px] h-12 font-bold text-lg transition-all relative";
-  const regularClasses = "text-white hover:menu-item-hover";
-  const activeClasses = "menu-item-hover text-white";
+  if (!isBottomMenu) {
+    const regularClasses = isDisabled
+      ? "bg-[#35383D] text-gray-400 cursor-not-allowed"
+      : "text-white hover:menu-item-hover";
 
-  const menuItemContent = (
-    <>
-      <div className="flex items-center gap-3 px-3">
-        <item.icon />
-        <span>{item.label}</span>
-      </div>
-      {isActive && (
-        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm"></div>
-      )}
-    </>
-  );
+    const activeClasses = isDisabled
+      ? "bg-[#35383D] text-gray-400 cursor-not-allowed"
+      : "menu-item-hover text-white";
 
-  if (item.type === "button") {
+    const baseClasses = `${commonClasses} ${
+      isActive ? activeClasses : regularClasses
+    }`;
+
+    if (item.type === "button") {
+      return (
+        <button
+          className={`${baseClasses} relative`}
+          onClick={isDisabled ? undefined : item.action}
+          title={isCollapsed ? item.label : undefined}
+          disabled={isDisabled}
+        >
+          {menuItemContent}
+        </button>
+      );
+    }
+
     return (
-      <button
-        className={`${baseClasses} ${isActive ? activeClasses : regularClasses}`}
+      <Link
+        href={isDisabled ? "#" : item.href!}
+        className={`${baseClasses} relative`}
+        onClick={(e) => {
+          if (isDisabled) e.preventDefault();
+        }}
       >
         {menuItemContent}
-      </button>
+      </Link>
     );
   }
-
-  return (
-    <Link
-      href={item.href!}
-      className={`${baseClasses} ${isActive ? activeClasses : regularClasses}`}
-    >
-      {menuItemContent}
-    </Link>
-  );
 };
 
-const Sidebar = () => {
+const Sidebar = ({
+  activeSection,
+  onSectionChange,
+}: {
+  activeSection?: string;
+  onSectionChange?: (section: string) => void;
+}) => {
   const pathname = usePathname();
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   if (!isConnected) {
     return null;
   }
 
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   return (
     <div
-      className="w-[302px] h-[972px] rounded-3xl py-[54px] px-[31px] sidebar-shadow bg-[#0D1117] flex flex-col justify-between"
+      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 relative ${
+        isCollapsed
+          ? "w-[136px] h-[1001px] py-[48px] px-[20px]"
+          : "w-[302px] h-[972px] py-[54px] px-[29px]"
+      }`}
       style={{
         boxShadow:
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
       }}
     >
       <div className="text-white">
-        <div className="flex items-center justify-between mb-[65px]">
+        <div
+          className={`flex items-center ${isCollapsed ? "justify-center mb-[124px]" : "justify-between mb-[65px]"}`}
+        >
           <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
-          <button>
-            <CloseSidebarIcon width={24} height={25} />
-          </button>
+
+          {!isCollapsed && (
+            <button onClick={toggleSidebar}>
+              <CloseSidebarIcon width={24} height={25} />
+            </button>
+          )}
         </div>
+        {isCollapsed && (
+          <div className="absolute top-[110px] right-4">
+            <button onClick={toggleSidebar}>
+              <CloseSidebarIcon width={24} height={25} />
+            </button>
+          </div>
+        )}
 
         <div className="mb-8">
-          <span className="text-[24px] font-bold text-white mb-8 block">
-            Explore Amana
-          </span>
-          <nav className="space-y-4">
+          {!isCollapsed && (
+            <span className="text-[24px] font-bold text-white mb-8 block min-w-[200px]">
+              Explore Amana
+            </span>
+          )}
+          <nav
+            className={
+              isCollapsed ? "space-y-4 flex flex-col items-center" : "space-y-4"
+            }
+          >
             {menuItems.map((item) => (
               <SidebarMenuItem
                 key={item.id}
                 item={item}
-                isActive={pathname === item.href}
+                isActive={activeSection === item.id}
+                isCollapsed={isCollapsed}
               />
             ))}
           </nav>
@@ -130,12 +209,19 @@ const Sidebar = () => {
       </div>
       <div>
         <div className="border-t border-[#535E73] my-4"></div>
-        <nav className="space-y-1 mt-auto">
+        <nav
+          className={
+            isCollapsed
+              ? "space-y-1 mt-auto flex flex-col items-center"
+              : "space-y-1 mt-auto"
+          }
+        >
           {bottomMenuItems.map((item) => (
             <SidebarMenuItem
               key={item.id}
               item={item}
-              isActive={pathname === item.href}
+              isActive={activeSection === item.id}
+              isCollapsed={isCollapsed}
               isBottomMenu={true}
             />
           ))}
