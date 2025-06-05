@@ -94,6 +94,7 @@ const config: Config = {
         fustat: ["var(--font-fustat)"],
         mono: ["var(--font-space-mono)"],
         sans: ["var(--font-inter)"],
+        gotham: ["var(--font-gotham)"],
       },
       letterSpacing: {
         1: "1px",

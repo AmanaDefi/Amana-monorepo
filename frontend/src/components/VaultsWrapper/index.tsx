@@ -1,12 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   VaultData,
   VaultAPY,
   VaultTotalAssets,
   UserVaultBalance,
 } from "@/types/types";
-import { useMultiChain } from "@/providers/MultiChainProvider";
 import LoadingLogo from "../LoadingLogo";
 import { VaultFilters } from "./components/VaultFilters";
 import { VaultCard } from "./components/VaultCard";
@@ -34,9 +32,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   userVaultBalances,
   vaultTotalAssets,
 }) => {
-  const { walletAddress } = useMultiChain();
-  const isConnected = !!walletAddress;
-
   const [searchTerm, setSearchTerm] = useState("");
   const [chainFilter, setChainFilter] = useState<string>("");
   const [protocolFilter, setProtocolFilter] = useState<string>("");
@@ -132,7 +127,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   }
 
   return (
-    <div className="w-full border border-[#302E44] rounded-3xl p-6">
+    <div className="font-gotham w-full border border-[#302E44] rounded-3xl p-6">
       <VaultFilters
         vaults={vaults}
         setSortOrder={setSortOrder}
