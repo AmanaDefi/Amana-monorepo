@@ -178,7 +178,7 @@ export const VaultCard: FC<Props> = React.memo(
           {/*MOCK APY 30d and predictions */}
           <div className="flex flex-row gap-4">
             <VaultCardInfoBlock>
-              <div className="flex flex-col gap-2 w-full relative">
+              <div className="flex flex-col gap-2 w-full relative pr-6">
                 <p className="font-normal text-sm leading-4 text-white">
                   30d avg APY
                 </p>
@@ -205,7 +205,7 @@ export const VaultCard: FC<Props> = React.memo(
             </VaultCardInfoBlock>
 
             <VaultCardInfoBlock>
-              <div className="flex flex-col gap-2  w-full relative">
+              <div className="flex flex-col gap-2  w-full relative pr-6">
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
