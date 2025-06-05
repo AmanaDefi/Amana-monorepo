@@ -132,7 +132,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Ethereum connection error:", error);
     }
-  }, [chain, disconnect]);
+  }, [chain, disconnect, connect]);
 
   //  Disconnect Wallet
   const disconnectWallet = useCallback(async () => {

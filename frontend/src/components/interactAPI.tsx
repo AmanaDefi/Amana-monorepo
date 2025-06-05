@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Action,
   Balance,
@@ -1351,7 +1351,7 @@ function Interaction({
     await interactionPostHook(!!success);
   };
 
-  function handleDone() {
+  const  handleDone = useCallback(() => {
     console.log("[UI] handleDone called - clearing all transaction state");
 
     // Mark component as inactive to prevent any ongoing BlockPI updates
@@ -1389,7 +1389,7 @@ function Interaction({
     // Refresh balance
     refreshBalance();
     console.log("[UI] All transaction state cleared, component reactivated");
-  }
+  }, [refreshBalance])
 
   useEffect(() => {
     if (

@@ -281,7 +281,7 @@ export default function VaultInputs({
         displayValue: "",
       });
     }
-  }, [inputToken?.address, activeChain?.id, fetchBalance]);
+  }, [inputToken, activeChain, fetchBalance, vaultData.id]);
 
   // Trigger error message handling
   useEffect(() => {
@@ -313,6 +313,7 @@ export default function VaultInputs({
     action,
     vaultTotalAssetinToken,
     steps,
+    tokenBalance.value
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -958,7 +959,7 @@ export default function VaultInputs({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [inputBalance]);
+  }, [inputBalance, initialConversionOutput]);
 
   useEffect(() => {
     if (
@@ -1026,7 +1027,7 @@ export default function VaultInputs({
     inputBalance.formatted,
     inputToken?.symbol,
     isDeposit,
-    vaultData.id,
+    vaultData,
   ]);
 
   return (
