@@ -128,7 +128,7 @@ export const VaultCard: FC<Props> = React.memo(
                     by all users across all chains.
                   </InfoBlock>
                 </div>
-                <p className="text-blue-digits font-bold text-xl leading-5">
+                <p className="text-blue-digits font-bold text-xl leading-6">
                   $
                   {formatNumberWithSuffix(
                     Number(totalAssets?.totalAssets || 0),
@@ -137,8 +137,8 @@ export const VaultCard: FC<Props> = React.memo(
               </div>
               <div className="flex flex-col gap-2 items-center">
                 <div className="flex flex-row gap-1 items-center">
-                  <p className="font-normal text-base leading-4 uppercase text-white">
-                    RISK
+                  <p className="font-normal text-base leading-4 text-white">
+                    Risk
                   </p>
                   <InfoBlock isMiddle>
                     💡 Risk Rating: A <br />
@@ -164,7 +164,7 @@ export const VaultCard: FC<Props> = React.memo(
                 </div>
                 <p
                   className={classNames(
-                    "font-bold text-xl leading-5",
+                    "font-bold text-xl leading-6",
                     { "text-green-accent": Number(vaultAPY?.APY7d) > 0 },
                     { "text-red-error": Number(vaultAPY?.APY7d) <= 0 },
                   )}
