@@ -172,19 +172,18 @@ const Sidebar = ({
 
   return (
     <div
-      ref={sidebarRef}
-      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham
-        hidden md:flex
-        ${
-          isCollapsed
-            ? "w-[136px] h-[972px] py-[48px] px-0"
-            : "w-[302px] h-[972px] py-[54px] px-[29px]"
-        }`}
-      style={{
-        boxShadow:
-          "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
-      }}
-    >
+  ref={sidebarRef}
+  className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham
+    hidden md:flex
+    ${isCollapsed ? "w-[136px] px-0" : "w-[302px] px-[29px]"}
+    py-[54px] h-full
+  `}
+  style={{
+    boxShadow:
+      "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
+  }}
+>
+
       <div className="text-white">
         <div
           className={`flex items-center transition-all duration-300 ease-in-out ${
@@ -248,9 +247,7 @@ const Sidebar = ({
       <div className="flex flex-col items-center">
         <div
           className={`border-t border-[#535E73] my-4 ${
-            isCollapsed
-              ? "w-[64px]"
-              : "w-full"
+            isCollapsed ? "w-[64px]" : "w-full"
           }`}
         ></div>
         <nav
