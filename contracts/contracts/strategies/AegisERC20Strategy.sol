@@ -34,9 +34,9 @@ contract AegisERC20Strategy is ERC20StrategyParent {
             _name,
             _amanaVault,
             _gatewayAddress,
-            _withdrawHelper
+            _withdrawHelper,
+            _inputTokenAddress
         );
-        __ERC20StrategyParent_init(_inputTokenAddress);
 
         swapHelper = _swapHelper;
 

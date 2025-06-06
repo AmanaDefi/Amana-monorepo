@@ -150,7 +150,7 @@ contract SwapHelperBnb is SwapHelperParent {
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-
+        console.log("Swapping %s of %s to %s", amount, inputToken, outputToken);
         uint256 minAmountOut = calculateMinAmountOut(
             inputToken,
             outputToken,
@@ -173,13 +173,20 @@ contract SwapHelperBnb is SwapHelperParent {
             uint8(0x01), // SETTLE_ALL
             uint8(0x02) // TAKE_ALL
         );
+        bool zeroForOne = inputToken < outputToken;
+        console.log(
+            "Zero for one: %s, inputToken: %s, outputToken: %s",
+            zeroForOne,
+            inputToken,
+            outputToken
+        );
 
         // === STEP 3: Setup PoolKey ===
         IV4SwapRouter.PoolKey memory key = IV4SwapRouter.PoolKey({
-            currency0: inputToken,
-            currency1: outputToken,
+            currency0: zeroForOne ? inputToken : outputToken,
+            currency1: zeroForOne ? outputToken : inputToken,
             fee: 100,
-            tickSpacing: 60, // or whatever the tick spacing is
+            tickSpacing: 10, // or whatever the tick spacing is
             hooks: address(0)
         });
 
@@ -188,7 +195,7 @@ contract SwapHelperBnb is SwapHelperParent {
         params[0] = abi.encode(
             IV4SwapRouter.ExactInputSingleParams({
                 poolKey: key,
-                zeroForOne: true, // ← double-check direction!
+                zeroForOne: zeroForOne, // ← double-check direction!
                 amountIn: uint128(amount),
                 amountOutMinimum: uint128(minAmountOut),
                 hookData: bytes("")
