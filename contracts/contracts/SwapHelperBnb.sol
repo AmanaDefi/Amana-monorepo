@@ -169,9 +169,9 @@ contract SwapHelperBnb is SwapHelperParent {
 
         // === STEP 2: Action list for V4Router ===
         bytes memory actions = abi.encodePacked(
-            uint8(0x00), // SWAP_EXACT_IN_SINGLE
-            uint8(0x01), // SETTLE_ALL
-            uint8(0x02) // TAKE_ALL
+            uint8(0x00) // SWAP_EXACT_IN_SINGLE
+            // uint8(0x01), // SETTLE_ALL
+            // uint8(0x02) // TAKE_ALL
         );
         bool zeroForOne = inputToken < outputToken;
         console.log(
