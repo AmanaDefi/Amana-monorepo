@@ -2,7 +2,6 @@
 
 import { Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
-import { ThirdwebProvider } from "thirdweb/react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,6 +12,7 @@ import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
+import { AlchemyProviders } from "@/providers/AchemyProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,7 +38,7 @@ const ClientLayout = ({
       <body className="font-sans font-light">
         <QueryClientProvider client={queryClient}>
           <SolanaWalletProvider>
-            <ThirdwebProvider>
+            <AlchemyProviders>
               <AccountProvider>
                 <MultiChainProvider>
                   <TokenPriceProvider>
@@ -49,7 +49,7 @@ const ClientLayout = ({
                 </MultiChainProvider>
               </AccountProvider>
               <ToastContainer />
-            </ThirdwebProvider>
+            </AlchemyProviders>
           </SolanaWalletProvider>
         </QueryClientProvider>
       </body>

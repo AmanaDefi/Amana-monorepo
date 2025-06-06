@@ -2,16 +2,11 @@
 
 import React from "react";
 import VaultsGridContainer from "@/containers/VaultsGridContainer";
-import { useActiveAccount } from "thirdweb/react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { BannersCarousel } from "@/components/banners/BannersCarousel";
 import { Note } from "@/components/Note";
 
-export default function VaultsGridPage() {
-  const account = useActiveAccount();
-  const wallet = useWallet();
-  
+export default function VaultsGridPage() {  
   return (
     <div className='flex flex-col w-full'>
       <div className='w-full text-center bg-amber-50'>
