@@ -7,10 +7,10 @@ import {console} from "forge-std/console.sol";
 contract Upgrade is Script {
     function run() external {
         // 🛰️ Proxy address you want to upgrade
-        address proxyAddress = 0x022F47Baf18990EF8C1A6fe7e9e9078B2F5D6015;
+        address proxyAddress = 0xE870EDca08CA5422260445ab24ED8ff1419cE688;
 
         // 🆕 New implementation contract address
-        address newImpl = 0x50c399BBc0D4AEFe14c61930Bd264729d7618e58;
+        address newImpl = 0x04F0660f71870980964819a5652f647203627dCb;
 
         // 🔐 Get private key from .env and prefix if needed
         string memory rawPrivateKey = vm.envString("PRIVATE_KEY");
@@ -27,11 +27,16 @@ contract Upgrade is Script {
         uint256 deployerPrivateKey = vm.parseUint(prefixedPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
 
-        // 🚀 Perform upgrade via `upgradeTo`
+        // 🚀 Perform upgrade via `upgradeToAndCall`
         (bool success, ) = proxyAddress.call(
-            abi.encodeWithSignature("upgradeTo(address)", newImpl)
+            abi.encodeWithSignature(
+                "upgradeToAndCall(address,bytes)",
+                address(newImpl),
+                ""
+            )
         );
-        require(success, "upgradeTo failed");
+        require(success, "upgradeToAndCall failed");
+
         console.log("Proxy successfully upgraded to new implementation.");
 
         vm.stopBroadcast();

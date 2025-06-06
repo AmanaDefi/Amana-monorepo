@@ -126,7 +126,11 @@ contract WithdrawHelper is Revertable {
             ),
             onRevertGasLimit: 0
         });
-
+        console.log(
+            "handleGasFeeAndWithdrawToUser: amount: %s, withdrawZRC20: %s",
+            amount,
+            withdrawZRC20
+        );
         IGatewayZEVM(GATEWAY_ADDRESS).withdraw(
             recipient,
             amount,
@@ -153,16 +157,6 @@ contract WithdrawHelper is Revertable {
         address registry,
         uint256 vaultNonce
     ) external {
-        uint256 previewedShares = IAmanaVault(msg.sender).previewDeposit(
-            amount
-        );
-        require(previewedShares <= uint256(type(int256).max), "Overflow");
-
-        IAmanaVault(msg.sender).adjustPendingShareChange(
-            previewedShares,
-            vaultNonce
-        ); //+= int256(previewedShares)
-
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(vaultAsset)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
@@ -288,16 +282,6 @@ contract WithdrawHelper is Revertable {
             revert("AmountTooLowToPayForGas");
         }
 
-        uint256 previewedShares = IAmanaVault(msg.sender).previewDeposit(
-            amount
-        );
-        require(previewedShares <= uint256(type(int256).max), "Overflow");
-
-        IAmanaVault(msg.sender).adjustPendingShareChange(
-            previewedShares,
-            vaultNonce
-        ); //+= int256(previewedShares)
-
         if (gas_zrc20 == vaultAsset) {
             approveOrIncreaseAllowance(
                 IERC20(vaultAsset),
@@ -359,27 +343,21 @@ contract WithdrawHelper is Revertable {
     function handleDivestCallToStrategy(
         address strategyAddress,
         uint256 gasLimitForCall,
-        uint256 adjustedTotalSupply,
         address vaultAsset,
         address registry,
         address user,
         address withdrawZRC20,
-        uint256 vaultSharesToBeBurnt,
+        uint256 assets,
         uint256 minimumOut,
         uint256 vaultNonce
     ) external {
         _handleGasFee(gasLimitForCall, vaultAsset, registry);
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
-        uint256 numerator = vaultSharesToBeBurnt *
-            1e18 +
-            adjustedTotalSupply /
-            2;
-        uint256 fractionOfTotalShares = numerator / adjustedTotalSupply;
 
         bytes memory outgoingMessage = abi.encode(
             uint8(TxType.Withdraw),
-            fractionOfTotalShares,
+            assets,
             minimumOut,
             address(0),
             vaultNonce
@@ -392,7 +370,7 @@ contract WithdrawHelper is Revertable {
             abi.encode(
                 "_divestConnectedChainStrategyFailed",
                 strategyAddress,
-                vaultSharesToBeBurnt,
+                assets,
                 user,
                 withdrawZRC20,
                 vaultAsset,
@@ -412,7 +390,7 @@ contract WithdrawHelper is Revertable {
             callOptions,
             revertOptions
         );
-        emit DivestSent(vaultNonce, msg.sender, user, vaultSharesToBeBurnt);
+        emit DivestSent(vaultNonce, msg.sender, user, assets);
     }
 
     function handleSwitchCallToStrategy(
