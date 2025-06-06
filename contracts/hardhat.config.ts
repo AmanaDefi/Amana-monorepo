@@ -40,7 +40,6 @@ import "@nomiclabs/hardhat-ethers";
 import { getHardhatConfigNetworks } from "@zetachain/networks";
 import { HardhatUserConfig } from "hardhat/config";
 import * as dotenv from "dotenv";
-import { mainnet } from "@zetachain/protocol-contracts";
 
 dotenv.config();
 

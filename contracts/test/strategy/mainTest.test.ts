@@ -31,7 +31,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         owner,
         inputToken,
         strategy,
-        config
+        config,
+        swapHelper
       } = ctx;
 
       const depositAmount = config.depositAmount;
@@ -42,6 +43,10 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
+      await network.provider.send("hardhat_setBalance", [
+        swapHelper.address,
+        ethers.utils.parseEther("1").toHexString()
+      ]);
       await expect(simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         await owner.getAddress(),

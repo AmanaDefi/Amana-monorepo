@@ -3,6 +3,14 @@ pragma solidity 0.8.26;
 
 import "./SwapHelperParent.sol";
 
+// import {UniversalRouter} from "@uniswap/universal-router/UniversalRouter.sol";
+// import {Commands} from "@uniswap/universal-router/libraries/Commands.sol";
+// import {IPoolManager} from "@uniswap/v4-core/interfaces/IPoolManager.sol";
+// import {IV4Router} from "@uniswap/v4-periphery/interfaces/IV4Router.sol";
+// import {Actions} from "@uniswap/v4-periphery/libraries/Actions.sol";
+// import {IPermit2} from "@uniswap/permit2/interfaces/IPermit2.sol";
+// import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IV4SwapRouter.sol";
 import "./interfaces/IUniversalRouter.sol";
@@ -165,13 +173,13 @@ contract SwapHelperBnb is SwapHelperParent {
         );
 
         // === STEP 1: Command byte ===
-        bytes memory commands = abi.encodePacked(uint8(0x0b)); // V4_SWAP
+        bytes memory commands = abi.encodePacked(uint8(0x10)); // V4_SWAP
 
         // === STEP 2: Action list for V4Router ===
         bytes memory actions = abi.encodePacked(
-            uint8(0x00) // SWAP_EXACT_IN_SINGLE
-            // uint8(0x01), // SETTLE_ALL
-            // uint8(0x02) // TAKE_ALL
+            uint8(6), // SWAP_EXACT_IN_SINGLE
+            uint8(12), // SETTLE_ALL
+            uint8(15) // TAKE_ALL
         );
         bool zeroForOne = inputToken < outputToken;
         console.log(
@@ -183,11 +191,15 @@ contract SwapHelperBnb is SwapHelperParent {
 
         // === STEP 3: Setup PoolKey ===
         IV4SwapRouter.PoolKey memory key = IV4SwapRouter.PoolKey({
-            currency0: zeroForOne ? inputToken : outputToken,
-            currency1: zeroForOne ? outputToken : inputToken,
+            currency0: IV4SwapRouter.Currency.wrap(
+                zeroForOne ? inputToken : outputToken
+            ),
+            currency1: IV4SwapRouter.Currency.wrap(
+                zeroForOne ? outputToken : inputToken
+            ),
             fee: 100,
-            tickSpacing: 10, // or whatever the tick spacing is
-            hooks: address(0)
+            tickSpacing: 200,
+            hooks: IHooks(address(0)) // assuming no hooks used
         });
 
         // === STEP 4: Setup Params for actions ===
