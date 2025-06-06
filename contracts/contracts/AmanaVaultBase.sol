@@ -59,20 +59,38 @@ abstract contract AmanaVaultBase is
         address withdrawZRC20;
         address withdrawERC20;
         uint256 amount;
-        uint256 vaultSharesToBeBurnt;
+        uint256 minOut;
         uint32 withdrawChainId;
         bool isDeposit;
         uint256 totalAssetsAfter;
-        bytes32 txSucceeded;
+        bytes32 txStatus;
         uint16 slippage;
     }
 
-    mapping(uint256 => Transaction) transactions; // Buffer for out-of-order confirmations
+    mapping(uint256 => Transaction) public transactions; // Buffer for out-of-order confirmations
     mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
-    int256 public pendingShareChange;
     uint256 public vaultNonce; // TODO need to initialize this to 1!
     mapping(uint256 => bytes) public nonEvmAddressByNonce;
+
+    // Transaction type identifiers (simulate enum)
+    bytes32 internal constant TX_DEPOSIT_INITIATED =
+        keccak256("DepositInitiated");
+    bytes32 internal constant TX_DEPOSIT_CONFIRMED =
+        keccak256("DepositConfirmed");
+    bytes32 internal constant TX_WITHDRAW_INITIATED =
+        keccak256("WithdrawInitiated");
+    bytes32 internal constant TX_WITHDRAW_CONFIRMED =
+        keccak256("WithdrawConfirmed");
+    bytes32 internal constant TX_SWITCH_CONFIRMED =
+        keccak256("SwitchConfirmed");
+    bytes32 internal constant TX_DEPOSIT_REVERTED =
+        keccak256("DepositReverted");
+    bytes32 internal constant TX_WITHDRAW_REVERTED =
+        keccak256("WithdrawReverted");
+    bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted");
+    bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
+        keccak256("TotalAssetsUpdate");
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) revert OnlyGateway();
@@ -258,7 +276,6 @@ abstract contract AmanaVaultBase is
 
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares, minimumOut);
-
         return shares;
     }
 
@@ -297,9 +314,7 @@ abstract contract AmanaVaultBase is
      * @dev Handles deposits from a connected chain, processes swaps if necessary, and initiates cross-chain investment.
      * @notice Performs token swaps if the ZRC20 source token differs from the vault's asset.
      */
-    function _depositComingFromConnectedChain(
-        uint256 minimumOut
-    ) internal whenNotPaused {
+    function _depositComingFromConnectedChain() internal whenNotPaused {
         Transaction storage txn = transactions[vaultNonce];
         uint256 maxAssets = maxDeposit(txn.receiver);
         if (txn.amount > maxAssets) {
@@ -324,10 +339,11 @@ abstract contract AmanaVaultBase is
                 address(this),
                 200
             );
-        _investAssets(minimumOut);
+
+        _investAssets();
     }
 
-    function _investAssets(uint256 minimumOut) internal virtual;
+    function _investAssets() internal virtual;
 
     function redeem(
         uint256 shares,
@@ -338,10 +354,7 @@ abstract contract AmanaVaultBase is
         if (shares == 0) {
             revert AmountCantBeZero();
         }
-        uint256 maxShares = maxRedeem(owner);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-        }
+
         redeemToAnyToken(
             shares,
             minimumOut,
@@ -358,7 +371,7 @@ abstract contract AmanaVaultBase is
         uint256 minimumOut,
         address receiver,
         address owner
-    ) public returns (uint256) {
+    ) public {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
@@ -367,17 +380,16 @@ abstract contract AmanaVaultBase is
             revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
         }
 
-        uint256 shares = previewWithdraw(assets);
+        // uint256 shares = previewWithdraw(assets);
         _withdraw(
             _msgSender(),
             receiver,
             owner,
             address(asset()),
             minimumOut,
-            shares,
+            assets,
             0
         );
-        return shares;
     }
 
     /** @dev See {IERC4626-redeem}. */
@@ -389,13 +401,18 @@ abstract contract AmanaVaultBase is
         address withdrawZRC20,
         uint16 slippage
     ) public {
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
+        uint256 assets = previewRedeem(shares);
         _withdraw(
             _msgSender(),
             receiver,
             owner,
             withdrawZRC20,
             minimumOut,
-            shares,
+            assets,
             slippage
         );
     }
@@ -414,9 +431,7 @@ abstract contract AmanaVaultBase is
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
      * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
      */
-    function _withdrawComingFromConnectedChain(
-        uint256 minimumOut
-    ) internal virtual;
+    function _withdrawComingFromConnectedChain() internal virtual;
 
     function returnFundsToUser(uint256 nonce) external onlyOwner {
         _returnFundsToUser(nonce);
