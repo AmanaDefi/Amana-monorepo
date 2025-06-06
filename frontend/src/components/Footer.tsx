@@ -8,7 +8,7 @@ import Link from "next/link";
 const Footer = ({ isConnected }: { isConnected: boolean }) => {
   return (
     <footer
-      className={`flex sticky bottom-0 justify-between items-center w-full font-gotham ${
+      className={`flex sticky bottom-0 justify-between items-center w-full font-gotham mt-8 ${
         isConnected ? "px-[44px]" : ""
       }`}
     >
