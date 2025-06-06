@@ -1,18 +1,20 @@
-"use client"; // Client-side code
+"use client";
 
 import { Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React, { PropsWithChildren, useState } from "react";
 import AccountProvider from "@/providers/AccountProvider";
 import TokenPriceProvider from "@/providers/TokenPriceProvider";
 import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
-import { AlchemyProviders } from "@/providers/AchemyProvider";
+import { AlchemyAccountProvider } from "@account-kit/react";
+import { alchemyConfig } from "@/config.ts/alchemyConfig";
+import { AlchemyClientState } from "@account-kit/core";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,9 +27,9 @@ const spaceMono = Space_Mono({
   variable: "--font-space-mono",
 });
 
-const ClientLayout = ({
-  children,
-}: Readonly<{ children: React.ReactNode }>) => {
+const ClientLayout = (
+  props: PropsWithChildren<{ initialState?: AlchemyClientState }>,
+) => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
@@ -38,18 +40,22 @@ const ClientLayout = ({
       <body className="font-sans font-light">
         <QueryClientProvider client={queryClient}>
           <SolanaWalletProvider>
-            <AlchemyProviders>
+            <AlchemyAccountProvider
+              config={alchemyConfig}
+              queryClient={queryClient}
+              initialState={props.initialState}
+            >
               <AccountProvider>
                 <MultiChainProvider>
                   <TokenPriceProvider>
                     <main className="min-h-screen flex flex-col relative overflow-hidden">
-                      <ConditionalLayout>{children}</ConditionalLayout>
+                      <ConditionalLayout>{props.children}</ConditionalLayout>
                     </main>
                   </TokenPriceProvider>
                 </MultiChainProvider>
               </AccountProvider>
               <ToastContainer />
-            </AlchemyProviders>
+            </AlchemyAccountProvider>
           </SolanaWalletProvider>
         </QueryClientProvider>
       </body>

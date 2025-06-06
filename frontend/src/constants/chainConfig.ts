@@ -1,4 +1,4 @@
-import { defineChain } from "thirdweb";
+import { defineChain } from "viem";
 import { Token, Icon } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { PublicKey, Connection } from "@solana/web3.js";
@@ -164,7 +164,17 @@ export const crossChainTxUrl =
     : process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API || "";
 
 export enum CHAIN_ID {
-  zetachain = deployEnv === "testnet" ? 7001 : 7000,
+  zetachain = 7000,
+  ethereum = 1,
+  base = 8453,
+  polygon = 137,
+  bsc = 56,
+  solana = 900,
+  arbitrum = 42161,
+  avalanche = 43114,
+}
+export enum CHAIN_ID_TESTNET {
+  zetachain = (deployEnv === "testnet" ? 7001 : 7000),
   ethereum = deployEnv === "testnet" ? 11155111 : 1,
   base = deployEnv === "testnet" ? 84532 : 8453,
   polygon = deployEnv === "testnet" ? 80001 : 137,
@@ -172,6 +182,12 @@ export enum CHAIN_ID {
   solana = deployEnv === "testnet" ? 901 : 900,
   arbitrum = deployEnv === "testnet" ? 421613 : 42161,
   avalanche = deployEnv === "testnet" ? 43113 : 43114,
+}
+
+const getChainId = (chain: string) => {
+  switch (deployEnv) {
+    case "testnet": CHAIN_ID_TESTNET.chain
+  }
 }
 
 export enum MulticallVersion {
@@ -244,34 +260,34 @@ export const MULTICALL_ADDRS: Record<
 
 // Define ZetaChain configuration
 const zetaChain = defineChain({
-  chainId: CHAIN_ID.zetachain, // 7001 for testnet, 7000 for mainnet
+  id: CHAIN_ID.zetachain, // 7001 for testnet, 7000 for mainnet
   name: deployEnv === "testnet" ? "ZetaChain Testnet" : "ZetaChain",
   shortName: "zeta",
   chain: "ZetaChain",
   icon: CHAIN_ICONS[7000],
-  rpc: [
-    zetaRpcUrl,
-    deployEnv === "testnet"
-      ? "https://zeta-chain-testnet.drpc.org"
-      : "https://zeta-chain.drpc.org",
-  ], // RPC should be an array of strings
   nativeCurrency: {
     name: "Zeta",
     symbol: "ZETA",
     decimals: 18,
   },
-  explorers: [
-    {
+  testnet: deployEnv === "testnet",
+  slug: "zetachain",
+
+  rpcUrls: {
+    default: {
+      http: [deployEnv === "testnet" ? "https://zeta-chain-testnet.drpc.org" : "https://zeta-chain.drpc.org"], 
+    },
+  },
+  blockExplorers: {
+    default: {
       name: "Zeta Explorer",
       url:
         deployEnv === "testnet"
           ? "https://zetachain-testnet.blockscout.com/"
           : "https://explorer.zetachain.com",
       standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet", // Set to true if testnet
-  slug: "zetachain",
+    }, 
+  },
 });
 
 // Define Ethereum configuration
