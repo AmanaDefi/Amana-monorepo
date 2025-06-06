@@ -172,18 +172,17 @@ const Sidebar = ({
 
   return (
     <div
-  ref={sidebarRef}
-  className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham
+      ref={sidebarRef}
+      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham
     hidden md:flex
     ${isCollapsed ? "w-[136px] px-0" : "w-[302px] px-[29px]"}
     py-[54px] h-full
   `}
-  style={{
-    boxShadow:
-      "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
-  }}
->
-
+      style={{
+        boxShadow:
+          "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 1px 0 2px 0 rgba(255, 255, 255, 0.1)",
+      }}
+    >
       <div className="text-white">
         <div
           className={`flex items-center transition-all duration-300 ease-in-out ${
