@@ -46,11 +46,11 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
 
   const menuItemContent = (
     <>
-      <div className="flex items-center">
+      <div className="flex items-center justify-center">
         <item.icon />
         <span
           className={`ml-3 transition-all duration-300 ease-in-out ${
-            isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+            isCollapsed ? "hidden w-0 overflow-hidden" : "flex w-auto"
           }`}
         >
           {item.label}
@@ -177,7 +177,7 @@ const Sidebar = ({
         hidden md:flex
         ${
           isCollapsed
-            ? "w-[136px] h-[972px] py-[48px] px-[20px]"
+            ? "w-[136px] h-[972px] py-[48px] px-0"
             : "w-[302px] h-[972px] py-[54px] px-[29px]"
         }`}
       style={{
@@ -193,12 +193,12 @@ const Sidebar = ({
               : "justify-between mb-[65px]"
           }`}
         >
-          <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
+          <AmanaLogo width={78} height={53} className="w-[78px] h-[53px]" />
 
           <button
             onClick={toggleSidebar}
             className={`transition-opacity duration-300 ease-in-out ${
-              isCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+              isCollapsed ? "hidden pointer-events-none" : "flex"
             }`}
           >
             <CloseSidebarIcon width={24} height={25} />
@@ -206,7 +206,7 @@ const Sidebar = ({
         </div>
 
         <div
-          className={`absolute top-[110px] right-4 transition-opacity duration-300 ease-in-out ${
+          className={`absolute top-[160px] right-3 transition-opacity duration-300 ease-in-out ${
             isCollapsed ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
@@ -245,8 +245,14 @@ const Sidebar = ({
           </nav>
         </div>
       </div>
-      <div>
-        <div className="border-t border-[#535E73] my-4"></div>
+      <div className="flex flex-col items-center">
+        <div
+          className={`border-t border-[#535E73] my-4 ${
+            isCollapsed
+              ? "w-[64px]"
+              : "w-full"
+          }`}
+        ></div>
         <nav
           className={
             isCollapsed
