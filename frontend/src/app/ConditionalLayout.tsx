@@ -73,12 +73,12 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           <Footer isConnected />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-[40px] px-4 md:px-0">
+        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-[40px] px-4 md:pr-[108px] md:px-0">
           <Header 
             activeSection={activeSection}
             onSectionChange={setActiveSection}
           />
-          <div className="flex-1 md:ml-16">{children}</div>
+          <div className="flex-1 md:ml-16 md:pl-[44px]">{children}</div>
           <div className="md:ml-16">
             <Footer isConnected={false} />
           </div>
