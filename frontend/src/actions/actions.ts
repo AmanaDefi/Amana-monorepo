@@ -881,17 +881,21 @@ const getPathDataAndMinSharesOut = async (
   transactionAmount: bigint,
   activeChain: Chain
 ): Promise<{ swapPath: `0x${string}`; minSharesOut: bigint }> => {
-  const inputTokenAddress = isZetachain(activeChain.id)
-    ? inputToken?.address
+  const inputTokenOnZeta = isZetachain(activeChain.id)
+    ? inputToken
     : inputToken?.ZRC20equivalent;
+
+  if (!inputTokenOnZeta) {
+    throw new Error("inputTokenOnZeta is undefined – missing ZRC20 equivalent");
+  }
 
   let assetsConversionAmount: bigint = transactionAmount;
   let swapPath: `0x${string}` = "0x";
 
-  if (inputTokenAddress !== vaultData.inputToken.address) {
+  if (inputTokenOnZeta.address !== vaultData.inputToken.address) {
     const { encodedPath, amountOut } = await getPathDataAndAmountOut(
       transactionAmount,
-      inputToken,
+      inputTokenOnZeta,
       vaultData.inputToken,
       vaultData.id as Address
     );
@@ -928,9 +932,13 @@ const getPathDataAndMinAmountOut = async (
   transactionAmount: bigint,
   activeChain: Chain
 ) => {
-  const outputTokenAddress = isZetachain(activeChain.id)
-    ? outputToken?.address
+  const outputTokenOnZeta = isZetachain(activeChain.id)
+    ? outputToken
     : outputToken?.ZRC20equivalent;
+
+  if (!outputTokenOnZeta) {
+    throw new Error("outputTokenOnZeta is undefined – missing ZRC20 equivalent");
+  }
 
   const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
   const minAmountOutInOutputToken =
@@ -939,10 +947,10 @@ const getPathDataAndMinAmountOut = async (
   let minAmountOut = minAmountOutInOutputToken;
   let swapPath: `0x${string}` = "0x";
 
-  if (outputTokenAddress !== vaultData.inputToken.address) {
+  if (outputTokenOnZeta.address !== vaultData.inputToken.address) {
     const result = await getPathDataAndAmountOut(
       minAmountOutInOutputToken,
-      outputToken,
+      outputTokenOnZeta,
       vaultData.inputToken,
       vaultData.id as Address
     );
@@ -951,7 +959,7 @@ const getPathDataAndMinAmountOut = async (
     const result2 = await getPathDataAndAmountOut(
       transactionAmount,
       vaultData.inputToken,
-      outputToken,
+      outputTokenOnZeta,
       vaultData.id as Address
     );
     swapPath = result2.encodedPath ?? "0x";
@@ -1567,58 +1575,104 @@ export const getBeamTokenId = async (
 
 export const getPathDataAndAmountOut = async (
   amount: bigint,
-  inputToken: Token,
-  outputToken: Token,
+  inputTokenOnZeta: Token,
+  outputTokenOnZeta: Token,
   userAddress: string
 ): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
+  console.log("inputTokenOnZeta", inputTokenOnZeta);
+  console.log("outputTokenOnZeta", outputTokenOnZeta);
+  console.log("amount", amount);
+
   const [inputTokenId, outputTokenId] = await Promise.all([
-    getBeamTokenId(inputToken.address),
-    getBeamTokenId(outputToken.address),
+    getBeamTokenId(inputTokenOnZeta.address),
+    getBeamTokenId(outputTokenOnZeta.address),
   ]);
+
+  console.log("inputTokenId", inputTokenId);
+  console.log("outputTokenId", outputTokenId);
+  console.log("amount", Number(amount) / 10 ** inputTokenOnZeta.decimals);
+  console.log("userAddress", userAddress);
 
   if (!inputTokenId || !outputTokenId) {
     console.warn("❌ Missing Beam token ID(s)");
-    return { encodedPath: null, amountOut: BigInt(0) };
-  }
-
-  const swapDetails: swap.native.getSwapData.Input = {
-    tokenAId: inputTokenId,
-    tokenBId: outputTokenId,
-    slippage: 500,
-    amount: Number(amount) / 10 ** inputToken.decimals,
-    sender: userAddress,
-    recipient: userAddress,
-  };
-
-  try {
-    console.log("🚀 Fetching Beam quote...");
-    const beamQuote = await swap.native.getSwapData(beamConnection, swapDetails);
-
-    const path = beamQuote.data?.data?.path;
-    const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
-
-    if (!path || !Array.isArray(path) || path.length < 2) {
-      throw new Error("Beam quote returned invalid path");
-    }
-
-    const encodedPath = solidityPacked(
-      Array(path.length).fill("address"),
-      path
-    ) as `0x${string}`;
-
-    console.log("✅ Encoded path:", encodedPath);
-    console.log("✅ Expected amount out:", expectedAmountOut);
-
-    const amountOutRaw = (expectedAmountOut * 10 ** outputToken.decimals).toFixed(0);
-    return {
-      encodedPath,
-      amountOut: BigInt(amountOutRaw),
+  } else {
+    const swapDetails: swap.native.getSwapData.Input = {
+      tokenAId: inputTokenId,
+      tokenBId: outputTokenId,
+      slippage: 500,
+      amount: Number(amount) / 10 ** inputTokenOnZeta.decimals,
+      sender: userAddress,
+      recipient: userAddress,
     };
-  } catch (e: any) {
-    console.error("❌ Beam swap fetch failed:", e.message || e);
-    return { encodedPath: null, amountOut: BigInt(0) };
+
+    try {
+      console.log("🚀 Fetching Beam quote...");
+      const beamQuote = await swap.native.getSwapData(beamConnection, swapDetails);
+      console.log("✅ Beam quote fetched successfully:", beamQuote.data);
+
+      const path = beamQuote.data?.data?.path;
+      const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
+
+      if (!path || !Array.isArray(path) || path.length < 2) {
+        throw new Error("Beam quote returned invalid path");
+      }
+
+      const encodedPath = solidityPacked(
+        Array(path.length).fill("address"),
+        path
+      ) as `0x${string}`;
+
+      console.log("✅ Encoded path:", encodedPath);
+      console.log("✅ Expected amount out:", expectedAmountOut);
+
+      const amountOutRaw = (expectedAmountOut * 10 ** outputTokenOnZeta.decimals).toFixed(0);
+
+      return {
+        encodedPath,
+        amountOut: BigInt(amountOutRaw),
+      };
+    } catch (e: any) {
+      console.error("❌ Beam swap fetch failed:", e.message || e);
+    }
   }
+
+  // Step 3: Fallback to Eddy
+  try {
+    const sourceChainId = 7000;
+    const destinationChainId = 7000;
+    console.log("🌐 Trying Eddy as fallback...");
+    console.log("Source Chain ID:", sourceChainId);
+    console.log("Destination Chain ID:", destinationChainId);
+    console.log("Input Token Address:", inputTokenOnZeta.address);
+    console.log("Output Token Address:", outputTokenOnZeta.address);
+    console.log("Amount:", amount.toString());
+    const eddyQuote = await sdk.bridge.getQuoteForBridge({
+      inputTokenAddress: inputTokenOnZeta.address,
+      outputTokenAddress: outputTokenOnZeta.address,
+      sourceChainId,
+      destinationChainId,
+      amount: amount.toString(),
+      slippage: 0.5,
+    });
+
+    console.log("✅ Eddy quote found");
+    console.log("Eddy quote details:", eddyQuote);
+    return {
+      encodedPath: null,
+      amountOut: BigInt(eddyQuote.quoteAmount),
+    };
+  } catch (e) {
+    console.error("❌ Eddy quote failed:", e);
+  }
+
+  // 🛠️ Final catch-all return
+  console.warn("❌ Could not get Beam token IDs or all fallback methods failed");
+  return {
+    encodedPath: null,
+    amountOut: BigInt(0),
+  };
 };
+
 
 export const getSharesFromDeposit = async (
   amount: bigint,

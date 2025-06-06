@@ -40,7 +40,9 @@ export async function getBeamSwapDataFromVaultConfig() {
   const { vaultConfig, txConfig } = config;
 
   const inputToken = txConfig.originZRC20Input;
+  console.log("Input Token:", inputToken);
   const outputToken = vaultConfig.asset;
+  console.log("Output Token:", outputToken);
   const userAddress = "0x1111111111111111111111111111111111111111";
 
   const [inputTokenId, outputTokenId] = await Promise.all([
@@ -52,7 +54,11 @@ export async function getBeamSwapDataFromVaultConfig() {
     console.error("❌ Missing token ID for input or output token");
     return;
   }
-
+  console.log("Input Token ID:", inputTokenId);
+  console.log("Output Token ID:", outputTokenId);
+  // console.log("Cross Chain Deposit Amount:", txConfig.crossChainDepositAmount1);
+  console.log("Cross Chain Deposit Amount (in ZRC20):", Number(txConfig.crossChainDepositAmount1) / 10 ** 6);
+  console.log("userAddress:", userAddress);
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
@@ -65,6 +71,7 @@ export async function getBeamSwapDataFromVaultConfig() {
   try {
     console.log("📡 Requesting Beam swap data...");
     const response = await swap.native.getSwapData(beamConnection, swapDetails);
+    console.log("✅ Swap data received from Beam:", response);
     const path: string[] = response.data?.data?.path;
 
     if (!Array.isArray(path) || path.length < 2) {
