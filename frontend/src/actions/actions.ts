@@ -1585,17 +1585,29 @@ export const getPathDataAndAmountOut = async (
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
     slippage: 500,
-    amount: Number(amount) / 10 ** inputToken.decimals,
+    amount: formatUnits(amount, inputToken.decimals), // ✅ string with decimals
     sender: userAddress,
     recipient: userAddress,
   };
 
   try {
     console.log("🚀 Fetching Beam quote...");
-    const beamQuote = await swap.native.getSwapData(beamConnection, swapDetails);
-
+    const beamQuote = await swap.native.getSwapData(
+      beamConnection,
+      swapDetails
+    ) as {
+      data?: {
+        data?: {
+          path?: string[];
+          expectedAmountOut?: number;
+        };
+      };
+    };
     const path = beamQuote.data?.data?.path;
     const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
+    if (expectedAmountOut == null) {
+      throw new Error("Beam quote is missing expectedAmountOut");
+    }
 
     if (!path || !Array.isArray(path) || path.length < 2) {
       throw new Error("Beam quote returned invalid path");
