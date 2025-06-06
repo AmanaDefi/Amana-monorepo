@@ -1603,6 +1603,7 @@ export const getPathDataAndAmountOut = async (
         };
       };
     };
+    console.log("✅ Beam quote fetched successfully:", beamQuote);
     const path = beamQuote.data?.data?.path;
     const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
     if (expectedAmountOut == null) {
