@@ -2,31 +2,15 @@
 
 import React from "react";
 import VaultsContainer from "../containers/VaultsContainer";
-import { useActiveAccount } from "thirdweb/react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import Link from "next/link";
-import { BannersCarousel } from "@/components/banners/BannersCarousel";
-import { Note } from "@/components/Note";
 import InvestBlock from "@/components/InvestBlock";
 
 
 export default function Page() {
-  const account = useActiveAccount();
-  const wallet = useWallet();
   return (
-    <div className='flex flex-col w-full'>
+    <div className='flex h-full flex-col w-full'>
       <InvestBlock />
-      <div className='w-full text-center bg-amber-50'>
-        {/* <span className='py-2 lg:py-4 px-4 text-black text-sm'>
-          This site is currently in beta and may contain bugs 🐞. Report any bugs or give feedback <Link
-            href='mailto:info@amanadefi.com' className='underline-offset-2 underline'>here</Link>
-        </span> */}
-      </div>
-      {/* <div className='py-4'>
-        <BannersCarousel />
-      </div> */}
-      <div className="flex-1 flex flex-col w-full justify-between pb-10">
-        <div className="flex-1 w-full gap-5 my-6">
+      <div className="flex-1 h-full flex flex-col w-full justify-between pb-10">
+        <div className="flex-1 h-full w-full gap-5 my-6">
           <VaultsContainer />
         </div>
       </div>

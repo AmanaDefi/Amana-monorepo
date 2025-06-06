@@ -50,30 +50,34 @@ export const VaultFilters: FC<Props> = ({
     const uniqueNetworksMap = new Map();
 
     vaults.forEach((vault) => {
-      if (vault && vault.protocol && typeof vault.protocol.network === 'string') {
+      if (
+        vault &&
+        vault.protocol &&
+        typeof vault.protocol.network === "string"
+      ) {
         const networkName = vault.protocol.network;
-        const iconUrl = vault.imgURL; 
-  
+        const iconUrl = vault.imgURL;
+
         if (!uniqueNetworksMap.has(networkName)) {
           uniqueNetworksMap.set(networkName, {
             value: networkName,
-            icon: iconUrl, 
+            icon: iconUrl,
           });
         }
       }
     });
-  
+
     return Array.from(uniqueNetworksMap.values());
   }, [vaults]);
 
   const protocols = useMemo(() => {
-    return Array.from(
-      new Set(
-        vaults.map((vault) => {
-          return { value: vault.protocol.name };
-        }),
-      ),
+    const uniqueProtocols = Array.from(
+      new Set(vaults.map((vault) => vault.protocol.name)),
     );
+
+    return uniqueProtocols.map((prot) => {
+      return { value: prot };
+    });
   }, [vaults]);
 
   useEffect(() => {

@@ -5,7 +5,8 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/header";
 import GlowIcon from "@/components/svg/GlowIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
@@ -19,10 +20,8 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       setIsMobile(window.innerWidth < 768);
     };
 
-    // Перевіряємо при завантаженні
     checkIsMobile();
 
-    // Додаємо слухач для зміни розміру
     window.addEventListener('resize', checkIsMobile);
 
     return () => {
@@ -36,13 +35,13 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       <GlowIcon position="bottom-left" />
 
       {isConnected ? (
-        <div className="flex flex-col mx-auto w-full max-w-[1512px] pt-[60px] pb-[30px] px-4 md:px-0">
+        <div className="flex flex-col mx-auto w-full min-h-screen pt-[60px] pb-[30px] px-4 md:px-0">
           <Header 
             activeSection={activeSection}
             onSectionChange={setActiveSection}
           />
           <div className="flex flex-1">
-            {/* Sidebar - показується тільки на планшеті та десктопі */}
+
             <div className="flex-shrink-0">
               <Sidebar
                 activeSection={activeSection}
@@ -52,7 +51,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
               />
             </div>
             
-            {/* Main Content */}
             <div
               className="flex-1"
               style={
@@ -75,7 +73,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           <Footer isConnected />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px] py-[40px] px-4 md:px-0">
+        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-[40px] px-4 md:px-0">
           <Header 
             activeSection={activeSection}
             onSectionChange={setActiveSection}
