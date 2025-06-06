@@ -5,6 +5,9 @@ import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from ".
 import { setTokenBalance } from "../utils";
 import { AmanaConnectedChainVault } from "../../typechain";
 import { vaultTestMatrix } from "../config/vault.config";
+import { swap } from "codemelt-retro-api-sdk/functional/api";
+import api from "codemelt-retro-api-sdk";
+import type { IConnection } from "codemelt-retro-api-sdk"; import axios from "axios";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43";
@@ -116,6 +119,9 @@ export async function setupVaultFixture() {
   // supply the owner address with an amount of origin chain input ZRC20 token, so they can make deposits
   await setTokenBalance(txConfig.originZRC20Input, await owner.getAddress(), txConfig.crossChainDepositAmount1.mul(200).div(1), 3);
   await setTokenBalance(ZC_USDC_BSC_ADDRESS, await owner.getAddress(), txConfig.directDepositAmount1.mul(200).div(1), 3);
+  const depositSwapData = await getBeamSwapData(txConfig.originZRC20Input, vaultConfig.asset);
+  const withdrawSwapData = await getBeamSwapData(vaultConfig.asset, txConfig.originZRC20Input);
+
   console.log("Setup done, returning values")
   return {
     amanaVault,
@@ -136,6 +142,8 @@ export async function setupVaultFixture() {
     vaultConfig,
     strategyConfig,
     txConfig,
+    depositSwapData,
+    withdrawSwapData,
   };
 }
 
@@ -164,4 +172,80 @@ async function deployAndLog(name: string, factoryArgs: any[] = [], signer?: Sign
   await contract.deployed();
   console.log(`${name} deployed at: ${contract.address}`);
   return contract;
+}
+
+const beamConnection: IConnection = {
+  host: "https://public-beam-backend-mainnet.codemelt.codes",
+  headers: {
+    "x-api-key": process.env.BEAM_API_KEY!,
+  },
+};
+
+const getBeamTokenId = async (tokenAddress: string): Promise<number | null> => {
+  try {
+    const response = await api.functional.api.currency.partners.getPartners(
+      beamConnection,
+      "7000"
+    );
+
+    const data = response.data as {
+      data: { address: string; id: number }[];
+    };
+
+    const token = data.data.find(
+      (t) => t.address.toLowerCase() === tokenAddress.toLowerCase()
+    );
+    return token?.id ?? null;
+  } catch (err) {
+    console.error("Failed to fetch token ID:", err);
+    return null;
+  }
+};
+
+export async function getBeamSwapData(inputToken: string, outputToken: string) {
+
+  const config = vaultTestMatrix[0];
+  const { txConfig } = config;
+
+  // const inputToken = txConfig.originZRC20Input;
+  // const outputToken = vaultConfig.asset;
+  const userAddress = "0x1111111111111111111111111111111111111111";
+
+  const [inputTokenId, outputTokenId] = await Promise.all([
+    getBeamTokenId(inputToken),
+    getBeamTokenId(outputToken),
+  ]);
+
+  if (inputTokenId == null || outputTokenId == null) {
+    console.error("❌ Missing token ID for input or output token");
+    return;
+  }
+
+  const swapDetails: swap.native.getSwapData.Input = {
+    tokenAId: inputTokenId,
+    tokenBId: outputTokenId,
+    slippage: 500,
+    amount: Number(txConfig.crossChainDepositAmount1) / 10 ** 6,
+    sender: userAddress,
+    recipient: userAddress,
+  };
+
+  try {
+    console.log("📡 Requesting Beam swap data...");
+    const response = await swap.native.getSwapData(beamConnection, swapDetails);
+    const path: string[] = response.data?.data?.path;
+
+    if (!Array.isArray(path) || path.length < 2) {
+      throw new Error("Invalid or missing swap path from Beam");
+    }
+
+    const encodedPath = ethers.utils.solidityPack(
+      Array(path.length).fill("address"),
+      path
+    );
+
+    return encodedPath;
+  } catch (err: any) {
+    console.error("❌ Failed to fetch swap data:", err.message);
+  }
 }

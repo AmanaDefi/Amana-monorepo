@@ -59,6 +59,13 @@ const VaultsDetailContainer: React.FC<{
     const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000]
 
     // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
+    console.log('🏗️ [VAULT-DETAIL] Calling useUpdateVaultBalanceAndTotalPerVault with:', {
+      vaultData: vaultData?.id,
+      walletAddress,
+      transactionCompleted,
+      timestamp: new Date().toISOString()
+    });
+    
     useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     
     // Get token price for USD conversion

@@ -31,9 +31,23 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const MAX_RETRIES = 3;
 
   const fetchBalance = useCallback(async () => {
+    console.log('💰 [TOKEN-BALANCE] fetchBalance called', {
+      walletAddress,
+      token: token?.symbol,
+      tokenAddress: token?.address,
+      isNative: token?.isNative,
+      activeChain: activeChain?.id,
+      timestamp: new Date().toISOString()
+    });
+    
     refetchNativeBalance();
     try {
       if (!walletAddress || !token) {
+        console.log('⚠️ [TOKEN-BALANCE] Missing wallet address or token', {
+          walletAddress: !!walletAddress,
+          token: !!token,
+          timestamp: new Date().toISOString()
+        });
         setBalance({
           value: 0n,
           formatted: "0",
@@ -42,20 +56,33 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       }
 
       if (token.isNative) {
+        console.log('🪙 [TOKEN-BALANCE] Using native balance', {
+          nativeBalance: nativeBalance.formatted,
+          timestamp: new Date().toISOString()
+        });
         setBalance(nativeBalance);
         return;
       }
 
       if (isSolanaAddress(token.address) && isSolanaAddress(walletAddress)) {
+        console.log('🌟 [TOKEN-BALANCE] Fetching Solana token balance...', {
+          tokenAddress: token.address,
+          timestamp: new Date().toISOString()
+        });
         try {
           const { balance, decimals } = await getSplTokenBalance(
             walletAddress,
             token.address
           );
-          setBalance({
+          const formattedBalance = {
             value: balance,
             formatted: format(balance, decimals),
+          };
+          console.log('✅ [TOKEN-BALANCE] Solana balance fetched', {
+            balance: formattedBalance.formatted,
+            timestamp: new Date().toISOString()
           });
+          setBalance(formattedBalance);
         } catch (error) {
           console.error("Error fetching Solana token balance:", error);
           setBalance({ value: 0n, formatted: "0" });
@@ -64,6 +91,11 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
         isEthereumAddress(token.address) &&
         isEthereumAddress(walletAddress)
       ) {
+        console.log('⚡ [TOKEN-BALANCE] Fetching EVM token balance...', {
+          tokenAddress: token.address,
+          chainId: activeChain?.id,
+          timestamp: new Date().toISOString()
+        });
         try {
           // Verify the token is supported on this chain before fetching balance
           if (!activeChain?.id) {
@@ -91,10 +123,16 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
             token.address,
             activeChain
           );
-          setBalance({
+          const formattedBalance = {
             value: balance,
             formatted: format(balance, decimals),
+          };
+          console.log('✅ [TOKEN-BALANCE] EVM balance fetched', {
+            balance: formattedBalance.formatted,
+            decimals,
+            timestamp: new Date().toISOString()
           });
+          setBalance(formattedBalance);
 
           // If we got a valid balance, reset retry count
           if (balance > 0n) {

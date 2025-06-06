@@ -3,6 +3,7 @@
 import { Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
+import { AutoConnect } from "thirdweb/react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,6 +15,8 @@ import Header from "@/components/header";
 import Footer from "@/components/Footer";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
+import { client } from "@/utils/client";
+import { wallets } from "@/components/header";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,6 +43,12 @@ const ClientLayout = ({
         <QueryClientProvider client={queryClient}>
           <SolanaWalletProvider>
             <ThirdwebProvider>
+              {/* Auto-connect for ThirdWeb wallets */}
+              <AutoConnect
+                client={client}
+                wallets={wallets}
+                timeout={15000}
+              />
               <AccountProvider>
                 <MultiChainProvider>
                   <TokenPriceProvider>
