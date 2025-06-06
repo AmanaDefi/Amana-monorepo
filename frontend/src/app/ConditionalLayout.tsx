@@ -5,7 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/header";
 import GlowIcon from "@/components/svg/GlowIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useState } from "react";
+import React, { useState } from "react";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
@@ -18,7 +18,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       <GlowIcon position="bottom-left" />
 
       {isConnected ? (
-        <div className="flex flex-col mx-auto w-full max-w-[1512px] pt-[60px] pb-[30px]">
+        <div className="flex flex-col min-h-screen mx-auto w-full pt-[60px] pb-[30px]">
           <Header />
           <div className="flex flex-1">
             <div className="flex-shrink-0">
@@ -43,7 +43,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           <Footer isConnected />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 mx-auto w-full max-w-[1360px] py-[40px]">
+        <div className="flex flex-col  min-h-screen flex-1 mx-auto w-full py-[40px]">
           <Header />
           <div className="flex-1 ml-16">{children}</div>
           <div className="ml-16">
