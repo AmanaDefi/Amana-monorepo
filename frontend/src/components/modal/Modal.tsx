@@ -43,11 +43,11 @@ export const Modal = ({
                     stiffness: 300,
                     damping: 24,
                   }}
-                  className={`relative w-full max-w-md bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham ${paddingClass}`}
+                  className={`relative w-full max-w-md bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border ${paddingClass}`}
                 >
                   <button
                     onClick={onClose}
-                    className="absolute top-4 left-4 rounded-[8px] flex items-center justify-center w-10 h-10"
+                    className="absolute rounded-[8px] flex items-center justify-center w-10 h-10"
                     aria-label="Close"
                   >
                     <CloseModalIcon width={16} height={16} />

@@ -9,6 +9,8 @@ import { Modal } from "../Modal";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { motion } from "framer-motion";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
+import Button from "@/components/Button";
+import { useEffect } from "react";
 
 const schema = z.object({
   username: z
@@ -31,9 +33,11 @@ export const SignUpModal = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
+    reset,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
+    mode: "onChange",
   });
 
   const onSubmit = async (data: FormData) => {
@@ -53,6 +57,12 @@ export const SignUpModal = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (step !== "signup") {
+      reset(); // з react-hook-form
+    }
+  }, [step]);
 
   return (
     <Modal
@@ -88,7 +98,7 @@ export const SignUpModal = () => {
           type="text"
           placeholder="Choose a username"
           {...register("username")}
-          className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-[#535E73] bg-transparent border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+          className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-[#535E73] !bg-transparent border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
             errors.username
               ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
               : "border-[#2C2F36]"
@@ -107,8 +117,8 @@ export const SignUpModal = () => {
           type="email"
           placeholder="E-mail"
           {...register("email")}
-          className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-[#535E73] bg-transparent border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
-            errors.username
+          className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-[#535E73] !bg-transparent border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+            errors.email
               ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
               : "border-[#2C2F36]"
           }`}
@@ -122,12 +132,14 @@ export const SignUpModal = () => {
           </div>
         )}
 
-        <button
+        <Button
           type="submit"
-          className="w-full h-12 rounded-[8px] bg-[#1B46E0] text-white font-bold text-[16px] shadow-md hover:opacity-90 transition-all duration-200"
+          variant="custom"
+          disabled={!isValid}
+          className="w-full h-12 rounded-[8px] text-white font-bold text-[16px] shadow-md transition-all duration-200"
         >
           Continue
-        </button>
+        </Button>
       </motion.form>
 
       <motion.div

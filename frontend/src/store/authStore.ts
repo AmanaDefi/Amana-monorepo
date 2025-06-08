@@ -14,7 +14,10 @@ interface AuthState {
 
   openStep: (step: AuthStep) => void;
   closeAll: () => void;
-  updateField: (name: "username" | "email" | "otp", value: string) => void;
+  updateField: (
+    name: "username" | "email" | "otp",
+    value: string,
+  ) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   authenticate: (address: string) => void;
@@ -32,11 +35,35 @@ export const useAuthStore = create<AuthState>((set) => ({
   userAddress: null,
 
   openStep: (step) => set({ step }),
-  closeAll: () => set({ step: null, isLoading: false, error: null }),
+  closeAll: () =>
+    set({
+      step: null,
+      isLoading: false,
+      error: null,
+      email: "",
+      username: "",
+      otp: "",
+    }),
   updateField: (name, value) => set((state) => ({ ...state, [name]: value })),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
   authenticate: (address) =>
-    set({ isAuthenticated: true, userAddress: address, step: null }),
-  logout: () => set({ isAuthenticated: false, userAddress: null }),
+    set({
+      isAuthenticated: true,
+      userAddress: address,
+      step: null,
+      email: "",
+      username: "",
+      otp: "",
+      error: null,
+    }),
+  logout: () =>
+    set({
+      isAuthenticated: false,
+      userAddress: null,
+      email: "",
+      username: "",
+      otp: "",
+    }),
 }));
+
