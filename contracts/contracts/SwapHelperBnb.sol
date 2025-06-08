@@ -151,7 +151,7 @@ contract SwapHelperBnb is SwapHelperParent {
         address outputToken,
         uint16 slippageBps,
         address receiver,
-        uint16 maxDeadline,
+        uint256 maxDeadline,
         bytes calldata /* data */
     ) external override returns (uint256 amountOut) {
         require(

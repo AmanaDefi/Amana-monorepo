@@ -34,32 +34,32 @@ export interface StrategyTestConfig {
 }
 
 export const strategyConfigs: StrategyTestConfig[] = [
-  // {
-  //   name: "Compound USDT Strategy",
-  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-  //   strategyContractName: "ERC20_Compound_Strategy",
-  //   strategyChainId: 137,
-  //   receiptTokenContractName: "ICompoundVault",
-  //   swapHelperContractName: "SwapHelperPolygon",
-  //   rewardsContractName: "ICometRewards",
-  //   forkBlock: 71580000,
-  //   inputTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-  //   inputTokenStorageSlot: 0,
-  //   inputTokenIndexOrPlaceholder: 0,
-  //   receiptTokenAddress: "0xaeB318360f27748Acb200CE616E389A6C9409a07",
-  //   rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
-  //   rewardsTokenAddress: "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
-  //   originChainId: 8453,
-  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
-  //   otherErc20Address: POL_USDC_ADDRESS,
-  //   otherErc20BalanceStorageSlot: 0,
-  //   isNative: false,
-  //   depositAmount: ethers.utils.parseUnits("1000", 6),
-  //   minSharesOut: ethers.utils.parseUnits("900", 6),
-  //   withdrawAmount: ethers.utils.parseUnits("1000", 6),
-  //   minAmountOut: ethers.utils.parseUnits("900", 6),
-  //   slippage: 10000
-  // },
+  {
+    name: "Compound USDT Strategy",
+    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+    strategyContractName: "ERC20_Compound_Strategy",
+    strategyChainId: 137,
+    receiptTokenContractName: "ICompoundVault",
+    swapHelperContractName: "SwapHelperPolygon",
+    rewardsContractName: "ICometRewards",
+    forkBlock: 71580000,
+    inputTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+    inputTokenStorageSlot: 0,
+    inputTokenIndexOrPlaceholder: 0,
+    receiptTokenAddress: "0xaeB318360f27748Acb200CE616E389A6C9409a07",
+    rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+    rewardsTokenAddress: "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
+    originChainId: 8453,
+    withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+    otherErc20Address: POL_USDC_ADDRESS,
+    otherErc20BalanceStorageSlot: 0,
+    isNative: false,
+    depositAmount: ethers.utils.parseUnits("1000", 6),
+    minSharesOut: ethers.utils.parseUnits("900", 6),
+    withdrawAmount: ethers.utils.parseUnits("1000", 6),
+    minAmountOut: ethers.utils.parseUnits("900", 6),
+    slippage: 10000
+  },
   // {
   //   name: "Convex ETH Strategy",
   //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
@@ -236,34 +236,34 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   minAmountOut: ethers.utils.parseUnits("90", 18),
   //   slippage: 10000,
   // },
-  {
-    name: "Aave USDT Strategy",
-    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-    strategyContractName: "AaveERC20Strategy",
-    strategyChainId: 56, // Base
-    receiptTokenContractName: "IERC20", // LP token is a plain ERC20
-    swapHelperContractName: "SwapHelperBnb",
-    rewardsContractName: "IBalancerLiquidityGauge",
-    forkBlock: 51095333, // Set your fork block
+  // {
+  //   name: "Aave USDT Strategy",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "AaveERC20Strategy",
+  //   strategyChainId: 56, // Base
+  //   receiptTokenContractName: "IERC20", // LP token is a plain ERC20
+  //   swapHelperContractName: "SwapHelperBnb",
+  //   rewardsContractName: "IBalancerLiquidityGauge",
+  //   forkBlock: 51095333, // Set your fork block
 
-    inputTokenAddress: "0x55d398326f99059fF775485246999027B3197955", // USDC on Base
-    inputTokenStorageSlot: 9, // Update if needed for forking balance injection
-    inputTokenIndexOrPlaceholder: 1,
+  //   inputTokenAddress: "0x55d398326f99059fF775485246999027B3197955", // USDC on Base
+  //   inputTokenStorageSlot: 9, // Update if needed for forking balance injection
+  //   inputTokenIndexOrPlaceholder: 1,
 
-    receiptTokenAddress: "0xa9251ca9DE909CB71783723713B21E4233fbf1B1", // Balancer LP token
-    rewardsContractAddress: ethers.constants.AddressZero, // LiquidityGauge
-    rewardsTokenAddress: ethers.constants.AddressZero, // axlOP - not actually needed in strategy, but useful here in the test
+  //   receiptTokenAddress: "0xa9251ca9DE909CB71783723713B21E4233fbf1B1", // Balancer LP token
+  //   rewardsContractAddress: ethers.constants.AddressZero, // LiquidityGauge
+  //   rewardsTokenAddress: ethers.constants.AddressZero, // axlOP - not actually needed in strategy, but useful here in the test
 
-    originChainId: 8453, // Base
-    withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
-    otherErc20Address: BSC_USDC_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
-    otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
+  //   originChainId: 8453, // Base
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
+  //   otherErc20Address: BSC_USDC_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
+  //   otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
 
-    isNative: false,
-    depositAmount: ethers.utils.parseUnits("10000", 6),
-    minSharesOut: ethers.utils.parseUnits("9000", 6),
-    withdrawAmount: ethers.utils.parseUnits("1000", 6),
-    minAmountOut: ethers.utils.parseUnits("900", 6),
-    slippage: 10000,
-  },
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("10000", 6),
+  //   minSharesOut: ethers.utils.parseUnits("9000", 6),
+  //   withdrawAmount: ethers.utils.parseUnits("1000", 6),
+  //   minAmountOut: ethers.utils.parseUnits("900", 6),
+  //   slippage: 10000,
+  // },
 ];

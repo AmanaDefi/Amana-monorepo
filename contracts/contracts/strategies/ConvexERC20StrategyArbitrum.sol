@@ -191,8 +191,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     function depositFromOldStrategy(
         uint256 amount,
         uint256 minimumSharesOut,
-        uint256 currentExecutionNonce,
-        bytes32
+        uint256 currentExecutionNonce
     ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();

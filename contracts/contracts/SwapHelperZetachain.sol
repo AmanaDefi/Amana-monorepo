@@ -440,7 +440,7 @@ contract SwapHelperZetachain is SwapHelperParent {
         address targetZRC20,
         uint16 slippageBps,
         address vault,
-        uint16 maxDeadline,
+        uint256 maxDeadline,
         bytes calldata swapData
     ) external override returns (uint256 amountOut) {
         require(

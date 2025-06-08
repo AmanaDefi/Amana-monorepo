@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./StrategyParent.sol";
+import "hardhat/console.sol";
 
 /// @title ERC20StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -61,11 +62,13 @@ abstract contract ERC20StrategyParent is StrategyParent {
         uint256 totalShares = IERC20(receiptTokenAddress).balanceOf(
             address(this)
         );
-        approveOrIncreaseAllowance(
-            IERC20(receiptTokenAddress),
+        console.log(
+            "Transferring assets to new strategy",
             txn.newStrategy,
             totalShares
         );
+        // Transfer receipt tokens directly instead of approving + transferFrom
+        IERC20(receiptTokenAddress).transfer(txn.newStrategy, totalShares);
 
         IStrategy(txn.newStrategy).depositFromOldStrategy(
             totalShares,
@@ -88,14 +91,13 @@ abstract contract ERC20StrategyParent is StrategyParent {
     function depositFromOldStrategy(
         uint256 amount,
         uint256 minimumOut,
-        uint256 currentExecutionNonce,
-        bytes32
+        uint256 currentExecutionNonce
     ) external virtual {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         if (amount == 0) revert NoFundsReceived();
         lastProcessedNonce = currentExecutionNonce - 1;
-        IERC20(inputToken).safeTransferFrom(oldStrategy, address(this), amount);
+        // IERC20(inputToken).safeTransferFrom(oldStrategy, address(this), amount);
         _invest();
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
@@ -114,7 +116,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
 
         IERC20(token).safeTransfer(swapHelper, amountIn);
 
-        uint16 maxDeadline = uint16(block.timestamp + 1 hours);
+        uint256 maxDeadline = 1 hours;
         uint16 slippage = initialSlippageBps;
 
         // Retry with increasing slippage up to 10% (1000 bps)

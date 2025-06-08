@@ -218,6 +218,7 @@ abstract contract SwapHelperParent is
         address tokenA,
         address tokenB
     ) internal view returns (bool exists, uint24 bestFeeTier) {
+        console.log("Searching for best V3 pool for %s and %s", tokenA, tokenB);
         uint24[4] memory tiers = [
             uint24(100),
             uint24(500),
@@ -243,7 +244,11 @@ abstract contract SwapHelperParent is
                 }
             }
         }
-
+        console.log(
+            "Best V3 Pool Found: %s with fee tier %d",
+            exists,
+            bestFeeTier
+        );
         return (exists, bestFeeTier);
     }
 
@@ -492,14 +497,19 @@ abstract contract SwapHelperParent is
         address outputToken,
         uint16 slippageBps,
         address receiver,
-        uint16 maxDeadline,
+        uint256 maxDeadline,
         bytes calldata swapData
     ) external virtual returns (uint256 amountOut) {
         require(
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-
+        console.log(
+            "Swapping %s %s for %s",
+            amount,
+            IERC20Metadata(inputToken).symbol(),
+            IERC20Metadata(outputToken).symbol()
+        );
         uint256 minimumOut = calculateMinAmountOut(
             inputToken,
             outputToken,
@@ -518,12 +528,14 @@ abstract contract SwapHelperParent is
             // Uniswap V3 Swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             console.log("Attempting Uniswap V3 swap");
+            console.log("amountOutMinimum: %s", minimumOut);
+            console.log("encodedPath.length: %s", encodedPath.length);
             try
                 ISwapRouter(UNISWAP_V3_ROUTER).exactInput(
                     ISwapRouter.ExactInputParams({
-                        path: swapData,
+                        path: encodedPath,
                         recipient: receiver,
-                        deadline: maxDeadline,
+                        deadline: block.timestamp + maxDeadline,
                         amountIn: amount,
                         amountOutMinimum: minimumOut
                     })
@@ -535,8 +547,9 @@ abstract contract SwapHelperParent is
                     amountOut
                 );
                 return amountOut;
-            } catch {
-                console.log("Uniswap V3 swap failed");
+            } catch (bytes memory reason) {
+                console.log("Uniswap V3 swap failed with reason:");
+                console.logBytes(reason); // this logs the raw revert data
                 return 0;
             }
         }

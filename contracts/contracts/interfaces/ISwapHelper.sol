@@ -15,7 +15,7 @@ interface ISwapHelper {
         address targetZRC20,
         uint16 slippageBps,
         address vault,
-        uint16 maxDeadline,
+        uint256 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut);
 
