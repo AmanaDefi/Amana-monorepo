@@ -1,65 +1,65 @@
-import { Dispatch, Fragment, SetStateAction } from "react";
-import { Dialog, Transition } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { Dialog, DialogPanel } from "@headlessui/react";
+import { Fragment, ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import CloseModalIcon from "../svg/CloseModalIcon";
 
-interface ModalProps {
-  visibility: [boolean, Dispatch<SetStateAction<boolean>>];
-  children: any;
-  title?: any;
-  classNames?: string;
-}
+type ModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  paddingClass?: string;
+  roundedClass?: string;
+};
 
-export default function Modal({
-  visibility,
+export const Modal = ({
+  isOpen,
+  onClose,
   children,
-  title,
-  classNames = "",
-}: ModalProps): JSX.Element {
-  const [show, setShowModal] = visibility;
-
+  paddingClass = "p-6",
+  roundedClass = "rounded-[16px]",
+}: ModalProps) => {
   return (
-    <Transition.Root show={show} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={setShowModal}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-75 transition-opacity" />
-        </Transition.Child>
+    <AnimatePresence>
+      {isOpen && (
+        <Dialog open={isOpen} onClose={onClose} as={Fragment}>
+          <div className="relative z-50">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 bg-[rgba(12,16,21,0.5)] backdrop-blur-[20px]"
+            />
 
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center md:p-0">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            >
-              <Dialog.Panel
-                className={`w-full md:min-w-[500px] md:w-fit relative transform rounded-lg bg-customNeutral200 border border-customNeutral100 px-8 py-9 transition-all text-white ${classNames}`}
-              >
-                <div className="flex flex-row justify-between font-medium md:items-center mb-8">
-                  <>{title || <div></div>}</>
-                  <XMarkIcon
-                    className="w-7 h-7 text-white"
-                    onClick={() => setShowModal(false)}
-                    role="button"
-                  />
-                </div>
-                {children}
-              </Dialog.Panel>
-            </Transition.Child>
+            <div className="fixed inset-0 flex items-center justify-center p-4">
+              <DialogPanel as={Fragment}>
+                <motion.div
+                  key="modal"
+                  initial={{ y: 100, opacity: 0, scale: 0.95 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  exit={{ y: 100, opacity: 0, scale: 0.95 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 24,
+                  }}
+                  className={`relative w-full max-w-md bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham ${paddingClass}`}
+                >
+                  <button
+                    onClick={onClose}
+                    className="absolute top-4 left-4 rounded-[8px] flex items-center justify-center w-10 h-10"
+                    aria-label="Close"
+                  >
+                    <CloseModalIcon width={16} height={16} />
+                  </button>
+
+                  {children}
+                </motion.div>
+              </DialogPanel>
+            </div>
           </div>
-        </div>
-      </Dialog>
-    </Transition.Root>
+        </Dialog>
+      )}
+    </AnimatePresence>
   );
-}
+};

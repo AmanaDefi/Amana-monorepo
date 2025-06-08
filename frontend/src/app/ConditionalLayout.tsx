@@ -3,6 +3,7 @@
 import Footer from "@/components/Footer";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/header";
+import { AppModals } from "@/components/modal/AppModals";
 import GlowIcon from "@/components/svg/GlowIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import React, { useState, useEffect } from "react";
@@ -36,12 +37,11 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
       {isConnected ? (
         <div className="flex flex-col mx-auto w-full min-h-screen pt-[60px] pb-[30px] px-4 md:px-0">
-          <Header 
+          <Header
             activeSection={activeSection}
             onSectionChange={setActiveSection}
           />
           <div className="flex flex-1">
-
             <div className="flex-shrink-0">
               <Sidebar
                 activeSection={activeSection}
@@ -50,7 +50,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
                 setIsCollapsed={setIsCollapsed}
               />
             </div>
-            
+
             <div
               className="flex-1"
               style={
@@ -71,16 +71,18 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
           <Footer isConnected />
+          <AppModals />
         </div>
       ) : (
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-[40px] px-4 md:pr-[108px] md:px-0">
-          <Header 
+          <Header
             activeSection={activeSection}
             onSectionChange={setActiveSection}
           />
           <div className="flex-1 md:ml-16 md:pl-[44px]">{children}</div>
           <div className="md:ml-16">
             <Footer isConnected={false} />
+            <AppModals />
           </div>
         </div>
       )}
