@@ -8,6 +8,7 @@ import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
+import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
 
 const OptionsModal = () => {
   const { step, closeAll, openStep } = useAuthStore();
@@ -29,7 +30,7 @@ const OptionsModal = () => {
         </button>
       }
     >
-      <div className="flex max-w-[761px]">
+      <div className="flex max-w-[761px] flex-row gap-[56px]">
         <div className="flex flex-col justify-between">
           <ConnectWallet />
           <div className="flex items-center gap-2">
@@ -47,24 +48,20 @@ const OptionsModal = () => {
             />
           </div>
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col ">
           <PopularOptions />
-
-          <ModalButton
-            label="Smart Wallet"
-            icon={<SmartWalletIcon width={29} height={25} />}
-            onClick={() => openStep("signup")}
-          />
-
-          <button className="flex items-center gap-3 border border-[#3E73C4] rounded-[8px] px-4 py-3 text-white text-[16px] font-semibold hover:bg-[#3E73C4]/10 transition">
-            <Image
-              src="/icons/all-wallets.svg"
-              width={24}
-              height={24}
-              alt="All Wallets"
+          <div className="flex flex-col gap-4 mt-6">
+            <ModalButton
+              label="Smart Wallet"
+              icon={<SmartWalletIcon width={29} height={25} />}
+              onClick={() => openStep("signup")}
             />
-            All Wallets
-          </button>
+            <ModalButton
+              label="All Wallets"
+              icon={<AllWalletsIcon width={28} height={27} />}
+              onClick={() => {}}
+            />
+          </div>
         </div>
       </div>
     </Modal>
