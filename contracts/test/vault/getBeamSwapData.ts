@@ -4,6 +4,7 @@ import api from "codemelt-retro-api-sdk";
 import type { IConnection } from "codemelt-retro-api-sdk";
 import { ethers } from "ethers";
 import dotenv from "dotenv";
+import { formatUnits } from "ethers/lib/utils";
 
 dotenv.config(); // Load API key from .env
 
@@ -57,7 +58,7 @@ export async function getBeamSwapDataFromVaultConfig() {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
     slippage: 500,
-    amount: Number(txConfig.crossChainDepositAmount1) / 10 ** 6,
+    amount: formatUnits(txConfig.crossChainDepositAmount1, txConfig.originERC20InputDecimals),
     sender: userAddress,
     recipient: userAddress,
   };

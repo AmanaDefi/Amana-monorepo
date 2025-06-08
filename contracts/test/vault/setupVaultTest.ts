@@ -3,11 +3,12 @@ import { Signer } from "ethers";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
-import { AmanaConnectedChainVault } from "../../typechain";
+import { AmanaConnectedChainVaultV1 } from "../../typechain";
 import { vaultTestMatrix } from "../config/vault.config";
 import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
 import type { IConnection } from "codemelt-retro-api-sdk"; import axios from "axios";
+import { formatUnits } from "ethers/lib/utils";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43";
@@ -78,9 +79,9 @@ export async function setupVaultFixture() {
   ]);
   await zapContract.updateRegistryAddress(amanaRegistry.address);
 
-  const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
+  const Vault = await ethers.getContractFactory("AmanaConnectedChainVaultV1", owner);
   console.log("About to deploy vault");
-  const amanaVault: AmanaConnectedChainVault = await upgrades.deployProxy(
+  const amanaVault: AmanaConnectedChainVaultV1 = await upgrades.deployProxy(
     Vault,
     [
       vaultConfig.name,
@@ -99,7 +100,7 @@ export async function setupVaultFixture() {
   );
   console.log("Vault deployed, waiting for confirmation");
   await amanaVault.deployed();
-  console.log(`AmanaConnectedChainVault deployed at: ${amanaVault.address}`);
+  console.log(`AmanaConnectedChainVaultV1 deployed at: ${amanaVault.address}`);
 
   await gasTank.authorizeVault(amanaVault.address);
   console.log(`Vault authorized with GasTank.`);
@@ -225,7 +226,7 @@ export async function getBeamSwapData(inputToken: string, outputToken: string) {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
     slippage: 500,
-    amount: Number(txConfig.crossChainDepositAmount1) / 10 ** 6,
+    amount: formatUnits(txConfig.crossChainDepositAmount1, txConfig.originERC20InputDecimals),
     sender: userAddress,
     recipient: userAddress,
   };

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "./AmanaVaultBase.sol";
+import "./AmanaVaultBaseV1.sol";
 
 /// @title Amana Connected Chain Vault
 /// @notice A vault that interacts with ZetaChain-connected strategies
 /// @dev Implements ERC4626 with custom cross-chain functionality
-contract AmanaConnectedChainVault is AmanaVaultBase {
+contract AmanaConnectedChainVaultV1 is AmanaVaultBaseV1 {
     using SafeERC20 for IERC20;
     using Math for uint256;
 

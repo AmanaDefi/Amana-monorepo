@@ -67,7 +67,7 @@ abstract contract AmanaVaultBase is
         uint16 slippage;
     }
 
-    mapping(uint256 => Transaction) public transactions; // Buffer for out-of-order confirmations
+    mapping(uint256 => Transaction) public pendingTransactions; // Buffer for out-of-order confirmations
     mapping(address => uint256) public pendingWithdrawals;
     bool public depositFeePaidFromGasTank;
     uint256 public vaultNonce; // TODO need to initialize this to 1!
@@ -156,7 +156,8 @@ abstract contract AmanaVaultBase is
         address registry_,
         uint16 perfFee_,
         uint32 gasLimitWithdrawAndCall_,
-        uint32 gasLimitCall_
+        uint32 gasLimitCall_,
+        bool depositFeePaidFromGasTank_
     ) internal onlyInitializing {
         __ERC4626RewardsUpgradeable_init(asset, name, symbol, owner); // <- this already calls the base in correct order
         __UUPSUpgradeable_init(); // <- comes after the ERC4626 chain
@@ -168,6 +169,7 @@ abstract contract AmanaVaultBase is
         vaultNonce = 1;
         gasLimitForWithdrawAndCall = gasLimitWithdrawAndCall_;
         gasLimitForCall = gasLimitCall_;
+        depositFeePaidFromGasTank = depositFeePaidFromGasTank_;
     }
 
     /**
@@ -278,6 +280,7 @@ abstract contract AmanaVaultBase is
 
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares, minimumOut);
+
         return shares;
     }
 
@@ -317,7 +320,7 @@ abstract contract AmanaVaultBase is
      * @notice Performs token swaps if the ZRC20 source token differs from the vault's asset.
      */
     function _depositComingFromConnectedChain() internal whenNotPaused {
-        Transaction storage txn = transactions[vaultNonce];
+        Transaction storage txn = pendingTransactions[vaultNonce];
         uint256 maxAssets = maxDeposit(txn.receiver);
         if (txn.amount > maxAssets) {
             revert ERC4626ExceededMaxDeposit(
@@ -445,7 +448,7 @@ abstract contract AmanaVaultBase is
      * @notice Handles cross-chain transfers or same-chain asset transfers. Manages gas fees and token approvals.
      */
     function _returnFundsToUser(uint256 nonce) internal {
-        Transaction storage txn = transactions[nonce];
+        Transaction storage txn = pendingTransactions[nonce];
         uint256 outputAmount = (txn.withdrawChainId == uint32(block.chainid) ||
             address(asset()) == txn.withdrawZRC20)
             ? txn.amount
