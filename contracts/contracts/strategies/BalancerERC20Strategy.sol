@@ -58,7 +58,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         liquidityGauge = IBalancerLiquidityGauge(_liquidityGaugeAddress);
 
         receiptToken = _receiptTokenAddress;
-        receiptToken = _receiptTokenAddress;
         inputTokenIndex = _inputTokenIndex;
     }
 

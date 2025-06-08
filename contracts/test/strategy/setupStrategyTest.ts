@@ -27,7 +27,12 @@ export interface StrategyTestContext {
 }
 
 function getRpcUrl(chainId: number): string {
-  return `https://${chainId}.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c`;
+  if (chainId === 56) {
+    return "https://fittest-wandering-lambo.bsc.quiknode.pro/22464c646768adfa0ffa02000362d1f51049c7c9";
+  } else {
+    return `https://${chainId}.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c`;
+
+  }
 }
 
 function getPythContractAddress(chainId: number): string {
