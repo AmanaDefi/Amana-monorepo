@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import Button from "@/components/Button";
 import { useEffect } from "react";
+import CloseModalIcon from "@/components/svg/CloseModalIcon";
 
 const schema = z.object({
   username: z
@@ -70,13 +71,23 @@ export const SignUpModal = () => {
       onClose={closeAll}
       paddingClass="px-4 pt-5 pb-6"
       roundedClass="rounded-[16px]"
+      maxWidth="max-w-[436px]"
     >
+      <div className="flex justify-start">
+        <button
+          onClick={closeAll}
+          className="rounded-[8px] flex items-center justify-center w-10 h-10"
+          aria-label="Close"
+        >
+          <CloseModalIcon width={16} height={16} />
+        </button>
+      </div>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
       >
-        <div className="flex justify-center mb-5 mt-10">
+        <div className="flex justify-center mb-5">
           <div className="w-12 h-12 rounded-[8px] bg-[rgba(62,115,196,0.05)] flex items-center justify-center">
             <AmanaLogo width={39} height={28} className="w-[39px] h-[28px]" />
           </div>

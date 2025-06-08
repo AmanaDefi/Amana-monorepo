@@ -1,7 +1,6 @@
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Fragment, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import CloseModalIcon from "../svg/CloseModalIcon";
 
 type ModalProps = {
   isOpen: boolean;
@@ -9,6 +8,8 @@ type ModalProps = {
   children: ReactNode;
   paddingClass?: string;
   roundedClass?: string;
+  customCloseButton?: ReactNode;
+  maxWidth?: string;
 };
 
 export const Modal = ({
@@ -17,6 +18,8 @@ export const Modal = ({
   children,
   paddingClass = "p-6",
   roundedClass = "rounded-[16px]",
+  customCloseButton,
+  maxWidth = "max-w-md",
 }: ModalProps) => {
   return (
     <AnimatePresence>
@@ -43,17 +46,10 @@ export const Modal = ({
                     stiffness: 300,
                     damping: 24,
                   }}
-                  className={`relative w-full max-w-md bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border ${paddingClass}`}
+                  className={`relative w-full ${maxWidth} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
                 >
-                  <button
-                    onClick={onClose}
-                    className="absolute rounded-[8px] flex items-center justify-center w-10 h-10"
-                    aria-label="Close"
-                  >
-                    <CloseModalIcon width={16} height={16} />
-                  </button>
-
-                  {children}
+                  {customCloseButton}
+                  <div className={paddingClass}>{children}</div>
                 </motion.div>
               </DialogPanel>
             </div>

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import clsx from "clsx";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
+import CloseModalIcon from "@/components/svg/CloseModalIcon";
 
 const formatEmail = (email: string) => {
   const [local, domain] = email.split("@");
@@ -66,13 +67,23 @@ export const VerifyOtpModal = () => {
       onClose={closeAll}
       paddingClass="px-9 pt-5 pb-6"
       roundedClass="rounded-[16px]"
+      maxWidth="max-w-[440px]"
     >
+      <div className="flex justify-start">
+        <button
+          onClick={closeAll}
+          className="rounded-[8px] flex items-center justify-center w-10 h-10"
+          aria-label="Close"
+        >
+          <CloseModalIcon width={16} height={16} />
+        </button>
+      </div>
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
       >
-        <div className="flex justify-center mb-6 mt-10">
+        <div className="flex justify-center mb-6">
           <div className="w-12 h-12 rounded-[8px] bg-[rgba(62,115,196,0.05)] flex items-center justify-center">
             <AmanaLogo width={39} height={28} />
           </div>
