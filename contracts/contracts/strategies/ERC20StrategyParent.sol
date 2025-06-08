@@ -58,24 +58,23 @@ abstract contract ERC20StrategyParent is StrategyParent {
         if (IStrategy(txn.newStrategy).amanaVault() != amanaVault) {
             revert InvalidAmanaVault();
         }
-        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
-            1e18, // Withdraw all
-            txn.assetAmount
+        uint256 totalShares = IERC20(receiptTokenAddress).balanceOf(
+            address(this)
         );
         approveOrIncreaseAllowance(
-            inputToken,
+            IERC20(receiptTokenAddress),
             txn.newStrategy,
-            withdrawnAmount
+            totalShares
         );
 
         IStrategy(txn.newStrategy).depositFromOldStrategy(
-            withdrawnAmount,
+            totalShares,
             txn.minimumOut,
             lastProcessedNonce + 1
         );
         emit AssetsTransferredToNewStrategy(
             txn.newStrategy,
-            withdrawnAmount,
+            totalShares,
             lastProcessedNonce + 1
         );
     }
@@ -89,12 +88,14 @@ abstract contract ERC20StrategyParent is StrategyParent {
     function depositFromOldStrategy(
         uint256 amount,
         uint256 minimumOut,
-        uint256 currentExecutionNonce
+        uint256 currentExecutionNonce,
+        bytes32
     ) external virtual {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
         if (amount == 0) revert NoFundsReceived();
-        lastProcessedNonce = currentExecutionNonce;
+        lastProcessedNonce = currentExecutionNonce - 1;
+        IERC20(inputToken).safeTransferFrom(oldStrategy, address(this), amount);
         _invest();
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,

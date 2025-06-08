@@ -39,7 +39,8 @@ contract Eth_4626_Strategy is EthStrategyParent {
             _amanaVault,
             _gateway,
             _withdrawHelper,
-            address(0)
+            address(0),
+            _receiptTokenAddress
         );
 
         receiptToken = I4626Vault(_receiptTokenAddress);

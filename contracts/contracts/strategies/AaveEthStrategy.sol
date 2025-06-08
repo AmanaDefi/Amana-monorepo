@@ -51,7 +51,8 @@ contract AaveEthStrategy is EthStrategyParent {
             _amanaVault,
             _gateway,
             _withdrawHelper,
-            address(0)
+            address(0),
+            _receiptTokenAddress
         );
 
         receiptToken = IAaveReceiptToken(_receiptTokenAddress);

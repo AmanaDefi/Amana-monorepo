@@ -71,7 +71,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY],
     },
     bsc: {
-      url: "https://binance.llamarpc.com",
+      url: "https://bsc-dataseed1.binance.org",
       accounts: [process.env.PRIVATE_KEY],
     },
     bsc_testnet: {
@@ -121,7 +121,7 @@ const config: HardhatUserConfig = {
           evmVersion: "paris",
           optimizer: {
             enabled: true,
-            runs: 10000,
+            runs: 175,
           },
           viaIR: true,
         },

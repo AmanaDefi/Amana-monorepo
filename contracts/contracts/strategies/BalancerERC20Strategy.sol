@@ -46,7 +46,8 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             _amanaVault,
             _gatewayAddress,
             _withdrawHelper,
-            _inputTokenAddress
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
         swapHelper = _swapHelper;
         liquidityRouter = IBalancerRouter(
@@ -105,19 +106,10 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         harvest();
 
         uint256 totalStaked = liquidityGauge.balanceOf(address(this));
-        console.log("Total staked in liquidity gauge: %s", totalStaked);
         uint256 sharesToWithdraw = convertToShares(assetAmount);
-        console.log(
-            "Shares to withdraw based on asset amount %s: %s",
-            assetAmount,
-            sharesToWithdraw
-        );
+
         if (totalStaked > 0 && totalStaked - sharesToWithdraw <= 1e3) {
             sharesToWithdraw = totalStaked;
-            console.log(
-                "Rounding up to withdraw full staked balance: %s",
-                sharesToWithdraw
-            );
         }
         liquidityGauge.withdraw(sharesToWithdraw);
 
@@ -129,7 +121,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         address[] memory poolTokens = IBalancerStablePool(receiptToken)
             .getTokens();
         address tokenToWithdraw = poolTokens[inputTokenIndex];
-        console.log("minAmountOut: %s", minAmountOut);
 
         uint256 amountOutFromGauge = liquidityRouter
             .removeLiquiditySingleTokenExactIn(
@@ -140,21 +131,10 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
                 true, // wethIsEth
                 "" // userData (can be empty unless needed)
             );
-        console.log(
-            "Withdrew %s from liquidity gauge, received %s of token %s",
-            sharesToWithdraw,
-            amountOutFromGauge,
-            tokenToWithdraw
-        );
         uint256 finalAmountOut = I4626Vault(tokenToWithdraw).redeem(
             amountOutFromGauge,
             address(this),
             address(this)
-        );
-        console.log(
-            "Withdrew %s from ERC4626 vault, final amount out: %s",
-            amountOutFromGauge,
-            finalAmountOut
         );
         require(finalAmountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = finalAmountOut;
@@ -184,14 +164,11 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     function _reinvestRewards() internal override {
         uint256 totalConverted;
         try liquidityGauge.reward_count() returns (uint256 count) {
-            console.log("Reward count: %s", count);
             for (uint256 i = 0; i < count; i++) {
                 address reward = liquidityGauge.reward_tokens(i);
                 if (reward == address(0)) continue;
 
                 uint256 balance = IERC20(reward).balanceOf(address(this));
-                console.log("balance of reward %s: %s", reward, balance);
-                console.log("minClaimableReward: %s", minClaimableReward);
                 if (balance < minClaimableReward) continue;
 
                 uint256 converted = swapToInputToken(
@@ -249,7 +226,8 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     function depositFromOldStrategy(
         uint256 amount,
         uint256 minimumSharesOut,
-        uint256 currentExecutionNonce
+        uint256 currentExecutionNonce,
+        bytes32
     ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();

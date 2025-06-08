@@ -36,7 +36,8 @@ contract FluidErc20Strategy is ERC20StrategyParent {
             _amanaVault,
             _gateway,
             _withdrawHelper,
-            _inputTokenAddress
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
 
         receiptToken = I4626Vault(_receiptTokenAddress);

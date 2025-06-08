@@ -238,8 +238,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         rewardsContract,
         config
       } = ctx;
-      if (config.rewardsContractAddress === undefined) {
-        console.info("Skipping test as rewardsContractAddress is not defined");
+      if (config.rewardsContractAddress === ethers.constants.AddressZero) {
+        console.info("Skipping test as rewardsContractAddress is zero");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }
       const depositAmount = config.depositAmount;
@@ -718,7 +718,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         rewardsContract,
         config
       } = ctx;
-      if (config.rewardsContractAddress === undefined) {
+      if (config.rewardsContractAddress === ethers.constants.AddressZero) {
         console.info("Skipping test as rewardsContractAddress is not defined");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }
@@ -801,7 +801,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         config
       } = ctx;
-      if (config.rewardsContractAddress === undefined || config.rewardsTokenAddress === undefined) {
+      if (config.rewardsContractAddress === ethers.constants.AddressZero || config.rewardsTokenAddress === ethers.constants.AddressZero) {
         console.info("Skipping test as rewardsContractAddress is not defined");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }

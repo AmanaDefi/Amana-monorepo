@@ -2,84 +2,84 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as dotenv from "dotenv";
 
-dotenv.config(); // Load environment variables from .env
+dotenv.config(); // Load env vars
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
-
   const [signer] = await hre.ethers.getSigners();
+
   if (!signer) {
-    throw new Error(
-      `Wallet not found. Please, run "npx hardhat account --save" or set PRIVATE_KEY env variable (for example, in a .env file)`
-    );
-  }
-  const currentNonce = await hre.ethers.provider.getTransactionCount(signer.address);
-  console.log(`📟 Current on-chain nonce for ${signer.address}: ${currentNonce}`);
-
-  // Fetch the vault address argument required for the BaseAaveStrategy constructor
-  const contractName = args.contract;
-  const name = args.name;
-  const vault = args.vault;
-  const inputToken = args.inputToken;
-  const receiptToken = args.receiptToken;
-  const gateway = args.gateway;
-  const withdrawHelper = args.withdrawHelper;
-
-  if (!name) {
-    throw new Error("🚨 Strategy name is required");
-  }
-  if (!vault) {
-    throw new Error("🚨 Vault address is required");
-  }
-  if (!inputToken) {
-    throw new Error("🚨 Input token address is required");
-  }
-  if (!receiptToken) {
-    throw new Error("🚨 Receipt token address is required");
-  }
-  if (!contractName) {
-    throw new Error("🚨 Strategy contract name is required");
-  }
-  if (!gateway) {
-    throw new Error("🚨 Gateway address is required");
+    throw new Error("Wallet not found. Please set PRIVATE_KEY in .env");
   }
 
-  // Deploy the BaseAaveStrategy contract
-  const factory = await hre.ethers.getContractFactory(contractName);
-  const contract = await factory.deploy(name, vault, inputToken, receiptToken, gateway, withdrawHelper);
-  console.log("Contract deployed, waiting for confirmations...");
-  console.log(`📦 Deploy tx sent with nonce: ${contract.deployTransaction.nonce}`);
+  const {
+    contract: contractName,
+    name,
+    vault,
+    inputToken,
+    receiptToken,
+    gateway,
+    withdrawHelper,
+    swapHelper
+  } = args;
 
-  // Wait for contract to be deployed before proceeding
-  await contract.deployed();
+  if (!name || !vault || !inputToken || !receiptToken || !contractName || !gateway || !withdrawHelper) {
+    throw new Error("🚨 Missing required parameters.");
+  }
 
-  console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed ${name} on ${network}.`);
-  console.log(`📜 Contract address: ${contract.address}`); // Updated from contract.target
+  console.log(`🔑 Deploying ${contractName} with signer: ${signer.address}`);
 
-  const etherscanApiKey = hre.config.etherscan.apiKey[network];
+  const StrategyFactory = await hre.ethers.getContractFactory(contractName, signer);
+
+  const proxy = await hre.upgrades.deployProxy(
+    StrategyFactory,
+    [
+      name,
+      gateway,
+      vault,
+      withdrawHelper,
+      swapHelper ?? hre.ethers.constants.AddressZero,
+      receiptToken,
+      inputToken,
+      hre.ethers.constants.AddressZero, // rewards token — unused
+      hre.ethers.constants.AddressZero, // liquidityGauge — unused
+      hre.ethers.constants.AddressZero  // tokenIndex — unused
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups",
+      gasLimit: 10_000_000 // 👈 force more gas
+    }
+  );
+
+  await proxy.deployed();
+  console.log(`✅ Proxy deployed at: ${proxy.address}`);
+
+  const implAddress = await hre.upgrades.erc1967.getImplementationAddress(proxy.address);
+  console.log(`📦 Implementation deployed at: ${implAddress}`);
+
+  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
   if (etherscanApiKey) {
-    console.log(`🛠 Verifying contract on ${network} explorer...`);
+    console.log(`🔍 Verifying implementation on Etherscan...`);
     try {
       await hre.run("verify:verify", {
-        address: contract.address, // Updated from contract.target
-        constructorArguments: [name, vault, inputToken, receiptToken, gateway, withdrawHelper],
+        address: implAddress,
+        constructorArguments: []
       });
-      console.log(`✅ Contract verified on ${network} explorer`);
-    } catch (err) {
-      console.error("❌ Contract verification failed:", err);
+      console.log("✅ Implementation verified on Etherscan");
+    } catch (err: any) {
+      console.error("❌ Verification failed:", err.message);
     }
   } else {
-    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
+    console.log("⚠️ No Etherscan API key for this network. Skipping verification.");
   }
 
   if (args.json) {
-    console.log(JSON.stringify(contract));
+    console.log(JSON.stringify({ proxyAddress: proxy.address, implementationAddress: implAddress }));
   }
 };
 
-// Define the Hardhat task for deployment
-task("deploy-erc20-strategy", "Deploy a Strategy contract", main)
+task("deploy-erc20-strategy", "Deploy a UUPS upgradeable ERC20-based strategy", main)
   .addFlag("json", "Output in JSON")
   .addParam("contract", "The name of the strategy contract to deploy")
   .addParam("name", "The name of the strategy")
@@ -88,6 +88,6 @@ task("deploy-erc20-strategy", "Deploy a Strategy contract", main)
   .addParam("receiptToken", "The address of the receipt token")
   .addParam("gateway", "The address of the gateway contract")
   .addParam("withdrawHelper", "The address of the WithdrawHelper contract")
-  .addOptionalParam("swapHelper", "The address of the SwapHelper contract");
+  .addOptionalParam("swapHelper", "The address of the SwapHelper contract (optional)");
 
 export default {};

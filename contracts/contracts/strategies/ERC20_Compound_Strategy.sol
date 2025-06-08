@@ -42,7 +42,8 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
             _amanaVault,
             _gatewayAddress,
             _withdrawHelper,
-            _inputTokenAddress
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
 
         swapHelper = _swapHelper;

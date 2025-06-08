@@ -45,7 +45,8 @@ contract ConvexEthStrategy is EthStrategyParent {
             _amanaVault,
             _gatewayAddress,
             _withdrawHelper,
-            address(0)
+            address(0),
+            _receiptTokenAddress
         );
 
         receiptToken = ICurvePoolFixed(_receiptTokenAddress);

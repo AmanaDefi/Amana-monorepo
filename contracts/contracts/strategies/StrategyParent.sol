@@ -57,6 +57,7 @@ abstract contract StrategyParent is
     mapping(uint256 => BufferedTx) public pendingByNonce;
 
     IERC20 public inputToken;
+    address public receiptTokenAddress;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");
@@ -138,7 +139,8 @@ abstract contract StrategyParent is
         address _amanaVault,
         address _gateway,
         address _withdrawHelper,
-        address _inputTokenAddress
+        address _inputTokenAddress,
+        address _receiptTokenAddress
     ) internal onlyInitializing {
         __Ownable_init(msg.sender);
         name = _name;
@@ -146,6 +148,7 @@ abstract contract StrategyParent is
         _GATEWAY_ADDRESS = _gateway;
         withdrawHelper = _withdrawHelper;
         inputToken = IERC20(_inputTokenAddress);
+        receiptTokenAddress = _receiptTokenAddress;
         minClaimableReward = 5 * 10 ** 15; // 0.005
     }
 

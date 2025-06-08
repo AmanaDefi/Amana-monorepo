@@ -33,7 +33,8 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
             _amanaVault,
             _gateway,
             _withdrawHelper,
-            _inputTokenAddress
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
 
         receiptToken = I4626Vault(_receiptTokenAddress);

@@ -44,7 +44,8 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             _amanaVault,
             _gatewayAddress,
             _withdrawHelper,
-            _inputTokenAddress
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
 
         receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
@@ -190,7 +191,8 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     function depositFromOldStrategy(
         uint256 amount,
         uint256 minimumSharesOut,
-        uint256 currentExecutionNonce
+        uint256 currentExecutionNonce,
+        bytes32
     ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
