@@ -9,16 +9,13 @@ import {
   UserSettings,
   DEFAULT_SETTINGS
 } from "@/types/types"
-import { Account } from "thirdweb/wallets";
 import { isApproved } from "@/utils/approve";
 import { ethers, Provider, ZeroAddress } from "ethers";
 import { APPROVED_TOKENS, CHAIN_ID, HERMES_URL, solanaRpcUrl } from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { client } from "./client";
-import { Chain } from "viem";
-import { ChainOptions } from "thirdweb/chains";
 import { getBalance } from "thirdweb/extensions/erc20";
 import { keccak_256 } from 'js-sha3';
 import SolanaConnectionSingleton from "./solanaSingleton";

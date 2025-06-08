@@ -61,10 +61,6 @@ export const VaultRow: FC<Props> = React.memo(
               <p className="text-white font-bold text-lg leading-5 -tracking-1">
                 {vault.name}
               </p>
-
-              <p className="text-[#535E73] font-normal text-sm leading-4">
-                30 Jul 2025 (65 days)
-              </p>
             </div>
           </div>
         </div>
@@ -79,7 +75,6 @@ export const VaultRow: FC<Props> = React.memo(
           </div>
           <div className="xl:w-[55%] w-[60%] flex flex-row items-center gap-2 xl:gap-6 justify-between">
             <div className="flex flex-row gap-1 items-center">
-              <p>up to</p>
               <p
                 className={classNames(
                   "font-bold text-lg leading-5 ",
@@ -98,7 +93,9 @@ export const VaultRow: FC<Props> = React.memo(
               />
             </div>
             <div className="w-[50%]">
-              <AppButton onClick={handleNavigate}>{!!walletAddress ? 'Details' : "Invest"}</AppButton>
+              <AppButton onClick={handleNavigate}>
+                {!!walletAddress ? "Details" : "Invest"}
+              </AppButton>
             </div>
           </div>
         </div>

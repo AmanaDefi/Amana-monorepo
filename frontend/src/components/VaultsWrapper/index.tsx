@@ -127,77 +127,81 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   }
 
   return (
-    <div className="font-gotham w-full border border-[#302E44] rounded-3xl p-6">
-      <VaultFilters
-        vaults={vaults}
-        setSortOrder={setSortOrder}
-        sortOrder={sortOrder}
-        chainFilter={chainFilter}
-        setChainFilter={setChainFilter}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        protocolFilter={protocolFilter}
-        setProtocolFilter={setProtocolFilter}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
-        clearAllFilters={clearAllFilters}
-        setDisplayType={setDisplayType}
-        displayType={displayType}
-      />
+    <div className="font-gotham flex flex-col w-full h-full border border-[#302E44] rounded-3xl p-6 justify-between">
+      <div>
+        <VaultFilters
+          vaults={vaults}
+          setSortOrder={setSortOrder}
+          sortOrder={sortOrder}
+          chainFilter={chainFilter}
+          setChainFilter={setChainFilter}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          protocolFilter={protocolFilter}
+          setProtocolFilter={setProtocolFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          clearAllFilters={clearAllFilters}
+          setDisplayType={setDisplayType}
+          displayType={displayType}
+        />
 
-      <div className="text-gray-400 mb-4 text-sm">
-        Showing {paginatedVaults.length} of {filteredVaults.length} vaults
-      </div>
-      {displayType === "cards" ? (
-        <div className={classNames("flex flex-row gap-4 flex-wrap")}>
-          {paginatedVaults.map((vault) => {
-            return (
-              <VaultCard
-                key={vault.id}
-                vault={vault}
-                vaultAPYs={vaultAPYs}
-                vaultTotalAssets={vaultTotalAssets}
-                userVaultBalances={userVaultBalances}
-              />
-            );
-          })}
+        <div className="text-gray-400 mb-4 text-sm">
+          Showing {paginatedVaults.length} of {filteredVaults.length} vaults
         </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-row items-center justify-between">
-            <p className="w-[30%] mr-[10%] text-center">Pool</p>
+        {displayType === "cards" ? (
+          <div
+            className='flex flex-row flex-wrap gap-4'
+          >
+            {paginatedVaults.map((vault) => {
+              return (
+                <VaultCard
+                  key={vault.id}
+                  vault={vault}
+                  vaultAPYs={vaultAPYs}
+                  vaultTotalAssets={vaultTotalAssets}
+                  userVaultBalances={userVaultBalances}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-row items-center justify-between">
+              <p className="w-[30%] mr-[10%] text-center">Pool</p>
 
-            <div className="w-[60%] flex flex-row items-center ">
-              <p className="w-[40%] text-center xl:pl-[10%]">TVL</p>
-              <p className="w-[60%] text-center pr-[20%]">APY</p>
+              <div className="w-[60%] flex flex-row items-center ">
+                <p className="w-[40%] text-center xl:pl-[10%]">TVL</p>
+                <p className="w-[60%] text-center pr-[20%]">APY</p>
+              </div>
+            </div>
+            {paginatedVaults.map((vault) => {
+              return (
+                <VaultRow
+                  key={vault.id}
+                  vault={vault}
+                  vaultAPYs={vaultAPYs}
+                  vaultTotalAssets={vaultTotalAssets}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {paginatedVaults.length === 0 && (
+          <div className="flex flex-col items-center py-12 gap-3">
+            <p className="text-white text-lg">
+              No vaults found matching your filters
+            </p>
+            <div className="w-[180px]">
+              <AppButton onClick={clearAllFilters}>
+                <span className="relative z-2">Clear Filters</span>
+              </AppButton>
             </div>
           </div>
-          {paginatedVaults.map((vault) => {
-            return (
-              <VaultRow
-                key={vault.id}
-                vault={vault}
-                vaultAPYs={vaultAPYs}
-                vaultTotalAssets={vaultTotalAssets}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {paginatedVaults.length === 0 && (
-        <div className="flex flex-col items-center py-12 gap-3">
-          <p className="text-white text-lg">
-            No vaults found matching your filters
-          </p>
-          <div className="w-[180px]">
-            <AppButton onClick={clearAllFilters}>
-              <span className="relative z-2">Clear Filters</span>
-            </AppButton>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
