@@ -206,4 +206,34 @@ export const strategyConfigs: StrategyTestConfig[] = [
     minAmountOut: ethers.utils.parseUnits("900", 6),
     slippage: 10000,
   },
+  {
+    name: "Aave USDT Strategy",
+    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+    strategyContractName: "AaveERC20Strategy",
+    strategyChainId: 56, // Base
+    receiptTokenContractName: "IERC20", // LP token is a plain ERC20
+    swapHelperContractName: "SwapHelperBnb",
+    rewardsContractName: "IBalancerLiquidityGauge",
+    forkBlock: 51095333, // Set your fork block
+
+    inputTokenAddress: "0x55d398326f99059fF775485246999027B3197955", // USDC on Base
+    inputTokenStorageSlot: 9, // Update if needed for forking balance injection
+    inputTokenIndexOrPlaceholder: 1,
+
+    receiptTokenAddress: "0xa9251ca9DE909CB71783723713B21E4233fbf1B1", // Balancer LP token
+    rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645", // LiquidityGauge
+    rewardsTokenAddress: "0x994ac01750047B9d35431a7Ae4Ed312ee955E030", // axlOP - not actually needed in strategy, but useful here in the test
+
+    originChainId: 8453, // Base
+    withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
+    otherErc20Address: BASE_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
+    otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
+
+    isNative: false,
+    depositAmount: ethers.utils.parseUnits("10000", 6),
+    minSharesOut: ethers.utils.parseUnits("9000", 6),
+    withdrawAmount: ethers.utils.parseUnits("1000", 6),
+    minAmountOut: ethers.utils.parseUnits("900", 6),
+    slippage: 10000,
+  },
 ];

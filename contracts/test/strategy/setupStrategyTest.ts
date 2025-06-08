@@ -9,7 +9,8 @@ import {
   PYTH_CONTRACT_ADDRESS_BASE,
   PYTH_CONTRACT_ADDRESS_ZETACHAIN,
   PYTH_CONTRACT_ADDRESS_POLYGON,
-  PYTH_CONTRACT_ADDRESS_ARBITRUM
+  PYTH_CONTRACT_ADDRESS_ARBITRUM,
+  PYTH_CONTRACT_ADDRESS_BNB
 } from "../../../constants";
 import { isBalancerStrategy, isConvexStrategy } from "../utils";
 
@@ -41,6 +42,8 @@ function getPythContractAddress(chainId: number): string {
       return PYTH_CONTRACT_ADDRESS_BASE;
     case 42161:
       return PYTH_CONTRACT_ADDRESS_ARBITRUM;
+    case 56:
+      return PYTH_CONTRACT_ADDRESS_BNB;
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }
