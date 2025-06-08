@@ -3,9 +3,10 @@
 import { useAuthStore } from "@/store/authStore";
 import { Modal } from "../Modal";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import clsx from "clsx";
+import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 
 const formatEmail = (email: string) => {
   const [local, domain] = email.split("@");
@@ -20,34 +21,42 @@ const formatEmail = (email: string) => {
 export const VerifyOtpModal = () => {
   const { step, email, closeAll, authenticate } = useAuthStore();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const [error, setError] = useState(false);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const handleChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
+    setError(false);
 
-    // Auto-focus next
     if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      if (nextInput) (nextInput as HTMLInputElement).focus();
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     const otp = code.join("");
-    if (otp.length === 6) {
-      // TODO: Replace with real OTP verification (e.g. Alchemy)
-      console.log("Verify OTP:", otp);
+    if (otp.length < 6) return;
 
+    if (otp !== "123456") {
+      setError(true);
+    } else {
       authenticate("0xMockUserWallet");
     }
   };
 
   useEffect(() => {
+    if (code.every((digit) => digit !== "")) {
+      handleSubmit();
+    }
+  }, [code]);
+
+  useEffect(() => {
     if (step !== "verify") {
       setCode(["", "", "", "", "", ""]);
+      setError(false);
     }
   }, [step]);
 
@@ -64,10 +73,8 @@ export const VerifyOtpModal = () => {
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
       >
         <div className="flex justify-center mb-6 mt-10">
-          <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-[8px] bg-[rgba(62,115,196,0.05)] flex items-center justify-center">
-              <AmanaLogo width={39} height={28} className="w-[39px] h-[28px]" />
-            </div>
+          <div className="w-12 h-12 rounded-[8px] bg-[rgba(62,115,196,0.05)] flex items-center justify-center">
+            <AmanaLogo width={39} height={28} />
           </div>
         </div>
 
@@ -78,14 +85,14 @@ export const VerifyOtpModal = () => {
           {formatEmail(email)}
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col items-center gap-6"
-        >
-          <div className="flex justify-center gap-2">
+        <form className="flex flex-col gap-4">
+          <div className="flex gap-4">
             {code.map((digit, index) => (
               <input
                 key={index}
+                ref={(el) => {
+                  inputRefs.current[index] = el;
+                }}
                 id={`otp-${index}`}
                 type="text"
                 inputMode="numeric"
@@ -93,19 +100,27 @@ export const VerifyOtpModal = () => {
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 className={clsx(
-                  "w-12 h-12 text-center text-white text-xl rounded-md bg-[#161C27] border outline-none transition-all duration-200",
+                  "w-12 h-12 text-center text-white text-xl rounded-md bg-[#161C27] outline-none transition-all duration-200",
                   {
-                    "border-[#3E73C4]": digit !== "", // якщо є значення — бордер синій
-                    "border-transparent hover:border-[#3E73C4] focus:border-[#3E73C4]":
-                      digit === "",
+                    "border border-[#3E73C4]": digit !== "" && !error,
+                    "border border-transparent hover:border-[#3E73C4] focus:border-[#3E73C4]":
+                      digit === "" && !error,
+                    "border border-[#FF1E1E]": error,
                   },
                 )}
               />
             ))}
           </div>
+
+          {error && (
+            <div className="flex items-center gap-1 text-[#FF1E1E] text-sm mt-2">
+              <ErrorInputIcon width={16} height={16} />
+              <p className="text-[12px] font-normal">The wrong code</p>
+            </div>
+          )}
         </form>
 
-        <div className="mt-12 text-center">
+        <div className="mt-6 text-center">
           <button
             type="button"
             onClick={() => console.log("Resend code")}
