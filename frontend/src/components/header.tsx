@@ -126,7 +126,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           )} */}
           {!isConnected && (
             <button
-              onClick={() => openStep("options")}
+              onClick={() => openStep("optionsA")}
               className="bg-[#1B46E0] hover:opacity-90 text-white text-[16px] font-bold rounded-lg px-6 py-2"
             >
               Sign in

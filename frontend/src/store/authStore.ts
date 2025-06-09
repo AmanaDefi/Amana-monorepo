@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type AuthStep = "signup" | "verify" | "import" | "options" | null;
+export type AuthStep = "signup" | "verify" | "import" | "optionsA" | "optionsB" | null;
 
 interface AuthState {
   step: AuthStep;

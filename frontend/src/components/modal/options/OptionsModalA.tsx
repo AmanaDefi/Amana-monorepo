@@ -2,7 +2,6 @@
 
 import { Modal } from "../Modal";
 import { useAuthStore } from "@/store/authStore";
-import Image from "next/image";
 import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
@@ -11,12 +10,12 @@ import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
 import BackedBy from "../shared/BackedBy";
 
-const OptionsModal = () => {
+const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
 
   return (
     <Modal
-      isOpen={step === "options"}
+      isOpen={step === "optionsA"}
       onClose={closeAll}
       paddingClass="pt-[45px] pl-[57px] pb-[26px] pr-[91px]"
       roundedClass="rounded-[16px]"
@@ -43,7 +42,7 @@ const OptionsModal = () => {
               <ModalButton
                 label="Smart Wallet"
                 icon={<SmartWalletIcon width={29} height={25} />}
-                onClick={() => openStep("signup")}
+                onClick={() => openStep("optionsB")}
               />
               <ModalButton
                 label="All Wallets"
@@ -61,4 +60,4 @@ const OptionsModal = () => {
   );
 };
 
-export default OptionsModal;
+export default OptionsModalA;
