@@ -1,7 +1,6 @@
-import React, { FC } from "react";
+import React, { forwardRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import {
   UserVaultBalance,
@@ -18,11 +17,6 @@ import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
 import { InfoBlock } from "./InfoBlock.tsx";
 
-const RISK_LEVELS: Record<number, { level: string; color: string }> = {
-  1: { level: "Low", color: "bg-green-accent" },
-  2: { level: "Medium", color: "bg-yellow-500" },
-  3: { level: "High", color: "bg-red-500" },
-};
 
 const MOCK_DIGITS = 6.43;
 
@@ -33,8 +27,8 @@ type Props = {
   userVaultBalances: UserVaultBalance[];
 };
 
-export const VaultCard: FC<Props> = React.memo(
-  ({ vault, vaultAPYs, vaultTotalAssets, userVaultBalances }) => {
+export const VaultCard = forwardRef<HTMLDivElement, Props>(
+  ({ vault, vaultAPYs, vaultTotalAssets, userVaultBalances }, ref) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
 
@@ -53,7 +47,8 @@ export const VaultCard: FC<Props> = React.memo(
 
     return (
       <div
-        className="bg-[#14171F] flex-1 p-6 min-w-[380px] rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
+        ref={ref}
+        className="w-full min-w-[380px] h-full bg-[#14171F] p-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
         onClick={() => handleVaultClick(vault.id)}
       >
         <div className="flex md:flex-row flex-col gap-1 justify-between">
@@ -88,12 +83,12 @@ export const VaultCard: FC<Props> = React.memo(
               className="rounded-full"
               sizes="24px"
             />
-
             <h3 className="text-white text-sm font-bold">
               {vault.protocol.network}
             </h3>
           </div>
         </div>
+
         <div className="flex flex-col gap-2 w-full mb-4">
           {walletAddress && (
             <VaultCardInfoBlock>
@@ -105,8 +100,7 @@ export const VaultCard: FC<Props> = React.memo(
                   $
                   {formatTokenBalance(
                     userVaultBalances.find(
-                      (balance: UserVaultBalance) =>
-                        balance.vaultId === vault.id,
+                      (balance) => balance.vaultId === vault.id,
                     )?.balance || 0,
                     vault.inputToken.symbol,
                   )}
@@ -156,18 +150,17 @@ export const VaultCard: FC<Props> = React.memo(
                   <p className="font-normal text-base leading-4 uppercase text-white">
                     APY (7d)
                   </p>
-                  <InfoBlock isRight >
+                  <InfoBlock isRight>
                     💡 APY (Annual Percentage Yield) <br />
                     Estimated yearly return with compounding. It may vary based
                     on rewards, liquidity, and market changes.
                   </InfoBlock>
                 </div>
                 <p
-                  className={classNames(
-                    "font-bold text-xl leading-6",
-                    { "text-green-accent": Number(vaultAPY?.APY7d) > 0 },
-                    { "text-red-error": Number(vaultAPY?.APY7d) <= 0 },
-                  )}
+                  className={classNames("font-bold text-xl leading-6", {
+                    "text-green-accent": Number(vaultAPY?.APY7d) > 0,
+                    "text-red-error": Number(vaultAPY?.APY7d) <= 0,
+                  })}
                 >
                   {(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%
                 </p>
@@ -175,7 +168,6 @@ export const VaultCard: FC<Props> = React.memo(
             </div>
           </VaultCardInfoBlock>
 
-          {/*MOCK APY 30d and predictions */}
           <div className="flex flex-row gap-4">
             <VaultCardInfoBlock>
               <div className="flex flex-col gap-2 w-full relative pr-6">
@@ -184,11 +176,10 @@ export const VaultCard: FC<Props> = React.memo(
                 </p>
                 <div className="flex flex-row justify-between">
                   <p
-                    className={classNames(
-                      "font-bold text-xl leading-5",
-                      { "text-green-accent": is30dAPYUp },
-                      { "text-red-error": !is30dAPYUp },
-                    )}
+                    className={classNames("font-bold text-xl leading-5", {
+                      "text-green-accent": is30dAPYUp,
+                      "text-red-error": !is30dAPYUp,
+                    })}
                   >
                     6.43%
                   </p>
@@ -205,17 +196,16 @@ export const VaultCard: FC<Props> = React.memo(
             </VaultCardInfoBlock>
 
             <VaultCardInfoBlock>
-              <div className="flex flex-col gap-2  w-full relative pr-6">
+              <div className="flex flex-col gap-2 w-full relative pr-6">
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
                 <div className="flex flex-row justify-between">
                   <p
-                    className={classNames(
-                      "font-bold text-xl leading-5",
-                      { "text-green-accent": isPredictionUp },
-                      { "text-red-error": !isPredictionUp },
-                    )}
+                    className={classNames("font-bold text-xl leading-5", {
+                      "text-green-accent": isPredictionUp,
+                      "text-red-error": !isPredictionUp,
+                    })}
                   >
                     {(!isPredictionUp ? "-" : "") + MOCK_DIGITS}%
                   </p>
@@ -241,7 +231,7 @@ export const VaultCard: FC<Props> = React.memo(
             {vault.protocol.name} <InfoIcon />
           </p>
         </p>
-        {/* Buttons */}
+
         <div className="flex gap-4">
           <AppButton
             isBlue
@@ -250,15 +240,12 @@ export const VaultCard: FC<Props> = React.memo(
               router.push(`/vaults/${vault.id}?tab=deposit`);
             }}
           >
-            {!!walletAddress ? 'Deposit' : "Invest"}
+            {!!walletAddress ? "Deposit" : "Invest"}
           </AppButton>
-          {userVaultBalances.find(
-            (balance: UserVaultBalance) => balance.vaultId === vault.id,
-          )?.balance &&
+
+          {userVaultBalances.find((b) => b.vaultId === vault.id)?.balance &&
             Number(
-              userVaultBalances.find(
-                (balance: UserVaultBalance) => balance.vaultId === vault.id,
-              )?.balance,
+              userVaultBalances.find((b) => b.vaultId === vault.id)?.balance,
             ) > 0 && (
               <AppButton
                 onClick={(e) => {
