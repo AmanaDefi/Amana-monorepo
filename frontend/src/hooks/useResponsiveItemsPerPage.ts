@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { useLayoutStore } from "@/store/store";
+import { useEffect } from "react";
 
 export const useResponsiveItemsPerPageByGrid = (
   containerRef: React.RefObject<HTMLElement>,
@@ -17,10 +17,8 @@ export const useResponsiveItemsPerPageByGrid = (
       if (cardWidth === 0) return;
 
       const gap = 16;
-      const availableWidth = containerWidth - gap;
       const cardWithGap = cardWidth + gap;
-
-      const columns = Math.floor(availableWidth / cardWithGap);
+      const columns = Math.floor((containerWidth + gap) / cardWithGap);
       const rows = 2;
       let itemsPerPage = columns * rows;
 

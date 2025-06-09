@@ -12,7 +12,6 @@ import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
 import classNames from "classnames";
 import { useLayoutStore } from "@/store/store";
-import { useResponsiveItemsPerPageByGrid } from "@/hooks/useResponsiveItemsPerPage";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   return 1;
@@ -42,14 +41,24 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [displayType, setDisplayType] = useState<"cards" | "list">("cards");
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const cardRef = useRef<HTMLDivElement | null>(null);
-
-  // Використовуємо хук для розрахунку itemsPerPage
-  useResponsiveItemsPerPageByGrid(containerRef, cardRef);
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
+  const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
 
-  // Видаляємо дублікат ResizeObserver - тепер все керується хуком
-  // useEffect з ResizeObserver ВИДАЛЕНО
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (width >= 1805) {
+        setItemsPerPage(8);
+      } else {
+        setItemsPerPage(8);
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [setItemsPerPage]);
 
   const filteredVaults = useMemo(() => {
     return vaults.filter((vault) => {
@@ -165,14 +174,13 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
             }}
           >
-            {paginatedVaults.map((vault, index) => (
+            {paginatedVaults.map((vault) => (
               <VaultCard
                 key={vault.id}
                 vault={vault}
                 vaultAPYs={vaultAPYs}
                 vaultTotalAssets={vaultTotalAssets}
                 userVaultBalances={userVaultBalances}
-                ref={index === 0 ? cardRef : undefined}
               />
             ))}
           </div>
