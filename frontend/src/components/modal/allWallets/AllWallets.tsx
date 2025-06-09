@@ -1,6 +1,6 @@
 "use client";
 
-import { Modal } from "../Modal";
+import { Modal } from "../base/Modal";
 import { useAuthStore } from "@/store/authStore";
 import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";

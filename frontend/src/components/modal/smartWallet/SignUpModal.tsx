@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Modal } from "../Modal";
+import { Modal } from "../base/Modal";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { motion } from "framer-motion";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";

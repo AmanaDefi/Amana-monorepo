@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/store/authStore";
-import { Modal } from "../Modal";
+import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";

@@ -1,4 +1,4 @@
-import Modal from "@/components/modal/Modal";
+import Modal from "@/components/modal/base/Modal";
 import React, { useEffect, useState } from "react";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
