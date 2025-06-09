@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@account-kit/react": "^4.39.0",
+    "@account-kit/core": "4.35.1",
+    "@account-kit/infra": "4.35.1",
+    "@account-kit/react": "4.35.1",
     "@coral-xyz/anchor": "0.30.1",
     "@headlessui/react": "2.1.1",
     "@heroicons/react": "2.1.4",
@@ -22,7 +24,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.35",
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/web3.js": "^1.98.0",
-    "@tanstack/react-query": "^5.56.2",
+    "@tanstack/react-query": "^5.50.1",
     "@uniswap/v3-periphery": "^1.4.4",
     "@zetachain/networks": "^12.0.0",
     "@zetachain/protocol-contracts": "^11.0.0",
@@ -39,18 +41,19 @@
     "jotai": "2.8.4",
     "js-sha3": "^0.9.3",
     "mixpanel-browser": "^2.55.1",
-    "next": "14.1.0",
+    "next": "14.2.4",
     "nori-sdk": "^0.0.1",
-    "react": "^18.3",
     "react-copy-to-clipboard": "5.1.0",
-    "react-dom": "^18.3",
+    "react": "^18",
+    "react-dom": "^18",
     "react-icons": "^5.4.0",
     "react-modal": "^3.16.1",
     "react-spinners": "^0.15.0",
     "react-toastify": "^10.0.5",
     "react-tooltip": "5.22.0",
     "thirdweb": "5.92.1",
-    "viem": "2.17.0"
+    "viem": "2.30.0",
+    "wagmi": "2.15.4"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",

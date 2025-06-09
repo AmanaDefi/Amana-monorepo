@@ -8,7 +8,6 @@ import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import MobileMenuModal from "@/components/modal/MobileMenuModal";
 // import ConnectButton from "./ConnectButton";
 import { useState } from "react";
-import { ConnectButton, useConnect } from "thirdweb/react";
 import { client } from "@/utils/client";
 import {
   ACCOUNT_ABSTRACTION_CONFIG,
@@ -17,18 +16,19 @@ import {
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { wallets } from "@/constants/wallets";
+import { AppButton } from "./button/AppButton";
 
 const Header = () => {
   const path = usePathname();
   const router = useRouter();
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, connectEthereum, disconnectWallet } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
 
   const navLinks = isConnected
     ? [{ label: "Home", href: "/" }, ...NAV_LINKS.slice(1)]
     : NAV_LINKS;
-  
+
   return (
     <header
       className={`w-full flex items-center justify-between font-gotham ${isConnected ? "px-11 mb-7 h-[40px]" : "pl-11 mb-9 h-[80px]"}`}
@@ -73,12 +73,11 @@ const Header = () => {
         {/* <ChainSwitcher/> */}
         {/* <ConnectButton /> */}
         <div className="hidden lg:block thirdweb-connect-override">
-          <ConnectButton
-            wallets={wallets}
-            chains={SUPPORTED_CHAINS}
-            client={client}
-            connectButton={{ label: "Sign in" }}
-          />
+          {isConnected ? (
+            <AppButton onClick={disconnectWallet}>Disconnect</AppButton>
+          ) : (
+            <AppButton onClick={connectEthereum}>Sing in</AppButton>
+          )}
         </div>
         <MobileMenuModal />
       </div>

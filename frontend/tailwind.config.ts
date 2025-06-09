@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 import { colors } from "./src/utils/colors";
+import { withAccountKitUi, createColorSet } from "@account-kit/react/tailwind";
 
 const beforeGradientBorder = plugin(({ addUtilities }) => {
   addUtilities({
@@ -12,8 +13,8 @@ const beforeGradientBorder = plugin(({ addUtilities }) => {
       content: '""',
       position: "absolute",
       inset: "0",
-      padding: "1px", 
-      borderRadius: "16px", 
+      padding: "1px",
+      borderRadius: "16px",
       background: "linear-gradient(180deg, #162559 0%, #1B46E0 100%)",
       pointerEvents: "none",
       zIndex: "-1",
@@ -27,8 +28,9 @@ const beforeGradientBorder = plugin(({ addUtilities }) => {
 const menuItemHover = plugin(function ({ addUtilities }) {
   addUtilities({
     ".menu-item-hover": {
-        background: 'linear-gradient(159deg, #14171f 0%, #14171f 60%, rgba(27, 70, 224, 0.3) 80%, rgba(27, 70, 224, 0.5) 100%) !important',
-      },
+      background:
+        "linear-gradient(159deg, #14171f 0%, #14171f 60%, rgba(27, 70, 224, 0.3) 80%, rgba(27, 70, 224, 0.5) 100%) !important",
+    },
   });
 });
 const sidebarShadow = plugin(({ addUtilities }) => {
@@ -39,7 +41,7 @@ const sidebarShadow = plugin(({ addUtilities }) => {
   });
 });
 
-const config: Config = {
+const config: Config = withAccountKitUi({
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -116,5 +118,5 @@ const config: Config = {
     },
   },
   plugins: [beforeGradientBorder, menuItemHover, sidebarShadow],
-};
+});
 export default config;

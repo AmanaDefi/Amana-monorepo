@@ -1,11 +1,11 @@
 import { client } from "@/app/client";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
-import { ConnectButton as ThirdwebConnectButton } from "thirdweb/react";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import SelectNetworkModal from "./modal/SelectNetworkModal";
 import { ArrowsRightLeftIcon } from "@heroicons/react/24/solid";
 import Button from "./Button";
 import { wallets } from "@/constants/wallets";
+import { AppButton } from "./button/AppButton";
 
 export default function ConnectButton() {
   const {
@@ -23,12 +23,13 @@ export default function ConnectButton() {
     <>
       {selectedChain == "evm" ? (
         <div className="flex items-center space-x-3">
-          <ThirdwebConnectButton
+          {/* <ThirdwebConnectButton
             client={client}
             chains={SUPPORTED_CHAINS}
             wallets={wallets}
             connectModal={{ size: "compact" }}
-          />
+          /> */}
+          <AppButton onClick={connectEthereum}>Connect wallet</AppButton>
           <div className="tooltip-container">
             <div>
               <ArrowsRightLeftIcon
@@ -45,7 +46,7 @@ export default function ConnectButton() {
             <div className="flex items-center space-x-3">
               <button
                 className="p-2 bg-grayBtn rounded-lg border border-borderBtn hover:bg-grayBtnHover w-[165px] h-[50px]"
-                onClick={() => setIsModalOpen(true)}
+                onClick={disconnectWallet}
               >
                 <div className="flex space-x-2">
                   <div className="w-[35px] h-[35px] bg-green-500 rounded-full"></div>
@@ -61,7 +62,7 @@ export default function ConnectButton() {
               </button>
             </div>
           ) : (
-            <Button variant="signIn" onClick={() => setIsModalOpen(true)}>
+            <Button variant="signIn" onClick={connectEthereum}>
               Sign in
             </Button>
           )}

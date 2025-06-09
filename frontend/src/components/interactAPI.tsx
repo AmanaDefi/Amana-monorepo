@@ -26,7 +26,7 @@ import {
 } from "@/constants/chainConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
-import { useActiveAccount } from "thirdweb/react";
+import { useUser } from "@account-kit/react";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import Blockpi from "@/service/blockpi";
@@ -991,7 +991,7 @@ function Interaction({
   isComponentActiveRef: React.MutableRefObject<boolean>;
   isTrackingActiveRef: React.MutableRefObject<boolean>;
 }): JSX.Element {
-  const activeAccount = useActiveAccount();
+  const activeAccount = useUser();
   const walletContext = useWallet();
   const prevLebel = useRef(label);
 
@@ -1351,7 +1351,7 @@ function Interaction({
     await interactionPostHook(!!success);
   };
 
-  const  handleDone = useCallback(() => {
+  const handleDone = useCallback(() => {
     console.log("[UI] handleDone called - clearing all transaction state");
 
     // Mark component as inactive to prevent any ongoing BlockPI updates
@@ -1389,13 +1389,10 @@ function Interaction({
     // Refresh balance
     refreshBalance();
     console.log("[UI] All transaction state cleared, component reactivated");
-  }, [refreshBalance])
+  }, [refreshBalance]);
 
   useEffect(() => {
-    if (
-      prevLebel.current !== "" &&
-      prevLebel.current !== label
-    ) {
+    if (prevLebel.current !== "" && prevLebel.current !== label) {
       handleDone();
     }
     prevLebel.current = label;

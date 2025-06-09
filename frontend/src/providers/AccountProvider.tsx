@@ -13,7 +13,6 @@ import { client } from "../utils/client";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 import {
-  useAccount,
   useUser,
   useSignerStatus
 } from "@account-kit/react";

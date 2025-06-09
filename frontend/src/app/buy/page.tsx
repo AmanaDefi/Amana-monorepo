@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { useActiveAccount } from "thirdweb/react";
+import {useUser} from "@account-kit/react";
 import BuyContainer from "@/containers/BuyContainer";
 
 function Buy({ }) {
 
-    const account = useActiveAccount();
+    const account = useUser();
 
     return (
         <>

@@ -1,20 +1,18 @@
-"use client";
 
 import { Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import React, { PropsWithChildren, useState } from "react";
+import React, { PropsWithChildren } from "react";
 import AccountProvider from "@/providers/AccountProvider";
 import TokenPriceProvider from "@/providers/TokenPriceProvider";
 import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
-import { AlchemyAccountProvider } from "@account-kit/react";
-import { alchemyConfig } from "@/config.ts/alchemyConfig";
 import { AlchemyClientState } from "@account-kit/core";
+import { ThirdwebProvider } from "thirdweb/react";
+import { Providers } from "@/providers/AlchemyProviders";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,21 +28,15 @@ const spaceMono = Space_Mono({
 const ClientLayout = (
   props: PropsWithChildren<{ initialState?: AlchemyClientState }>,
 ) => {
-  const [queryClient] = useState(() => new QueryClient());
-
   return (
     <html
       lang="en"
       className={`${fustat.variable} ${gotham.variable} ${inter.variable} ${spaceMono.variable}`}
     >
       <body className="font-sans font-light">
-        <QueryClientProvider client={queryClient}>
+        <Providers>
           <SolanaWalletProvider>
-            <AlchemyAccountProvider
-              config={alchemyConfig}
-              queryClient={queryClient}
-              initialState={props.initialState}
-            >
+            <ThirdwebProvider>
               <AccountProvider>
                 <MultiChainProvider>
                   <TokenPriceProvider>
@@ -55,9 +47,9 @@ const ClientLayout = (
                 </MultiChainProvider>
               </AccountProvider>
               <ToastContainer />
-            </AlchemyAccountProvider>
+            </ThirdwebProvider>
           </SolanaWalletProvider>
-        </QueryClientProvider>
+        </Providers>
       </body>
     </html>
   );

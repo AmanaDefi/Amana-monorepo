@@ -3,6 +3,22 @@ import { Token, Icon } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { PublicKey, Connection } from "@solana/web3.js";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
+import {
+  mainnet,
+  sepolia, 
+  base,
+  baseSepolia,
+  polygon,
+  polygonAmoy, 
+  bsc,
+  bscTestnet,
+  avalanche,
+  avalancheFuji,
+  arbitrum,
+  arbitrumSepolia,
+  zetachain,
+  zetachainAthensTestnet,
+} from "viem/chains";
 
 export const zeroSolAddress = PublicKey.default.toBase58();
 
@@ -138,16 +154,16 @@ const baseSepoliaRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
 const polygonAmoyRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
-const bscTestnetRpcUrl =
+export const bscTestnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC_TESTNET || "";
 const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
 const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 const polygonMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
-const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
-const avalancheMainnetRpcUrl =
+export const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
+export const avalancheMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
-const avalancheFujiRpcUrl =
+export const avalancheFujiRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
 const arbitrumMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
@@ -164,17 +180,7 @@ export const crossChainTxUrl =
     : process.env.NEXT_PUBLIC_CROSSCHAIN_TX_API || "";
 
 export enum CHAIN_ID {
-  zetachain = 7000,
-  ethereum = 1,
-  base = 8453,
-  polygon = 137,
-  bsc = 56,
-  solana = 900,
-  arbitrum = 42161,
-  avalanche = 43114,
-}
-export enum CHAIN_ID_TESTNET {
-  zetachain = (deployEnv === "testnet" ? 7001 : 7000),
+  zetachain = deployEnv === "testnet" ? 7001 : 7000,
   ethereum = deployEnv === "testnet" ? 11155111 : 1,
   base = deployEnv === "testnet" ? 84532 : 8453,
   polygon = deployEnv === "testnet" ? 80001 : 137,
@@ -182,12 +188,6 @@ export enum CHAIN_ID_TESTNET {
   solana = deployEnv === "testnet" ? 901 : 900,
   arbitrum = deployEnv === "testnet" ? 421613 : 42161,
   avalanche = deployEnv === "testnet" ? 43113 : 43114,
-}
-
-const getChainId = (chain: string) => {
-  switch (deployEnv) {
-    case "testnet": CHAIN_ID_TESTNET.chain
-  }
 }
 
 export enum MulticallVersion {
@@ -258,168 +258,20 @@ export const MULTICALL_ADDRS: Record<
   },
 };
 
-// Define ZetaChain configuration
-const zetaChain = defineChain({
-  id: CHAIN_ID.zetachain, // 7001 for testnet, 7000 for mainnet
-  name: deployEnv === "testnet" ? "ZetaChain Testnet" : "ZetaChain",
-  shortName: "zeta",
-  chain: "ZetaChain",
-  icon: CHAIN_ICONS[7000],
-  nativeCurrency: {
-    name: "Zeta",
-    symbol: "ZETA",
-    decimals: 18,
-  },
-  testnet: deployEnv === "testnet",
-  slug: "zetachain",
-
-  rpcUrls: {
-    default: {
-      http: [deployEnv === "testnet" ? "https://zeta-chain-testnet.drpc.org" : "https://zeta-chain.drpc.org"], 
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Zeta Explorer",
-      url:
-        deployEnv === "testnet"
-          ? "https://zetachain-testnet.blockscout.com/"
-          : "https://explorer.zetachain.com",
-      standard: "EIP3091",
-    }, 
-  },
-});
-
-// Define Ethereum configuration
-const ethereumChain = defineChain({
-  chainId: CHAIN_ID.ethereum, // 11155111 for Sepolia Testnet, 1 for Ethereum Mainnet
-  name: deployEnv === "testnet" ? "Sepolia Testnet" : "Ethereum",
-  shortName: deployEnv === "testnet" ? "sepolia" : "eth",
-  chain: "ETH",
-  icon: CHAIN_ICONS[1],
-  rpc:
-    deployEnv === "testnet"
-      ? [sepoliaRpcUrl, "https://1rpc.io/sepolia"]
-      : [ethMainnetRpcUrl, "https://eth.llamarpc.com"], // Replace with your RPC URL if available
-  nativeCurrency: {
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  explorers: [
-    {
-      name: "Etherscan",
-      url:
-        deployEnv === "testnet"
-          ? "https://sepolia.etherscan.io"
-          : "https://etherscan.io",
-      standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: deployEnv === "testnet" ? "sepolia" : "ethereum",
-});
-
-// Define Base configuration
-const baseChain = defineChain({
-  chainId: CHAIN_ID.base, // 84532 for Base Sepolia Testnet, 8453 for Base Mainnet
-  name: deployEnv === "testnet" ? "Base Sepolia Testnet" : "Base",
-  shortName: "base",
-  chain: "Base",
-  icon: CHAIN_ICONS[84532],
-  rpc:
-    deployEnv === "testnet"
-      ? [baseSepoliaRpcUrl, "https://base-sepolia.drpc.org"]
-      : [baseMainnetRpcUrl, "https://base.llamarpc.com"], // Replace with your RPC URL if available
-  nativeCurrency: {
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  explorers: [
-    {
-      name: "Base Explorer",
-      url:
-        deployEnv === "testnet"
-          ? "https://base-sepolia.blockscout.com"
-          : "https://explorer.base.org",
-      standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: "base",
-});
-
-// Define Polygon configuration
-const polygonChain = defineChain({
-  chainId: CHAIN_ID.polygon, // 80001 for Mumbai Testnet, 137 for Polygon Mainnet
-  name: deployEnv === "testnet" ? "Polygon Mumbai Testnet" : "Polygon",
-  shortName: "polygon",
-  chain: "Polygon",
-  icon: CHAIN_ICONS[137],
-  rpc:
-    deployEnv === "testnet"
-      ? [polygonAmoyRpcUrl, "https://polygon-mumbai-pokt.nodies.app"]
-      : [polygonMainnetRpcUrl, "https://1rpc.io/matic"], // Replace with your RPC URL if available
-  nativeCurrency: {
-    name: "MATIC",
-    symbol: "MATIC",
-    decimals: 18,
-  },
-  explorers: [
-    {
-      name: "Polygonscan",
-      url:
-        deployEnv === "testnet"
-          ? "https://mumbai.polygonscan.com"
-          : "https://polygonscan.com",
-      standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: "polygon",
-});
-
-// Define BSC configuration
-const bscChain = defineChain({
-  chainId: CHAIN_ID.bsc, // 97 for BSC Testnet, 56 for BSC Mainnet
-  name: deployEnv === "testnet" ? "BSC Testnet" : "BNB Smart Chain",
-  shortName: "bsc",
-  chain: "BSC",
-  icon: CHAIN_ICONS[97],
-  rpc:
-    deployEnv === "testnet"
-      ? [bscTestnetRpcUrl, "https://bsc-testnet.drpc.org"]
-      : [bscMainnetRpcUrl, "https://binance.llamarpc.com"], // Replace with your RPC URL if available
-  nativeCurrency: {
-    name: "Binance Coin",
-    symbol: "BNB",
-    decimals: 18,
-  },
-  explorers: [
-    {
-      name: "BSCScan",
-      url:
-        deployEnv === "testnet"
-          ? "https://testnet.bscscan.com"
-          : "https://bscscan.com",
-      standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: "bsc",
-});
-
-const solanaChain = defineChain({
-  chainId: CHAIN_ID.solana, // Solana uses string identifiers
+const solanaChain = {
+  id: CHAIN_ID.solana, 
   name: deployEnv === "testnet" ? "devnet" : "mainnet",
   shortName: "sol",
   chain: "Solana",
-  rpc: [solanaRpcUrl],
+  rpcUrls: {
+    default: {
+      http: [solanaRpcUrl],
+    },
+  },
   nativeCurrency: {
     name: "Solana",
     symbol: "SOL",
-    decimals: 9, // Solana uses 9 decimal places
+    decimals: 9,
   },
   explorers: [
     {
@@ -433,97 +285,28 @@ const solanaChain = defineChain({
   ],
   testnet: deployEnv === "testnet",
   slug: "solana",
-});
+};
 
-const avalancheChain = defineChain({
-  chainId: CHAIN_ID.avalanche, // 43114 for Avalanche Mainnet, 43113 for Fuji Testnet
-  name: deployEnv === "testnet" ? "Avalanche Fuji Testnet" : "Avalanche",
-  shortName: "avax",
-  chain: "Avalanche",
-  icon: CHAIN_ICONS[43114],
-  rpc:
-    deployEnv === "testnet"
-      ? [avalancheFujiRpcUrl, "https://avalanche-fuji.drpc.org"]
-      : [avalancheMainnetRpcUrl, "https://1rpc.io/avax/c"],
-  nativeCurrency: {
-    name: "Avalanche",
-    symbol: "AVAX",
-    decimals: 18,
-  },
-  explorers: [
-    {
-      name: "SnowTrace",
-      url:
-        deployEnv === "testnet"
-          ? "https://testnet.snowtrace.io"
-          : "https://snowtrace.io",
-      standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: "avalanche",
-});
-
-const arbitrumChain = defineChain({
-  chainId: CHAIN_ID.arbitrum, // 42161 for Arbitrum One Mainnet, 421613 for Arbitrum Sepolia Testnet
-  name: deployEnv === "testnet" ? "Arbitrum Sepolia Testnet" : "Arbitrum One",
-  shortName: "arb",
-  chain: "Arbitrum",
-  icon: CHAIN_ICONS[42161],
-  rpc:
-    deployEnv === "testnet"
-      ? [arbitrumSepoliaRpcUrl, "https://arbitrum-goerli.publicnode.com"]
-      : [arbitrumMainnetRpcUrl, "https://arbitrum.meowrpc.com"],
-  nativeCurrency: {
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  explorers: [
-    {
-      name: "Arbiscan",
-      url:
-        deployEnv === "testnet"
-          ? "https://sepolia.arbiscan.io"
-          : "https://arbiscan.io",
-      standard: "EIP3091",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: "arbitrum",
-});
-
-// Define supported chains based on the deployment environment
-export const SUPPORTED_CHAINS =
-  deployEnv === "testnet"
-    ? [
-        zetaChain,
-        ethereumChain,
-        baseChain,
-        polygonChain,
-        bscChain,
-        avalancheChain,
-        arbitrumChain,
-      ] // always put Zetachain first
-    : [
-        zetaChain,
-        ethereumChain,
-        baseChain,
-        polygonChain,
-        bscChain,
-        avalancheChain,
-        arbitrumChain,
-      ]; // always put Zetachain first
+export const SUPPORTED_CHAINS = [
+  deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
+  deployEnv === "testnet" ? sepolia : mainnet,
+  deployEnv === "testnet" ? baseSepolia : base,
+  deployEnv === "testnet" ? polygonAmoy : polygon,
+  deployEnv === "testnet" ? bscTestnet : bsc,
+  deployEnv === "testnet" ? avalancheFuji : avalanche,
+  deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
+  solanaChain
+];
 
 export const chainConfigs = {
-  [CHAIN_ID.zetachain]: zetaChain,
-  [CHAIN_ID.ethereum]: ethereumChain,
-  [CHAIN_ID.base]: baseChain,
-  [CHAIN_ID.bsc]: bscChain,
-  [CHAIN_ID.polygon]: polygonChain,
-  [CHAIN_ID.solana]: solanaChain,
-  [CHAIN_ID.arbitrum]: arbitrumChain,
-  [CHAIN_ID.avalanche]: avalancheChain,
+  [CHAIN_ID.zetachain]: deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
+  [CHAIN_ID.ethereum]: deployEnv === "testnet" ? sepolia : mainnet,
+  [CHAIN_ID.base]: deployEnv === "testnet" ? baseSepolia : base,
+  [CHAIN_ID.bsc]: deployEnv === "testnet" ? bscTestnet : bsc,
+  [CHAIN_ID.polygon]: deployEnv === "testnet" ? polygonAmoy : polygon,
+  [CHAIN_ID.arbitrum]: deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
+  [CHAIN_ID.avalanche]: deployEnv === "testnet" ? avalancheFuji : avalanche,
+  [CHAIN_ID.solana]: solanaChain
 };
 
 // Define approved tokens per chain
@@ -1157,7 +940,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
 
 // Account abstraction configuration
 export const ACCOUNT_ABSTRACTION_CONFIG = {
-  chain: zetaChain,
+  chain: deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
   sponsorGas: false,
   factoryAddress: "0x021A47c1F745cEaC5CD19DC92C5d117e84b1cD46", // Replace with the correct factory address
 };
@@ -1165,35 +948,49 @@ export const ACCOUNT_ABSTRACTION_CONFIG = {
 export const HERMES_URL = "https://hermes.pyth.network/";
 export const PRICE_IDS: { [key: string]: string } = {
   // Base tokens
-  "ETH": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  "BNB": "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
-  "POL": "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
-  "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "SOL": "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
-  "COMP": "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
-  "AVAX": "0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7",
-  "CRV": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
-  "CVX": "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
-  "OP": "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf",
+  ETH: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  BNB: "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
+  POL: "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
+  USDC: "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  USDT: "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  SOL: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
+  COMP: "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478",
+  AVAX: "0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7",
+  CRV: "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
+  CVX: "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
+  OP: "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf",
 
   // Chain-specific tokens - using the "(CHAIN)" format
-  "ETH (BASE)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  "USDC (BASE)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "ETH (ARB)": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  "USDC (ARB)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (ARB)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (ETH)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (ETH)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (POL)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (POL)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (BNB)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (BNB)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (SOL)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (SOL)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
-  "USDC (AVAX)": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-  "USDT (AVAX)": "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"
-
+  "ETH (BASE)":
+    "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  "USDC (BASE)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "ETH (ARB)":
+    "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  "USDC (ARB)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (ARB)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (ETH)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (ETH)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (POL)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (POL)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (BNB)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (BNB)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (SOL)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (SOL)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
+  "USDC (AVAX)":
+    "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+  "USDT (AVAX)":
+    "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b",
 };
 
 export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
@@ -1210,8 +1007,8 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
 // Cross-chain explorer URLs for ZetaChain cross-chain transactions (cc/tx format)
 export const ZETACHAIN_CROSSCHAIN_EXPLORER_URLS = {
   mainnet: "https://explorer.zetachain.com",
-  testnet: "https://zetachain-testnet.blockscout.com" // Keeping testnet as blockscout for now
-}
+  testnet: "https://zetachain-testnet.blockscout.com", // Keeping testnet as blockscout for now
+};
 
 export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
   // EVM Chains with unique gateway
