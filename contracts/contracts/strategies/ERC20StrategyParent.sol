@@ -95,10 +95,13 @@ abstract contract ERC20StrategyParent is StrategyParent {
     ) external virtual {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
-        if (amount == 0) revert NoFundsReceived();
+        if (
+            amount == 0 ||
+            IERC20(receiptTokenAddress).balanceOf(address(this)) == 0
+        ) revert NoFundsReceived();
         lastProcessedNonce = currentExecutionNonce - 1;
         // IERC20(inputToken).safeTransferFrom(oldStrategy, address(this), amount);
-        _invest();
+        // _invest();
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,

@@ -7,7 +7,6 @@ import "../interfaces/ICompoundVault.sol";
 import "./ERC20StrategyParent.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/ICometRewards.sol";
-import "hardhat/console.sol";
 
 // Polygon USDT receiptToken: 0xaeB318360f27748Acb200CE616E389A6C9409a07
 // Polygon rewardsTokenAddress token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
@@ -58,7 +57,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 compBalanceBefore = IERC20(rewardsTokenAddress).balanceOf(
             address(this)
         );
-        console.log("Comp balance before claim: %s", compBalanceBefore);
         try
             cometRewardsContract.claim(
                 address(receiptToken),
@@ -71,7 +69,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
             );
             uint256 claimed = compBalanceAfter - compBalanceBefore;
             emit RewardsClaimed(address(this), rewardsTokenAddress, claimed);
-            console.log("Claimed %s rewards from Compound", claimed);
             return claimed;
         } catch {
             return 0;

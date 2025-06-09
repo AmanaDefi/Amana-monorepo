@@ -1,5 +1,5 @@
 // test/strategy.config.ts
-import { BSC_USDC_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_ETH_BASE_ADDRESS, ETH_USDC_ADDRESS, POL_USDC_ADDRESS, ARB_USDC_ADDRESS, ARB_CRV_ADDRESS, ARB_USDT_ADDRESS } from "../../../constants";
+import { BASE_USDT_ADDRESS, ZC_USDC_POL_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_ETH_BASE_ADDRESS, ETH_USDC_ADDRESS, POL_USDC_ADDRESS, ARB_USDC_ADDRESS, ARB_CRV_ADDRESS, ARB_USDT_ADDRESS } from "../../../constants";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 
@@ -52,6 +52,32 @@ export const strategyConfigs: StrategyTestConfig[] = [
     originChainId: 8453,
     withdrawZRC20: ZC_USDC_BASE_ADDRESS,
     otherErc20Address: POL_USDC_ADDRESS,
+    otherErc20BalanceStorageSlot: 0,
+    isNative: false,
+    depositAmount: ethers.utils.parseUnits("1000", 6),
+    minSharesOut: ethers.utils.parseUnits("900", 6),
+    withdrawAmount: ethers.utils.parseUnits("1000", 6),
+    minAmountOut: ethers.utils.parseUnits("900", 6),
+    slippage: 10000
+  },
+  {
+    name: "Fluid Strategy",
+    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+    strategyContractName: "FluidErc20Strategy",
+    strategyChainId: 8453,
+    receiptTokenContractName: "I4626Vault",
+    swapHelperContractName: "SwapHelperOnBase",
+    rewardsContractName: "ICometRewards",
+    forkBlock: 30958515,
+    inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    inputTokenStorageSlot: 9,
+    inputTokenIndexOrPlaceholder: 0,
+    receiptTokenAddress: "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169",
+    rewardsContractAddress: ethers.constants.AddressZero, // Fluid strategy does not have a rewards contract
+    rewardsTokenAddress: ethers.constants.AddressZero, // Fluid strategy does not have a rewards token
+    originChainId: 137,
+    withdrawZRC20: ZC_USDC_POL_ADDRESS,
+    otherErc20Address: BASE_USDT_ADDRESS,
     otherErc20BalanceStorageSlot: 0,
     isNative: false,
     depositAmount: ethers.utils.parseUnits("1000", 6),
