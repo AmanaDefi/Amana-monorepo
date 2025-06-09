@@ -79,13 +79,21 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 compBalance = IERC20(rewardsTokenAddress).balanceOf(
             address(this)
         );
-        if (compBalance > minClaimableReward) {
+        if (
+            compBalance >
+            minClaimableReward *
+                10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
+        ) {
             uint256 usdcReceived = swapToInputToken(
                 rewardsTokenAddress,
                 compBalance,
                 harvestSwapSlippage
             );
-            if (usdcReceived > 0) {
+            if (
+                usdcReceived >
+                minClaimableReward *
+                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+            ) {
                 _depositFundsIntoYieldSource(usdcReceived, 0);
                 emit RewardsHarvested(
                     rewardsTokenAddress,

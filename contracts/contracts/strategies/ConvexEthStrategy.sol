@@ -139,7 +139,11 @@ contract ConvexEthStrategy is EthStrategyParent {
 
     function _handleRewardReinvestment(address rewardToken) internal {
         uint256 rewardBalance = IERC20(rewardToken).balanceOf(address(this));
-        if (rewardBalance < minClaimableReward) return; // skip small amounts
+        if (
+            rewardBalance <
+            minClaimableReward *
+                10 ** (IERC20Metadata(rewardToken).decimals() - 3)
+        ) return; // skip small amounts
 
         uint256 receivedInputToken = swapToInputToken(
             rewardToken,

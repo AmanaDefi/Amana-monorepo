@@ -60,7 +60,10 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
 
     function claimRewards() public override returns (uint256) {
         uint256 earnedCrv = IConvexRewardPool(rewardPool).earned(address(this));
-        if (earnedCrv < minClaimableReward) {
+        if (
+            earnedCrv <
+            minClaimableReward * 10 ** (IERC20Metadata(crvToken).decimals() - 3)
+        ) {
             return 0; // Skip claiming if there's too little to claim
         }
         uint256 amountBefore = IERC20(crvToken).balanceOf(address(this));
@@ -91,7 +94,11 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
             harvestSwapSlippage
         );
 
-        if (inputAmount > minClaimableReward) {
+        if (
+            inputAmount >
+            minClaimableReward *
+                10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+        ) {
             uint256[] memory amounts = new uint256[](2);
             amounts[inputTokenIndex] = inputAmount;
 
@@ -125,7 +132,11 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
                 harvestSwapSlippage
             );
 
-            if (extraInput > minClaimableReward) {
+            if (
+                extraInput >
+                minClaimableReward *
+                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+            ) {
                 uint256[] memory extraAmounts = new uint256[](2);
                 extraAmounts[inputTokenIndex] = extraInput;
 

@@ -169,7 +169,11 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
                 if (reward == address(0)) continue;
 
                 uint256 balance = IERC20(reward).balanceOf(address(this));
-                if (balance < minClaimableReward) continue;
+                if (
+                    balance <
+                    minClaimableReward *
+                        10 ** (IERC20Metadata(reward).decimals() - 3)
+                ) continue;
 
                 uint256 converted = swapToInputToken(
                     reward,
@@ -185,7 +189,11 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             emit RewardClaimFailed("Failed to iterate reward_count");
         }
 
-        if (totalConverted > minClaimableReward) {
+        if (
+            totalConverted >
+            minClaimableReward *
+                10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+        ) {
             _depositFundsIntoYieldSource(totalConverted, 0);
         }
     }

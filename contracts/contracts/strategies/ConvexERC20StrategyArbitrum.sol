@@ -98,7 +98,13 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
                 if (rewardToken == address(0)) continue;
 
                 uint256 balance = IERC20(rewardToken).balanceOf(address(this));
-                if (balance < minClaimableReward) continue;
+                if (
+                    balance <
+                    minClaimableReward *
+                        10 **
+                            (IERC20Metadata(address(rewardToken)).decimals() -
+                                3)
+                ) continue;
 
                 uint256 converted = swapToInputToken(
                     rewardToken,
@@ -115,7 +121,11 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             emit RewardClaimFailed("Failed during rewardLength iteration");
         }
 
-        if (totalConverted > minClaimableReward) {
+        if (
+            totalConverted >
+            minClaimableReward *
+                10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+        ) {
             uint256[] memory amounts = new uint256[](2);
             amounts[inputTokenIndex] = totalConverted;
 

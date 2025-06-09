@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {SwapHelperZetachain} from "../contracts/SwapHelperZetachain.sol";
+import {ConvexERC20StrategyArbitrum} from "../contracts/strategies/ConvexERC20StrategyArbitrum.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        SwapHelperZetachain newImpl = new SwapHelperZetachain();
+        ConvexERC20StrategyArbitrum newImpl = new ConvexERC20StrategyArbitrum();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }

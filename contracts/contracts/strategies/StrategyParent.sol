@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
@@ -150,7 +152,7 @@ abstract contract StrategyParent is
         withdrawHelper = _withdrawHelper;
         inputToken = IERC20(_inputTokenAddress);
         receiptTokenAddress = _receiptTokenAddress;
-        minClaimableReward = 5 * 10 ** 15; // 0.005
+        minClaimableReward = 5; // wherever this is used it is multiplied by 1e15 or 1e3, depending on token decimals
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
@@ -267,7 +269,7 @@ abstract contract StrategyParent is
     }
 
     function setMinClaimableReward(uint256 newThreshold) external onlyOwner {
-        require(newThreshold < 1 ether, "Too high"); // Optional sanity check
+        require(newThreshold < 10000, "Too high"); // Optional sanity check
         minClaimableReward = newThreshold;
     }
 
