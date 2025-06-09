@@ -10,6 +10,7 @@ type ModalProps = {
   roundedClass?: string;
   customCloseButton?: ReactNode;
   maxWidth?: string;
+  minHeight?: string;
 };
 
 export const Modal = ({
@@ -20,6 +21,7 @@ export const Modal = ({
   roundedClass = "rounded-[16px]",
   customCloseButton,
   maxWidth = "max-w-md",
+  minHeight,
 }: ModalProps) => {
   return (
     <AnimatePresence>
@@ -46,7 +48,7 @@ export const Modal = ({
                     stiffness: 300,
                     damping: 24,
                   }}
-                  className={`relative w-full ${maxWidth} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
+                  className={`relative w-full ${maxWidth} ${minHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
                 >
                   {customCloseButton}
                   <div className={paddingClass}>{children}</div>

@@ -9,6 +9,7 @@ import PopularOptions from "../shared/PopularOptions";
 import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
+import BackedBy from "../shared/BackedBy";
 
 const OptionsModal = () => {
   const { step, closeAll, openStep } = useAuthStore();
@@ -20,6 +21,7 @@ const OptionsModal = () => {
       paddingClass="pt-[45px] pl-[57px] pb-[26px] pr-[91px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[761px]"
+      minHeight="min-h-[560px]"
       customCloseButton={
         <button
           onClick={closeAll}
@@ -30,38 +32,29 @@ const OptionsModal = () => {
         </button>
       }
     >
-      <div className="flex max-w-[761px] flex-row gap-[56px]">
-        <div className="flex flex-col justify-between">
-          <ConnectWallet />
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              <div className="w-2 h-2 rounded-full bg-[#1B46E0]" />
-              <div className="w-2 h-2 rounded-full bg-[#3F3D5A]" />
-              <div className="w-2 h-2 rounded-full bg-[#3F3D5A]" />
+      <div className="flex flex-col justify-between min-h-[489px]">
+        <div className="flex max-w-[761px] flex-row gap-[56px]">
+          <div className="flex flex-col justify-between">
+            <ConnectWallet />
+          </div>
+          <div className="flex flex-col ">
+            <PopularOptions />
+            <div className="flex flex-col gap-4 mt-6">
+              <ModalButton
+                label="Smart Wallet"
+                icon={<SmartWalletIcon width={29} height={25} />}
+                onClick={() => openStep("signup")}
+              />
+              <ModalButton
+                label="All Wallets"
+                icon={<AllWalletsIcon width={28} height={27} />}
+                onClick={() => {}}
+              />
             </div>
-            <span className="ml-4 text-xs text-white">BACKED BY</span>
-            <Image
-              src="/logo/zetachain.svg"
-              alt="Zetachain"
-              width={60}
-              height={14}
-            />
           </div>
         </div>
-        <div className="flex flex-col ">
-          <PopularOptions />
-          <div className="flex flex-col gap-4 mt-6">
-            <ModalButton
-              label="Smart Wallet"
-              icon={<SmartWalletIcon width={29} height={25} />}
-              onClick={() => openStep("signup")}
-            />
-            <ModalButton
-              label="All Wallets"
-              icon={<AllWalletsIcon width={28} height={27} />}
-              onClick={() => {}}
-            />
-          </div>
+        <div>
+          <BackedBy />
         </div>
       </div>
     </Modal>
