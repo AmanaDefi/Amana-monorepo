@@ -20,7 +20,9 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     receiptToken,
     gateway,
     withdrawHelper,
-    swapHelper
+    swapHelper,
+    rewardsContract,
+    rewardsToken
   } = args;
 
   if (!name || !vault || !inputToken || !receiptToken || !contractName || !gateway || !withdrawHelper) {
@@ -41,14 +43,14 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       swapHelper ?? hre.ethers.constants.AddressZero,
       receiptToken,
       inputToken,
-      hre.ethers.constants.AddressZero, // rewards token — unused
-      hre.ethers.constants.AddressZero, // liquidityGauge — unused
+      rewardsContract ?? hre.ethers.constants.AddressZero,
+      rewardsToken ?? hre.ethers.constants.AddressZero,
       hre.ethers.constants.AddressZero  // tokenIndex — unused
     ],
     {
       initializer: "initialize",
       kind: "uups",
-      gasLimit: 10_000_000 // 👈 force more gas
+      gasLimit: 10_000_000
     }
   );
 
@@ -88,6 +90,8 @@ task("deploy-erc20-strategy", "Deploy a UUPS upgradeable ERC20-based strategy", 
   .addParam("receiptToken", "The address of the receipt token")
   .addParam("gateway", "The address of the gateway contract")
   .addParam("withdrawHelper", "The address of the WithdrawHelper contract")
-  .addOptionalParam("swapHelper", "The address of the SwapHelper contract (optional)");
+  .addOptionalParam("swapHelper", "The address of the SwapHelper contract (optional)")
+  .addOptionalParam("rewardsContract", "The address of the rewards contract (optional)")
+  .addOptionalParam("rewardsToken", "The address of the rewards token (optional)");
 
 export default {};

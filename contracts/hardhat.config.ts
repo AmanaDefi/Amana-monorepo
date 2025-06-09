@@ -22,7 +22,6 @@ import "./tasks/deployWithdrawHelper";
 import "./tasks/deployERC20_MoonwellStrategy";
 import "./tasks/deployAmanaRegistry";
 import "./tasks/clearNonces";
-import "./tasks/deployERC20_Strategy_SwapHelper";
 import "./tasks/depositMultiple";
 import "./tasks/findConvexPid";
 import "./tasks/updateWithdrawHelperOnStrats";
