@@ -47,7 +47,7 @@ const OptionsModalA = () => {
               <ModalButton
                 label="All Wallets"
                 icon={<AllWalletsIcon width={28} height={27} />}
-                onClick={() => {}}
+                onClick={() => openStep("allWallets")}
               />
             </div>
           </div>

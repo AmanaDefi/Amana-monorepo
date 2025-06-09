@@ -1,3 +1,4 @@
+import AllWAllets from "./allWallets/AllWallets";
 import OptionsModalA from "./options/OptionsModalA";
 import OptionsModalB from "./options/OptionsModalB";
 import { SignUpModal } from "./smartWallet/SignUpModal";
@@ -10,6 +11,7 @@ export const AppModals = () => {
       <VerifyOtpModal />
       <OptionsModalA />
       <OptionsModalB />
+      <AllWAllets />
     </>
   );
 };
