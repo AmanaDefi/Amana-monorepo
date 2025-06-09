@@ -7,6 +7,7 @@ import {
   readContract,
   defineChain,
 } from "thirdweb";
+import { safeReadContract, rpcDebugger } from "@/utils/rpcDebugger";
 import { client } from "../utils/client";
 import {
   CHAIN_ID,

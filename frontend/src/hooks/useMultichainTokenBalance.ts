@@ -147,7 +147,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       console.error("Error in fetchBalance:", error);
       setBalance({ value: 0n, formatted: "0" });
     }
-  }, [token, walletAddress, activeChain, nativeBalance, balance.value]);
+  }, [token?.address, token?.symbol, token?.isNative, walletAddress, activeChain?.id, nativeBalance.formatted]);
 
   useEffect(() => {
     // Detect if chain has changed
@@ -166,32 +166,9 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       retryCountRef.current = 0;
     }
 
-    // Execute initial fetch
+    // Execute initial fetch only when dependencies change (not when balance changes)
     fetchBalance();
-
-    // If we have zero balance after a chain switch, retry with increasing delays
-    if (
-      (hasChainSwitched || retryCountRef.current > 0) &&
-      balance.value === 0n &&
-      retryCountRef.current < MAX_RETRIES
-    ) {
-      const retryDelay = 1000 * (retryCountRef.current + 1); // Increasing delay: 1s, 2s, 3s...
-      retryCountRef.current += 1;
-
-      console.log(
-        `Scheduling retry #${retryCountRef.current} for token balance fetch in ${retryDelay}ms`
-      );
-
-      const timeoutId = setTimeout(() => {
-        console.log(
-          `Executing retry #${retryCountRef.current} for token balance fetch`
-        );
-        fetchBalance();
-      }, retryDelay);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [token, walletAddress, activeChain, nativeBalance, balance.value]);
+  }, [token?.address, walletAddress, activeChain?.id, fetchBalance]);
 
   return { balance, fetchBalance };
 };

@@ -17,6 +17,7 @@ import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import { client } from "@/utils/client";
 import { wallets } from "@/components/header";
+import RPCMonitor from "@/components/debug/RPCMonitor";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -66,6 +67,7 @@ const ClientLayout = ({
                 </MultiChainProvider>
               </AccountProvider>
               <ToastContainer />
+              <RPCMonitor />
             </ThirdwebProvider>
           </SolanaWalletProvider>
         </QueryClientProvider>

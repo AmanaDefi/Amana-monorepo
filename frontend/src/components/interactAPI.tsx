@@ -647,10 +647,10 @@ export default function InteractionContainer({
           setStep(actionMapping.length - 1);
           
           // IMPORTANT: Capture current transaction steps before switching to finished state
-          setTransactionStepFeedback(prev => {
+          setTransactionStepFeedback(currentSteps => {
             // Save the current feedback to lastTransactionStepFeedback so steps stay visible
-            setLastTransactionStepFeedback(prev);
-            return prev;
+            setLastTransactionStepFeedback(currentSteps);
+            return currentSteps;
           });
           
           setFinishedTransaction(true);
@@ -684,10 +684,10 @@ export default function InteractionContainer({
           console.error('[BlockPI Progressive] Transaction failed:', result.error);
           
           // IMPORTANT: Capture current transaction steps before clearing state (for failed transactions)
-          setTransactionStepFeedback(prev => {
+          setTransactionStepFeedback(currentSteps => {
             // Save the current feedback to lastTransactionStepFeedback so error steps stay visible
-            setLastTransactionStepFeedback(prev);
-            return prev;
+            setLastTransactionStepFeedback(currentSteps);
+            return currentSteps;
           });
           
           setFinishedTransaction(true); // Show "Done" button even for failures
