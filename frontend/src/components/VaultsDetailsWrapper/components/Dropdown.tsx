@@ -11,7 +11,11 @@ const Dropdown: FC<Props> = ({ title, defaultOpen = false, children }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="bg-[#14171F] border border-[#2A2D36] rounded-2xl py-6 px-[30px] font-gotham">
+    <div
+      className={`bg-[#14171F] rounded-2xl py-6 px-[30px] font-gotham transition-all duration-300 ease-in-out ${
+        isOpen ? "border border-[#2A2D36]" : "border-transparent"
+      }`}
+    >
       <div
         className="flex items-center justify-between cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
@@ -28,7 +32,7 @@ const Dropdown: FC<Props> = ({ title, defaultOpen = false, children }) => {
 
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? "max-h-screen opacity-100 mt-6" : "max-h-0 opacity-0"
+          isOpen ? "h-full opacity-100 mt-6" : "max-h-0 opacity-0"
         }`}
       >
         <div className="bg-[#161C27] rounded-lg p-6 md:p-8">{children}</div>

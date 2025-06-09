@@ -16,6 +16,8 @@ import { CheckTheTxIsInProgress, getLocalStorageObject, updateLocalStorageObject
 import VaultInformationDropdown from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
+import Button from "@/components/Button";
+import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 
 
 const VaultsDetailContainer: React.FC<{
@@ -117,17 +119,19 @@ const VaultsDetailContainer: React.FC<{
     }
 
     return vaultData ? (
-      <div className="overflow-x-auto">
-        <button
-          className="fluid-hover-button rounded-lg flex flex-row items-center gap-2 px-4 py-2 ml-4 md:ml-0"
-          type="button"
+      <div className="overflow-x-auto font-gotham">
+        <Button
+          variant="outlined"
           onClick={handleBack}
+          className="flex items-center justify-between max-h-[56px]"
         >
-          <div className="w-5 h-5 relative z-2">
-            <LeftArrowIcon color="white" />
+          <div className="w-5 h-5 relative z-2 flex items-center justify-center">
+            <BackToVaultsIcon width={7} height={12} />
           </div>
-          <p className="text-white leading-0 relative z-2">Back to Vaults</p>
-        </button>
+          <p className="text-white leading-0 relative z-2 text-[18px] font-normal">
+            Back to vaults
+          </p>
+        </Button>
 
         <VaultHeader
           vaultData={vaultData}
@@ -166,7 +170,7 @@ const VaultsDetailContainer: React.FC<{
             </Dropdown>
             {["Historical APY", "Which Tokens I can invest?"].map((title) => (
               <Dropdown key={title} title={title}>
-                <p className="text-white/60 text-base">Content</p>
+                <p className="text-white text-sm font-normal">Content</p>
               </Dropdown>
             ))}
           </div>
