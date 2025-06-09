@@ -144,15 +144,19 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     }
 
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest();
-        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
-            fractionToWithdraw
-        );
+        console.log("assetAmount:", assetAmount);
+        console.log("minAmountOut:", minAmountOut);
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         rewardPool.withdraw(sharesToWithdraw, false);
-
+        console.log("sharesToWithdraw:", sharesToWithdraw);
+        console.log(
+            "receiptTokens now held:",
+            receiptToken.balanceOf(address(this))
+        );
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
             sharesToWithdraw,
             int128(int256(inputTokenIndex)),
@@ -225,16 +229,17 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = rewardPool.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        return
-            withdrawShareAmount > totalShares
-                ? totalShares
-                : withdrawShareAmount;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
+        }
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
     }
 
     function convertToShares(

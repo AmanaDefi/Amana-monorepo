@@ -114,17 +114,13 @@ export const generateTransactionId = (
 
 export async function simulateDepositCallFromVaultToStrategy(
   vaultAddress: string,
-  owner: string,
   gatewaySigner: Signer,
   strategy: any,
   depositAmount: BigNumber,
   minSharesOut: BigNumber,
-  slippage: number,
-  ORIGIN_CHAIN_ID: number,
-  vaultNonce: number
+  vaultNonce: number,
+  isNative: boolean = false // Default to false, set to true if the strategy accepts native tokens
 ) {
-
-
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Match the new tuple structure
     [TxType.Deposit, depositAmount, minSharesOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
@@ -143,6 +139,7 @@ export async function simulateDepositCallFromVaultToStrategy(
       {
         // value: depositAmount, - this is only if we are testing a strategy that accepts native tokens
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
+        ...(isNative && { value: depositAmount }),
       }
     );
   const receipt = await tx.wait();

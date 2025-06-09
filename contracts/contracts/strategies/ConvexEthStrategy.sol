@@ -178,7 +178,7 @@ contract ConvexEthStrategy is EthStrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        harvest(); // TO DO remove this from the deposit flow, rather do it manually
+        // harvest(); // TO DO remove this from the deposit flow, rather do it manually
         weth.deposit{value: amount}();
 
         uint256[2] memory amounts;
@@ -196,15 +196,11 @@ contract ConvexEthStrategy is EthStrategyParent {
     }
 
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
-            fractionToWithdraw
-        );
-
-        harvest(); // TO DO remove this from the withdraw flow, rather do it manually - but it might still get called in the Convex contract?
-        sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
+        // harvest(); // TO DO remove this from the withdraw flow, rather do it manually - but it might still get called in the Convex contract?
         rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
 
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
@@ -277,16 +273,17 @@ contract ConvexEthStrategy is EthStrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = rewardPool.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        return
-            withdrawShareAmount > totalShares
-                ? totalShares
-                : withdrawShareAmount;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
+        }
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
     }
 
     function convertToShares(
