@@ -4,7 +4,7 @@ import React, { forwardRef } from "react";
 import cn from "classnames";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "signIn" | "primary";
+  variant?: "signIn" | "primary" | "custom";
   className?: string;
 }
 
@@ -17,6 +17,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             return "bg-[#0A0A0A] text-[#6B7280] border-[#1F2937] cursor-not-allowed";
           case "primary":
             return "bg-gray-800 text-[#9CA3AF] border border-[#323234] shadow-[0_4px_4px_0_rgba(0,0,0,0.15)] cursor-not-allowed";
+          case "custom":
+            return "border border-[#35383D] text-[#35383D] bg-transparent shadow-[0_2px_6px_rgba(0,0,0,0.25)] cursor-not-allowed";
         }
       }
 
@@ -34,6 +36,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             "hover:backdrop-blur-[20px] hover:shadow-[inset_0_2px_4px_0_#5251c5]",
             "active:bg-[#1B46E0] active:backdrop-blur-[20px] active:shadow-[inset_0_2px_4px_0_#5251c5]",
           );
+        case "custom":
+          return cn(
+            "bg-[#1B46E0] text-white border border-transparent shadow-[0_2px_6px_rgba(0,0,0,0.25)]",
+            "hover:bg-transparent hover:border-[#3E73C4] hover:shadow-[0_2px_6px_rgba(0,0,0,0.25)]",
+          );
         default:
           return "";
       }
@@ -44,7 +51,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled}
         className={cn(
-          "rounded-lg px-[16px] py-[17px] w-[192px] h-[56px]",
+          "rounded-lg px-[16px] py-[17px] w-[192px]",
           "text-[18px] font-normal font-sans text-center",
           "flex items-center justify-center select-none transition",
           getButtonClass(),
