@@ -42,7 +42,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           />
           <div className="flex flex-1">
 
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 max-h-[1001px]">
               <Sidebar
                 activeSection={activeSection}
                 onSectionChange={setActiveSection}
