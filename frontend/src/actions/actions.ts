@@ -881,17 +881,19 @@ const getPathDataAndMinSharesOut = async (
   transactionAmount: bigint,
   activeChain: Chain
 ): Promise<{ swapPath: `0x${string}`; minSharesOut: bigint }> => {
-  const inputTokenAddress = isZetachain(activeChain.id)
-    ? inputToken?.address
+  const inputTokenZeta = isZetachain(activeChain.id)
+    ? inputToken
     : inputToken?.ZRC20equivalent;
-
+  if (!inputTokenZeta) {
+    throw new Error("Input token not found on Zetachain");
+  }
   let assetsConversionAmount: bigint = transactionAmount;
   let swapPath: `0x${string}` = "0x";
 
-  if (inputTokenAddress !== vaultData.inputToken.address) {
+  if (inputTokenZeta.address !== vaultData.inputToken.address) {
     const { encodedPath, amountOut } = await getPathDataAndAmountOut(
       transactionAmount,
-      inputToken,
+      inputTokenZeta,
       vaultData.inputToken,
       vaultData.id as Address
     );
@@ -925,13 +927,8 @@ const getPathDataAndMinSharesOut = async (
 const getPathDataAndMinAmountOut = async (
   vaultData: VaultData,
   outputToken: Token,
-  transactionAmount: bigint,
-  activeChain: Chain
+  transactionAmount: bigint
 ) => {
-  const outputTokenAddress = isZetachain(activeChain.id)
-    ? outputToken?.address
-    : outputToken?.ZRC20equivalent;
-
   const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
   const minAmountOutInOutputToken =
     (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
@@ -939,7 +936,7 @@ const getPathDataAndMinAmountOut = async (
   let minAmountOut = minAmountOutInOutputToken;
   let swapPath: `0x${string}` = "0x";
 
-  if (outputTokenAddress !== vaultData.inputToken.address) {
+  if (outputToken.address !== vaultData.inputToken.address) {
     const result = await getPathDataAndAmountOut(
       minAmountOutInOutputToken,
       outputToken,
@@ -1235,8 +1232,7 @@ export const executeSolanaWithdrawal = async (
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
     withdrawZRC20,
-    withdrawAssetAmount,
-    activeChain
+    withdrawAssetAmount
   );
   const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
   // Generate a unique transaction ID
@@ -1331,8 +1327,7 @@ const executeDirectWithdrawal = async (
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut( // TODO simplify this here to reduce lag
     vaultData,
     vaultData.inputToken,
-    withdrawAssetAmount,
-    activeChain
+    withdrawAssetAmount
   );
   let contract = getContract({
     client,
@@ -1370,8 +1365,7 @@ const executeCrossChainWithdrawal = async (
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
     withdrawZRC20,
-    withdrawAssetAmount,
-    activeChain
+    withdrawAssetAmount
   );
 
   // Generate a unique transaction ID
@@ -1571,6 +1565,8 @@ export const getPathDataAndAmountOut = async (
   outputToken: Token,
   userAddress: string
 ): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
+  console.log("inputToken address:", inputToken.address);
+  console.log("outputToken address:", outputToken.address);
   const [inputTokenId, outputTokenId] = await Promise.all([
     getBeamTokenId(inputToken.address),
     getBeamTokenId(outputToken.address),
