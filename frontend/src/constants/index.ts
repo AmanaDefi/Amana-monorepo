@@ -28,33 +28,33 @@ export const tokens: Token[] = [
 ]
 
 const MAINNET_VAULT_DATA: VaultData[] = [
-  // {
-  //   id: "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e", // Base ZeroLend USDC Vault
-  //   name: "USDC Lend Pool",
-  //   type: "Lending Pool",
-  //   des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters.",
-  //   symbol: "aZeroLendUSDC",
-  //   imgURL: "/base.png",
-  //   depositFeePaidFromGasTank: true,
-  //   inputToken: {
-  //     symbol: "USDC.BASE",
-  //     decimals: 6,
-  //     address: ZC_USDC_BASE_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "ZeroLend",
-  //     strategyAddress: "0xC967154127af55cecC47328B06385EFd8f8C427E",
-  //     network: "Base",
-  //     chainId: 8453,
-  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-  //     imgURL: "/ZeroLend.png",
-  //     des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements."
-  //   },
-  // },
+  {
+    id: "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e", // Base ZeroLend USDC Vault
+    name: "USDC Lend Pool",
+    type: "Lending Pool",
+    des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters.",
+    symbol: "aZeroLendUSDC",
+    imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "ZeroLend",
+      strategyAddress: "0x70f92e46824b2FeaC3EE5f5877dDe3a3F6b17e7a",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/ZeroLend.png",
+      des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements."
+    },
+  },
   // // {
   // //   id: "0x8960997eaBF32c3bE224Ca91d429b57825e1EA24", // Base ZeroLend USDC Vault
   // //   name: "Leveraged USDC Lend Pool",
@@ -80,61 +80,61 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   // //     des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements."
   // //   },
   // // },
-  // {
-  //   id: "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69",
-  //   name: "USDC Lend Pool",
-  //   type: "Lending Pool",
-  //   des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
-  //   symbol: "aFluidUSDC",
-  //   imgURL: "/base.png",
-  //   depositFeePaidFromGasTank: true,
-  //   inputToken: {
-  //     symbol: "USDC.BASE",
-  //     decimals: 6,
-  //     address: ZC_USDC_BASE_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Fluid",
-  //     strategyAddress: "0x5D4a0eF44758c9ab0571b67927ED0B849bbB12D0",
-  //     network: "Base",
-  //     chainId: 8453,
-  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-  //     imgURL: "/fluid.png",
-  //     des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
-  //   },
-  // },
-  // {
-  //   id: "0x622E956626Cc6aBa655E3d92a3629b04cB038E80",
-  //   name: "USDT Lend Pool",
-  //   type: "Lending Pool",
-  //   des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
-  //   symbol: "aPolUSDT",
-  //   imgURL: "/polygon_logo.png",
-  //   depositFeePaidFromGasTank: true,
-  //   inputToken: {
-  //     symbol: "USDT.POL",
-  //     decimals: 6,
-  //     address: ZC_USDT_POL_ADDRESS,
-  //     imgURL: "/usdt.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Compound",
-  //     strategyAddress: "0x53d4ca240736DDD613152C4F8Fb3A8598f1b9bF4",
-  //     rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
-  //     network: "Polygon",
-  //     chainId: 137,
-  //     netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
-  //     imgURL: "/compound.png",
-  //     des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
-  //   },
-  // },
+  {
+    id: "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69",
+    name: "USDC Lend Pool",
+    type: "Lending Pool",
+    des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
+    symbol: "aFluidUSDC",
+    imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Fluid",
+      strategyAddress: "0x916e59336fD9EBd752630a80BeD39A0c9637471D",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/fluid.png",
+      des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
+    },
+  },
+  {
+    id: "0x622E956626Cc6aBa655E3d92a3629b04cB038E80",
+    name: "USDT Lend Pool",
+    type: "Lending Pool",
+    des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+    symbol: "aPolUSDT",
+    imgURL: "/polygon_logo.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDT.POL",
+      decimals: 6,
+      address: ZC_USDT_POL_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Compound",
+      strategyAddress: "0x8A5B82e85eab876438e14264817d20669b2e3671",
+      rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+      network: "Polygon",
+      chainId: 137,
+      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
+      imgURL: "/compound.png",
+      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
+    },
+  },
 
   {
     id: "0xe5fa0E4BA13D516908c5313b3375b7Ede24BFe7a", // Aave USDT on BNB
@@ -529,34 +529,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   // //     des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
   // //   },
   // // },
-  // {
-  //   id: "0xAbE7a5C760B030421B5C9815fE91f9Ba68058769", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
-  //   name: "eUSD/USDC Pool",
-  //   type: "Liquidity Pool",
-  //   des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
-  //   symbol: "aConvexUsdcArb",
-  //   imgURL: "/arbitrum-arb-logo.png",
-  //   depositFeePaidFromGasTank: true,
-  //   inputToken: {
-  //     symbol: "USDC.ARB",
-  //     decimals: 6,
-  //     address: ZC_USDC_ARB_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Curve-Convex",
-  //     strategyAddress: "0x8C1b444830A37CE72330d808bB97F91047224c66", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
-  //     rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
-  //     network: "Arbitrum",
-  //     chainId: 42161,
-  //     netdes: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
-  //     imgURL: "/convex.png",
-  //     des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
-  //   },
-  // },
+  {
+    id: "0x32fECdEf376E2aD74C53663BDE933116C09408f3", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
+    name: "eUSD/USDC Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+    symbol: "aConvexUsdcArb",
+    imgURL: "/arbitrum-arb-logo.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDC.ARB",
+      decimals: 6,
+      address: ZC_USDC_ARB_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve-Convex",
+      strategyAddress: "0xEF2D1463de249b1b74Ea60B73D05D25A0C8516A3", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
+      rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
+      network: "Arbitrum",
+      chainId: 42161,
+      netdes: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
+      imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+    },
+  },
   {
     id: "0x19C5C50B3d02f6cDB47c06a12C625ee644bf5B4A",
     name: "yUSD/USDC Pool",

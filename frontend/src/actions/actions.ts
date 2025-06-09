@@ -839,7 +839,7 @@ export const Approvedeposit = async (
   transactionAmount: bigint
 ) => {
   console.log("Executing DepositApprove");
-
+  console.log("inputToken", inputToken);
   try {
     let contract = getContract({
       client,
@@ -852,6 +852,7 @@ export const Approvedeposit = async (
     } else {
       spender = EVM_GATEWAY_ADDRESSES[activeChain.id];
     }
+
     const approveTx = prepareContractCall({
       contract,
       method: "function approve(address to, uint256 value)",
