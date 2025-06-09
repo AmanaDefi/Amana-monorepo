@@ -19,6 +19,7 @@ import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { wallets } from "@/constants/wallets";
 import { useAuthStore } from "@/store/authStore";
+import Button from "./Button";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -105,7 +106,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="hidden md:block thirdweb-connect-override">
+          {/* <div className="hidden md:block thirdweb-connect-override">
             <ConnectButton
               wallets={wallets}
               chains={SUPPORTED_CHAINS}
@@ -123,15 +124,16 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                 connectButton={{ label: "Sign in" }}
               />
             </div>
-          )}
-          {/* {!isConnected && (
-            <button
+          )} */}
+          {!isConnected && (
+            <Button
+              variant="signIn"
               onClick={() => openStep("optionsA")}
-              className="bg-[#1B46E0] hover:opacity-90 text-white text-[16px] font-bold rounded-lg px-6 py-2"
+              className="hover:opacity-90 text-white text-[16px] font-bold rounded-lg px-6 py-2"
             >
               Sign in
-            </button>
-          )} */}
+            </Button>
+          )}
         </div>
       </header>
 
