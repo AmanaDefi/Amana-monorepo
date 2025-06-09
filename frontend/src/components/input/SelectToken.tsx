@@ -3,12 +3,12 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Token, VaultData } from "@/types/types";
 import TokenIcon from "@/components/common/TokenIcon";
 import SearchToken from "@/components/input/SearchToken";
-
 import { Tooltip } from "react-tooltip";
 import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
 import { Account } from "thirdweb/wallets";
 import {getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
-import { Modal } from "../modal/base/Modal";
+import Modal from "../modal/Modal";
+
 
 export interface SelectTokenProps {
   options: Token[];

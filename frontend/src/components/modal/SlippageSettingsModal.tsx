@@ -1,4 +1,3 @@
-import Modal from "@/components/modal/base/Modal";
 import React, { useEffect, useState } from "react";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
@@ -10,6 +9,7 @@ import {
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
 import { bigIntReplacer } from "@/utils/utils";
+import Modal from "./Modal";
 
 export default function SlippageSettingsModal({
   setInputBalance,
