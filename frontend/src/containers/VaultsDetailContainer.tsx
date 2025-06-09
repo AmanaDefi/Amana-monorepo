@@ -143,10 +143,9 @@ const VaultsDetailContainer: React.FC<{
           selectedToken={selectedToken}
         />
 
-        <section className="w-full flex flex-col lg:flex-row gap-4 my-4 ">
+        <section className="w-full flex flex-col lg:flex-row gap-4 my-4 font-gotham">
           <div className="w-full ">
-            <div className="bg-customNeutral200 p-6 rounded-lg">
-              <div className="bg-customNeutral300 px-6 py-6 rounded-lg">
+            <div className="bg-[#14171F] pt-6 px-5 pb-3 rounded-[16px]">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}
@@ -157,7 +156,6 @@ const VaultsDetailContainer: React.FC<{
                   onTokenSelect={handleTokenSelect}
                   selectedToken={selectedToken}
                 />
-              </div>
             </div>
           </div>
           <div className="w-full max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
