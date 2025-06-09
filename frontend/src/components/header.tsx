@@ -18,6 +18,7 @@ import {
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { wallets } from "@/constants/wallets";
+import { useAuthStore } from "@/store/authStore";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -51,6 +52,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const { openStep } = useAuthStore();
 
   const navLinks = isConnected
     ? [{ label: "Home", href: "/" }, ...NAV_LINKS.slice(1)]
@@ -121,6 +124,14 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
               />
             </div>
           )}
+          {/* {!isConnected && (
+            <button
+              onClick={() => openStep("optionsA")}
+              className="bg-[#1B46E0] hover:opacity-90 text-white text-[16px] font-bold rounded-lg px-6 py-2"
+            >
+              Sign in
+            </button>
+          )} */}
         </div>
       </header>
 
