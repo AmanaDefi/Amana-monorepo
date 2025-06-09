@@ -48,6 +48,9 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
+import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
+import ErrorInputIcon from "./svg/ErrorInputIcon";
+import Button from "./Button";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -1051,7 +1054,7 @@ export default function VaultInputs({
       />
 
       <InputTokenWithError
-        captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}
+        captionText={isDeposit ? "Amount to Invest" : "Withdraw Amount"}
         onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
         allowInput={allowInput}
         vaultData={vaultData}
@@ -1073,19 +1076,10 @@ export default function VaultInputs({
         isSlippageExceedingLimit={isSlippageExceedingLimit}
         setInputBalance={setInputBalance}
       />
-      <div className="pt-4 pb-2 flex items-center gap-3">
-        <div className="w-full h-px bg-tuatara-900"></div>
-        <button
-          className="group flex-center hover:border-white"
-          onClick={switchTokens}
-        >
-          <ArrowDownCircleIcon
-            width={48}
-            height={48}
-            className="size-12 text-tuatara-900 group-hover:text-tuatara-300 transition-colors"
-          />
+      <div className="w-full mt-10 flex items-center justify-center">
+        <button className="group flex-center p-2" onClick={switchTokens}>
+          <DepositModalArrowsIcon width={24} height={24} />
         </button>
-        <div className="w-full h-px bg-tuatara-900"></div>
       </div>
       <InputTokenWithError
         captionText={"Output amount"}
@@ -1110,7 +1104,7 @@ export default function VaultInputs({
         conversionOutput={conversionOutput}
         setInputBalance={setInputBalance}
       />
-      <div className="mt-4">
+      <div className="mt-[56px]">
         {conversionOutput.slippageActualValue !== null &&
           conversionOutput.slippageActualValue < 100 && (
             <p className="text-white font-bold mb-2 text-start">
@@ -1165,8 +1159,10 @@ export default function VaultInputs({
             </div>
           )}
 
-        <p className="text-white font-bold mb-2 text-start">Fee Breakdown</p>
-        <div className="bg-customNeutral200 py-2 px-4 rounded-lg">
+        <p className="text-white text-[18px] font-bold text-start">
+          Fee Breakdown
+        </p>
+        <div className="w-full mt-3 bg-[#161C27] py-[18px] px-4 rounded-lg border text-[14px] font-normal text-white border-[#3E73C4]">
           {/* Deposit Fee For Ethereum Vaults*/}
           {isDeposit &&
             !vaultData.depositFeePaidFromGasTank &&
@@ -1176,10 +1172,14 @@ export default function VaultInputs({
             conversionOutput.gasFeeInUSD && (
               <span className="flex flex-row items-center justify-between text-white py-1">
                 <div className="flex items-center">
-                  <p>Deposit Fee (deducted from your deposit)</p>
-                  <button id="gas-fee-info" className="ml-2 group">
-                    <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors" />
+                  <button id="gas-fee-info" className="mr-[10px] group">
+                    <ErrorInputIcon
+                      width={14}
+                      height={14}
+                      className="fill-[#1B46E0]"
+                    />
                   </button>
+                  <p>Deposit Fee (deducted from your deposit)</p>
                   <ResponsiveTooltip
                     id="gas-fee-info"
                     content={
@@ -1221,10 +1221,14 @@ export default function VaultInputs({
           {/* Performance Fee */}
           <span className="flex flex-row items-center justify-between text-white py-1">
             <div className="flex items-center">
-              <p>Performance Fee (deducted upon withdrawal)</p>
-              <button id="performance-fee-info" className="group ml-2">
-                <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white group-hover:transition-colors" />
+              <button id="gas-fee-info" className="mr-[10px] group">
+                <ErrorInputIcon
+                  width={14}
+                  height={14}
+                  className="!fill-[#1B46E0]"
+                />
               </button>
+              <p>Performance Fee (deducted upon withdrawal)</p>
               <ResponsiveTooltip
                 id={"performance-fee-info"}
                 content={
@@ -1238,6 +1242,9 @@ export default function VaultInputs({
           </span>
         </div>
       </div>
+      <button className="bg-[#1B46E0] rounded-lg flex items-center justify-center text-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] w-full py-[14px] text-[18px] font-bold max-h-12 mt-[47px]">
+        Invest
+      </button>
 
       {inputToken &&
         !loadingOutputToken &&

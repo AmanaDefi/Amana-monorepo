@@ -100,7 +100,7 @@ export default function InputTokenWithError({
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
       <div className="flex items-center justify-between mb-3">
         {captionText && (
-          <div className="text-white text-start flex items-center gap-2">
+          <div className="text-white text-start flex text-[18px] font-bold items-center gap-2 mt-[53px]">
             {captionText}
             {isOutput && (
               <>
@@ -129,14 +129,18 @@ export default function InputTokenWithError({
             <p className="hidden lg:block">Transaction settings</p>
           )}
           {!isOutput && (
-            <SlippageSettingsModal setInputBalance={setInputBalance} vaultId={vaultData.id} />
+            <SlippageSettingsModal
+              setInputBalance={setInputBalance}
+              vaultId={vaultData.id}
+            />
           )}
         </div>
       </div>
       <div className="relative flex w-full flex-col">
         <div
-          className={`w-full px-5 pt-4 pb-3 rounded-lg border ${
-            errorMessage ? "border-red-500" : "border-customGray100"
+          style={{ boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.25)" }}
+          className={`w-full bg-[#161C27] pl-5 py-[11px] pr-[10px] rounded-lg border border-[#535E73] color-[#535E73] hover:border hover:border-[#3E73C4] transition-all duration-200 ${
+            errorMessage ? "color-[##ffc700]" : "color-[#535E73]"
           }`}
         >
           <div className="flex items-center justify-between ">
@@ -196,7 +200,7 @@ export default function InputTokenWithError({
                   ? // Removed the unnecessary .toString() call since formatCurrency already returns a string
                     // Changed the default value from "0" to "0.00" to maintain consistent decimal formatting
                     formatCurrency(
-                      Number(props.value || 0) * selectedTokenPrice
+                      Number(props.value || 0) * selectedTokenPrice,
                     )
                   : "0.00")
               ) : loadingOutputToken ? (
