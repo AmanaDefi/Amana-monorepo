@@ -240,6 +240,11 @@ abstract contract AmanaVaultBaseV1 is
         gasLimitForCall = _gasLimitCall;
     }
 
+    function setVaultNonce(uint256 newNonce) external onlyOwner {
+        if (newNonce <= lastProcessedNonce) revert InvalidNonce();
+        vaultNonce = newNonce;
+    }
+
     /**
      * @dev Switches the strategy of the vault. Can only be called by the owner.
      *      Divests from the current strategy and invests in the new one.
