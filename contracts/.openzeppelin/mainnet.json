@@ -1,0 +1,113 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0xcDC7cF7d291Dd496d4c3A22B74de60fA9Dba131F",
+      "txHash": "0x1bb4e6faba55dcefefbb3ddb74ec1ed775a37f978c8a67a524e928b0a488bb36",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "ca34e605370bdd5e193bfa9b231ab9a7268af3a39c2975fbeb0dbdfc02213b5c": {
+      "address": "0xfdDe5218bbaBc60E6Ad879Af2eeE18aFFc8f48FB",
+      "txHash": "0xc329490fec2d6e3195395d57ee5ac92c28507a1ee27283d6485438fdd3e43db0",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "priceOracleAddress",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address",
+            "contract": "SwapHelperParent",
+            "src": "contracts/SwapHelperParent.sol:31"
+          },
+          {
+            "label": "UNISWAP_V2_ROUTER",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "SwapHelperParent",
+            "src": "contracts/SwapHelperParent.sol:32"
+          },
+          {
+            "label": "UNISWAP_V2_FACTORY",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "SwapHelperParent",
+            "src": "contracts/SwapHelperParent.sol:33"
+          },
+          {
+            "label": "UNISWAP_V3_ROUTER",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_address",
+            "contract": "SwapHelperParent",
+            "src": "contracts/SwapHelperParent.sol:34"
+          },
+          {
+            "label": "UNISWAP_V3_FACTORY",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "SwapHelperParent",
+            "src": "contracts/SwapHelperParent.sol:35"
+          },
+          {
+            "label": "CURVE_REGISTRY",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "SwapHelperParent",
+            "src": "contracts/SwapHelperParent.sol:36"
+          },
+          {
+            "label": "intermediateToken",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_address",
+            "contract": "SwapHelperParent",
+            "src": "contracts/SwapHelperParent.sol:38"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
