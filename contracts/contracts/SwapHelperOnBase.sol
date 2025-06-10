@@ -57,7 +57,6 @@ contract SwapHelperOnBase is SwapHelperParent {
         } else if (token == axlOP) {
             console.log("Getting OP price");
             return opUsdPriceFeedId;
-            console.log("Got OP price");
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }

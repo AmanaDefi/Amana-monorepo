@@ -125,7 +125,11 @@ abstract contract SwapHelperParent is
         // Convert USD value to output token amount
         uint256 amountOut = (amountInUsd * (10 ** outputDecimals)) /
             outputPrice;
-
+        console.log(
+            "Calculated amountOut: %s %s",
+            amountOut,
+            IERC20Metadata(outputToken).symbol()
+        );
         // Apply slippage
         return amountOut - ((amountOut * slippageBps) / 10000);
     }
@@ -218,7 +222,6 @@ abstract contract SwapHelperParent is
         address tokenA,
         address tokenB
     ) internal view returns (bool exists, uint24 bestFeeTier) {
-        console.log("Searching for best V3 pool for %s and %s", tokenA, tokenB);
         uint24[4] memory tiers = [
             uint24(100),
             uint24(500),
@@ -235,6 +238,7 @@ abstract contract SwapHelperParent is
                 tokenB,
                 tiers[i]
             );
+
             if (pool != address(0)) {
                 uint128 liquidity = IUniswapV3Pool(pool).liquidity();
                 if (liquidity > highestLiquidity) {
