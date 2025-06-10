@@ -445,34 +445,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   // //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
   // //   },
   // // },
-  // {
-  //   id: "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE",
-  //   name: "msETH/WETH Pool",
-  //   type: "Liquidity Pool",
-  //   des: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since msETH and WETH are pegged to the same underlying asset (ETH), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
-  //   symbol: "aCurveETH",
-  //   imgURL: "/ETH.png",
-  //   depositFeePaidFromGasTank: false,
-  //   inputToken: {
-  //     symbol: "ETH.ETH",
-  //     decimals: 18,
-  //     address: ZC_ETH_ETH_ADDRESS,
-  //     imgURL: "/ETH.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Curve-Convex",
-  //     strategyAddress: "0x6faC704cdfF7D3AbE3a6671FAe7f6Ade296c516b",
-  //     rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
-  //     network: "Ethereum",
-  //     chainId: 1,
-  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-  //     imgURL: "/convex.png",
-  //     des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
-  //   },
-  // },
+  {
+    id: "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE",
+    name: "msETH/WETH Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since msETH and WETH are pegged to the same underlying asset (ETH), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+    symbol: "aCurveETH",
+    imgURL: "/ETH.png",
+    depositFeePaidFromGasTank: false,
+    inputToken: {
+      symbol: "ETH.ETH",
+      decimals: 18,
+      address: ZC_ETH_ETH_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve-Convex",
+      strategyAddress: "0x43a2332ac629D11DAAf2B6E94d5A808950a3df75",
+      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+    },
+  },
   // {
   //   id: "0x0552D4C51491D9bFeD97eb795E101E90a5F16d44",
   //   name: "USDT/USDe Pool",
@@ -557,34 +557,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
     },
   },
-  {
-    id: "0x19C5C50B3d02f6cDB47c06a12C625ee644bf5B4A",
-    name: "yUSD/USDC Pool",
-    type: "Liquidity Pool",
-    des: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer’s LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
-    symbol: "aBalancerUsdcBase",
-    imgURL: "/base.png",
-    depositFeePaidFromGasTank: true,
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Balancer",
-      strategyAddress: "0xa6AFeecdb93F0902987CC02854AA9707d9404B29",
-      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-      imgURL: "/balancer.png",
-      des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
-    },
-  },
+  // {
+  //   id: "0x19C5C50B3d02f6cDB47c06a12C625ee644bf5B4A",
+  //   name: "yUSD/USDC Pool",
+  //   type: "Liquidity Pool",
+  //   des: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer’s LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
+  //   symbol: "aBalancerUsdcBase",
+  //   imgURL: "/base.png",
+  //   depositFeePaidFromGasTank: true,
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Balancer",
+  //     strategyAddress: "0xa6AFeecdb93F0902987CC02854AA9707d9404B29",
+  //     rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/balancer.png",
+  //     des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
+  //   },
+  // },
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [
