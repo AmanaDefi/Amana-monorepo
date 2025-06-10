@@ -256,7 +256,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           return (
             <div key={step} className="flex flex-row gap-4 items-center">
               <div
-                className="rounded-full w-11 h-11 flex items-center justify-center"
+                className="rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: "#535E73" }}
               >
                 {getStepIcon(step)}
@@ -299,7 +299,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           return (
             <div key={step} className="flex flex-row gap-4 items-center">
               <div
-                className="rounded-full w-11 h-11 flex items-center justify-center relative"
+                className="rounded-full w-11 h-11 flex items-center justify-center relative flex-shrink-0"
                 style={{ backgroundColor: bgColor }}
               >
                 {getStepIcon(step)}

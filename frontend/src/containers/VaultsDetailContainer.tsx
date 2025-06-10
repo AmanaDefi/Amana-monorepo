@@ -272,14 +272,14 @@ const VaultsDetailContainer: React.FC<{
         selectedToken={selectedToken}
       />
 
-      <section className="w-full flex flex-col justify-between lg:flex-row gap-4 my-4 font-gotham">
+      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 my-4 font-gotham">
         <div>
           <VaultOverviewBlock
             vault={vaultData}
             vaultAPY={vaultAPYs.find((a) => a.vaultId === vaultID.toString())}
             totalAssets={vaultTotalAsset}
           />
-          <div className="bg-[#14171F] pt-6 px-5 rounded-[16px] min-w-[526px] mt-8">
+          <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
             <VaultInputs
               vaultData={vaultData}
               setTransactionCompleted={setTransactionCompleted}
@@ -293,7 +293,7 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
 
-        <div className="w-full max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           <Dropdown title="Information" defaultOpen={true}>
             <VaultInformationContent
               vaultData={vaultData}
@@ -306,26 +306,27 @@ const VaultsDetailContainer: React.FC<{
               <p className="text-white text-sm font-normal">Content</p>
             </Dropdown>
           ))}
-          <Dropdown
-            title={
-              isTransactionProcessing ||
-              Object.keys(transactionStepFeedback).length > 0
-                ? "Transaction Progress"
-                : "Deposit instruction"
-            }
-            defaultOpen={true}
-          >
-            <DepositInstruction
-              // Передаємо стан транзакції
-              transactionStepFeedback={transactionStepFeedback}
-              lastTransactionStepFeedback={lastTransactionStepFeedback}
-              finishedTransaction={finishedTransaction}
-              activeChainId={activeChainId}
-              vaultStrategyChainId={vaultData?.protocol?.chainId}
-              isDeposit={initialIsDeposit}
-              isProcessing={isTransactionProcessing}
-            />
-          </Dropdown>
+          {walletAddress && (
+            <Dropdown
+              title={
+                isTransactionProcessing ||
+                Object.keys(transactionStepFeedback).length > 0
+                  ? "Transaction Progress"
+                  : "Deposit instruction"
+              }
+              defaultOpen={true}
+            >
+              <DepositInstruction
+                transactionStepFeedback={transactionStepFeedback}
+                lastTransactionStepFeedback={lastTransactionStepFeedback}
+                finishedTransaction={finishedTransaction}
+                activeChainId={activeChainId}
+                vaultStrategyChainId={vaultData?.protocol?.chainId}
+                isDeposit={initialIsDeposit}
+                isProcessing={isTransactionProcessing}
+              />
+            </Dropdown>
+          )}
         </div>
       </section>
     </div>
