@@ -35,6 +35,10 @@ export async function setupVaultFixture() {
   const otherZRC20 = await ethers.getContractAt("IERC20", txConfig.otherZRC20Input);
   const vaultAsset = await ethers.getContractAt("IERC20", vaultConfig.asset);
   const rewardToken = await ethers.getContractAt("IERC20", vaultConfig.rewardToken);
+  const originZRC20Input = await ethers.getContractAt(
+    "IERC20",
+    txConfig.originZRC20Input
+  );
 
   let gatewaySigner = await setupGatewaySigner();
 
@@ -145,6 +149,7 @@ export async function setupVaultFixture() {
     txConfig,
     depositSwapData,
     withdrawSwapData,
+    originZRC20Input
   };
 }
 

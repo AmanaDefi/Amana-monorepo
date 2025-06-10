@@ -11,6 +11,7 @@ import "./interfaces/IAmanaRegistry.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
+import "./interfaces/IZapContract.sol";
 
 contract WithdrawHelper is Revertable {
     using SafeERC20 for IERC20;
@@ -144,6 +145,7 @@ contract WithdrawHelper is Revertable {
         address receiver,
         bytes memory nonEvmAddress,
         address withdrawZRC20,
+        address withdrawERC20,
         address vaultAsset,
         uint256 amount,
         uint256 minimumOut,
@@ -194,6 +196,7 @@ contract WithdrawHelper is Revertable {
                 amount,
                 receiver,
                 withdrawZRC20,
+                withdrawERC20,
                 vaultAsset,
                 registry,
                 msg.sender,
@@ -218,6 +221,7 @@ contract WithdrawHelper is Revertable {
         address receiver,
         bytes memory nonEvmAddress,
         address withdrawZRC20,
+        address withdrawERC20,
         address vaultAsset,
         uint256 amount,
         uint256 minimumOut,
@@ -314,6 +318,7 @@ contract WithdrawHelper is Revertable {
                 amount - amountToDeduct,
                 receiver,
                 withdrawZRC20,
+                withdrawERC20,
                 vaultAsset,
                 registry,
                 msg.sender,
@@ -557,6 +562,7 @@ contract WithdrawHelper is Revertable {
             uint256 amount,
             address receiver,
             address withdrawZRC20,
+            address withdrawERC20,
             address vaultAsset,
             address registry,
             address vault,
@@ -573,6 +579,7 @@ contract WithdrawHelper is Revertable {
                     address,
                     address,
                     address,
+                    address,
                     uint256,
                     bytes
                 )
@@ -582,19 +589,35 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
             if (context.amount > 0) {
-                bytes memory recipient;
-                if (nonEvmAddress.length > 0) {
-                    recipient = abi.encode(nonEvmAddress);
+                if (withdrawZRC20 == withdrawERC20) {
+                    IERC20(withdrawZRC20).approve(
+                        IAmanaRegistry(registry).zapContract(),
+                        context.amount
+                    );
+                    IZapContract(IAmanaRegistry(registry).zapContract())
+                        .zapSwapAndReturnToUser(
+                            context.amount,
+                            address(this),
+                            withdrawZRC20,
+                            withdrawZRC20,
+                            1000,
+                            receiver
+                        );
                 } else {
-                    recipient = abi.encodePacked(receiver);
+                    bytes memory recipient;
+                    if (nonEvmAddress.length > 0) {
+                        recipient = abi.encode(nonEvmAddress);
+                    } else {
+                        recipient = abi.encodePacked(receiver);
+                    }
+                    handleGasFeeAndWithdrawToUser(
+                        recipient,
+                        withdrawZRC20,
+                        context.amount,
+                        registry,
+                        vaultNonce
+                    );
                 }
-                handleGasFeeAndWithdrawToUser(
-                    recipient,
-                    withdrawZRC20,
-                    context.amount,
-                    registry,
-                    vaultNonce
-                );
             }
             _sendRevertToStrategy(
                 strategyAddress,
@@ -654,6 +677,7 @@ contract WithdrawHelper is Revertable {
             uint256 amount,
             address receiver,
             address withdrawZRC20,
+            address withdrawERC20,
             address vaultAsset,
             address registry,
             address vault,
@@ -670,6 +694,7 @@ contract WithdrawHelper is Revertable {
                     address,
                     address,
                     address,
+                    address,
                     uint256,
                     bytes
                 )
@@ -680,19 +705,35 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
             if (context.amount > 0) {
-                bytes memory recipient;
-                if (nonEvmAddress.length > 0) {
-                    recipient = abi.encode(nonEvmAddress);
+                if (withdrawZRC20 == withdrawERC20) {
+                    IERC20(withdrawZRC20).approve(
+                        IAmanaRegistry(registry).zapContract(),
+                        context.amount
+                    );
+                    IZapContract(IAmanaRegistry(registry).zapContract())
+                        .zapSwapAndReturnToUser(
+                            context.amount,
+                            address(this),
+                            withdrawZRC20,
+                            withdrawZRC20,
+                            1000,
+                            receiver
+                        );
                 } else {
-                    recipient = abi.encodePacked(receiver);
+                    bytes memory recipient;
+                    if (nonEvmAddress.length > 0) {
+                        recipient = abi.encode(nonEvmAddress);
+                    } else {
+                        recipient = abi.encodePacked(receiver);
+                    }
+                    handleGasFeeAndWithdrawToUser(
+                        recipient,
+                        withdrawZRC20,
+                        context.amount,
+                        registry,
+                        vaultNonce
+                    );
                 }
-                handleGasFeeAndWithdrawToUser(
-                    recipient,
-                    withdrawZRC20,
-                    context.amount,
-                    registry,
-                    vaultNonce
-                );
             }
             _sendRevertToStrategy(
                 strategyAddress,
