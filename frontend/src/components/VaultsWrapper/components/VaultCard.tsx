@@ -66,7 +66,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="text-white font-bold text-xl leading-5 -tracking-1">
                   {vault.name.replace("Pool", "").replace("Lend", "")}
                 </p>
-                <p className="text-white text-sm leading-4">Lend Pool</p>
+                <p className="text-white text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis">
+                  Lend Pool
+                </p>
               </div>
               <p className="text-white text-sm leading-4">
                 on {vault.protocol.name}

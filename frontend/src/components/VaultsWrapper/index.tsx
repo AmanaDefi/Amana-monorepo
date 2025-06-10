@@ -171,7 +171,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           <div
             className="grid gap-4"
             style={{
-              gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
             }}
           >
             {paginatedVaults.map((vault) => (
