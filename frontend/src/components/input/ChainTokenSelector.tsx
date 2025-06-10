@@ -648,7 +648,10 @@ export default function ChainTokenSelector({
   }, [selectedToken, walletAddress, findClosestToken]);
 
   return (
-    <div className="chain-token-selector relative" ref={dropdownRef}>
+    <div
+      className="chain-token-selector relative whitespace-nowrap"
+      ref={dropdownRef}
+    >
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -658,7 +661,7 @@ export default function ChainTokenSelector({
           }
           setIsOpen(!isOpen);
         }}
-        className={`fluid-hover-button flex items-center space-x-2 rounded-lg px-4 py-2 ${className}`}
+        className={`flex items-center space-x-2 rounded-lg ${className}`}
       >
         {displayContent}
         <ChevronDownIcon

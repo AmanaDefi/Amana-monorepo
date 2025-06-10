@@ -143,21 +143,22 @@ const VaultsDetailContainer: React.FC<{
           selectedToken={selectedToken}
         />
 
-        <section className="w-full flex flex-col lg:flex-row gap-4 my-4 font-gotham">
-          <div className="w-full ">
-            <div className="bg-[#14171F] pt-6 px-5 pb-3 rounded-[16px]">
-                <VaultInputs
-                  vaultData={vaultData}
-                  setTransactionCompleted={setTransactionCompleted}
-                  userVaultBalance={userVaultBalance}
-                  vaultTotalAssetinToken={vaultTotalAssetinToken}
-                  transactionCompleted={transactionCompleted}
-                  initialIsDeposit={initialIsDeposit}
-                  onTokenSelect={handleTokenSelect}
-                  selectedToken={selectedToken}
-                />
+        <section className="w-full flex flex-col justify-between lg:flex-row gap-4 my-4 font-gotham">
+          <div>
+            <div className="bg-[#14171F] pt-6 px-5 pb-3 rounded-[16px] min-w-[526px]">
+              <VaultInputs
+                vaultData={vaultData}
+                setTransactionCompleted={setTransactionCompleted}
+                userVaultBalance={userVaultBalance}
+                vaultTotalAssetinToken={vaultTotalAssetinToken}
+                transactionCompleted={transactionCompleted}
+                initialIsDeposit={initialIsDeposit}
+                onTokenSelect={handleTokenSelect}
+                selectedToken={selectedToken}
+              />
             </div>
           </div>
+
           <div className="w-full max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
             <Dropdown title="Information" defaultOpen={true}>
               <VaultInformationContent

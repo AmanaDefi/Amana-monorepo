@@ -6,14 +6,13 @@ export default function InputNumber(
   return (
     <input
       {...props}
-      className="block w-full p-0 border-none text-customGray100 text-2xl bg-inherit focus:ring-0"
+      className="w-full h-[31px] p-0 border-none text-white text-2xl bg-inherit focus:ring-0 focus:outline-none"
       inputMode="decimal"
       autoComplete="off"
       autoCorrect="off"
       // text-specific options
       type="text"
       pattern="^[0-9]*[.,]?[0-9]*$"
-      placeholder={"0.0"}
       spellCheck="false"
     />
   );

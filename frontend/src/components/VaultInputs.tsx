@@ -1047,7 +1047,6 @@ export default function VaultInputs({
         </div>
       )}
       <TabSelector
-        className="mb-5"
         availableTabs={["Deposit", "Withdraw"]}
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
@@ -1076,13 +1075,13 @@ export default function VaultInputs({
         isSlippageExceedingLimit={isSlippageExceedingLimit}
         setInputBalance={setInputBalance}
       />
-      <div className="w-full mt-10 flex items-center justify-center">
+      <div className="w-full  my-10 flex items-center justify-center">
         <button className="group flex-center p-2" onClick={switchTokens}>
           <DepositModalArrowsIcon width={24} height={24} />
         </button>
       </div>
       <InputTokenWithError
-        captionText={"Output amount"}
+        captionText={"Output Amount"}
         onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
         allowInput={allowInput}
         vaultData={vaultData}
