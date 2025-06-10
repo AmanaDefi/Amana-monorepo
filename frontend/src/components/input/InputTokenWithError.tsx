@@ -147,7 +147,6 @@ export default function InputTokenWithError({
           }`}
         >
           <div className="flex items-center justify-between text-sm text-[#535E73]">
-            {/* Показуємо текст і кнопку MAX тільки якщо це НЕ output */}
             {!isOutput && (
               <>
                 <span>You send (min 0.0015)</span>
@@ -159,7 +158,6 @@ export default function InputTokenWithError({
                 </button>
               </>
             )}
-            {/* Показуємо тільки суму в доларах */}
             <p className="group-hover/max:text-white">
               {isDeposit && !isOutput ? (
                 "$ " +

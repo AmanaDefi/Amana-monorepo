@@ -1033,6 +1033,34 @@ export default function VaultInputs({
     vaultData,
   ]);
 
+  const isButtonDisabled = useMemo(() => {
+    return (
+      !walletAddress ||
+      !inputBalance.formatted ||
+      Number(inputBalance.formatted) <= 0 ||
+      !!errorMessage ||
+      !!outputBoxErrorMessage ||
+      loadingOutputToken ||
+      (isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "")))
+    );
+  }, [
+    walletAddress,
+    inputBalance.formatted,
+    errorMessage,
+    outputBoxErrorMessage,
+    loadingOutputToken,
+    isDeposit,
+    vaultData.depositFeePaidFromGasTank,
+    debouncedInputBalance.value,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+  ]);
+
   return (
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}
@@ -1241,8 +1269,15 @@ export default function VaultInputs({
           </span>
         </div>
       </div>
-      <button className="bg-[#1B46E0] rounded-lg flex items-center justify-center text-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] w-full py-[14px] text-[18px] font-bold max-h-12 mt-[47px]">
-        Invest
+      <button
+        className={`rounded-lg flex items-center justify-center text-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] w-full py-[14px] text-[18px] font-bold max-h-12 mt-[47px] transition-colors ${
+          isButtonDisabled
+            ? "bg-gray-600 cursor-not-allowed"
+            : "bg-[#1B46E0] hover:bg-[#1540CC]"
+        }`}
+        disabled={isButtonDisabled}
+      >
+        {!walletAddress ? "Connect Wallet" : isDeposit ? "Invest" : "Withdraw"}
       </button>
 
       {inputToken &&
