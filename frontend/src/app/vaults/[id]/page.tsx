@@ -26,8 +26,8 @@ function Index({}) {
   return (
     <>
       {(account || wallet) && (
-        <div className="flex-1 flex flex-col w-full justify-between py-20 pl-6">
-          <div className="flex-1">
+        <div className="flex-1 flex flex-col w-full justify-between pl-6">
+          <div className="flex-1 mt-8">
             <VaultsDetailContainer vaultID={id} setVaultSymbol={setVaultSymbol} />
           </div>
         </div>
