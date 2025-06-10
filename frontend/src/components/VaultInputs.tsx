@@ -51,6 +51,7 @@ import {
 import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import ErrorInputIcon from "./svg/ErrorInputIcon";
 import Button from "./Button";
+import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -1248,22 +1249,12 @@ export default function VaultInputs({
           {/* Performance Fee */}
           <span className="flex flex-row items-center justify-between text-white py-1">
             <div className="flex items-center">
-              <button id="gas-fee-info" className="mr-[10px] group">
-                <ErrorInputIcon
-                  width={14}
-                  height={14}
-                  className="!fill-[#1B46E0]"
-                />
-              </button>
+              <div className="flex items-center mr-[10px]">
+                <InfoBlock>
+                  💡 15% deducted from the profit earned in the vault
+                </InfoBlock>
+              </div>
               <p>Performance Fee (deducted upon withdrawal)</p>
-              <ResponsiveTooltip
-                id={"performance-fee-info"}
-                content={
-                  <p className="w-60">
-                    15% deducted from the profit earned in the vault
-                  </p>
-                }
-              />
             </div>
             <span className="font-bold">{performanceFee}%</span>
           </span>

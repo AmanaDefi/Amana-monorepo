@@ -168,15 +168,6 @@ const VaultsDetailContainer: React.FC<{
     router.push(backPath);
   };
 
-  const [inputToken, setInputToken] = useState<Token | undefined>();
-  const { balance: walletTokenBalance } = useMultichainTokenBalance(inputToken);
-  const walletTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
-  console.log({
-    inputToken,
-    userVaultBalance,
-    vaultData,
-  });
-
   return vaultData ? (
     <div className="overflow-x-auto font-gotham">
       <InvestBlock />

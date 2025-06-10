@@ -14,7 +14,7 @@ export const InfoBlock = ({
   isMiddle?: boolean;
 }) => {
   return (
-    <div className="hover:cursor-pointer relative group">
+    <div className="hover:cursor-pointer relative group ">
       <InfoIcon />
       <div
         className={classNames(
