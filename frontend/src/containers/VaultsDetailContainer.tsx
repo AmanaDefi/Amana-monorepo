@@ -39,6 +39,7 @@ import TokenIcon from "@/components/common/TokenIcon";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
+import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -253,6 +254,9 @@ const VaultsDetailContainer: React.FC<{
               <p className="text-white text-sm font-normal">Content</p>
             </Dropdown>
           ))}
+          <Dropdown title="Deposit instruction" defaultOpen={true}>
+            <DepositInstruction />
+          </Dropdown>
         </div>
       </section>
     </div>
