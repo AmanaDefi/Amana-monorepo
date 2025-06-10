@@ -60,7 +60,6 @@ abstract contract AmanaVaultBase is
         address withdrawERC20;
         uint256 amount;
         uint256 minOut;
-        uint256 minOut;
         uint32 withdrawChainId;
         bool isDeposit;
         uint256 totalAssetsAfter;
