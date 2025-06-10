@@ -506,15 +506,31 @@ export default function InteractionContainer({
     console.log("🔧 [DONE-BUTTON-DEBUG] actions useEffect triggered", {
       actionsLength: actions.length,
       finishedTransaction,
-      hasTransactionSteps: Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0
+      hasTransactionSteps: Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0,
+      isTransactionStarted,
+      isTransactionProcessing
     });
     
-    setAction(_action);
-    setStep(0);
+    // 🔧 CRITICAL FIX: Don't reset action/step if we're in the middle of a transaction
+    // This prevents the button label from going back to "Approve" during transaction flow
+    if (!isTransactionStarted && !isTransactionProcessing && !finishedTransaction) {
+      console.log("🔧 [DONE-BUTTON-DEBUG] Safe to reset action and step");
+      setAction(_action);
+      setStep(0);
+    } else {
+      console.log("🔧 [DONE-BUTTON-DEBUG] NOT resetting action/step - transaction in progress or completed", {
+        isTransactionStarted,
+        isTransactionProcessing,
+        finishedTransaction
+      });
+    }
     
     // Reset transaction processing states when actions change (new vault)
-    setIsTransactionProcessing(false);
-    setIsTransactionStarted(false);
+    // Only reset if we're truly changing vaults (not during transaction flow)
+    if (!isTransactionStarted && !isTransactionProcessing && !finishedTransaction) {
+      setIsTransactionProcessing(false);
+      setIsTransactionStarted(false);
+    }
     
     // 🚨 CRITICAL FIX: Don't reset finishedTransaction if we have completed transaction steps
     // This prevents the Done button from disappearing after successful completion
@@ -529,7 +545,7 @@ export default function InteractionContainer({
         hasCompletedTransactionSteps
       });
     }
-  }, [actions, finishedTransaction, transactionStepFeedback, lastTransactionStepFeedback]);
+  }, [actions]);
 
   // Simplified BlockPI tracking without complex callbacks
   useEffect(() => {
@@ -985,7 +1001,19 @@ function Interaction({
       console.log("🔍 [POST-HOOK] - Action.depositConfirmed:", Action.depositConfirmed);
       console.log("🔍 [POST-HOOK] - actions[step + 1] == Action.depositConfirmed:", actions[step + 1] == Action.depositConfirmed);
       
-      if (action == Action.deposit && actions[step + 1] == Action.depositConfirmed) {
+      // 🔧 CRITICAL FIX: Handle both Type 2 and Type 4 deposit transactions
+      // Type 2: action=deposit, next might be crosschainInvest or deposited directly
+      // Type 4: action=deposit, next should be depositConfirmed
+      const isDepositFlow = action == Action.deposit;
+      const hasDepositConfirmed = actions[step + 1] == Action.depositConfirmed;
+      const isType2Flow = isDepositFlow && !hasDepositConfirmed; // Type 2 doesn't have depositConfirmed
+      
+      console.log("🔍 [POST-HOOK] Flow analysis:");
+      console.log("🔍 [POST-HOOK] - isDepositFlow:", isDepositFlow);
+      console.log("🔍 [POST-HOOK] - hasDepositConfirmed:", hasDepositConfirmed);
+      console.log("🔍 [POST-HOOK] - isType2Flow:", isType2Flow);
+      
+      if (isDepositFlow && (hasDepositConfirmed || isType2Flow)) {
         console.log("🏦 [POST-HOOK] === DEPOSIT TO DEPOSIT CONFIRMED TRANSITION ===");
         console.log('📍 [POST-HOOK] Current step:', step, 'Next step:', step + 1);
         console.log('➡️ [POST-HOOK] Next action should be:', actions[step + 1], `(${Action[actions[step + 1]]})`);
@@ -1031,22 +1059,34 @@ function Interaction({
         setIsTransactionProcessing(false);
         console.log("⏸️ [POST-HOOK] Set isTransactionProcessing to false");
         
-        const nextStep = step + 1;
-        console.log('➡️ [POST-HOOK] Setting action to:', actions[nextStep], `(${Action[actions[nextStep]]})`, 'and step to:', nextStep);
-        
-        // CRITICAL FIX: Ensure the next action exists before updating state
-        if (actions[nextStep] === undefined) {
-          console.error(`🚨 [POST-HOOK] CRITICAL ERROR: Action at index ${nextStep} is undefined. actions array:`, actions);
-          return; // Don't update state if the next action is undefined
+        if (hasDepositConfirmed) {
+          // Type 4 flow: move to depositConfirmed
+          const nextStep = step + 1;
+          console.log('➡️ [POST-HOOK] Type 4: Setting action to:', actions[nextStep], `(${Action[actions[nextStep]]})`, 'and step to:', nextStep);
+          
+          // CRITICAL FIX: Ensure the next action exists before updating state
+          if (actions[nextStep] === undefined) {
+            console.error(`🚨 [POST-HOOK] CRITICAL ERROR: Action at index ${nextStep} is undefined. actions array:`, actions);
+            return; // Don't update state if the next action is undefined
+          }
+          
+          // Set both state updates in a single render cycle to prevent inconsistency
+          setTimeout(() => {
+            console.log(`✅ [POST-HOOK] SAFE UPDATE: Setting action to ${Action[actions[nextStep]]} and step to ${nextStep}`);
+            setAction(actions[nextStep]);
+            setStep(nextStep);
+            console.log("🔄 [POST-HOOK] Action and step updated in sync - this should trigger BlockPI effect");
+          }, 50);
+        } else if (isType2Flow) {
+          // Type 2 flow: transition directly to depositConfirmed for BlockPI tracking
+          console.log('➡️ [POST-HOOK] Type 2: Setting action to depositConfirmed for BlockPI tracking');
+          setTimeout(() => {
+            console.log(`✅ [POST-HOOK] Type 2: Setting action to depositConfirmed and keeping step at ${step}`);
+            setAction(Action.depositConfirmed);
+            // Don't increment step for Type 2, let BlockPI handle the progression
+            console.log("🔄 [POST-HOOK] Type 2: Action set to depositConfirmed - this should trigger BlockPI effect");
+          }, 50);
         }
-        
-        // Set both state updates in a single render cycle to prevent inconsistency
-        setTimeout(() => {
-          console.log(`✅ [POST-HOOK] SAFE UPDATE: Setting action to ${Action[actions[nextStep]]} and step to ${nextStep}`);
-          setAction(actions[nextStep]);
-          setStep(nextStep);
-          console.log("🔄 [POST-HOOK] Action and step updated in sync - this should trigger BlockPI effect");
-        }, 50);
       } else {
         console.log("⏭️ [POST-HOOK] Deposit condition not met, checking withdraw...");
       }
@@ -1097,11 +1137,19 @@ function Interaction({
       }
       
       // If no conditions were met, log it
+      const depositConditionMet = action == Action.deposit && (actions[step + 1] == Action.depositConfirmed || !actions.includes(Action.depositConfirmed));
       if (!(actions[step + 1] == Action.depositApproveConfirmed) && 
-          !(action == Action.deposit && actions[step + 1] == Action.depositConfirmed) &&
+          !depositConditionMet &&
           !(action == Action.withdraw && actions[step + 1] == Action.withdrawconfirmed)) {
         console.log("🤔 [POST-HOOK] NO SUCCESS CONDITIONS MET!");
         console.log("🤔 [POST-HOOK] This might be why the UI shows failure even though transaction succeeded");
+        console.log("🤔 [POST-HOOK] Debug info:", {
+          action: Action[action],
+          step,
+          nextAction: actions[step + 1] ? Action[actions[step + 1]] : 'undefined',
+          actions: actions.map(a => Action[a]),
+          depositConditionMet
+        });
       }
       
     } else {
