@@ -150,7 +150,7 @@ contract SwapHelperBnb is SwapHelperParent {
         uint256 amount,
         address outputToken,
         uint16 slippageBps,
-        address receiver,
+        address,
         uint256 maxDeadline,
         bytes calldata /* data */
     ) external override returns (uint256 amountOut) {
@@ -230,8 +230,9 @@ contract SwapHelperBnb is SwapHelperParent {
             )
         {
             console.log("Universal Router V4 swap executed");
-            amountOut = IERC20(outputToken).balanceOf(receiver);
+            amountOut = IERC20(outputToken).balanceOf(address(this));
             console.log("Amount out: %s of %s", amountOut, outputToken);
+            IERC20(outputToken).transfer(msg.sender, amountOut);
         } catch (bytes memory errorData) {
             console.log("Universal Router V4 swap failed");
             console.logBytes(errorData);

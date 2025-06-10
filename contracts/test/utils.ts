@@ -556,6 +556,12 @@ export function isConvexStrategy(name: string): boolean {
   ].includes(name);
 }
 
+export function isAegisStrategy(name: string): boolean {
+  return [
+    "AegisERC20Strategy"
+  ].includes(name);
+}
+
 export function isBalancerStrategy(name: string): boolean {
   return name.toLowerCase().includes("balancer");
 }

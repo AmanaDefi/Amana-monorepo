@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ERC20StrategyParent.sol";
 
 import "../interfaces/ISwapHelper.sol";
-import "../interfaces/I4626Vault.sol";
+import "../interfaces/IAegisStakingVault.sol";
 
 import "hardhat/console.sol";
 
@@ -16,6 +16,7 @@ contract AegisERC20Strategy is ERC20StrategyParent {
 
     address public receiptToken;
     uint256 public inputTokenIndex;
+    IAegisStakingVault public stakingVault;
 
     function initialize(
         string memory _name,
@@ -25,7 +26,7 @@ contract AegisERC20Strategy is ERC20StrategyParent {
         address _swapHelper,
         address _receiptTokenAddress, // this is YUSD
         address _inputTokenAddress, // inputToken
-        address, // _liquidityGaugeAddress, // this is the YUSD staking gauge
+        address _stakingVault, // this is the YUSD staking gauge
         address /* _rewardsTokenAddress — not needed */,
         uint256 // _inputTokenIndex - not needed
     ) external initializer {
@@ -41,25 +42,18 @@ contract AegisERC20Strategy is ERC20StrategyParent {
         swapHelper = _swapHelper;
 
         receiptToken = _receiptTokenAddress;
+
+        stakingVault = IAegisStakingVault(_stakingVault);
     }
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
         uint256 minAmountOut
     ) internal override {
-        // need to check if we swap USDC into YUSD first, or if we can directly deposit USDC into the sYUSD 4626 vault
-        // swap USDC into YUSD - either uniswap or curve on BNB
-        // need to create a BNB swapHelper for this
-        // stake YUSD into sYUSD
-        // check min out
         require(amount > 0, "Deposit amount must be greater than zero");
 
         IERC20(inputToken).transfer(address(swapHelper), amount);
-        console.log(
-            "Depositing %s of input token %s into swapHelper",
-            amount,
-            address(inputToken)
-        );
+
         // Swap input token to receipt token (YUSD)
         uint256 amountOut = ISwapHelper(swapHelper).swap(
             address(inputToken),
@@ -70,47 +64,48 @@ contract AegisERC20Strategy is ERC20StrategyParent {
             9999,
             "0x"
         );
-        console.log(
-            "Amount out after swap from %s to %s: %s",
-            address(inputToken),
-            receiptToken,
+        approveOrIncreaseAllowance(
+            IERC20(receiptToken),
+            address(stakingVault),
             amountOut
         );
-        require(amountOut >= minAmountOut, "Insufficient output amount");
+
+        uint256 amountStaked = stakingVault.deposit(amountOut, address(this));
+        console.log("Deposited %s YUSD into stakingVault", amountOut);
+        require(amountStaked >= minAmountOut, "Insufficient output amount");
+    }
+
+    function coolDown(uint256 assetAmount) external {
+        // Cooldown the assets in the staking vault
+        stakingVault.cooldownAssets(assetAmount, address(this));
     }
 
     function _withdrawFundsFromYieldSource(
         uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        harvest();
+        // uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
 
-        uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
-        uint256 yusdToWithdraw = convertToShares(assetAmount);
-        console.log(
-            "Shares to withdraw based on asset amount %s: %s",
-            assetAmount,
-            yusdToWithdraw
-        );
-        if (totalinYusd > 0 && totalinYusd - yusdToWithdraw <= 1e3) {
-            yusdToWithdraw = totalinYusd;
-            console.log(
-                "Rounding up to withdraw full staked balance: %s",
-                yusdToWithdraw
-            );
-        }
-        IERC20(receiptToken).transfer(address(swapHelper), yusdToWithdraw);
+        stakingVault.unstake(address(this));
 
+        // uint256 yusdOut = stakingVault.withdraw(
+        //     assetAmount,
+        //     address(this),
+        //     address(this)
+        // );
+        console.log("Withdrew %s YUSD from stakingVault", assetAmount);
+        IERC20(receiptToken).transfer(address(swapHelper), assetAmount);
+        console.log("Swapping %s YUSD to input token", assetAmount);
         uint256 amountOut = ISwapHelper(swapHelper).swap(
             receiptToken,
-            yusdToWithdraw,
+            assetAmount,
             address(inputToken),
             500,
             address(this),
             9999,
             "0x"
         );
-
+        console.log("Swapped to %s input token", amountOut);
         require(amountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = amountOut;
     }
