@@ -1258,8 +1258,8 @@ export const executeSolanaWithdrawal = async (
   const args = {
     types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
     values: [
-      withdrawZRC20,
-      getSolanaEVMAddress(splMint), // or just splMint?
+      withdrawZRC20.address,
+      getSolanaEVMAddress(splMint),
       withdrawAssetAmount,
       minAmountOut,
       slippageValue,
