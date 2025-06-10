@@ -646,8 +646,9 @@ export async function calculateCompoundAPY(
   });
 
   const currentSupplyRateScaled = Number(currentSupplyRate) / Number(1e18);
-
+  console.log("Current Supply Rate Scaled:", currentSupplyRateScaled);
   const currentAPY = Math.pow(1 + currentSupplyRateScaled, secondsInAYear) - 1;
+  console.log("Current APY:", currentAPY);
   return currentAPY;
 }
 
@@ -664,68 +665,68 @@ export async function calculateCompoundRewardsAPY(
   strategyChain: Chain,
   compUsdPrice: number
 ): Promise<number> {
-  const cometContract = getContract({
-    client,
-    chain: strategyChain,
-    address: cometAddress,
-  });
+  // const cometContract = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: cometAddress,
+  // });
 
-  let baseTrackingSupplySpeed = await readContract({
-    contract: cometContract,
-    method: "function baseTrackingSupplySpeed() view returns (uint256)",
-  });
+  // let baseTrackingSupplySpeed = await readContract({
+  //   contract: cometContract,
+  //   method: "function baseTrackingSupplySpeed() view returns (uint256)",
+  // });
 
-  // Get the CometRewards contract
-  const rewardsContract = getContract({
-    client,
-    chain: strategyChain,
-    address: rewardsContractAddress,
-  });
-  const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+  // // Get the CometRewards contract
+  // const rewardsContract = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: rewardsContractAddress,
+  // });
+  // const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
 
-  // Fetch COMP reward emission per second
-  const rewardConfig = await readContract({
-    contract: rewardsContract,
-    method:
-      "function rewardConfig(address) view returns (address token, uint64 rescaleFactor, bool shouldUpscale)",
-    params: [cometAddress],
-  });
-  const rescaleFactor = rewardConfig[1];
-  const shouldUpscale = rewardConfig[2];
+  // // Fetch COMP reward emission per second
+  // const rewardConfig = await readContract({
+  //   contract: rewardsContract,
+  //   method:
+  //     "function rewardConfig(address) view returns (address token, uint64 rescaleFactor, bool shouldUpscale)",
+  //   params: [cometAddress],
+  // });
+  // const rescaleFactor = rewardConfig[1];
+  // const shouldUpscale = rewardConfig[2];
+  // // if (shouldUpscale) {
+  // //   baseTrackingSupplySpeed *= rescaleFactor
+  // // } else {
+  // //   baseTrackingSupplySpeed /= rescaleFactor
+  // // }
+
+  // const totalSupply = await readContract({
+  //   contract: cometContract,
+  //   method: "function totalSupply() view returns (uint256)",
+  // });
+
+  // // Calculate rewards APY:
+
+  // // Ensure baseTrackingSupplySpeed is a BigInt before dividing
+  // const baseTrackingSupplySpeedBN = BigInt(baseTrackingSupplySpeed);
+
+  // // Apply rescale factor adjustment
+  // let scaledAPR: bigint;
   // if (shouldUpscale) {
-  //   baseTrackingSupplySpeed *= rescaleFactor
+  //   scaledAPR = baseTrackingSupplySpeedBN * BigInt(rescaleFactor);
   // } else {
-  //   baseTrackingSupplySpeed /= rescaleFactor
+  //   scaledAPR = baseTrackingSupplySpeedBN / BigInt(rescaleFactor);
   // }
 
-  const totalSupply = await readContract({
-    contract: cometContract,
-    method: "function totalSupply() view returns (uint256)",
-  });
+  // // Convert scaledAPR to a number
+  // const apr = Number(scaledAPR) / 1e18;
+  // if (apr <= 0) {
+  //   throw new Error("Invalid APR value: APR should be greater than 0.");
+  // }
 
-  // Calculate rewards APY:
+  // // Convert APR to APY using continuous compounding
+  // const rewardsAPY = Math.exp(apr) - 1;
 
-  // Ensure baseTrackingSupplySpeed is a BigInt before dividing
-  const baseTrackingSupplySpeedBN = BigInt(baseTrackingSupplySpeed);
-
-  // Apply rescale factor adjustment
-  let scaledAPR: bigint;
-  if (shouldUpscale) {
-    scaledAPR = baseTrackingSupplySpeedBN * BigInt(rescaleFactor);
-  } else {
-    scaledAPR = baseTrackingSupplySpeedBN / BigInt(rescaleFactor);
-  }
-
-  // Convert scaledAPR to a number
-  const apr = Number(scaledAPR) / 1e18;
-  if (apr <= 0) {
-    throw new Error("Invalid APR value: APR should be greater than 0.");
-  }
-
-  // Convert APR to APY using continuous compounding
-  const rewardsAPY = Math.exp(apr) - 1;
-
-  return Number(0.02); // TODO replace with proper value
+  return Number(0); // currently no rewards for our Compound V3 vault
 }
 
 export async function calculateVenusAPY(
