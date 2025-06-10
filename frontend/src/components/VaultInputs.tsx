@@ -28,8 +28,7 @@ import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
-  getAmountOutFromSwap,
-  getAssetsFromShares,
+  getPathDataAndAmountOut,
   getPerformanceFee,
   getSharesFromDeposit,
 } from "@/actions/actions";
@@ -117,8 +116,16 @@ export default function VaultInputs({
     // Only update if the state is different from what it should be
     if (isDeposit !== shouldBeDeposit) {
       setIsDeposit(shouldBeDeposit);
+      
+      // 🧪 TESTING: Log UI state changes
+      console.log("=== UI STATE TESTING ===");
+      console.log(`🔄 Tab changed to: ${shouldBeDeposit ? 'DEPOSIT' : 'WITHDRAW'}`);
+      console.log(`💰 Vault underlying token: ${vaultData.inputToken.symbol}`);
+      console.log(`🏦 Vault share token: ${vaultData.symbol}`);
+      console.log(`📊 Balance shown will be: ${shouldBeDeposit ? 'user wallet balance' : 'maxWithdraw amount'}`);
+      console.log("========================");
     }
-  }, [tabParam, searchParams]);
+  }, [tabParam, searchParams, vaultData.inputToken.symbol, vaultData.symbol]);
 
   // // Check if user has balance for withdrawal if tab=withdraw
   // useEffect(() => {
@@ -263,6 +270,17 @@ export default function VaultInputs({
         const actionType = isDeposit
           ? SmartVaultActionType.Deposit
           : SmartVaultActionType.Withdrawal;
+        
+        console.log("🔧 [ACTIONS] === SELECTING ACTIONS ===");
+        console.log("🔧 [ACTIONS] - actionType:", actionType === SmartVaultActionType.Deposit ? 'Deposit' : 'Withdrawal');
+        console.log("🔧 [ACTIONS] - vaultData.symbol:", vaultData.symbol);
+        console.log("🔧 [ACTIONS] - activeChain:", activeChain?.name, `(${activeChain?.id})`);
+        console.log("🔧 [ACTIONS] - walletAddress:", walletAddress);
+        console.log("🔧 [ACTIONS] - inputBalance.value:", inputBalance.value.toString());
+        console.log("🔧 [ACTIONS] - inputToken.symbol:", inputToken.symbol);
+        console.log("🔧 [ACTIONS] - inputToken.address:", inputToken.address);
+        console.log("🔧 [ACTIONS] - inputToken.isNative:", inputToken.isNative);
+        
         const newStepsConfig = await selectActions(
           actionType,
           vaultData,
@@ -271,14 +289,17 @@ export default function VaultInputs({
           inputBalance,
           inputToken
         );
+        
         setSteps(newStepsConfig);
-        console.log(
-          "SETTING ACTION STEPS: ",
-          newStepsConfig,
-          newStepsConfig.map((e) => Action[e])
-        );
+        console.log("🔧 [ACTIONS] === ACTIONS SELECTED ===");
+        console.log("🔧 [ACTIONS] Raw actions:", newStepsConfig);
+        console.log("🔧 [ACTIONS] Mapped actions:", newStepsConfig.map((e, i) => `${i}: ${Action[e]}`));
+        console.log("🔧 [ACTIONS] First action:", Action[newStepsConfig[0]]);
+        console.log("🔧 [ACTIONS] Second action:", newStepsConfig[1] ? Action[newStepsConfig[1]] : 'undefined');
+        console.log("🔧 [ACTIONS] === END ACTION SELECTION ===");
       } else {
         setSteps([]);
+        console.log("🔧 [ACTIONS] No valid input, clearing steps");
       }
     };
     // Call the async function
@@ -444,13 +465,15 @@ export default function VaultInputs({
       console.log("Double Box - Starting getWithdrawOutputAmount:", {
         inputAmountValue: inputAmountValue.toString(),
       });
-      const assetsAmount = await getAssetsFromShares(
-        inputAmountValue,
-        vaultData
-      );
-      console.log("Double Box - Assets from shares:", {
+      
+      // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
+      // So we don't need to convert from shares to assets - the input IS the asset amount
+      let assetsAmount = inputAmountValue;
+      
+      console.log("Double Box - Assets amount (direct from input):", {
         assetsAmount: assetsAmount.toString(),
       });
+      
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;
@@ -462,12 +485,13 @@ export default function VaultInputs({
       });
       let tokenConversionAmount = assetsAmount;
       if (actualInputToken.address !== vaultData.inputToken.address) {
-        tokenConversionAmount = await getAmountOutFromSwap(
+         const result = await getPathDataAndAmountOut(
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
           vaultData.id as Address
         );
+        tokenConversionAmount = result.amountOut
       }
       console.log("Double Box - Conversion amounts:", {
         tokenConversionAmount: tokenConversionAmount.toString(),
@@ -545,12 +569,13 @@ export default function VaultInputs({
       });
       let assetsConversionAmount: bigint = inputAmountValue;
       if (actualInputToken.address !== vaultData.inputToken.address) {
-        assetsConversionAmount = await getAmountOutFromSwap(
+         const result = await getPathDataAndAmountOut(
           inputAmountValue,
           actualInputToken,
           vaultData.inputToken,
           vaultData.id as Address
         );
+        assetsConversionAmount = result.amountOut;
       }
 
       console.log("Double Box - Pre Gas Conversion amounts:", {
@@ -592,12 +617,13 @@ export default function VaultInputs({
 
         if (gasZRC20 !== vaultData.inputToken.address) {
           // Convert fee from gas token into vault asset terms
-          gasFeeInVaultAsset = await getAmountOutFromSwap(
+          const result = await getPathDataAndAmountOut(
             gasFee,
             ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
             vaultData.inputToken,
             vaultData.id as Address
           );
+          gasFeeInVaultAsset =result.amountOut;
         }
         // Format gas fee in USD and ETH
         const gasFeeInTokenUnits = Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
@@ -754,13 +780,38 @@ export default function VaultInputs({
 
   // Reset input state after transaction completes or fails
   useEffect(() => {
+    console.log('🔄 [VAULT-INPUTS] transactionCompleted effect triggered:', {
+      transactionCompleted,
+      timestamp: new Date().toISOString(),
+      inputBalance: inputBalance.formatted,
+      displayValue
+    });
+    
     if (transactionCompleted) {
+      console.log('✅ [VAULT-INPUTS] Transaction completed - resetting input state...', {
+        timestamp: new Date().toISOString(),
+        previousInputBalance: inputBalance.formatted,
+        previousDisplayValue: displayValue
+      });
+      
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(EMPTY_BALANCE);
       setOutputBoxErrorMessage("");
       setIsSlippageExceedingLimit(false);
+      
+      console.log('🧹 [VAULT-INPUTS] Input state reset completed!', {
+        timestamp: new Date().toISOString()
+      });
+      
+      // Reset transactionCompleted to false after processing
+      setTimeout(() => {
+        console.log('⏰ [VAULT-INPUTS] Resetting transactionCompleted to false after timeout...', {
+          timestamp: new Date().toISOString()
+        });
+        setTransactionCompleted(false);
+      }, 1000);
     }
   }, [transactionCompleted, initialConversionOutput, setInputBalance]);
 
@@ -872,6 +923,20 @@ export default function VaultInputs({
     }
   }, [loadingOutputToken, conversionOutput, debouncedInputBalance]);
 
+  // 🧪 TESTING: Log final values being displayed
+  useEffect(() => {
+    if (inputToken && vaultTotalAssetinToken) {
+      console.log("=== FINAL UI VALUES ===");
+      console.log(`🎯 Mode: ${isDeposit ? 'DEPOSIT' : 'WITHDRAW'}`);
+      console.log(`🪙 Input token: ${isDeposit ? inputToken?.symbol : vaultData.inputToken.symbol}`);
+      console.log(`🪙 Output token: ${vaultData.inputToken.symbol} (underlying asset)`);
+      console.log(`💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : vaultTotalAssetinToken.toString()}`);
+      console.log(`📊 Balance type: ${isDeposit ? 'wallet balance' : 'maxWithdraw amount'}`);
+      console.log(`✅ Consistent UX: Both modes show underlying asset!`);
+      console.log("=====================");
+    }
+  }, [isDeposit, inputToken?.symbol, vaultData.inputToken.symbol, tokenBalance.formatted, vaultTotalAssetinToken]);
+
   return (
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}
@@ -897,7 +962,7 @@ export default function VaultInputs({
         onMaxClick={handleMaxClick}
         value={displayValue}
         onChange={handleChangeInput}
-        selectedToken={isDeposit ? inputToken : vaultToken}
+        selectedToken={isDeposit ? inputToken : vaultData.inputToken}
         inputTokenbalance={
           isDeposit
             ? tokenBalance.formatted
@@ -934,7 +999,7 @@ export default function VaultInputs({
         onMaxClick={() => {}}
         value={conversionOutput.outputAmountFormatted}
         onChange={() => {}}
-        selectedToken={isDeposit ? vaultToken : inputToken}
+        selectedToken={isDeposit ? vaultData.inputToken : inputToken}
         inputTokenbalance={
           isDeposit
             ? vaultTotalAssetinToken?.toString() ?? "0"

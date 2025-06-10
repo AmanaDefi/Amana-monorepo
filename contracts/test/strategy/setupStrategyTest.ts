@@ -9,7 +9,8 @@ import {
   PYTH_CONTRACT_ADDRESS_BASE,
   PYTH_CONTRACT_ADDRESS_ZETACHAIN,
   PYTH_CONTRACT_ADDRESS_POLYGON,
-  PYTH_CONTRACT_ADDRESS_ARBITRUM
+  PYTH_CONTRACT_ADDRESS_ARBITRUM,
+  PYTH_CONTRACT_ADDRESS_BNB
 } from "../../../constants";
 import { isBalancerStrategy, isConvexStrategy } from "../utils";
 
@@ -26,7 +27,12 @@ export interface StrategyTestContext {
 }
 
 function getRpcUrl(chainId: number): string {
-  return `https://${chainId}.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c`;
+  if (chainId === 56) {
+    return "https://fittest-wandering-lambo.bsc.quiknode.pro/22464c646768adfa0ffa02000362d1f51049c7c9";
+  } else {
+    return `https://${chainId}.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c`;
+
+  }
 }
 
 function getPythContractAddress(chainId: number): string {
@@ -41,6 +47,8 @@ function getPythContractAddress(chainId: number): string {
       return PYTH_CONTRACT_ADDRESS_BASE;
     case 42161:
       return PYTH_CONTRACT_ADDRESS_ARBITRUM;
+    case 56:
+      return PYTH_CONTRACT_ADDRESS_BNB;
     default:
       throw new Error(`Unsupported chainId: ${chainId}`);
   }

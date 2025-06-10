@@ -13,7 +13,8 @@
     "deploy-testnet-vault": "npx hardhat compile && npx hardhat deploy-upgradeable-vault --name AaveV3EthVault --symbol aAaveETH --gateway 0x6c533f7fe93fae114d0954697069df33c9b74fd7 --system 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B --asset 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD --treasury 0x309ce55Cd7C9132DB7e235c752C7eB7d5F57c732 --gastank 0x3bbB4509B4ffbc7fF48E33D74Ce9e2f7fFb041B8 --network zeta_testnet",
     "deploy-testnet-strategy": "npx hardhat deploy-strategy --contract BaseSepAaveEthStrategy --name AaveEthStrategy --gateway 0x0c487a766110c85d301d96e33579c5b317fa4995 --vault 0x1Ba9b31648955c8D5653BC6AB340d5ECe5C0c11B --input-token 0x0000000000000000000000000000000000000000 --receipt-token 0x96e32dE4B1d1617B8c2AE13a88B9cC287239b13f --network base_sepolia",
     "deploy-testnet-vault-and-strat": "npx hardhat compile && npx hardhat deploy-vault-and-strategy --vault-name AaveV3EthVault --vault-symbol aAaveETH --gateway 0x6c533f7fe93fae114d0954697069df33c9b74fd7 --system 0xEdf1c3275d13489aCdC6cD6eD246E72458B8795B --vault-asset 0x236b0DE675cC8F46AE186897fCCeFe3370C9eDeD --treasury 0x309ce55Cd7C9132DB7e235c752C7eB7d5F57c732 --gas-tank 0x3bbB4509B4ffbc7fF48E33D74Ce9e2f7fFb041B8 --strategy-contract BaseSepAaveEthStrategy --strategy-name AaveEthStrategy --strategy-gateway 0x0c487a766110c85d301d96e33579c5b317fa4995 --input-token 0x036CbD53842c5426634e7929541eC2318f3dCF7e --receipt-token 0x96e32dE4B1d1617B8c2AE13a88B9cC287239b13f --strategy-network base_sepolia",
-    "deploy-gastank": "npx hardhat deploy-gas-tank --network zeta_testnet"
+    "deploy-gastank": "npx hardhat deploy-gas-tank --network zeta_testnet",
+    "get:beamSwapData": "tsx test/vault/getBeamSwapData.ts"
   },
   "keywords": [],
   "author": "",
@@ -54,9 +55,11 @@
     "ethers": "5.6.9",
     "hardhat": "^2.22.15",
     "hardhat-gas-reporter": "^1.0.8",
+    "hardhat-preprocessor": "^0.1.5",
     "prettier": "^2.8.8",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
+    "tsx": "^4.19.4",
     "typechain": "^8.1.0",
     "typescript": "^4.9.4"
   },
@@ -69,6 +72,7 @@
     "@solana-developers/helpers": "^2.4.0",
     "@solana/spl-memo": "^0.2.5",
     "@solana/web3.js": "^1.95.2",
-    "@zetachain/protocol-contracts": "12.0.0"
+    "@zetachain/protocol-contracts": "12.0.0",
+    "codemelt-retro-api-sdk": "^0.9.6"
   }
 }

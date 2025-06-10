@@ -30,9 +30,4 @@ interface IAmanaVault {
     function setStrategy(address strategy) external;
 
     function previewDeposit(uint256 assets) external view returns (uint256);
-
-    function adjustPendingShareChange(
-        uint256 previewedShares,
-        uint256 vaultNonce
-    ) external;
 }

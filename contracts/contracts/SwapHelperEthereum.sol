@@ -132,7 +132,7 @@ contract SwapHelperEthereum is SwapHelperParent {
         address outputToken,
         uint16 slippageBps,
         address strategy,
-        uint16 maxDeadline,
+        uint256 maxDeadline,
         bytes calldata data
     ) external override returns (uint256 amountOut) {
         require(

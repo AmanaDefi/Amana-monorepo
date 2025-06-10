@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   calculateAaveAPY,
   calculateAaveFlashAPY,
@@ -12,6 +12,7 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
+  fetchUserVaultMaxWithdraw,
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
@@ -39,7 +40,20 @@ export const useUpdateVaultBalanceAndTotal = (
 ) => {
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
+      // let address = isSolanaAddress(walletAddress) ? "0x5a55337a553557574C6E43506b48463373737669" : walletAddress
+      let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
+      
+      // 🧪 DEBUG: Log address conversion process
+      console.log("=== ADDRESS CONVERSION DEBUG ===");
+      console.log(`Original walletAddress: ${walletAddress}`);
+      console.log(`Is Solana address? ${isSolanaAddress(walletAddress)}`);
+      if (isSolanaAddress(walletAddress)) {
+        console.log(`Converted EVM address: ${getSolanaEVMAddress(walletAddress!)}`);
+      }
+      console.log(`Final address used: ${address}`);
+      console.log("================================");
+      
+      console.log("Updating vault balances and total assets for address:", address);
       try {
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
@@ -51,7 +65,7 @@ export const useUpdateVaultBalanceAndTotal = (
                   address as Address,
                   vault.id as Address
                 )
-                newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
+                newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
                   vault.inputToken.decimals,
                   address as Address,
                   vault.id as Address
@@ -118,37 +132,217 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   transactionCompleted: boolean,
 ) => {
   const { selectedChain } = useMultiChain();
-  useEffect(() => {
-    const updateVaultBalanceAndTotal = async () => {
-      const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
-      try {
-        if (vault && vault.id) {
-          const balance = await fetchUserVaultBalance(
-            address as Address,
-            vault.id as Address
-          );
+  
+  // Add a ref to track the last known balance
+  const lastKnownBalanceRef = useRef<string>('0');
+  const backgroundRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshAttemptsRef = useRef<number>(0);
+  const MAX_REFRESH_ATTEMPTS = 12; // 12 attempts * 10 seconds = 2 minutes of background checking
+  
+  const updateVaultBalanceAndTotal = useCallback(async () => {
+    const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
+    
+    console.log('💰 [VAULT-BALANCE-HOOK] Starting balance update...', {
+      vault: vault?.symbol,
+      vaultId: vault?.id,
+      userAddress,
+      convertedAddress: address,
+      transactionCompleted,
+      timestamp: new Date().toISOString()
+    });
+    
+    // 🧪 DEBUG: Address mapping in second hook
+    console.log("=== SECOND HOOK DEBUG ===");
+    console.log(`Original userAddress: ${userAddress}`);
+    console.log(`Is Solana address? ${isSolanaAddress(userAddress)}`);
+    console.log(`Final address: ${address}`);
+    console.log("========================");
+    
+    console.log("Updating vault balances and total assets for address:", address);
+    try {
+      if (vault && vault.id) {
+        console.log('📊 [VAULT-BALANCE-HOOK] Fetching user vault balance...', {
+          address,
+          vaultId: vault.id,
+          timestamp: new Date().toISOString()
+        });
+        
+        const balance = await fetchUserVaultBalance(
+          address as Address,
+          vault.id as Address
+        );
 
-          const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
+        console.log('🔢 [VAULT-BALANCE-HOOK] Balance fetched:', {
+          balance,
+          typeof: typeof balance,
+          lastKnownBalance: lastKnownBalanceRef.current,
+          hasChanged: balance !== lastKnownBalanceRef.current,
+          timestamp: new Date().toISOString()
+        });
+
+        const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+          vault.inputToken.decimals,
+          address as Address,
+          vault?.id as Address
+        );
+
+        console.log('💸 [VAULT-BALANCE-HOOK] Max withdraw fetched:', {
+          newTotalAssetsinToken,
+          typeof: typeof newTotalAssetsinToken,
+          timestamp: new Date().toISOString()
+        });
+
+        // 🧪 TESTING: Compare old vs new approach
+        console.log("=== MAXWITHDRAW TESTING ===");
+        try {
+          const oldMaxRedeem = await fetchUserVaultMaxRedeem(
             vault.inputToken.decimals,
             address as Address,
             vault?.id as Address
           );
-
-          setUserVaultBalance(balance);
-
-          const newTotalAssets = await fetchTotalAssets(vault.id as Address);
-          setVaultTotalAsset(newTotalAssets);
-
-          setVaultTotalAssetinToken(newTotalAssetsinToken);
+          console.log(`📊 Vault: ${vault.symbol}`);
+          console.log(`👤 User: ${address}`);
+          console.log(`🔄 OLD maxRedeem (shares): ${oldMaxRedeem}`);
+          console.log(`🆕 NEW maxWithdraw (assets): ${newTotalAssetsinToken}`);
+          console.log(`💰 Underlying token: ${vault.inputToken.symbol}`);
+          console.log(`🏦 Vault token: ${vault.symbol}`);
+          console.log("============================");
+        } catch (e) {
+          console.log("Error comparing old vs new:", e);
         }
-      } catch (error) {
-        console.error("Error updating vault balances and total assets:", error);
+
+        console.log('🔄 [VAULT-BALANCE-HOOK] Setting user vault balance state...', {
+          balance,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Check if balance has changed
+        if (balance !== lastKnownBalanceRef.current) {
+          console.log('🎉 [VAULT-BALANCE-HOOK] Balance has changed! Stopping background refresh...', {
+            oldBalance: lastKnownBalanceRef.current,
+            newBalance: balance,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Clear background refresh since balance has updated
+          if (backgroundRefreshIntervalRef.current) {
+            clearInterval(backgroundRefreshIntervalRef.current);
+            backgroundRefreshIntervalRef.current = null;
+            refreshAttemptsRef.current = 0;
+          }
+        }
+        
+        // Update the last known balance
+        lastKnownBalanceRef.current = balance;
+        setUserVaultBalance(balance);
+
+        const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+        console.log('📈 [VAULT-BALANCE-HOOK] Total assets fetched:', {
+          newTotalAssets,
+          timestamp: new Date().toISOString()
+        });
+        
+        setVaultTotalAsset(newTotalAssets);
+        setVaultTotalAssetinToken(newTotalAssetsinToken);
+        
+        console.log('✅ [VAULT-BALANCE-HOOK] All balances updated successfully!', {
+          vault: vault.symbol,
+          balance,
+          newTotalAssets,
+          newTotalAssetsinToken,
+          timestamp: new Date().toISOString()
+        });
+        
+        return balance; // Return balance for comparison
+      } else {
+        console.log('⚠️ [VAULT-BALANCE-HOOK] Vault or vault ID is missing', {
+          vault: vault ? 'exists' : 'null',
+          vaultId: vault?.id,
+          timestamp: new Date().toISOString()
+        });
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ [VAULT-BALANCE-HOOK] Error updating vault balances and total assets:', {
+        error,
+        vault: vault?.symbol,
+        address,
+        timestamp: new Date().toISOString()
+      });
+      return null;
+    }
+  }, [vault, userAddress]);
+  
+  useEffect(() => {
+    console.log('🔄 [VAULT-BALANCE-HOOK] Effect triggered with dependencies:', {
+      vault: vault?.id,
+      userAddress,
+      transactionCompleted,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (userAddress && vault) {
+      console.log('✅ [VAULT-BALANCE-HOOK] Prerequisites met, calling updateVaultBalanceAndTotal', {
+        userAddress: !!userAddress,
+        vault: !!vault,
+        timestamp: new Date().toISOString()
+      });
+      updateVaultBalanceAndTotal();
+      
+      // 🔄 NEW: Start background refresh when transaction completes
+      if (transactionCompleted && !backgroundRefreshIntervalRef.current) {
+        console.log('🔄 [BACKGROUND-REFRESH] Starting background balance refresh...', {
+          vault: vault.symbol,
+          maxAttempts: MAX_REFRESH_ATTEMPTS,
+          timestamp: new Date().toISOString()
+        });
+        
+        refreshAttemptsRef.current = 0;
+        backgroundRefreshIntervalRef.current = setInterval(async () => {
+          refreshAttemptsRef.current++;
+          console.log(`🔄 [BACKGROUND-REFRESH] Attempt ${refreshAttemptsRef.current}/${MAX_REFRESH_ATTEMPTS}`, {
+            vault: vault.symbol,
+            timestamp: new Date().toISOString()
+          });
+          
+          await updateVaultBalanceAndTotal();
+          
+          // Stop after max attempts
+          if (refreshAttemptsRef.current >= MAX_REFRESH_ATTEMPTS) {
+            console.log('⏹️ [BACKGROUND-REFRESH] Max attempts reached, stopping background refresh', {
+              vault: vault.symbol,
+              attempts: refreshAttemptsRef.current,
+              timestamp: new Date().toISOString()
+            });
+            
+            if (backgroundRefreshIntervalRef.current) {
+              clearInterval(backgroundRefreshIntervalRef.current);
+              backgroundRefreshIntervalRef.current = null;
+              refreshAttemptsRef.current = 0;
+            }
+          }
+        }, 10000); // Check every 10 seconds
+      }
+    } else {
+      console.log('❌ [VAULT-BALANCE-HOOK] Prerequisites not met', {
+        userAddress: !!userAddress,
+        vault: !!vault,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Cleanup interval on unmount or dependency change
+    return () => {
+      if (backgroundRefreshIntervalRef.current) {
+        console.log('🧹 [BACKGROUND-REFRESH] Cleaning up background refresh interval', {
+          timestamp: new Date().toISOString()
+        });
+        clearInterval(backgroundRefreshIntervalRef.current);
+        backgroundRefreshIntervalRef.current = null;
+        refreshAttemptsRef.current = 0;
       }
     };
-    if (userAddress && vault) {
-      updateVaultBalanceAndTotal();
-    }
-  }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
+  }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken, updateVaultBalanceAndTotal]);
 };
 
 export const useUpdateAPYs = (

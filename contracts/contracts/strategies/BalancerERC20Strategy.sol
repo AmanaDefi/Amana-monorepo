@@ -45,10 +45,10 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             _name,
             _amanaVault,
             _gatewayAddress,
-            _withdrawHelper
+            _withdrawHelper,
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
-        __ERC20StrategyParent_init(_inputTokenAddress);
-
         swapHelper = _swapHelper;
         liquidityRouter = IBalancerRouter(
             0x3f170631ed9821Ca51A59D996aB095162438DC10
@@ -58,7 +58,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         );
         liquidityGauge = IBalancerLiquidityGauge(_liquidityGaugeAddress);
 
-        receiptToken = _receiptTokenAddress;
         receiptToken = _receiptTokenAddress;
         inputTokenIndex = _inputTokenIndex;
     }
@@ -101,15 +100,17 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     }
 
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest();
 
         uint256 totalStaked = liquidityGauge.balanceOf(address(this));
-        uint256 sharesToWithdraw = (fractionToWithdraw * totalStaked + 5e17) /
-            1e18;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
 
+        if (totalStaked > 0 && totalStaked - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalStaked;
+        }
         liquidityGauge.withdraw(sharesToWithdraw);
 
         IERC20(receiptToken).approve(
@@ -120,7 +121,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         address[] memory poolTokens = IBalancerStablePool(receiptToken)
             .getTokens();
         address tokenToWithdraw = poolTokens[inputTokenIndex];
-        console.log("minAmountOut: %s", minAmountOut);
 
         uint256 amountOutFromGauge = liquidityRouter
             .removeLiquiditySingleTokenExactIn(
@@ -131,21 +131,10 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
                 true, // wethIsEth
                 "" // userData (can be empty unless needed)
             );
-        console.log(
-            "Withdrew %s from liquidity gauge, received %s of token %s",
-            sharesToWithdraw,
-            amountOutFromGauge,
-            tokenToWithdraw
-        );
         uint256 finalAmountOut = I4626Vault(tokenToWithdraw).redeem(
             amountOutFromGauge,
             address(this),
             address(this)
-        );
-        console.log(
-            "Withdrew %s from ERC4626 vault, final amount out: %s",
-            amountOutFromGauge,
-            finalAmountOut
         );
         require(finalAmountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = finalAmountOut;
@@ -175,15 +164,16 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     function _reinvestRewards() internal override {
         uint256 totalConverted;
         try liquidityGauge.reward_count() returns (uint256 count) {
-            console.log("Reward count: %s", count);
             for (uint256 i = 0; i < count; i++) {
                 address reward = liquidityGauge.reward_tokens(i);
                 if (reward == address(0)) continue;
 
                 uint256 balance = IERC20(reward).balanceOf(address(this));
-                console.log("balance of reward %s: %s", reward, balance);
-                console.log("minClaimableReward: %s", minClaimableReward);
-                if (balance < minClaimableReward) continue;
+                if (
+                    balance <
+                    minClaimableReward *
+                        10 ** (IERC20Metadata(reward).decimals() - 3)
+                ) continue;
 
                 uint256 converted = swapToInputToken(
                     reward,
@@ -199,7 +189,11 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             emit RewardClaimFailed("Failed to iterate reward_count");
         }
 
-        if (totalConverted > minClaimableReward) {
+        if (
+            totalConverted >
+            minClaimableReward *
+                10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+        ) {
             _depositFundsIntoYieldSource(totalConverted, 0);
         }
     }
@@ -251,7 +245,11 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         IERC20(receiptToken).approve(address(liquidityGauge), amount);
         liquidityGauge.deposit(amount);
 
-        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
+        _sendInvestConfirmation(
+            0,
+            totalUnderlyingAssets(),
+            currentExecutionNonce
+        );
 
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,

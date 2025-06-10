@@ -291,9 +291,10 @@ const bscChain = defineChain({
 
 const solanaChain = defineChain({
   chainId: CHAIN_ID.solana, // Solana uses string identifiers
-  name: deployEnv === "testnet" ? "devnet" : "mainnet",
+  name: deployEnv === "testnet" ? "Solana Devnet" : "Solana",
   shortName: "sol",
   chain: "Solana",
+  icon: CHAIN_ICONS[900],
   rpc: [
     solanaRpcUrl
   ],
@@ -367,8 +368,8 @@ const arbitrumChain = defineChain({
 
 // Define supported chains based on the deployment environment
 export const SUPPORTED_CHAINS = deployEnv === "testnet"
-  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain] // always put Zetachain first
-  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain]; // always put Zetachain first
+  ? [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain, solanaChain] // always put Zetachain first
+  : [zetaChain, ethereumChain, baseChain, polygonChain, bscChain, avalancheChain, arbitrumChain, solanaChain]; // always put Zetachain first
 
 export const chainConfigs = {
   [CHAIN_ID.zetachain]: zetaChain,

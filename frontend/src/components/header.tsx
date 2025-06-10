@@ -11,7 +11,7 @@ import { useState } from "react";
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/utils/client";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
-import ChainSwitcher from "./chainswitcher/ChainSwitcher";
+import MultiConnectButton from "./ConnectButton";
 
 export const wallets = [
   //   inAppWallet({
@@ -86,9 +86,8 @@ const Header = () => {
             </span> */}
           </nav>
           {/* Select Network Modal */}
-          {/* <ChainSwitcher/> */}
-          {/* <ConnectButton /> */}
-          <ConnectButton wallets={wallets} chains={SUPPORTED_CHAINS} client={client} />
+          <MultiConnectButton />
+          {/* <ConnectButton wallets={wallets} chains={SUPPORTED_CHAINS} client={client} /> */}
         </div>
         <MobileMenuModal />
       </div>

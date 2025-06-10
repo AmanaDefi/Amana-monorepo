@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
@@ -13,6 +15,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IDistributor.sol";
 import "../interfaces/ISwapHelper.sol";
+import "hardhat/console.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -49,12 +52,15 @@ abstract contract StrategyParent is
 
     struct BufferedTx {
         TxType txType;
-        uint256 amountOrFraction;
+        uint256 assetAmount;
         uint256 minimumOut;
         address newStrategy; // only for switch, optional otherwise
     }
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
+
+    IERC20 public inputToken;
+    address public receiptTokenAddress;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");
@@ -135,14 +141,18 @@ abstract contract StrategyParent is
         string memory _name,
         address _amanaVault,
         address _gateway,
-        address _withdrawHelper
+        address _withdrawHelper,
+        address _inputTokenAddress,
+        address _receiptTokenAddress
     ) internal onlyInitializing {
         __Ownable_init(msg.sender);
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
         withdrawHelper = _withdrawHelper;
-        minClaimableReward = 5 * 10 ** 15; // 0.005
+        inputToken = IERC20(_inputTokenAddress);
+        receiptTokenAddress = _receiptTokenAddress;
+        minClaimableReward = 5; // wherever this is used it is multiplied by 1e15 or 1e3, depending on token decimals
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
@@ -163,31 +173,39 @@ abstract contract StrategyParent is
 
         (
             TxType txType,
-            uint256 amountOrFraction,
+            uint256 assetAmount,
             uint256 minimumOut,
             address newStrategy,
             uint256 vaultNonce
         ) = abi.decode(message, (TxType, uint256, uint256, address, uint256));
 
+        if (txType == TxType.Deposit && msg.value == 0) {
+            SafeERC20.safeTransferFrom(
+                inputToken,
+                msg.sender,
+                address(this),
+                assetAmount
+            );
+        }
         pendingByNonce[vaultNonce] = BufferedTx({
             txType: txType,
-            amountOrFraction: amountOrFraction,
+            assetAmount: assetAmount,
             minimumOut: minimumOut,
             newStrategy: newStrategy
         });
 
         if (vaultNonce == lastProcessedNonce + 1) {
-            _processBufferedConfirmations();
+            _processBufferedTransactions();
         }
 
         return abi.encode(true);
     }
 
-    function processBufferedConfirmations() external onlyOwner {
-        _processBufferedConfirmations();
+    function processBufferedTransactions() external onlyOwner {
+        _processBufferedTransactions();
     }
 
-    function _processBufferedConfirmations() internal {
+    function _processBufferedTransactions() internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
             BufferedTx storage txData = pendingByNonce[nextNonce];
@@ -195,7 +213,7 @@ abstract contract StrategyParent is
             // Break if nothing is pending for this nonce
             if (
                 txData.txType == TxType(0) &&
-                txData.amountOrFraction == 0 &&
+                txData.assetAmount == 0 &&
                 txData.minimumOut == 0 &&
                 txData.newStrategy == address(0)
             ) {
@@ -209,7 +227,7 @@ abstract contract StrategyParent is
             } else if (txData.txType == TxType.Switch) {
                 _transferAssetsToNewStrategy();
             } else if (txData.txType == TxType.Revert) {
-                // nothing gets executed, but the nonce is incremented (below)
+                _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
             } else {
                 revert("Unknown TxType");
             }
@@ -251,7 +269,7 @@ abstract contract StrategyParent is
     }
 
     function setMinClaimableReward(uint256 newThreshold) external onlyOwner {
-        require(newThreshold < 1 ether, "Too high"); // Optional sanity check
+        require(newThreshold < 10000, "Too high"); // Optional sanity check
         minClaimableReward = newThreshold;
     }
 
@@ -331,10 +349,15 @@ abstract contract StrategyParent is
      * @param vaultNonce The execution nonce associated with the investment.
      */
     function manualResendInvestConfirmation(
+        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) external onlyOwner {
-        _sendInvestConfirmation(totalUnderlyingAssetsAfter, vaultNonce);
+        _sendInvestConfirmation(
+            totalUnderlyingAssetsBefore,
+            totalUnderlyingAssetsAfter,
+            vaultNonce
+        );
     }
 
     /**
@@ -348,11 +371,12 @@ abstract contract StrategyParent is
      * - Includes revert options in case of failure.
      */
     function _sendInvestConfirmation(
+        uint256 totalUnderlyingAssetsBefore,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            0,
+            totalUnderlyingAssetsBefore,
             totalUnderlyingAssetsAfter,
             vaultNonce,
             TX_DEPOSIT_CONFIRMED
@@ -388,7 +412,7 @@ abstract contract StrategyParent is
     function _divest() internal virtual {
         BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            txData.amountOrFraction,
+            txData.assetAmount,
             txData.minimumOut
         );
 
@@ -538,6 +562,7 @@ abstract contract StrategyParent is
         address spender,
         uint256 amount
     ) internal {
+        console.log("Approving spender %s for amount %s", spender, amount);
         bytes memory approveCalldata = abi.encodeWithSelector(
             IERC20.approve.selector,
             spender,
@@ -555,7 +580,7 @@ abstract contract StrategyParent is
         );
         (bool resetSuccess, ) = address(token).call(resetCalldata);
         require(resetSuccess, "Reset to 0 failed");
-
+        console.log("Reset to 0 succeeded, retrying approve");
         (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
         require(secondApproveSuccess, "Second approve failed");
     }
@@ -585,7 +610,7 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount, 0);
+            _depositFundsIntoYieldSource(context.amount, 1);
             _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,
@@ -627,7 +652,7 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            // _depositFundsIntoYieldSource(context.amount, 0);
+            // _depositFundsIntoYieldSource(context.amount, 1);
             _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,

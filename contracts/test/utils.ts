@@ -14,7 +14,13 @@ const TxType = {
 const WHALE_ADDRESSES: Record<string, string> = {
   // USDT Ethereum mainnet
   "0xdAC17F958D2ee523a2206206994597C13D831ec7":
-    "0xF977814e90dA44bFA03b6295A0616a897441aceC"
+    "0xF977814e90dA44bFA03b6295A0616a897441aceC",
+  // USDC BNB
+  "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d":
+    "0x8894E0a0c962CB723c1976a4421c95949bE2D4E3",
+  // USDT BNB
+  "0x55d398326f99059fF775485246999027B3197955":
+    "0xfD5840Cd36d94D7229439859C0112a4185BC0255",
 };
 
 /**
@@ -65,7 +71,9 @@ export async function setTokenBalance(
 
   // Check if the balance was successfully set
   const newBalance = await token.balanceOf(account);
-
+  console.log(
+    `[setTokenBalance] New balance for ${tokenAddress} at ${account}: ${newBalance.toString()}`
+  );
   if (newBalance.isZero() && WHALE_ADDRESSES[tokenAddress]) {
     console.warn(`[setTokenBalance] Storage set failed. Falling back to whale transfer for ${tokenAddress}`);
 
@@ -106,17 +114,13 @@ export const generateTransactionId = (
 
 export async function simulateDepositCallFromVaultToStrategy(
   vaultAddress: string,
-  owner: string,
   gatewaySigner: Signer,
   strategy: any,
   depositAmount: BigNumber,
   minSharesOut: BigNumber,
-  slippage: number,
-  ORIGIN_CHAIN_ID: number,
-  vaultNonce: number
+  vaultNonce: number,
+  isNative: boolean = false // Default to false, set to true if the strategy accepts native tokens
 ) {
-
-
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Match the new tuple structure
     [TxType.Deposit, depositAmount, minSharesOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
@@ -133,8 +137,9 @@ export async function simulateDepositCallFromVaultToStrategy(
       },
       depositMessage,
       {
-        value: depositAmount,
+        // value: depositAmount, - this is only if we are testing a strategy that accepts native tokens
         gasPrice: ethers.utils.parseUnits("150", "gwei"),
+        ...(isNative && { value: depositAmount }),
       }
     );
   const receipt = await tx.wait();
@@ -145,13 +150,13 @@ export async function simulateWithdrawCallFromVaultToStrategy(
   vaultAddress: string,
   gatewaySigner: Signer,
   strategy: any,
-  fractionOfTotalShares: BigNumber,
+  assetAmount: BigNumber,
   minAmountOut: BigNumber,
   vaultNonce: number
 ) {
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity onCall decode
-    [TxType.Withdraw, fractionOfTotalShares, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
+    [TxType.Withdraw, assetAmount, minAmountOut, ethers.constants.AddressZero, BigNumber.from(vaultNonce)]
   );
   const tx = await
     strategy.connect(gatewaySigner).onCall(
@@ -264,7 +269,8 @@ export async function simulateDepositCallFromConnChain(
   originChainZRC20Input: string,
   inputToken: string,
   originChainId: number,
-  slippage: number
+  slippage: number,
+  swapData: string = "0x" // Placeholder for swap data, if needed
 ): Promise<any> {
   // Update Pyth prices
   // await updatePythPrices(pythContract, user);
@@ -279,8 +285,8 @@ export async function simulateDepositCallFromConnChain(
 
   // Encode the deposit message
   const depositMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
-    [ethers.constants.AddressZero, inputToken, 0, minSharesOut, slippage, nonEvmAddress, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`]
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
+    [ethers.constants.AddressZero, inputToken, 0, minSharesOut, slippage, nonEvmAddress, swapData, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`]
   );
   // Execute the onCall function to simulate a deposit
   const tx = await amanaVault.connect(gatewaySigner).onCall(
@@ -315,7 +321,7 @@ export async function simulateConfirmDeposit(
 
   const confirmMessage = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint256", "uint256", "bytes32"],
-    [0, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, keccak256(toUtf8Bytes("DepositConfirmed")) as `0x${string}`
+    [depositAmountBN, totalAssetsBeforeBN.add(depositAmountBN), executionNonce, keccak256(toUtf8Bytes("DepositConfirmed")) as `0x${string}`
     ]
   );
   await amanaVault.connect(gatewaySigner).onCall(
@@ -392,24 +398,26 @@ export async function simulateWithdrawCallFromConnChain(
   amanaVault: AmanaConnectedChainVault,
   gatewaySigner: Signer,
   user: Signer,
-  sharesToWithdraw: BigNumber,
+  assetsToWithdraw: BigNumber,
   pythContract: any,
   originChainZRC20Input: string,
   originChainId: number,
   originChainGasToken: string,
-  nonEvmUserAddress: string
+  nonEvmUserAddress: string,
+  swapData: string = "0x" // Placeholder for swap data, if needed
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
-  const minAmountOut = sharesToWithdraw.mul(1000).div(1001);
+  const minAmountOut = assetsToWithdraw.mul(1000).div(1001);
   const slippage = 1000;
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
     [originChainZRC20Input,
       ethers.constants.AddressZero,
-      sharesToWithdraw,
+      assetsToWithdraw,
       minAmountOut,
       slippage,
       nonEvmUserAddress,
+      swapData,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`]
   );
 
@@ -551,4 +559,3 @@ export function isConvexStrategy(name: string): boolean {
 export function isBalancerStrategy(name: string): boolean {
   return name.toLowerCase().includes("balancer");
 }
-

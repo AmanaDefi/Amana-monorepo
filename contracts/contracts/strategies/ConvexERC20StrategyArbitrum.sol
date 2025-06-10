@@ -43,9 +43,10 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             _name,
             _amanaVault,
             _gatewayAddress,
-            _withdrawHelper
+            _withdrawHelper,
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
-        __ERC20StrategyParent_init(_inputTokenAddress); // Add this initializer too if needed
 
         receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
         swapHelper = _swapHelper;
@@ -97,7 +98,13 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
                 if (rewardToken == address(0)) continue;
 
                 uint256 balance = IERC20(rewardToken).balanceOf(address(this));
-                if (balance < minClaimableReward) continue;
+                if (
+                    balance <
+                    minClaimableReward *
+                        10 **
+                            (IERC20Metadata(address(rewardToken)).decimals() -
+                                3)
+                ) continue;
 
                 uint256 converted = swapToInputToken(
                     rewardToken,
@@ -114,7 +121,11 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             emit RewardClaimFailed("Failed during rewardLength iteration");
         }
 
-        if (totalConverted > minClaimableReward) {
+        if (
+            totalConverted >
+            minClaimableReward *
+                10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+        ) {
             uint256[] memory amounts = new uint256[](2);
             amounts[inputTokenIndex] = totalConverted;
 
@@ -143,15 +154,19 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     }
 
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest();
-        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
-            fractionToWithdraw
-        );
+        console.log("assetAmount:", assetAmount);
+        console.log("minAmountOut:", minAmountOut);
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         rewardPool.withdraw(sharesToWithdraw, false);
-
+        console.log("sharesToWithdraw:", sharesToWithdraw);
+        console.log(
+            "receiptTokens now held:",
+            receiptToken.balanceOf(address(this))
+        );
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
             sharesToWithdraw,
             int128(int256(inputTokenIndex)),
@@ -201,7 +216,11 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         IERC20(receiptToken).approve(address(booster), amount);
         booster.deposit(convexPid, amount); // This stakes on Arbitrum
 
-        _sendInvestConfirmation(totalUnderlyingAssets(), currentExecutionNonce);
+        _sendInvestConfirmation(
+            0,
+            totalUnderlyingAssets(),
+            currentExecutionNonce
+        );
 
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
@@ -220,16 +239,17 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = rewardPool.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        return
-            withdrawShareAmount > totalShares
-                ? totalShares
-                : withdrawShareAmount;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
+        }
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
     }
 
     function convertToShares(
