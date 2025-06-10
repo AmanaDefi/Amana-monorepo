@@ -226,7 +226,7 @@ const VaultsDetailContainer: React.FC<{
             vaultAPY={vaultAPYs.find((a) => a.vaultId === vaultID.toString())}
             totalAssets={vaultTotalAsset}
           />
-          <div className="bg-[#14171F] pt-6 px-5 pb-3 rounded-[16px] min-w-[526px] mt-8">
+          <div className="bg-[#14171F] pt-6 px-5 rounded-[16px] min-w-[526px] mt-8">
             <VaultInputs
               vaultData={vaultData}
               setTransactionCompleted={setTransactionCompleted}
