@@ -5,32 +5,9 @@ import {
 } from "@account-kit/react";
 import {
   alchemy,
-  mainnet,
-  sepolia,
-  base,
-  baseSepolia,
-  polygon,
-  polygonAmoy,
-  arbitrum,
-  arbitrumSepolia,
-  defineAlchemyChain,
 } from "@account-kit/infra";
-import {
-  bsc,
-  bscTestnet,
-  avalanche,
-  avalancheFuji,
-  zetachain,
-  zetachainAthensTestnet,
-} from "viem/chains";
-import {
-  avalancheFujiRpcUrl,
-  avalancheMainnetRpcUrl,
-  bscMainnetRpcUrl,
-  bscTestnetRpcUrl,
-  zetaRpcUrl,
-} from "@/constants/chainConfig";
 import { QueryClient } from "@tanstack/react-query";
+import { SUPPORTED_CHAINS, AlchemyZetachain } from "@/constants/chainConfig";
 
 const apiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 const walletConnectProjectId =
@@ -48,91 +25,23 @@ const uiConfig: AlchemyAccountsUIConfig = {
         { type: "passkey" },
         { type: "social", authProviderId: "google", mode: "popup" },
       ],
-      // [
-      //   {
-      //     type: "external_wallets",
-      //     walletConnect: { projectId: walletConnectProjectId },
-      //   },
-      // ],
+      [
+        {
+          type: "external_wallets",
+          walletConnect: { projectId: walletConnectProjectId },
+        },
+      ],
     ],
     addPasskeyOnSignup: true,
   },
 };
 
-// const bscChain = defineAlchemyChain({
-//   chain: bsc,
-//   rpcBaseUrl: bscMainnetRpcUrl,
-// });
-// const bscTestnetChain = defineAlchemyChain({
-//   chain: bscTestnet,
-//   rpcBaseUrl: bscTestnetRpcUrl,
-// });
-// const avalancheChain = defineAlchemyChain({
-//   chain: avalanche,
-//   rpcBaseUrl: avalancheMainnetRpcUrl,
-// });
-// const avalancheFujiChain = defineAlchemyChain({
-//   chain: avalancheFuji,
-//   rpcBaseUrl: avalancheFujiRpcUrl,
-// });
-// const zetachainChain = defineAlchemyChain({
-//   chain: zetachain,
-//   rpcBaseUrl: zetaRpcUrl,
-// });
-// const zetachainAthensTestnetChain = defineAlchemyChain({
-//   chain: zetachainAthensTestnet,
-//   rpcBaseUrl: zetaRpcUrl,
-// });
-
 export const alchemyConfig = createConfig(
   {
     transport: alchemy({ apiKey }),
-    chain: mainnet,
-    chains: [
-      {
-        chain: mainnet,
-      },
-      // {
-      //   chain: sepolia,
-      // },
-      // {
-      //   chain: base,
-      // },
-      // {
-      //   chain: baseSepolia,
-      // },
-      // {
-      //   chain: polygon,
-      // },
-      // {
-      //   chain: polygonAmoy,
-      // },
-      // {
-      //   chain: bscChain,
-      // },
-      // {
-      //   chain: bscTestnetChain,
-      // },
-      // {
-      //   chain: avalancheChain,
-      // },
-      // {
-      //   chain: avalancheFujiChain,
-      // },
-      // {
-      //   chain: arbitrum,
-      // },
-      // {
-      //   chain: arbitrumSepolia,
-      // },
-      // {
-      //   chain: zetachainChain,
-      // },
-      // {
-      //   chain: zetachainAthensTestnetChain,
-      // },
-    ],
-    ssr: false,
+    chain: AlchemyZetachain,
+    chains: SUPPORTED_CHAINS,
+    ssr: true,
     storage: cookieStorage,
     enablePopupOauth: true,
   },

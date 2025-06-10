@@ -22,8 +22,8 @@ export const AppButton = ({
             isBlue,
         },
         {
-          "px-2": typeof children === 'number'
-        }
+          "px-2": typeof children === "number",
+        },
       )}
       onClick={onClick}
     >

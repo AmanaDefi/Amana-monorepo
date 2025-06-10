@@ -1,25 +1,17 @@
 "use client";
 
-import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
-import MobileMenuModal from "@/components/modal/MobileMenuModal";
 import MobileSidebar from "./MobileSidebarMenu";
-// import ConnectButton from "./ConnectButton";
 import { useState } from "react";
-import { client } from "@/utils/client";
-import {
-  ACCOUNT_ABSTRACTION_CONFIG,
-  SUPPORTED_CHAINS,
-} from "@/constants/chainConfig";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { wallets } from "@/constants/wallets";
 import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
-import { ConnectButton } from "thirdweb/react";
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import classNames from "classnames";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -49,10 +41,12 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
-  const { walletAddress, connectEthereum, disconnectWallet } = useMultiChain();
+  const { walletAddress, switchToChain, activeChain } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  console.log('active chain', activeChain)
 
   const { openStep } = useAuthStore();
 
@@ -106,31 +100,36 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="hidden md:block thirdweb-connect-override">
-            <ConnectButton
-              wallets={wallets}
-              client={client}
-              connectButton={{ label: "Sign in" }}
-            />
+          {SUPPORTED_CHAINS.map((chain) => (
+            <button key={chain.chain.id} className={classNames({"text-blue-button": activeChain?.id === chain.chain.id})} onClick={() => switchToChain(chain.chain)}>
+              {chain.chain.name}
+            </button>
+          ))}
+          <div className="w-[192px] hidden md:block ">
+            {!isConnected ? (
+              <AppButton onClick={() => openStep("optionsA")}>
+                Sign in
+              </AppButton>
+            ) : (
+              <AppButton onClick={() => {}}>
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </AppButton>
+            )}
           </div>
 
           {path === "/" && (
-            <div className="md:hidden thirdweb-connect-override">
-              <ConnectButton
-                wallets={wallets}
-                client={client}
-                connectButton={{ label: "Sign in" }}
-              />
+            <div className="w-[192px] md:hidden ">
+              {!isConnected ? (
+                <AppButton onClick={() => openStep("optionsA")}>
+                  Sign in
+                </AppButton>
+              ) : (
+                <AppButton onClick={() => {}}>
+                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                </AppButton>
+              )}
             </div>
           )}
-          {/* {!isConnected && (
-            <button
-              onClick={() => openStep("optionsA")}
-              className="bg-[#1B46E0] hover:opacity-90 text-white text-[16px] font-bold rounded-lg px-6 py-2"
-            >
-              Sign in
-            </button>
-          )} */}
         </div>
       </header>
 

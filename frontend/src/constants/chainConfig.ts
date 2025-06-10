@@ -5,17 +5,20 @@ import { PublicKey, Connection } from "@solana/web3.js";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import {
   mainnet,
-  sepolia, 
+  sepolia,
   base,
   baseSepolia,
   polygon,
-  polygonAmoy, 
+  polygonAmoy,
+  arbitrum,
+  arbitrumSepolia,
+  defineAlchemyChain,
+} from "@account-kit/infra";
+import {
   bsc,
   bscTestnet,
   avalanche,
   avalancheFuji,
-  arbitrum,
-  arbitrumSepolia,
   zetachain,
   zetachainAthensTestnet,
 } from "viem/chains";
@@ -149,26 +152,14 @@ export const zetaRpcUrl =
     ? process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA_TESTNET || ""
     : process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ZETA || "";
 
-const sepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
-const baseSepoliaRpcUrl =
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
-const polygonAmoyRpcUrl =
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
 export const bscTestnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC_TESTNET || "";
-const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
-const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
-const polygonMainnetRpcUrl =
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
-export const bscMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
+export const bscMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BSC || "";
 export const avalancheMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
 export const avalancheFujiRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
-const arbitrumMainnetRpcUrl =
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
-const arbitrumSepoliaRpcUrl =
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_SEPOLIA || "";
 
 export const solanaRpcUrl =
   deployEnv == "testnet"
@@ -195,6 +186,84 @@ export enum MulticallVersion {
   V2 = 2,
   V3 = 3,
 }
+
+const bscChain = defineAlchemyChain({
+  chain: bsc,
+  rpcBaseUrl: bscMainnetRpcUrl,
+});
+const bscTestnetChain = defineAlchemyChain({
+  chain: bscTestnet,
+  rpcBaseUrl: bscTestnetRpcUrl,
+});
+const avalancheChain = defineAlchemyChain({
+  chain: avalanche,
+  rpcBaseUrl: avalancheMainnetRpcUrl,
+});
+const avalancheFujiChain = defineAlchemyChain({
+  chain: avalancheFuji,
+  rpcBaseUrl: avalancheFujiRpcUrl,
+});
+const zetachainChain = defineAlchemyChain({
+  chain: zetachain,
+  rpcBaseUrl: zetaRpcUrl,
+});
+const zetachainAthensTestnetChain = defineAlchemyChain({
+  chain: zetachainAthensTestnet,
+  rpcBaseUrl: zetaRpcUrl,
+});
+
+export const AlchemyZetachain =
+  deployEnv === "testnet" ? zetachainAthensTestnetChain : zetachainChain;
+
+const chainsMainnet = [
+  {
+    chain: zetachainChain,
+  },
+  {
+    chain: mainnet,
+  },
+  {
+    chain: base,
+  },
+  {
+    chain: polygon,
+  },
+  {
+    chain: bscChain,
+  },
+  {
+    chain: avalancheChain,
+  },
+  {
+    chain: arbitrum,
+  },
+];
+const chainsTestnet = [
+  {
+    chain: sepolia,
+  },
+  {
+    chain: baseSepolia,
+  },
+  {
+    chain: polygonAmoy,
+  },
+  {
+    chain: bscTestnetChain,
+  },
+  {
+    chain: avalancheFujiChain,
+  },
+  {
+    chain: arbitrumSepolia,
+  },
+  {
+    chain: zetachainAthensTestnetChain,
+  },
+];
+
+export const SUPPORTED_CHAINS =
+  deployEnv === "testnet" ? chainsTestnet : chainsMainnet;
 
 export const MULTICALL_ADDRS: Record<
   number,
@@ -259,7 +328,7 @@ export const MULTICALL_ADDRS: Record<
 };
 
 const solanaChain = {
-  id: CHAIN_ID.solana, 
+  id: CHAIN_ID.solana,
   name: deployEnv === "testnet" ? "devnet" : "mainnet",
   shortName: "sol",
   chain: "Solana",
@@ -287,26 +356,27 @@ const solanaChain = {
   slug: "solana",
 };
 
-export const SUPPORTED_CHAINS = [
-  deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
-  deployEnv === "testnet" ? sepolia : mainnet,
-  deployEnv === "testnet" ? baseSepolia : base,
-  deployEnv === "testnet" ? polygonAmoy : polygon,
-  deployEnv === "testnet" ? bscTestnet : bsc,
-  deployEnv === "testnet" ? avalancheFuji : avalanche,
-  deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
-  solanaChain
-];
+// export const SUPPORTED_CHAINS = [
+//   deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
+//   deployEnv === "testnet" ? sepolia : mainnet,
+//   deployEnv === "testnet" ? baseSepolia : base,
+//   deployEnv === "testnet" ? polygonAmoy : polygon,
+//   deployEnv === "testnet" ? bscTestnet : bsc,
+//   deployEnv === "testnet" ? avalancheFuji : avalanche,
+//   deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
+//   solanaChain,
+// ];
 
 export const chainConfigs = {
-  [CHAIN_ID.zetachain]: deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
+  [CHAIN_ID.zetachain]:
+    deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
   [CHAIN_ID.ethereum]: deployEnv === "testnet" ? sepolia : mainnet,
   [CHAIN_ID.base]: deployEnv === "testnet" ? baseSepolia : base,
   [CHAIN_ID.bsc]: deployEnv === "testnet" ? bscTestnet : bsc,
   [CHAIN_ID.polygon]: deployEnv === "testnet" ? polygonAmoy : polygon,
   [CHAIN_ID.arbitrum]: deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
   [CHAIN_ID.avalanche]: deployEnv === "testnet" ? avalancheFuji : avalanche,
-  [CHAIN_ID.solana]: solanaChain
+  [CHAIN_ID.solana]: solanaChain,
 };
 
 // Define approved tokens per chain

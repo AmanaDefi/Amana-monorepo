@@ -8,6 +8,7 @@ import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import clsx from "clsx";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
+import { useAuthenticate } from "@account-kit/react";
 
 const formatEmail = (email: string) => {
   const [local, domain] = email.split("@");
@@ -21,6 +22,7 @@ const formatEmail = (email: string) => {
 
 export const VerifyOtpModal = () => {
   const { step, email, closeAll, authenticate } = useAuthStore();
+  const {authenticate: OTPAuth} = useAuthenticate();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -37,15 +39,35 @@ export const VerifyOtpModal = () => {
     }
   };
 
+  const handleSendOTP = (code: string) => {
+    OTPAuth(
+      {
+        type: "otp",
+        otpCode: code,
+      },
+      {
+        onSuccess: (result) => {
+          console.log(result);
+          console.log("Success google auth", result);
+          authenticate(result.address)
+        },
+        onError: (err) => {
+          console.error("Error google auth:", err);
+          setError(true);
+        },
+      },
+    );
+  };
   const handleSubmit = () => {
     const otp = code.join("");
     if (otp.length < 6) return;
+    handleSendOTP(otp);
 
-    if (otp !== "123456") {
-      setError(true);
-    } else {
-      authenticate("0xMockUserWallet");
-    }
+    // if (otp !== "123456") {
+    //   setError(true);
+    // } else {
+    //   authenticate("0xMockUserWallet");
+    // }
   };
 
   useEffect(() => {

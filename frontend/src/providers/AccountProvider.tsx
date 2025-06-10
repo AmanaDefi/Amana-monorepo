@@ -2,24 +2,23 @@
 
 import React, { PropsWithChildren, useEffect, useState } from "react";
 import mixpanel from "mixpanel-browser";
-// import {
-//   useActiveAccount,
-//   useConnectModal,
-//   useActiveWalletConnectionStatus,
-// } from "thirdweb/react";
-import { SUPPORTED_CHAINS } from "../constants/chainConfig";
-// import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { client } from "../utils/client";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 import {
   useUser,
-  useSignerStatus
+  useSignerStatus,
+  useAccount,
 } from "@account-kit/react";
 
 export default function AccountProvider({ children }: PropsWithChildren) {
   const { isConnected, isDisconnected } = useSignerStatus()
   const user = useUser(); 
+  const scaAccount = useAccount({
+    type: "ModularAccountV2",
+    accountParams: {
+      mode: "default",
+    },
+  });
 
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
   const [hasIdentified, setHasIdentified] = useState(false);

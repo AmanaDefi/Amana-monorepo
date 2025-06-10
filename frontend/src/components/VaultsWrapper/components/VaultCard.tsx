@@ -237,9 +237,9 @@ export const VaultCard: FC<Props> = React.memo(
 
         <p className="font-normal text-xs leading-4 text-white mb-6">
           This vault auto-compounds Lenders Tokens on{" "}
-          <p className="flex flex-row gap-1">
+          <span className="flex flex-row gap-1">
             {vault.protocol.name} <InfoIcon />
-          </p>
+          </span>
         </p>
         {/* Buttons */}
         <div className="flex gap-4">

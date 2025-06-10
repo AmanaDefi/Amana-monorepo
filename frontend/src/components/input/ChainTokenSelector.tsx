@@ -13,7 +13,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { Chain } from "thirdweb";
+import { Chain } from "viem";
 import "@/styles/ChainTokenSelector.css";
 import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
@@ -705,7 +705,7 @@ export default function ChainTokenSelector({
                     className={`chain-button ${activeChain?.id === chain.id ? "active-chain" : ""}`}
                   >
                     <div className="flex items-center space-x-3">
-                      {chain.icon && (
+                      {/* {chain.icon && (
                         <Image
                           src={chain.icon.url}
                           alt={chain.name || ""}
@@ -714,7 +714,7 @@ export default function ChainTokenSelector({
                           className="chain-icon"
                           sizes="24px"
                         />
-                      )}
+                      )} */}
                       <span className="text-white">{chain.name}</span>
                       {selectedToken && chain.id === selectedTokenChain && (
                         <span className="ml-2 text-xs px-2 py-0.5 text-white bg-gradient-to-r from-[#262830] to-[#06afbc] rounded-full">

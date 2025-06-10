@@ -12,16 +12,17 @@ import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import Button from "@/components/Button";
 import { useEffect } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
+import { useAuthenticate } from "@account-kit/react";
 
 const schema = z.object({
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(20, "Username must be at most 20 characters")
-    .regex(
-      /^[a-zA-Z0-9_-]+$/,
-      "Username can only contain letters, numbers, underscores and hyphens",
-    ),
+  // username: z
+  //   .string()
+  //   .min(3, "Username must be at least 3 characters")
+  //   .max(20, "Username must be at most 20 characters")
+  //   .regex(
+  //     /^[a-zA-Z0-9_-]+$/,
+  //     "Username can only contain letters, numbers, underscores and hyphens",
+  //   ),
   email: z.string().email("Invalid email address"),
 });
 
@@ -30,6 +31,26 @@ type FormData = z.infer<typeof schema>;
 export const SignUpModal = () => {
   const { step, closeAll, updateField, setLoading, setError, openStep } =
     useAuthStore();
+  const { authenticate, isPending, error } = useAuthenticate();
+
+  const handleLogin = (email: string) => {
+    authenticate(
+      {
+        type: "email",
+        email,
+      },
+      {
+        onSuccess: (result) => {
+          console.log(result);
+          console.log("Success google auth", result);
+        },
+        onError: (err) => {
+          console.error("Error google auth:", err);
+          setError(err.message);
+        },
+      },
+    );
+  };
 
   const {
     register,
@@ -45,11 +66,9 @@ export const SignUpModal = () => {
     try {
       setLoading(true);
       updateField("email", data.email);
-      updateField("username", data.username);
+      // updateField("username", data.username);
 
-      // TODO: Replace mockSendOtp with Alchemy SDK method:
-      // await alchemy.auth.sendOtpCode(data.email);
-      await mockSendOtp(data.email);
+      handleLogin(data.email);
 
       openStep("verify");
     } catch (err: any) {
@@ -105,7 +124,7 @@ export const SignUpModal = () => {
         transition={{ type: "spring", stiffness: 220, damping: 20, delay: 0.1 }}
         className="flex flex-col gap-4 mb-8 px-[26px]"
       >
-        <input
+        {/* <input
           type="text"
           placeholder="Choose a username"
           {...register("username")}
@@ -122,7 +141,7 @@ export const SignUpModal = () => {
               {errors.username.message}
             </p>
           </div>
-        )}
+        )} */}
 
         <input
           type="email"
@@ -158,23 +177,23 @@ export const SignUpModal = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex flew-row items-center mb-6">
+        {/* <div className="flex flew-row items-center mb-6">
           <div className="bg-[#3f3d5a] h-[1px] w-full"></div>
           <span className="px-[17px] text-[16px] font-normal text-white">
             OR
           </span>
           <div className="bg-[#3f3d5a] h-[1px] w-full"></div>
-        </div>
+        </div> */}
 
         <div className="px-[26px]">
-          <div className="flex justify-center mb-8">
+          {/* <div className="flex justify-center mb-8">
             <button
               onClick={() => openStep("import")}
               className="w-full h-12 rounded-[8px] border border-[#3E73C4] text-white shadow-md hover:bg-[#3E73C4]/10 text-[16px] font-bold transition-all duration-200"
             >
               Import Existing Wallet
             </button>
-          </div>
+          </div> */}
 
           <div className="w-full text-[#535E73] text-[12px] font-normal bg-[rgba(62,115,196,0.05)] rounded-[8px] px-[17px] py-[15px]">
             By creating or restoring a wallet, you agree to Amana’s

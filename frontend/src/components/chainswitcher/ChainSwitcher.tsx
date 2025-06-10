@@ -2,14 +2,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useActiveWallet, useActiveWalletChain, useSwitchActiveWalletChain } from "thirdweb/react";
-import { Chain } from "thirdweb";
+import { useActiveWallet,  useSwitchActiveWalletChain } from "thirdweb/react";
+import { Chain } from "viem";
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import "react-toastify/dist/ReactToastify.css";
 import { ClipLoader } from "react-spinners";
 import { ChevronDownIcon, CheckIcon } from "@heroicons/react/24/solid";
 import { Tooltip } from "react-tooltip";
 import { showErrorToast, showLoadingToast, showSuccessToast } from "@/toasts";
+import { useChain } from "@account-kit/react";
 
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
@@ -19,7 +20,7 @@ const [zetaChain] = SUPPORTED_CHAINS;
 const ChainSwitcher: React.FC = () => {
   const switchChain = useSwitchActiveWalletChain();
   const wallet = useActiveWallet(); // Get the connected wallet
-  const currentChain = useActiveWalletChain(); // Get the current chain (updates automatically)
+  const {chain: currentChain }= useChain(); // Get the current chain (updates automatically)
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -44,10 +45,10 @@ const ChainSwitcher: React.FC = () => {
     // If we have a current chain and it's different from the previous one
     if (currentChain?.id && previousChainRef.current !== null && currentChain.id !== previousChainRef.current) {
       // Find the chain name
-      const chain = SUPPORTED_CHAINS.find((c: Chain) => c.id === currentChain.id);
+      const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === currentChain.id);
       // Use a try-catch to handle potential toast errors
       try {
-        showSuccessToast(`Successfully switched to ${chain?.name || "new network"}`)
+        showSuccessToast(`Successfully switched to ${chain?.chain?.name || "new network"}`)
       } catch (error) {
         console.error("Toast error:", error);
       }
@@ -106,7 +107,7 @@ const ChainSwitcher: React.FC = () => {
         data-tooltip-id="chain-switcher-tooltip"
         data-tooltip-content={wallet ? "Switch network" : "Connect wallet to switch networks"}
       >
-        {displayChain && (
+        {displayChain. && (
           <img
             src={displayChain.icon?.url}
             alt={displayChain.name}

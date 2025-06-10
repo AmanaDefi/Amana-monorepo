@@ -7,6 +7,7 @@ export type AuthStep =
   | "optionsA"
   | "optionsB"
   | "allWallets"
+  | "logout"
   | null;
 
 interface AuthState {

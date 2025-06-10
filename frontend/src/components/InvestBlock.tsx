@@ -3,16 +3,13 @@
 import React from "react";
 import InvestIcon from "./svg/InvestIcon";
 import Button from "./Button";
-import { client } from "@/utils/client";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
-import { useMultiChain } from "@/providers/MultiChainProvider";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { wallets } from "@/constants/wallets";
-import ConnectButton from "./ConnectButton";
 import { useSignerStatus } from "@account-kit/react";
+import { AppButton } from "./button/AppButton";
+import { useAuthStore } from "@/store/authStore";
 
 const InvestBlock = () => {
   const { isConnected } = useSignerStatus();
+  const { openStep } = useAuthStore();
 
   const handleFundWallet = () => {
     // Logic for replenishing the wallet
@@ -44,18 +41,10 @@ const InvestBlock = () => {
           Fund Wallet
         </Button>
       ) : (
-        <div className="thirdweb-invest-button">
-          <ConnectButton />
-           {/* <ConnectButton
-            wallets={wallets}
-            chains={SUPPORTED_CHAINS}
-            client={client}
-            connectButton={{
-              label: "Invest",
-              className:
-                "w-[192px] h-[56px] text-[14px] font-normal rounded-lg bg-[#1B46E0] !text-white border border-[#323234] shadow-[0_4px_4px_0_rgba(0,0,0,0.15),inset_0_2px_4px_0_#5251c5] backdrop-blur-[20px] hover:backdrop-blur-[20px] hover:shadow-[inset_0_2px_4px_0_#5251c5] active:bg-[#1B46E0] active:backdrop-blur-[20px] active:shadow-[inset_0_2px_4px_0_#5251c5] flex items-center justify-center transition",
-            }}
-          /> */}
+        <div className="w-[192px]">
+          <AppButton isBlue onClick={() => openStep("optionsA")}>
+            Invest
+          </AppButton>
         </div>
       )}
     </div>

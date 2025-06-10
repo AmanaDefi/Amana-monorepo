@@ -1,4 +1,3 @@
-
 import { Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
@@ -10,9 +9,11 @@ import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
-import { AlchemyClientState } from "@account-kit/core";
+import { AlchemyClientState, cookieToInitialState } from "@account-kit/core";
 import { ThirdwebProvider } from "thirdweb/react";
 import { Providers } from "@/providers/AlchemyProviders";
+import { headers } from "next/headers";
+import { alchemyConfig } from "../../alchemyConfig";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,31 +26,34 @@ const spaceMono = Space_Mono({
   variable: "--font-space-mono",
 });
 
-const ClientLayout = (
-  props: PropsWithChildren<{ initialState?: AlchemyClientState }>,
-) => {
+const initialState = cookieToInitialState(
+  alchemyConfig,
+  headers().get("cookie") ?? undefined,
+);
+
+const ClientLayout = (props: PropsWithChildren) => {
   return (
     <html
       lang="en"
       className={`${fustat.variable} ${gotham.variable} ${inter.variable} ${spaceMono.variable}`}
     >
       <body className="font-sans font-light">
-        <Providers>
-          <SolanaWalletProvider>
-            <ThirdwebProvider>
-              <AccountProvider>
-                <MultiChainProvider>
-                  <TokenPriceProvider>
-                    <main className="min-h-screen flex flex-col relative overflow-hidden">
-                      <ConditionalLayout>{props.children}</ConditionalLayout>
-                    </main>
-                  </TokenPriceProvider>
-                </MultiChainProvider>
-              </AccountProvider>
-              <ToastContainer />
-            </ThirdwebProvider>
-          </SolanaWalletProvider>
-        </Providers>
+        <SolanaWalletProvider>
+          <Providers initialState={initialState}>
+            {/* <ThirdwebProvider> */}
+            <AccountProvider>
+              <MultiChainProvider>
+                <TokenPriceProvider>
+                  <main className="min-h-screen flex flex-col relative overflow-hidden">
+                    <ConditionalLayout>{props.children}</ConditionalLayout>
+                  </main>
+                </TokenPriceProvider>
+              </MultiChainProvider>
+            </AccountProvider>
+            <ToastContainer />
+            {/* </ThirdwebProvider> */}
+          </Providers>
+        </SolanaWalletProvider>
       </body>
     </html>
   );
