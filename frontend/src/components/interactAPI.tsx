@@ -503,31 +503,58 @@ export default function InteractionContainer({
   }
 
   useEffect(() => {
+    console.log("🔧 [DONE-BUTTON-DEBUG] actions useEffect triggered", {
+      actionsLength: actions.length,
+      finishedTransaction,
+      hasTransactionSteps: Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0
+    });
+    
     setAction(_action);
     setStep(0);
     
     // Reset transaction processing states when actions change (new vault)
     setIsTransactionProcessing(false);
     setIsTransactionStarted(false);
-    setFinishedTransaction(false);
-  }, [actions]);
+    
+    // 🚨 CRITICAL FIX: Don't reset finishedTransaction if we have completed transaction steps
+    // This prevents the Done button from disappearing after successful completion
+    const hasCompletedTransactionSteps = Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0;
+    
+    if (!finishedTransaction && !hasCompletedTransactionSteps) {
+      console.log("🔧 [DONE-BUTTON-DEBUG] Resetting finishedTransaction to false (no completed transaction)");
+      setFinishedTransaction(false);
+    } else {
+      console.log("🔧 [DONE-BUTTON-DEBUG] NOT resetting finishedTransaction - preserving completed state", {
+        finishedTransaction,
+        hasCompletedTransactionSteps
+      });
+    }
+  }, [actions, finishedTransaction, transactionStepFeedback, lastTransactionStepFeedback]);
 
   // Simplified BlockPI tracking without complex callbacks
   useEffect(() => {
     console.log("=== SIMPLIFIED BLOCKPI EFFECT ===");
     console.log("crosschainInvestHash:", crosschainInvestHash);
-    console.log("action:", action);
+    console.log("action:", action, `(${Action[action]})`);
     console.log("isTrackingActive:", isTrackingActiveRef.current);
+    console.log("finishedTransaction:", finishedTransaction);
+    console.log("🔍 [DONE-BUTTON-DEBUG] Effect conditions check:");
+    console.log("🔍 [DONE-BUTTON-DEBUG] - action === undefined:", action === undefined);
+    console.log("🔍 [DONE-BUTTON-DEBUG] - finishedTransaction:", finishedTransaction);
+    console.log("🔍 [DONE-BUTTON-DEBUG] - !crosschainInvestHash:", !crosschainInvestHash);
+    console.log("🔍 [DONE-BUTTON-DEBUG] - isTrackingActiveRef.current:", isTrackingActiveRef.current);
     
     // Only proceed if we have the right conditions
     if (action === undefined || finishedTransaction || !crosschainInvestHash) {
       console.log("=== SKIPPING TRACKING ===", { action, finishedTransaction, hasHash: !!crosschainInvestHash });
+      console.log("🔍 [DONE-BUTTON-DEBUG] SKIPPING - one of the skip conditions is true");
       return;
     }
     
     // CRITICAL FIX: Prevent multiple concurrent tracking processes
     if (isTrackingActiveRef.current) {
       console.log("=== TRACKING ALREADY ACTIVE - SKIPPING ===");
+      console.log("🔍 [DONE-BUTTON-DEBUG] SKIPPING - tracking already active");
       return;
     }
     
@@ -535,8 +562,13 @@ export default function InteractionContainer({
     const isDepositConfirmed = action === Action.depositConfirmed || action === Action.deposit;
     const isWithdrawConfirmed = action === Action.withdrawconfirmed || action === Action.withdraw;
     
+    console.log("🔍 [DONE-BUTTON-DEBUG] Action checks:");
+    console.log("🔍 [DONE-BUTTON-DEBUG] - isDepositConfirmed:", isDepositConfirmed);
+    console.log("🔍 [DONE-BUTTON-DEBUG] - isWithdrawConfirmed:", isWithdrawConfirmed);
+    
     if (!isDepositConfirmed && !isWithdrawConfirmed) {
       console.log("=== WRONG ACTION FOR TRACKING ===", action);
+      console.log("🔍 [DONE-BUTTON-DEBUG] SKIPPING - wrong action for tracking");
       return;
     }
     
@@ -551,13 +583,18 @@ export default function InteractionContainer({
     // Skip tracking for Type 1 transactions
     if (isUserOnZetachain && isVaultOnZetachain) {
       console.log('[BlockPI Simple] Type 1 - moving directly to completion');
+      console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 transaction - setting finishedTransaction to true directly");
       setTimeout(() => {
         const finalAction = transactionType === 'deposit' ? Action.deposited : Action.withdrew;
         const nextStep = actions.findIndex(el => el === finalAction);
+        console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 finalAction:", finalAction, `(${Action[finalAction]})`);
+        console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 nextStep:", nextStep);
         if (nextStep >= 0) {
           setAction(finalAction);
           setStep(nextStep);
+          console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 - Calling setFinishedTransaction(true)");
           setFinishedTransaction(true);
+          console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 - Called setFinishedTransaction(true) - Done button should appear");
           
           // 🔄 NEW: Trigger automatic balance refresh for Type 1 transactions
           console.log('🎯 [AUTO-REFRESH-TYPE1] Type 1 transaction completed - triggering automatic balance refresh...', {
@@ -641,19 +678,28 @@ export default function InteractionContainer({
         console.log('[BlockPI Progressive] result.totalSteps:', result.totalSteps);
         
         if (result.success) {
+          console.log("🎉 [DONE-BUTTON-DEBUG] BlockPI tracking SUCCESS - setting finishedTransaction to true");
+          console.log("🎉 [DONE-BUTTON-DEBUG] transactionType:", transactionType);
+          console.log("🎉 [DONE-BUTTON-DEBUG] About to call setFinishedTransaction(true)");
+          
           // Move to final completed state
           const finalAction = transactionType === 'deposit' ? Action.deposited : Action.withdrew;
+          console.log("🎉 [DONE-BUTTON-DEBUG] finalAction:", finalAction, `(${Action[finalAction]})`);
+          
           setAction(finalAction);
           setStep(actionMapping.length - 1);
           
           // IMPORTANT: Capture current transaction steps before switching to finished state
-          setTransactionStepFeedback(prev => {
+          setTransactionStepFeedback(currentSteps => {
+            console.log("🎉 [DONE-BUTTON-DEBUG] Capturing current steps for lastTransactionStepFeedback");
             // Save the current feedback to lastTransactionStepFeedback so steps stay visible
-            setLastTransactionStepFeedback(prev);
-            return prev;
+            setLastTransactionStepFeedback(currentSteps);
+            return currentSteps;
           });
           
+          console.log("🎉 [DONE-BUTTON-DEBUG] Calling setFinishedTransaction(true) NOW");
           setFinishedTransaction(true);
+          console.log("🎉 [DONE-BUTTON-DEBUG] Called setFinishedTransaction(true) - Done button should appear");
           setIsTransactionProcessing(false);
           
           // 🔄 NEW: Trigger automatic balance refresh when transaction completes
@@ -682,15 +728,19 @@ export default function InteractionContainer({
         } else {
           // Handle error
           console.error('[BlockPI Progressive] Transaction failed:', result.error);
+          console.log("❌ [DONE-BUTTON-DEBUG] BlockPI tracking FAILED - setting finishedTransaction to true for error case");
           
           // IMPORTANT: Capture current transaction steps before clearing state (for failed transactions)
-          setTransactionStepFeedback(prev => {
+          setTransactionStepFeedback(currentSteps => {
+            console.log("❌ [DONE-BUTTON-DEBUG] Capturing current steps for error case");
             // Save the current feedback to lastTransactionStepFeedback so error steps stay visible
-            setLastTransactionStepFeedback(prev);
-            return prev;
+            setLastTransactionStepFeedback(currentSteps);
+            return currentSteps;
           });
           
+          console.log("❌ [DONE-BUTTON-DEBUG] Calling setFinishedTransaction(true) for failed transaction");
           setFinishedTransaction(true); // Show "Done" button even for failures
+          console.log("❌ [DONE-BUTTON-DEBUG] Called setFinishedTransaction(true) - Done button should appear for failed transaction");
           setIsTransactionProcessing(false);
           setIsTransactionStarted(false);
         }
@@ -720,6 +770,25 @@ export default function InteractionContainer({
 
   // No longer restoring transaction state from localStorage
   // This ensures we always start fresh and rely only on API responses
+
+  // Track finishedTransaction state changes
+  useEffect(() => {
+    console.log('🔍 [DONE-BUTTON-DEBUG] finishedTransaction state changed to:', finishedTransaction);
+    if (finishedTransaction) {
+      console.log('🔍 [DONE-BUTTON-DEBUG] finishedTransaction is now TRUE - Done button should be visible');
+      console.log('🔍 [DONE-BUTTON-DEBUG] Current state snapshot:', {
+        finishedTransaction,
+        transactionStepFeedbackKeys: Object.keys(transactionStepFeedback),
+        lastTransactionStepFeedbackKeys: Object.keys(lastTransactionStepFeedback),
+        isTransactionProcessing,
+        isTransactionStarted,
+        crosschainInvestHash: !!crosschainInvestHash
+      });
+    } else {
+      console.log('🚨 [DONE-BUTTON-DEBUG] finishedTransaction was set to FALSE - this is why Done button disappears!');
+      console.trace('🚨 [DONE-BUTTON-DEBUG] Stack trace for finishedTransaction=false:');
+    }
+  }, [finishedTransaction]);
 
   // Component unmount cleanup
   useEffect(() => {
@@ -1200,6 +1269,7 @@ function Interaction({
 
   function handleDone() {
     console.log('[UI] handleDone called - clearing all transaction state');
+    console.log('🎯 [DONE-BUTTON-DEBUG] handleDone function executed - this means Done button was clicked!');
     console.log('🎯 [TRANSACTION-COMPLETE] User clicked Done button, starting cleanup...', {
       timestamp: new Date().toISOString(),
       transactionStepFeedback: Object.keys(transactionStepFeedback).length,
@@ -1250,13 +1320,27 @@ function Interaction({
     });
   }
 
+  const shouldRenderUI = (
+    (Number(inputBalance.formatted) > 0 && actions.length && !errorMessage) ||
+    (crosschainInvestHash.length > 0 || isTransactionStarted || isTransactionProcessing) ||
+    (finishedTransaction && (Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0))
+  );
+  
+  console.log("🔍 [DONE-BUTTON-DEBUG] Main render conditions:");
+  console.log("🔍 [DONE-BUTTON-DEBUG] - shouldRenderUI:", shouldRenderUI);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - inputBalance.formatted:", inputBalance.formatted);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - actions.length:", actions.length);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - errorMessage:", errorMessage);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - crosschainInvestHash.length:", crosschainInvestHash.length);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - isTransactionStarted:", isTransactionStarted);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - isTransactionProcessing:", isTransactionProcessing);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - finishedTransaction:", finishedTransaction);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - transactionStepFeedback keys count:", Object.keys(transactionStepFeedback).length);
+  console.log("🔍 [DONE-BUTTON-DEBUG] - lastTransactionStepFeedback keys count:", Object.keys(lastTransactionStepFeedback).length);
+
   return (
     <>
-      {(
-        (Number(inputBalance.formatted) > 0 && actions.length && !errorMessage) ||
-        (crosschainInvestHash.length > 0 || isTransactionStarted || isTransactionProcessing) ||
-        (finishedTransaction && (Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0))
-      ) && (
+      {shouldRenderUI && (
         <>
           <p className="text-white text-start text-2xl font-bold leading-none mb-3">
             {label}
@@ -1270,27 +1354,33 @@ function Interaction({
               )}
             </>
           }
-          {finishedTransaction ? (
-            <MainActionButton label="Done" handleClick={handleDone} />
-          ) : (
-            (() => {
-              const isDisabledByProcessing = isTransactionProcessing;
-              const isDisabledByHash = crosschainInvestHash.length > 0 && !finishedTransaction;
-              const isDisabled = isDisabledByProcessing || isDisabledByHash;
-              
-
-              
-              return (
-                <>
-                  <MainActionButton
-                    disabled={isDisabled}
-                    label={label}
-                    handleClick={handleMainAction}
-                  />
-                </>
-              );
-            })()
-          )}
+          {(() => {
+            console.log("🔍 [DONE-BUTTON-DEBUG] Button render decision:");
+            console.log("🔍 [DONE-BUTTON-DEBUG] - finishedTransaction:", finishedTransaction);
+            console.log("🔍 [DONE-BUTTON-DEBUG] - transactionStepFeedback keys:", Object.keys(transactionStepFeedback));
+            console.log("🔍 [DONE-BUTTON-DEBUG] - lastTransactionStepFeedback keys:", Object.keys(lastTransactionStepFeedback));
+            console.log("🔍 [DONE-BUTTON-DEBUG] - Should show Done button:", finishedTransaction);
+            
+            return finishedTransaction ? (
+              <MainActionButton label="Done" handleClick={handleDone} />
+            ) : (
+              (() => {
+                const isDisabledByProcessing = isTransactionProcessing;
+                const isDisabledByHash = crosschainInvestHash.length > 0 && !finishedTransaction;
+                const isDisabled = isDisabledByProcessing || isDisabledByHash;
+                
+                return (
+                  <>
+                    <MainActionButton
+                      disabled={isDisabled}
+                      label={label}
+                      handleClick={handleMainAction}
+                    />
+                  </>
+                );
+              })()
+            );
+          })()}
         </>
       )}
     </>
