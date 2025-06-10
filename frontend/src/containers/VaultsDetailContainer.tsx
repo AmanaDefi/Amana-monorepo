@@ -11,6 +11,7 @@ import {
   Balance,
   ITxLocalStorage,
   Tabs,
+  TransactionStepMessages,
 } from "@/types/types";
 import { VAULT_DATA, tokens } from "@/constants";
 import {
@@ -60,6 +61,57 @@ const VaultsDetailContainer: React.FC<{
     useState<VaultTotalAssetsinToken>();
   const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
+
+  // ДОДАЄМО стан для відстеження транзакції
+  const [transactionStepFeedback, setTransactionStepFeedback] =
+    useState<TransactionStepMessages>({});
+  const [lastTransactionStepFeedback, setLastTransactionStepFeedback] =
+    useState<TransactionStepMessages>({});
+  const [finishedTransaction, setFinishedTransaction] = useState(false);
+  const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
+  const [activeChainId, setActiveChainId] = useState<number>();
+
+  const { activeChain } = useMultiChain();
+
+  useEffect(() => {
+    const checkTransactionState = () => {
+      if (!vaultID) return;
+
+      const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
+      const vaultTxData = getLocalStorageObject(vaultID.toString());
+
+      if (isTxInProgress && vaultTxData) {
+        setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
+        setLastTransactionStepFeedback(
+          vaultTxData?.lastTransactionStepFeedback ?? {},
+        );
+        setFinishedTransaction(vaultTxData?.finishedTransaction ?? false);
+        setIsTransactionProcessing(
+          vaultTxData?.isTransactionProcessing ?? false,
+        );
+      } else {
+        // Очищуємо стан якщо транзакція не активна
+        setTransactionStepFeedback({});
+        setLastTransactionStepFeedback({});
+        setFinishedTransaction(false);
+        setIsTransactionProcessing(false);
+      }
+    };
+
+    // Перевіряємо стан одразу
+    checkTransactionState();
+
+    // Налаштовуємо інтервал для періодичної перевірки localStorage
+    const interval = setInterval(checkTransactionState, 1000);
+
+    return () => clearInterval(interval);
+  }, [vaultID]);
+
+  useEffect(() => {
+    if (activeChain?.id) {
+      setActiveChainId(activeChain.id);
+    }
+  }, [activeChain]);
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;
@@ -254,8 +306,25 @@ const VaultsDetailContainer: React.FC<{
               <p className="text-white text-sm font-normal">Content</p>
             </Dropdown>
           ))}
-          <Dropdown title="Deposit instruction" defaultOpen={true}>
-            <DepositInstruction />
+          <Dropdown
+            title={
+              isTransactionProcessing ||
+              Object.keys(transactionStepFeedback).length > 0
+                ? "Transaction Progress"
+                : "Deposit instruction"
+            }
+            defaultOpen={true}
+          >
+            <DepositInstruction
+              // Передаємо стан транзакції
+              transactionStepFeedback={transactionStepFeedback}
+              lastTransactionStepFeedback={lastTransactionStepFeedback}
+              finishedTransaction={finishedTransaction}
+              activeChainId={activeChainId}
+              vaultStrategyChainId={vaultData?.protocol?.chainId}
+              isDeposit={initialIsDeposit}
+              isProcessing={isTransactionProcessing}
+            />
           </Dropdown>
         </div>
       </section>
