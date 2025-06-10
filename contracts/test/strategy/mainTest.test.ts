@@ -239,8 +239,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         rewardsContract,
         config
       } = ctx;
-      if (config.rewardsContractAddress === ethers.constants.AddressZero) {
-        console.info("Skipping test as rewardsContractAddress is zero");
+      if (config.rewardsContractAddress === ethers.constants.AddressZero || config.rewardsTokenAddress === ethers.constants.AddressZero) {
+        console.info("Skipping test as rewardsContractAddress or rewardsTokenAddress is zero");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }
       const depositAmount = config.depositAmount;
@@ -710,14 +710,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
     it("should harvest and reinvest rewards when called externally", async function () {
       const {
         gatewaySigner,
-        owner,
         inputToken,
         strategy,
         rewardsContract,
         config
       } = ctx;
-      if (config.rewardsContractAddress === ethers.constants.AddressZero) {
-        console.info("Skipping test as rewardsContractAddress is not defined");
+      if (config.rewardsContractAddress === ethers.constants.AddressZero || config.rewardsTokenAddress === ethers.constants.AddressZero) {
+        console.info("Skipping test as rewardsContractAddress or rewardsTokenAddress is zero");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }
       const depositAmount = config.depositAmount; // USDC has 6 decimals

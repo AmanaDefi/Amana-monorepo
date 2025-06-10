@@ -1,5 +1,5 @@
 // test/strategy.config.ts
-import { BASE_USDT_ADDRESS, ZC_USDC_POL_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_ETH_BASE_ADDRESS, ETH_USDC_ADDRESS, POL_USDC_ADDRESS, ARB_USDC_ADDRESS, ARB_CRV_ADDRESS, ARB_USDT_ADDRESS } from "../../../constants";
+import { BSC_USDT_ADDRESS, BASE_USDT_ADDRESS, ZC_USDC_POL_ADDRESS, ZC_USDC_BASE_ADDRESS, ZC_ETH_BASE_ADDRESS, ETH_USDC_ADDRESS, POL_USDC_ADDRESS, ARB_USDC_ADDRESS, ARB_CRV_ADDRESS, ARB_USDT_ADDRESS } from "../../../constants";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 
@@ -252,7 +252,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
 
     originChainId: 8453, // Base
     withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
-    otherErc20Address: BASE_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
+    otherErc20Address: BSC_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
     otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
 
     isNative: false,

@@ -162,71 +162,27 @@ contract AegisERC20Strategy is ERC20StrategyParent {
     }
 
     function totalUnderlyingAssets() public view override returns (uint256) {
-        uint256 total = IERC20(receiptToken).balanceOf(address(this));
+        uint256 staked = stakingVault.balanceOf(address(this));
+        uint256 held = IERC20(receiptToken).balanceOf(address(this));
+        uint256 total = staked + held;
         return total > 0 ? convertToAssets(total) : 0;
     }
 
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256 assets) {
-        if (address(inputToken) == receiptToken || shares == 0) {
-            return shares;
-        }
-
-        try
-            ISwapHelper(swapHelper).getPathV3(receiptToken, address(inputToken))
-        returns (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory /* encodedPath */
-        ) {
-            if (path.length == 0 || feeTiers.length == 0) {
-                return shares; // fallback to 1:1 if no path found
-            }
-
-            try
-                ISwapHelper(swapHelper).getAmountOutV3(shares, path, feeTiers)
-            returns (uint amountOut) {
-                return amountOut;
-            } catch {
-                return shares; // fallback if price estimation fails
-            }
-        } catch {
-            return shares; // fallback if path retrieval fails
-        }
+        // assumes YUSD:USDC is 1:1
+        return stakingVault.convertToAssets(shares);
     }
 
     function convertToShares(
         uint256 assets
     ) public view override returns (uint256 shares) {
-        if (address(inputToken) == receiptToken || assets == 0) {
-            return assets;
-        }
-
-        try
-            ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptToken)
-        returns (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory /* encodedPath */
-        ) {
-            if (path.length == 0 || feeTiers.length == 0) {
-                return assets; // fallback to 1:1 if no path found
-            }
-
-            try
-                ISwapHelper(swapHelper).getAmountOutV3(assets, path, feeTiers)
-            returns (uint amountOut) {
-                return amountOut;
-            } catch {
-                return assets; // fallback if price estimation fails
-            }
-        } catch {
-            return assets; // fallback if path retrieval fails
-        }
+        // assumes YUSD:USDC is 1:1
+        return stakingVault.convertToShares(assets);
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256 withdrawShareAmount) {}
 }
