@@ -295,11 +295,10 @@ const VaultsDetailContainer: React.FC<{
               strategyExplorerBaseUrl={strategyExplorerBaseUrl}
             />
           </Dropdown>
-          {["Historical APY", "Which Tokens I can invest?"].map((title) => (
-            <Dropdown key={title} title={title}>
+          
+            <Dropdown title="Which Tokens I can invest?">
               <p className="text-white text-sm font-normal">Content</p>
             </Dropdown>
-          ))}
           {walletAddress && (
             <Dropdown
               title={
