@@ -44,7 +44,7 @@ const supportedChains: Chain[] = [
   zetachainAthensTestnet,
 ];
 
-const getRpcUrl = (chain: Chain): string => {
+export const getRpcUrl = (chain: Chain): string => {
   const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
   if (alchemyApiKey) {
     const alchemyUrl = chain.rpcUrls.alchemy?.http[0];

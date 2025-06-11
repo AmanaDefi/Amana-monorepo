@@ -18,12 +18,17 @@ import IBalancerStablePoolABI from "../../abis/IBalancerStablePoolABI.json";
 import IBalancerLiquidityGaugeABI from "../../abis/IBalancerLiquidityGauge.json";
 import IERC20MetadataABI from "../../abis/IERC20MetadataABI.json";
 
-import { Chain } from "thirdweb";
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
-import { keccak256 } from "thirdweb";
 const Nori = require("nori-sdk").Nori;
 const sdk = new Nori();
-import { formatUnits, prepareEncodeFunctionData } from "viem";
+import {
+  encodeFunctionData,
+  formatUnits,
+  prepareEncodeFunctionData,
+  Chain,
+  keccak256,
+  Address,
+} from "viem";
 import {
   getCurrentSlippage,
   isZetachain,
@@ -34,8 +39,6 @@ import {
   ethereumProvider,
   arbitrumProvider,
 } from "../utils/providers";
-
-// import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
 import { Token, VaultData } from "@/types/types";
@@ -53,12 +56,14 @@ import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
 import { RECEIPT_LOCAL_STORAGE_KEY } from "@/constants";
 import { updateLocalStorageObject } from "@/utils/localStorageUtils";
-import { AiOutlineConsoleSql } from "react-icons/ai";
 import { GetUserResult } from "@account-kit/core";
 import { UseUserResult } from "@account-kit/react";
-import { getProvider } from "@/utils/getProvider";
 import { getContractCustom } from "@/utils/getContractCustom";
-import { getWalletClient } from "@/utils/getPublicClient";
+import {
+  getPublicClient,
+  getRpcUrl,
+  getWalletClient,
+} from "@/utils/getPublicClient";
 
 dotenv.config();
 
@@ -923,7 +928,7 @@ export const waitForReceiptSol = async (txHash: string) => {
 export const Approvedeposit = async (
   vaultId: Address,
   inputToken: Address,
-  activeAccount: Account,
+  activeAccount: UseUserResult,
   activeChain: Chain,
   transactionAmount: bigint,
 ) => {
@@ -973,29 +978,48 @@ const getMinSharesOut = async (
   const inputTokenAddress = isZetachain(activeChain.id)
     ? inputToken?.address
     : inputToken?.ZRC20equivalent;
-  let assetsConversionAmount: bigint = transactionAmount;
+
+  let assetsToConvert = transactionAmount;
+
   if (inputTokenAddress !== vaultData.inputToken.address) {
-    assetsConversionAmount = await getAmountOutFromSwap(
+    assetsToConvert = await getAmountOutFromSwap(
       transactionAmount,
       inputToken,
       vaultData.inputToken,
       vaultData.id as Address,
     );
   }
-  const strategyChain = defineChain(vaultData.protocol.chainId);
-  const contract = getContract({
-    client,
-    chain: strategyChain,
+
+  const publicClient = getPublicClient(vaultData.protocol.chainId);
+  if (!publicClient) {
+    throw new Error(
+      `Failed to get client for chain id: ${vaultData.protocol.chainId}`,
+    );
+  }
+
+  const strategyAbi = [
+    {
+      name: "convertToShares",
+      type: "function",
+      stateMutability: "view",
+      inputs: [{ name: "assets", type: "uint256" }],
+      outputs: [{ name: "", type: "uint256" }],
+    },
+  ] as const;
+
+  const sharesOutForUnderlying = await publicClient.readContract({
     address: vaultData.protocol.strategyAddress,
+    abi: strategyAbi,
+    functionName: "convertToShares",
+    args: [assetsToConvert],
   });
-  const sharesOutForUnderlying = await readContract({
-    contract,
-    method: "function convertToShares(uint256) view returns (uint256)",
-    params: [assetsConversionAmount],
-  });
+
+  const slippage = getCurrentSlippage();
+  const slippageFactor = BigInt(10000 - slippage * 100);
+
   const minSharesOut =
-    (sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100)) /
-    BigInt(10000);
+    (sharesOutForUnderlying * slippageFactor) / BigInt(10000);
+
   return minSharesOut;
 };
 
@@ -1005,44 +1029,80 @@ const getMinAmountOut = async (
   strategyAddress: Address,
   strategyChainId: number,
 ) => {
-  const vaultContract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0].chain, // Zetachain
-    address: vaultId,
-  });
-  const vaultTotalSupply = await readContract({
-    contract: vaultContract,
-    method: "function totalSupply() view returns (uint256)",
-  });
-  const fractionOfTotalShares =
-    (transactionAmount * ethers.parseEther("1")) / vaultTotalSupply;
-  const strategyChain = defineChain(strategyChainId);
-  const contract = getContract({
-    client,
-    chain: strategyChain,
-    address: strategyAddress,
-  });
-  const strategyWithdrawShareAmount = await readContract({
-    contract,
-    method:
-      "function getStrategyWithdrawShareAmount(uint256) public view returns (uint256)",
-    params: [fractionOfTotalShares],
-  });
-  const amountOutForShares = await readContract({
-    contract,
-    method: "function convertToAssets(uint256) view returns (uint256)",
-    params: [strategyWithdrawShareAmount],
-  });
-  const minAmountOut =
-    (amountOutForShares * BigInt(10000 - getCurrentSlippage() * 100)) /
-    BigInt(10000);
-  return minAmountOut;
+  const vaultAbi = [
+    {
+      name: "totalSupply",
+      type: "function",
+      stateMutability: "view",
+      inputs: [],
+      outputs: [{ name: "", type: "uint256" }],
+    },
+  ] as const;
+
+  const strategyAbi = [
+    {
+      name: "getStrategyWithdrawShareAmount",
+      type: "function",
+      stateMutability: "view",
+      inputs: [{ name: "fraction", type: "uint256" }],
+      outputs: [{ name: "", type: "uint256" }],
+    },
+    {
+      name: "convertToAssets",
+      type: "function",
+      stateMutability: "view",
+      inputs: [{ name: "shares", type: "uint256" }],
+      outputs: [{ name: "", type: "uint256" }],
+    },
+  ] as const;
+
+  const publicClient = getPublicClient(strategyChainId);
+
+  if (!publicClient) {
+    throw new Error("failed to get clients");
+  }
+
+  try {
+    const vaultTotalSupply = await publicClient.readContract({
+      address: vaultId,
+      abi: vaultAbi,
+      functionName: "totalSupply",
+    });
+    if (vaultTotalSupply === 0n) {
+      return 0n;
+    }
+    const fractionOfTotalShares = (transactionAmount * BigInt(10**18)) / vaultTotalSupply;
+
+    const strategyWithdrawShareAmount = await publicClient.readContract({
+      address: strategyAddress,
+      abi: strategyAbi,
+      functionName: "getStrategyWithdrawShareAmount",
+      args: [fractionOfTotalShares],
+    });
+
+    const amountOutForShares = await publicClient.readContract({
+      address: strategyAddress,
+      abi: strategyAbi,
+      functionName: "convertToAssets",
+      args: [strategyWithdrawShareAmount],
+    });
+
+    const slippage = getCurrentSlippage(); 
+    const slippageFactor = BigInt(10000 - slippage * 100);
+    const minAmountOut = (amountOutForShares * slippageFactor) / BigInt(10000);
+
+    return minAmountOut;
+
+  } catch (error) {
+    console.error("error geet min amount out:", error);
+    throw error; 
+  }
 };
 
 const executeDirectDeposit = async (
   vaultData: VaultData,
   inputToken: Token,
-  activeAccount: Account,
+  activeAccount: UseUserResult,
   activeChain: Chain,
   transactionAmount: bigint,
 ) => {
@@ -1111,14 +1171,36 @@ const executeCrossChainDeposit = async (
   console.log("transactionId", transactionId);
 
   const nonEvmAddress = "0x";
-  // Determine if the inputToken is a native asset (ETH, BNB, MATIC, etc.)
-  const isNativeToken = inputToken.address === ZeroAddress;
 
   let contract, approveTx, receipt, payload, revertOptions;
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
 
   // Prepare payload (calldata to pass to the receiver)
+
+  const gatewayDepositAbi = [
+    {
+      type: "function",
+      name: "depositAndCall",
+      stateMutability: "payable",
+      inputs: [
+        { name: "receiver", type: "address" },
+        { name: "payload", type: "bytes" },
+        {
+          name: "revertOptions",
+          type: "tuple",
+          components: [
+            { name: "revertAddress", type: "address" },
+            { name: "callOnRevert", type: "bool" },
+            { name: "abortAddress", type: "address" },
+            { name: "revertMessage", type: "bytes" },
+            { name: "onRevertGasLimit", type: "uint256" },
+          ],
+        },
+      ],
+      outputs: [],
+    },
+  ] as const;
 
   payload = abiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
@@ -1150,6 +1232,14 @@ const executeCrossChainDeposit = async (
     BigInt(1000000), // onRevertGasLimit
   ] as const;
 
+  const revertOptionsObject = {
+    revertAddress: contractWithdrawalReceiverAddress,
+    callOnRevert: true,
+    abortAddress: activeAccount.address,
+    revertMessage: revertMessage as `0x${string}`,
+    onRevertGasLimit: BigInt(1000000),
+  };
+
   // const txOptions = {
   //   gasLimit: 1000000, // Example value, update as needed
   //   gasPrice: 100000, // TODO - this will have to change, depending on the chain?
@@ -1158,42 +1248,33 @@ const executeCrossChainDeposit = async (
   // Case 1: Native token (ETH, BNB, etc.)
   if (inputToken.isNative) {
     console.log("Native token deposit detected");
-    contract = getContractCustom({
-      chainId: activeChain.id,
-      address: EVM_GATEWAY_ADDRESSES[activeChain.id],
-      abi: moonwellVaultABI,
+
+    const data = encodeFunctionData({
+      abi: gatewayDepositAbi,
+      functionName: "depositAndCall",
+      args: [vaultData.id, payload, revertOptionsObject],
     });
 
-    const vaultDepositAbi = [
-      {
-        "type": "function",
-        "name": "deposit",
-        "stateMutability": "payable", // або "nonpayable", залежить від контракту
-        "inputs": [
-          { "name": "assets", "type": "uint256" },
-          { "name": "minSharesOut", "type": "uint256" },
-          { "name": "receiver", "type": "address" }
-        ],
-        "outputs": [] // Якщо функція нічого не повертає
-      }
-    ] as const;
-
-    const data = prepareEncodeFunctionData({abi: vaultDepositAbi, functionName: 'deposit', args: [vaultData.id, payload, revertOptions]})
-
-    const depositTx = walletClient.prepareTransactionRequest({
-      contract,
-      method:
-        "function depositAndCall(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
-      params: [vaultData.id, payload, revertOptions],
+    // console.log("depositTx", depositTx);
+    const txHash = await walletClient.sendTransaction({
+      account: activeAccount.address,
+      data,
       value: transactionAmount,
+      chain: activeChain,
+      to: EVM_GATEWAY_ADDRESSES[activeChain.id],
     });
 
-    console.log("depositTx", depositTx);
-    receipt = await sendTransaction({
-      account: activeAccount,
-      transaction: depositTx,
-      // ...txOptions,
-    });
+    console.log("txHash:", txHash);
+
+    const publicClient = getPublicClient(activeChain.id);
+    if (publicClient) {
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
+      console.log("receipt:", receipt);
+
+      return receipt;
+    }
     console.log("Deposit executed");
     // setcrossChainTxId(transactionId);
     //console.log("Deposit executed");
@@ -1435,7 +1516,7 @@ export const executeWithdrawal = async (
   strategyAddress: Address,
   strategyChainId: number,
   walletContext: WalletContextState,
-  activeAccount: Account,
+  activeAccount: UseUserResult,
   activeChain: Chain,
   withdrawShareAmount: bigint,
   withdrawERC20: Address,
@@ -1614,7 +1695,7 @@ export const fetchUserVaultBalance = async (
   const contract = getContractCustom({
     chainId: SUPPORTED_CHAINS[0].chain.id, // This will always be Zetachain, as it's a balance on the vault
     address: vaultAddress,
-    abi: ''
+    abi: "",
   });
   const { value: shares, decimals } = await getBalance({
     contract,
@@ -1799,21 +1880,41 @@ export const getSharesFromDeposit = async (
   amount: bigint,
   vaultData: VaultData,
 ) => {
-  const contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0],
-    address: vaultData.id as Address,
-  });
+  const previewDepositAbi = [
+    {
+      inputs: [{ name: "assets", type: "uint256" }],
+      name: "previewDeposit",
+      outputs: [{ name: "shares", type: "uint256" }],
+      stateMutability: "view",
+      type: "function",
+    },
+  ] as const;
+
+  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
+
+  if (!publicClient) {
+    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].chain.id}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
 
   try {
-    const shares = await readContract({
-      contract,
-      method: "function previewDeposit(uint assets) view returns (uint shares)",
-      params: [amount],
+    const sharesAsBigInt = await publicClient.readContract({
+      address: vaultData.id,
+      abi: previewDepositAbi,
+      functionName: "previewDeposit",
+      args: [amount],
     });
-    const formattedShares =
-      Number(shares) / 10 ** vaultData.inputToken.decimals;
-    return formattedShares.toString();
+
+    const formattedShares = formatUnits(
+      sharesAsBigInt,
+      vaultData.inputToken.decimals,
+    );
+
+    console.log("'shares' (bigint):", sharesAsBigInt);
+    console.log("formatted 'shares':", formattedShares);
+
+    return formattedShares;
   } catch (e) {
     return "0";
   }
@@ -1822,21 +1923,33 @@ export const getSharesFromDeposit = async (
 export const getAssetsFromShares = async (
   amount: bigint,
   vaultData: VaultData,
+  chainId: number,
 ) => {
-  /*console.log("amount", amount);
-  console.log("vault address", vaultData.id);*/
-  const contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0],
-    address: vaultData.id as Address,
-  });
-  //console.log("contract", contract);
+  const previewRedeemAbi = [
+    {
+      inputs: [{ name: "shares", type: "uint256" }],
+      name: "previewRedeem",
+      outputs: [{ name: "assets", type: "uint256" }],
+      stateMutability: "view",
+      type: "function",
+    },
+  ] as const;
+
+  const publicClient = getPublicClient(chainId);
+
+  if (!publicClient) {
+    console.error(`error get publicClient  for chain with ID ${chainId}`);
+    return 0n;
+  }
+
   try {
-    const result = await readContract({
-      contract,
-      method: "function previewRedeem(uint shares) view returns (uint assets)",
-      params: [amount],
+    const result = await publicClient.readContract({
+      address: vaultData.id,
+      abi: previewRedeemAbi,
+      functionName: "previewRedeem",
+      args: [amount],
     });
+
     //console.log("result", result);
     return result;
   } catch (e) {
@@ -1845,16 +1958,30 @@ export const getAssetsFromShares = async (
   }
 };
 
-export const getPerformanceFee = async (vaultId: Address) => {
-  let contract = getContract({
-    client,
-    chain: SUPPORTED_CHAINS[0], // Zetachain
-    address: vaultId,
-  });
+export const getPerformanceFee = async (vaultId: Address, chainId: number) => {
+  const publicClient = getPublicClient(chainId);
+  if (!publicClient) return 1;
+  const abi = [
+    {
+      type: "function",
+      name: "perfFee",
+      stateMutability: "view",
+      inputs: [],
+      outputs: [
+        {
+          name: "",
+          type: "uint16",
+          internalType: "uint16",
+        },
+      ],
+    },
+  ] as const;
 
-  const perfFee = await readContract({
-    contract,
-    method: "function perfFee() view returns (uint16)",
+  console.log(vaultId, chainId)
+  const perfFee = await publicClient.readContract({
+    address: vaultId,
+    abi: abi,
+    functionName: "perfFee",
   });
 
   return perfFee;
@@ -1896,7 +2023,7 @@ export async function fetchReceiptTokens(
 
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
-    const rpcUrl = chainConfigs[chainId].rpc;
+    const rpcUrl = getRpcUrl(chainConfigs[chainId]);
     if (!rpcUrl) continue;
     const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);
     const mcAddr = MULTICALL_ADDRS[chainId]?.address;

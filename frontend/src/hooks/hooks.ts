@@ -44,6 +44,7 @@ import multicall3Abi from "../../abis/multicall3ABI.json";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { apiService } from "@/service";
 import { zetaProvider } from "@/utils/providers";
+import { Address, zeroAddress } from "viem";
 
 type CashedVaultData = {
   vaultId: string;
@@ -107,7 +108,7 @@ export const useUpdateVaultBalanceAndTotal = (
       if (!provider || vaults.length === 0) return;
       let address = isSolanaAddress(walletAddress)
         ? "0x77706672467938396e78347A4B734c5066653142"
-        : walletAddress || ADDRESS_ZERO;
+        : walletAddress || zeroAddress;
 
       const mcCfg = MULTICALL_ADDRS[CHAIN_ID.zetachain];
 
@@ -248,7 +249,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
     const updateVaultBalanceAndTotal = async () => {
       const address = isSolanaAddress(userAddress)
         ? "0x77706672467938396e78347A4B734c5066653142"
-        : userAddress;
+        : userAddress ?? zeroAddress;
       try {
         if (vault && vault.id) {
           const balance = await fetchUserVaultBalance(
