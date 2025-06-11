@@ -19,7 +19,7 @@ const ConnectWallet = () => {
       </div>
       <button className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1">
         I DON’T HAVE A WALLET
-        <ErrorInputIcon width={16} height={17} />
+        <ErrorInputIcon width={16} height={17} className="fill-[#3E73C4]" />
       </button>
     </div>
   );

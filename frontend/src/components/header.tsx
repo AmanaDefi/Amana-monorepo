@@ -105,7 +105,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          {/* <div className="hidden md:block thirdweb-connect-override">
+          <div className="hidden md:block thirdweb-connect-override">
             <ConnectButton
               wallets={wallets}
               chains={SUPPORTED_CHAINS}
@@ -123,15 +123,15 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                 connectButton={{ label: "Sign in" }}
               />
             </div>
-          )} */}
-          {!isConnected && (
+          )}
+          {/* {!isConnected && (
             <button
               onClick={() => openStep("optionsA")}
               className="bg-[#1B46E0] hover:opacity-90 text-white text-[16px] font-bold rounded-lg px-6 py-2"
             >
               Sign in
             </button>
-          )}
+          )} */}
         </div>
       </header>
 

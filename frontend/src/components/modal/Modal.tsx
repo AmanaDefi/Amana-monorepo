@@ -44,7 +44,7 @@ export default function Modal({
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
               <Dialog.Panel
-                className={`w-full md:min-w-[500px] md:w-fit relative transform rounded-lg bg-customNeutral200 border border-customNeutral100 px-8 py-9 transition-all text-white ${classNames}`}
+                className={`w-full md:min-w-[500px] md:w-fit relative transform rounded-lg bg-customNeutral200 border border-customNeutral100 px-8 py-9 transition-all ${classNames}`}
               >
                 <div className="flex flex-row justify-between font-medium md:items-center mb-8">
                   <>{title || <div></div>}</>
