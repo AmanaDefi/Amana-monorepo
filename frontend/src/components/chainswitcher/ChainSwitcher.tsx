@@ -11,6 +11,8 @@ import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
+import ChandeChain from "@public/ethereum.png"
+import Button from "../Button";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
@@ -125,10 +127,11 @@ const ChainSwitcher: React.FC = () => {
       className="z-50 relative bg-gradient-to-b from-[#262830] to-[#06afbc] rounded-full lg:bg-none lg:rounded-none"
       ref={dropdownRef}
     >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex flex-col md:flex-row items-center gap-2 p-1 lg:p-4 md:px-3 md:py-2 bg-gradient-to-r from-[#262830] to-[#06afbc] hover:bg-gradient-to-l text-white rounded-md transition-opacity duration-200 cursor-pointer"
+      <Button
+        variant="secondary"
         disabled={!wallet}
+        onClick={() => setIsOpen(!isOpen)}
+        className="cursor-pointer !p-2 !max-w-[56px] !max-h-[58px] "
         data-tooltip-id="chain-switcher-tooltip"
         data-tooltip-content={
           wallet?.type === "eoa"
@@ -145,13 +148,10 @@ const ChainSwitcher: React.FC = () => {
             className="w-5 h-5 rounded-full"
           />
         )} */}
-        <span className="hidden lg:block">
-          {displayChain?.name || "Select Chain"}
-        </span>
-        <ChevronDownIcon
-          className={`w-4 h-4 md:ml-2 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
+        <div className="bg-[#24262f] rounded-full border border-[#9A9CB3] p-2 flex items-center justify-center">
+          <Image src={ChandeChain} width={24} height={24} alt="change chain" />
+        </div>
+      </Button>
 
       <Tooltip id="chain-switcher-tooltip" />
 

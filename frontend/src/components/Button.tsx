@@ -3,7 +3,13 @@ import React, { forwardRef } from "react";
 import cn from "classnames";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "signIn" | "primary" | "custom" | "outlined" | "special";
+  variant?:
+    | "signIn"
+    | "primary"
+    | "custom"
+    | "outlined"
+    | "special"
+    | "secondary";
   className?: string;
 }
 
@@ -22,8 +28,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             return "border border-[#35383D] text-[#35383D] bg-transparent cursor-not-allowed";
           case "special":
             return "border border-[#35383D] text-[#35383D] bg-transparent cursor-not-allowed font-bold text-[16px]";
+          case "secondary":
+            return "bg-[#35383D] text-[#6B7280] border-none shadow-[0_4px_4px_0_rgba(0,0,0,0.15)] cursor-not-allowed";
         }
       }
+
       switch (variant) {
         case "signIn":
           return cn(
@@ -52,6 +61,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           return cn(
             "bg-[#1B46E0] text-white border border-transparent shadow-[0_2px_6px_rgba(0,0,0,0.25)] font-bold text-[16px] rounded-lg px-[39px] py-[14px]",
             "hover:bg-[#0C1015] hover:border hover:border-[#3E73C4]",
+          );
+        case "secondary":
+          return cn(
+            "bg-[var(--second-60)] text-white border border-[#323234] rounded-lg",
+            "shadow-[0_4px_4px_0_rgba(0,0,0,0.15)]",
+            "hover:border-[#1B46E0]",
           );
         default:
           return "";
