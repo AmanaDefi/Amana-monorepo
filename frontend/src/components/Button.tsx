@@ -27,9 +27,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       switch (variant) {
         case "signIn":
           return cn(
-            "bg-[#0A0A0A] text-white border-[#9CA3AF]",
-            "hover:bg-white/10",
-            "active:bg-[linear-gradient(139deg,_#14171f_0%,_#1b46e0_100%)]",
+            "bg-[#0A0A0A] text-white border border-[#535E73] h-[56px]",
+            "hover:[background:linear-gradient(139deg,#14171f_0%,#14171f_55%,rgba(27,70,224,0.25)_70%,rgba(27,70,224,0.5)_90%,#1b46e0_120%)!important]",
+            "active:[background:linear-gradient(139deg,#14171f_0%,#14171f_55%,rgba(27,70,224,0.25)_70%,rgba(27,70,224,0.5)_90%,#1b46e0_120%)!important]",
           );
         case "primary":
           return cn(
@@ -59,7 +59,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled}
         className={cn(
           "rounded-lg px-[16px] py-[17px] w-[192px]",
-          "text-[18px] font-normal font-sans text-center",
+          "text-[18px] font-gotham font-normal text-center",
           "flex items-center justify-center select-none transition",
           getButtonClass(),
           className,
