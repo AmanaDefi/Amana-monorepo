@@ -178,8 +178,8 @@ export default function VaultHeader({
   const depositAmountNumber = parseFloat(depositAmount) || 0;
   
   return (
-    <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
-      <div className="w-full mb-12 flex flex-row items-center">
+    <section className="pt-10 px-4 md:px-0 ">
+      <div className="w-full mb-10 flex flex-row items-center">
         <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -225,7 +225,7 @@ export default function VaultHeader({
         </div>
       </div>
       <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:pr-10 gap-4 md:gap-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:pr-10 gap-4 md:gap-[56px]">
           <LargeCardStat
             id="deposits"
             label="Deposits"
@@ -246,7 +246,7 @@ export default function VaultHeader({
             )}`}
             tooltip="Value of deposit assets held in your wallet"
           />
-          <LargeCardStat
+          {/* <LargeCardStat
             id="APY"
             label="7d APY"
             value={
@@ -263,7 +263,7 @@ export default function VaultHeader({
                   ).toFixed(2)}%`
             }
             tooltip="APY for the last 7 days"
-          />
+          /> */}
         </div>
       </div>
     </section>

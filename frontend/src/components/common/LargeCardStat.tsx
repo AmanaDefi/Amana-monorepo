@@ -4,44 +4,33 @@ import { CardStatProps } from "@/components/common/CardStat";
 export default function LargeCardStat({ id, label, value, secondaryValue, children, tooltip, tooltipChild }: CardStatProps): JSX.Element {
   return (
     <div className="w-full cursor-pointer" id={id}>
-      <p
-        className="text-white font-normal whitespace-nowrap w-1/2 md:w-full"
-      >
+      <p className="text-[#535E73] font-bold text-[16px] whitespace-nowrap w-1/2 md:w-full mb-4">
         {label}
       </p>
-      {value ?
+      {value ? (
         <>
-          <p className="text-2xl lg:text-3xl font-bold whitespace-nowrap text-white leading-0">
+          <p className="text-2xl lg:text-[32px] font-normal whitespace-nowrap text-white leading-0 ">
             {value}
           </p>
-          {
-            secondaryValue &&
+          {/* {secondaryValue && (
             <p className={`text-xl whitespace-nowrap text-customGray300 -mt-2`}>
               {secondaryValue}
             </p>
-          }
+          )} */}
         </>
-        : <>
-          {children}
-        </>
-      }
+      ) : (
+        <>{children}</>
+      )}
 
-      {
-        tooltip && tooltip !== "" &&
+      {tooltip && tooltip !== "" && (
         <ResponsiveTooltip
           id={id}
-          content={
-            <p className="w-52">{tooltip}</p>
-          }
+          content={<p className="w-52">{tooltip}</p>}
         />
-      }
-      {
-        !tooltip && tooltipChild &&
-        <ResponsiveTooltip
-          id={id}
-          content={tooltipChild}
-        />
-      }
+      )}
+      {!tooltip && tooltipChild && (
+        <ResponsiveTooltip id={id} content={tooltipChild} />
+      )}
     </div>
-  )
+  );
 }
