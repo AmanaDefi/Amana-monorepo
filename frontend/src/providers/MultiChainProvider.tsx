@@ -19,11 +19,15 @@ import {
   useLogout,
   useUser,
   useChain,
+  useConnection,
 } from "@account-kit/react";
-// import { useBal ance } from "wagmi";
+import { useBalance } from "wagmi";
 import useSolanaBalance from "@/hooks/useSolanaBalance";
 import { Balance } from "@/types/types";
 import { Chain } from "viem";
+import { BrowserProvider, ethers } from "ethers";
+import { ethereumProvider } from "@/utils/providers";
+import { getProvider } from "@/utils/getProvider";
 declare global {
   interface Window {
     solana?: any;
@@ -44,7 +48,7 @@ interface MultiChainContextType {
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
   switchToChain: (chain: Chain) => Promise<void>;
-  // refetchBalance: () => void;
+  refetchBalance: () => void;
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -68,9 +72,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { logout: evmDisconnect } = useLogout();
   const { publicKey, disconnect, connected } = useWallet();
   const { setVisible } = useWalletModal();
+  const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
 
-  const [activeChain, setActiveChain] = useState<Chain | null>(null);
   const { setChain, chain } = useChain();
+  const [activeChain, setActiveChain] = useState<Chain | null>(chain);
 
   const { balance: solanaBalance, refetch: refetchSolBalance } =
     useSolanaBalance();
@@ -140,20 +145,24 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   //   address: userAddress,
   // });
 
-  // const evmBalance: Balance = data
-  //   ? {
-  //       value: data.value || 0n,
-  //       formatted: format(data.value, data.decimals),
-  //     }
-  //   : EMPTY_BALANCE;
+  const getEvmBalance = useCallback(async () => {
+    console.log("het evm", chain, walletAddress);
+    if (!chain || !activeAccount?.address) return;
 
-  // const refetchBalance = () => {
-  //   if (activeChain?.id === CHAIN_ID.ethereum) {
-  //     refetchEthBalance();
-  //   } else if (activeChain?.id === CHAIN_ID.solana) {
-  //     refetchSolBalance();
-  //   }
-  // };
+    try {
+      const rpcProvider = getProvider(chain.id);
+      const balanceInWei = await rpcProvider.getBalance(activeAccount?.address);
+
+      const balanceInEth = ethers.formatEther(balanceInWei);
+
+      const formattedBalance = parseFloat(balanceInEth).toFixed(4);
+      console.log(formattedBalance);
+
+      setBalance({ formatted: formattedBalance, value: balanceInWei });
+    } catch (error) {
+      console.error("Error get balance:", error);
+    }
+  }, [chain, activeAccount, getProvider, setBalance]);
 
   useEffect(() => {
     console.log(activeAccount, publicKey);
@@ -165,9 +174,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       setIsModalOpen(false);
     } else if (activeAccount?.address) {
       setWalletAddress(activeAccount?.address);
+      getEvmBalance();
       setIsModalOpen(false);
     }
-  }, [activeAccount, publicKey, disconnectWallet]);
+  }, [activeAccount, publicKey, disconnectWallet, getEvmBalance]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {
@@ -241,17 +251,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         selectedChain,
         activeChain,
         walletAddress,
-        balance:
-          selectedChain == "solana"
-            ? solanaBalance
-            : { value: 0n, formatted: "0" },
+        balance: selectedChain == "solana" ? solanaBalance : balance,
         connectSolana,
         connectEthereum,
         disconnectWallet,
         isModalOpen,
         setIsModalOpen,
         switchToChain,
-        // refetchBalance,
+        refetchBalance: getEvmBalance,
       }}
     >
       {children}

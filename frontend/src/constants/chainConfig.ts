@@ -160,6 +160,19 @@ export const avalancheMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
 export const avalancheFujiRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
+export const sepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
+export const baseSepoliaRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
+export const polygonAmoyRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
+export const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
+export const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
+export const polygonMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
+export const arbitrumMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
+export const arbitrumSepoliaRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_SEPOLIA || "";
 
 export const solanaRpcUrl =
   deployEnv == "testnet"
@@ -240,6 +253,9 @@ const chainsMainnet = [
 ];
 const chainsTestnet = [
   {
+    chain: zetachainAthensTestnetChain,
+  },
+  {
     chain: sepolia,
   },
   {
@@ -256,9 +272,6 @@ const chainsTestnet = [
   },
   {
     chain: arbitrumSepolia,
-  },
-  {
-    chain: zetachainAthensTestnetChain,
   },
 ];
 

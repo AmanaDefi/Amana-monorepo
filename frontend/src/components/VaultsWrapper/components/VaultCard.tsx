@@ -17,6 +17,7 @@ import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
 import { InfoBlock } from "./InfoBlock.tsx";
+import { useAuthStore } from "@/store/authStore";
 
 const RISK_LEVELS: Record<number, { level: string; color: string }> = {
   1: { level: "Low", color: "bg-green-accent" },
@@ -37,6 +38,7 @@ export const VaultCard: FC<Props> = React.memo(
   ({ vault, vaultAPYs, vaultTotalAssets, userVaultBalances }) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
+    const { openStep } = useAuthStore();
 
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
@@ -51,10 +53,23 @@ export const VaultCard: FC<Props> = React.memo(
     const is30dAPYUp = true;
     const isPredictionUp = false;
 
+    const handlePressButton = (
+      e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    ) => {
+      e.stopPropagation();
+      if (walletAddress) {
+        handleVaultClick(vault.id);
+      } else {
+        openStep("optionsA");
+      }
+    };
     return (
       <div
         className="bg-[#14171F] flex-1 p-6 min-w-[380px] rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
-        onClick={() => handleVaultClick(vault.id)}
+        onClick={() => {
+          if (!walletAddress) return;
+          handleVaultClick(vault.id);
+        }}
       >
         <div className="flex md:flex-row flex-col gap-1 justify-between">
           <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
@@ -156,7 +171,7 @@ export const VaultCard: FC<Props> = React.memo(
                   <p className="font-normal text-base leading-4 uppercase text-white">
                     APY (7d)
                   </p>
-                  <InfoBlock isRight >
+                  <InfoBlock isRight>
                     💡 APY (Annual Percentage Yield) <br />
                     Estimated yearly return with compounding. It may vary based
                     on rewards, liquidity, and market changes.
@@ -243,14 +258,8 @@ export const VaultCard: FC<Props> = React.memo(
         </p>
         {/* Buttons */}
         <div className="flex gap-4">
-          <AppButton
-            isBlue
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/vaults/${vault.id}?tab=deposit`);
-            }}
-          >
-            {!!walletAddress ? 'Deposit' : "Invest"}
+          <AppButton isBlue onClick={handlePressButton}>
+            {!!walletAddress ? "Deposit" : "Invest"}
           </AppButton>
           {userVaultBalances.find(
             (balance: UserVaultBalance) => balance.vaultId === vault.id,

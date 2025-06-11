@@ -41,7 +41,6 @@ export const SignUpModal = () => {
       },
       {
         onSuccess: (result) => {
-          console.log(result);
           console.log("Success google auth", result);
         },
         onError: (err) => {

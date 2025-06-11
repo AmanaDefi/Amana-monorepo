@@ -1,9 +1,47 @@
-import { JsonRpcProvider } from 'ethers';
-import { zetaRpcUrl, CHAIN_ID } from '@/constants/chainConfig';
+import { JsonRpcProvider } from "ethers";
+import {
+  zetaRpcUrl,
+  baseMainnetRpcUrl,
+  ethMainnetRpcUrl,
+  arbitrumMainnetRpcUrl,
+  polygonAmoyRpcUrl,
+  polygonMainnetRpcUrl,
+  avalancheMainnetRpcUrl,
+  bscMainnetRpcUrl,
+  baseSepoliaRpcUrl,
+  sepoliaRpcUrl,
+  arbitrumSepoliaRpcUrl,
+  avalancheFujiRpcUrl,
+  bscTestnetRpcUrl,
+} from "@/constants/chainConfig";
 
-const baseProvider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE!);
-const ethereumProvider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH!);
-const arbitrumProvider = new JsonRpcProvider(process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE!);
-const zetaProvider = new JsonRpcProvider(zetaRpcUrl, CHAIN_ID.zetachain);
+const baseProvider = new JsonRpcProvider(baseMainnetRpcUrl);
+const ethereumProvider = new JsonRpcProvider(ethMainnetRpcUrl);
+const arbitrumProvider = new JsonRpcProvider(arbitrumMainnetRpcUrl);
+const zetaProvider = new JsonRpcProvider(zetaRpcUrl);
+const polygonProvider = new JsonRpcProvider(polygonMainnetRpcUrl);
+const avalancheProvider = new JsonRpcProvider(avalancheMainnetRpcUrl);
+const bscProvider = new JsonRpcProvider(bscMainnetRpcUrl);
 
-export { baseProvider, ethereumProvider, arbitrumProvider, zetaProvider };
+const baseTestnetProvider = new JsonRpcProvider(baseSepoliaRpcUrl);
+const ethereumTestnetProvider = new JsonRpcProvider(sepoliaRpcUrl);
+const arbitrumTestnetProvider = new JsonRpcProvider(arbitrumSepoliaRpcUrl);
+const polygonTestnetProvider = new JsonRpcProvider(polygonAmoyRpcUrl);
+const avalancheTestnetProvider = new JsonRpcProvider(avalancheFujiRpcUrl);
+const bscTestnetProvider = new JsonRpcProvider(bscTestnetRpcUrl);
+
+export {
+  baseProvider,
+  ethereumProvider,
+  arbitrumProvider,
+  zetaProvider,
+  polygonProvider,
+  avalancheProvider,
+  bscProvider,
+  baseTestnetProvider,
+  ethereumTestnetProvider,
+  arbitrumTestnetProvider,
+  polygonTestnetProvider,
+  avalancheTestnetProvider,
+  bscTestnetProvider
+};

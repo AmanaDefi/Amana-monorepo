@@ -7,18 +7,11 @@ import { trackEvent } from "@/utils/trackEvent";
 import {
   useUser,
   useSignerStatus,
-  useAccount,
 } from "@account-kit/react";
 
 export default function AccountProvider({ children }: PropsWithChildren) {
-  const { isConnected, isDisconnected } = useSignerStatus()
+  const { isConnected, isInitializing } = useSignerStatus()
   const user = useUser(); 
-  const scaAccount = useAccount({
-    type: "ModularAccountV2",
-    accountParams: {
-      mode: "default",
-    },
-  });
 
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
   const [hasIdentified, setHasIdentified] = useState(false);
@@ -38,14 +31,14 @@ export default function AccountProvider({ children }: PropsWithChildren) {
       (mixpanel as any).__initialized = true;
     }
 
-    if (isConnected && user?.address) {
+    if (user?.address && !isInitializing) {
       if (!hasIdentified) {
         mixpanel.identify(user.address);
         mixpanel.people.set({ wallet_address: user.address });
         trackEvent("Wallet Connected", { walletAddress: user.address });
         setHasIdentified(true);
       }
-    } else if (!isDisconnected) {
+    } else if (!isInitializing) {
       if (hasIdentified) {
         mixpanel.reset();
         setHasIdentified(false);
@@ -75,7 +68,7 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     isConnected,
     hasTrackedPage,
     hasIdentified,
-    isDisconnected
+    isInitializing
   ]);
 
   return <>{children}</>;

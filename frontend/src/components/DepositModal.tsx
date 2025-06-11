@@ -1,11 +1,9 @@
 import { VaultData } from "@/types/types";
-import { Account } from "thirdweb/wallets";
 import React, { useEffect, useState } from "react";
-import { Address, getContract } from "thirdweb";
-import { getBalance } from "thirdweb/extensions/erc20";
 import { client } from "../utils/client";
-import { useActiveWalletChain } from "thirdweb/react";
 import { ethers } from "ethers";
+import { useChain, UseUserResult } from "@account-kit/react";
+import { getContract } from "@/utils/getContract";
 
 const DepositModal: React.FC<{
   isOpen: boolean;
@@ -13,7 +11,7 @@ const DepositModal: React.FC<{
   transactionAmount: string;
   setTransactionAmount: (value: string) => void;
   handleDeposit: () => void;
-  activeAccount: Account | null;
+  activeAccount: UseUserResult | null;
   selectedVault: VaultData | null;
   isProcessing: boolean;
 }> = ({
@@ -27,7 +25,7 @@ const DepositModal: React.FC<{
   isProcessing,
 }) => {
   const [tokenBalance, setTokenBalance] = useState<string>("0");
-  const activeChain = useActiveWalletChain();
+  const {chain: activeChain} = useChain();
   if (!activeChain) {
     throw new Error("No active chain found");
   }

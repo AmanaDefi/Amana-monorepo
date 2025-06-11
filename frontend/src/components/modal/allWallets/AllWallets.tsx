@@ -25,13 +25,12 @@ const AllWAllets = () => {
   const walletConnectConnector = connectors.find(
     (con) => con.name === "WalletConnect",
   );
-  const metaMaskConnector = connectors.find(
-    (con) => con.name === "MetaMask",
-  );
+  const metaMaskConnector = connectors.find((con) => con.name === "MetaMask");
 
   const handleExternalWalletConnect = (
     connector: CreateConnectorFn | Connector,
   ) => {
+    if (isConnectingWallet) return;
     connect(
       { connector },
       {
@@ -73,7 +72,7 @@ const AllWAllets = () => {
                     if (metaMaskConnector) {
                       handleExternalWalletConnect(metaMaskConnector);
                     } else {
-                      console.log('no metaMask connector');
+                      console.log("no metaMask connector");
                     }
                   }}
                 />
@@ -84,7 +83,7 @@ const AllWAllets = () => {
                     if (walletConnectConnector) {
                       handleExternalWalletConnect(walletConnectConnector);
                     } else {
-                      console.log('no WalletConnect connector');
+                      console.log("no WalletConnect connector");
                     }
                   }}
                 />

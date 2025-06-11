@@ -12,7 +12,8 @@ import {
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { parseUnits } from "viem";
-import { Address, Chain, getContract, readContract } from "thirdweb";
+import { Address, getContract, readContract } from "thirdweb";
+import { Chain } from "viem";
 import { client } from "@/utils/client";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import {
@@ -313,7 +314,7 @@ export default function VaultInputs({
     action,
     vaultTotalAssetinToken,
     steps,
-    tokenBalance.value
+    tokenBalance.value,
   ]);
 
   // Watch input balance and trigger steps config selection

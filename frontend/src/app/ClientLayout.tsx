@@ -9,8 +9,7 @@ import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
-import { AlchemyClientState, cookieToInitialState } from "@account-kit/core";
-import { ThirdwebProvider } from "thirdweb/react";
+import { cookieToInitialState } from "@account-kit/core";
 import { Providers } from "@/providers/AlchemyProviders";
 import { headers } from "next/headers";
 import { alchemyConfig } from "../../alchemyConfig";
@@ -26,12 +25,12 @@ const spaceMono = Space_Mono({
   variable: "--font-space-mono",
 });
 
-const initialState = cookieToInitialState(
-  alchemyConfig,
-  headers().get("cookie") ?? undefined,
-);
-
 const ClientLayout = (props: PropsWithChildren) => {
+  const initialState = cookieToInitialState(
+    alchemyConfig,
+    headers().get("cookie") ?? undefined,
+  );
+
   return (
     <html
       lang="en"
@@ -40,7 +39,6 @@ const ClientLayout = (props: PropsWithChildren) => {
       <body className="font-sans font-light">
         <SolanaWalletProvider>
           <Providers initialState={initialState}>
-            {/* <ThirdwebProvider> */}
             <AccountProvider>
               <MultiChainProvider>
                 <TokenPriceProvider>
@@ -51,7 +49,6 @@ const ClientLayout = (props: PropsWithChildren) => {
               </MultiChainProvider>
             </AccountProvider>
             <ToastContainer />
-            {/* </ThirdwebProvider> */}
           </Providers>
         </SolanaWalletProvider>
       </body>

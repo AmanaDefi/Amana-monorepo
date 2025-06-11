@@ -1000,7 +1000,7 @@ const getMinAmountOut = async (
 ) => {
   const vaultContract = getContract({
     client,
-    chain: SUPPORTED_CHAINS[0], // Zetachain
+    chain: SUPPORTED_CHAINS[0].chain, // Zetachain
     address: vaultId,
   });
   const vaultTotalSupply = await readContract({

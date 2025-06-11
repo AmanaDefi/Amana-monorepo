@@ -13,8 +13,6 @@ import {
   executeWithdrawal,
   getAssetsFromShares,
 } from "@/actions/actions";
-import { Address, Chain, waitForReceipt } from "thirdweb";
-import { Account } from "thirdweb/wallets";
 import MainActionButton from "@/components/button/MainActionButton";
 import { client } from "@/utils/client";
 import { MoonLoader } from "react-spinners";

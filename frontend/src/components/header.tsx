@@ -10,8 +10,10 @@ import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
-import classNames from "classnames";
+import { BrowserProvider, ethers, Signer } from "ethers";
+import { ethereumProvider } from "@/utils/providers";
+import Image from "next/image";
+import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -41,12 +43,14 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
-  const { walletAddress, switchToChain, activeChain } = useMultiChain();
+  const { walletAddress, switchToChain, activeChain, balance } =
+    useMultiChain();
   const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  console.log('active chain', activeChain)
+  const [signer, setSigner] = useState<Signer | null>(null);
+  console.log("active chain", activeChain);
 
   const { openStep } = useAuthStore();
 
@@ -100,33 +104,67 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          {SUPPORTED_CHAINS.map((chain) => (
+          <ChainSwitcher />
+          {/* {SUPPORTED_CHAINS.map((chain) => (
             <button key={chain.chain.id} className={classNames({"text-blue-button": activeChain?.id === chain.chain.id})} onClick={() => switchToChain(chain.chain)}>
               {chain.chain.name}
             </button>
-          ))}
-          <div className="w-[192px] hidden md:block ">
+          ))} */}
+
+          <div className="hidden md:block thirdweb-connect-override">
             {!isConnected ? (
               <AppButton onClick={() => openStep("optionsA")}>
                 Sign in
               </AppButton>
             ) : (
               <AppButton onClick={() => {}}>
-                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                <div className="flex flex-row gap-2 text-base leading-[18px] items-center">
+                  <Image
+                    src={"/accountEllipse.png"}
+                    alt={""}
+                    width={32}
+                    height={32}
+                    className="h-[32px] w-[32px]"
+                    sizes="32px"
+                  />
+                  <div className="flex flex-col">
+                    <p>
+                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </p>
+                    <p className="text-[#535E73]">
+                      {balance.formatted} {activeChain?.nativeCurrency?.symbol}
+                    </p>
+                  </div>
+                </div>
               </AppButton>
             )}
           </div>
 
           {path === "/" && (
-            <div className="w-[192px] md:hidden ">
+            <div className="thirdweb-connect-override md:hidden ">
               {!isConnected ? (
                 <AppButton onClick={() => openStep("optionsA")}>
                   Sign in
                 </AppButton>
               ) : (
-                <AppButton onClick={() => {}}>
-                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                </AppButton>
+                <div className="flex flex-row gap-2 text-base leading-[18px] items-center">
+                  <Image
+                    src={"/accountEllipse.png"}
+                    alt={""}
+                    width={32}
+                    height={32}
+                    className="h-[32px] w-[32px]"
+                    sizes="32px"
+                  />
+                  <div className="flex flex-col">
+                    <p>
+                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </p>
+                    <p className="text-[#535E73]">
+                      {balance.formatted} {activeChain?.nativeCurrency?.symbol}
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           )}
