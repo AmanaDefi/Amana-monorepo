@@ -1,0 +1,106 @@
+"use client";
+
+import Image from "next/image";
+import ElephantIcon from "@public/elephant.png";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+type ElephantLoaderProps = {
+  isLoading: boolean;
+};
+
+const PROGRESS_WIDTH = 427;
+
+const ElephantLoader = ({ isLoading }: ElephantLoaderProps) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!isLoading) return;
+
+    setProgress(0);
+    const interval = setInterval(() => {
+      setProgress((prev) => (prev >= 100 ? 100 : prev + 1));
+    }, 20);
+
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  return (
+    <AnimatePresence>
+      {isLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          className="relative max-w-[427px] w-full h-1 mt-[59px] mx-auto"
+        >
+          <motion.div
+            className="absolute top-0 left-0 w-full h-full bg-[#535E73] rounded-[4px]"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            style={{ transformOrigin: "left" }}
+          />
+          <motion.div
+            className="absolute top-0 left-0 h-full bg-[#1B46E0] rounded-[4px]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{
+              duration: 0.3,
+              ease: "easeOut",
+            }}
+          />
+          <motion.div
+            className="absolute -top-[20px]"
+            animate={{
+              x: (progress / 100) * PROGRESS_WIDTH,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+            }}
+          >
+            <motion.div
+              animate={{
+                y: [0, -3, 0],
+                rotate: progress > 0 ? [0, 2, -2, 0] : 0,
+              }}
+              transition={{
+                y: {
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                },
+                rotate: {
+                  duration: 0.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                },
+              }}
+            >
+              <Image
+                src={ElephantIcon}
+                alt="Elephant"
+                width={32}
+                height={32}
+                className="w-10 h-10 drop-shadow-lg"
+              />
+            </motion.div>
+          </motion.div>
+          <motion.div
+            className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-sm text-[#535E73] font-medium"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            {Math.round(progress)}%
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default ElephantLoader;

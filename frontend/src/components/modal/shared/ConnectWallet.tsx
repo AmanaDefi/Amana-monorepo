@@ -9,11 +9,11 @@ const ConnectWallet = () => {
 
   const handleClick = () => {
     closeAll(); 
-    router.push("/onboarding");
+    router.push("/welcome");
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col font-gotham">
       <div className="flex flex-row gap-6 mb-[41px]">
         <AmanaLogo width={78} height={55} className="w-[78px] h-[55px]" />
         <h1 className="text-[34px] font-bold">AMANA</h1>
