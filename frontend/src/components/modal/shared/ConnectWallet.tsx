@@ -1,9 +1,7 @@
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
-import { useRouter } from "next/navigation";
 
 const ConnectWallet = () => {
-  const router = useRouter();
 
   return (
     <div className="flex flex-col font-gotham">

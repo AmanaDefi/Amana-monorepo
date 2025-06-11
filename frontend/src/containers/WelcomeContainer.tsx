@@ -6,65 +6,33 @@ import FinalConfirmationIcon from "@/components/svg/instruction/FinalConfirmatio
 import SelectTokenIcon from "@/components/svg/instruction/SelectTokenIcon";
 import { useAuthStore } from "@/store/authStore";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 const WelcomeContainer = () => {
-  const router = useRouter();
   const username = useAuthStore((state) => state.username);
   const isWalletLoading = true;
 
   const benefits = [
-    {
-      title: "Non-custodial",
-      Icon: SelectTokenIcon,
-    },
-    {
-      title: "Universal-chain",
-      Icon: CrossChainTransferIcon,
-    },
-    {
-      title: "Easy recovery",
-      Icon: FinalConfirmationIcon,
-    },
+    { title: "Non-custodial", Icon: SelectTokenIcon },
+    { title: "Universal-chain", Icon: CrossChainTransferIcon },
+    { title: "Easy recovery", Icon: FinalConfirmationIcon },
   ];
 
-  const logoVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const titleVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        delay: 0.2,
-        ease: "easeOut",
-      },
-    },
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-white text-center font-gotham">
-      <motion.div variants={logoVariants} initial="hidden" animate="visible">
+    <div className="flex flex-col items-center justify-center text-white text-center font-gotham w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <AmanaLogo width={122} height={85} />
       </motion.div>
 
       <motion.h1
-        className="text-3xl md:text-7xl font-bold mt-10"
-        variants={titleVariants}
-        initial="hidden"
-        animate="visible"
+        className="text-3xl md:text-6xl font-bold mt-8"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
       >
         Welcome to{" "}
         <motion.span
@@ -72,7 +40,7 @@ const WelcomeContainer = () => {
           animate={{
             textShadow: [
               "0 0 0px #1B46E0",
-              "0 0 5px rgba(27, 70, 224, 0.4)",
+              "0 0 6px rgba(27, 70, 224, 0.5)",
               "0 0 0px #1B46E0",
             ],
           }}
@@ -89,24 +57,25 @@ const WelcomeContainer = () => {
 
       <ElephantLoader isLoading={isWalletLoading} />
 
-      <p className="text-lg md:text-[24px] font-medium mt-10">
-        {username ? `Congratulations ${username},` : "Congratulations!"} you've
-        been created a wallet on ZetaChain!
+      <p className="text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
+        {username ? `Congratulations ${username},` : "Congratulations!"} you’ve
+        successfully created a wallet on ZetaChain!
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-[121px] mt-[74px] max-w-[1202px] w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-[940px] w-full px-6">
         {benefits.map(({ title, Icon }, index) => (
-          <div
+          <motion.div
             key={index}
-            className="rounded-[16px] py-[30px] px-[66px] flex flex-col items-center gap-4 backdrop-blur-[20px] before-gradient-border"
+            className="rounded-[16px] py-6 px-6 md:px-10 flex flex-col items-center gap-4 backdrop-blur-[20px] before-gradient-border bg-[#0E1014]/50 border border-[#3E73C4]/30"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + index * 0.1 }}
           >
             <div className="rounded-lg bg-[#14171F] h-12 w-12 border border-[#3E73C4] flex justify-center items-center">
               <Icon width={20} height={20} />
             </div>
-            <span className="text-base md:text-[24px] font-medium">
-              {title}
-            </span>
-          </div>
+            <span className="text-base md:text-lg font-medium">{title}</span>
+          </motion.div>
         ))}
       </div>
     </div>

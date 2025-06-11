@@ -7,6 +7,7 @@ export type AuthStep =
   | "optionsA"
   | "optionsB"
   | "allWallets"
+  | "success"
   | null;
 
 interface AuthState {
@@ -21,16 +22,13 @@ interface AuthState {
 
   openStep: (step: AuthStep) => void;
   closeAll: () => void;
-  updateField: (
-    name: "username" | "email" | "otp",
-    value: string,
-  ) => void;
+  successAuth: () => void;
+  updateField: (name: "username" | "email" | "otp", value: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   authenticate: (address: string) => void;
   logout: () => void;
 }
-
 export const useAuthStore = create<AuthState>((set) => ({
   step: null,
   username: "",
@@ -45,6 +43,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   closeAll: () =>
     set({
       step: null,
+      isLoading: false,
+      error: null,
+      email: "",
+      username: "",
+      otp: "",
+    }),
+  successAuth: () =>
+    set({
+      step: "success",
       isLoading: false,
       error: null,
       email: "",
@@ -73,4 +80,5 @@ export const useAuthStore = create<AuthState>((set) => ({
       otp: "",
     }),
 }));
+
 

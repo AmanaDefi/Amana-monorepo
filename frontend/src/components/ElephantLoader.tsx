@@ -19,8 +19,8 @@ const ElephantLoader = ({ isLoading }: ElephantLoaderProps) => {
 
     setProgress(0);
     const interval = setInterval(() => {
-      setProgress((prev) => (prev >= 100 ? 100 : prev + 1));
-    }, 20);
+      setProgress((prev) => (prev >= 100 ? 100 : prev + 0.7));
+    }, 30);
 
     return () => clearInterval(interval);
   }, [isLoading]);

@@ -95,7 +95,7 @@ export const VerifyOtpModal = () => {
     if (otp !== "123456") {
       setError(true);
     } else {
-      authenticate("0xMockUserWallet");
+      useAuthStore.getState().successAuth();
     }
   };
 
