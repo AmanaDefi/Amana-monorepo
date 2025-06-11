@@ -22,7 +22,7 @@ const formatEmail = (email: string) => {
 };
 
 export const VerifyOtpModal = () => {
-  const { step, email, closeAll, authenticate } = useAuthStore();
+  const { step, email, closeAll, authenticate, successAuth } = useAuthStore();
   const {authenticate: OTPAuth} = useAuthenticate();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState(false);
@@ -102,6 +102,7 @@ export const VerifyOtpModal = () => {
           console.log(result);
           console.log("Success google auth", result);
           authenticate(result.address)
+          successAuth();
         },
         onError: (err) => {
           console.error("Error google auth:", err);

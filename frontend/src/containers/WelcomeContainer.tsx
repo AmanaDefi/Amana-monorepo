@@ -55,11 +55,15 @@ const WelcomeContainer = () => {
         DEFI
       </motion.h1>
 
-      <ElephantLoader isLoading={isWalletLoading} onComplete={() => closeAll()} />
+      <ElephantLoader
+        isLoading={isWalletLoading}
+        onComplete={() => closeAll()}
+      />
 
       <p className="text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
-        {username ? `Congratulations ${username},` : "Congratulations!"} you’ve
-        successfully created a wallet on ZetaChain!
+        {/* {username ? `Congratulations ${username},` : "Congratulations!"} you’ve
+        successfully created a wallet on ZetaChain! */}
+        Congratulations! You’ve successfully created a wallet on ZetaChain!
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-[940px] w-full px-6">

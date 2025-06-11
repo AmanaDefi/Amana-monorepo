@@ -79,7 +79,7 @@ export const SignUpModal = () => {
 
   useEffect(() => {
     if (step !== "signup") {
-      reset(); // з react-hook-form
+      reset(); 
     }
   }, [step]);
 
@@ -154,7 +154,7 @@ export const SignUpModal = () => {
         />
         {errors.email && (
           <div className="flex gap-1 color-[#FFC700] text-[#FFC700]">
-            <ErrorInputIcon width={16} height={16} />
+            <ErrorInputIcon width={16} height={16} className="fill-[#FFC700]" />
             <p className="text-[#FFC700] text-[12px] font-normal ">
               {errors.email.message}
             </p>
