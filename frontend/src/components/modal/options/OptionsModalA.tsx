@@ -13,12 +13,6 @@ import { useRouter } from "next/navigation";
 
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
-  const router = useRouter();
-
-  const handleClick = () => {
-    closeAll();
-    router.push("/onboarding");
-  };
 
   return (
     <Modal
@@ -49,7 +43,7 @@ const OptionsModalA = () => {
               <ModalButton
                 label="Smart Wallet"
                 icon={<SmartWalletIcon width={29} height={25} />}
-                onClick={handleClick}
+                onClick={() => openStep("onboarding")}
               />
               <ModalButton
                 label="All Wallets"

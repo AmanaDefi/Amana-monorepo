@@ -7,23 +7,33 @@ import { motion, AnimatePresence } from "framer-motion";
 
 type ElephantLoaderProps = {
   isLoading: boolean;
+  onComplete?: () => void;
 };
 
 const PROGRESS_WIDTH = 427;
 
-const ElephantLoader = ({ isLoading }: ElephantLoaderProps) => {
-  const [progress, setProgress] = useState(0);
+const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
+ const [progress, setProgress] = useState(0);
+ const [hasCompleted, setHasCompleted] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading) return;
+ useEffect(() => {
+   if (!isLoading) return;
 
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((prev) => (prev >= 100 ? 100 : prev + 0.7));
-    }, 30);
+   setProgress(0);
+   setHasCompleted(false); 
+   const interval = setInterval(() => {
+     setProgress((prev) => (prev >= 100 ? 100 : prev + 0.7));
+   }, 30);
 
-    return () => clearInterval(interval);
-  }, [isLoading]);
+   return () => clearInterval(interval);
+ }, [isLoading]);
+
+ useEffect(() => {
+   if (progress >= 100 && !hasCompleted) {
+     setHasCompleted(true);
+     onComplete?.();
+   }
+ }, [progress, hasCompleted, onComplete]);
 
   return (
     <AnimatePresence>

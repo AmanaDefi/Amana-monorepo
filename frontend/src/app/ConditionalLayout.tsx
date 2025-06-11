@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import Footer from "@/components/Footer";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/header";
@@ -11,11 +10,7 @@ import React, { useState, useEffect } from "react";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
-  const pathname = usePathname();
   const isConnected = !!walletAddress;
-  const isOnboardingPage = pathname === "/onboarding";
-  const isWelcomePage = pathname === "/welcome";
-
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("");
   const [isMobile, setIsMobile] = useState(false);
@@ -26,8 +21,12 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     };
 
     checkIsMobile();
+
     window.addEventListener("resize", checkIsMobile);
-    return () => window.removeEventListener("resize", checkIsMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkIsMobile);
+    };
   }, []);
 
   return (
@@ -35,15 +34,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       <GlowIcon position="top-right" />
       <GlowIcon position="bottom-left" />
 
-      {isWelcomePage ? (
-        <div className="flex flex-col min-h-screen">{children}</div>
-      ) : isOnboardingPage ? (
-        <div className="flex flex-col mx-auto w-full min-h-screen pt-[53px] pb-[30px] px-10">
-          <div className="flex-1">{children}</div>
-          <Footer isConnected={false} />
-          <AppModals />
-        </div>
-      ) : isConnected ? (
+      {isConnected ? (
         <div className="flex flex-col mx-auto w-full min-h-screen pt-[60px] pb-[30px] px-4 md:px-0">
           <Header
             activeSection={activeSection}

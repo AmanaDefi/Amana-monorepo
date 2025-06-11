@@ -9,7 +9,7 @@ import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { motion } from "framer-motion";
 
 const WelcomeContainer = () => {
-  const username = useAuthStore((state) => state.username);
+  const { username, closeAll } = useAuthStore();
   const isWalletLoading = true;
 
   const benefits = [
@@ -55,7 +55,7 @@ const WelcomeContainer = () => {
         DEFI
       </motion.h1>
 
-      <ElephantLoader isLoading={isWalletLoading} />
+      <ElephantLoader isLoading={isWalletLoading} onComplete={() => closeAll()} />
 
       <p className="text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
         {username ? `Congratulations ${username},` : "Congratulations!"} you’ve

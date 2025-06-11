@@ -8,6 +8,7 @@ export type AuthStep =
   | "optionsB"
   | "allWallets"
   | "success"
+  | "onboarding"
   | null;
 
 interface AuthState {
