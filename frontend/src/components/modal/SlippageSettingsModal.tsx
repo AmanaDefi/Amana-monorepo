@@ -10,6 +10,7 @@ import {
 } from "@/utils/localStorageUtils";
 import { bigIntReplacer } from "@/utils/utils";
 import Modal from "./Modal";
+import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
 
 export default function SlippageSettingsModal({
   setInputBalance,
@@ -88,19 +89,10 @@ export default function SlippageSettingsModal({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-2 mb-6">
           <div className="flex items-center gap-2">
             <span>Max slippage</span>
-            <button id="max-slipage-info-button" className="group">
-              <InformationCircleIcon className="w-5 h-5 text-customGray300 group-hover:text-white group-hover:transition-colors" />
-            </button>
-            <ResponsiveTooltip
-              id={"max-slipage-info-button"}
-              content={
-                <p className="w-28">
-                  {
-                    "Your transaction will revert if the price changes by more than the slippage percentage"
-                  }
-                </p>
-              }
-            />
+            <InfoBlock isRight>
+              💡 Your transaction will revert if the price changes by more than
+              the slippage percentage.
+            </InfoBlock>
           </div>
           <div className="rounded-5xl border border-customGray600 px-3 py-1.5 flex md:items-center justify-between">
             <button

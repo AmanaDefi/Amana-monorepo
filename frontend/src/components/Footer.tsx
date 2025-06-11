@@ -30,21 +30,21 @@ const Footer = ({ isConnected }: { isConnected: boolean }) => {
           target="_blank"
           className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
         >
-          <LinkedInLogo height={18} className="w-[18px] h-[18px]" />
+          <LinkedInLogo height={20} className="w-[20px] h-[20px]" />
         </Link>
         <Link
           href="https://x.com/Amana_DeFi"
           target="_blank"
           className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
         >
-          <XLogo height={18} className="w-[18px] h-[18px]" />
+          <XLogo height={24} className="w-[24px] h-[24px]" />
         </Link>
         <Link
           href="https://discord.gg/kG3Gfn3B9V"
           target="_blank"
           className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
         >
-          <DiscordLogo height={18} className="w-[18px] h-[18px]" />
+          <DiscordLogo height={18} className="w-[22px] h-[26px]" />
         </Link>
       </div>
     </footer>
