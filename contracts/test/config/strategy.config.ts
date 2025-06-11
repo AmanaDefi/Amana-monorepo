@@ -210,7 +210,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "IERC20", // LP token is a plain ERC20
     swapHelperContractName: "SwapHelperOnBase",
     rewardsContractName: "IBalancerLiquidityGauge",
-    forkBlock: 31306334, // Set your fork block
+    forkBlock: 31433507, // Set your fork block
 
     inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
     inputTokenStorageSlot: 9, // Update if needed for forking balance injection

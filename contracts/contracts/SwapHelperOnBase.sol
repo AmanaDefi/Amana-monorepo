@@ -6,6 +6,7 @@ import "./SwapHelperParent.sol";
 import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IAerodromePoolFactory.sol";
 import "./interfaces/IAerodromeRouter.sol";
+import "./interfaces/IBalancerRouter.sol";
 import "./CurvePoolRegistry.sol";
 import "hardhat/console.sol";
 
@@ -36,6 +37,8 @@ contract SwapHelperOnBase is SwapHelperParent {
         0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43; // Aerodrome Router on Base
     address constant AERODROME_FACTORY =
         0x420DD381b31aEf6683db6B902084cB0FFECe40Da; // Aerodrome PoolFactory on Base
+    address constant BALANCER_ROUTER =
+        0x3f170631ed9821Ca51A59D996aB095162438DC10; // Balancer Vault on Base
 
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
@@ -274,6 +277,46 @@ contract SwapHelperOnBase is SwapHelperParent {
             );
         amountOut = amounts[amounts.length - 1];
         return amountOut;
+    }
+
+    function swapViaBalancerPool(
+        address inputToken,
+        address outputToken,
+        uint256 amount,
+        uint256 minimumOut,
+        address receiver,
+        uint256 maxDeadline,
+        address pool
+    ) external returns (uint256 amountOut) {
+        require(
+            IERC20(inputToken).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+        console.log("Attempting swap on Balancer pool");
+
+        IERC20(inputToken).approve(address(BALANCER_ROUTER), amount);
+        uint256 queryAmountOut = IBalancerRouter(BALANCER_ROUTER)
+            .querySwapSingleTokenExactIn(
+                pool,
+                IERC20(inputToken),
+                IERC20(outputToken),
+                amount,
+                address(this),
+                "0x"
+            );
+        console.log("Balancer query swap amount out: %s", queryAmountOut);
+
+        amountOut = IBalancerRouter(BALANCER_ROUTER).swapSingleTokenExactIn(
+            pool,
+            IERC20(inputToken),
+            IERC20(outputToken),
+            amount,
+            0,
+            99999999,
+            false,
+            "0x"
+        );
+        console.log("Balancer swap completed, amount out: %s", amountOut);
     }
 
     // function getAmountOutCurveOrUniswap(

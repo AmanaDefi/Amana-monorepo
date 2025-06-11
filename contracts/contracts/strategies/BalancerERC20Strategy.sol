@@ -109,39 +109,46 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             // Example pseudocode:
             uint256 halfAmount = amount / 2;
 
-            inputToken.safeTransfer(swapHelper, halfAmount);
-
             uint256 maxDeadline = 1 hours;
             uint16 slippage = 500;
             uint256 yUSDIndex = 1 - inputTokenIndex;
+            console.log("got here");
             address[] memory poolTokens = IBalancerStablePool(receiptToken)
                 .getTokens();
             // Retry with increasing slippage up to 10% (1000 bps)
             uint256 yusdReceived;
-            while (slippage <= 1000) {
-                console.log(
-                    "Attempting to swap %s USDC for yUSD with slippage %s bps",
-                    halfAmount,
-                    poolTokens[yUSDIndex],
-                    slippage
-                );
-                try
-                    ISwapHelper(swapHelper).swap(
-                        address(inputToken),
-                        halfAmount,
-                        poolTokens[yUSDIndex],
-                        slippage,
-                        address(this),
-                        maxDeadline,
-                        ""
-                    )
-                returns (uint256 result) {
-                    yusdReceived = result;
-                    break;
-                } catch {}
+            console.log("and here");
+            // while (slippage <= 1000) {
+            console.log(
+                "Attempting to swap %s USDC for yUSD with slippage %s bps",
+                halfAmount,
+                poolTokens[yUSDIndex],
+                slippage
+            );
+            // try
+            uint256 wrappedAmount = I4626Vault(poolTokens[inputTokenIndex])
+                .deposit(amount - halfAmount, address(this));
+            IERC20(poolTokens[inputTokenIndex]).safeTransfer(
+                swapHelper,
+                halfAmount
+            );
 
-                slippage += 100; // increase slippage by 1% (100 bps)
-            }
+            yusdReceived = ISwapHelper(swapHelper).swapViaBalancerPool(
+                poolTokens[inputTokenIndex],
+                poolTokens[yUSDIndex],
+                wrappedAmount,
+                1, //minimumOut,
+                address(this),
+                maxDeadline,
+                receiptToken
+            );
+            // returns (uint256 result) {
+            //     yusdReceived = result;
+            //     break;
+            // } catch {}
+
+            // slippage += 100; // increase slippage by 1% (100 bps)
+            // }
             require(yusdReceived > 0, "yUSD swap failed completely");
 
             // Step 2: Prepare token array for proportional deposit
