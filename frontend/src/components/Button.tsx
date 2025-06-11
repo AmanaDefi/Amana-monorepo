@@ -4,7 +4,7 @@ import React, { forwardRef } from "react";
 import cn from "classnames";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "signIn" | "primary" | "custom";
+  variant?: "signIn" | "primary" | "custom" | "outlined";
   className?: string;
 }
 
@@ -19,6 +19,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             return "bg-gray-800 text-[#9CA3AF] border border-[#323234] shadow-[0_4px_4px_0_rgba(0,0,0,0.15)] cursor-not-allowed";
           case "custom":
             return "border border-[#35383D] text-[#35383D] bg-transparent shadow-[0_2px_6px_rgba(0,0,0,0.25)] cursor-not-allowed";
+          case "outlined":
+            return "border border-[#35383D] text-[#35383D] bg-transparent cursor-not-allowed";
         }
       }
 
@@ -40,6 +42,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           return cn(
             "bg-[#1B46E0] text-white border border-transparent shadow-[0_2px_6px_rgba(0,0,0,0.25)]",
             "hover:bg-transparent hover:border-[#3E73C4] hover:shadow-[0_2px_6px_rgba(0,0,0,0.25)]",
+          );
+        case "outlined":
+          return cn(
+            "border border-[#535E73] text-white bg-transparent",
+            "hover:border-[#1B46E0]",
           );
         default:
           return "";

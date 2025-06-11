@@ -178,9 +178,9 @@ export default function VaultHeader({
   const depositAmountNumber = parseFloat(depositAmount) || 0;
   
   return (
-    <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
-      <div className="w-full mb-12 flex flex-row items-center">
-        <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
+    <section>
+      <div className="w-full mb-14 flex flex-row items-center">
+        <div className="flex items-center gap-12 max-w-full flex-wrap md:flex-nowrap flex-1 mt-8">
           <div className="flex items-center gap-2">
             <div className="relative">
               <Image
@@ -188,13 +188,13 @@ export default function VaultHeader({
                 alt={vaultData.protocol.network}
                 width={1200}
                 height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                className={`w-6 md:w-11 h-6 md:h-11 rounded-full`}
                 sizes="(max-width: 768px) 24px, 40px"
               />
             </div>
-            <h2 className="font-bold text-white">
+            <p className="font-bold text-white text-[18px]">
               {vaultData.protocol.network}
-            </h2>
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -203,11 +203,13 @@ export default function VaultHeader({
                 alt={vaultData.protocol.name}
                 width={1200}
                 height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                className={`w-6 md:w-11 h-6 md:h-11 rounded-full`}
                 sizes="(max-width: 768px) 24px, 40px"
               />
             </div>
-            <h2 className="font-bold text-white">{vaultData.protocol.name}</h2>
+            <p className="font-bold text-white text-[18px]">
+              {vaultData.protocol.name}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -216,15 +218,15 @@ export default function VaultHeader({
                 alt={vaultData.name}
                 width={1200}
                 height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
+                className={`w-6 md:w-11 h-6 md:h-11 rounded-full`}
                 sizes="(max-width: 768px) 24px, 40px"
               />
             </div>
-            <h2 className="font-bold text-white">{vaultData.name}</h2>
+            <p className="font-bold text-white text-[18px]">{vaultData.name}</p>
           </div>
         </div>
       </div>
-      <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
+      {/* <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
         <div className="grid grid-cols-1 sm:grid-cols-3 md:pr-10 gap-4 md:gap-20">
           <LargeCardStat
             id="deposits"
@@ -233,7 +235,7 @@ export default function VaultHeader({
               vaultData.inputToken.symbol
             }`}
             secondaryValue={`$ ${formatCurrency(
-              depositAmountNumber * vaultTokenPrice
+              depositAmountNumber * vaultTokenPrice,
             )}`}
             tooltip="Value of your vault deposits"
           />
@@ -242,7 +244,7 @@ export default function VaultHeader({
             label="Your Wallet"
             value={`${formattedWalletBalance} ${symbol}`}
             secondaryValue={`$ ${formatCurrency(
-              Number(walletTokenBalance.formatted) * price
+              Number(walletTokenBalance.formatted) * price,
             )}`}
             tooltip="Value of deposit assets held in your wallet"
           />
@@ -250,22 +252,14 @@ export default function VaultHeader({
             id="APY"
             label="7d APY"
             value={
-              Number.isNaN(
-                Number(
-                  vaultAPYs[0]?.APY7d
-                )
-              )
+              Number.isNaN(Number(vaultAPYs[0]?.APY7d))
                 ? "0%"
-                : `${(
-                    Number(
-                      vaultAPYs[0]?.APY7d
-                    ) * 100
-                  ).toFixed(2)}%`
+                : `${(Number(vaultAPYs[0]?.APY7d) * 100).toFixed(2)}%`
             }
             tooltip="APY for the last 7 days"
           />
         </div>
-      </div>
+      </div> */}
     </section>
   );
 }

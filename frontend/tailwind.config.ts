@@ -57,6 +57,7 @@ const config: Config = withAccountKitUi({
       lg: "1024px",
       xl: "1280px",
       "2xl": "1536px",
+      xxl: "1805px",
     },
     extend: {
       backgroundImage: {

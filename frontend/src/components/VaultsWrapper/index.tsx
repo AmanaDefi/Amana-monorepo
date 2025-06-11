@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   VaultData,
   VaultAPY,
@@ -11,9 +11,9 @@ import { VaultCard } from "./components/VaultCard";
 import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
 import classNames from "classnames";
+import { useLayoutStore } from "@/store/store";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
-  // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
   return 1;
 };
 
@@ -40,7 +40,25 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<"cards" | "list">("cards");
 
-  const itemsPerPage = 6;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
+  const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (width >= 1805) {
+        setItemsPerPage(8);
+      } else {
+        setItemsPerPage(8);
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [setItemsPerPage]);
 
   const filteredVaults = useMemo(() => {
     return vaults.filter((vault) => {
@@ -59,7 +77,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     });
   }, [vaults, searchTerm, chainFilter, protocolFilter]);
 
-  // Sort vaults based on selected criteria
   const sortedVaults = useMemo(() => {
     return [...filteredVaults].sort((a, b) => {
       let aValue: any, bValue: any;
@@ -67,22 +84,20 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       switch (sortBy.toLowerCase()) {
         case "apy":
           aValue = Number(
-            vaultAPYs.find((apy: VaultAPY) => apy.vaultId === a.id)?.APY7d || 0,
+            vaultAPYs.find((apy) => apy.vaultId === a.id)?.APY7d || 0,
           );
           bValue = Number(
-            vaultAPYs.find((apy: VaultAPY) => apy.vaultId === b.id)?.APY7d || 0,
+            vaultAPYs.find((apy) => apy.vaultId === b.id)?.APY7d || 0,
           );
           break;
         case "tvl":
           aValue = Number(
-            vaultTotalAssets.find(
-              (asset: VaultTotalAssets) => asset.vaultId === a.id,
-            )?.totalAssets || 0,
+            vaultTotalAssets.find((asset) => asset.vaultId === a.id)
+              ?.totalAssets || 0,
           );
           bValue = Number(
-            vaultTotalAssets.find(
-              (asset: VaultTotalAssets) => asset.vaultId === b.id,
-            )?.totalAssets || 0,
+            vaultTotalAssets.find((asset) => asset.vaultId === b.id)
+              ?.totalAssets || 0,
           );
           break;
         case "risk":
@@ -93,26 +108,27 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           return 0;
       }
 
-      if (sortOrder === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
+      return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });
   }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
 
-  // Pagination logic
   const paginatedVaults = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return sortedVaults.slice(startIndex, endIndex);
+    return sortedVaults.slice(startIndex, startIndex + itemsPerPage);
   }, [sortedVaults, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(sortedVaults.length / itemsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, chainFilter, protocolFilter, sortBy, sortOrder]);
+  }, [
+    searchTerm,
+    chainFilter,
+    protocolFilter,
+    sortBy,
+    sortOrder,
+    itemsPerPage,
+  ]);
 
   const clearAllFilters = () => {
     setSearchTerm("");
@@ -122,12 +138,13 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     setSortOrder("desc");
   };
 
-  if (loading) {
-    return <LoadingLogo />;
-  }
+  if (loading) return <LoadingLogo />;
 
   return (
-    <div className="font-gotham flex flex-col w-full h-full border border-[#302E44] rounded-3xl p-6 justify-between">
+    <div
+      ref={containerRef}
+      className="font-gotham flex flex-col w-full h-full border border-[#302E44] rounded-3xl p-6 justify-between"
+    >
       <div>
         <VaultFilters
           vaults={vaults}
@@ -149,46 +166,44 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         <div className="text-gray-400 mb-4 text-sm">
           Showing {paginatedVaults.length} of {filteredVaults.length} vaults
         </div>
+
         {displayType === "cards" ? (
           <div
-            className='flex flex-row flex-wrap gap-4'
+            className="grid gap-4"
+            style={{
+              gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+            }}
           >
-            {paginatedVaults.map((vault) => {
-              return (
-                <VaultCard
-                  key={vault.id}
-                  vault={vault}
-                  vaultAPYs={vaultAPYs}
-                  vaultTotalAssets={vaultTotalAssets}
-                  userVaultBalances={userVaultBalances}
-                />
-              );
-            })}
+            {paginatedVaults.map((vault) => (
+              <VaultCard
+                key={vault.id}
+                vault={vault}
+                vaultAPYs={vaultAPYs}
+                vaultTotalAssets={vaultTotalAssets}
+                userVaultBalances={userVaultBalances}
+              />
+            ))}
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex flex-row items-center justify-between">
               <p className="w-[30%] mr-[10%] text-center">Pool</p>
-
-              <div className="w-[60%] flex flex-row items-center ">
+              <div className="w-[60%] flex flex-row items-center">
                 <p className="w-[40%] text-center xl:pl-[10%]">TVL</p>
                 <p className="w-[60%] text-center pr-[20%]">APY</p>
               </div>
             </div>
-            {paginatedVaults.map((vault) => {
-              return (
-                <VaultRow
-                  key={vault.id}
-                  vault={vault}
-                  vaultAPYs={vaultAPYs}
-                  vaultTotalAssets={vaultTotalAssets}
-                />
-              );
-            })}
+            {paginatedVaults.map((vault) => (
+              <VaultRow
+                key={vault.id}
+                vault={vault}
+                vaultAPYs={vaultAPYs}
+                vaultTotalAssets={vaultTotalAssets}
+              />
+            ))}
           </div>
         )}
 
-        {/* Empty State */}
         {paginatedVaults.length === 0 && (
           <div className="flex flex-col items-center py-12 gap-3">
             <p className="text-white text-lg">
@@ -203,7 +218,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         )}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-6">
           <div className="flex gap-2 flex-row items-center">
@@ -228,9 +242,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             ))}
 
             <div
-              className={`${
-                currentPage === totalPages && "cursor-not-allowed"
-              }`}
+              className={`${currentPage === totalPages && "cursor-not-allowed"}`}
             >
               <AppButton
                 onClick={() =>

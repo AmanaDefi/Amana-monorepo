@@ -67,7 +67,7 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({
   const cvxTokenPrice = useTokenPriceBySymbol("CVX");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
-const opTokenPrice = useTokenPriceBySymbol("OP");
+  const opTokenPrice = useTokenPriceBySymbol("OP");
 
   useUpdateAPYs(
     vaults,

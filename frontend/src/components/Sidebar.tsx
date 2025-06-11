@@ -33,7 +33,7 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   const isDisabled =
     item.id !== "wallet" && item.id !== "logout" && item.id !== "earn";
 
-  const commonClasses = `flex items-center rounded-lg h-12 font-bold text-lg transition-all duration-300 ease-in-out ${
+  const commonClasses = `flex items-center rounded-lg h-12 font-bold text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
     isCollapsed ? "justify-center w-16" : "gap-3 px-[22px] w-[240px]"
   }`;
 
@@ -46,18 +46,24 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
 
   const menuItemContent = (
     <>
-      <div className="flex items-center justify-center">
+      <div className="flex items-center flex-shrink-0">
         <item.icon />
-        <span
-          className={`ml-3 transition-all duration-300 ease-in-out ${
-            isCollapsed ? "hidden w-0 overflow-hidden" : "flex w-auto"
-          }`}
-        >
-          {item.label}
-        </span>
       </div>
+      <span
+        className={`transition-all duration-500 ease-in-out whitespace-nowrap ${
+          isCollapsed
+            ? "opacity-0 max-w-0 ml-0 overflow-hidden"
+            : "opacity-100 max-w-[200px] ml-3"
+        }`}
+      >
+        {item.label}
+      </span>
       {isActive && !isDisabled && (
-        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm"></div>
+        <div
+          className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm transition-opacity duration-500 ${
+            isCollapsed ? "opacity-0" : "opacity-100"
+          }`}
+        ></div>
       )}
     </>
   );
@@ -109,7 +115,7 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   if (item.type === "button") {
     return (
       <button
-        className={`${itemSpecificClasses} relative`}
+        className={itemSpecificClasses}
         onClick={isDisabled ? undefined : item.action}
         title={isCollapsed ? item.label : undefined}
         disabled={isDisabled}
@@ -122,7 +128,7 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   return (
     <Link
       href={isDisabled ? "#" : item.href!}
-      className={`${itemSpecificClasses} relative`}
+      className={itemSpecificClasses}
       onClick={(e) => {
         if (isDisabled) e.preventDefault();
       }}
@@ -173,7 +179,7 @@ const Sidebar = ({
   return (
     <div
       ref={sidebarRef}
-      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham
+      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
     hidden md:flex
     ${isCollapsed ? "w-[136px] px-0" : "w-[302px] px-[29px]"}
     py-[54px] h-full
@@ -183,20 +189,22 @@ const Sidebar = ({
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 1px 0 2px 0 rgba(255, 255, 255, 0.1)",
       }}
     >
-      <div className="text-white">
+      <div className="text-white overflow-hidden">
         <div
-          className={`flex items-center transition-all duration-300 ease-in-out ${
-            isCollapsed
-              ? "justify-center mb-[124px]"
-              : "justify-between mb-[65px]"
+          className={`flex items-center transition-all duration-500 ease-in-out mb-[65px] ${
+            isCollapsed ? "justify-center" : "justify-between"
           }`}
         >
-          <AmanaLogo width={78} height={53} className="w-[78px] h-[53px]" />
+          <div className="flex-shrink-0">
+            <AmanaLogo width={78} height={53} className="w-[78px] h-[53px]" />
+          </div>
 
           <button
             onClick={toggleSidebar}
-            className={`transition-opacity duration-300 ease-in-out ${
-              isCollapsed ? "hidden pointer-events-none" : "flex"
+            className={`transition-all duration-500 ease-in-out flex-shrink-0 ${
+              isCollapsed
+                ? "opacity-0 max-w-0 overflow-hidden ml-0"
+                : "opacity-100 max-w-[24px] ml-3"
             }`}
           >
             <CloseSidebarIcon width={24} height={25} />
@@ -204,8 +212,10 @@ const Sidebar = ({
         </div>
 
         <div
-          className={`absolute top-[160px] right-3 transition-opacity duration-300 ease-in-out ${
-            isCollapsed ? "opacity-100" : "opacity-0 pointer-events-none"
+          className={`absolute top-[160px] right-3 transition-all duration-500 ease-in-out ${
+            isCollapsed
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
           }`}
         >
           <button onClick={toggleSidebar}>
@@ -213,21 +223,21 @@ const Sidebar = ({
           </button>
         </div>
 
-        <div className="mb-8">
-          <span
-            className={`text-[24px] font-bold text-white mb-8 block transition-all duration-300 ease-in-out ${
+        <div className="mb-8 overflow-hidden">
+          <div
+            className={`text-[24px] font-bold text-white mb-8 transition-all duration-500 ease-in-out whitespace-nowrap ${
               isCollapsed
-                ? "opacity-0 w-0 overflow-hidden"
-                : "opacity-100 min-w-[200px]"
+                ? "opacity-0 max-height-0 overflow-hidden"
+                : "opacity-100 max-height-[32px]"
             }`}
           >
             Explore Amana
-          </span>
+          </div>
 
           <nav
-            className={
+            className={`transition-all duration-500 ease-in-out ${
               isCollapsed ? "space-y-4 flex flex-col items-center" : "space-y-4"
-            }
+            }`}
           >
             {enhancedMenuItems.map((item) => (
               <SidebarMenuItem
@@ -243,18 +253,19 @@ const Sidebar = ({
           </nav>
         </div>
       </div>
-      <div className="flex flex-col items-center">
+
+      <div className="flex flex-col items-center overflow-hidden">
         <div
-          className={`border-t border-[#535E73] my-4 ${
+          className={`border-t border-[#535E73] my-4 transition-all duration-500 ease-in-out ${
             isCollapsed ? "w-[64px]" : "w-full"
           }`}
         ></div>
         <nav
-          className={
+          className={`transition-all duration-500 ease-in-out ${
             isCollapsed
               ? "space-y-1 mt-auto flex flex-col items-center"
               : "space-y-1 mt-auto"
-          }
+          }`}
         >
           {enhancedBottomItems.map((item) => (
             <SidebarMenuItem
