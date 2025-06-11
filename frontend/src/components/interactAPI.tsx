@@ -1228,7 +1228,7 @@ function Interaction({
       });
     }
   }
-
+  
   const handleMainAction = async () => {
     console.log("=== HANDLE MAIN ACTION CALLED ===");
     console.log("Current action:", action);

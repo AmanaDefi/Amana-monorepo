@@ -1,10 +1,9 @@
-import React, { HTMLProps, useMemo } from "react";
+'use client';
+import React, { HTMLProps, useMemo, useState } from "react";
 import { Token, VaultData } from "@/types/types";
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
-import {
-  formatCurrency,
-} from "@/utils/utils";
+import { formatCurrency } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
 import TokenIcon from "@/components/common/TokenIcon";
@@ -15,6 +14,8 @@ import ResponsiveTooltip from "@/components/common/Tooltip";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "thirdweb";
 import { formatTokenBalance } from "@/utils/utils";
+import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
+import clsx from "clsx";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -78,6 +79,7 @@ export default function InputTokenWithError({
 } & HTMLProps<HTMLInputElement>): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
   const { activeChain } = useMultiChain();
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   // Function to handle token selection with chain switching
   const handleTokenSelection = (token: Token) => {
@@ -114,24 +116,13 @@ export default function InputTokenWithError({
       </div>
       <div className="flex items-center justify-between mb-3">
         {captionText && (
-          <div className="text-white text-start flex text-[18px] font-bold items-center gap-2">
+          <div className="text-white text-start flex text-[18px] items-center gap-2">
             {captionText}
             {isOutput && (
-              <>
-                <button id="output-amount-button" className="group">
-                  <InformationCircleIcon className="w-5 h-5 text-customGray300 group-hover:text-white group-hover:transition-colors" />
-                </button>
-                <ResponsiveTooltip
-                  id={"output-amount-button"}
-                  content={
-                    <p className="w-48">
-                      {
-                        "This is an estimated output amount. Actual amount may vary during transaction execution."
-                      }
-                    </p>
-                  }
-                />
-              </>
+              <InfoBlock isMiddle>
+                💡 This is an estimated output amount. Actual amount may vary
+                during transaction execution.
+              </InfoBlock>
             )}
             {inputMoreThanBalance && (
               <span className="text-red-500 ml-2">Input More than Balance</span>
@@ -142,9 +133,12 @@ export default function InputTokenWithError({
       <div className="relative flex w-full flex-col">
         <div
           style={{ boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.25)" }}
-          className={`w-full max-h-[75px] bg-[#161C27] pl-5 py-[11px] pr-[10px] rounded-lg border border-[#535E73] color-[#535E73] hover:border hover:border-[#3E73C4] transition-all duration-200 ${
-            errorMessage ? "color-[##ffc700]" : "color-[#535E73]"
-          }`}
+          className={clsx(
+            "w-full max-h-[75px] bg-[#161C27] pl-5 py-[11px] pr-[10px] rounded-lg border transition-all duration-200",
+            errorMessage ? "border-red-500" : "border-[#535E73]",
+            "hover:border-[#3E73C4]",
+            isInputFocused && "border-[#3E73C4]",
+          )}
         >
           <div className="flex items-center justify-between text-sm text-[#535E73]">
             {!isOutput && (
@@ -188,7 +182,12 @@ export default function InputTokenWithError({
                 )}
               </span>
             ) : (
-              <InputNumber {...props} disabled={disabled} />
+              <InputNumber
+                {...props}
+                disabled={disabled}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
+              />
             )}
 
             {/* <div

@@ -47,6 +47,8 @@ import {
 } from "@/utils/localStorageUtils";
 import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import ErrorInputIcon from "./svg/ErrorInputIcon";
+import Button from "./Button";
+import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -1100,7 +1102,7 @@ export default function VaultInputs({
         isSlippageExceedingLimit={isSlippageExceedingLimit}
         setInputBalance={setInputBalance}
       />
-      <div className="w-full  my-10 flex items-center justify-center">
+      <div className="w-full my-10 flex items-center justify-center">
         <button className="group flex-center p-2" onClick={switchTokens}>
           <DepositModalArrowsIcon width={24} height={24} />
         </button>
@@ -1245,37 +1247,20 @@ export default function VaultInputs({
           {/* Performance Fee */}
           <span className="flex flex-row items-center justify-between text-white py-1">
             <div className="flex items-center">
-              <button id="gas-fee-info" className="mr-[10px] group">
-                <ErrorInputIcon
-                  width={14}
-                  height={14}
-                  className="!fill-[#1B46E0]"
-                />
-              </button>
+              <div className="flex items-center mr-[10px]">
+                <InfoBlock>
+                  💡 15% deducted from the profit earned in the vault
+                </InfoBlock>
+              </div>
               <p>Performance Fee (deducted upon withdrawal)</p>
-              <ResponsiveTooltip
-                id={"performance-fee-info"}
-                content={
-                  <p className="w-60">
-                    15% deducted from the profit earned in the vault
-                  </p>
-                }
-              />
             </div>
             <span className="font-bold">{performanceFee}%</span>
           </span>
         </div>
       </div>
-      <button
-        className={`rounded-lg flex items-center justify-center text-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] w-full py-[14px] text-[18px] font-bold max-h-12 mt-[47px] transition-colors ${
-          isButtonDisabled
-            ? "bg-gray-600 cursor-not-allowed"
-            : "bg-[#1B46E0] hover:bg-[#1540CC]"
-        }`}
-        disabled={isButtonDisabled}
-      >
+      <Button variant="special" disabled={isButtonDisabled} className="w-full mt-[47px]">
         {!walletAddress ? "Connect Wallet" : isDeposit ? "Invest" : "Withdraw"}
-      </button>
+      </Button>
 
       {inputToken &&
         !loadingOutputToken &&
