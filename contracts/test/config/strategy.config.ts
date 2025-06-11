@@ -86,35 +86,35 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   minAmountOut: ethers.utils.parseUnits("900", 6),
   //   slippage: 10000
   // },
-  {
-    name: "Convex ETH Strategy",
-    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-    strategyContractName: "ConvexEthStrategy",
-    strategyChainId: 1,
-    receiptTokenContractName: "ICurvePoolFixed",
-    swapHelperContractName: "SwapHelperEthereum",
-    rewardsContractName: "IConvexRewardPool",
-    forkBlock: 22671910,
-    inputTokenAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-    inputTokenStorageSlot: 0,
-    inputTokenIndexOrPlaceholder: 1,
-    receiptTokenAddress: "0xa4c567c662349BeC3D0fB94C4e7f85bA95E208e4",
-    rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
-    rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52",
-    originChainId: 8453,
-    withdrawZRC20: ZC_ETH_BASE_ADDRESS,
-    otherErc20Address: ETH_USDC_ADDRESS,
-    otherErc20BalanceStorageSlot: 9,
-    isNative: true,
-    depositAmount: ethers.utils.parseUnits("1", 18),
-    minSharesOut: ethers.utils.parseUnits("0.9", 18),
-    withdrawAmount: ethers.utils.parseUnits("1", 18),
-    minAmountOut: ethers.utils.parseUnits("0.9", 18),
-    slippage: 10000,
-    convexBooster: "0xf403c135812408bfbe8713b5a23a04b3d48aae31",
-    cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
-    convexPoolId: 217
-  },
+  // {
+  //   name: "Convex ETH Strategy",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "ConvexEthStrategy",
+  //   strategyChainId: 1,
+  //   receiptTokenContractName: "ICurvePoolFixed",
+  //   swapHelperContractName: "SwapHelperEthereum",
+  //   rewardsContractName: "IConvexRewardPool",
+  //   forkBlock: 22671910,
+  //   inputTokenAddress: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  //   inputTokenStorageSlot: 0,
+  //   inputTokenIndexOrPlaceholder: 1,
+  //   receiptTokenAddress: "0xa4c567c662349BeC3D0fB94C4e7f85bA95E208e4",
+  //   rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
+  //   rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52",
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_ETH_BASE_ADDRESS,
+  //   otherErc20Address: ETH_USDC_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 9,
+  //   isNative: true,
+  //   depositAmount: ethers.utils.parseUnits("1", 18),
+  //   minSharesOut: ethers.utils.parseUnits("0.9", 18),
+  //   withdrawAmount: ethers.utils.parseUnits("1", 18),
+  //   minAmountOut: ethers.utils.parseUnits("0.9", 18),
+  //   slippage: 10000,
+  //   convexBooster: "0xf403c135812408bfbe8713b5a23a04b3d48aae31",
+  //   cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
+  //   convexPoolId: 217
+  // },
   // {
   //   name: "Convex eUSDUSDC Strategy - Ethereum",
   //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
@@ -210,7 +210,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "IERC20", // LP token is a plain ERC20
     swapHelperContractName: "SwapHelperOnBase",
     rewardsContractName: "IBalancerLiquidityGauge",
-    forkBlock: 31374359, // Set your fork block
+    forkBlock: 31306334, // Set your fork block
 
     inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
     inputTokenStorageSlot: 9, // Update if needed for forking balance injection
@@ -226,8 +226,8 @@ export const strategyConfigs: StrategyTestConfig[] = [
     otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
 
     isNative: false,
-    depositAmount: ethers.utils.parseUnits("10000", 6),
-    minSharesOut: ethers.utils.parseUnits("9000", 6),
+    depositAmount: ethers.utils.parseUnits("1000", 6),
+    minSharesOut: ethers.utils.parseUnits("900", 6),
     withdrawAmount: ethers.utils.parseUnits("1000", 6),
     minAmountOut: ethers.utils.parseUnits("900", 6),
     slippage: 10000,

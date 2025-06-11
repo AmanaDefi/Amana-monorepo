@@ -4,7 +4,8 @@ pragma solidity 0.8.26;
 import "./SwapHelperParent.sol";
 
 import "./interfaces/ICurvePoolDynamic.sol";
-
+import "./interfaces/IAerodromePoolFactory.sol";
+import "./interfaces/IAerodromeRouter.sol";
 import "./CurvePoolRegistry.sol";
 import "hardhat/console.sol";
 
@@ -15,6 +16,7 @@ contract SwapHelperOnBase is SwapHelperParent {
     address constant MORPHO = 0xBAa5CC21fd487B8Fcc2F632f3F4E8D37262a0842;
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant axlOP = 0x994ac01750047B9d35431a7Ae4Ed312ee955E030;
+    address constant yUSD = 0x4772D2e014F9fC3a820C444e3313968e9a5C8121;
 
     bytes32 constant wellUsdPriceFeedId =
         0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
@@ -28,7 +30,12 @@ contract SwapHelperOnBase is SwapHelperParent {
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
 
-    address constant WETH_ADDRESS = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // mainnet and testnet
+    address constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
+
+    address constant AERODROME_ROUTER =
+        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43; // Aerodrome Router on Base
+    address constant AERODROME_FACTORY =
+        0x420DD381b31aEf6683db6B902084cB0FFECe40Da; // Aerodrome PoolFactory on Base
 
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
@@ -55,7 +62,6 @@ contract SwapHelperOnBase is SwapHelperParent {
         } else if (token == MORPHO) {
             return morphoUsdPriceFeedId;
         } else if (token == axlOP) {
-            console.log("Getting OP price");
             return opUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
@@ -68,7 +74,7 @@ contract SwapHelperOnBase is SwapHelperParent {
      * @return True if the token is a stablecoin, false otherwise.
      */
     function isStablecoin(address token) internal pure override returns (bool) {
-        return (token == USDC);
+        return (token == USDC || token == yUSD);
     }
 
     /**
@@ -139,6 +145,135 @@ contract SwapHelperOnBase is SwapHelperParent {
 
         (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
         require(secondApproveSuccess, "Second approve failed");
+    }
+
+    function _existsAerodromePairPool(
+        address tokenA,
+        address tokenB,
+        bool isStable,
+        address factoryAddress
+    ) internal view returns (bool) {
+        address pair = IAerodromePoolFactory(factoryAddress).getPool(
+            tokenA,
+            tokenB,
+            isStable
+        );
+        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
+    }
+
+    function getPathAerodrome(
+        address inputToken,
+        address outputToken,
+        address factoryAddress,
+        address intermediateToken,
+        bool isStable
+    ) public view returns (address[] memory path) {
+        if (inputToken == outputToken) {
+            revert IErrors.InvalidAddress();
+        }
+        // Check for direct pool
+        if (
+            _existsAerodromePairPool(
+                inputToken,
+                outputToken,
+                isStable,
+                factoryAddress
+            )
+        ) {
+            path = new address[](2);
+            path[0] = inputToken;
+            path[1] = outputToken;
+            return path;
+        }
+
+        // Check for two-hop path via intermediateToken
+        bool existsPair1 = _existsAerodromePairPool(
+            inputToken,
+            intermediateToken,
+            isStable,
+            factoryAddress
+        );
+        bool existsPair2 = _existsAerodromePairPool(
+            intermediateToken,
+            outputToken,
+            isStable,
+            factoryAddress
+        );
+
+        if (existsPair1 && existsPair2) {
+            path = new address[](3);
+            path[0] = inputToken;
+            path[1] = intermediateToken;
+            path[2] = outputToken;
+            return path;
+        }
+
+        // No valid path found
+        return new address[](0);
+    }
+
+    function swap(
+        address inputToken,
+        uint256 amount,
+        address outputToken,
+        uint16 slippageBps,
+        address receiver,
+        uint256 maxDeadline,
+        bytes calldata
+    ) external override returns (uint256 amountOut) {
+        require(
+            IERC20(inputToken).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+        bool isStable = isStablecoin(inputToken) && isStablecoin(outputToken);
+        console.log(
+            "Swapping from %s to %s, isStable: %s",
+            inputToken,
+            outputToken,
+            isStable
+        );
+        uint256 minimumOut = calculateMinAmountOut(
+            inputToken,
+            outputToken,
+            amount,
+            slippageBps
+        );
+        address[] memory path = getPathAerodrome(
+            inputToken,
+            outputToken,
+            AERODROME_FACTORY,
+            WETH_ADDRESS, // Using WETH as the intermediate token
+            isStable // Assuming we want to swap through non-stable pools
+        );
+        if (path.length < 2) {
+            console.log("No valid Aerodrome path found");
+            // No valid path found
+            return 0;
+        }
+        console.log("Found Aerodrome path with length:", path.length);
+        IERC20(inputToken).approve(AERODROME_ROUTER, amount);
+        IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](
+            path.length - 1
+        );
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            routes[i] = IAerodromeRouter.Route({
+                from: path[i],
+                to: path[i + 1],
+                stable: isStable,
+                factory: AERODROME_FACTORY
+            });
+        }
+        console.log("Attempting swap on Aerodrome");
+        uint256[] memory amounts = IAerodromeRouter(AERODROME_ROUTER)
+            .swapExactTokensForTokens(
+                amount,
+                minimumOut,
+                routes,
+                receiver,
+                block.timestamp + maxDeadline
+            );
+        amountOut = amounts[amounts.length - 1];
+        return amountOut;
     }
 
     // function getAmountOutCurveOrUniswap(

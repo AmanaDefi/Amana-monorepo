@@ -31,8 +31,8 @@ interface IBalancerRouter {
     function removeLiquidityProportional(
         address pool,
         uint256 exactBptAmountIn,
-        uint256[] calldata minAmountsOut,
+        uint256[] memory minAmountsOut,
         bool wethIsEth,
-        bytes calldata userData
+        bytes memory userData
     ) external payable returns (uint256[] memory amountsOut);
 }

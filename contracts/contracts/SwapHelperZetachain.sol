@@ -488,7 +488,7 @@ contract SwapHelperZetachain is SwapHelperParent {
             amountOut = ISwapRouter(SWAPROUTER_BEAM).exactInput(params);
         } else {
             // fallback to V2 or revert
-            path = getPathV2(zrc20, targetZRC20);
+            path = getPathV2(zrc20, targetZRC20, UNISWAP_V2_FACTORY);
             IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
             uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
                 .swapExactTokensForTokens(
@@ -559,7 +559,7 @@ contract SwapHelperZetachain is SwapHelperParent {
             amountIn = ISwapRouter(SWAPROUTER_BEAM).exactOutput(params);
         } else {
             // Fallback: Uniswap V2-style exactOutput swap
-            path = getPathV2(zrc20, targetZRC20);
+            path = getPathV2(zrc20, targetZRC20, UNISWAP_V2_FACTORY);
 
             IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, maxAmountIn);
 

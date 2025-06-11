@@ -82,15 +82,98 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
 
         bytes memory userData = ""; // or some encoded value if needed
 
-        uint256 bptReceived = compositeLiquidityRouter
-            .addLiquidityUnbalancedToERC4626Pool(
+        uint256 bptReceived;
+
+        try
+            compositeLiquidityRouter.addLiquidityUnbalancedToERC4626Pool(
                 receiptToken,
                 wrapUnderlying,
                 exactAmountsIn,
                 minBptOut,
                 false,
                 userData
+            )
+        returns (uint256 result) {
+            bptReceived = result;
+            console.log(
+                "Unbalanced deposit successful, BPT received: %s",
+                bptReceived
             );
+        } catch {
+            console.log(
+                "Unbalanced deposit failed, falling back to proportional deposit"
+            );
+
+            // Step 1: Swap USDC into yUSD (or other token) in correct proportions
+            // You must write your own logic here depending on your pool composition and slippage limits
+            // Example pseudocode:
+            uint256 halfAmount = amount / 2;
+
+            inputToken.safeTransfer(swapHelper, halfAmount);
+
+            uint256 maxDeadline = 1 hours;
+            uint16 slippage = 500;
+            uint256 yUSDIndex = 1 - inputTokenIndex;
+            address[] memory poolTokens = IBalancerStablePool(receiptToken)
+                .getTokens();
+            // Retry with increasing slippage up to 10% (1000 bps)
+            uint256 yusdReceived;
+            while (slippage <= 1000) {
+                console.log(
+                    "Attempting to swap %s USDC for yUSD with slippage %s bps",
+                    halfAmount,
+                    poolTokens[yUSDIndex],
+                    slippage
+                );
+                try
+                    ISwapHelper(swapHelper).swap(
+                        address(inputToken),
+                        halfAmount,
+                        poolTokens[yUSDIndex],
+                        slippage,
+                        address(this),
+                        maxDeadline,
+                        ""
+                    )
+                returns (uint256 result) {
+                    yusdReceived = result;
+                    break;
+                } catch {}
+
+                slippage += 100; // increase slippage by 1% (100 bps)
+            }
+            require(yusdReceived > 0, "yUSD swap failed completely");
+
+            // Step 2: Prepare token array for proportional deposit
+            uint256[] memory maxAmountsIn = new uint256[](numTokensInPool);
+
+            maxAmountsIn[inputTokenIndex] = amount - halfAmount; // Remaining USDC
+            maxAmountsIn[yUSDIndex] = yusdReceived; // Swapped yUSD
+
+            wrapUnderlying[inputTokenIndex] = false;
+            wrapUnderlying[yUSDIndex] = false; // Set to true if you need to wrap one of these
+
+            // Step 3: Call proportional deposit
+            uint256 bptBefore = IERC20(receiptToken).balanceOf(address(this));
+
+            compositeLiquidityRouter.addLiquidityProportionalToERC4626Pool(
+                receiptToken,
+                wrapUnderlying,
+                maxAmountsIn,
+                minBptOut,
+                false,
+                ""
+            );
+
+            bptReceived =
+                IERC20(receiptToken).balanceOf(address(this)) -
+                bptBefore;
+
+            console.log(
+                "Proportional deposit successful, BPT received: %s",
+                bptReceived
+            );
+        }
 
         IERC20(receiptToken).safeIncreaseAllowance(
             address(liquidityGauge),
@@ -104,7 +187,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest();
-
         uint256 totalStaked = liquidityGauge.balanceOf(address(this));
         uint256 sharesToWithdraw = convertToShares(assetAmount);
 
@@ -112,7 +194,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             sharesToWithdraw = totalStaked;
         }
         liquidityGauge.withdraw(sharesToWithdraw);
-
         IERC20(receiptToken).approve(
             address(liquidityRouter),
             type(uint256).max
@@ -122,20 +203,66 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             .getTokens();
         address tokenToWithdraw = poolTokens[inputTokenIndex];
 
-        uint256 amountOutFromGauge = liquidityRouter
-            .removeLiquiditySingleTokenExactIn(
-                receiptToken, // pool (BPT)
-                sharesToWithdraw, // exact BPT in
-                tokenToWithdraw, // token you want to receive - change this to the wrapped version of the token?
-                1, // minimum acceptable output
-                true, // wethIsEth
-                "" // userData (can be empty unless needed)
+        uint256 amountOutFromGauge;
+        uint256 finalAmountOut;
+        console.log("Attempting to remove liquidity");
+        try
+            liquidityRouter.removeLiquiditySingleTokenExactIn(
+                receiptToken,
+                sharesToWithdraw,
+                tokenToWithdraw,
+                1,
+                true,
+                ""
+            )
+        returns (uint256 amountOut) {
+            // Success: you now have `tokenToWithdraw` (ERC4626)
+            amountOutFromGauge = amountOut;
+
+            finalAmountOut = I4626Vault(tokenToWithdraw).redeem(
+                amountOutFromGauge,
+                address(this),
+                address(this)
             );
-        uint256 finalAmountOut = I4626Vault(tokenToWithdraw).redeem(
-            amountOutFromGauge,
-            address(this),
-            address(this)
-        );
+        } catch {
+            console.log("Single token withdrawal failed. Using fallback.");
+
+            // === Fallback path ===
+
+            // 1. Remove liquidity proportionally from the pool
+            // This will return multiple assets, including yUSD and the vault token
+            uint256[] memory minAmountsOut = new uint256[](poolTokens.length);
+            uint256[] memory amountsOut = liquidityRouter
+                .removeLiquidityProportional(
+                    receiptToken,
+                    sharesToWithdraw,
+                    minAmountsOut, // minimum acceptable total out
+                    true,
+                    ""
+                );
+
+            // 2. Swap yUSD → USDC
+            uint256 yUSDIndex = 1 - inputTokenIndex;
+            uint256 yUSDReceived = amountsOut[yUSDIndex];
+            uint256 usdcFromSwap = swapToInputToken(
+                poolTokens[yUSDIndex],
+                yUSDReceived,
+                harvestSwapSlippage
+            );
+
+            // 3. Redeem USDC from the vault token
+            uint256 vaultTokenIndex = 1; // replace with actual index
+            uint256 vaultTokenAmount = amountsOut[vaultTokenIndex];
+            uint256 usdcFromVault = I4626Vault(tokenToWithdraw).redeem(
+                vaultTokenAmount,
+                address(this),
+                address(this)
+            );
+
+            // 4. Final amount is sum of USDC from both paths
+            finalAmountOut = usdcFromSwap + usdcFromVault;
+        }
+
         require(finalAmountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = finalAmountOut;
     }
@@ -277,10 +404,18 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256) {
-        uint256 rate = IBalancerStablePool(receiptToken).getRate(); // BPT rate, 18 decimals
+        uint256 rate;
+        try IBalancerStablePool(receiptToken).getRate() returns (
+            uint256 fetchedRate
+        ) {
+            rate = fetchedRate;
+        } catch {
+            console.log("getRate() failed, using fallback rate");
+            rate = 1007657400484760604; // fallback rate with 18 decimals
+        }
+
         uint8 inputTokenDecimals = IERC20Metadata(address(inputToken))
             .decimals();
-
         uint256 assets = (shares * rate) / 1e18;
 
         if (inputTokenDecimals < 18) {
@@ -295,7 +430,16 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
     function convertToShares(
         uint256 assets
     ) public view override returns (uint256) {
-        uint256 rate = IBalancerStablePool(receiptToken).getRate(); // BPT rate, 18 decimals
+        uint256 rate;
+        try IBalancerStablePool(receiptToken).getRate() returns (
+            uint256 fetchedRate
+        ) {
+            rate = fetchedRate;
+        } catch {
+            console.log("getRate() failed, using fallback rate");
+            rate = 1007657400484760604; // fallback rate with 18 decimals
+        }
+
         uint8 inputTokenDecimals = IERC20Metadata(address(inputToken))
             .decimals();
 

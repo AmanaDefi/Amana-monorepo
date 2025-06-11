@@ -125,11 +125,6 @@ abstract contract SwapHelperParent is
         // Convert USD value to output token amount
         uint256 amountOut = (amountInUsd * (10 ** outputDecimals)) /
             outputPrice;
-        console.log(
-            "Calculated amountOut: %s %s",
-            amountOut,
-            IERC20Metadata(outputToken).symbol()
-        );
         // Apply slippage
         return amountOut - ((amountOut * slippageBps) / 10000);
     }
@@ -209,9 +204,10 @@ abstract contract SwapHelperParent is
 
     function _existsPairPool(
         address tokenA,
-        address tokenB
+        address tokenB,
+        address factoryAddress
     ) internal view returns (bool) {
-        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+        address pair = IUniswapV2Factory(factoryAddress).getPair(
             tokenA,
             tokenB
         );
@@ -220,7 +216,8 @@ abstract contract SwapHelperParent is
 
     function _getBestV3Pool(
         address tokenA,
-        address tokenB
+        address tokenB,
+        address factoryAddress
     ) internal view returns (bool exists, uint24 bestFeeTier) {
         uint24[4] memory tiers = [
             uint24(100),
@@ -233,7 +230,7 @@ abstract contract SwapHelperParent is
         exists = false;
 
         for (uint256 i = 0; i < tiers.length; i++) {
-            address pool = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
+            address pool = IUniswapV3Factory(factoryAddress).getPool(
                 tokenA,
                 tokenB,
                 tiers[i]
@@ -248,24 +245,20 @@ abstract contract SwapHelperParent is
                 }
             }
         }
-        console.log(
-            "Best V3 Pool Found: %s with fee tier %d",
-            exists,
-            bestFeeTier
-        );
         return (exists, bestFeeTier);
     }
 
     function getPathV2(
         address inputToken,
-        address outputToken
+        address outputToken,
+        address factoryAddress
     ) public view returns (address[] memory path) {
         if (inputToken == outputToken) {
             revert IErrors.InvalidAddress();
         }
 
         // UniswapV2 Direct Swap
-        if (_existsPairPool(inputToken, outputToken)) {
+        if (_existsPairPool(inputToken, outputToken, factoryAddress)) {
             path = new address[](2);
             path[0] = inputToken;
             path[1] = outputToken;
@@ -274,8 +267,8 @@ abstract contract SwapHelperParent is
 
         // UniswapV2 Indirect Swap via intermediateToken
         if (
-            _existsPairPool(inputToken, intermediateToken) &&
-            _existsPairPool(intermediateToken, outputToken)
+            _existsPairPool(inputToken, intermediateToken, factoryAddress) &&
+            _existsPairPool(intermediateToken, outputToken, factoryAddress)
         ) {
             path = new address[](3);
             path[0] = inputToken;
@@ -288,7 +281,8 @@ abstract contract SwapHelperParent is
 
     function getPathV3(
         address inputToken,
-        address outputToken
+        address outputToken,
+        address factoryAddress
     )
         public
         view
@@ -306,7 +300,11 @@ abstract contract SwapHelperParent is
         uint24 feeTier;
 
         // UniswapV3 Direct Swap (Checks both fee tiers, prioritizes 0.05%)
-        (exists, feeTier) = _getBestV3Pool(inputToken, outputToken);
+        (exists, feeTier) = _getBestV3Pool(
+            inputToken,
+            outputToken,
+            factoryAddress
+        );
         if (exists) {
             path = new address[](2);
             feeTiers = new uint24[](1);
@@ -318,10 +316,18 @@ abstract contract SwapHelperParent is
         }
 
         // UniswapV3 Indirect Swap via intermediateToken (Checks both fee tiers)
-        (exists, feeTier) = _getBestV3Pool(inputToken, intermediateToken);
+        (exists, feeTier) = _getBestV3Pool(
+            inputToken,
+            intermediateToken,
+            factoryAddress
+        );
         if (exists) {
             uint24 feeTier2;
-            (exists, feeTier2) = _getBestV3Pool(intermediateToken, outputToken);
+            (exists, feeTier2) = _getBestV3Pool(
+                intermediateToken,
+                outputToken,
+                factoryAddress
+            );
             if (exists) {
                 path = new address[](3);
                 feeTiers = new uint24[](2);
@@ -508,12 +514,6 @@ abstract contract SwapHelperParent is
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-        console.log(
-            "Swapping %s %s for %s",
-            amount,
-            IERC20Metadata(inputToken).symbol(),
-            IERC20Metadata(outputToken).symbol()
-        );
         uint256 minimumOut = calculateMinAmountOut(
             inputToken,
             outputToken,
@@ -523,7 +523,11 @@ abstract contract SwapHelperParent is
         bytes memory encodedPath;
 
         if (swapData.length == 0) {
-            (, , encodedPath) = getPathV3(inputToken, outputToken);
+            (, , encodedPath) = getPathV3(
+                inputToken,
+                outputToken,
+                UNISWAP_V3_FACTORY
+            );
         } else {
             encodedPath = swapData;
         }
@@ -531,9 +535,6 @@ abstract contract SwapHelperParent is
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
-            console.log("Attempting Uniswap V3 swap");
-            console.log("amountOutMinimum: %s", minimumOut);
-            console.log("encodedPath.length: %s", encodedPath.length);
             try
                 ISwapRouter(UNISWAP_V3_ROUTER).exactInput(
                     ISwapRouter.ExactInputParams({
@@ -546,10 +547,6 @@ abstract contract SwapHelperParent is
                 )
             returns (uint256 out) {
                 amountOut = out;
-                console.log(
-                    "Uniswap V3 swap successful, amount out: %s",
-                    amountOut
-                );
                 return amountOut;
             } catch (bytes memory reason) {
                 console.log("Uniswap V3 swap failed with reason:");
@@ -559,14 +556,17 @@ abstract contract SwapHelperParent is
         }
 
         // Uniswap V2 fallback
-        address[] memory path = getPathV2(inputToken, outputToken);
+        address[] memory path = getPathV2(
+            inputToken,
+            outputToken,
+            UNISWAP_V2_FACTORY
+        );
         if (path.length < 2) {
             console.log("No valid Uniswap V2 path found");
             // No valid path found
             return 0;
         }
         IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
-        console.log("Attempting Uniswap V2 swap");
 
         try
             IUniswapV2Router02(UNISWAP_V2_ROUTER).swapExactTokensForTokens(
@@ -578,10 +578,6 @@ abstract contract SwapHelperParent is
             )
         returns (uint256[] memory amounts) {
             amountOut = amounts[amounts.length - 1];
-            console.log(
-                "Uniswap V2 swap successful, amount out: %s",
-                amountOut
-            );
             return amountOut;
         } catch {
             console.log("Uniswap V2 swap failed");
@@ -615,7 +611,7 @@ abstract contract SwapHelperParent is
             address[] memory pathV3,
             uint24[] memory feeTiers,
             bytes memory encodedPath
-        ) = getPathV3(outputToken, inputToken);
+        ) = getPathV3(outputToken, inputToken, UNISWAP_V3_FACTORY);
 
         if (encodedPath.length > 0) {
             // Try Uniswap V3 swap
@@ -638,7 +634,11 @@ abstract contract SwapHelperParent is
             }
         } else {
             // Try Uniswap V2 swap
-            address[] memory path = getPathV2(inputToken, outputToken);
+            address[] memory path = getPathV2(
+                inputToken,
+                outputToken,
+                UNISWAP_V2_FACTORY
+            );
             if (path.length < 2) {
                 return 0; // No valid path
             }
