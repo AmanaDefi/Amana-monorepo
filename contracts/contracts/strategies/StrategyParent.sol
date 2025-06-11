@@ -478,7 +478,7 @@ abstract contract StrategyParent is
                 totalUnderlyingAssetsAfter,
                 vaultNonce
             ),
-            uint256(1000000)
+            uint256(1500000)
         );
         _sendDepositAndCall(
             amountWithdrawn,
