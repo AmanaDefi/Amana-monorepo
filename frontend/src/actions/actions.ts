@@ -1614,7 +1614,7 @@ export const fetchUserVaultBalance = async (
   const contract = getContractCustom({
     chainId: SUPPORTED_CHAINS[0].chain.id, // This will always be Zetachain, as it's a balance on the vault
     address: vaultAddress,
-    abi: 
+    abi: ''
   });
   const { value: shares, decimals } = await getBalance({
     contract,
