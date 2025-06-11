@@ -14,6 +14,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const isConnected = !!walletAddress;
   const isOnboardingPage = pathname === "/onboarding";
+  const isWelcomePage = pathname === "/welcome";
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("");
@@ -34,7 +35,9 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       <GlowIcon position="top-right" />
       <GlowIcon position="bottom-left" />
 
-      {isOnboardingPage ? (
+      {isWelcomePage ? (
+        <div className="flex flex-col min-h-screen">{children}</div>
+      ) : isOnboardingPage ? (
         <div className="flex flex-col mx-auto w-full min-h-screen pt-[53px] pb-[30px] px-10">
           <div className="flex-1">{children}</div>
           <Footer isConnected={false} />
