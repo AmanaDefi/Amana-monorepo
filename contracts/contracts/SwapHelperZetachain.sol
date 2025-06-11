@@ -496,7 +496,11 @@ contract SwapHelperZetachain is SwapHelperParent {
         }
 
         // Fallback to Eddy V2
-        address[] memory v2Path = getPathV2(zrc20, targetZRC20);
+        address[] memory v2Path = getPathV2(
+            zrc20,
+            targetZRC20,
+            UNISWAP_V2_FACTORY
+        );
         IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
 
         uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
