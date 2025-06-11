@@ -1,10 +1,9 @@
 "use client";
-
 import React, { forwardRef } from "react";
 import cn from "classnames";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "signIn" | "primary" | "custom" | "outlined";
+  variant?: "signIn" | "primary" | "custom" | "outlined" | "special";
   className?: string;
 }
 
@@ -21,9 +20,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             return "border border-[#35383D] text-[#35383D] bg-transparent shadow-[0_2px_6px_rgba(0,0,0,0.25)] cursor-not-allowed";
           case "outlined":
             return "border border-[#35383D] text-[#35383D] bg-transparent cursor-not-allowed";
+          case "special":
+            return "border border-[#35383D] text-[#35383D] bg-transparent cursor-not-allowed font-bold text-[16px]";
         }
       }
-
       switch (variant) {
         case "signIn":
           return cn(
@@ -48,22 +48,28 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             "border border-[#535E73] text-white bg-transparent",
             "hover:border-[#1B46E0]",
           );
+        case "special":
+          return cn(
+            "bg-[#1B46E0] text-white border border-transparent shadow-[0_2px_6px_rgba(0,0,0,0.25)] font-bold text-[16px] rounded-lg px-[39px] py-[14px]",
+            "hover:bg-[#0C1015] hover:border hover:border-[#3E73C4]",
+          );
         default:
           return "";
       }
+    };
+
+    const getButtonStyles = () => {
+      if (variant === "special") {
+        return "rounded-lg px-[39px] py-[14px] text-[16px] font-bold font-sans text-center flex items-center justify-center select-none transition";
+      }
+      return "rounded-lg px-[16px] py-[17px] w-[192px] text-[18px] font-normal font-sans text-center flex items-center justify-center select-none transition";
     };
 
     return (
       <button
         ref={ref}
         disabled={disabled}
-        className={cn(
-          "rounded-lg px-[16px] py-[17px] w-[192px]",
-          "text-[18px] font-gotham font-normal text-center",
-          "flex items-center justify-center select-none transition",
-          getButtonClass(),
-          className,
-        )}
+        className={cn(getButtonStyles(), getButtonClass(), className)}
         {...rest}
       >
         {children}
@@ -73,5 +79,4 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
-
 export default Button;

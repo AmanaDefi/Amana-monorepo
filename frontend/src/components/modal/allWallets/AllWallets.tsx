@@ -16,10 +16,28 @@ import PhantomIcon from "@/components/svg/PhantomIcon";
 import CoinbaseWalletIcon from "@/components/svg/CoinbaseWalletIcon";
 import OKXWalletIcon from "@/components/svg/OKXWalletIcon";
 import UniswapIcon from "@/components/svg/UniswapIcon";
+import { useConnect } from "@account-kit/react";
+import { Connector, CreateConnectorFn } from "wagmi";
 
 const AllWAllets = () => {
   const { step, closeAll, openStep } = useAuthStore();
+  const { connectors, connect, isPending: isConnectingWallet } = useConnect();
+  const walletConnectConnector = connectors.find(
+    (con) => con.name === "WalletConnect",
+  );
+  const metaMaskConnector = connectors.find((con) => con.name === "MetaMask");
 
+  const handleExternalWalletConnect = (
+    connector: CreateConnectorFn | Connector,
+  ) => {
+    if (isConnectingWallet) return;
+    connect(
+      { connector },
+      {
+        onSuccess: closeAll,
+      },
+    );
+  };
   return (
     <Modal
       isOpen={step === "allWallets"}
@@ -50,11 +68,24 @@ const AllWAllets = () => {
                 <ModalButton
                   label="MetaMask"
                   icon={<MetaMaskIcon width={35} height={32} />}
+                  onClick={() => {
+                    if (metaMaskConnector) {
+                      handleExternalWalletConnect(metaMaskConnector);
+                    } else {
+                      console.log("no metaMask connector");
+                    }
+                  }}
                 />
                 <ModalButton
                   label="WalletConnect"
                   icon={<WalletConnectIcon width={24} height={16} />}
-                  onClick={() => {}}
+                  onClick={() => {
+                    if (walletConnectConnector) {
+                      handleExternalWalletConnect(walletConnectConnector);
+                    } else {
+                      console.log("no WalletConnect connector");
+                    }
+                  }}
                 />
               </div>
               <div className="flex flex-row gap-[11px]">

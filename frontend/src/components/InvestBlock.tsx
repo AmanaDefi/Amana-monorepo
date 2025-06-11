@@ -9,17 +9,18 @@ import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { wallets } from "@/constants/wallets";
+import { useSignerStatus } from "@account-kit/react";
+import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
 
 const InvestBlock = () => {
-  const { walletAddress } = useMultiChain();
-  const isConnected = !!walletAddress;
+  const { isConnected } = useSignerStatus();
+  const { openStep } = useAuthStore();
 
   const handleFundWallet = () => {
     // Logic for replenishing the wallet
     console.log("Fund wallet clicked");
   };
-  const { openStep } = useAuthStore();
 
   return (
     <div className="font-gotham pl-[44px] pr-[40px] py-[18px] flex items-center justify-between rounded-[16px] bg-[rgba(20,23,31,0.15)] backdrop-blur-[20px] shadow-md before-gradient-border">

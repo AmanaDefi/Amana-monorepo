@@ -5,7 +5,7 @@ import { LeaderboardUserData, SearchParams } from "@/types/types";
 import { formatCurrency, shortAddressForm } from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
 import { TrophyIcon } from "@heroicons/react/24/outline";
-import { useActiveAccount } from "thirdweb/react";
+import {useUser} from "@account-kit/react";
 import { ZERO_ACCOUNT } from "@/containers/VaultsContainer";
 import { useLeaderboardData } from "@/hooks/useLeaderboardData";
 
@@ -20,7 +20,7 @@ export default function Page() {
   const [searchParams, setSearchParams] =
     useState<SearchParams>(initialSearchParams);
 
-  const currentUserAccount = useActiveAccount() || ZERO_ACCOUNT;
+  const currentUserAccount = useUser() || ZERO_ACCOUNT;
   const {
     data: leaderboardData,
     isLoading,

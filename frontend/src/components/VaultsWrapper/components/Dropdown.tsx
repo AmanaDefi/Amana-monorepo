@@ -30,12 +30,10 @@ export const Dropdown: React.FC<Props> = ({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      console.log("handleClick");
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        console.log("handleClick setIsShownList(false)");
         setIsShownList(false);
       }
     }

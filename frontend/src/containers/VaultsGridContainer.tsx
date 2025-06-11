@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -13,7 +15,6 @@ import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useActiveAccount } from "thirdweb/react";
 import VaultsGrid from "../components/VaultsWrapper";
 
 // Zero account for default value
@@ -53,7 +54,7 @@ const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
   const pathname = usePathname();
 
   const vaults: VaultData[] = VAULT_DATA;
-  const EOAaccount = useActiveAccount() || defaultAccount;
+
   const { walletAddress } = useMultiChain();
 
   // Fetch vault balances and total values

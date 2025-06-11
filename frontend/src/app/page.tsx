@@ -1,9 +1,6 @@
-"use client";
-
 import React from "react";
 import VaultsContainer from "../containers/VaultsContainer";
 import InvestBlock from "@/components/InvestBlock";
-
 
 export default function Page() {
   return (

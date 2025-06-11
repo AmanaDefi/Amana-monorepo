@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import {
@@ -9,18 +8,16 @@ import {
   VaultTotalAssetsinToken,
   Token,
   Balance,
-  ITxLocalStorage,
   Tabs,
+  TransactionStepMessages,
 } from "@/types/types";
-import { VAULT_DATA, tokens } from "@/constants";
+import { VAULT_DATA } from "@/constants";
 import {
   useUpdateVaultBalanceAndTotalPerVault,
   useUpdateAPYs,
 } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
-import Link from "next/link";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
@@ -29,16 +26,15 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import VaultInformationDropdown from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
 import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import InvestBlock from "@/components/InvestBlock";
-import TokenIcon from "@/components/common/TokenIcon";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
+import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -59,6 +55,57 @@ const VaultsDetailContainer: React.FC<{
     useState<VaultTotalAssetsinToken>();
   const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
+
+  // ДОДАЄМО стан для відстеження транзакції
+  const [transactionStepFeedback, setTransactionStepFeedback] =
+    useState<TransactionStepMessages>({});
+  const [lastTransactionStepFeedback, setLastTransactionStepFeedback] =
+    useState<TransactionStepMessages>({});
+  const [finishedTransaction, setFinishedTransaction] = useState(false);
+  const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
+  const [activeChainId, setActiveChainId] = useState<number>();
+
+  const { activeChain } = useMultiChain();
+
+  useEffect(() => {
+    const checkTransactionState = () => {
+      if (!vaultID) return;
+
+      const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
+      const vaultTxData = getLocalStorageObject(vaultID.toString());
+
+      if (isTxInProgress && vaultTxData) {
+        setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
+        setLastTransactionStepFeedback(
+          vaultTxData?.lastTransactionStepFeedback ?? {},
+        );
+        setFinishedTransaction(vaultTxData?.finishedTransaction ?? false);
+        setIsTransactionProcessing(
+          vaultTxData?.isTransactionProcessing ?? false,
+        );
+      } else {
+        // Очищуємо стан якщо транзакція не активна
+        setTransactionStepFeedback({});
+        setLastTransactionStepFeedback({});
+        setFinishedTransaction(false);
+        setIsTransactionProcessing(false);
+      }
+    };
+
+    // Перевіряємо стан одразу
+    checkTransactionState();
+
+    // Налаштовуємо інтервал для періодичної перевірки localStorage
+    const interval = setInterval(checkTransactionState, 1000);
+
+    return () => clearInterval(interval);
+  }, [vaultID]);
+
+  useEffect(() => {
+    if (activeChain?.id) {
+      setActiveChainId(activeChain.id);
+    }
+  }, [activeChain]);
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;
@@ -168,15 +215,6 @@ const VaultsDetailContainer: React.FC<{
     router.push(backPath);
   };
 
-  const [inputToken, setInputToken] = useState<Token | undefined>();
-  const { balance: walletTokenBalance } = useMultichainTokenBalance(inputToken);
-  const walletTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
-  console.log({
-    inputToken,
-    userVaultBalance,
-    vaultData,
-  });
-
   return vaultData ? (
     <div className="overflow-x-auto font-gotham">
       <InvestBlock />
@@ -228,14 +266,14 @@ const VaultsDetailContainer: React.FC<{
         selectedToken={selectedToken}
       />
 
-      <section className="w-full flex flex-col justify-between lg:flex-row gap-4 my-4 font-gotham">
+      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 my-4 font-gotham">
         <div>
           <VaultOverviewBlock
             vault={vaultData}
             vaultAPY={vaultAPYs.find((a) => a.vaultId === vaultID.toString())}
             totalAssets={vaultTotalAsset}
           />
-          <div className="bg-[#14171F] pt-6 px-5 pb-3 rounded-[16px] min-w-[526px] mt-8">
+          <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
             <VaultInputs
               vaultData={vaultData}
               setTransactionCompleted={setTransactionCompleted}
@@ -249,7 +287,7 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
 
-        <div className="w-full max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           <Dropdown title="Information" defaultOpen={true}>
             <VaultInformationContent
               vaultData={vaultData}
@@ -262,6 +300,27 @@ const VaultsDetailContainer: React.FC<{
               <p className="text-white text-sm font-normal">Content</p>
             </Dropdown>
           ))}
+          {walletAddress && (
+            <Dropdown
+              title={
+                isTransactionProcessing ||
+                Object.keys(transactionStepFeedback).length > 0
+                  ? "Transaction Progress"
+                  : "Deposit instruction"
+              }
+              defaultOpen={true}
+            >
+              <DepositInstruction
+                transactionStepFeedback={transactionStepFeedback}
+                lastTransactionStepFeedback={lastTransactionStepFeedback}
+                finishedTransaction={finishedTransaction}
+                activeChainId={activeChainId}
+                vaultStrategyChainId={vaultData?.protocol?.chainId}
+                isDeposit={initialIsDeposit}
+                isProcessing={isTransactionProcessing}
+              />
+            </Dropdown>
+          )}
         </div>
       </section>
     </div>

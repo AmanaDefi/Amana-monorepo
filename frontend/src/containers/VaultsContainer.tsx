@@ -1,5 +1,6 @@
+"use client";
+
 import { useState } from "react";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import VaultsGrid from "../components/VaultsWrapper";
 import {
   VaultData,
@@ -52,7 +53,6 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({
   const pathname = usePathname();
 
   const vaults: VaultData[] = VAULT_DATA;
-  const EOAaccount = useActiveAccount() || defaultAccount;
   const { walletAddress } = useMultiChain();
 
   useUpdateVaultBalanceAndTotal(

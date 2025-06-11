@@ -12,8 +12,7 @@ import {
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { parseUnits } from "viem";
-import { Address, Chain, getContract, readContract } from "thirdweb";
-import { client } from "@/utils/client";
+import { Chain } from "viem";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
@@ -29,7 +28,6 @@ import {
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
   getAmountOutFromSwap,
   getAssetsFromShares,
@@ -38,7 +36,6 @@ import {
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
@@ -51,6 +48,7 @@ import {
 import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import ErrorInputIcon from "./svg/ErrorInputIcon";
 import Button from "./Button";
+import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -159,7 +157,7 @@ export default function VaultInputs({
 
   useEffect(() => {
     async function handlePerformanceFee() {
-      const perfFee = await getPerformanceFee(vaultData.id as Address);
+      const perfFee = await getPerformanceFee(vaultData.id);
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
       setPerformanceFee(percentagePerformanceFee);
     }
@@ -218,7 +216,7 @@ export default function VaultInputs({
     return {
       symbol: vaultData.symbol,
       decimals: vaultData.inputToken.decimals,
-      address: vaultData.id as Address,
+      address: vaultData.id ,
       imgURL: "",
       price: 1,
       balance: EMPTY_BALANCE,
@@ -254,6 +252,8 @@ export default function VaultInputs({
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const { balance: tokenBalance, fetchBalance } =
     useMultichainTokenBalance(inputToken);
+
+    console.log(tokenBalance, 'tokenBalance')
 
   // Reset token when chain changes to prevent cross-chain token errors
   useEffect(() => {
@@ -316,7 +316,7 @@ export default function VaultInputs({
     action,
     vaultTotalAssetinToken,
     steps,
-    tokenBalance.value
+    tokenBalance.value,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -414,7 +414,6 @@ export default function VaultInputs({
         updateLocalStorageObject(vaultData.id, {
           steps: steps,
           selectedToken: JSON.stringify(inputToken, bigIntReplacer),
-          activeChain: activeChain,
         });
       };
       fetchSteps();
@@ -502,6 +501,7 @@ export default function VaultInputs({
       if (decimals?.length > decimalsNumber) {
         inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
       }
+      console.log(inputAmt, isNaN(Number(inputAmt)))
 
       if (isNaN(Number(inputAmt))) {
         return;
@@ -533,7 +533,6 @@ export default function VaultInputs({
   );
 
   const handleMaxClick = useCallback(() => {
-    // localStorage.removeItem(vaultData.id)
     const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
 
     if (!inputToken || isTxInProgress) return;
@@ -619,7 +618,7 @@ export default function VaultInputs({
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
-          vaultData.id as Address,
+          vaultData.id,
         );
       }
       /*console.log("Double Box - Conversion amounts:", {
@@ -699,7 +698,7 @@ export default function VaultInputs({
           inputAmountValue,
           actualInputToken,
           vaultData.inputToken,
-          vaultData.id as Address,
+          vaultData.id,
         );
       }
 
@@ -713,50 +712,50 @@ export default function VaultInputs({
       let gasFeeInUSD = "0";
       let gasFeeInETH = "0";
       let netDepositToVaultUSD = "0";
-      if (!vaultData.depositFeePaidFromGasTank) {
-        const vaultContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.id as Address,
-        });
-        const gasLimitForWithdrawAndCall = await readContract({
-          contract: vaultContract,
-          method:
-            "function gasLimitForWithdrawAndCall() view returns (uint256)",
-        });
-        const tokenContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.inputToken.address as Address,
-        });
-        const result = await readContract({
-          contract: tokenContract,
-          method:
-            "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
-          params: [gasLimitForWithdrawAndCall],
-        });
-        const gasZRC20 = result[0] as Address;
-        const gasFee = result[1] as bigint;
-        // 3. If vault token and gas token match, subtract directly
-        gasFeeInVaultAsset = gasFee;
+      // if (!vaultData.depositFeePaidFromGasTank) {
+      //   const vaultContract = getContract({
+      //     client,
+      //     chain: SUPPORTED_CHAINS[0],
+      //     address: vaultData.id as Address,
+      //   });
+      //   const gasLimitForWithdrawAndCall = await readContract({
+      //     contract: vaultContract,
+      //     method:
+      //       "function gasLimitForWithdrawAndCall() view returns (uint256)",
+      //   });
+      //   const tokenContract = getContract({
+      //     client,
+      //     chain: SUPPORTED_CHAINS[0],
+      //     address: vaultData.inputToken.address as Address,
+      //   });
+      //   const result = await readContract({
+      //     contract: tokenContract,
+      //     method:
+      //       "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
+      //     params: [gasLimitForWithdrawAndCall],
+      //   });
+      //   const gasZRC20 = result[0] as Address;
+      //   const gasFee = result[1] as bigint;
+      //   // 3. If vault token and gas token match, subtract directly
+      //   gasFeeInVaultAsset = gasFee;
 
-        if (gasZRC20 !== vaultData.inputToken.address) {
-          // Convert fee from gas token into vault asset terms
-          gasFeeInVaultAsset = await getAmountOutFromSwap(
-            gasFee,
-            ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
-            vaultData.inputToken,
-            vaultData.id as Address,
-          );
-        }
-        // Format gas fee in USD and ETH
-        const gasFeeInTokenUnits =
-          Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
-        const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
-        gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-        const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
-        gasFeeInETH = ethAmount.toFixed(5);
-      }
+      //   if (gasZRC20 !== vaultData.inputToken.address) {
+      //     // Convert fee from gas token into vault asset terms
+      //     gasFeeInVaultAsset = await getAmountOutFromSwap(
+      //       gasFee,
+      //       ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
+      //       vaultData.inputToken,
+      //       vaultData.id as Address,
+      //     );
+      //   }
+      //   // Format gas fee in USD and ETH
+      //   const gasFeeInTokenUnits =
+      //     Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
+      //   const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
+      //   gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
+      //   const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
+      //   gasFeeInETH = ethAmount.toFixed(5);
+      // }
 
       // 4. Subtract gas fee from converted amount
       const finalConvertedAmount =
@@ -1103,7 +1102,7 @@ export default function VaultInputs({
         isSlippageExceedingLimit={isSlippageExceedingLimit}
         setInputBalance={setInputBalance}
       />
-      <div className="w-full  my-10 flex items-center justify-center">
+      <div className="w-full my-10 flex items-center justify-center">
         <button className="group flex-center p-2" onClick={switchTokens}>
           <DepositModalArrowsIcon width={24} height={24} />
         </button>
@@ -1248,37 +1247,20 @@ export default function VaultInputs({
           {/* Performance Fee */}
           <span className="flex flex-row items-center justify-between text-white py-1">
             <div className="flex items-center">
-              <button id="gas-fee-info" className="mr-[10px] group">
-                <ErrorInputIcon
-                  width={14}
-                  height={14}
-                  className="!fill-[#1B46E0]"
-                />
-              </button>
+              <div className="flex items-center mr-[10px]">
+                <InfoBlock>
+                  💡 15% deducted from the profit earned in the vault
+                </InfoBlock>
+              </div>
               <p>Performance Fee (deducted upon withdrawal)</p>
-              <ResponsiveTooltip
-                id={"performance-fee-info"}
-                content={
-                  <p className="w-60">
-                    15% deducted from the profit earned in the vault
-                  </p>
-                }
-              />
             </div>
             <span className="font-bold">{performanceFee}%</span>
           </span>
         </div>
       </div>
-      <button
-        className={`rounded-lg flex items-center justify-center text-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] w-full py-[14px] text-[18px] font-bold max-h-12 mt-[47px] transition-colors ${
-          isButtonDisabled
-            ? "bg-gray-600 cursor-not-allowed"
-            : "bg-[#1B46E0] hover:bg-[#1540CC]"
-        }`}
-        disabled={isButtonDisabled}
-      >
+      <Button variant="special" disabled={isButtonDisabled} className="w-full mt-[47px]">
         {!walletAddress ? "Connect Wallet" : isDeposit ? "Invest" : "Withdraw"}
-      </button>
+      </Button>
 
       {inputToken &&
         !loadingOutputToken &&

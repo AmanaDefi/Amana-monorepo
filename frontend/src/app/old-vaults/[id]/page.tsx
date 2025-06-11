@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useActiveAccount, useActiveWalletConnectionStatus, useConnectModal } from "thirdweb/react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useUser } from "@account-kit/react";
 
 function Index({ }) {
-    const account = useActiveAccount();
+    const account = useUser();
     const { id } = useParams();
     const wallet = useWallet();
 
