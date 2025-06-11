@@ -447,59 +447,68 @@ contract SwapHelperZetachain is SwapHelperParent {
             IERC20(zrc20).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
+
         uint256 minimumOut = calculateMinAmountOut(
             zrc20,
             targetZRC20,
             amount,
             slippageBps
         );
-        (
-            address[] memory path,
-            ,
-            bytes memory encodedPath,
-            SwapType swapType
-        ) = getPathV3BeamOrEddy(zrc20, targetZRC20);
-        if (swapType == SwapType.Eddy) {
-            IZRC20(zrc20).approve(UNISWAP_V3_ROUTER, amount);
-            ISwapRouter.ExactInputParams memory params = ISwapRouter
-                .ExactInputParams({
-                    path: encodedPath,
-                    recipient: vault,
-                    deadline: block.timestamp + maxDeadline,
-                    amountIn: amount,
-                    amountOutMinimum: minimumOut
-                });
-            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
-        } else if (swapType == SwapType.Beam) {
-            IZRC20(zrc20).approve(SWAPROUTER_BEAM, amount);
 
-            if (swapData.length > 0) {
-                // If swapData is provided, it should be the encoded path
-                encodedPath = swapData;
+        bytes memory path;
+        address router;
+
+        if (swapData.length > 0) {
+            // Force Beam with provided path
+            path = swapData;
+            router = SWAPROUTER_BEAM;
+        } else {
+            // Try Beam or Eddy via getPath
+            (
+                ,
+                ,
+                bytes memory encodedPath,
+                SwapType swapType
+            ) = getPathV3BeamOrEddy(zrc20, targetZRC20);
+
+            if (encodedPath.length > 0) {
+                path = encodedPath;
+                router = (swapType == SwapType.Beam)
+                    ? SWAPROUTER_BEAM
+                    : UNISWAP_V3_ROUTER;
             }
+        }
+
+        // If we’ve got a valid path and router, execute V3 swap
+        if (path.length > 0 && router != address(0)) {
+            IZRC20(zrc20).approve(router, amount);
+
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
-                    path: encodedPath,
+                    path: path,
                     recipient: vault,
                     deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
-            amountOut = ISwapRouter(SWAPROUTER_BEAM).exactInput(params);
-        } else {
-            // fallback to V2 or revert
-            path = getPathV2(zrc20, targetZRC20, UNISWAP_V2_FACTORY);
-            IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
-            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
-                .swapExactTokensForTokens(
-                    amount,
-                    minimumOut,
-                    path,
-                    vault,
-                    block.timestamp + maxDeadline
-                );
-            amountOut = amounts[amounts.length - 1];
+
+            return ISwapRouter(router).exactInput(params);
         }
+
+        // Fallback to Eddy V2
+        address[] memory v2Path = getPathV2(zrc20, targetZRC20);
+        IZRC20(zrc20).approve(UNISWAP_V2_ROUTER, amount);
+
+        uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+            .swapExactTokensForTokens(
+                amount,
+                minimumOut,
+                v2Path,
+                vault,
+                block.timestamp + maxDeadline
+            );
+
+        return amounts[amounts.length - 1];
     }
 
     function swapExactOut(
