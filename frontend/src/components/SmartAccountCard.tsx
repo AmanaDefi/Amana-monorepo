@@ -12,8 +12,7 @@ const SmartAccountCard = ({
   note,
 }: SmartAccountCardProps) => {
   return (
-    <div className="p-4 rounded-md shadow-md bg-dark-card">
-      {" "}
+    <div className="p-8 rounded-md shadow-md bg-dark-card transition-all backdrop-blur-[20px] cursor-pointer before-gradient-border font-gotham">
       <h3 className="font-bold mb-2 text-white">{title}</h3>
       <p className="text-white whitespace-pre-line">{description}</p>
       {list && (

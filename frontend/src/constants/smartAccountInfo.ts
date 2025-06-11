@@ -22,10 +22,10 @@ export const smartAccountInfo = [
     description:
       "Smart accounts are powered by smart contracts. That means they can do more than just hold tokens:",
     list: [
-      "• Batch transactions → One click = multiple actions",
-      "• Automate deposits or withdrawals",
-      "• Recover your account with a backup",
-      "• Pay gas in any token — or no gas at all",
+      "Batch transactions → One click = multiple actions",
+      "Automate deposits or withdrawals",
+      "Recover your account with a backup",
+      "Pay gas in any token — or no gas at all",
     ],
     note: "This is DeFi the way it should be: secure, simple, and powerful.",
   },

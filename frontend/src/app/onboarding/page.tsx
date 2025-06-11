@@ -1,8 +1,12 @@
+import BackButton from "@/components/common/BackButton";
+import OnboardingContainer from "@/containers/OnboardingContainer";
+
 function Onboarding({}) {
   return (
     <div>
-          
-   </div>
+      <BackButton />
+      <OnboardingContainer />
+    </div>
   );
 }
 

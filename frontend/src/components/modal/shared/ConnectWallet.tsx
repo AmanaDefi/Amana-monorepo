@@ -1,7 +1,17 @@
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
+import { useAuthStore } from "@/store/authStore";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
+import { useRouter } from "next/navigation";
 
 const ConnectWallet = () => {
+  const router = useRouter();
+  const {closeAll} = useAuthStore();
+
+  const handleClick = () => {
+    closeAll(); 
+    router.push("/onboarding");
+  };
+
   return (
     <div className="flex flex-col">
       <div className="flex flex-row gap-6 mb-[41px]">
@@ -17,7 +27,10 @@ const ConnectWallet = () => {
           wallet from the options to get started
         </p>
       </div>
-      <button className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1">
+      <button
+        onClick={handleClick}
+        className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1"
+      >
         I DON’T HAVE A WALLET
         <ErrorInputIcon width={16} height={17} className="fill-[#3E73C4]" />
       </button>
