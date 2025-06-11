@@ -80,7 +80,7 @@ export default function InputTokenWithError({
   const { activeChain } = useMultiChain();
 
   // Function to handle token selection with chain switching
-  const handleTokenSelection = (token: Token, chain: Chain) => {
+  const handleTokenSelection = (token: Token) => {
     onSelectToken(token);
   };
 
@@ -163,7 +163,7 @@ export default function InputTokenWithError({
                 "$ " +
                 (selectedToken
                   ? formatCurrency(
-                      Number(props.value || 0) * selectedTokenPrice,
+                      Number(inputTokenbalance || 0) * selectedTokenPrice,
                     )
                   : "0.00")
               ) : loadingOutputToken ? (
@@ -181,8 +181,8 @@ export default function InputTokenWithError({
               <span className="text-white text-2xl">
                 {loadingOutputToken ? (
                   <PendingDots />
-                ) : props.value && Number(props.value) !== 0 ? (
-                  props.value
+                ) : inputTokenbalance && Number(inputTokenbalance) !== 0 ? (
+                  inputTokenbalance
                 ) : (
                   " "
                 )}
@@ -217,14 +217,14 @@ export default function InputTokenWithError({
               }
             </div> */}
             <div className="flex items-center">
-              {/* {showTokenSelector ? (
+              {showTokenSelector ? (
                 <ChainTokenSelector
                   selectedToken={selectedToken}
                   onSelectToken={handleTokenSelection}
                   className="justify-end"
                   vaultData={vaultData}
                 />
-              ) : ( */}
+              ) : (
                 <div className="flex items-center">
                   <div className="md:mr-2 relative flex-none w-5 h-5">
                     <TokenIcon
@@ -237,7 +237,7 @@ export default function InputTokenWithError({
                     {selectedToken?.symbol}
                   </p>
                 </div>
-              {/* )} */}
+              )}
             </div>
           </div>
         </div>

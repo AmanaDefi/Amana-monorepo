@@ -12,9 +12,7 @@ import {
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { parseUnits } from "viem";
-import { Address, getContract, readContract } from "thirdweb";
 import { Chain } from "viem";
-import { client } from "@/utils/client";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
@@ -30,7 +28,6 @@ import {
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
   getAmountOutFromSwap,
   getAssetsFromShares,
@@ -39,7 +36,6 @@ import {
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
@@ -51,7 +47,6 @@ import {
 } from "@/utils/localStorageUtils";
 import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import ErrorInputIcon from "./svg/ErrorInputIcon";
-import Button from "./Button";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -160,7 +155,7 @@ export default function VaultInputs({
 
   useEffect(() => {
     async function handlePerformanceFee() {
-      const perfFee = await getPerformanceFee(vaultData.id as Address);
+      const perfFee = await getPerformanceFee(vaultData.id);
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
       setPerformanceFee(percentagePerformanceFee);
     }
@@ -219,7 +214,7 @@ export default function VaultInputs({
     return {
       symbol: vaultData.symbol,
       decimals: vaultData.inputToken.decimals,
-      address: vaultData.id as Address,
+      address: vaultData.id ,
       imgURL: "",
       price: 1,
       balance: EMPTY_BALANCE,
@@ -256,6 +251,8 @@ export default function VaultInputs({
   const { balance: tokenBalance, fetchBalance } =
     useMultichainTokenBalance(inputToken);
 
+    console.log(tokenBalance, 'tokenBalance')
+
   // Reset token when chain changes to prevent cross-chain token errors
   useEffect(() => {
     // Clear token selection and balance when the active chain changes
@@ -275,7 +272,7 @@ export default function VaultInputs({
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
     if (inputToken && activeChain && !isTxInProgress) {
-      // fetchBalance();
+      fetchBalance();
       // Reset input field when token changes
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
@@ -534,7 +531,6 @@ export default function VaultInputs({
   );
 
   const handleMaxClick = useCallback(() => {
-    // localStorage.removeItem(vaultData.id)
     const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
 
     if (!inputToken || isTxInProgress) return;
@@ -620,7 +616,7 @@ export default function VaultInputs({
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
-          vaultData.id as Address,
+          vaultData.id,
         );
       }
       /*console.log("Double Box - Conversion amounts:", {
@@ -700,7 +696,7 @@ export default function VaultInputs({
           inputAmountValue,
           actualInputToken,
           vaultData.inputToken,
-          vaultData.id as Address,
+          vaultData.id,
         );
       }
 

@@ -37,7 +37,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       return;
     }
 
-    // refetchNativeBalance();
+    // refetchNativeBalance(walletAddress);
     setIsLoading(true);
     setError(null);
 
@@ -78,14 +78,14 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
           );
           newBalance = DEFAULT_BALANCE;
         } else {
-          // const { balance: ercBalance, decimals } = await getERC20TokenBalance(
-          //   walletAddress,
-          //   currentToken.address,
-          //   activeChain,
-          // );
+          const { balance: ercBalance, decimals } = await getERC20TokenBalance(
+            walletAddress,
+            currentToken.address,
+            activeChain,
+          );
           newBalance = {
-            value: 0n,
-            formatted: '0.00',
+            value: ercBalance,
+            formatted: format(ercBalance, decimals),
           };
         }
       }
@@ -111,7 +111,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
     activeChain,
     nativeBalance,
     error,
-    // refetchNativeBalance,
+    refetchNativeBalance,
   ]);
 
   useEffect(() => {

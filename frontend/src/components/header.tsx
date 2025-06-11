@@ -14,6 +14,7 @@ import { BrowserProvider, ethers, Signer } from "ethers";
 import { ethereumProvider } from "@/utils/providers";
 import Image from "next/image";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
+import { formatBalance, formatTokenBalance } from "@/utils/utils";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -132,7 +133,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                       {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                     </p>
                     <p className="text-[#535E73]">
-                      {balance.formatted} {activeChain?.nativeCurrency?.symbol}
+                      {Number(balance.formatted).toFixed(4)}{" "}
+                      {activeChain?.nativeCurrency?.symbol}
                     </p>
                   </div>
                 </div>
