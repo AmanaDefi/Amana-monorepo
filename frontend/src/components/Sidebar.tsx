@@ -33,8 +33,8 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   const isDisabled =
     item.id !== "wallet" && item.id !== "logout" && item.id !== "earn";
 
-  const commonClasses = `flex items-center rounded-lg h-12 font-bold text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
-    isCollapsed ? "justify-center w-16" : "gap-3 px-[22px] w-[240px]"
+  const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-bold text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
+    isCollapsed ? "justify-center max-w-[64px]" : "gap-3"
   }`;
 
   const enabledClasses = "hover:text-white text-gray-400";
@@ -181,7 +181,7 @@ const Sidebar = ({
       ref={sidebarRef}
       className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
     hidden md:flex
-    ${isCollapsed ? "w-[136px] px-0" : "w-[302px] px-[29px]"}
+    ${isCollapsed ? "w-[136px] px-[29px]" : "w-[302px] px-[29px]"}
     py-[54px] h-full
   `}
       style={{
@@ -201,18 +201,18 @@ const Sidebar = ({
 
           <button
             onClick={toggleSidebar}
-            className={`transition-all duration-500 ease-in-out flex-shrink-0 ${
+            className={`transition-all duration-500 ease-in-out flex-shrink-0 p-1 ${
               isCollapsed
                 ? "opacity-0 max-w-0 overflow-hidden ml-0"
                 : "opacity-100 max-w-[24px] ml-3"
             }`}
           >
-            <CloseSidebarIcon width={24} height={25} />
+            <CloseSidebarIcon width={20} height={20} />
           </button>
         </div>
 
         <div
-          className={`absolute top-[160px] right-3 transition-all duration-500 ease-in-out ${
+          className={`absolute z-10 top-[160px] right-3 transition-all duration-500 ease-in-out ${
             isCollapsed
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
