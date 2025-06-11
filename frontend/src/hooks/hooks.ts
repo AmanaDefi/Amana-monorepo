@@ -18,14 +18,7 @@ import {
   calculateCombinedBalancerAPY,
   fetchReceiptTokens,
 } from "@/actions/actions";
-import {
-  Address,
-  ADDRESS_ZERO,
-  defineChain,
-  getContract,
-  prepareEvent,
-  readContract,
-} from "thirdweb";
+
 import {
   DEFAULT_SETTINGS,
   UserSettings,
@@ -38,7 +31,6 @@ import {
   MULTICALL_ADDRS,
   SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
-import { useContractEvents } from "thirdweb/react";
 import {
   getOnlyTokenSymbol,
   isSolanaAddress,
@@ -260,8 +252,8 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
       try {
         if (vault && vault.id) {
           const balance = await fetchUserVaultBalance(
-            address as Address,
-            vault.id as Address,
+            address,
+            vault.id,
           );
 
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(

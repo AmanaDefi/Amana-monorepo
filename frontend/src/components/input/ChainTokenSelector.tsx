@@ -19,7 +19,7 @@ import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 
 interface ChainTokenSelectorProps {
-  onSelectToken: (token: Token, chain: Chain) => void;
+  onSelectToken: (token: Token) => void;
   selectedToken?: Token;
   className?: string;
   vaultData?: VaultData;
@@ -236,10 +236,7 @@ export default function ChainTokenSelector({
       if (activeChain && walletAddress) {
         const closestToken = findClosestToken();
         if (closestToken) {
-          const chain =
-            SUPPORTED_CHAINS.find((c) => c.id === activeChain.id) ||
-            activeChain;
-          onSelectToken(closestToken, chain);
+          onSelectToken(closestToken);
         }
       }
     }
@@ -268,9 +265,8 @@ export default function ChainTokenSelector({
       const closestToken = findClosestToken();
 
       if (closestToken) {
-        const chain =
-          SUPPORTED_CHAINS.find((c) => c.id === activeChain.id) || activeChain;
-        onSelectToken(closestToken, chain);
+    
+        onSelectToken(closestToken);
       } else if (selectedToken) {
         // If we have a selected token from another chain, try to find the same token on this chain
         const currentChainTokens = APPROVED_TOKENS[activeChain.id] || [];
@@ -340,10 +336,7 @@ export default function ChainTokenSelector({
             return aSuffix.localeCompare(bSuffix);
           });
 
-          const chain =
-            SUPPORTED_CHAINS.find((c) => c.id === activeChain.id) ||
-            activeChain;
-          onSelectToken(sortedTokens[0], chain);
+          onSelectToken(sortedTokens[0]);
           return;
         }
 
@@ -357,19 +350,13 @@ export default function ChainTokenSelector({
         });
 
         if (matchingToken) {
-          const chain =
-            SUPPORTED_CHAINS.find((c) => c.id === activeChain.id) ||
-            activeChain;
-          onSelectToken(matchingToken, chain);
+          onSelectToken(matchingToken);
           return;
         }
 
         // If we can't find a matching token, just select the first available
         if (currentChainTokens.length > 0) {
-          const chain =
-            SUPPORTED_CHAINS.find((c) => c.id === activeChain.id) ||
-            activeChain;
-          onSelectToken(currentChainTokens[0], chain);
+          onSelectToken(currentChainTokens[0]);
         }
       }
     }
@@ -404,9 +391,8 @@ export default function ChainTokenSelector({
       const closestToken = findClosestToken();
 
       if (closestToken) {
-        const chain =
-          SUPPORTED_CHAINS.find((c) => c.id === activeChain.id) || activeChain;
-        onSelectToken(closestToken, chain);
+      
+        onSelectToken(closestToken);
       }
     }
   }, [
@@ -556,7 +542,7 @@ export default function ChainTokenSelector({
     setSelectedTokenChain(chain.id);
 
     // Now that we're on the right chain, select the token
-    onSelectToken(token, chain);
+    onSelectToken(token);
     setIsOpen(false);
     setExpandedChain(null);
   };
@@ -596,12 +582,12 @@ export default function ChainTokenSelector({
     if (!searchQuery) return SUPPORTED_CHAINS;
 
     return SUPPORTED_CHAINS.filter((chain) => {
-      const chainTokens = getTokensForChain(chain);
+      const chainTokens = getTokensForChain(chain.chain);
       const hasMatchingTokens = chainTokens.some((token) =>
         token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       return (
-        chain.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        chain?.chain?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         hasMatchingTokens
       );
     });
@@ -687,7 +673,7 @@ export default function ChainTokenSelector({
 
           <div className="max-h-96 overflow-y-auto">
             {filteredChains.map((chain) => {
-              const chainTokens = getTokensForChain(chain);
+              const chainTokens = getTokensForChain(chain.chain);
               const filteredTokens = searchQuery
                 ? chainTokens.filter((token) =>
                     token.symbol
@@ -702,10 +688,10 @@ export default function ChainTokenSelector({
               if (filteredTokens.length === 0) return null;
 
               return (
-                <div key={chain.id}>
+                <div key={chain.chain.id}>
                   <button
-                    onClick={(e) => handleChainClick(chain.id, e)}
-                    className={`chain-button ${activeChain?.id === chain.id ? "active-chain" : ""}`}
+                    onClick={(e) => handleChainClick(chain.chain.id, e)}
+                    className={`chain-button ${activeChain?.id === chain.chain.id ? "active-chain" : ""}`}
                   >
                     <div className="flex items-center space-x-3">
                       {/* {chain.icon && (
@@ -718,8 +704,8 @@ export default function ChainTokenSelector({
                           sizes="24px"
                         />
                       )} */}
-                      <span className="text-white">{chain.name}</span>
-                      {selectedToken && chain.id === selectedTokenChain && (
+                      <span className="text-white">{chain.chain.name}</span>
+                      {selectedToken && chain.chain.id === selectedTokenChain && (
                         <span className="ml-2 text-xs px-2 py-0.5 text-white bg-gradient-to-r from-[#262830] to-[#06afbc] rounded-full">
                           Connected
                         </span>
@@ -727,12 +713,12 @@ export default function ChainTokenSelector({
                     </div>
                     <ChevronDownIcon
                       className={`w-5 h-5 text-white transition-transform ${
-                        expandedChain === chain.id ? "rotate-180" : ""
+                        expandedChain === chain.chain.id ? "rotate-180" : ""
                       }`}
                     />
                   </button>
 
-                  {(expandedChain === chain.id || searchQuery) &&
+                  {(expandedChain === chain.chain.id || searchQuery) &&
                     filteredTokens.length > 0 && (
                       <div className="token-list">
                         {filteredTokens.map((token) => {
@@ -758,7 +744,7 @@ export default function ChainTokenSelector({
                             <button
                               key={token.address + token.symbol}
                               onClick={(e) =>
-                                handleTokenSelect(token, chain, e)
+                                handleTokenSelect(token, chain.chain, e)
                               }
                               className={`token-button ${isVaultToken ? "vault-token" : ""} ${isSelectedToken ? "selected-token" : ""}`}
                             >

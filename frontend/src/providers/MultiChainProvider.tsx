@@ -24,10 +24,11 @@ import {
 import { useBalance } from "wagmi";
 import useSolanaBalance from "@/hooks/useSolanaBalance";
 import { Balance } from "@/types/types";
-import { Chain } from "viem";
+import { Chain, formatEther } from "viem";
 import { BrowserProvider, ethers } from "ethers";
 import { ethereumProvider } from "@/utils/providers";
 import { getProvider } from "@/utils/getProvider";
+import { getPublicClient } from "@/utils/getPublicClient";
 declare global {
   interface Window {
     solana?: any;
@@ -48,7 +49,7 @@ interface MultiChainContextType {
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
   switchToChain: (chain: Chain) => Promise<void>;
-  refetchBalance: () => void;
+  refetchBalance: (address: string) => void;
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -145,24 +146,24 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   //   address: userAddress,
   // });
 
-  const getEvmBalance = useCallback(async () => {
-    console.log("het evm", chain, walletAddress);
-    if (!chain || !activeAccount?.address) return;
+  const getEvmBalance = useCallback(async (walletAddress: string) => {
+    if (!chain || !walletAddress) return;
+
+    const publicClient = getPublicClient(chain.id);
+    if (!publicClient) return;
 
     try {
-      const rpcProvider = getProvider(chain.id);
-      const balanceInWei = await rpcProvider.getBalance(activeAccount?.address);
+      const balanceInEth = await publicClient.getBalance({
+        address: walletAddress,
+      });
 
-      const balanceInEth = ethers.formatEther(balanceInWei);
+      const formattedBalance = formatEther(balanceInEth);
 
-      const formattedBalance = parseFloat(balanceInEth).toFixed(4);
-      console.log(formattedBalance);
-
-      setBalance({ formatted: formattedBalance, value: balanceInWei });
+      setBalance({ formatted: formattedBalance, value: balanceInEth });
     } catch (error) {
       console.error("Error get balance:", error);
     }
-  }, [chain, activeAccount, getProvider, setBalance]);
+  }, [chain, getPublicClient, setBalance]);
 
   useEffect(() => {
     console.log(activeAccount, publicKey);
@@ -173,11 +174,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       setWalletAddress(publicKey.toBase58());
       setIsModalOpen(false);
     } else if (activeAccount?.address) {
-      setWalletAddress(activeAccount?.address);
-      getEvmBalance();
+      setWalletAddress(activeAccount.address);
+      getEvmBalance(activeAccount.address);
       setIsModalOpen(false);
     }
-  }, [activeAccount?.address, publicKey, disconnectWallet]);
+  }, [activeAccount?.address, publicKey, disconnectWallet, getEvmBalance]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {
