@@ -217,14 +217,14 @@ export default function InputTokenWithError({
               }
             </div> */}
             <div className="flex items-center">
-              {showTokenSelector ? (
+              {/* {showTokenSelector ? (
                 <ChainTokenSelector
                   selectedToken={selectedToken}
                   onSelectToken={handleTokenSelection}
                   className="justify-end"
                   vaultData={vaultData}
                 />
-              ) : (
+              ) : ( */}
                 <div className="flex items-center">
                   <div className="md:mr-2 relative flex-none w-5 h-5">
                     <TokenIcon
@@ -237,7 +237,7 @@ export default function InputTokenWithError({
                     {selectedToken?.symbol}
                   </p>
                 </div>
-              )}
+              {/* )} */}
             </div>
           </div>
         </div>

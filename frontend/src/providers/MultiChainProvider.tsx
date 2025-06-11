@@ -177,7 +177,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       getEvmBalance();
       setIsModalOpen(false);
     }
-  }, [activeAccount, publicKey, disconnectWallet, getEvmBalance]);
+  }, [activeAccount?.address, publicKey, disconnectWallet]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {

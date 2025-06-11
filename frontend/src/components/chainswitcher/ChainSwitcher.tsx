@@ -3,13 +3,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Chain } from "viem";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { CHAIN_ICONS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import "react-toastify/dist/ReactToastify.css";
 import { ClipLoader } from "react-spinners";
 import { ChevronDownIcon, CheckIcon } from "@heroicons/react/24/solid";
 import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import { useChain, useUser } from "@account-kit/react";
+import Image from "next/image";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
@@ -165,11 +166,13 @@ const ChainSwitcher: React.FC = () => {
               data-tooltip-id={`chain-${chain.chain.id}-tooltip`}
               data-tooltip-content={`Switch to ${chain.chain.name}`}
             >
-              {/* <img
-                src={chain.icon?.url}
-                alt={chain.name}
-                className="w-5 h-5 mr-2 rounded-full"
-              /> */}
+              <Image
+                src={CHAIN_ICONS[chain.chain.id].url}
+                alt={chain.chain.name}
+                width={40}
+                height={40}
+                sizes="40px"
+              />
               <span>{chain.chain.name}</span>
               {isLoading === chain.chain.id ? (
                 <div className="ml-auto">

@@ -26,7 +26,7 @@ import {
 export const zeroSolAddress = PublicKey.default.toBase58();
 
 export const TOKEN_LOGO_URLS: Record<string, string> = {
-  ZETA: "/ZetaChain.jpeg",
+  ZETA: "/ZetaChainLogo.png",
   BTC: "/bitcoin_logo.png",
   CBBTC: "/cbbtc.png",
   ETH: "/ETH.png",
@@ -50,18 +50,18 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
 };
 
 // Chain icons mapping (optional fallback if modal icons fail) {It's a long one, should we move it to utils || any other data center}
-const CHAIN_ICONS: { [chainId: number]: Icon } = {
+export const CHAIN_ICONS: { [chainId: number]: Icon } = {
   7000: {
     url: TOKEN_LOGO_URLS.ZETA,
     width: 32,
     height: 32,
-    format: "jpeg",
+    format: "png",
   }, // ZetaChain Mainnet
   7001: {
     url: TOKEN_LOGO_URLS.ZETA,
     width: 32,
     height: 32,
-    format: "jpeg",
+    format: "png",
   }, // ZetaChain Testnet
   1: {
     url: TOKEN_LOGO_URLS.ETH,

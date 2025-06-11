@@ -275,7 +275,7 @@ export default function VaultInputs({
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
     if (inputToken && activeChain && !isTxInProgress) {
-      fetchBalance();
+      // fetchBalance();
       // Reset input field when token changes
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
@@ -415,7 +415,6 @@ export default function VaultInputs({
         updateLocalStorageObject(vaultData.id, {
           steps: steps,
           selectedToken: JSON.stringify(inputToken, bigIntReplacer),
-          activeChain: activeChain,
         });
       };
       fetchSteps();
@@ -503,6 +502,7 @@ export default function VaultInputs({
       if (decimals?.length > decimalsNumber) {
         inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
       }
+      console.log(inputAmt, isNaN(Number(inputAmt)))
 
       if (isNaN(Number(inputAmt))) {
         return;
@@ -714,50 +714,50 @@ export default function VaultInputs({
       let gasFeeInUSD = "0";
       let gasFeeInETH = "0";
       let netDepositToVaultUSD = "0";
-      if (!vaultData.depositFeePaidFromGasTank) {
-        const vaultContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.id as Address,
-        });
-        const gasLimitForWithdrawAndCall = await readContract({
-          contract: vaultContract,
-          method:
-            "function gasLimitForWithdrawAndCall() view returns (uint256)",
-        });
-        const tokenContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.inputToken.address as Address,
-        });
-        const result = await readContract({
-          contract: tokenContract,
-          method:
-            "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
-          params: [gasLimitForWithdrawAndCall],
-        });
-        const gasZRC20 = result[0] as Address;
-        const gasFee = result[1] as bigint;
-        // 3. If vault token and gas token match, subtract directly
-        gasFeeInVaultAsset = gasFee;
+      // if (!vaultData.depositFeePaidFromGasTank) {
+      //   const vaultContract = getContract({
+      //     client,
+      //     chain: SUPPORTED_CHAINS[0],
+      //     address: vaultData.id as Address,
+      //   });
+      //   const gasLimitForWithdrawAndCall = await readContract({
+      //     contract: vaultContract,
+      //     method:
+      //       "function gasLimitForWithdrawAndCall() view returns (uint256)",
+      //   });
+      //   const tokenContract = getContract({
+      //     client,
+      //     chain: SUPPORTED_CHAINS[0],
+      //     address: vaultData.inputToken.address as Address,
+      //   });
+      //   const result = await readContract({
+      //     contract: tokenContract,
+      //     method:
+      //       "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
+      //     params: [gasLimitForWithdrawAndCall],
+      //   });
+      //   const gasZRC20 = result[0] as Address;
+      //   const gasFee = result[1] as bigint;
+      //   // 3. If vault token and gas token match, subtract directly
+      //   gasFeeInVaultAsset = gasFee;
 
-        if (gasZRC20 !== vaultData.inputToken.address) {
-          // Convert fee from gas token into vault asset terms
-          gasFeeInVaultAsset = await getAmountOutFromSwap(
-            gasFee,
-            ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
-            vaultData.inputToken,
-            vaultData.id as Address,
-          );
-        }
-        // Format gas fee in USD and ETH
-        const gasFeeInTokenUnits =
-          Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
-        const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
-        gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-        const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
-        gasFeeInETH = ethAmount.toFixed(5);
-      }
+      //   if (gasZRC20 !== vaultData.inputToken.address) {
+      //     // Convert fee from gas token into vault asset terms
+      //     gasFeeInVaultAsset = await getAmountOutFromSwap(
+      //       gasFee,
+      //       ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
+      //       vaultData.inputToken,
+      //       vaultData.id as Address,
+      //     );
+      //   }
+      //   // Format gas fee in USD and ETH
+      //   const gasFeeInTokenUnits =
+      //     Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
+      //   const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
+      //   gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
+      //   const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
+      //   gasFeeInETH = ethAmount.toFixed(5);
+      // }
 
       // 4. Subtract gas fee from converted amount
       const finalConvertedAmount =

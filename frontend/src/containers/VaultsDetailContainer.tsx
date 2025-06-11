@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import {
@@ -9,18 +8,15 @@ import {
   VaultTotalAssetsinToken,
   Token,
   Balance,
-  ITxLocalStorage,
   Tabs,
 } from "@/types/types";
-import { VAULT_DATA, tokens } from "@/constants";
+import { VAULT_DATA } from "@/constants";
 import {
   useUpdateVaultBalanceAndTotalPerVault,
   useUpdateAPYs,
 } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
-import Link from "next/link";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
@@ -29,13 +25,11 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import VaultInformationDropdown from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
 import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import InvestBlock from "@/components/InvestBlock";
-import TokenIcon from "@/components/common/TokenIcon";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
