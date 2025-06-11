@@ -1,16 +1,9 @@
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
-import { useAuthStore } from "@/store/authStore";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { useRouter } from "next/navigation";
 
 const ConnectWallet = () => {
   const router = useRouter();
-  const {closeAll} = useAuthStore();
-
-  const handleClick = () => {
-    closeAll(); 
-    router.push("/welcome");
-  };
 
   return (
     <div className="flex flex-col font-gotham">
@@ -28,7 +21,6 @@ const ConnectWallet = () => {
         </p>
       </div>
       <button
-        onClick={handleClick}
         className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1"
       >
         I DON’T HAVE A WALLET

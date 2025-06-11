@@ -1,12 +1,15 @@
 "use client";
+import Button from "@/components/Button";
 import SmartAccountCard from "@/components/SmartAccountCard";
 import { smartAccountInfo } from "@/constants/smartAccountInfo";
+import { useAuthStore } from "@/store/authStore";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { useRouter } from "next/navigation";
 
 
 const OnboardingContainer = () => {
-    const router = useRouter();
+  const router = useRouter();
+  const { step, closeAll, openStep } = useAuthStore();
     
     return (
       <>
@@ -32,6 +35,15 @@ const OnboardingContainer = () => {
           {smartAccountInfo.map((info, index) => (
             <SmartAccountCard key={index} {...info} />
           ))}
+        </div>
+        <div className="max-w-[400px] mt-12 mb-8 mx-auto">
+          <Button
+            onClick={() => openStep("optionsB")}
+            className="w-full h-[48px]"
+            variant="custom"
+          >
+            Continue
+          </Button>
         </div>
       </>
     );
