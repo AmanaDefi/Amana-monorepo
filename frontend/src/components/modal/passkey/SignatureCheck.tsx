@@ -7,9 +7,32 @@ import Button from "@/components/Button";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
 import OnboardingIcon from "@/components/svg/OnboardingIcon";
+import { useAuthenticate } from "@account-kit/react";
 
 export const SignatureCheck = () => {
-  const { step, closeAll, openStep } = useAuthStore();
+  const { step, closeAll, openStep, successAuth } = useAuthStore();
+  const { authenticate, isPending, error } = useAuthenticate();
+
+  const handleLogin = () => {
+    if (isPending) return;
+
+    authenticate(
+      {
+        type: "passkey",
+        createNew: false,
+      },
+      {
+        onSuccess: (result) => {
+          console.log(result);
+          console.log("Success google auth", result);
+          successAuth();
+        },
+        onError: (err) => {
+          console.error("Error google auth:", err);
+        },
+      },
+    );
+  };
 
   return (
     <Modal
@@ -84,12 +107,14 @@ export const SignatureCheck = () => {
       >
         <div className="flex justify-center gap-4 w-full mx-auto max-w-[352px]">
           <Button
+            onClick={closeAll}
             variant="custom"
             className="w-full h-12 rounded-[8px] border border-[#3E73C4] text-white shadow-md hover:bg-[#3E73C4]/10 !text-[16px] !font-bold transition-all duration-200 !font-gotham"
           >
             Cancel
           </Button>
           <Button
+            onClick={handleLogin}
             variant="custom"
             className="w-full h-12 rounded-[8px] border border-[#3E73C4] text-white shadow-md hover:bg-[#3E73C4]/10 !text-[16px] !font-bold transition-all duration-200 !font-gotham"
           >

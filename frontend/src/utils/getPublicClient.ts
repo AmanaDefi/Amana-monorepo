@@ -7,22 +7,7 @@ import {
   createWalletClient,
   custom,
 } from "viem";
-import {
-  mainnet,
-  sepolia,
-  base,
-  baseSepolia,
-  polygon,
-  polygonAmoy,
-  arbitrum,
-  arbitrumSepolia,
-  bsc,
-  bscTestnet,
-  avalanche,
-  avalancheFuji,
-  zetachain,
-  zetachainAthensTestnet,
-} from "viem/chains";
+
 import type { Chain } from "viem/chains";
 
 const clientCache = new Map<number, PublicClient>();

@@ -47,9 +47,7 @@ import {
 } from "@/utils/localStorageUtils";
 import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import ErrorInputIcon from "./svg/ErrorInputIcon";
-import Button from "./Button";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
-import { getContractCustom } from "@/utils/getContractCustom";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 

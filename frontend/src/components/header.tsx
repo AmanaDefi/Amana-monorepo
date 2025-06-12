@@ -114,6 +114,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
 
           {isConnected && activeAccount?.type === "eoa" && <ChainSwitcher />}
           <div className="hidden md:block">
+
             {!isConnected ? (
               <Button variant="signIn" onClick={() => openStep("optionsA")}>
                 Sign in

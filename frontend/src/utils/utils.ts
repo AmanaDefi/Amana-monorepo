@@ -1,5 +1,4 @@
 import {
-  TransactionResult,
   SmartVaultActionType,
   VaultData,
   Balance,
@@ -9,20 +8,19 @@ import {
   DEFAULT_SETTINGS,
 } from "@/types/types";
 import { isApproved } from "@/utils/approve";
-import { ethers, Provider, ZeroAddress } from "ethers";
+import { ZeroAddress } from "ethers";
 import {
   APPROVED_TOKENS,
   CHAIN_ID,
   HERMES_URL,
-  solanaRpcUrl,
 } from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { PublicKey } from "@solana/web3.js";
 import { keccak_256 } from "js-sha3";
 import SolanaConnectionSingleton from "./solanaSingleton";
-import { erc20Abi, formatEther, getContract, formatUnits } from "viem";
-import { getPublicClient, getWalletClient } from "./getPublicClient";;
+import { erc20Abi, getContract, formatUnits } from "viem";
+import { getPublicClient, } from "./getPublicClient";;
 
 export const formatTotalAssets = (
   totalAssets: string,
@@ -602,15 +600,14 @@ export const getERC20TokenBalance = async (
     }
 
     const publicClient = getPublicClient(chain.id);
-    const walletClient = getWalletClient(chain.id);
-    if (!publicClient || !walletClient)
+    if (!publicClient)
       return {
         balance: 0n,
         decimals: 18,
       };
 
     const contract = getContract({
-      client: { public: publicClient, wallet: walletClient },
+      client: { public: publicClient},
       address: tokenAddress,
       abi: erc20Abi,
     });

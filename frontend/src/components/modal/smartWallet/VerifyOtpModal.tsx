@@ -23,9 +23,10 @@ const formatEmail = (email: string) => {
 
 export const VerifyOtpModal = () => {
   const { step, email, closeAll, authenticate, successAuth } = useAuthStore();
-  const {authenticate: OTPAuth} = useAuthenticate();
+  const { authenticate: OTPAuth } = useAuthenticate();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState(false);
+  const [isResentdedOtp, setIsResendedOtp] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const clearAllFields = () => {
@@ -90,7 +91,6 @@ export const VerifyOtpModal = () => {
     }
   };
 
-
   const handleSendOTP = (code: string) => {
     OTPAuth(
       {
@@ -101,8 +101,28 @@ export const VerifyOtpModal = () => {
         onSuccess: (result) => {
           console.log(result);
           console.log("Success google auth", result);
-          authenticate(result.address)
+          authenticate(result.address);
           successAuth();
+        },
+        onError: (err) => {
+          console.error("Error google auth:", err);
+          setError(true);
+        },
+      },
+    );
+  };
+
+  const resendEmail = () => {
+    OTPAuth(
+      {
+        type: "email",
+        email: email,
+      },
+      {
+        onSuccess: (result) => {
+          console.log(result);
+          console.log("Success google auth", result);
+          setIsResendedOtp(true);
         },
         onError: (err) => {
           console.error("Error google auth:", err);
@@ -122,7 +142,6 @@ export const VerifyOtpModal = () => {
     // } else {
     //   authenticate("0xMockUserWallet");
     // }
-
   };
 
   useEffect(() => {
@@ -219,10 +238,12 @@ export const VerifyOtpModal = () => {
         <div className="mt-6 text-center">
           <button
             type="button"
-            onClick={() => console.log("Resend code")}
+            onClick={resendEmail}
             className="text-[#1B46E0] font-normal text-sm hover:underline transition"
           >
-            Not received the email?
+            {isResentdedOtp
+              ? "New code was send to your email"
+              : "Not received the email?"}
           </button>
         </div>
       </motion.div>

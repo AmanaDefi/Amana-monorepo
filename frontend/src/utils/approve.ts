@@ -1,6 +1,6 @@
 import { Chain, getContract, erc20Abi } from "viem";
 import { EVM_GATEWAY_ADDRESSES } from "@/constants/chainConfig"; // adjust path if needed
-import { getPublicClient, getWalletClient } from "./getPublicClient";
+import { getPublicClient} from "./getPublicClient";
 
 interface HandleAllowanceProps {
   token: string;
@@ -18,11 +18,10 @@ export async function isApproved({
   amount,
 }: HandleAllowanceProps): Promise<boolean> {
   const publicClient = getPublicClient(activeChain.id);
-  const walletClient = getWalletClient(activeChain.id);
-  if (!publicClient || !walletClient) return false;
+  if (!publicClient) return false;
 
   const contract = getContract({
-    client: { public: publicClient, wallet: walletClient },
+    client: { public: publicClient},
     address: token,
     abi: erc20Abi,
   });
