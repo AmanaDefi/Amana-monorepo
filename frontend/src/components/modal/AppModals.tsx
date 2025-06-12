@@ -3,6 +3,7 @@ import AllWAllets from "./allWallets/AllWallets";
 import OnboardingModal from "./onboarding/OnboardingModal";
 import OptionsModalA from "./options/OptionsModalA";
 import OptionsModalB from "./options/OptionsModalB";
+import { SignIn } from "./passkey/SignIn";
 import { SignUpModal } from "./smartWallet/SignUpModal";
 import { VerifyOtpModal } from "./smartWallet/VerifyOtpModal";
 import WelcomeModal from "./welcome/WelcomeModal";
@@ -17,6 +18,7 @@ export const AppModals = () => {
       <AllWAllets />
       <WelcomeModal />
       <OnboardingModal />
+      <SignIn />
     </>
   );
 };
