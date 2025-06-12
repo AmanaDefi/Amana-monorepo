@@ -229,3 +229,9 @@ body .page-container {
   backdrop-filter: blur(20px) !important;
   box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.15), inset 0 2px 4px 0 #5251c5 !important;
 }
+.gradient-text {
+  background: linear-gradient(150deg, #d7d7d9 11%, #1b46e0 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

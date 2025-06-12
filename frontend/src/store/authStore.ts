@@ -10,6 +10,10 @@ export type AuthStep =
   | "success"
   | "onboarding"
   | "logout"
+  | "passkey"
+  | "signature"
+  | "checking"
+  | "notVerify"
   | null;
 
 interface AuthState {

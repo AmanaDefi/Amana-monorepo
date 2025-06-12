@@ -71,11 +71,11 @@ const OptionsModalB = () => {
                 icon={<EmailOptionsIcon width={26} height={26} />}
                 onClick={() => openStep("signup")}
               />
-              {/* <ModalButton
+              <ModalButton
                 label="Passkey"
                 icon={<PasskeyOptionsIcon width={28} height={27} />}
-                onClick={() => {}}
-              /> */}
+                onClick={() => openStep("passkey")}
+              />
               <ModalButton
                 label="Google"
                 icon={<GoogleOptionsIcon width={27} height={28} />}
