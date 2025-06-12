@@ -7,32 +7,15 @@ import { trackEvent } from "@/utils/trackEvent";
 import {
   useUser,
   useSignerStatus,
-  useSmartAccountClient,
-  useChain,
 } from "@account-kit/react";
-import { getWalletClient } from "@/utils/getPublicClient";
 
 export default function AccountProvider({ children }: PropsWithChildren) {
   const { isConnected, isInitializing } = useSignerStatus();
   const user = useUser();
-  const { chain } = useChain();
 
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
   const [hasIdentified, setHasIdentified] = useState(false);
 
-  const { client: scaClient } = useSmartAccountClient({
-    type: "ModularAccountV2",
-  });
-
-  const currentWalletClient = useMemo(() => {
-    if (user && user.type === 'eoa') {
-      const eosWalletClient = getWalletClient(chain.id);
-      return eosWalletClient;
-    } else {
-      return scaClient;
-    }
-
-  }, [user?.type, getWalletClient, scaClient, chain])
   const route = usePathname();
 
   useEffect(() => {
@@ -91,7 +74,6 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     hasTrackedPage,
     hasIdentified,
     isInitializing,
-    currentWalletClient,
   ]);
 
   return <>{children}</>;

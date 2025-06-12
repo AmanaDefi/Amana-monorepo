@@ -6,7 +6,7 @@ import {
   chainConfigs,
   MULTICALL_ADDRS,
 } from "../constants/chainConfig";
-import { ethers, getAddress, Interface } from "ethers";
+import { ethers, getAddress, Interface, solidityPacked } from "ethers";
 
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
@@ -28,6 +28,7 @@ import {
   Address,
   encodeAbiParameters,
   getContract,
+  WalletClient,
 } from "viem";
 import {
   getCurrentSlippage,
@@ -56,13 +57,14 @@ import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
 import { RECEIPT_LOCAL_STORAGE_KEY } from "@/constants";
 import { updateLocalStorageObject } from "@/utils/localStorageUtils";
-import { GetUserResult } from "@account-kit/core";
+import { AlchemySmartAccountClient, GetUserResult } from "@account-kit/core";
 import { UseUserResult } from "@account-kit/react";
 import {
   getPublicClient,
   getRpcUrl,
   getWalletClient,
 } from "@/utils/getPublicClient";
+import { ActiveWalletClient } from "@/providers/MultiChainProvider";
 
 dotenv.config();
 
@@ -81,6 +83,103 @@ const BLOCK_TIME: { [chainId: number]: number } = {
   137: 2, // Polygon
   8453: 2, // Base
   42161: 0.25, // Arbitrum
+};
+
+export const getPathDataAndAmountOut = async (
+  amount: bigint,
+  inputToken: Token,
+  outputToken: Token,
+  userAddress: string,
+): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
+  console.log("inputToken address:", inputToken.address);
+  console.log("outputToken address:", outputToken.address);
+  const [inputTokenId, outputTokenId] = await Promise.all([
+    getBeamTokenId(inputToken.address),
+    getBeamTokenId(outputToken.address),
+  ]);
+
+  if (!inputTokenId || !outputTokenId) {
+    console.warn("❌ Missing Beam token ID(s)");
+    return { encodedPath: null, amountOut: BigInt(0) };
+  }
+
+  const swapDetails: swap.native.getSwapData.Input = {
+    tokenAId: inputTokenId,
+    tokenBId: outputTokenId,
+    slippage: 500,
+    amount: formatUnits(amount, inputToken.decimals), // ✅ string with decimals
+    sender: userAddress,
+    recipient: userAddress,
+  };
+
+  try {
+    console.log("🚀 Fetching Beam quote...");
+    const beamQuote = (await swap.native.getSwapData(
+      beamConnection,
+      swapDetails,
+    )) as {
+      data?: {
+        data?: {
+          path?: string[];
+          expectedAmountOut?: number;
+        };
+      };
+    };
+    console.log("✅ Beam quote fetched successfully:", beamQuote);
+    const path = beamQuote.data?.data?.path;
+    const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
+    if (expectedAmountOut == null) {
+      throw new Error("Beam quote is missing expectedAmountOut");
+    }
+
+    if (!path || !Array.isArray(path) || path.length < 2) {
+      throw new Error("Beam quote returned invalid path");
+    }
+
+    const encodedPath = solidityPacked(
+      Array(path.length).fill("address"),
+      path,
+    ) as `0x${string}`;
+
+    console.log("✅ Encoded path:", encodedPath);
+    console.log("✅ Expected amount out:", expectedAmountOut);
+
+    const amountOutRaw = (
+      expectedAmountOut *
+      10 ** outputToken.decimals
+    ).toFixed(0);
+    return {
+      encodedPath,
+      amountOut: BigInt(amountOutRaw),
+    };
+  } catch (e: any) {
+    console.error("❌ Beam swap fetch failed:", e.message || e);
+    return { encodedPath: null, amountOut: BigInt(0) };
+  }
+};
+
+const getPathDataAndMinAmountOut = async (
+  vaultData: VaultData,
+  outputToken: Token,
+  transactionAmount: bigint,
+) => {
+  const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
+  const minAmountOut =
+    (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
+
+  let swapPath: `0x${string}` = "0x";
+
+  if (outputToken.address !== vaultData.inputToken.address) {
+    const result = await getPathDataAndAmountOut(
+      transactionAmount,
+      vaultData.inputToken,
+      outputToken,
+      vaultData.id as Address,
+    );
+    swapPath = result.encodedPath ?? "0x";
+  }
+
+  return { swapPath, minAmountOut };
 };
 
 export async function calculateEddyAPY(
@@ -948,10 +1047,12 @@ export const Approvedeposit = async (
   activeAccount: UseUserResult,
   activeChain: Chain,
   transactionAmount: bigint,
+  sendUserOperation: any,
 ) => {
   //console.log("Executing DepositApprove");
   const walletClient = getWalletClient(activeChain.id);
-  if (!walletClient || !activeAccount?.address) return false;
+  if (!(walletClient && !sendUserOperation) || !activeAccount?.address)
+    return false;
 
   try {
     let spender = EVM_GATEWAY_ADDRESSES[activeChain.id];
@@ -973,16 +1074,34 @@ export const Approvedeposit = async (
       },
     ] as const;
 
-    const txHash = await walletClient.writeContract({
-      address: inputToken,
-      abi: erc20ApproveAbi,
-      functionName: "approve",
-      args: [spender, transactionAmount],
-      chain: walletClient.chain,
-      account: activeAccount?.address,
-    });
+    let txHash: `0x${string}`;
 
-    console.log("Approve транзакцію відправлено. Хеш:", txHash);
+    if (activeAccount.type === "sca") {
+      const { hash } = await sendUserOperation({
+        uo: [
+          {
+            target: inputToken,
+            data: encodeFunctionData({
+              abi: erc20ApproveAbi,
+              functionName: "approve",
+              args: [spender, transactionAmount],
+            }),
+          },
+        ],
+      });
+      txHash = hash;
+    } else {
+      const eoaClient = walletClient;
+
+      txHash = await eoaClient.writeContract({
+        address: inputToken,
+        abi: erc20ApproveAbi,
+        functionName: "approve",
+        args: [spender, transactionAmount],
+        account: activeAccount?.address,
+        chain: eoaClient.chain!,
+      });
+    }
 
     // 3. (Опціонально) Очікуємо підтвердження
     const publicClient = getPublicClient(activeChain.id);
@@ -991,10 +1110,10 @@ export const Approvedeposit = async (
         hash: txHash,
       });
       if (receipt.status === "success") {
-        console.log("Approve транзакція успішна!");
+        console.log("success approve");
         return txHash;
       } else {
-        console.error("Approve транзакція не вдалася.");
+        console.error("error approve");
         return false;
       }
     }
@@ -1141,6 +1260,9 @@ const executeDirectDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
 ) => {
+  if (!activeAccount?.address) {
+    throw new Error("Can`t detect account");
+  }
   //console.log("Executing Direct Deposit");
   const minSharesOut: bigint = await getMinSharesOut(
     vaultData,
@@ -1163,46 +1285,32 @@ const executeDirectDeposit = async (
     },
   ] as const;
 
-  if (!walletClient || !activeAccount?.address) {
-    console.error("Failed to get WalletClient.");
-    return {transactionHash: null};
-  }
+  const txHash = await walletClient?.writeContract({
+    address: vaultData.id,
+    abi: depositAbi,
+    functionName: "deposit",
+    args: [transactionAmount, minSharesOut, activeAccount?.address],
+    chain: walletClient.chain,
+    value: transactionAmount,
+    account: activeAccount?.address,
+  });
 
-  try {
-    const txHash = await walletClient.writeContract({
-      address: vaultData.id,
-      abi: depositAbi,
-      functionName: "deposit",
-      args: [transactionAmount, minSharesOut, activeAccount?.address],
-      chain: walletClient.chain,
-      value: transactionAmount,
-      account: activeAccount?.address,
-    });
+  console.log("Tx is send", txHash);
 
-    console.log("Tx is send", txHash);
+  const publicClient = getPublicClient(activeChain.id);
 
-    const publicClient = getPublicClient(activeChain.id);
-    if (!publicClient) {
-      console.warn(
-        `Chant get client ${activeChain.id}`,
-      );
-      return {transactionHash: txHash};
-    }
-
-    const receipt = await publicClient.waitForTransactionReceipt({
+  if (txHash && publicClient) {
+    const receipt = await publicClient?.waitForTransactionReceipt({
       hash: txHash,
     });
-
     if (receipt.status === "success") {
       console.log("tx success!", receipt);
     } else {
       console.error("fail to perform tx", receipt);
+      return receipt;
     }
-
-    return receipt;
-  } catch (error) {
-    console.error("Failed to get receip:", error);
-    return {transactionHash: null};
+  } else {
+    throw new Error('Fail to perform tx')
   }
 };
 
@@ -1226,7 +1334,7 @@ const executeCrossChainDeposit = async (
   setcrossChainTxId: Function,
 ) => {
   const walletClient = getWalletClient(activeChain.id);
-  if (!activeAccount || !walletClient) return {transactionHash: null};;
+  if (!activeAccount || !walletClient) return { transactionHash: null };
   //console.log("Executing Cross-Chain Deposit");
   const minSharesOut = await getMinSharesOut(
     vaultData,
@@ -1349,7 +1457,7 @@ const executeCrossChainDeposit = async (
     // setcrossChainTxId(transactionId);
     //console.log("Deposit executed");
     console.log("receipt", receipt);
-    return {transactionHash: txHash};
+    return { transactionHash: txHash };
   } else {
     // Case 2: ERC20 token
     console.log("ERC20 token deposit detected");
@@ -1405,9 +1513,9 @@ const executeCrossChainDeposit = async (
 
     if (!walletClient.chain) {
       console.error("failed to get chain from WalletClient.");
-      return {transactionHash: null};
+      return { transactionHash: null };
     }
-    updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId})
+    updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
     try {
       const txHash = await walletClient.writeContract({
         address: EVM_GATEWAY_ADDRESSES[activeChain.id],
@@ -1423,14 +1531,14 @@ const executeCrossChainDeposit = async (
         chain: walletClient.chain,
         account: activeAccount.address,
       });
-      
+
       console.log("depositAndCall txHash:", txHash);
 
       const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) {
         console.warn(`Failed to get ${activeChain.id}.`);
         setcrossChainTxId(transactionId);
-        return {transactionHash: txHash};
+        return { transactionHash: txHash };
       }
 
       const receipt = await publicClient.waitForTransactionReceipt({
@@ -1446,7 +1554,7 @@ const executeCrossChainDeposit = async (
       return receipt;
     } catch (error) {
       console.error("failed depositAndCall:", error);
-      return {transactionHash: null};;
+      return { transactionHash: null };
     }
   }
 };
@@ -1550,25 +1658,24 @@ const executeSolanaDeposit = async (
 };
 
 export const executeSolanaWithdrawal = async (
-  vaultId: Address,
-  strategyAddress: Address,
-  strategyChainId: number,
+  vaultData: VaultData,
   walletContext: WalletContextState,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   splMint: string,
-  withdrawZRC20: Address,
+  withdrawZRC20: Token,
   setcrossChainTxId: Function,
 ) => {
   //console.log("Executing Solana Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId,
+  const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
+    vaultData,
+    withdrawZRC20,
+    withdrawAssetAmount,
   );
-  const depositorBytes = walletContext.publicKey!.toBytes();
 
+  const solanaWalletAddress = new TextEncoder().encode(
+    walletContext.publicKey!.toBase58(),
+  );
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     walletContext.publicKey!.toBase58(),
@@ -1595,34 +1702,33 @@ export const executeSolanaWithdrawal = async (
       "uint256",
       "uint16",
       "bytes",
+      "bytes",
       "bytes32",
     ],
     values: [
-      withdrawZRC20,
+      withdrawZRC20.address,
       getSolanaEVMAddress(splMint),
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       slippageValue,
-      depositorBytes,
+      solanaWalletAddress,
+      swapPath,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`,
     ],
   };
-
-  updateLocalStorageObject(vaultId, { crossChainTxId: transactionId });
-  const txHash = await client.solanaWithdrawal(vaultId, args);
-  //console.log("Withdrawal executed");
+  updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
+  const txHash = await client.solanaWithdrawal(vaultData.id, args);
+  console.log("Withdrawal executed");
   setcrossChainTxId(transactionId);
   return { transactionHash: txHash };
 };
 
 export const executeWithdrawal = async (
-  vaultId: Address,
-  strategyAddress: Address,
-  strategyChainId: number,
+  vaultData: VaultData,
   walletContext: WalletContextState,
   activeAccount: UseUserResult,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
@@ -1630,33 +1736,27 @@ export const executeWithdrawal = async (
   if (activeChain.id == CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(
-      vaultId,
-      strategyAddress,
-      strategyChainId,
+      vaultData,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
     return executeSolanaWithdrawal(
-      vaultId,
-      strategyAddress,
-      strategyChainId,
+      vaultData,
       walletContext,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
-      withdrawZRC20.address as Address,
+      withdrawZRC20,
       setcrossChainTxId,
     );
   } else {
     return executeCrossChainWithdrawal(
-      vaultId,
-      strategyAddress,
-      strategyChainId,
+      vaultData,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawERC20,
       withdrawZRC20,
       setcrossChainTxId,
@@ -1665,19 +1765,16 @@ export const executeWithdrawal = async (
 };
 
 const executeDirectWithdrawal = async (
-  vaultId: Address,
-  strategyAddress: Address,
-  strategyChainId: number,
+  vaultData: VaultData,
   activeAccount: UseUserResult,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
 ) => {
   //vaultId: string
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId,
+  const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
+    vaultData,
+    vaultData.inputToken,
+    withdrawAssetAmount,
   );
   const walletClient = getWalletClient(activeChain.id);
   const redeemAbi = [
@@ -1686,8 +1783,8 @@ const executeDirectWithdrawal = async (
       type: "function",
       stateMutability: "nonpayable",
       inputs: [
-        { name: "shares", type: "uint256" },
-        { name: "minAmountOut", type: "uint256" },
+        { name: "assets", type: "uint256" },
+        { name: "minimumOut", type: "uint256" },
         { name: "receiver", type: "address" },
         { name: "owner", type: "address" },
       ],
@@ -1699,68 +1796,61 @@ const executeDirectWithdrawal = async (
     console.error("Failet go get WalletClient.");
     return { transactionHash: null };
   }
+  console.log(walletClient.chain, "walletClient.chain");
 
-  try {
-    const txHash = await walletClient.writeContract({
-      address: vaultId,
-      abi: redeemAbi,
-      functionName: "redeem",
-      args: [
-        withdrawShareAmount,
-        minAmountOut,
-        activeAccount?.address,
-        activeAccount?.address,
-      ],
-      chain: walletClient.chain,
-      account: activeAccount?.address,
-    });
+  const txHash = await walletClient.writeContract({
+    address: vaultData.id,
+    abi: redeemAbi,
+    functionName: "redeem",
+    args: [
+      withdrawAssetAmount,
+      minAmountOut,
+      activeAccount?.address,
+      activeAccount?.address,
+    ],
+    chain: walletClient.chain,
+    account: activeAccount?.address,
+  });
 
-    console.log("executeDirectWithdrawal txHash:", txHash);
+  console.log("executeDirectWithdrawal txHash:", txHash);
 
-    const publicClient = getPublicClient(walletClient.chain.id);
-    if (!publicClient) {
-      console.warn(
-        `failed to get publicClient for chain id: ${walletClient.chain.id}.`,
-      );
-      return { transactionHash: null };
-    }
-
-    const receipt = await publicClient.waitForTransactionReceipt({
-      hash: txHash,
-    });
-
-    if (receipt.status === "success") {
-      console.log("tx success", receipt);
-    } else {
-      console.error("tx failed.", receipt);
-    }
-
-    return receipt;
-  } catch (error) {
-    console.error("tx failed.", error);
+  const publicClient = getPublicClient(walletClient.chain.id);
+  if (!publicClient) {
+    console.warn(
+      `failed to get publicClient for chain id: ${walletClient.chain.id}.`,
+    );
     return { transactionHash: null };
   }
+
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash,
+  });
+
+  if (receipt.status === "success") {
+    console.log("tx success", receipt);
+  } else {
+    console.error("tx failed.", receipt);
+  }
+
+  return receipt;
 };
 
 const executeCrossChainWithdrawal = async (
-  vaultId: Address,
-  strategyAddress: Address,
-  strategyChainId: number,
+  vaultData: VaultData,
   activeAccount: UseUserResult,
   activeChain: Chain,
-  withdrawShareAmount: bigint,
+  withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
 ) => {
   const walletClient = getWalletClient(activeChain.id);
-  if (!activeAccount || !walletClient) return { transactionHash: null };;
+  if (!activeAccount || !walletClient) return { transactionHash: null };
   //console.log("Executing Cross-Chain Withdrawal");
-  const minAmountOut = await getMinAmountOut(
-    vaultId,
-    withdrawShareAmount,
-    strategyAddress,
-    strategyChainId,
+  const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
+    vaultData,
+    withdrawZRC20,
+    withdrawAssetAmount,
   );
 
   // Generate a unique transaction ID
@@ -1780,16 +1870,18 @@ const executeCrossChainWithdrawal = async (
       { type: "uint256" },
       { type: "uint16" },
       { type: "bytes" },
+      { type: "bytes" },
       { type: "bytes32" },
     ],
     [
       withdrawZRC20.address,
       withdrawERC20,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       minAmountOut,
       Number(slippageValue),
       nonEvmAddress,
-      keccak256(toUtf8Bytes("WithdrawInitiated")),
+      swapPath,
+      keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`,
     ],
   );
   const revertMessage = encodeAbiParameters(
@@ -1832,19 +1924,17 @@ const executeCrossChainWithdrawal = async (
       address: EVM_GATEWAY_ADDRESSES[activeChain.id],
       abi: gatewayCallAbi,
       functionName: "call",
-      args: [vaultId, payload, revertOptionsObject],
-      chain: walletClient.chain,
-      account: activeAccount.address
+      args: [vaultData.id, payload, revertOptionsObject],
+      chain: activeChain,
+      account: activeAccount.address,
     });
-    updateLocalStorageObject(vaultId, { crossChainTxId: transactionId });
+    updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
 
     console.log("tx is send:", txHash);
 
     const publicClient = getPublicClient(activeChain.id);
     if (!publicClient) {
-      console.warn(
-        `failed to get public client ${activeChain.id}.`,
-      );
+      console.warn(`failed to get public client ${activeChain.id}.`);
       return { transactionHash: null };
     }
 
@@ -1868,7 +1958,7 @@ const executeCrossChainWithdrawal = async (
 export const fetchUserVaultBalance = async (
   userAddress: string,
   vaultAddress: string,
-  decimals: number
+  decimals: number,
 ) => {
   const vaultAbi = [
     {
@@ -1889,7 +1979,9 @@ export const fetchUserVaultBalance = async (
 
   const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
   if (!publicClient) {
-    console.error(`Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].chain.id}`);
+    console.error(
+      `Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].chain.id}`,
+    );
     return null;
   }
 
@@ -1910,7 +2002,6 @@ export const fetchUserVaultBalance = async (
 
     // 5. Форматуємо кінцевий результат
     return formatUnits(balanceInAssets, decimals);
-    
   } catch (error) {
     console.error("Помилка під час отримання балансу вольта:", error);
     return null;
@@ -1935,7 +2026,9 @@ export const fetchUserVaultMaxRedeem = async (
   // 2. Отримуємо publicClient
   const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
   if (!publicClient) {
-    console.error(`Не вдалося отримати publicClient для мережі з ID ${SUPPORTED_CHAINS[0].chain.id}`);
+    console.error(
+      `Не вдалося отримати publicClient для мережі з ID ${SUPPORTED_CHAINS[0].chain.id}`,
+    );
     return null;
   }
 
@@ -1948,7 +2041,6 @@ export const fetchUserVaultMaxRedeem = async (
     });
 
     return formatUnits(maxRedeemAmount, decimals);
-
   } catch (error) {
     console.error("Помилка під час отримання maxRedeem:", error);
     return null;
@@ -2281,8 +2373,10 @@ export async function fetchReceiptTokens(
         try {
           const publicClient = getPublicClient(chainId);
           if (!publicClient) {
-            console.error(`АFailed to get public client for chain id: ${chainId}`);
-            result[v.id] = ethers.ZeroAddress; 
+            console.error(
+              `АFailed to get public client for chain id: ${chainId}`,
+            );
+            result[v.id] = ethers.ZeroAddress;
             continue;
           }
           const receiptTokenAddress = await publicClient.readContract({

@@ -50,6 +50,7 @@ import ErrorInputIcon from "./svg/ErrorInputIcon";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
+import { useChain } from "@account-kit/react";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -218,7 +219,8 @@ export default function VaultInputs({
     initialConversionOutput,
   );
 
-  const { activeChain, walletAddress } = useMultiChain();
+  const { walletAddress } = useMultiChain();
+  const { chain: activeChain } = useChain();
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
