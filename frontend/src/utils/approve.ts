@@ -1,6 +1,6 @@
 import { Chain, getContract, erc20Abi } from "viem";
 import { EVM_GATEWAY_ADDRESSES } from "@/constants/chainConfig"; // adjust path if needed
-import { getPublicClient, getWalletClient } from "./getPublicClient";
+import { getPublicClient} from "./getPublicClient";
 
 interface HandleAllowanceProps {
   token: string;

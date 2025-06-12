@@ -10,6 +10,7 @@ import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import Button from "@/components/Button";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
+import { useAuthenticate } from "@account-kit/react";
 
 const passkeySchema = z.object({
   passkey: z
@@ -21,7 +22,7 @@ const passkeySchema = z.object({
 type PasskeyForm = z.infer<typeof passkeySchema>;
 
 export const SignIn = () => {
-  const { step, closeAll, openStep, setError } = useAuthStore();
+  const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
 
   const {
     register,
@@ -30,10 +31,30 @@ export const SignIn = () => {
   } = useForm<PasskeyForm>({
     resolver: zodResolver(passkeySchema),
   });
-
+  
+  const { authenticate, isPending, error } = useAuthenticate();
   const onSubmit = (data: PasskeyForm) => {
-    console.log("Creating new passkey with label:", data.passkey);
+    authenticate(
+      {
+        type: "passkey",
+        createNew: true,
+        username: data.passkey,
+      },
+      {
+        onSuccess: (result) => {
+          console.log(result);
+          console.log("Success google auth", result);
+          successAuth();
+        },
+        onError: (err) => {
+          console.error("Error google auth:", err);
+          setError(err.message);
+        },
+      },
+    );
   };
+
+
 
   return (
     <Modal
