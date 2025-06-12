@@ -13,7 +13,7 @@ const apiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
 
-if (!apiKey) throw new Error("Invalid API KEY");
+if (!apiKey) throw new Error("Invalid Alchemy API KEY");
 if (!walletConnectProjectId) throw new Error("Invalid WalletConnect Id");
 
 const uiConfig: AlchemyAccountsUIConfig = {

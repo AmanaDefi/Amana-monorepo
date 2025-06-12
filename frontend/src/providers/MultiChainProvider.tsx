@@ -91,6 +91,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [selectedChain, chain]);
 
+
   // Connect Solana Wallet
   const connectSolana = useCallback(async () => {
     setIsModalOpen(false);
