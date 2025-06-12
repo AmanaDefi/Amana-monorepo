@@ -1,23 +1,15 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import { Chain } from "viem";
 import { CHAIN_ICONS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import "react-toastify/dist/ReactToastify.css";
-import { ClipLoader } from "react-spinners";
-import { ChevronDownIcon, CheckIcon } from "@heroicons/react/24/solid";
 import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
-<<<<<<< HEAD
 import { AppButton } from "../button/AppButton";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
-=======
-import ChandeChain from "@public/ethereum.png"
-import Button from "../Button";
->>>>>>> origin/fix/AM-90/auth-modals
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
