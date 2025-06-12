@@ -23,7 +23,6 @@ import {
   VaultData,
   Token,
 } from "@/types/types";
-import { client } from "@/utils/client";
 import {
   CHAIN_ID,
   MULTICALL_ADDRS,

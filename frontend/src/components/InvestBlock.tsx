@@ -3,14 +3,7 @@
 import React from "react";
 import InvestIcon from "./svg/InvestIcon";
 import Button from "./Button";
-import { ConnectButton } from "thirdweb/react";
-import { client } from "@/utils/client";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
-import { useMultiChain } from "@/providers/MultiChainProvider";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { wallets } from "@/constants/wallets";
 import { useSignerStatus } from "@account-kit/react";
-import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
 
 const InvestBlock = () => {
