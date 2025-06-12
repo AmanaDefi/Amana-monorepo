@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
@@ -90,9 +92,8 @@ const VaultsDetailContainer: React.FC<{
         setIsTransactionProcessing(false);
       }
     };
-    
-    checkTransactionState();
 
+    checkTransactionState();
   }, [vaultID]);
 
   useEffect(() => {
@@ -212,8 +213,8 @@ const VaultsDetailContainer: React.FC<{
       <div
         className={clsx(
           "flex flex-row justify-between",
-          !walletAddress && "mt-6", 
-          walletAddress && "mt-0", 
+          !walletAddress && "mt-6",
+          walletAddress && "mt-0",
         )}
       >
         <Button

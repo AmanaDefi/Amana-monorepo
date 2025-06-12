@@ -14,7 +14,7 @@ import Button from "./Button";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import { ethereumProvider } from "@/utils/providers";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
-import { formatBalance, formatTokenBalance } from "@/utils/utils";
+import { useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 
@@ -46,16 +46,17 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
+  const activeAccount = useUser();
   const { walletAddress, switchToChain, activeChain, balance } =
     useMultiChain();
   const isConnected = !!walletAddress;
-  const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   const [signer, setSigner] = useState<Signer | null>(null);
+
   console.log("active chain", activeChain);
 
   const { openStep } = useAuthStore();
@@ -110,14 +111,9 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          {isConnected && <ChainSwitcher />}
-          {/* {SUPPORTED_CHAINS.map((chain) => (
-            <button key={chain.chain.id} className={classNames({"text-blue-button": activeChain?.id === chain.chain.id})} onClick={() => switchToChain(chain.chain)}>
-              {chain.chain.name}
-            </button>
-          ))} */}
 
-          <div className="hidden md:block">
+          {isConnected && activeAccount?.type === "eoa" && <ChainSwitcher />}
+          <div className="hidden md:block thirdweb-connect-override">
             {!isConnected ? (
               <Button variant="signIn" onClick={() => openStep("optionsA")}>
                 Sign in

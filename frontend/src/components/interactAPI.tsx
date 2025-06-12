@@ -14,7 +14,6 @@ import {
   getAssetsFromShares,
 } from "@/actions/actions";
 import MainActionButton from "@/components/button/MainActionButton";
-import { client } from "@/utils/client";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { isZetachain } from "@/utils/utils";
@@ -24,7 +23,7 @@ import {
 } from "@/constants/chainConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
-import { useUser } from "@account-kit/react";
+import { useUser, UseUserResult } from "@account-kit/react";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import Blockpi from "@/service/blockpi";
@@ -34,13 +33,20 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
+import { Address, Chain } from "viem";
+import { getPublicClient } from "@/utils/getPublicClient";
+import Button from "./Button";
+
+function isHex(value: string): value is `0x${string}` {
+  return typeof value === "string" && value.startsWith("0x");
+}
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
   inputBalance: Balance,
   inputToken: Token,
   walletContext: WalletContextState,
-  activeAccount: Account,
+  activeAccount: UseUserResult,
   setTransactionCompleted: (value: boolean) => void,
   activeChain: any,
   setCrosschainInvestHash: Function,
@@ -48,6 +54,7 @@ const handleDepositTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function,
 ) => {
+  if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
   console.log("Active Chain ID:", activeChain.id);
   console.log("Vault Strategy Chain ID:", vaultData.protocol.chainId);
@@ -98,20 +105,25 @@ const handleDepositTransaction = async (
       CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
     updateLocalStorageObject(vaultData.id, {
       lastEventTxHash: `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`,
-      crosschainInvestHash: receipt.transactionHash,
+      crosschainInvestHash: receipt.transactionHash ?? "",
     });
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
       console.log("Solana transaction handling");
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
-      const receiptObject = {
-        transactionHash: receipt.transactionHash as `0x${string}`,
-        client,
-        chain: activeChain,
-      };
-      await waitForReceipt(receiptObject);
-      console.log("Receipt confirmed");
+
+      const publicClient = getPublicClient(activeChain.id);
+      if (
+        publicClient &&
+        receipt.transactionHash &&
+        isHex(receipt.transactionHash)
+      ) {
+        await publicClient.waitForTransactionReceipt({
+          hash: receipt.transactionHash,
+        });
+        console.log("Receipt confirmed");
+      }
     }
 
     setLastEventTxHash(
@@ -201,7 +213,7 @@ const handleWithdrawTransaction = async (
   inputBalance: Balance,
   withdrawToken: Token,
   walletContext: WalletContextState,
-  activeAccount: Account,
+  activeAccount: UseUserResult,
   setTransactionCompleted: (value: boolean) => void,
   activeChain: any,
   setCrosschainInvestHash: Function,
@@ -209,6 +221,7 @@ const handleWithdrawTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function,
 ) => {
+  if (!activeAccount) return;
   setTransactionCompleted(false);
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
 
@@ -225,7 +238,11 @@ const handleWithdrawTransaction = async (
 
   try {
     const withdrawShareAmount = inputBalance.value;
-    const assetsOut = await getAssetsFromShares(withdrawShareAmount, vaultData);
+    const assetsOut = await getAssetsFromShares(
+      withdrawShareAmount,
+      vaultData,
+      activeChain.id,
+    );
     const withdrawAmountFormatted =
       Number(assetsOut) / 10 ** withdrawToken.decimals;
     const amountUSD = (
@@ -259,17 +276,22 @@ const handleWithdrawTransaction = async (
       CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
     updateLocalStorageObject(vaultData.id, {
       lastEventTxHash: `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`,
-      crosschainInvestHash: receipt.transactionHash,
+      crosschainInvestHash: receipt.transactionHash ?? "",
     });
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
     } else {
-      const receiptObject = {
-        transactionHash: receipt.transactionHash as `0x${string}`,
-        client,
-        chain: activeChain,
-      };
-      await waitForReceipt(receiptObject);
+      const publicClient = getPublicClient(activeChain.id);
+      if (
+        publicClient &&
+        receipt?.transactionHash &&
+        isHex(receipt.transactionHash)
+      ) {
+        await publicClient.waitForTransactionReceipt({
+          hash: receipt.transactionHash,
+        });
+        console.log("Receipt confirmed");
+      }
     }
 
     setLastEventTxHash(
@@ -352,7 +374,7 @@ export default function InteractionContainer({
   isDeposit: boolean;
   refreshBalance: Function;
 }): JSX.Element {
-  const [label, setLabel] = useState("");
+  const [label, setLabel] = useState("Invest");
 
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
@@ -369,20 +391,24 @@ export default function InteractionContainer({
     useState<TransactionStepMessages>({});
 
   useEffect(() => {
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
-    const vaultTxData = getLocalStorageObject(vaultData.id);
+    if (vaultData?.id) {
+      const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+      const vaultTxData = getLocalStorageObject(vaultData.id);
 
-    if (isTxInProgress && vaultTxData) {
-      setCrosschainInvestHash(vaultTxData?.crosschainInvestHash ?? "");
-      setcrossChainTxId(vaultTxData?.crossChainTxId ?? "");
-      setIsTransactionStarted(vaultTxData?.isTransactionStarted ?? false);
-      setIsTransactionProcessing(vaultTxData?.isTransactionProcessing ?? false);
-      setFinishedTransaction(vaultTxData?.finishedTransaction ?? false);
-      setLastEventTxHash(vaultTxData?.lastEventTxHash ?? "");
-      setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
-      setLastTransactionStepFeedback(
-        vaultTxData?.lastTransactionStepFeedback ?? {},
-      );
+      if (isTxInProgress && vaultTxData) {
+        setCrosschainInvestHash(vaultTxData?.crosschainInvestHash ?? "");
+        setcrossChainTxId(vaultTxData?.crossChainTxId ?? "");
+        setIsTransactionStarted(vaultTxData?.isTransactionStarted ?? false);
+        setIsTransactionProcessing(
+          vaultTxData?.isTransactionProcessing ?? false,
+        );
+        setFinishedTransaction(vaultTxData?.finishedTransaction ?? false);
+        setLastEventTxHash(vaultTxData?.lastEventTxHash ?? "");
+        setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
+        setLastTransactionStepFeedback(
+          vaultTxData?.lastTransactionStepFeedback ?? {},
+        );
+      }
     }
   }, [vaultData.id]);
 
@@ -401,7 +427,7 @@ export default function InteractionContainer({
         setLabel("Approve");
         break;
       case Action.deposit:
-        setLabel("Deposit");
+        setLabel("Invest");
         break;
       case Action.withdraw:
         setLabel("Withdraw");
@@ -843,13 +869,10 @@ export default function InteractionContainer({
       }
     };
 
-    // Start tracking with a small delay
     const timeoutId = setTimeout(trackTransaction, 100);
 
-    // Cleanup
     return () => {
       clearTimeout(timeoutId);
-      // Mark tracking as inactive on cleanup to prevent memory leaks
       isTrackingActiveRef.current = false;
     };
   }, [
@@ -864,10 +887,6 @@ export default function InteractionContainer({
     vaultData,
   ]);
 
-  // No longer restoring transaction state from localStorage
-  // This ensures we always start fresh and rely only on API responses
-
-  // Component unmount cleanup
   useEffect(() => {
     return () => {
       console.log("[Component] Unmounting - marking component as inactive");
@@ -1228,7 +1247,7 @@ function Interaction({
       });
     }
   }
-  
+
   const handleMainAction = async () => {
     console.log("=== HANDLE MAIN ACTION CALLED ===");
     console.log("Current action:", action);
@@ -1398,49 +1417,43 @@ function Interaction({
 
   return (
     <>
-      {((Number(inputBalance.formatted) > 0 &&
-        actions.length &&
-        !errorMessage) ||
-        crosschainInvestHash.length > 0 ||
-        isTransactionStarted ||
-        isTransactionProcessing ||
-        (finishedTransaction &&
-          (Object.keys(transactionStepFeedback).length > 0 ||
-            Object.keys(lastTransactionStepFeedback).length > 0))) && (
+      {
         <>
-          <p className="text-white text-start text-2xl font-bold leading-none mb-3">
-            {label}
-          </p>
-          {
-            <>
-              {renderTransactionSteps(
-                finishedTransaction,
-                lastTransactionStepFeedback,
-                transactionStepFeedback,
-              )}
-            </>
-          }
-          {finishedTransaction ? (
-            <MainActionButton label="Done" handleClick={handleDone} />
-          ) : (
-            (() => {
-              const isDisabledByProcessing = isTransactionProcessing;
-              const isDisabledByHash =
-                crosschainInvestHash.length > 0 && !finishedTransaction;
-              const isDisabled = isDisabledByProcessing || isDisabledByHash;
-
-              return (
-                <>
-                  <MainActionButton
-                    disabled={isDisabled}
-                    label={label}
-                    handleClick={handleMainAction}
-                  />
-                </>
-              );
-            })()
+          {renderTransactionSteps(
+            finishedTransaction,
+            lastTransactionStepFeedback,
+            transactionStepFeedback,
           )}
         </>
+      }
+      {finishedTransaction ? (
+        <Button
+          variant="special"
+          className="w-full mt-[47px]"
+          onClick={handleDone}
+        >
+          Done
+        </Button>
+      ) : (
+        (() => {
+          const isDisabledByProcessing = isTransactionProcessing;
+          const isDisabledByHash =
+            crosschainInvestHash.length > 0 && !finishedTransaction;
+          const isDisabled = isDisabledByProcessing || isDisabledByHash;
+
+          return (
+            <>
+              <Button
+                variant="special"
+                disabled={isDisabled}
+                className="w-full mt-[47px]"
+                onClick={handleMainAction}
+              >
+                {label}
+              </Button>
+            </>
+          );
+        })()
       )}
     </>
   );
@@ -1576,7 +1589,7 @@ function handleInteraction(
   vaultData: VaultData,
   inputBalance: Balance,
   inputToken: Token,
-  activeAccount: Account,
+  activeAccount: UseUserResult,
   walletContext: WalletContextState | any,
   setTransactionCompleted: (value: boolean) => void,
   activeChain: Chain,

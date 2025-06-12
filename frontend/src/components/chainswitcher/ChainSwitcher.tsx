@@ -5,13 +5,11 @@ import { useState, useRef, useEffect } from "react";
 import { Chain } from "viem";
 import { CHAIN_ICONS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import "react-toastify/dist/ReactToastify.css";
-import { ClipLoader } from "react-spinners";
-import { ChevronDownIcon, CheckIcon } from "@heroicons/react/24/solid";
 import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
-import ChandeChain from "@public/ethereum.png"
+import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
@@ -122,6 +120,26 @@ const ChainSwitcher: React.FC = () => {
       )?.chain || currentChain
     : zetaChain.chain;
 
+  const options = SUPPORTED_CHAINS.map((chain) => {
+    return { value: chain.chain.name, icon: CHAIN_ICONS[chain.chain.id].url };
+  });
+
+  const handleSelectChain = (
+    event:
+      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
+      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    option: string,
+  ) => {
+    event.stopPropagation();
+    const selected = SUPPORTED_CHAINS.find(
+      (c: { chain: Chain }) => c.chain.name === option,
+    );
+
+    if (selected) {
+      handleChainSwitch(selected);
+    }
+  };
+
   return (
     <div
       className="z-50 relative bg-gradient-to-b from-[#262830] to-[#06afbc] rounded-full lg:bg-none lg:rounded-none"
@@ -141,21 +159,28 @@ const ChainSwitcher: React.FC = () => {
               : "Connect wallet to switch networks"
         }
       >
-        {/* {displayChain. && (
-          <img
-            src={displayChain.icon?.url}
-            alt={displayChain.name}
-            className="w-5 h-5 rounded-full"
-          />
-        )} */}
         <div className="bg-[#24262f] rounded-full border border-[#9A9CB3] p-2 flex items-center justify-center">
-          <Image src={ChandeChain} width={24} height={24} alt="change chain" />
+          <Image
+            src={CHAIN_ICONS[currentChain.id].url}
+            width={24}
+            height={24}
+            alt="change chain"
+          />
         </div>
       </Button>
 
       <Tooltip id="chain-switcher-tooltip" />
 
-      {isOpen && (
+      <DropdownList
+        width={250}
+        isIconButton={false}
+        options={options}
+        selectedOption={displayChain?.name}
+        handleSelectedOption={handleSelectChain}
+        isShownList={isOpen}
+        needReset={false}
+      />
+      {/* {isOpen && (
         <div className="absolute top-full left-0 mt-2 w-64 bg-gray-800 rounded-md shadow-lg">
           {SUPPORTED_CHAINS.map((chain) => (
             <button
@@ -185,7 +210,7 @@ const ChainSwitcher: React.FC = () => {
             </button>
           ))}
         </div>
-      )}
+      )} */}
     </div>
   );
 };

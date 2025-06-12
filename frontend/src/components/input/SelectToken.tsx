@@ -4,10 +4,9 @@ import { Token, VaultData } from "@/types/types";
 import TokenIcon from "@/components/common/TokenIcon";
 import SearchToken from "@/components/input/SearchToken";
 import { Tooltip } from "react-tooltip";
-import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
-import { Account } from "thirdweb/wallets";
 import {getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
 import Modal from "../modal/Modal";
+import { useChain } from "@account-kit/react";
 
 
 export interface SelectTokenProps {
@@ -21,7 +20,7 @@ export default function SelectToken({
   selectedToken,
   selectToken
 }: SelectTokenProps): JSX.Element {
-  const activeChain = useActiveWalletChain();
+  const activeChain = useChain().chain;
 
   const [show, setShow] = useState(false);
   const selectTokenId = selectedToken?.symbol.split(" ").join("");

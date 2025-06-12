@@ -9,7 +9,7 @@ import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
-import { cookieToInitialState } from "@account-kit/core";
+import { AlchemyClientState, cookieToInitialState } from "@account-kit/core";
 import { Providers } from "@/providers/AlchemyProviders";
 import { headers } from "next/headers";
 import { alchemyConfig } from "../../alchemyConfig";
@@ -25,12 +25,7 @@ const spaceMono = Space_Mono({
   variable: "--font-space-mono",
 });
 
-const ClientLayout = (props: PropsWithChildren) => {
-  const initialState = cookieToInitialState(
-    alchemyConfig,
-    headers().get("cookie") ?? undefined,
-  );
-
+const ClientLayout = (props: PropsWithChildren<{ initialState?: AlchemyClientState }>) => {
   return (
     <html
       lang="en"
@@ -38,7 +33,7 @@ const ClientLayout = (props: PropsWithChildren) => {
     >
       <body className="font-sans font-light">
         <SolanaWalletProvider>
-          <Providers initialState={initialState}>
+          <Providers initialState={props.initialState}>
             <AccountProvider>
               <MultiChainProvider>
                 <TokenPriceProvider>

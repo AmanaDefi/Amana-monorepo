@@ -14,20 +14,14 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { CHAIN_ID, chainConfigs } from "@/constants/chainConfig";
 import {
-  useAccount,
   useAuthModal,
   useLogout,
   useUser,
   useChain,
-  useConnection,
 } from "@account-kit/react";
-import { useBalance } from "wagmi";
 import useSolanaBalance from "@/hooks/useSolanaBalance";
 import { Balance } from "@/types/types";
 import { Chain, formatEther } from "viem";
-import { BrowserProvider, ethers } from "ethers";
-import { ethereumProvider } from "@/utils/providers";
-import { getProvider } from "@/utils/getProvider";
 import { getPublicClient } from "@/utils/getPublicClient";
 declare global {
   interface Window {
@@ -163,7 +157,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error get balance:", error);
     }
-  }, [chain, getPublicClient, setBalance]);
+  }, [chain, setBalance]);
 
   useEffect(() => {
     console.log(activeAccount, publicKey);
@@ -212,9 +206,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
                 const checkChain = setInterval(() => {
                   checkAttempts++;
-                  // Use the chain from thirdweb directly to verify the wallet's actual chain
-
-                  // Check BOTH the ref (our tracked value) and the thirdweb chain value
                   if (latestChainRef.current === chain.id) {
                     console.log(
                       `Chain switch successful: Now on chain ${chain.id}`,

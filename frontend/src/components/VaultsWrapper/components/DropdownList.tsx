@@ -8,6 +8,7 @@ export const DropdownList = ({
   selectedOption,
   handleSelectedOption,
   isShownList,
+  needReset = true,
 }: {
   width: number;
   isIconButton: boolean;
@@ -20,12 +21,13 @@ export const DropdownList = ({
     option: string,
   ) => void;
   isShownList: boolean;
+  needReset?: boolean;
 }) => {
   return (
     <div
       style={{
         width,
-        top: isIconButton ? 30 : 40,
+        top: !needReset ? 65 : isIconButton ? 30 : 40,
         maxHeight: isShownList ? "600px" : "0px",
         padding: isShownList ? "20px" : "0px",
         border: isShownList ? "1px" : "0px",
@@ -63,13 +65,15 @@ export const DropdownList = ({
         </div>
       ))}
 
-      <button
-        type="button"
-        onClick={(event) => handleSelectedOption(event, "")}
-        className="underline font-normal text-sm leading-4 text-[#535E73] hover:text-blue-button active:scale-90"
-      >
-        Reset to default
-      </button>
+      {needReset && (
+        <button
+          type="button"
+          onClick={(event) => handleSelectedOption(event, "")}
+          className="underline font-normal text-sm leading-4 text-[#535E73] hover:text-blue-button active:scale-90"
+        >
+          Reset to default
+        </button>
+      )}
     </div>
   );
 };
