@@ -11,6 +11,7 @@ export type AuthStep =
   | "onboarding"
   | "logout"
   | "passkey"
+  | "signature"
   | null;
 
 interface AuthState {

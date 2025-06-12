@@ -33,7 +33,6 @@ export const SignIn = () => {
 
   const onSubmit = (data: PasskeyForm) => {
     console.log("Creating new passkey with label:", data.passkey);
-    
   };
 
   return (
@@ -71,6 +70,7 @@ export const SignIn = () => {
             Sign in with passkey
           </h2>
           <Button
+            onClick={() => openStep("signature")}
             type="button"
             variant="custom"
             className="mt-6 w-full h-12 rounded-[8px] text-white !font-bold !text-[16px] shadow-md transition-all duration-200 !font-gotham"
