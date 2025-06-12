@@ -13,6 +13,7 @@ export type AuthStep =
   | "passkey"
   | "signature"
   | "checking"
+  | "notVerify"
   | null;
 
 interface AuthState {

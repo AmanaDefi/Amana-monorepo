@@ -4,6 +4,7 @@ import OnboardingModal from "./onboarding/OnboardingModal";
 import OptionsModalA from "./options/OptionsModalA";
 import OptionsModalB from "./options/OptionsModalB";
 import { Checking } from "./passkey/CheckingLoader";
+import { NotVerify } from "./passkey/NotVerify";
 import { SignIn } from "./passkey/SignIn";
 import { SignatureCheck } from "./passkey/SignatureCheck";
 import { SignUpModal } from "./smartWallet/SignUpModal";
@@ -23,6 +24,7 @@ export const AppModals = () => {
       <SignIn />
       <SignatureCheck />
       <Checking />
+      <NotVerify />
     </>
   );
 };
