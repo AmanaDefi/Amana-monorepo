@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import ElephantIcon from "@public/elephant.png";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -90,11 +88,11 @@ const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
                 },
               }}
             >
-              <Image
-                src={ElephantIcon}
+              <img
+                src="/elephant.gif"
                 alt="Elephant"
-                width={32}
-                height={32}
+                width={40}
+                height={40}
                 className="w-10 h-10 drop-shadow-lg"
               />
             </motion.div>
