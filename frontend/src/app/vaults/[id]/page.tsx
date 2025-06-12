@@ -6,6 +6,7 @@ import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
+import clsx from "clsx";
 
 function Index({}) {
   const account = useUser();
@@ -27,8 +28,11 @@ function Index({}) {
     <>
       {(account || wallet) && (
         <div className="flex-1 flex flex-col w-full justify-between pl-6">
-          <div className="flex-1 mt-8">
-            <VaultsDetailContainer vaultID={id} setVaultSymbol={setVaultSymbol} />
+          <div className={clsx("flex-1", !wallet && "mt-8", wallet && "mt-0")}>
+            <VaultsDetailContainer
+              vaultID={id}
+              setVaultSymbol={setVaultSymbol}
+            />
           </div>
         </div>
       )}

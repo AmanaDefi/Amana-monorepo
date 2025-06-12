@@ -2,8 +2,9 @@ import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 
 const ConnectWallet = () => {
+
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col font-gotham">
       <div className="flex flex-row gap-6 mb-[41px]">
         <AmanaLogo width={78} height={55} className="w-[78px] h-[55px]" />
         <h1 className="text-[34px] font-bold">AMANA</h1>
@@ -17,9 +18,11 @@ const ConnectWallet = () => {
           wallet from the options to get started
         </p>
       </div>
-      <button className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1">
+      <button
+        className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1"
+      >
         I DON’T HAVE A WALLET
-        <ErrorInputIcon width={16} height={17} />
+        <ErrorInputIcon width={16} height={17} className="fill-[#3E73C4]" />
       </button>
     </div>
   );

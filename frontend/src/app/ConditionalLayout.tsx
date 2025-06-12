@@ -8,7 +8,6 @@ import GlowIcon from "@/components/svg/GlowIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import React, { useState, useEffect } from "react";
 
-
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
@@ -23,10 +22,10 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
     checkIsMobile();
 
-    window.addEventListener('resize', checkIsMobile);
+    window.addEventListener("resize", checkIsMobile);
 
     return () => {
-      window.removeEventListener('resize', checkIsMobile);
+      window.removeEventListener("resize", checkIsMobile);
     };
   }, []);
 
@@ -89,6 +88,5 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     </div>
   );
 };
-
 
 export default ConditionalLayout;

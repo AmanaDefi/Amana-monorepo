@@ -11,8 +11,13 @@ import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
+<<<<<<< HEAD
 import { AppButton } from "../button/AppButton";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
+=======
+import ChandeChain from "@public/ethereum.png"
+import Button from "../Button";
+>>>>>>> origin/fix/AM-90/auth-modals
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
@@ -168,37 +173,6 @@ const ChainSwitcher: React.FC = () => {
         isShownList={isOpen}
         needReset={false}
       />
-      {/* {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-800 rounded-md shadow-lg">
-          {SUPPORTED_CHAINS.map((chain) => (
-            <button
-              key={chain.chain.id}
-              onClick={() => handleChainSwitch(chain)}
-              className="flex items-center w-full px-4 py-2 text-white hover:bg-gray-700 rounded-md"
-              disabled={isLoading !== null}
-              data-tooltip-id={`chain-${chain.chain.id}-tooltip`}
-              data-tooltip-content={`Switch to ${chain.chain.name}`}
-            >
-              <Image
-                src={CHAIN_ICONS[chain.chain.id].url}
-                alt={chain.chain.name}
-                width={40}
-                height={40}
-                sizes="40px"
-              />
-              <span>{chain.chain.name}</span>
-              {isLoading === chain.chain.id ? (
-                <div className="ml-auto">
-                  <ClipLoader size={16} color="#ffffff" />
-                </div>
-              ) : currentChain?.id === chain.chain.id ? (
-                <CheckIcon className="ml-auto h-4 w-4 text-green-500" />
-              ) : null}
-              <Tooltip id={`chain-${chain.chain.id}-tooltip`} />
-            </button>
-          ))}
-        </div>
-      )} */}
     </div>
   );
 };

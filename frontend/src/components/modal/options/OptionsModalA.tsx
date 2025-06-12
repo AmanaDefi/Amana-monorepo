@@ -9,6 +9,7 @@ import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
 import BackedBy from "../shared/BackedBy";
+import { useRouter } from "next/navigation";
 
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
@@ -42,7 +43,7 @@ const OptionsModalA = () => {
               <ModalButton
                 label="Smart Wallet"
                 icon={<SmartWalletIcon width={29} height={25} />}
-                onClick={() => openStep("optionsB")}
+                onClick={() => openStep("onboarding")}
               />
               <ModalButton
                 label="All Wallets"

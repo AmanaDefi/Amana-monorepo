@@ -14,18 +14,25 @@ const formatEmail = (email: string) => {
   const [local, domain] = email.split("@");
   if (!local || !domain) return email;
 
-  const maskedLocal =
-    local.length > 3 ? `${local.slice(0, 3)}...` : local[0] + "...";
+  if (local.length <= 4) {
+    return `${local[0]}***@${domain}`;
+  }
 
-  return `${maskedLocal}@${domain}`;
+  return `${local.slice(0, 3)}***${local.slice(-2)}@${domain}`;
 };
 
 export const VerifyOtpModal = () => {
-  const { step, email, closeAll, authenticate } = useAuthStore();
+  const { step, email, closeAll, authenticate, successAuth } = useAuthStore();
   const {authenticate: OTPAuth} = useAuthenticate();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const clearAllFields = () => {
+    setCode(["", "", "", "", "", ""]);
+    setError(false);
+    inputRefs.current[0]?.focus();
+  };
 
   const handleChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
@@ -39,6 +46,51 @@ export const VerifyOtpModal = () => {
     }
   };
 
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace") {
+      const newCode = [...code];
+      if (newCode[index] === "" && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      } else {
+        newCode[index] = "";
+        setCode(newCode);
+        setError(false);
+      }
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+      e.preventDefault();
+      inputRefs.current.forEach((input) => {
+        if (input) {
+          input.select();
+        }
+      });
+    }
+
+    if (e.key === "Escape") {
+      clearAllFields();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text");
+    const digits = pasteData.replace(/\D/g, "").slice(0, 6);
+
+    if (digits.length > 0) {
+      const newCode = [...code];
+      for (let i = 0; i < 6; i++) {
+        newCode[i] = digits[i] || "";
+      }
+      setCode(newCode);
+      setError(false);
+
+      const lastFilledIndex = Math.min(digits.length - 1, 5);
+      inputRefs.current[lastFilledIndex]?.focus();
+    }
+  };
+
+
   const handleSendOTP = (code: string) => {
     OTPAuth(
       {
@@ -50,6 +102,7 @@ export const VerifyOtpModal = () => {
           console.log(result);
           console.log("Success google auth", result);
           authenticate(result.address)
+          successAuth();
         },
         onError: (err) => {
           console.error("Error google auth:", err);
@@ -58,6 +111,7 @@ export const VerifyOtpModal = () => {
       },
     );
   };
+
   const handleSubmit = () => {
     const otp = code.join("");
     if (otp.length < 6) return;
@@ -68,6 +122,7 @@ export const VerifyOtpModal = () => {
     // } else {
     //   authenticate("0xMockUserWallet");
     // }
+
   };
 
   useEffect(() => {
@@ -132,6 +187,8 @@ export const VerifyOtpModal = () => {
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={handlePaste}
                 className={clsx(
                   "w-12 h-12 text-center text-white text-xl rounded-md bg-[#161C27] outline-none transition-all duration-200",
                   {
@@ -146,9 +203,15 @@ export const VerifyOtpModal = () => {
           </div>
 
           {error && (
-            <div className="flex items-center gap-1 text-[#FF1E1E] text-sm mt-2">
-              <ErrorInputIcon width={16} height={16} />
-              <p className="text-[12px] font-normal">The wrong code</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 text-[#FF1E1E] text-sm">
+                <ErrorInputIcon
+                  width={16}
+                  height={16}
+                  className="fill-[#FF1E1E]"
+                />
+                <p className="text-[12px] font-normal">The wrong code</p>
+              </div>
             </div>
           )}
         </form>

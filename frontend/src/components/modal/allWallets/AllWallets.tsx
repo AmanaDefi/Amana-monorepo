@@ -102,7 +102,7 @@ const AllWAllets = () => {
               </div>
             </div>
             <div className="mt-10">
-              <p className="mb-4 text-sm font-normal color-[#535E73]">
+              <p className="mb-4 text-sm font-normal text-[#535E73]">
                 Other options
               </p>
               <div className="flex flex-col gap-4 mt-6">

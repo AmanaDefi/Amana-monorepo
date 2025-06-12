@@ -35,6 +35,7 @@ import { SUPPORTED_TOKENS } from "@/constants/tokens";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
+import clsx from "clsx";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -56,7 +57,6 @@ const VaultsDetailContainer: React.FC<{
   const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
 
-  // ДОДАЄМО стан для відстеження транзакції
   const [transactionStepFeedback, setTransactionStepFeedback] =
     useState<TransactionStepMessages>({});
   const [lastTransactionStepFeedback, setLastTransactionStepFeedback] =
@@ -84,21 +84,15 @@ const VaultsDetailContainer: React.FC<{
           vaultTxData?.isTransactionProcessing ?? false,
         );
       } else {
-        // Очищуємо стан якщо транзакція не активна
         setTransactionStepFeedback({});
         setLastTransactionStepFeedback({});
         setFinishedTransaction(false);
         setIsTransactionProcessing(false);
       }
     };
-
-    // Перевіряємо стан одразу
+    
     checkTransactionState();
 
-    // Налаштовуємо інтервал для періодичної перевірки localStorage
-    const interval = setInterval(checkTransactionState, 1000);
-
-    return () => clearInterval(interval);
   }, [vaultID]);
 
   useEffect(() => {
@@ -148,7 +142,6 @@ const VaultsDetailContainer: React.FC<{
 
   const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000];
 
-  // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
   useUpdateVaultBalanceAndTotalPerVault(
     vaultData || null,
     walletAddress,
@@ -158,10 +151,8 @@ const VaultsDetailContainer: React.FC<{
     transactionCompleted,
   );
 
-  // Get token price for USD conversion
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
 
-  // Log detailed vault deposit information
   useEffect(() => {
     if (userVaultBalance && vaultData) {
       const rawBalance =
@@ -196,7 +187,6 @@ const VaultsDetailContainer: React.FC<{
     opTokenPrice,
   );
 
-  // Handle token selection from child components
   const handleTokenSelect = useCallback(
     (token: Token) => {
       setSelectedToken(token);
@@ -217,9 +207,15 @@ const VaultsDetailContainer: React.FC<{
 
   return vaultData ? (
     <div className="overflow-x-auto font-gotham">
-      <InvestBlock />
+      {!walletAddress && <InvestBlock />}
 
-      <div className="flex flex-row justify-between mt-6">
+      <div
+        className={clsx(
+          "flex flex-row justify-between",
+          !walletAddress && "mt-6", 
+          walletAddress && "mt-0", 
+        )}
+      >
         <Button
           variant="outlined"
           onClick={handleBack}
@@ -255,18 +251,19 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
       </div>
+      {walletAddress && (
+        <VaultHeader
+          vaultData={vaultData}
+          userVaultBalance={userVaultBalance}
+          selectedVaultId={vaultID.toString()}
+          vaultTotalAsset={vaultTotalAsset}
+          vaultAPYs={vaultAPYs}
+          transactionCompleted={transactionCompleted}
+          selectedToken={selectedToken}
+        />
+      )}
 
-      <VaultHeader
-        vaultData={vaultData}
-        userVaultBalance={userVaultBalance}
-        selectedVaultId={vaultID.toString()}
-        vaultTotalAsset={vaultTotalAsset}
-        vaultAPYs={vaultAPYs}
-        transactionCompleted={transactionCompleted}
-        selectedToken={selectedToken}
-      />
-
-      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 my-4 font-gotham">
+      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-[56px] font-gotham">
         <div>
           <VaultOverviewBlock
             vault={vaultData}
@@ -295,11 +292,10 @@ const VaultsDetailContainer: React.FC<{
               strategyExplorerBaseUrl={strategyExplorerBaseUrl}
             />
           </Dropdown>
-          {["Historical APY", "Which Tokens I can invest?"].map((title) => (
-            <Dropdown key={title} title={title}>
-              <p className="text-white text-sm font-normal">Content</p>
-            </Dropdown>
-          ))}
+
+          <Dropdown title="Which Tokens I can invest?">
+            <p className="text-white text-sm font-normal">Content</p>
+          </Dropdown>
           {walletAddress && (
             <Dropdown
               title={
