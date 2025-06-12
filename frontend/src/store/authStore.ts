@@ -12,6 +12,7 @@ export type AuthStep =
   | "logout"
   | "passkey"
   | "signature"
+  | "checking"
   | null;
 
 interface AuthState {
