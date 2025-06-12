@@ -11,14 +11,12 @@ import {
 } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
-import { Chain } from "thirdweb";
-import { Account } from "thirdweb/wallets";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import VaultsGrid from "../components/VaultsWrapper";
 
 // Zero account for default value
-export const ZERO_ACCOUNT: Account = {
+export const ZERO_ACCOUNT = {
   address: "0x0000000000000000000000000000000000000000",
   sendTransaction: async () => {
     throw new Error("sendTransaction not implemented for ZERO_ACCOUNT");
@@ -31,15 +29,9 @@ export const ZERO_ACCOUNT: Account = {
   },
 };
 
-interface VaultsGridContainerProps {
-  activeChain?: Chain; // Make activeChain optional
-  defaultAccount?: Account; // Optional default account
-}
 
-const VaultsGridContainer: React.FC<VaultsGridContainerProps> = ({
-  activeChain,
-  defaultAccount = ZERO_ACCOUNT,
-}) => {
+
+const VaultsGridContainer = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<

@@ -15,6 +15,7 @@ import { ethereumProvider } from "@/utils/providers";
 import Image from "next/image";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 import { formatBalance, formatTokenBalance } from "@/utils/utils";
+import { useUser } from "@account-kit/react";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -44,13 +45,12 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
+  const activeAccount = useUser();
   const { walletAddress, switchToChain, activeChain, balance } =
     useMultiChain();
   const isConnected = !!walletAddress;
-  const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const [signer, setSigner] = useState<Signer | null>(null);
   console.log("active chain", activeChain);
 
   const { openStep } = useAuthStore();
@@ -105,13 +105,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          <ChainSwitcher />
-          {/* {SUPPORTED_CHAINS.map((chain) => (
-            <button key={chain.chain.id} className={classNames({"text-blue-button": activeChain?.id === chain.chain.id})} onClick={() => switchToChain(chain.chain)}>
-              {chain.chain.name}
-            </button>
-          ))} */}
 
+          {isConnected && activeAccount?.type === "eoa" && <ChainSwitcher />}
           <div className="hidden md:block thirdweb-connect-override">
             {!isConnected ? (
               <AppButton onClick={() => openStep("optionsA")}>

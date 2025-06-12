@@ -1,3 +1,4 @@
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import {
   createPublicClient,
   http,
@@ -27,23 +28,6 @@ import type { Chain } from "viem/chains";
 const clientCache = new Map<number, PublicClient>();
 const walletClientCache = new Map<number, WalletClient>();
 
-const supportedChains: Chain[] = [
-  mainnet,
-  sepolia,
-  base,
-  baseSepolia,
-  polygon,
-  polygonAmoy,
-  arbitrum,
-  arbitrumSepolia,
-  bsc,
-  bscTestnet,
-  avalanche,
-  avalancheFuji,
-  zetachain,
-  zetachainAthensTestnet,
-];
-
 export const getRpcUrl = (chain: Chain): string => {
   const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
   if (alchemyApiKey) {
@@ -60,7 +44,7 @@ export const getPublicClient = (chainId: number): PublicClient | null => {
     return clientCache.get(chainId)!;
   }
 
-  const chain = supportedChains.find((c) => c.id === chainId);
+  const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
     console.error(`Chain with id:${chainId} doesn't supported`);
     return null;
@@ -84,7 +68,7 @@ export const getWalletClient = (chainId: number): WalletClient | null => {
     return walletClientCache.get(chainId)!;
   }
 
-  const chain = supportedChains.find((c) => c.id === chainId);
+  const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
     console.error(`Chain with id:${chainId} doesn't supported`);
     return null;

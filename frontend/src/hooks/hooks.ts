@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   calculateAaveAPY,
-  calculateAaveFlashAPY,
   calculateCompoundAPY,
   calculateMoonwellAPY,
   calculateVenusAPY,
   calculateVenusRewardsAPY,
   calculateEddyAPY,
   calculateBeefyAPY,
-  calculateCurveAPY,
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
@@ -45,6 +43,7 @@ import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { apiService } from "@/service";
 import { zetaProvider } from "@/utils/providers";
 import { Address, zeroAddress } from "viem";
+import { useChain } from "@account-kit/react";
 
 type CashedVaultData = {
   vaultId: string;
@@ -244,7 +243,6 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   transactionCompleted: boolean,
 ) => {
-  const { selectedChain } = useMultiChain();
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
       const address = isSolanaAddress(userAddress)
@@ -255,6 +253,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           const balance = await fetchUserVaultBalance(
             address,
             vault.id,
+            vault.inputToken.decimals,
           );
 
           const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
@@ -308,7 +307,10 @@ export const useUpdateAPYs = (
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
-              const strategyChain = defineChain(vault.protocol.chainId);
+              const strategyChain = SUPPORTED_CHAINS.find((c) => c.chain.id === vault.protocol.chainId)?.chain;
+              if (!strategyChain) {
+                return { vaultId: vault.id, APY7d: 0 };
+              }
               const receiptTokenAddress = receiptTokenAddresses[vault.id];
               let APY7d = 0;
               let RewardsAPY = 0;
@@ -383,7 +385,6 @@ export const useUpdateAPYs = (
                   strategyChain,
                 );
               } else if (vault.protocol.name === "Curve-Convex") {
-                // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
                   if (strategyChain.id === 1) {
                     RewardsAPY = await calculateConvexEthereumRewardsAPY(
@@ -466,156 +467,6 @@ export const useUpdateAPYs = (
       }
     }
   }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice, isFromVaultGrid, cvxTokenPrice, opTokenPrice, setLoading, setVaultAPYs]);
-};
-
-export const useInteractionEvents = ({
-  vaultData,
-  activeChainId,
-  strategyChainID,
-  strategyAddress,
-  contractWithdrawalReceiverAddress,
-  isTransactionStarted,
-}: {
-  vaultData: VaultData;
-  activeChainId: number;
-  strategyChainID: number;
-  strategyAddress: string;
-  contractWithdrawalReceiverAddress: string;
-  isTransactionStarted: boolean;
-}) => {
-  // events
-  const events = useMemo(
-    () => ({
-      vault: [
-        prepareEvent({
-          signature:
-            "event CrossChainInvestSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)",
-        }),
-        prepareEvent({
-          signature:
-            "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)",
-        }),
-        prepareEvent({
-          signature:
-            "event Deposit(address indexed sender,address indexed owner,uint256 assets,uint256 shares)",
-        }),
-        prepareEvent({
-          signature:
-            "event DivestSent(bytes32 indexed crossChainTxId, address user, uint256 shares)",
-        }),
-        prepareEvent({
-          signature:
-            "event Withdraw(address indexed sender,address indexed receiver,address indexed owner,uint256 assets,uint256 shares)",
-        }),
-        prepareEvent({
-          signature:
-            "event CrossChainInvestFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)",
-        }),
-        prepareEvent({
-          signature:
-            "event DivestFailed(bytes32 indexed crossChainTxId, address user, uint256 shares)",
-        }),
-        prepareEvent({
-          signature:
-            "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)",
-        }),
-        prepareEvent({
-          signature:
-            "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)",
-        }),
-      ],
-      strategy: [
-        prepareEvent({
-          signature:
-            "event FundsInvested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
-        }),
-        prepareEvent({
-          signature:
-            "event FundsDivested(bytes32 indexed crossChainTxId,address user,uint256 amount)",
-        }),
-        prepareEvent({
-          signature:
-            "event InvestConfirmFailed(bytes32 indexed crossChainTxId)",
-        }),
-        prepareEvent({
-          signature:
-            "event ReturnFundsFromStrategyFailed(bytes32 indexed crossChainTxId)",
-        }),
-      ],
-      withdrawalReceiver: [
-        prepareEvent({
-          signature:
-            "event FundsReturned(address user,address asset,uint256 amount,bytes32 indexed crossChainTxId)",
-        }),
-        prepareEvent({
-          signature:
-            "event CrossChainDepositFailed(bytes32 indexed crossChainTxId)",
-        }),
-        prepareEvent({
-          signature:
-            "event CrossChainWithdrawFailed(bytes32 indexed crossChainTxId)",
-        }),
-      ],
-    }),
-    [],
-  );
-
-  // contracts
-  const contracts = useMemo(
-    () => ({
-      vault: getContract({
-        client,
-        chain: SUPPORTED_CHAINS[0],
-        address: vaultData.id,
-      }),
-      strategy: getContract({
-        client,
-        chain: defineChain(strategyChainID),
-        address: strategyAddress,
-      }),
-      withdrawalReceiver: getContract({
-        client,
-        chain: defineChain(
-          !activeChainId || activeChainId == CHAIN_ID.solana
-            ? strategyChainID
-            : activeChainId,
-        ),
-        address: contractWithdrawalReceiverAddress,
-      }),
-    }),
-    [
-      vaultData.id,
-      strategyChainID,
-      strategyAddress,
-      activeChainId,
-      contractWithdrawalReceiverAddress,
-    ],
-  );
-
-  // event listeners
-  const { data: vaultEvents } = useContractEvents({
-    contract: contracts.vault,
-    events: events.vault,
-    enabled: isTransactionStarted,
-  });
-  const { data: strategyEvents } = useContractEvents({
-    contract: contracts.strategy,
-    events: events.strategy,
-    enabled: isTransactionStarted,
-  });
-  const { data: withdrawalReceiverEvents } = useContractEvents({
-    contract: contracts.withdrawalReceiver,
-    events: events.withdrawalReceiver,
-    enabled:
-      isTransactionStarted &&
-      !(isZetachain(strategyChainID) && isZetachain(activeChainId)),
-  });
-
-  return {
-    vaultEvents,
-    strategyEvents,
-    withdrawalReceiverEvents,
-  };
 };
 
 export function useTokenPriceBySymbol(symbol: string | undefined) {

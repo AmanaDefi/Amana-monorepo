@@ -11,6 +11,8 @@ import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
+import { AppButton } from "../button/AppButton";
+import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
@@ -120,42 +122,53 @@ const ChainSwitcher: React.FC = () => {
       )?.chain || currentChain
     : zetaChain.chain;
 
+  const options = SUPPORTED_CHAINS.map((chain) => {
+    return { value: chain.chain.name, icon: CHAIN_ICONS[chain.chain.id].url };
+  });
+
+  const handleSelectChain = (
+    event:
+      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
+      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    option: string,
+  ) => {
+    event.stopPropagation()
+    const selected = SUPPORTED_CHAINS.find(
+      (c: { chain: Chain }) => c.chain.name === option,
+    );
+
+    if (selected) {
+      handleChainSwitch(selected);
+    }
+  };
+
   return (
     <div
       className="z-50 relative bg-gradient-to-b from-[#262830] to-[#06afbc] rounded-full lg:bg-none lg:rounded-none"
       ref={dropdownRef}
     >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex flex-col md:flex-row items-center gap-2 p-1 lg:p-4 md:px-3 md:py-2 bg-gradient-to-r from-[#262830] to-[#06afbc] hover:bg-gradient-to-l text-white rounded-md transition-opacity duration-200 cursor-pointer"
-        disabled={!wallet}
-        data-tooltip-id="chain-switcher-tooltip"
-        data-tooltip-content={
-          wallet?.type === "eoa"
-            ? "Switch network"
-            : wallet?.type === "sca"
-              ? "Connect EOA wallet for change chain"
-              : "Connect wallet to switch networks"
-        }
-      >
-        {/* {displayChain. && (
-          <img
-            src={displayChain.icon?.url}
-            alt={displayChain.name}
-            className="w-5 h-5 rounded-full"
-          />
-        )} */}
-        <span className="hidden lg:block">
-          {displayChain?.name || "Select Chain"}
-        </span>
-        <ChevronDownIcon
-          className={`w-4 h-4 md:ml-2 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+      <AppButton isIconOnly onClick={() => setIsOpen(!isOpen)}>
+        <Image
+          src={CHAIN_ICONS[displayChain.id].url}
+          alt={displayChain?.name}
+          width={40}
+          height={40}
+          sizes="40px"
         />
-      </button>
+      </AppButton>
 
       <Tooltip id="chain-switcher-tooltip" />
 
-      {isOpen && (
+      <DropdownList
+        width={250}
+        isIconButton={false}
+        options={options}
+        selectedOption={displayChain?.name}
+        handleSelectedOption={handleSelectChain}
+        isShownList={isOpen}
+        needReset={false}
+      />
+      {/* {isOpen && (
         <div className="absolute top-full left-0 mt-2 w-64 bg-gray-800 rounded-md shadow-lg">
           {SUPPORTED_CHAINS.map((chain) => (
             <button
@@ -185,7 +198,7 @@ const ChainSwitcher: React.FC = () => {
             </button>
           ))}
         </div>
-      )}
+      )} */}
     </div>
   );
 };

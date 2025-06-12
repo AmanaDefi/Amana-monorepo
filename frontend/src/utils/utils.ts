@@ -19,12 +19,10 @@ import {
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { PublicKey } from "@solana/web3.js";
-import { client } from "./client";
 import { keccak_256 } from "js-sha3";
 import SolanaConnectionSingleton from "./solanaSingleton";
 import { erc20Abi, formatEther, getContract, formatUnits } from "viem";
-import { getPublicClient, getWalletClient } from "./getPublicClient";
-import { toTokens } from "thirdweb";
+import { getPublicClient, getWalletClient } from "./getPublicClient";;
 
 export const formatTotalAssets = (
   totalAssets: string,

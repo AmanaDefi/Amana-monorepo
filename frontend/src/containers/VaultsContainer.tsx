@@ -11,13 +11,13 @@ import {
 } from "../types/types";
 import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
-import { Chain } from "thirdweb";
-import { Account } from "thirdweb/wallets";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { usePathname } from "next/navigation";
+import { Chain } from "viem";
+import { UseUserResult } from "@account-kit/react";
 
-export const ZERO_ACCOUNT: Account = {
+export const ZERO_ACCOUNT = {
   address: "0x0000000000000000000000000000000000000000",
   sendTransaction: async () => {
     throw new Error("sendTransaction not implemented for ZERO_ACCOUNT");
@@ -32,7 +32,7 @@ export const ZERO_ACCOUNT: Account = {
 
 interface VaultsContainerProps {
   activeChain?: Chain; // Make activeChain optional
-  defaultAccount?: Account; // Optional default account
+  defaultAccount?: UseUserResult; // Optional default account
 }
 
 const VaultsContainer: React.FC<VaultsContainerProps> = ({

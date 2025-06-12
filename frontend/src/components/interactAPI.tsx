@@ -14,7 +14,6 @@ import {
   getAssetsFromShares,
 } from "@/actions/actions";
 import MainActionButton from "@/components/button/MainActionButton";
-import { client } from "@/utils/client";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { isZetachain } from "@/utils/utils";
@@ -36,6 +35,10 @@ import {
 } from "@/utils/localStorageUtils";
 import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
+
+function isHex(value: string): value is `0x${string}` {
+  return typeof value === 'string' && value.startsWith('0x');
+}
 
 const handleDepositTransaction = async (
   vaultData: VaultData,
@@ -101,7 +104,7 @@ const handleDepositTransaction = async (
       CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
     updateLocalStorageObject(vaultData.id, {
       lastEventTxHash: `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`,
-      crosschainInvestHash: receipt.transactionHash,
+      crosschainInvestHash: receipt.transactionHash ?? "",
     });
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
@@ -110,7 +113,7 @@ const handleDepositTransaction = async (
       console.log("EVM transaction, waiting for receipt confirmation");
 
       const publicClient = getPublicClient(activeChain.id);
-      if (publicClient) {
+      if (publicClient && receipt.transactionHash && isHex(receipt.transactionHash)) {
         await publicClient.waitForTransactionReceipt({
           hash: receipt.transactionHash,
         });
@@ -200,6 +203,8 @@ const handleDepositTransaction = async (
   }
 };
 
+
+
 const handleWithdrawTransaction = async (
   vaultData: VaultData,
   inputBalance: Balance,
@@ -268,13 +273,13 @@ const handleWithdrawTransaction = async (
       CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
     updateLocalStorageObject(vaultData.id, {
       lastEventTxHash: `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`,
-      crosschainInvestHash: receipt.transactionHash,
+      crosschainInvestHash: receipt.transactionHash ?? "",
     });
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
     } else {
       const publicClient = getPublicClient(activeChain.id);
-      if (publicClient) {
+      if (publicClient && receipt?.transactionHash && isHex(receipt.transactionHash)) {
         await publicClient.waitForTransactionReceipt({
           hash: receipt.transactionHash,
         });
