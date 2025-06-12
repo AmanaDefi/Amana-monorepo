@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import MobileSidebar from "./MobileSidebarMenu";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppButton } from "./button/AppButton";
@@ -13,11 +13,10 @@ import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import { ethereumProvider } from "@/utils/providers";
-import Image from "next/image";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 import { formatBalance, formatTokenBalance } from "@/utils/utils";
 import ProfileIcon from "./svg/Profile";
-
+import ProfileDropdown from "./ProfileDropdown";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -52,6 +51,9 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const isConnected = !!walletAddress;
   const [isSolanaWalletModalOpen, setIsSolanaWalletModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   const [signer, setSigner] = useState<Signer | null>(null);
   console.log("active chain", activeChain);
@@ -122,8 +124,9 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
               </Button>
             ) : (
               <Button
+                ref={profileButtonRef}
                 variant="secondary"
-                onClick={() => {}}
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                 className="!py-4 !px-[31px] !h-[56px]"
               >
                 <div className="flex flex-row gap-2 leading-[18px] items-center">
@@ -149,22 +152,40 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                   Sign in
                 </Button>
               ) : (
-                <div className="flex flex-row gap-2 leading-[18px] items-center">
-                  <ProfileIcon width={18} height={18} />
-                  <div className="flex flex-col">
-                    <p>
-                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </p>
-                    {/* <p className="text-[#535E73]">
-                      {balance.formatted} {activeChain?.nativeCurrency?.symbol}
+                <Button
+                  ref={profileButtonRef}
+                  variant="secondary"
+                  onClick={() =>
+                    setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                  }
+                  className="!py-4 !px-[31px] !h-[56px]"
+                >
+                  <div className="flex flex-row gap-2 leading-[18px] items-center">
+                    <ProfileIcon width={18} height={18} />
+                    <div className="flex flex-col">
+                      <p className="text-[18px] text-white font-normal">
+                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                      </p>
+                      {/* <p className="text-[#535E73]">
+                      {Number(balance.formatted).toFixed(4)}{" "}
+                      {activeChain?.nativeCurrency?.symbol}
                     </p> */}
+                    </div>
                   </div>
-                </div>
+                </Button>
               )}
             </div>
           )}
         </div>
       </header>
+      <ProfileDropdown
+        isOpen={isProfileDropdownOpen}
+        onClose={() => setIsProfileDropdownOpen(false)}
+        triggerRef={profileButtonRef}
+        onDisconnect={() => {
+          setIsProfileDropdownOpen(false);
+        }}
+      />
 
       {isConnected && (
         <MobileSidebar
