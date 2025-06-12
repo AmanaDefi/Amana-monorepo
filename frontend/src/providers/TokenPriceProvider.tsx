@@ -1,3 +1,5 @@
+"use client"
+
 import React, {createContext, PropsWithChildren, useContext, useEffect, useState} from "react";
 import {fetchTokenPrices} from "@/utils/utils";
 import {PRICE_IDS} from "@/constants/chainConfig";

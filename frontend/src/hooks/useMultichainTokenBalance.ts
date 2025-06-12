@@ -37,7 +37,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       return;
     }
 
-    refetchNativeBalance();
+    // refetchNativeBalance(walletAddress);
     setIsLoading(true);
     setError(null);
 

@@ -1,11 +1,11 @@
 "use client";
 import React, {useEffect } from "react";
 import Link from "next/link";
-import { useActiveAccount } from "thirdweb/react";
+import {useUser} from "@account-kit/react";
 import { useRouter } from 'next/navigation';
 
 export default function FAQ() {
-  const account = useActiveAccount();
+  const account = useUser();
   const router = useRouter();
   useEffect(() => {
     if (!account) {

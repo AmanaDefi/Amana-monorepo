@@ -13,7 +13,7 @@ export const useSidebarActions = () => {
     qa: () => router.push("/qa"),
     logout: async () => {
       try {
-        await disconnectWallet();
+        disconnectWallet();
         router.push("/");
       } catch (error) {
         console.error("Error during logout:", error);

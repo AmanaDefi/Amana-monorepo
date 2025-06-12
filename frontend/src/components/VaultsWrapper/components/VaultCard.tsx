@@ -15,7 +15,8 @@ import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
-import { InfoBlock } from "./InfoBlock.tsx";
+import { useAuthStore } from "@/store/authStore";
+
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 
 const MOCK_DIGITS = 6.43;
@@ -31,6 +32,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
   ({ vault, vaultAPYs, vaultTotalAssets, userVaultBalances }, ref) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
+    const { openStep } = useAuthStore();
 
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
@@ -45,11 +47,24 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const is30dAPYUp = true;
     const isPredictionUp = false;
 
+    const handlePressButton = (
+      e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    ) => {
+      e.stopPropagation();
+      if (walletAddress) {
+        handleVaultClick(vault.id);
+      } else {
+        openStep("optionsA");
+      }
+    };
     return (
       <div
+        onClick={() => {
+          if (!walletAddress) return;
+          handleVaultClick(vault.id);
+        }}
         ref={ref}
         className="w-full min-w-[380px] h-full bg-[#14171F] p-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
-        onClick={() => handleVaultClick(vault.id)}
       >
         <div className="flex md:flex-row flex-col gap-1 justify-between">
           <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
@@ -176,19 +191,15 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
         <p className="font-normal text-xs leading-4 text-white mb-6">
           This vault auto-compounds Lenders Tokens on{" "}
-          <p className="flex flex-row gap-1">
+          <span className="flex flex-row gap-1">
             {vault.protocol.name} <InfoIcon />
-          </p>
+          </span>
         </p>
 
         <div className="flex gap-4">
-          <AppButton
-            isBlue
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/vaults/${vault.id}?tab=deposit`);
-            }}
-          >
+          <>
+          
+          <AppButton isBlue onClick={handlePressButton}>
             {!!walletAddress ? "Deposit" : "Invest"}
           </AppButton>
 
@@ -205,6 +216,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 Withdraw
               </AppButton>
             )}
+            </>
         </div>
       </div>
     );

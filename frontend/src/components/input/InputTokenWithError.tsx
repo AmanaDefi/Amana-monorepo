@@ -9,10 +9,7 @@ import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
 import TokenIcon from "@/components/common/TokenIcon";
 import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
-import { InformationCircleIcon } from "@heroicons/react/24/solid";
-import ResponsiveTooltip from "@/components/common/Tooltip";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { Chain } from "thirdweb";
 import { formatTokenBalance } from "@/utils/utils";
 import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
 import clsx from "clsx";
@@ -82,7 +79,7 @@ export default function InputTokenWithError({
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   // Function to handle token selection with chain switching
-  const handleTokenSelection = (token: Token, chain: Chain) => {
+  const handleTokenSelection = (token: Token) => {
     onSelectToken(token);
   };
 
@@ -157,7 +154,7 @@ export default function InputTokenWithError({
                 "$ " +
                 (selectedToken
                   ? formatCurrency(
-                      Number(props.value || 0) * selectedTokenPrice,
+                      Number(inputTokenbalance || 0) * selectedTokenPrice,
                     )
                   : "0.00")
               ) : loadingOutputToken ? (
@@ -175,8 +172,8 @@ export default function InputTokenWithError({
               <span className="text-white text-2xl">
                 {loadingOutputToken ? (
                   <PendingDots />
-                ) : props.value && Number(props.value) !== 0 ? (
-                  props.value
+                ) : inputTokenbalance && Number(inputTokenbalance) !== 0 ? (
+                  inputTokenbalance
                 ) : (
                   " "
                 )}

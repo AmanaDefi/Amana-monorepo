@@ -10,9 +10,35 @@ import BackedBy from "../shared/BackedBy";
 import EmailOptionsIcon from "@/components/svg/EmailOptionsIcon";
 import PasskeyOptionsIcon from "@/components/svg/PasskeyOptionsIcon";
 import GoogleOptionsIcon from "@/components/svg/GoogleOptionsButton";
+import { useAuthenticate } from "@account-kit/react";
 
 const OptionsModalB = () => {
-  const { step, closeAll, openStep } = useAuthStore();
+  const { step, closeAll, openStep, setError } = useAuthStore();
+
+  const { authenticate, isPending, error } = useAuthenticate();
+
+  const handleLogin = () => {
+    if (isPending) return;
+    authenticate(
+      {
+        type: "oauth",
+        authProviderId: "google",
+        isCustomProvider: false,
+        mode: "popup",
+      },
+      {
+        onSuccess: (result) => {
+          console.log(result);
+          console.log("Success google auth", result);
+          closeAll();
+        },
+        onError: (err) => {
+          console.error("Error google auth:", err);
+          setError(err.message);
+        },
+      },
+    );
+  };
 
   return (
     <Modal
@@ -45,15 +71,15 @@ const OptionsModalB = () => {
                 icon={<EmailOptionsIcon width={26} height={26} />}
                 onClick={() => openStep("signup")}
               />
-              <ModalButton
+              {/* <ModalButton
                 label="Passkey"
                 icon={<PasskeyOptionsIcon width={28} height={27} />}
                 onClick={() => {}}
-              />
+              /> */}
               <ModalButton
                 label="Google"
                 icon={<GoogleOptionsIcon width={27} height={28} />}
-                onClick={() => {}}
+                onClick={handleLogin}
               />
             </div>
           </div>

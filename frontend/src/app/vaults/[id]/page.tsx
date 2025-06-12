@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useActiveAccount } from "thirdweb/react";
+import {useUser} from "@account-kit/react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 
 function Index({}) {
-  const account = useActiveAccount();
+  const account = useUser();
   const { id } = useParams();
   const wallet = useWallet();
   const [vaultSymbol, setVaultSymbol] = useState<string | null>(null);

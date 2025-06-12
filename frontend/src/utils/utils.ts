@@ -1,4 +1,3 @@
-import { ParseEventLogsResult, Address, getContract, readContract, toTokens } from "thirdweb";
 import {
   TransactionResult,
   SmartVaultActionType,
@@ -7,26 +6,34 @@ import {
   Token,
   Action,
   UserSettings,
-  DEFAULT_SETTINGS
-} from "@/types/types"
+  DEFAULT_SETTINGS,
+} from "@/types/types";
 import { isApproved } from "@/utils/approve";
 import { ethers, Provider, ZeroAddress } from "ethers";
-import { APPROVED_TOKENS, CHAIN_ID, HERMES_URL, solanaRpcUrl } from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  CHAIN_ID,
+  HERMES_URL,
+  solanaRpcUrl,
+} from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { PublicKey } from "@solana/web3.js";
-import { client } from "./client";
-import { getBalance } from "thirdweb/extensions/erc20";
-import { keccak_256 } from 'js-sha3';
+import { keccak_256 } from "js-sha3";
 import SolanaConnectionSingleton from "./solanaSingleton";
+import { erc20Abi, formatEther, getContract, formatUnits } from "viem";
+import { getPublicClient, getWalletClient } from "./getPublicClient";;
 
-export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
+export const formatTotalAssets = (
+  totalAssets: string,
+  decimals: number,
+): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
   return value.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 };
 
@@ -36,28 +43,9 @@ export const formatUSDCBalance = (usdcBalance: string): string => {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 };
-
-export const getWalletAddressOnceCreated = (
-  eventLog: ParseEventLogsResult<any, boolean> | undefined,
-  transactionResult: TransactionResult | undefined,
-  prevTransaction: TransactionResult | null,
-  updatePrevTransaction: (transaction: TransactionResult | null) => void
-): string | null => {
-  if (transactionResult && transactionResult !== prevTransaction) {
-    updatePrevTransaction(transactionResult);
-    if (eventLog && eventLog.length > 0) {
-      const latestEvent = eventLog[eventLog.length - 1];
-      if (latestEvent && latestEvent.topics[1]) {
-        return formatAddress(latestEvent.topics[1]);
-      }
-    }
-  }
-  return null;
-};
-
 
 export function formatAddress(rawAddress: string): string {
   if (!rawAddress.startsWith("0x")) {
@@ -74,18 +62,16 @@ export const NumberFormatter = Intl.NumberFormat("en", {
   notation: "compact",
 });
 
-
 export function getVaultErrorMessage(
   value: string,
   inputValue: string | undefined,
-  steps: Action[]
+  steps: Action[],
 ): string {
-
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
-    return "Insufficient balance"
+    return "Insufficient balance";
   } else {
-    return ""
+    return "";
   }
 }
 
@@ -101,10 +87,15 @@ export function formatCurrency(amount: number): string {
   if (amount == 0) {
     return "0.00";
   }
-  const [integerPart, decimalPart] = Number(amount.toFixed(2)).toString().split('.');
+  const [integerPart, decimalPart] = Number(amount.toFixed(2))
+    .toString()
+    .split(".");
 
   // Use a regular expression to add commas to the integer part
-  const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const formattedIntegerPart = integerPart.replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    ",",
+  );
   if (decimalPart == undefined) {
     return `${formattedIntegerPart}`;
   }
@@ -113,7 +104,6 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatBalance(balance: number) {
-
   if (Number.isNaN(balance)) {
     return "0";
   }
@@ -129,19 +119,21 @@ export const selectActions = async (
   activeChain: any,
   walletAddress: string,
   inputBalance: Balance,
-  inputToken: Token
+  inputToken: Token,
 ) => {
-
   const isNativeToken = inputToken?.address === ZeroAddress;
-  const value = Number(inputBalance.value)
+  const value = Number(inputBalance.value);
   const chainID = vaultData.protocol.chainId;
-  const allowanceResult = activeChain?.id == CHAIN_ID.solana ? true : await isApproved({
-    token: inputToken?.address as Address,
-    activeChain: activeChain,
-    activeAccount: walletAddress as Address,
-    spender: vaultData.id as Address,
-    amount: value
-  });
+  const allowanceResult =
+    activeChain?.id == CHAIN_ID.solana
+      ? true
+      : await isApproved({
+          token: inputToken?.address,
+          activeChain: activeChain,
+          activeAccount: walletAddress,
+          spender: vaultData.id,
+          amount: value,
+        });
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 7001 && chainID != 7000) {
@@ -154,10 +146,9 @@ export const selectActions = async (
               Action.FundsReturnedError,
               Action.FundsInvest,
               Action.InvestConfirmFailed,
-              Action.deposited
-            ]
-          }
-          else if (allowanceResult) {
+              Action.deposited,
+            ];
+          } else if (allowanceResult) {
             return [
               Action.deposit,
               Action.crosschainInvest,
@@ -165,10 +156,9 @@ export const selectActions = async (
               Action.FundsReturnedError,
               Action.FundsInvest,
               Action.InvestConfirmFailed,
-              Action.deposited
-            ]
-          }
-          else {
+              Action.deposited,
+            ];
+          } else {
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
@@ -178,8 +168,8 @@ export const selectActions = async (
               Action.FundsReturnedError,
               Action.FundsInvest,
               Action.InvestConfirmFailed,
-              Action.deposited
-            ]
+              Action.deposited,
+            ];
           }
         } else {
           if (isNativeToken) {
@@ -192,10 +182,9 @@ export const selectActions = async (
               Action.FundsReturnedError,
               Action.FundsInvest,
               Action.InvestConfirmFailed,
-              Action.deposited
-            ]
-          }
-          else if (allowanceResult) {
+              Action.deposited,
+            ];
+          } else if (allowanceResult) {
             return [
               Action.deposit,
               Action.depositConfirmed,
@@ -205,10 +194,9 @@ export const selectActions = async (
               Action.FundsReturnedError,
               Action.FundsInvest,
               Action.InvestConfirmFailed,
-              Action.deposited
-            ]
-          }
-          else {
+              Action.deposited,
+            ];
+          } else {
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
@@ -220,60 +208,48 @@ export const selectActions = async (
               Action.FundsReturnedError,
               Action.FundsInvest,
               Action.InvestConfirmFailed,
-              Action.deposited
-            ]
+              Action.deposited,
+            ];
           }
         }
-      }
-      else {
+      } else {
         if (activeChain.id == 7001 || activeChain.id == 7000) {
           if (isNativeToken) {
-            return [
-              Action.deposit,
-              Action.deposited
-            ]
-          }
-          else if (allowanceResult) {
-            return [
-              Action.deposit,
-              Action.deposited
-            ]
-          }
-          else {
+            return [Action.deposit, Action.deposited];
+          } else if (allowanceResult) {
+            return [Action.deposit, Action.deposited];
+          } else {
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
               Action.deposit,
-              Action.deposited
-            ]
+              Action.deposited,
+            ];
           }
-        }
-        else {
+        } else {
           if (isNativeToken) {
             return [
               Action.deposit,
               Action.depositConfirmed,
               Action.CrossChainDepositFailed,
-              Action.deposited
-            ]
-          }
-          else if (allowanceResult) {
+              Action.deposited,
+            ];
+          } else if (allowanceResult) {
             return [
               Action.deposit,
               Action.depositConfirmed,
               Action.CrossChainDepositFailed,
-              Action.deposited
-            ]
-          }
-          else {
+              Action.deposited,
+            ];
+          } else {
             return [
               Action.depositApprove,
               Action.depositApproveConfirmed,
               Action.deposit,
               Action.depositConfirmed,
               Action.CrossChainDepositFailed,
-              Action.deposited
-            ]
+              Action.deposited,
+            ];
           }
         }
       }
@@ -288,8 +264,8 @@ export const selectActions = async (
             Action.ReturnFundsFromStrategyFailed,
             Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
-            Action.withdrew
-          ]
+            Action.withdrew,
+          ];
         } else {
           return [
             Action.withdraw,
@@ -301,174 +277,209 @@ export const selectActions = async (
             Action.ReturnFundsFromStrategyFailed,
             Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
-            Action.withdrew
-          ]
+            Action.withdrew,
+          ];
         }
-      }
-      else {
+      } else {
         if (activeChain.id == 7001 || activeChain.id == 7000) {
-          return [
-            Action.withdraw,
-            Action.withdrew
-          ]
-        }
-        else {
+          return [Action.withdraw, Action.withdrew];
+        } else {
           return [
             Action.withdraw,
             Action.withdrawconfirmed,
             Action.CrossChainWithdrawFailed,
             Action.ReturnFundsToUserSent,
             Action.ReturnFundsToUserFailed,
-            Action.withdrew
-          ]
+            Action.withdrew,
+          ];
         }
       }
   }
-}
+};
 
-export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
+export function determineVaultTokenFromApprovedTokens(
+  chainId: number,
+  vaultToken: Token,
+): Token | undefined {
   const approvedTokens = APPROVED_TOKENS[chainId];
   if (!approvedTokens?.length) return undefined;
-  
+
   // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
-  const vaultTokenSymbol = vaultToken.symbol.split('.')[0].split(' ')[0];
-  
+  const vaultTokenSymbol = vaultToken.symbol.split(".")[0].split(" ")[0];
+
   // Check if vault token is a native token (ETH, BNB, etc.)
-  const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
-  
+  const isNativeVaultToken = [
+    "ETH",
+    "BNB",
+    "MATIC",
+    "AVAX",
+    "FTM",
+    "ONE",
+    "CRO",
+    "SOL",
+    "GLMR",
+  ].includes(vaultTokenSymbol.toUpperCase());
+
   // Check if vault token is a stablecoin
-  const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
-  
-  
+  const isStablecoin = [
+    "USDT",
+    "USDC",
+    "DAI",
+    "BUSD",
+    "TUSD",
+    "USDP",
+    "FRAX",
+    "LUSD",
+  ].includes(vaultTokenSymbol.toUpperCase());
+
   // Map of chain IDs to their symbol suffixes
   const chainIdToSuffix: Record<number, string> = {
-    1: "ETH",   // Ethereum
+    1: "ETH", // Ethereum
     8453: "BASE", // Base
-    137: "POL",   // Polygon
-    42161: "ARB",  // Arbitrum
+    137: "POL", // Polygon
+    42161: "ARB", // Arbitrum
     43114: "AVAX", // Avalanche
-    56: "BSC"     // BNB Chain
+    56: "BSC", // BNB Chain
   };
 
   // Get current chain suffix
   const currentChainSuffix = chainIdToSuffix[chainId] || "";
-  
+
   // If on ZetaChain and dealing with a stablecoin, look for chain-specific tokens first
   if ((chainId === 7000 || chainId === 7001) && isStablecoin) {
     // Look for tokens with this base symbol that have chain suffixes
-    const chainSpecificTokens = approvedTokens.filter(token => {
-      const tokenParts = token.symbol.split('.');
+    const chainSpecificTokens = approvedTokens.filter((token) => {
+      const tokenParts = token.symbol.split(".");
       if (tokenParts.length === 2) {
         const tokenBaseSymbol = tokenParts[0];
         return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
       }
       return false;
     });
-    
+
     if (chainSpecificTokens.length > 0) {
       // Extract the vault token's chain suffix if it has one
-      const vaultTokenParts = vaultToken.symbol.split('.');
-      const vaultTokenSuffix = vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
-      
+      const vaultTokenParts = vaultToken.symbol.split(".");
+      const vaultTokenSuffix =
+        vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
+
       // PRIORITY:
       // 1. Connected chain's tokens (if on a specific chain)
       // 2. The vault's original token suffix (if it has one)
       // 3. For other tokens, use alphabetical order
-      
+
       const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
-        const aSuffix = a.symbol.split('.')[1] || '';
-        const bSuffix = b.symbol.split('.')[1] || '';
-        
+        const aSuffix = a.symbol.split(".")[1] || "";
+        const bSuffix = b.symbol.split(".")[1] || "";
+
         // If one token matches the current chain, it wins
-        if (aSuffix === currentChainSuffix && bSuffix !== currentChainSuffix) return -1;
-        if (bSuffix === currentChainSuffix && aSuffix !== currentChainSuffix) return 1;
-        
+        if (aSuffix === currentChainSuffix && bSuffix !== currentChainSuffix)
+          return -1;
+        if (bSuffix === currentChainSuffix && aSuffix !== currentChainSuffix)
+          return 1;
+
         // If one token matches the vault token's original suffix, it comes next
         if (vaultTokenSuffix) {
-          if (aSuffix === vaultTokenSuffix && bSuffix !== vaultTokenSuffix) return -1;
-          if (bSuffix === vaultTokenSuffix && aSuffix !== vaultTokenSuffix) return 1;
+          if (aSuffix === vaultTokenSuffix && bSuffix !== vaultTokenSuffix)
+            return -1;
+          if (bSuffix === vaultTokenSuffix && aSuffix !== vaultTokenSuffix)
+            return 1;
         }
-        
+
         // Otherwise, alphabetical order
         return aSuffix.localeCompare(bSuffix);
       });
-      
+
       return sortedTokens[0];
     }
   }
-  
+
   // For non-ZetaChain and non-stablecoin cases, proceed with original logic
   // PRIORITY 1: First try to find token with matching chain suffix
   if (currentChainSuffix && isStablecoin) {
-    const chainSuffixMatch = approvedTokens.find(token => {
-      const tokenParts = token.symbol.split('.');
+    const chainSuffixMatch = approvedTokens.find((token) => {
+      const tokenParts = token.symbol.split(".");
       if (tokenParts.length === 2) {
         const tokenBaseSymbol = tokenParts[0];
         const tokenSuffix = tokenParts[1];
-        return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase() && 
-               tokenSuffix === currentChainSuffix;
+        return (
+          tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase() &&
+          tokenSuffix === currentChainSuffix
+        );
       }
       return false;
     });
-    
+
     if (chainSuffixMatch) {
       return chainSuffixMatch;
     }
   }
-  
+
   // PRIORITY 2: Look for exact symbol match (non-native tokens prioritized for stablecoins)
-  const exactMatches = approvedTokens.filter(token => {
-    const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+  const exactMatches = approvedTokens.filter((token) => {
+    const tokenBaseSymbol = token.symbol.split(" ")[0].split(".")[0];
     return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
   });
-  
+
   if (exactMatches.length > 0) {
     // For stablecoin vaults, prioritize non-native tokens
     if (isStablecoin) {
-      const nonNativeMatch = exactMatches.find(token => 
-        token.address !== "0x0000000000000000000000000000000000000000" &&
-        token.address !== "11111111111111111111111111111111" // Solana native
+      const nonNativeMatch = exactMatches.find(
+        (token) =>
+          token.address !== "0x0000000000000000000000000000000000000000" &&
+          token.address !== "11111111111111111111111111111111", // Solana native
       );
-      
+
       if (nonNativeMatch) {
         return nonNativeMatch;
       }
     }
-    
+
     return exactMatches[0];
   }
-  
+
   // PRIORITY 3: For stablecoin vaults, try to find any stablecoin
   if (isStablecoin) {
-    const stablecoinMatch = approvedTokens.find(token => {
-      const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
-      return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(tokenBaseSymbol.toUpperCase());
+    const stablecoinMatch = approvedTokens.find((token) => {
+      const tokenBaseSymbol = token.symbol.split(" ")[0].split(".")[0];
+      return [
+        "USDT",
+        "USDC",
+        "DAI",
+        "BUSD",
+        "TUSD",
+        "USDP",
+        "FRAX",
+        "LUSD",
+      ].includes(tokenBaseSymbol.toUpperCase());
     });
-    
+
     if (stablecoinMatch) {
       return stablecoinMatch;
     }
   }
-  
+
   // PRIORITY 4: For native token vaults, prioritize native token
   if (isNativeVaultToken) {
-    const nativeToken = approvedTokens.find(token => 
-      token.address === "0x0000000000000000000000000000000000000000" ||
-      token.address === "11111111111111111111111111111111" // Solana native
+    const nativeToken = approvedTokens.find(
+      (token) =>
+        token.address === "0x0000000000000000000000000000000000000000" ||
+        token.address === "11111111111111111111111111111111", // Solana native
     );
-    
+
     if (nativeToken) {
       return nativeToken;
     }
   }
-  
+
   // PRIORITY 5: Default to first approved token if nothing else matched
   return approvedTokens[0];
 }
 
-export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
+export const isZetachain = (chainId: number) =>
+  chainId === 7000 || chainId === 7001;
 
-export const getOnlyTokenSymbol = (symbol: string) => symbol.split('.')[0];
+export const getOnlyTokenSymbol = (symbol: string) => symbol.split(".")[0];
 
 export async function fetchTokenPrices(priceIds: string[]): Promise<{
   [priceId: string]: number;
@@ -513,8 +524,6 @@ export function getStoredSettings(): UserSettings {
   }
 }
 
-
-
 export function getCurrentSlippage(): number {
   const settings = getStoredSettings();
   return settings.slippage.value;
@@ -541,14 +550,22 @@ export function isSolanaAddress(address: any): boolean {
 }
 
 // Updated the getERC20TokenBalance function
-export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: string, chain: any) => {
+export const getERC20TokenBalance = async (
+  walletAddress: string,
+  tokenAddress: string,
+  chain: any,
+) => {
   try {
     // Skip call for invalid inputs
     if (!walletAddress || !tokenAddress || !chain) {
-      console.warn("Missing parameters for getERC20TokenBalance:", { walletAddress, tokenAddress, chain });
+      console.warn("Missing parameters for getERC20TokenBalance:", {
+        walletAddress,
+        tokenAddress,
+        chain,
+      });
       return {
         balance: 0n,
-        decimals: 18
+        decimals: 18,
       };
     }
 
@@ -556,7 +573,7 @@ export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: 
     if (tokenAddress === "0x0000000000000000000000000000000000000000") {
       return {
         balance: 0n,
-        decimals: 18
+        decimals: 18,
       };
     }
 
@@ -565,88 +582,112 @@ export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: 
       console.warn("Invalid chain object:", chain);
       return {
         balance: 0n,
-        decimals: 18
+        decimals: 18,
       };
     }
 
     // Verify if the token exists in APPROVED_TOKENS for this chain
-    if (!APPROVED_TOKENS[chain.id]?.some(token => token.address.toLowerCase() === tokenAddress.toLowerCase())) {
-      console.warn(`Token ${tokenAddress} is not in the approved list for chain ${chain.id}`);
+    if (
+      !APPROVED_TOKENS[chain.id]?.some(
+        (token) => token.address.toLowerCase() === tokenAddress.toLowerCase(),
+      )
+    ) {
+      console.warn(
+        `Token ${tokenAddress} is not in the approved list for chain ${chain.id}`,
+      );
       return {
         balance: 0n,
-        decimals: 18
+        decimals: 18,
       };
     }
 
-    // Create the contract instance
+    const publicClient = getPublicClient(chain.id);
+    const walletClient = getWalletClient(chain.id);
+    if (!publicClient || !walletClient)
+      return {
+        balance: 0n,
+        decimals: 18,
+      };
+
     const contract = getContract({
-      client,
-      chain: chain,
-      address: tokenAddress as Address
+      client: { public: publicClient, wallet: walletClient },
+      address: tokenAddress,
+      abi: erc20Abi,
     });
-    
+
     try {
       // Get token decimals first to avoid potential read issues
-      let decimals;
+      let decimals = 18;
       try {
-        decimals = await readContract({
-          contract,
-          method: "function decimals() view returns (uint8)",
-        });
+        decimals = await contract.read.decimals();
       } catch (error) {
-        console.warn("Failed to read token decimals, using default of 18:", error);
+        console.warn(
+          "Failed to read token decimals, using default of 18:",
+          error,
+        );
         decimals = 18;
       }
 
       // Now get the balance
-      const { value } = await getBalance({
-        contract,
-        address: walletAddress as Address,
-      });
+      const balance = await contract.read.balanceOf([walletAddress]);
 
       return {
-        balance: value,
-        decimals
+        balance: balance,
+        decimals,
       };
     } catch (error) {
       console.error("Error fetching token balance:", error);
-      
+
       // Special handling for "AbiDecodingZeroDataError"
       if (error instanceof Error) {
         if (error.name === "AbiDecodingZeroDataError") {
-          console.warn(`Zero data returned from contract ${tokenAddress} on chain ${chain.id}. Contract may not exist at this address on this chain.`);
-        } else if (error.message.includes("execution reverted") || error.message.includes("call revert exception")) {
-          console.warn(`Contract call reverted for token ${tokenAddress} on chain ${chain.id}`);
+          console.warn(
+            `Zero data returned from contract ${tokenAddress} on chain ${chain.id}. Contract may not exist at this address on this chain.`,
+          );
+        } else if (
+          error.message.includes("execution reverted") ||
+          error.message.includes("call revert exception")
+        ) {
+          console.warn(
+            `Contract call reverted for token ${tokenAddress} on chain ${chain.id}`,
+          );
         }
       }
-      
+
       // Return a default value when balance fetching fails
       return {
         balance: 0n,
-        decimals: 18
+        decimals: 18,
       };
     }
   } catch (error) {
     console.error("Error initializing contract:", error);
     return {
       balance: 0n,
-      decimals: 18
+      decimals: 18,
     };
   }
 };
 
-export async function getSplTokenBalance(walletAddress: string, tokenMint: string) {
+export async function getSplTokenBalance(
+  walletAddress: string,
+  tokenMint: string,
+) {
   const publicKey = new PublicKey(walletAddress);
   const mintAddress = new PublicKey(tokenMint);
 
   // Fetch all SPL token accounts owned by the wallet
-  const tokenAccounts = await solanaConnection.getParsedTokenAccountsByOwner(publicKey, {
-    programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), // SPL Token Program
-  });
+  const tokenAccounts = await solanaConnection.getParsedTokenAccountsByOwner(
+    publicKey,
+    {
+      programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), // SPL Token Program
+    },
+  );
 
   // Find the token account that matches the specified token mint
   const tokenAccount = tokenAccounts.value.find(
-    (account) => account.account.data.parsed.info.mint === mintAddress.toBase58()
+    (account) =>
+      account.account.data.parsed.info.mint === mintAddress.toBase58(),
   );
 
   if (!tokenAccount) {
@@ -660,8 +701,8 @@ export async function getSplTokenBalance(walletAddress: string, tokenMint: strin
   };
 }
 
-export function shortAddressForm(address: Address) {
-  return address.slice(0, 6) + '...' + address.slice(-4);
+export function shortAddressForm(address: string) {
+  return address.slice(0, 6) + "..." + address.slice(-4);
 }
 
 export function getSolanaEVMAddress(solanaPublicKey: string) {
@@ -675,15 +716,15 @@ export function getSolanaEVMAddress(solanaPublicKey: string) {
   const hash = keccak_256(pubKeyBuffer);
 
   // Take the last 20 bytes (40 characters in hex) and add 0x prefix
-  const evmAddress = '0x' + hash.substring(hash.length - 40);
+  const evmAddress = "0x" + hash.substring(hash.length - 40);
 
   return evmAddress;
 }
 
 export function format(value: bigint, decimals: number) {
-  if (!value || value == 0n) return "0"
+  if (!value || value == 0n) return "0";
 
-  const str = Number(toTokens(value, decimals)).toFixed(6);
+  const str = Number(formatUnits(value, decimals)).toFixed(6);
   return Number(str).toString();
 }
 
@@ -692,54 +733,60 @@ export function formatNumberWithSuffix(num: number): string {
   if (num === null || num === undefined || isNaN(num)) {
     return "0";
   }
-  
+
   if (num < 1000) {
     return num.toFixed(2);
   }
-  
+
   const absNum = Math.abs(num);
-  
+
   if (absNum >= 1000000000) {
-    return (num / 1000000000).toFixed(2) + 'B';
+    return (num / 1000000000).toFixed(2) + "B";
   }
-  
+
   if (absNum >= 1000000) {
-    return (num / 1000000).toFixed(2) + 'M';
+    return (num / 1000000).toFixed(2) + "M";
   }
-  
+
   if (absNum >= 1000) {
-    return (num / 1000).toFixed(2) + 'K';
+    return (num / 1000).toFixed(2) + "K";
   }
-  
+
   return num.toFixed(2);
 }
 
-// Add the formatTokenBalance function 
-export const formatTokenBalance = (balance: string | number, symbol: string): string => {
+// Add the formatTokenBalance function
+export const formatTokenBalance = (
+  balance: string | number,
+  symbol: string,
+): string => {
   const num = Number(balance);
   // Check if token is a stablecoin
-  const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') || 
-                     symbol?.includes('USDT') || symbol?.includes('USDC') ||
-                     symbol?.includes('BUSD');
+  const isStablecoin =
+    symbol?.includes("USD") ||
+    symbol?.includes("DAI") ||
+    symbol?.includes("USDT") ||
+    symbol?.includes("USDC") ||
+    symbol?.includes("BUSD");
   // Format with 2 decimal places for stablecoins, 4 for others
   const decimals = isStablecoin ? 2 : 4;
   return num.toFixed(decimals);
 };
 
 export function bigIntReplacer(key: string, value: any) {
-  if (typeof value === 'bigint') {
-    return value.toString(); 
+  if (typeof value === "bigint") {
+    return value.toString();
   }
   return value;
 }
 
 export function bigIntReviver(key: string, value: any) {
-  if (key === 'value') {
-      try {
-        return BigInt(value);
-      } catch (e) {
-        return value;
-      }
+  if (key === "value") {
+    try {
+      return BigInt(value);
+    } catch (e) {
+      return value;
+    }
   }
   return value;
 }

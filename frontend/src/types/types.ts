@@ -210,7 +210,6 @@ export enum Tabs {
 
 export interface ITxLocalStorage {
   tab: Tabs;
-  activeChain: Chain;
 
   action: Action;
   step: number;

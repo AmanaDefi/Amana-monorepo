@@ -12,8 +12,7 @@ import {
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { parseUnits } from "viem";
-import { Address, Chain, getContract, readContract } from "thirdweb";
-import { client } from "@/utils/client";
+import { Chain } from "viem";
 import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
@@ -29,7 +28,6 @@ import {
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import { ArrowDownCircleIcon } from "@heroicons/react/24/outline";
 import {
   getAmountOutFromSwap,
   getAssetsFromShares,
@@ -38,7 +36,6 @@ import {
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
@@ -52,6 +49,9 @@ import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import ErrorInputIcon from "./svg/ErrorInputIcon";
 import Button from "./Button";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
+import { getContractCustom } from "@/utils/getContractCustom";
+import { getPublicClient } from "@/utils/getPublicClient";
+import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -130,15 +130,19 @@ export default function VaultInputs({
 
   // Update isDeposit when URL tab parameter changes
   useEffect(() => {
-    const TxInfo = getLocalStorageObject(vaultData.id);
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
     const shouldBeDeposit = tabParam !== "withdraw";
-
-    if (isTxInProgress && TxInfo?.tab) {
-      setIsDeposit(TxInfo.tab === Tabs.DEPOSIT);
+    if (vaultData?.id) {
+      const TxInfo = getLocalStorageObject(vaultData.id);
+      const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+      if (isTxInProgress && TxInfo?.tab) {
+        setIsDeposit(TxInfo.tab === Tabs.DEPOSIT);
+      } else {
+        setIsDeposit(shouldBeDeposit);
+      }
     } else {
       setIsDeposit(shouldBeDeposit);
     }
+
     // Only update if the state is different from what it should be
   }, [tabParam, searchParams, vaultData.id]);
 
@@ -160,31 +164,38 @@ export default function VaultInputs({
 
   useEffect(() => {
     async function handlePerformanceFee() {
-      const perfFee = await getPerformanceFee(vaultData.id as Address);
+      const perfFee = await getPerformanceFee(
+        vaultData.id,
+        SUPPORTED_CHAINS[0].chain.id,
+      );
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
       setPerformanceFee(percentagePerformanceFee);
     }
-    handlePerformanceFee();
+    if (vaultData) {
+      handlePerformanceFee();
+    }
   }, [vaultData]);
 
   useEffect(() => {
-    const TxInfo = getLocalStorageObject(vaultData.id);
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
-    if (isTxInProgress) {
-      if (TxInfo?.steps) {
-        setSteps(TxInfo?.steps);
-      }
-      if (TxInfo?.step) {
-        setStep(TxInfo?.step);
-      }
-      if (TxInfo?.action) {
-        setAction(TxInfo?.action);
-      }
-      if (TxInfo?.inputBal) {
-        setInputBalance(JSON.parse(TxInfo?.inputBal, bigIntReviver));
-        setDisplayValue(
-          JSON.parse(TxInfo?.inputBal, bigIntReviver)?.formatted ?? "",
-        );
+    if (vaultData?.id) {
+      const TxInfo = getLocalStorageObject(vaultData.id);
+      const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+      if (isTxInProgress) {
+        if (TxInfo?.steps) {
+          setSteps(TxInfo?.steps);
+        }
+        if (TxInfo?.step) {
+          setStep(TxInfo?.step);
+        }
+        if (TxInfo?.action) {
+          setAction(TxInfo?.action);
+        }
+        if (TxInfo?.inputBal) {
+          setInputBalance(JSON.parse(TxInfo?.inputBal, bigIntReviver));
+          setDisplayValue(
+            JSON.parse(TxInfo?.inputBal, bigIntReviver)?.formatted ?? "",
+          );
+        }
       }
     }
   }, [vaultData.id]);
@@ -219,7 +230,7 @@ export default function VaultInputs({
     return {
       symbol: vaultData.symbol,
       decimals: vaultData.inputToken.decimals,
-      address: vaultData.id as Address,
+      address: vaultData.id,
       imgURL: "",
       price: 1,
       balance: EMPTY_BALANCE,
@@ -229,24 +240,35 @@ export default function VaultInputs({
 
   // Set input token by filtering approved tokens based on user connected chain
   useEffect(() => {
-    const vaultInfo = getLocalStorageObject(vaultData.id);
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
-
-    if (isTxInProgress && vaultInfo?.selectedToken) {
-      setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
-    } else if (selectedToken) {
-      setInputToken(selectedToken);
-    } else if (activeChain?.id === 7001 || activeChain?.id === 7000) {
-      // If on ZetaChain testnet, set inputToken to the vault token
-      setInputToken(vaultData.inputToken);
+    const setToken = () => {
+      if (selectedToken) {
+        setInputToken(selectedToken);
+      } else if (
+        (activeChain?.id === 7001 || activeChain?.id === 7000) &&
+        vaultData?.inputToken
+      ) {
+        // If on ZetaChain testnet, set inputToken to the vault token
+        setInputToken(vaultData.inputToken);
+      } else if (vaultData?.inputToken) {
+        // On other chains, use APPROVED_TOKENS to set available tokens
+        setInputToken(
+          determineVaultTokenFromApprovedTokens(
+            activeChain?.id as number,
+            vaultData.inputToken,
+          ),
+        ); // Set to the first approved token as a default
+      }
+    };
+    if (vaultData?.id) {
+      const vaultInfo = getLocalStorageObject(vaultData.id);
+      const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
+      if (isTxInProgress && vaultInfo?.selectedToken) {
+        setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+      } else {
+        setToken();
+      }
     } else {
-      // On other chains, use APPROVED_TOKENS to set available tokens
-      setInputToken(
-        determineVaultTokenFromApprovedTokens(
-          activeChain?.id as number,
-          vaultData.inputToken,
-        ),
-      ); // Set to the first approved token as a default
+      setToken();
     }
 
     setAllowInput(true);
@@ -317,7 +339,7 @@ export default function VaultInputs({
     action,
     vaultTotalAssetinToken,
     steps,
-    tokenBalance.value
+    tokenBalance.value,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -415,7 +437,6 @@ export default function VaultInputs({
         updateLocalStorageObject(vaultData.id, {
           steps: steps,
           selectedToken: JSON.stringify(inputToken, bigIntReplacer),
-          activeChain: activeChain,
         });
       };
       fetchSteps();
@@ -503,6 +524,7 @@ export default function VaultInputs({
       if (decimals?.length > decimalsNumber) {
         inputAmt = `${integers}.${decimals.slice(0, decimalsNumber)}`;
       }
+      console.log(inputAmt, isNaN(Number(inputAmt)));
 
       if (isNaN(Number(inputAmt))) {
         return;
@@ -534,7 +556,6 @@ export default function VaultInputs({
   );
 
   const handleMaxClick = useCallback(() => {
-    // localStorage.removeItem(vaultData.id)
     const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
 
     if (!inputToken || isTxInProgress) return;
@@ -601,6 +622,7 @@ export default function VaultInputs({
       const assetsAmount = await getAssetsFromShares(
         inputAmountValue,
         vaultData,
+        activeChain?.id ?? SUPPORTED_CHAINS[0].chain.id,
       );
       /*console.log("Double Box - Assets from shares:", {
         assetsAmount: assetsAmount.toString(),
@@ -620,7 +642,7 @@ export default function VaultInputs({
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
-          vaultData.id as Address,
+          vaultData.id,
         );
       }
       /*console.log("Double Box - Conversion amounts:", {
@@ -700,7 +722,7 @@ export default function VaultInputs({
           inputAmountValue,
           actualInputToken,
           vaultData.inputToken,
-          vaultData.id as Address,
+          vaultData.id,
         );
       }
 
@@ -715,29 +737,51 @@ export default function VaultInputs({
       let gasFeeInETH = "0";
       let netDepositToVaultUSD = "0";
       if (!vaultData.depositFeePaidFromGasTank) {
-        const vaultContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.id as Address,
+        const publicClient = getPublicClient(activeChain?.id ?? 7000);
+        if (!publicClient) return;
+        const vaultAbi = [
+          {
+            type: "function",
+            name: "gasLimitForWithdrawAndCall",
+            stateMutability: "view",
+            inputs: [],
+            outputs: [
+              {
+                name: "",
+                type: "uint256",
+                internalType: "uint256",
+              },
+            ],
+          },
+        ] as const;
+
+        const tokenContractAbi = [
+          {
+            type: "function",
+            name: "withdrawGasFeeWithGasLimit",
+            stateMutability: "view",
+            inputs: [{ name: "gasLimit", type: "uint256" }], // Даємо параметру ім'я для читабельності
+            outputs: [
+              { name: "tokenAddress", type: "address" },
+              { name: "gasFee", type: "uint256" },
+            ],
+          },
+        ] as const;
+
+        const gasLimitForWithdrawAndCall = await publicClient.readContract({
+          address: vaultData.id,
+          abi: vaultAbi,
+          functionName: "gasLimitForWithdrawAndCall",
         });
-        const gasLimitForWithdrawAndCall = await readContract({
-          contract: vaultContract,
-          method:
-            "function gasLimitForWithdrawAndCall() view returns (uint256)",
+
+        const result = await publicClient.readContract({
+          address: vaultData.inputToken.address,
+          abi: tokenContractAbi,
+          functionName: "withdrawGasFeeWithGasLimit",
+          args: [gasLimitForWithdrawAndCall],
         });
-        const tokenContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.inputToken.address as Address,
-        });
-        const result = await readContract({
-          contract: tokenContract,
-          method:
-            "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
-          params: [gasLimitForWithdrawAndCall],
-        });
-        const gasZRC20 = result[0] as Address;
-        const gasFee = result[1] as bigint;
+        const gasZRC20 = result[0];
+        const gasFee = result[1];
         // 3. If vault token and gas token match, subtract directly
         gasFeeInVaultAsset = gasFee;
 
@@ -747,7 +791,7 @@ export default function VaultInputs({
             gasFee,
             ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
             vaultData.inputToken,
-            vaultData.id as Address,
+            vaultData.id,
           );
         }
         // Format gas fee in USD and ETH
@@ -1260,7 +1304,11 @@ export default function VaultInputs({
           </span>
         </div>
       </div>
-      <Button variant="special" disabled={isButtonDisabled} className="w-full mt-[47px]">
+      <Button
+        variant="special"
+        disabled={isButtonDisabled}
+        className="w-full mt-[47px]"
+      >
         {!walletAddress ? "Connect Wallet" : isDeposit ? "Invest" : "Withdraw"}
       </Button>
 

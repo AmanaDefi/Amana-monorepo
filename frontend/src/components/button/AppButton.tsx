@@ -6,11 +6,13 @@ export const AppButton = ({
   onClick,
   isBlue,
   disabled,
+  isIconOnly
 }: {
   children: ReactNode;
   onClick: (e: MouseEvent<HTMLButtonElement>) => void;
   isBlue?: boolean;
   disabled?: boolean;
+  isIconOnly?: boolean
 }) => {
   return (
     <button
@@ -22,7 +24,10 @@ export const AppButton = ({
             isBlue,
         },
         {
-          "px-2": typeof children === 'number'
+          "px-2": typeof children === "number",
+        },
+        {
+          "!p-0 !w-[56px] !h-[56px] flex items-center justify-center" : isIconOnly
         }
       )}
       onClick={onClick}
