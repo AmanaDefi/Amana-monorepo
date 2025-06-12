@@ -35,9 +35,10 @@ import {
 } from "@/utils/localStorageUtils";
 import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
+import Button from "./Button";
 
 function isHex(value: string): value is `0x${string}` {
-  return typeof value === 'string' && value.startsWith('0x');
+  return typeof value === "string" && value.startsWith("0x");
 }
 
 const handleDepositTransaction = async (
@@ -113,7 +114,11 @@ const handleDepositTransaction = async (
       console.log("EVM transaction, waiting for receipt confirmation");
 
       const publicClient = getPublicClient(activeChain.id);
-      if (publicClient && receipt.transactionHash && isHex(receipt.transactionHash)) {
+      if (
+        publicClient &&
+        receipt.transactionHash &&
+        isHex(receipt.transactionHash)
+      ) {
         await publicClient.waitForTransactionReceipt({
           hash: receipt.transactionHash,
         });
@@ -203,8 +208,6 @@ const handleDepositTransaction = async (
   }
 };
 
-
-
 const handleWithdrawTransaction = async (
   vaultData: VaultData,
   inputBalance: Balance,
@@ -279,7 +282,11 @@ const handleWithdrawTransaction = async (
       // Solana handling
     } else {
       const publicClient = getPublicClient(activeChain.id);
-      if (publicClient && receipt?.transactionHash && isHex(receipt.transactionHash)) {
+      if (
+        publicClient &&
+        receipt?.transactionHash &&
+        isHex(receipt.transactionHash)
+      ) {
         await publicClient.waitForTransactionReceipt({
           hash: receipt.transactionHash,
         });
@@ -367,7 +374,7 @@ export default function InteractionContainer({
   isDeposit: boolean;
   refreshBalance: Function;
 }): JSX.Element {
-  const [label, setLabel] = useState("");
+  const [label, setLabel] = useState("Invest");
 
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
@@ -420,7 +427,7 @@ export default function InteractionContainer({
         setLabel("Approve");
         break;
       case Action.deposit:
-        setLabel("Deposit");
+        setLabel("Invest");
         break;
       case Action.withdraw:
         setLabel("Withdraw");
@@ -1410,49 +1417,43 @@ function Interaction({
 
   return (
     <>
-      {((Number(inputBalance.formatted) > 0 &&
-        actions.length &&
-        !errorMessage) ||
-        crosschainInvestHash.length > 0 ||
-        isTransactionStarted ||
-        isTransactionProcessing ||
-        (finishedTransaction &&
-          (Object.keys(transactionStepFeedback).length > 0 ||
-            Object.keys(lastTransactionStepFeedback).length > 0))) && (
+      {
         <>
-          <p className="text-white text-start text-2xl font-bold leading-none mb-3">
-            {label}
-          </p>
-          {
-            <>
-              {renderTransactionSteps(
-                finishedTransaction,
-                lastTransactionStepFeedback,
-                transactionStepFeedback,
-              )}
-            </>
-          }
-          {finishedTransaction ? (
-            <MainActionButton label="Done" handleClick={handleDone} />
-          ) : (
-            (() => {
-              const isDisabledByProcessing = isTransactionProcessing;
-              const isDisabledByHash =
-                crosschainInvestHash.length > 0 && !finishedTransaction;
-              const isDisabled = isDisabledByProcessing || isDisabledByHash;
-
-              return (
-                <>
-                  <MainActionButton
-                    disabled={isDisabled}
-                    label={label}
-                    handleClick={handleMainAction}
-                  />
-                </>
-              );
-            })()
+          {renderTransactionSteps(
+            finishedTransaction,
+            lastTransactionStepFeedback,
+            transactionStepFeedback,
           )}
         </>
+      }
+      {finishedTransaction ? (
+        <Button
+          variant="special"
+          className="w-full mt-[47px]"
+          onClick={handleDone}
+        >
+          Done
+        </Button>
+      ) : (
+        (() => {
+          const isDisabledByProcessing = isTransactionProcessing;
+          const isDisabledByHash =
+            crosschainInvestHash.length > 0 && !finishedTransaction;
+          const isDisabled = isDisabledByProcessing || isDisabledByHash;
+
+          return (
+            <>
+              <Button
+                variant="special"
+                disabled={isDisabled}
+                className="w-full mt-[47px]"
+                onClick={handleMainAction}
+              >
+                {label}
+              </Button>
+            </>
+          );
+        })()
       )}
     </>
   );

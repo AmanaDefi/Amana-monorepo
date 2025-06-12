@@ -13,7 +13,7 @@ import GoogleOptionsIcon from "@/components/svg/GoogleOptionsButton";
 import { useAuthenticate } from "@account-kit/react";
 
 const OptionsModalB = () => {
-  const { step, closeAll, openStep, setError } = useAuthStore();
+  const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
 
   const { authenticate, isPending, error } = useAuthenticate();
 
@@ -30,7 +30,7 @@ const OptionsModalB = () => {
         onSuccess: (result) => {
           console.log(result);
           console.log("Success google auth", result);
-          closeAll();
+          successAuth();
         },
         onError: (err) => {
           console.error("Error google auth:", err);

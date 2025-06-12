@@ -1304,13 +1304,6 @@ export default function VaultInputs({
           </span>
         </div>
       </div>
-      <Button
-        variant="special"
-        disabled={isButtonDisabled}
-        className="w-full mt-[47px]"
-      >
-        {!walletAddress ? "Connect Wallet" : isDeposit ? "Invest" : "Withdraw"}
-      </Button>
 
       {inputToken &&
         !loadingOutputToken &&
