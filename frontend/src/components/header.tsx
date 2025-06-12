@@ -113,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         <div className="flex items-center gap-6">
 
           {isConnected && activeAccount?.type === "eoa" && <ChainSwitcher />}
-          <div className="hidden md:block thirdweb-connect-override">
+          <div className="hidden md:block">
             {!isConnected ? (
               <Button variant="signIn" onClick={() => openStep("optionsA")}>
                 Sign in

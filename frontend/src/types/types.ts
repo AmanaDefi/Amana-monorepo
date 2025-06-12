@@ -64,6 +64,7 @@ export interface VaultTotalAssetsinToken {
 export interface VaultAPY {
   vaultId: string;
   APY7d: string | number | "Error"; // Adjust the type as needed
+  apy30d: number;
 }
 
 export interface User {

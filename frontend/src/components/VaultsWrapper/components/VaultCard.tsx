@@ -138,21 +138,45 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d avg APY
                 </p>
-                <div className="flex flex-row justify-between">
-                  <p
-                    className={classNames("font-bold text-xl leading-5", {
-                      "text-green-accent": is30dAPYUp,
-                      "text-red-error": !is30dAPYUp,
-                    })}
-                  >
-                    6.43%
-                  </p>
-                  <div className={classNames({ "rotate-180": !is30dAPYUp })}>
-                    <DynamicArrowIcon
-                      color={is30dAPYUp ? "#05D47F" : "#FF1E1E"}
-                    />
-                  </div>
-                </div>
+
+                {(() => {
+                  const apyValue = vaultAPY?.apy30d;
+
+                  const isDefined = typeof apyValue === "number";
+                  const isNegative = isDefined && apyValue < 0;
+                  const isLow = isDefined && apyValue >= 0 && apyValue <= 0.5;
+                  const isHigh = isDefined && apyValue > 0.5;
+
+                  const displayText = isDefined
+                    ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
+                    : "--";
+
+                  const textClass = classNames("font-bold text-xl leading-5", {
+                    "text-red-error": isNegative,
+                    "text-white": isLow || !isDefined,
+                    "text-green-accent": isHigh,
+                  });
+
+                  const arrowColor = isNegative
+                    ? "#FF1E1E"
+                    : isLow
+                      ? "#FFA500"
+                      : "#05D47F";
+
+                  return (
+                    <div className="flex flex-row justify-between">
+                      <p className={textClass}>{displayText}</p>
+                      {isDefined && (
+                        <div
+                          className={classNames({ "rotate-180": isNegative })}
+                        >
+                          <DynamicArrowIcon color={arrowColor} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
                   <InfoIcon />
                 </div>
@@ -198,25 +222,24 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
         <div className="flex gap-4">
           <>
-          
-          <AppButton isBlue onClick={handlePressButton}>
-            {!!walletAddress ? "Deposit" : "Invest"}
-          </AppButton>
+            <AppButton isBlue onClick={handlePressButton}>
+              {!!walletAddress ? "Deposit" : "Invest"}
+            </AppButton>
 
-          {userVaultBalances.find((b) => b.vaultId === vault.id)?.balance &&
-            Number(
-              userVaultBalances.find((b) => b.vaultId === vault.id)?.balance,
-            ) > 0 && (
-              <AppButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/vaults/${vault.id}?tab=withdraw`);
-                }}
-              >
-                Withdraw
-              </AppButton>
-            )}
-            </>
+            {userVaultBalances.find((b) => b.vaultId === vault.id)?.balance &&
+              Number(
+                userVaultBalances.find((b) => b.vaultId === vault.id)?.balance,
+              ) > 0 && (
+                <AppButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/vaults/${vault.id}?tab=withdraw`);
+                  }}
+                >
+                  Withdraw
+                </AppButton>
+              )}
+          </>
         </div>
       </div>
     );
