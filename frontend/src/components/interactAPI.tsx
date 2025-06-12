@@ -42,6 +42,7 @@ import {
 import { Address, Chain, encodeFunctionData } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import Button from "./Button";
+import { ReceiptRefundIcon } from "@heroicons/react/24/outline";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -59,7 +60,9 @@ const handleDepositTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  sendUserOperation: Function
 ) => {
+  console.log('deposit', activeAccount)
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
   console.log("Active Chain ID:", activeChain.id);
@@ -89,7 +92,11 @@ const handleDepositTransaction = async (
       activeChain,
       depositAmount,
       setcrossChainTxId,
+      sendUserOperation
     );
+    if (!receipt || !receipt.transactionHash) {
+      throw new Error('Failed Tx')
+    }
 
     trackEvent("Deposit Initiated", {
       vaultSymbol: vaultData.symbol,
@@ -226,6 +233,7 @@ const handleWithdrawTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  sendUserOperation: Function
 ) => {
   if (!activeAccount) return;
   setTransactionCompleted(false);
@@ -274,7 +282,12 @@ const handleWithdrawTransaction = async (
       withdrawToken.address as Address,
       withdrawZRC20 as Token,
       setcrossChainTxId,
+      sendUserOperation
     );
+
+    if (!receipt.transactionHash) {
+      throw new Error('error withdraw tx')
+    }
 
     const activeChainExplorerBaseUrl =
       CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
@@ -1408,7 +1421,6 @@ function Interaction({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
-    setLabel("");
 
     updateLocalStorageObject(vaultData.id, {
       lastTransactionStepFeedback: {},
@@ -1465,16 +1477,15 @@ function Interaction({
           const isDisabled = isDisabledByProcessing || isDisabledByHash;
 
           return (
-            <>
               <Button
                 variant="special"
-                disabled={isDisabled}
+                // disabled={isDisabled}
                 className="w-full mt-[47px]"
                 onClick={handleMainAction}
               >
                 {label ?? (isDeposit ? "Invest" : "Withdrow")}
               </Button>
-            </>
+   
           );
         })()
       )}
@@ -1655,6 +1666,7 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
+          sendUserOperation
         );
         return result;
       };
@@ -1672,6 +1684,7 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
+          sendUserOperation
         );
         return result;
       };
