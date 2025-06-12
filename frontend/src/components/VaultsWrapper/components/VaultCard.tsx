@@ -18,6 +18,11 @@ import { AppButton } from "@/components/button/AppButton";
 import { useAuthStore } from "@/store/authStore";
 
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
+import TableChart from "@/components/TableChart";
+import { MOCK_HISTORICAL_APY } from "@/constants/mockHistoricalAPY";
+import { InfoBlock } from "./InfoBlock.tsx";
+
+
 
 const MOCK_DIGITS = 6.43;
 
@@ -106,7 +111,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 w-full mb-4">
+        <div className="flex flex-col gap-2 w-full mb-2">
           {walletAddress && (
             <VaultCardInfoBlock>
               <div className="flex w-full justify-between">
@@ -212,8 +217,28 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </VaultCardInfoBlock>
           </div>
         </div>
+        {walletAddress && (
+          <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
+            <div className="flex flex-row gap-1">
+              <p className="font-normal text-sm leading-4 text-white pl-[11px]">
+                Historical APY
+              </p>
+              {/* <InfoBlock isRight>💡</InfoBlock> */}
+            </div>
 
-        <p className="font-normal text-xs leading-4 text-white mb-6">
+            <TableChart
+              points={MOCK_HISTORICAL_APY[vault.id] || []}
+              percentageChange={(() => {
+                const points = MOCK_HISTORICAL_APY[vault.id];
+                if (!points || points.length < 2) return 0;
+                const first = points[0];
+                const last = points.at(-1)!;
+                return ((last - first) / first) * 100;
+              })()}
+            />
+          </div>
+        )}
+        <p className="font-normal text-xs leading-4 text-white mb-6 mt-2">
           This vault auto-compounds Lenders Tokens on{" "}
           <span className="flex flex-row gap-1">
             {vault.protocol.name} <InfoIcon />
