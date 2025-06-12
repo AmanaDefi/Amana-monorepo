@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import {useUser} from "@account-kit/react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
