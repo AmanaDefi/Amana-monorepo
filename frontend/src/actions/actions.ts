@@ -932,10 +932,9 @@ const getPathDataAndMinAmountOut = async (
   transactionAmount: bigint
 ) => {
   const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
-  const minAmountOutInVaultAsset =
+  const minAmountOut =
     (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
 
-  let minAmountOut = minAmountOutInVaultAsset;
   let swapPath: `0x${string}` = "0x";
 
   if (outputToken.address !== vaultData.inputToken.address) {
@@ -947,8 +946,6 @@ const getPathDataAndMinAmountOut = async (
       vaultData.id as Address
     );
     swapPath = result.encodedPath ?? "0x";
-    minAmountOut = result.amountOut ?? 0;
-
   }
 
   return { swapPath, minAmountOut };
