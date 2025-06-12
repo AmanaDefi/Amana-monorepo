@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -8,8 +9,8 @@ import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
-import { AppButton } from "../button/AppButton";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
+import Button from "../Button";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
@@ -129,7 +130,7 @@ const ChainSwitcher: React.FC = () => {
       | React.MouseEvent<HTMLButtonElement, MouseEvent>,
     option: string,
   ) => {
-    event.stopPropagation()
+    event.stopPropagation();
     const selected = SUPPORTED_CHAINS.find(
       (c: { chain: Chain }) => c.chain.name === option,
     );
@@ -144,15 +145,29 @@ const ChainSwitcher: React.FC = () => {
       className="z-50 relative bg-gradient-to-b from-[#262830] to-[#06afbc] rounded-full lg:bg-none lg:rounded-none"
       ref={dropdownRef}
     >
-      <AppButton isIconOnly onClick={() => setIsOpen(!isOpen)}>
-        <Image
-          src={CHAIN_ICONS[displayChain.id].url}
-          alt={displayChain?.name}
-          width={40}
-          height={40}
-          sizes="40px"
-        />
-      </AppButton>
+      <Button
+        variant="secondary"
+        disabled={!wallet}
+        onClick={() => setIsOpen(!isOpen)}
+        className="cursor-pointer !p-2 !max-w-[56px] !max-h-[58px] "
+        data-tooltip-id="chain-switcher-tooltip"
+        data-tooltip-content={
+          wallet?.type === "eoa"
+            ? "Switch network"
+            : wallet?.type === "sca"
+              ? "Connect EOA wallet for change chain"
+              : "Connect wallet to switch networks"
+        }
+      >
+        <div className="bg-[#24262f] rounded-full border border-[#9A9CB3] p-2 flex items-center justify-center">
+          <Image
+            src={CHAIN_ICONS[currentChain.id].url}
+            width={24}
+            height={24}
+            alt="change chain"
+          />
+        </div>
+      </Button>
 
       <Tooltip id="chain-switcher-tooltip" />
 
@@ -165,6 +180,37 @@ const ChainSwitcher: React.FC = () => {
         isShownList={isOpen}
         needReset={false}
       />
+      {/* {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-800 rounded-md shadow-lg">
+          {SUPPORTED_CHAINS.map((chain) => (
+            <button
+              key={chain.chain.id}
+              onClick={() => handleChainSwitch(chain)}
+              className="flex items-center w-full px-4 py-2 text-white hover:bg-gray-700 rounded-md"
+              disabled={isLoading !== null}
+              data-tooltip-id={`chain-${chain.chain.id}-tooltip`}
+              data-tooltip-content={`Switch to ${chain.chain.name}`}
+            >
+              <Image
+                src={CHAIN_ICONS[chain.chain.id].url}
+                alt={chain.chain.name}
+                width={40}
+                height={40}
+                sizes="40px"
+              />
+              <span>{chain.chain.name}</span>
+              {isLoading === chain.chain.id ? (
+                <div className="ml-auto">
+                  <ClipLoader size={16} color="#ffffff" />
+                </div>
+              ) : currentChain?.id === chain.chain.id ? (
+                <CheckIcon className="ml-auto h-4 w-4 text-green-500" />
+              ) : null}
+              <Tooltip id={`chain-${chain.chain.id}-tooltip`} />
+            </button>
+          ))}
+        </div>
+      )} */}
     </div>
   );
 };
