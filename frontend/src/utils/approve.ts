@@ -18,11 +18,10 @@ export async function isApproved({
   amount,
 }: HandleAllowanceProps): Promise<boolean> {
   const publicClient = getPublicClient(activeChain.id);
-  const walletClient = getWalletClient(activeChain.id);
-  if (!publicClient || !walletClient) return false;
+  if (!publicClient) return false;
 
   const contract = getContract({
-    client: { public: publicClient, wallet: walletClient },
+    client: { public: publicClient},
     address: token,
     abi: erc20Abi,
   });

@@ -58,7 +58,6 @@ import { RECEIPT_LOCAL_STORAGE_KEY } from "@/constants";
 import { updateLocalStorageObject } from "@/utils/localStorageUtils";
 import { GetUserResult } from "@account-kit/core";
 import { UseUserResult } from "@account-kit/react";
-import { getContractCustom } from "@/utils/getContractCustom";
 import {
   getPublicClient,
   getRpcUrl,
