@@ -15,8 +15,6 @@ import "../interfaces/IPermit2.sol";
 import "../interfaces/I4626Vault.sol";
 import "../interfaces/IBalancerStablePool.sol";
 
-import "hardhat/console.sol";
-
 contract BalancerERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
@@ -95,48 +93,32 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             )
         returns (uint256 result) {
             bptReceived = result;
-            console.log(
-                "Unbalanced deposit successful, BPT received: %s",
-                bptReceived
-            );
         } catch {
-            console.log(
-                "Unbalanced deposit failed, falling back to proportional deposit"
-            );
-
             // Step 1: Swap USDC into yUSD (or other token) in correct proportions
             // You must write your own logic here depending on your pool composition and slippage limits
             // Example pseudocode:
+            permit2ApproveIfNeeded(
+                address(inputToken),
+                address(receiptToken),
+                amount
+            );
             uint256 halfAmount = amount / 2;
 
             uint256 maxDeadline = 1 hours;
             uint16 slippage = 500;
             uint256 yUSDIndex = 1 - inputTokenIndex;
-            console.log("got here");
             address[] memory poolTokens = IBalancerStablePool(receiptToken)
                 .getTokens();
             // Retry with increasing slippage up to 10% (1000 bps)
             uint256 yusdReceived;
-            console.log("and here");
             // while (slippage <= 1000) {
-            console.log(
-                "Attempting to swap %s USDC for yUSD with slippage %s bps",
-                halfAmount,
-                poolTokens[yUSDIndex],
-                slippage
-            );
             // try
-            uint256 wrappedAmount = I4626Vault(poolTokens[inputTokenIndex])
-                .deposit(amount - halfAmount, address(this));
-            IERC20(poolTokens[inputTokenIndex]).safeTransfer(
-                swapHelper,
-                halfAmount
-            );
-
+            inputToken.safeTransfer(swapHelper, halfAmount); // Transfer USDC to the swap helper
             yusdReceived = ISwapHelper(swapHelper).swapViaBalancerPool(
+                address(inputToken),
                 poolTokens[inputTokenIndex],
                 poolTokens[yUSDIndex],
-                wrappedAmount,
+                halfAmount,
                 1, //minimumOut,
                 address(this),
                 maxDeadline,
@@ -175,11 +157,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             bptReceived =
                 IERC20(receiptToken).balanceOf(address(this)) -
                 bptBefore;
-
-            console.log(
-                "Proportional deposit successful, BPT received: %s",
-                bptReceived
-            );
         }
 
         IERC20(receiptToken).safeIncreaseAllowance(
@@ -212,7 +189,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
 
         uint256 amountOutFromGauge;
         uint256 finalAmountOut;
-        console.log("Attempting to remove liquidity");
         try
             liquidityRouter.removeLiquiditySingleTokenExactIn(
                 receiptToken,
@@ -232,8 +208,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
                 address(this)
             );
         } catch {
-            console.log("Single token withdrawal failed. Using fallback.");
-
             // === Fallback path ===
 
             // 1. Remove liquidity proportionally from the pool
@@ -417,7 +391,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         ) {
             rate = fetchedRate;
         } catch {
-            console.log("getRate() failed, using fallback rate");
             rate = 1007657400484760604; // fallback rate with 18 decimals
         }
 
@@ -443,7 +416,6 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
         ) {
             rate = fetchedRate;
         } catch {
-            console.log("getRate() failed, using fallback rate");
             rate = 1007657400484760604; // fallback rate with 18 decimals
         }
 

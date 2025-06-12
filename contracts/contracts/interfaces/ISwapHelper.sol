@@ -59,6 +59,7 @@ interface ISwapHelper {
 
     function swapViaBalancerPool(
         address inputToken,
+        address wrappedInputToken,
         address outputToken,
         uint256 amount,
         uint256 minimumOut,

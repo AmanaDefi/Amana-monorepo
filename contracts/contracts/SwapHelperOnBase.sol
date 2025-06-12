@@ -7,8 +7,8 @@ import "./interfaces/ICurvePoolDynamic.sol";
 import "./interfaces/IAerodromePoolFactory.sol";
 import "./interfaces/IAerodromeRouter.sol";
 import "./interfaces/IBalancerRouter.sol";
+import "./interfaces/I4626Vault.sol";
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
@@ -39,6 +39,8 @@ contract SwapHelperOnBase is SwapHelperParent {
         0x420DD381b31aEf6683db6B902084cB0FFECe40Da; // Aerodrome PoolFactory on Base
     address constant BALANCER_ROUTER =
         0x3f170631ed9821Ca51A59D996aB095162438DC10; // Balancer Vault on Base
+    address constant BALANCER_VAULT =
+        0xbA1333333333a1BA1108E8412f11850A5C319bA9; // Balancer Vault on Base
 
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
@@ -229,12 +231,7 @@ contract SwapHelperOnBase is SwapHelperParent {
             "Insufficient balance"
         );
         bool isStable = isStablecoin(inputToken) && isStablecoin(outputToken);
-        console.log(
-            "Swapping from %s to %s, isStable: %s",
-            inputToken,
-            outputToken,
-            isStable
-        );
+
         uint256 minimumOut = calculateMinAmountOut(
             inputToken,
             outputToken,
@@ -249,11 +246,9 @@ contract SwapHelperOnBase is SwapHelperParent {
             isStable // Assuming we want to swap through non-stable pools
         );
         if (path.length < 2) {
-            console.log("No valid Aerodrome path found");
             // No valid path found
             return 0;
         }
-        console.log("Found Aerodrome path with length:", path.length);
         IERC20(inputToken).approve(AERODROME_ROUTER, amount);
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](
             path.length - 1
@@ -266,7 +261,6 @@ contract SwapHelperOnBase is SwapHelperParent {
                 factory: AERODROME_FACTORY
             });
         }
-        console.log("Attempting swap on Aerodrome");
         uint256[] memory amounts = IAerodromeRouter(AERODROME_ROUTER)
             .swapExactTokensForTokens(
                 amount,
@@ -281,6 +275,7 @@ contract SwapHelperOnBase is SwapHelperParent {
 
     function swapViaBalancerPool(
         address inputToken,
+        address wrappedInputToken,
         address outputToken,
         uint256 amount,
         uint256 minimumOut,
@@ -292,31 +287,38 @@ contract SwapHelperOnBase is SwapHelperParent {
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-        console.log("Attempting swap on Balancer pool");
 
-        IERC20(inputToken).approve(address(BALANCER_ROUTER), amount);
-        uint256 queryAmountOut = IBalancerRouter(BALANCER_ROUTER)
-            .querySwapSingleTokenExactIn(
-                pool,
-                IERC20(inputToken),
-                IERC20(outputToken),
-                amount,
-                address(this),
-                "0x"
-            );
-        console.log("Balancer query swap amount out: %s", queryAmountOut);
+        // IERC20(inputToken).approve(wrappedInputToken, amount);
+        // uint256 wrappedAmount = I4626Vault(wrappedInputToken).deposit(
+        //     amount,
+        //     address(this)
+        // );
+        // console.log("Wrapped amount: %s", wrappedAmount);
+        IERC20(inputToken).approve(
+            address(BALANCER_VAULT), // Balancer docs say to approve the vault, not the router
+            amount
+        );
+        // uint256 queryAmountOut = IBalancerRouter(BALANCER_ROUTER)
+        //     .querySwapSingleTokenExactIn(
+        //         pool,
+        //         IERC20(wrappedInputToken),
+        //         IERC20(outputToken),
+        //         wrappedAmount,
+        //         address(this),
+        //         "0x"
+        //     );
+        // console.log("Balancer query swap amount out: %s", queryAmountOut);
 
         amountOut = IBalancerRouter(BALANCER_ROUTER).swapSingleTokenExactIn(
             pool,
             IERC20(inputToken),
             IERC20(outputToken),
             amount,
-            0,
+            1,
             99999999,
             false,
             "0x"
         );
-        console.log("Balancer swap completed, amount out: %s", amountOut);
     }
 
     // function getAmountOutCurveOrUniswap(
