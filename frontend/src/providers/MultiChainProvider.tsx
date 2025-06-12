@@ -9,6 +9,7 @@ import {
   SetStateAction,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -18,11 +19,13 @@ import {
   useLogout,
   useUser,
   useChain,
+  useSmartAccountClient,
 } from "@account-kit/react";
 import useSolanaBalance from "@/hooks/useSolanaBalance";
 import { Balance } from "@/types/types";
-import { Chain, formatEther } from "viem";
-import { getPublicClient } from "@/utils/getPublicClient";
+import { Chain, formatEther, WalletClient } from "viem";
+import { getPublicClient, getWalletClient } from "@/utils/getPublicClient";
+import { AlchemySmartAccountClient } from "@account-kit/core";
 declare global {
   interface Window {
     solana?: any;
@@ -31,6 +34,12 @@ declare global {
 }
 
 export type ChainType = "solana" | "evm" | null;
+
+export type ActiveWalletClient = {
+  client: undefined | WalletClient | AlchemySmartAccountClient;
+  isSmartAccount: boolean;
+  isLoading: boolean;
+}
 
 interface MultiChainContextType {
   selectedChain: ChainType | null;
@@ -76,6 +85,22 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     useSolanaBalance();
 
   const latestChainRef = useRef<number | null>(null);
+
+  const { client: scaClient, isLoadingClient: isSmartAccountInitializing } =
+    useSmartAccountClient({
+      type: "MultiOwnerModularAccount",
+    });
+
+  const currentWalletCLient = useMemo(() => {
+    if (activeAccount && scaClient) {
+      return scaClient;
+    }
+
+    const walletClient = getWalletClient(chain.id);
+    if (walletClient) {
+      return walletClient;
+    }
+  }, [activeAccount, scaClient, isSmartAccountInitializing, chain]);
 
   useEffect(() => {
     if (selectedChain == "solana") {
@@ -140,27 +165,29 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   //   address: userAddress,
   // });
 
-  const getEvmBalance = useCallback(async (walletAddress: string) => {
-    if (!chain || !walletAddress) return;
+  const getEvmBalance = useCallback(
+    async (walletAddress: string) => {
+      if (!chain || !walletAddress) return;
 
-    const publicClient = getPublicClient(chain.id);
-    if (!publicClient) return;
+      const publicClient = getPublicClient(chain.id);
+      if (!publicClient) return;
 
-    try {
-      const balanceInEth = await publicClient.getBalance({
-        address: walletAddress,
-      });
+      try {
+        const balanceInEth = await publicClient.getBalance({
+          address: walletAddress,
+        });
 
-      const formattedBalance = formatEther(balanceInEth);
+        const formattedBalance = formatEther(balanceInEth);
 
-      setBalance({ formatted: formattedBalance, value: balanceInEth });
-    } catch (error) {
-      console.error("Error get balance:", error);
-    }
-  }, [chain, setBalance]);
+        setBalance({ formatted: formattedBalance, value: balanceInEth });
+      } catch (error) {
+        console.error("Error get balance:", error);
+      }
+    },
+    [chain, setBalance],
+  );
 
   useEffect(() => {
-    console.log(activeAccount, publicKey);
     if (!activeAccount && !publicKey) {
       disconnectWallet();
       setIsModalOpen(false);

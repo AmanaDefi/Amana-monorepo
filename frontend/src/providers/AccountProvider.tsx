@@ -1,6 +1,6 @@
 "use client";
 
-import React, { PropsWithChildren, useEffect, useState } from "react";
+import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import mixpanel from "mixpanel-browser";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
@@ -10,8 +10,8 @@ import {
 } from "@account-kit/react";
 
 export default function AccountProvider({ children }: PropsWithChildren) {
-  const { isConnected, isInitializing } = useSignerStatus()
-  const user = useUser(); 
+  const { isConnected, isInitializing } = useSignerStatus();
+  const user = useUser();
 
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
   const [hasIdentified, setHasIdentified] = useState(false);
@@ -46,12 +46,17 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     }
 
     const page =
-      route === "/" ? "Vaults List" :
-      route.startsWith("/vaults/") ? "Vault Details" :
-      route === "/about" ? "About" :
-      route === "/leaderboard" ? "Leaderboard" :
-      route === "/roadmap" ? "Roadmap" :
-      route;
+      route === "/"
+        ? "Vaults List"
+        : route.startsWith("/vaults/")
+          ? "Vault Details"
+          : route === "/about"
+            ? "About"
+            : route === "/leaderboard"
+              ? "Leaderboard"
+              : route === "/roadmap"
+                ? "Roadmap"
+                : route;
 
     if (!hasTrackedPage) {
       trackEvent("Page Viewed", {
@@ -68,7 +73,7 @@ export default function AccountProvider({ children }: PropsWithChildren) {
     isConnected,
     hasTrackedPage,
     hasIdentified,
-    isInitializing
+    isInitializing,
   ]);
 
   return <>{children}</>;

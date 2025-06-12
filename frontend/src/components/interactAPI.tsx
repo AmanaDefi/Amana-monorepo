@@ -23,7 +23,13 @@ import {
 } from "@/constants/chainConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
-import { useUser, UseUserResult } from "@account-kit/react";
+import {
+  SendUserOperationWithEOA,
+  useSendUserOperation,
+  useSmartAccountClient,
+  useUser,
+  UseUserResult,
+} from "@account-kit/react";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import Blockpi from "@/service/blockpi";
@@ -33,9 +39,10 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import { Address, Chain } from "viem";
+import { Address, Chain, encodeFunctionData } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import Button from "./Button";
+import { ReceiptRefundIcon } from "@heroicons/react/24/outline";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -53,7 +60,9 @@ const handleDepositTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  sendUserOperation: Function
 ) => {
+  console.log('deposit', activeAccount)
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
   console.log("Active Chain ID:", activeChain.id);
@@ -83,7 +92,11 @@ const handleDepositTransaction = async (
       activeChain,
       depositAmount,
       setcrossChainTxId,
+      sendUserOperation
     );
+    if (!receipt || !receipt.transactionHash) {
+      throw new Error('Failed Tx')
+    }
 
     trackEvent("Deposit Initiated", {
       vaultSymbol: vaultData.symbol,
@@ -220,6 +233,7 @@ const handleWithdrawTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  sendUserOperation: Function
 ) => {
   if (!activeAccount) return;
   setTransactionCompleted(false);
@@ -237,9 +251,9 @@ const handleWithdrawTransaction = async (
   }
 
   try {
-    const withdrawShareAmount = inputBalance.value;
+    const withdrawAssetAmount = inputBalance.value;
     const assetsOut = await getAssetsFromShares(
-      withdrawShareAmount,
+      withdrawAssetAmount,
       vaultData,
       activeChain.id,
     );
@@ -252,7 +266,7 @@ const handleWithdrawTransaction = async (
     trackEvent("Withdraw Submitted", {
       vaultSymbol: vaultData.symbol,
       vault: vaultData.id.toString(),
-      amount: withdrawShareAmount.toString(),
+      amount: withdrawAssetAmount.toString(),
       amountUSD: amountUSD,
       withdrawToken: withdrawToken.symbol,
       user: activeAccount.address,
@@ -260,17 +274,20 @@ const handleWithdrawTransaction = async (
     });
 
     const receipt = await executeWithdrawal(
-      vaultData.id as Address,
-      vaultData.protocol.strategyAddress as Address,
-      vaultData.protocol.chainId as number,
+      vaultData,
       walletContext,
       activeAccount,
       activeChain,
-      withdrawShareAmount,
+      withdrawAssetAmount,
       withdrawToken.address as Address,
       withdrawZRC20 as Token,
       setcrossChainTxId,
+      sendUserOperation
     );
+
+    if (!receipt.transactionHash) {
+      throw new Error('error withdraw tx')
+    }
 
     const activeChainExplorerBaseUrl =
       CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
@@ -374,7 +391,7 @@ export default function InteractionContainer({
   isDeposit: boolean;
   refreshBalance: Function;
 }): JSX.Element {
-  const [label, setLabel] = useState("Invest");
+  const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
 
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
@@ -931,6 +948,7 @@ export default function InteractionContainer({
         crossChainTxId={crossChainTxId}
         isComponentActiveRef={isComponentActiveRef}
         isTrackingActiveRef={isTrackingActiveRef}
+        isDeposit={isDeposit}
       />
     </div>
   );
@@ -968,6 +986,7 @@ function Interaction({
   crosschainInvestHash,
   isComponentActiveRef,
   isTrackingActiveRef,
+  isDeposit,
 }: {
   setStep: Function;
   setAction: Function;
@@ -1007,10 +1026,26 @@ function Interaction({
   crossChainTxId: string;
   isComponentActiveRef: React.MutableRefObject<boolean>;
   isTrackingActiveRef: React.MutableRefObject<boolean>;
+  isDeposit: boolean;
 }): JSX.Element {
   const activeAccount = useUser();
   const walletContext = useWallet();
   const prevLebel = useRef(label);
+  const { client: scaClient } = useSmartAccountClient({
+    type: "MultiOwnerModularAccount",
+  });
+  const { sendUserOperation } = useSendUserOperation({
+    client: scaClient,
+    waitForTxn: true,
+    onError: (error) => {
+      let errorMessage = error.message;
+
+      const detailsIndex = errorMessage.indexOf("Details:");
+      if (detailsIndex !== -1) {
+        errorMessage = errorMessage.slice(detailsIndex);
+      }
+    },
+  });
 
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
@@ -1359,6 +1394,7 @@ function Interaction({
       setcrossChainTxId,
       setInputBalance,
       setLastEventTxHash,
+      sendUserOperation,
     )();
 
     console.log("=== HANDLE INTERACTION COMPLETED ===");
@@ -1385,7 +1421,6 @@ function Interaction({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
-    setLabel("");
 
     updateLocalStorageObject(vaultData.id, {
       lastTransactionStepFeedback: {},
@@ -1438,20 +1473,19 @@ function Interaction({
         (() => {
           const isDisabledByProcessing = isTransactionProcessing;
           const isDisabledByHash =
-            crosschainInvestHash.length > 0 && !finishedTransaction;
+            crosschainInvestHash?.length > 0 && !finishedTransaction;
           const isDisabled = isDisabledByProcessing || isDisabledByHash;
 
           return (
-            <>
               <Button
                 variant="special"
-                disabled={isDisabled}
+                // disabled={isDisabled}
                 className="w-full mt-[47px]"
                 onClick={handleMainAction}
               >
-                {label}
+                {label ?? (isDeposit ? "Invest" : "Withdrow")}
               </Button>
-            </>
+   
           );
         })()
       )}
@@ -1598,6 +1632,7 @@ function handleInteraction(
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  sendUserOperation: any,
 ) {
   console.log("inputToken in handleInteraction: ", inputToken.symbol, {
     action,
@@ -1613,6 +1648,7 @@ function handleInteraction(
           activeAccount,
           activeChain,
           depositAmount,
+          sendUserOperation,
         );
         return result;
       };
@@ -1630,6 +1666,7 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
+          sendUserOperation
         );
         return result;
       };
@@ -1647,6 +1684,7 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
+          sendUserOperation
         );
         return result;
       };
