@@ -4,20 +4,21 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./ERC20StrategyParent.sol";
+import "./EthStrategyParent.sol";
 
-import "../interfaces/ICurvePoolDynamic.sol";
+import "../interfaces/ICurveTricryptoPool.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBoosterArbitrum.sol";
 import "../interfaces/IConvexRewardPoolArbitrum.sol";
 
-contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
+contract ConvexEthStrategyArbitrum is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    ICurvePoolDynamic public receiptToken;
+    ICurveTricryptoPool public receiptToken;
     IConvexBoosterArbitrum public booster;
     IConvexRewardPoolArbitrum public rewardPool;
 
+    IWETH public weth;
     address public cvxToken;
     address public crvToken;
 
@@ -44,11 +45,12 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             _amanaVault,
             _gatewayAddress,
             _withdrawHelper,
-            _inputTokenAddress,
+            address(0),
             _receiptTokenAddress
         );
 
-        receiptToken = ICurvePoolDynamic(_receiptTokenAddress);
+        receiptToken = ICurveTricryptoPool(_receiptTokenAddress);
+        weth = IWETH(_inputTokenAddress);
         swapHelper = _swapHelper;
         booster = IConvexBoosterArbitrum(_boosterAddress);
         rewardPool = IConvexRewardPoolArbitrum(_rewardPoolAddress);
@@ -56,6 +58,44 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         cvxToken = _cvxToken;
         inputTokenIndex = _inputTokenIndex;
         convexPid = _convexPid;
+    }
+
+    function swapToInputToken(
+        address token,
+        uint256 amountIn,
+        uint16 initialSlippageBps
+    ) internal returns (uint256 amountOut) {
+        if (amountIn == 0) return 0;
+
+        IERC20(token).safeTransfer(swapHelper, amountIn);
+
+        uint16 maxDeadline = uint16(block.timestamp + 1 hours);
+        uint16 slippage = initialSlippageBps;
+
+        // Retry with increasing slippage up to 10% (1000 bps)
+        while (slippage <= 1000) {
+            try
+                ISwapHelper(swapHelper).swap(
+                    token,
+                    amountIn,
+                    address(weth),
+                    slippage,
+                    address(this),
+                    maxDeadline,
+                    ""
+                )
+            returns (uint256 result) {
+                emit RewardsHarvested(token, amountIn, result);
+                return result;
+            } catch {
+                emit SwapFailed(token, amountIn, "Swap attempt failed");
+            }
+
+            slippage += 100; // increase slippage by 1% (100 bps)
+        }
+
+        // Swap failed even after max attempts
+        return 0;
     }
 
     function claimRewards() public override returns (uint256 totalClaimed) {
@@ -126,7 +166,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             minClaimableReward *
                 10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
         ) {
-            uint256[] memory amounts = new uint256[](2);
+            uint256[3] memory amounts;
             amounts[inputTokenIndex] = totalConverted;
 
             approveOrIncreaseAllowance(
@@ -144,27 +184,53 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        uint256[] memory amounts = new uint256[](2);
+        // harvest(); // TO DO put this back in?
+        weth.deposit{value: amount}();
+
+        uint256[3] memory amounts;
         amounts[inputTokenIndex] = amount;
 
-        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
+        approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
+
         uint256 shares = receiptToken.add_liquidity(amounts, minimumOut);
+
         approveOrIncreaseAllowance(receiptToken, address(booster), shares);
         booster.deposit(convexPid, shares);
+        console.log(
+            "ConvexEthStrategyArbitrum: Deposited %s shares into booster",
+            shares
+        );
     }
 
     function _withdrawFundsFromYieldSource(
         uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        harvest();
-
+        // harvest();
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
+        console.log(
+            "ConvexEthStrategyArbitrum: Withdrawing %s shares from rewardPool",
+            sharesToWithdraw
+        );
+        // harvest(); // TO DO remove this from the withdraw flow, rather do it manually - but it might still get called in the Convex contract?
         rewardPool.withdraw(sharesToWithdraw, false);
+        console.log(
+            "ConvexEthStrategyArbitrum: Withdrew %s shares from rewardPool",
+            sharesToWithdraw
+        );
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
             sharesToWithdraw,
-            int128(int256(inputTokenIndex)),
+            inputTokenIndex,
             minAmountOut
+        );
+        console.log(
+            "ConvexEthStrategyArbitrum: Withdrew %s amount from receiptToken",
+            amountWithdrawn
+        );
+        weth.withdraw(amountWithdrawn);
+        console.log(
+            "ConvexEthStrategyArbitrum: Withdrew %s amount from WETH",
+            amountWithdrawn
         );
     }
 
@@ -173,6 +239,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
         harvest();
+
         rewardPool.withdrawAll(false);
         (address lpToken, , , , ) = booster.poolInfo(convexPid);
         uint256 withdrawnAmount = IERC20(lpToken).balanceOf(address(this));
@@ -183,7 +250,6 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             txn.minimumOut,
             lastProcessedNonce + 1
         );
-
         emit AssetsTransferredToNewStrategy(
             txn.newStrategy,
             withdrawnAmount,
@@ -198,12 +264,11 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
      */
     function depositFromOldStrategy(
         uint256 amount,
-        uint256 minimumSharesOut,
+        uint256,
         uint256 currentExecutionNonce
-    ) external override {
+    ) external payable override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
-
         lastProcessedNonce = currentExecutionNonce;
 
         // Stake the LP tokens into Convex (Arbitrum)
@@ -215,13 +280,11 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
             totalUnderlyingAssets(),
             currentExecutionNonce
         );
-
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,
             currentExecutionNonce
         );
-
         oldStrategy = address(0);
     }
 
@@ -249,7 +312,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
     function convertToShares(
         uint256 assetAmount
     ) public view override returns (uint256) {
-        uint256[] memory amounts = new uint256[](2);
+        uint256[3] memory amounts;
         amounts[inputTokenIndex] = assetAmount;
         return receiptToken.calc_token_amount(amounts, false);
     }
@@ -258,11 +321,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         uint256 shares
     ) public view override returns (uint256) {
         if (shares == 0) return 0;
-        return
-            receiptToken.calc_withdraw_one_coin(
-                shares,
-                int128(int256(inputTokenIndex))
-            );
+        return receiptToken.calc_withdraw_one_coin(shares, inputTokenIndex);
     }
 
     // function checkRewards() public view returns (uint256) {

@@ -327,7 +327,7 @@ abstract contract StrategyParent is
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view virtual returns (uint256 withdrawShareAmount);
 
     /// @notice Invests assets into the yield source
