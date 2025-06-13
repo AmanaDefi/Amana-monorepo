@@ -404,11 +404,11 @@ export async function simulateWithdrawCallFromConnChain(
   originChainId: number,
   originChainGasToken: string,
   nonEvmUserAddress: string,
-  swapData: string = "0x" // Placeholder for swap data, if needed
+  swapData: string = "0x", // Placeholder for swap data, if needed
+  slippage: number // Default slippage of 0.1%
 ): Promise<void> {
   // await updatePythPrices(pythContract, user);
   const minAmountOut = assetsToWithdraw.mul(1000).div(1001);
-  const slippage = 1000;
   const withdrawMessage = ethers.utils.defaultAbiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
     [originChainZRC20Input,

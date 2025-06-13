@@ -5743,10 +5743,10 @@ cluster-key-slot@1.1.2:
   resolved "https://registry.yarnpkg.com/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz#88ddaa46906e303b5de30d3153b7d9fe0a0c19ac"
   integrity sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==
 
-codemelt-retro-api-sdk@^0.9.6:
-  version "0.9.6"
-  resolved "https://registry.yarnpkg.com/codemelt-retro-api-sdk/-/codemelt-retro-api-sdk-0.9.6.tgz#afe30cb9401ae38030eacc4a249f032dab4bf651"
-  integrity sha512-GGuXqmguLD5HPmrp5lpVVTlOPsajYf574SQNsqP60x4sjj+d1EViEZ06fW5axgW3ajpM2sxTeFMWLau70vZBIQ==
+codemelt-retro-api-sdk@^0.9.7:
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/codemelt-retro-api-sdk/-/codemelt-retro-api-sdk-0.9.7.tgz#b9140d4e6ff33a86056ba77244d9969da5fd5110"
+  integrity sha512-FdT8oiAKVLSvSdy3BK1zdwS7Nsu79US8u/2pEN2jXOdSGWOTZWtRdcqhSHEMd3lptHw1k/oBon3aZ9Vr+rTB6Q==
   dependencies:
     "@nestia/fetcher" "^3.4.1"
 

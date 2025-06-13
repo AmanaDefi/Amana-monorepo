@@ -897,7 +897,8 @@ const getPathDataAndMinSharesOut = async (
       transactionAmount,
       inputTokenZeta,
       vaultData.inputToken,
-      vaultData.id as Address
+      vaultData.id as Address,
+      getCurrentSlippage() * 100
     );
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
@@ -931,7 +932,7 @@ const getPathDataAndMinAmountOut = async (
   outputToken: Token,
   transactionAmount: bigint
 ) => {
-  const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
+  const slippageBps = Number(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
   const minAmountOut =
     (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
 
@@ -943,7 +944,8 @@ const getPathDataAndMinAmountOut = async (
       transactionAmount,
       vaultData.inputToken,
       outputToken,
-      vaultData.id as Address
+      vaultData.id as Address,
+      slippageBps
     );
     swapPath = result.encodedPath ?? "0x";
   }
@@ -1557,7 +1559,8 @@ export const getPathDataAndAmountOut = async (
   amount: bigint,
   inputToken: Token,
   outputToken: Token,
-  userAddress: string
+  userAddress: string,
+  slippage: Number
 ): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
   console.log("inputToken address:", inputToken.address);
   console.log("outputToken address:", outputToken.address);
@@ -1574,7 +1577,7 @@ export const getPathDataAndAmountOut = async (
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
-    slippage: 500,
+    slippage: Number(slippage), // e.g. 500 for 0.5%
     amount: formatUnits(amount, inputToken.decimals), // ✅ string with decimals
     sender: userAddress,
     recipient: userAddress,
