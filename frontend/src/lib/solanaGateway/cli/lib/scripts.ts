@@ -48,7 +48,8 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
     .depositAndCall(
       new anchor.BN(amount),
       ethers.getBytes(recipient),
-      message
+      message,
+      RevertOptions
     ).accounts({
       pda: pdaAccount,
       signer: payer,
@@ -77,11 +78,22 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
   const to = getAssociatedTokenAddressSync(mint, pdaAccount, true);
   const message = Buffer.from(getBytes(new AbiCoder().encode(args.types, args.values)));
 
+  const revertOptions = {
+    abortAddress: ethers.getBytes(options.abortAddress),
+    callOnRevert: options.callOnRevert,
+    onRevertGasLimit: new anchor.BN(options.onRevertGasLimit ?? 0),
+    revertAddress: options.revertAddress
+      ? new PublicKey(options.revertAddress)
+      : provider.wallet.publicKey,
+    revertMessage: Buffer.from(options.revertMessage, "utf8"),
+  };
+
   const ix = await program.methods
     .depositSplTokenAndCall(
       new anchor.BN(amount),
       ethers.getBytes(recipient),
-      message
+      message,
+      revertOptions
     ).accounts({
       pda: pdaAccount,
       signer: payer,
@@ -97,4 +109,4 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
 }
 
 
-export const createWithdrawSplTokenTx = async () => {}
+export const createWithdrawSplTokenTx = async () => { }
