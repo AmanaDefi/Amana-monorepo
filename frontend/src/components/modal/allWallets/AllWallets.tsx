@@ -35,9 +35,7 @@ const AllWAllets = () => {
   const okxConnector = connectors.find((con) => con.id === "com.okex.wallet");
 
   //Solana providers
-  const solflareConnector = connectors.find(
-    (con) => con.id === "",
-  ); //We have no this connector on evm
+  const solflareConnector = connectors.find((con) => con.id === ""); //We have no this connector on evm
   const phantomConnector = connectors.find((con) => con.id === "app.phantom");
 
   const handleExternalWalletConnect = (
@@ -97,11 +95,15 @@ const AllWAllets = () => {
                   }
                 }}
               />
-              <ModalButton
-                label="Solflare Wallet"
-                icon={<SolflareWalletIcon width={32} height={32} />}
-                onClick={() => {}}
-              />
+              {solflareConnector && (
+                <ModalButton
+                  label="Solflare Wallet"
+                  icon={<SolflareWalletIcon width={32} height={32} />}
+                  onClick={() => {
+                    handleExternalWalletConnect(solflareConnector);
+                  }}
+                />
+              )}
               {phantomConnector && (
                 <ModalButton
                   label="Phantom"
