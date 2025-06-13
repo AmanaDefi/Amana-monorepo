@@ -6,6 +6,8 @@ import {
 import { alchemy } from "@account-kit/infra";
 import { QueryClient } from "@tanstack/react-query";
 import { SUPPORTED_CHAINS, AlchemyZetachain } from "@/constants/chainConfig";
+import { injected } from "wagmi";
+import { walletConnect } from "wagmi/connectors";
 
 export const alchemyApiKey =
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || "WOD1jehYaPtOI8ix7dFiP";
@@ -17,23 +19,23 @@ if (!alchemyApiKey) throw new Error("Invalid Alchemy API KEY");
 if (!walletConnectProjectId) throw new Error("Invalid WalletConnect Id");
 
 const uiConfig: AlchemyAccountsUIConfig = {
-  illustrationStyle: "filled",
-  auth: {
-    sections: [
-      [{ type: "email" }],
-      [
-        { type: "passkey" },
-        { type: "social", authProviderId: "google", mode: "popup" },
-      ],
-      [
-        {
-          type: "external_wallets",
-          walletConnect: { projectId: walletConnectProjectId },
-        },
-      ],
-    ],
-    addPasskeyOnSignup: true,
-  },
+  // illustrationStyle: "filled",
+  // auth: {
+  //   sections: [
+  //     [{ type: "email" }],
+  //     [
+  //       { type: "passkey" },
+  //       { type: "social", authProviderId: "google", mode: "popup" },
+  //     ],
+  //     // [
+  //     //   {
+  //     //     type: "external_wallets",
+  //     //     walletConnect: { projectId: walletConnectProjectId },
+  //     //   },
+  //     // ],
+  //   ],
+  //   addPasskeyOnSignup: true,
+  // },
 };
 
 export const alchemyConfig = createConfig(
@@ -44,6 +46,15 @@ export const alchemyConfig = createConfig(
     ssr: true,
     storage: cookieStorage,
     enablePopupOauth: true,
+    connectors: [
+      walletConnect({
+        projectId: walletConnectProjectId,
+        showQrModal: true,
+        qrModalOptions: {
+          themeMode: "dark",
+        },
+      }),
+    ],
   },
   uiConfig,
 );

@@ -15,7 +15,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { CHAIN_ID, chainConfigs } from "@/constants/chainConfig";
 import {
-  useAuthModal,
   useLogout,
   useUser,
   useChain,
@@ -47,7 +46,6 @@ interface MultiChainContextType {
   walletAddress: string | null;
   balance: Balance;
   connectSolana: () => Promise<void>;
-  connectEthereum: () => void;
   disconnectWallet: () => void;
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -71,7 +69,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [selectedChain, setSelectedChain] = useState<ChainType | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { openAuthModal, isOpen } = useAuthModal();
   const activeAccount = useUser();
   const { logout: evmDisconnect } = useLogout();
   const { publicKey, disconnect, connected } = useWallet();
@@ -129,14 +126,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       console.error("Solana connection error:", error);
     }
   }, [selectedChain, activeAccount, evmDisconnect, setVisible]);
-
-  const connectEthereum = useCallback(() => {
-    setIsModalOpen(false);
-
-    if (openAuthModal) {
-      openAuthModal();
-    }
-  }, [openAuthModal]);
 
   useEffect(() => {
     if (activeAccount?.address) {
@@ -272,7 +261,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         walletAddress,
         balance: selectedChain == "solana" ? solanaBalance : balance,
         connectSolana,
-        connectEthereum,
         disconnectWallet,
         isModalOpen,
         setIsModalOpen,
