@@ -152,14 +152,10 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   const isLow = isDefined && apyValue >= 0 && apyValue <= 0.5;
                   const isHigh = isDefined && apyValue > 0.5;
 
-                  const displayText = isDefined
-                    ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
-                    : "--";
-
                   const textClass = classNames("font-bold text-xl leading-5", {
-                    "text-red-error": isNegative,
-                    "text-white": isLow || !isDefined,
+                    "text-white": !isDefined || isLow,
                     "text-green-accent": isHigh,
+                    "text-red-error": false,
                   });
 
                   const arrowColor = isNegative
@@ -169,11 +165,19 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                       : "#05D47F";
 
                   return (
-                    <div className="flex flex-row justify-between">
-                      <p className={textClass}>{displayText}</p>
+                    <div className="flex flex-row justify-between items-center">
+                      <p className={textClass}>
+                        {!isDefined
+                          ? "--"
+                          : isNegative
+                            ? "" 
+                            : `${apyValue.toFixed(2)}%`}
+                      </p>
                       {isDefined && (
                         <div
-                          className={classNames({ "rotate-180": isNegative })}
+                          className={classNames({
+                            "rotate-180": isNegative,
+                          })}
                         >
                           <DynamicArrowIcon color={arrowColor} />
                         </div>
