@@ -42,10 +42,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [displayType, setDisplayType] = useState<"cards" | "list">("cards");
 
   const [isShownMyVaults, setIsShownMyVaults] = useState(
-    !!vaults?.some(
-      (vault) =>
-        userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
-          ?.balance,
+    !!Number(
+      vaults?.some(
+        (vault) =>
+          userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
+            ?.balance,
+      ),
     ),
   );
 
@@ -83,21 +85,33 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       const matchesProtocol =
         protocolFilter === "" || vault.protocol.name === protocolFilter;
 
-      const hasDeposited = userVaultBalances ? !!userVaultBalances?.find(
-        (balance) => balance?.vaultId === vault?.id,
-      )?.balance : false;
-
-      return (
-        matchesSearch &&
-        matchesChain &&
-        matchesProtocol &&
-        (isShownMyVaults ? hasDeposited : true)
-      );
+      return matchesSearch && matchesChain && matchesProtocol;
     });
-  }, [vaults, searchTerm, chainFilter, protocolFilter, isShownMyVaults, userVaultBalances]);
+  }, [vaults, searchTerm, chainFilter, protocolFilter]);
+
+  const MyVaults = useMemo(() => {
+    return filteredVaults.filter((vault) => {
+      const hasDeposited = userVaultBalances
+        ? !!Number(
+            userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
+              ?.balance,
+          )
+        : false;
+
+      return hasDeposited;
+    });
+  }, [filteredVaults, userVaultBalances]);
+
+  const vaultsList = useMemo(() => {
+    if (isShownMyVaults) {
+      return MyVaults;
+    }
+
+    return filteredVaults;
+  }, [MyVaults, filteredVaults, isShownMyVaults]);
 
   const sortedVaults = useMemo(() => {
-    return [...filteredVaults].sort((a, b) => {
+    return [...vaultsList].sort((a, b) => {
       let aValue: any, bValue: any;
 
       switch (sortBy.toLowerCase()) {
@@ -129,7 +143,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });
-  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
+  }, [vaultsList, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
 
   const paginatedVaults = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -182,11 +196,11 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           displayType={displayType}
           isShownMyVaults={isShownMyVaults}
           setIsShownMyVaults={setIsShownMyVaults}
-          shouldShowTabs={!!user}
+          shouldShowTabs={!!user && !!MyVaults?.length}
         />
 
         <div className="text-gray-400 mb-4 text-sm">
-          Showing {paginatedVaults.length} of {filteredVaults.length} vaults
+          Showing {paginatedVaults.length} of {vaultsList.length} vaults
         </div>
 
         {displayType === "cards" ? (
@@ -226,7 +240,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
         )}
 
-        {paginatedVaults.length === 0 && (
+        {vaultsList.length === 0 && (
           <div className="flex flex-col items-center py-12 gap-3">
             <p className="text-white text-lg">
               No vaults found matching your filters
