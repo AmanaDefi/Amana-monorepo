@@ -8,21 +8,17 @@ import {
   VaultData,
   VaultTotalAssets,
 } from "@/types/types";
-import { formatNumberWithSuffix, formatTokenBalance } from "@/utils/utils";
+import { formatTokenBalance } from "@/utils/utils";
 import { VaultCardInfoBlock } from "./VaultCardInfoBlock";
 import { calculateRiskLevel } from "..";
 import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
-import { useAuthStore } from "@/store/authStore";
 
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import TableChart from "@/components/TableChart";
 import { MOCK_HISTORICAL_APY } from "@/constants/mockHistoricalAPY";
-import { InfoBlock } from "./InfoBlock.tsx";
-
-
 
 const MOCK_DIGITS = 6.43;
 
@@ -37,7 +33,6 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
   ({ vault, vaultAPYs, vaultTotalAssets, userVaultBalances }, ref) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
-    const { openStep } = useAuthStore();
 
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
@@ -56,16 +51,11 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     ) => {
       e.stopPropagation();
-      if (walletAddress) {
-        handleVaultClick(vault.id);
-      } else {
-        openStep("optionsA");
-      }
+      handleVaultClick(vault.id);
     };
     return (
       <div
         onClick={() => {
-          if (!walletAddress) return;
           handleVaultClick(vault.id);
         }}
         ref={ref}
