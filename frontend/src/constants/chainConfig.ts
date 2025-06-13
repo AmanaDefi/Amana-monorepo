@@ -174,7 +174,7 @@ export const polygonMainnetRpcUrl =
 export const arbitrumMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
 export const arbitrumSepoliaRpcUrl =
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_SEPOLIA || "";
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_GOERLI || "";
 
 export const solanaRpcUrl =
   deployEnv == "testnet"

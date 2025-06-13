@@ -7,6 +7,8 @@ import FiltersIcon from "@/components/svg/Filters";
 import CardsMenuIcon from "@/components/svg/ListMenuCards";
 import ListMenuIcon from "@/components/svg/ListMenuIcon";
 import SearchIcon from "@/components/svg/Search";
+import Button from "@/components/Button";
+import classNames from "classnames";
 
 const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "RISK" }];
 
@@ -25,6 +27,9 @@ type Props = {
   clearAllFilters: () => void;
   displayType: "cards" | "list";
   setDisplayType: Dispatch<SetStateAction<"cards" | "list">>;
+  isShownMyVaults: boolean;
+  setIsShownMyVaults: Dispatch<SetStateAction<boolean>>;
+  shouldShowTabs: boolean;
 };
 
 export const VaultFilters: FC<Props> = ({
@@ -41,6 +46,9 @@ export const VaultFilters: FC<Props> = ({
   clearAllFilters,
   displayType,
   setDisplayType,
+  shouldShowTabs,
+  isShownMyVaults,
+  setIsShownMyVaults,
 }) => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -120,20 +128,47 @@ export const VaultFilters: FC<Props> = ({
     >
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <Dropdown
-            emptyLabel="All Chains"
-            options={chains}
-            selectedOption={chainFilter}
-            setSelectedOption={setChainFilter}
-            width={210}
-          />
-          <Dropdown
-            emptyLabel="All Protocols"
-            options={protocols}
-            selectedOption={protocolFilter}
-            setSelectedOption={setProtocolFilter}
-            width={210}
-          />
+          {!shouldShowTabs ? (
+            <>
+              <Dropdown
+                emptyLabel="All Chains"
+                options={chains}
+                selectedOption={chainFilter}
+                setSelectedOption={setChainFilter}
+                width={210}
+              />
+              <Dropdown
+                emptyLabel="All Protocols"
+                options={protocols}
+                selectedOption={protocolFilter}
+                setSelectedOption={setProtocolFilter}
+                width={210}
+              />
+            </>
+          ) : (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setIsShownMyVaults(true)
+                }
+                className={classNames("!py-4 !px-[31px] !h-[56px]", {
+                  "!border-[#1B46E0]": isShownMyVaults,
+                })}
+              >
+                My Vaults
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setIsShownMyVaults(false)}
+                className={classNames("!py-4 !px-[31px] !h-[56px]", {
+                  "!border-[#1B46E0]": !isShownMyVaults,
+                })}
+              >
+                All Vaults
+              </Button>
+            </>
+          )}
           <button
             type="button"
             onClick={clearAllFilters}

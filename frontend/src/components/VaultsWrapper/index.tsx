@@ -12,6 +12,7 @@ import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
 import classNames from "classnames";
 import { useLayoutStore } from "@/store/store";
+import { useUser } from "@account-kit/react";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   return 1;
@@ -40,9 +41,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<"cards" | "list">("cards");
 
+  const [isShownMyVaults, setIsShownMyVaults] = useState(
+    !!vaults?.some(
+      (vault) =>
+        userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
+          ?.balance,
+    ),
+  );
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
   const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
+  const user = useUser();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -73,9 +83,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       const matchesProtocol =
         protocolFilter === "" || vault.protocol.name === protocolFilter;
 
-      return matchesSearch && matchesChain && matchesProtocol;
+      const hasDeposited = userVaultBalances ? !!userVaultBalances?.find(
+        (balance) => balance?.vaultId === vault?.id,
+      )?.balance : false;
+
+      return (
+        matchesSearch &&
+        matchesChain &&
+        matchesProtocol &&
+        (isShownMyVaults ? hasDeposited : true)
+      );
     });
-  }, [vaults, searchTerm, chainFilter, protocolFilter]);
+  }, [vaults, searchTerm, chainFilter, protocolFilter, isShownMyVaults, userVaultBalances]);
 
   const sortedVaults = useMemo(() => {
     return [...filteredVaults].sort((a, b) => {
@@ -161,6 +180,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           clearAllFilters={clearAllFilters}
           setDisplayType={setDisplayType}
           displayType={displayType}
+          isShownMyVaults={isShownMyVaults}
+          setIsShownMyVaults={setIsShownMyVaults}
+          shouldShowTabs={!!user}
         />
 
         <div className="text-gray-400 mb-4 text-sm">
