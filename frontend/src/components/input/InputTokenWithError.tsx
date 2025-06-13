@@ -1,19 +1,19 @@
-'use client';
+"use client";
 import React, { HTMLProps, useMemo, useState } from "react";
 import { Token, VaultData } from "@/types/types";
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import SlippageSettingsDropdown from "@/components/modal/SlippageSettingsDropdown.tsx";
+import SlippageSettingsDropdown from "@/components/modal/SlippageSettingsDropdown";
 import TokenIcon from "@/components/common/TokenIcon";
 import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { formatTokenBalance } from "@/utils/utils";
 import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
+import { Chain } from "viem";
 import clsx from "clsx";
-
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -53,6 +53,7 @@ export default function InputTokenWithError({
   conversionOutput,
   isSlippageExceedingLimit,
   setInputBalance,
+  selectedChain, 
   ...props
 }: {
   errorMessage?: string;
@@ -74,21 +75,26 @@ export default function InputTokenWithError({
   loadingOutputToken?: boolean;
   conversionOutput: ConversionOutput;
   isSlippageExceedingLimit?: boolean;
+  selectedChain?: Chain; 
 } & HTMLProps<HTMLInputElement>): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
   const { activeChain } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
 
-  // Function to handle token selection with chain switching
   const handleTokenSelection = (token: Token) => {
     onSelectToken(token);
   };
 
-  // Determine if token selection should be available
   const showTokenSelector = useMemo(() => {
-    // Always show token selector if there are tokens available
-    return tokenList && tokenList.length > 0;
-  }, [tokenList]);
+    // Show token selector only for deposit mode and if there are tokens available and chain is selected
+    return (
+      isDeposit &&
+      !isOutput &&
+      tokenList &&
+      tokenList.length > 0 &&
+      selectedChain
+    );
+  }, [isDeposit, isOutput, tokenList, selectedChain]);
 
   // Format the balance with the appropriate number of decimal places
   const formattedTokenBalance = useMemo(() => {
@@ -112,6 +118,7 @@ export default function InputTokenWithError({
           </div>
         )}
       </div>
+
       <div className="flex items-center justify-between mb-3">
         {captionText && (
           <div className="text-white text-start flex text-[18px] items-center gap-2">
@@ -128,6 +135,7 @@ export default function InputTokenWithError({
           </div>
         )}
       </div>
+
       <div className="relative flex w-full flex-col">
         <div
           style={{ boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.25)" }}
@@ -188,38 +196,14 @@ export default function InputTokenWithError({
               />
             )}
 
-            {/* <div
-              className={`flex items-center ml-1 gap-2 group/max text-customGray300 ${
-                allowInput && !isOutput
-                  ? "group-hover/max:text-white cursor-pointer "
-                  : ""
-              }`}
-              onClick={allowInput ? onMaxClick : () => {}}
-            >
-              <div
-                className={`mb-1 ${
-                  allowInput && !isOutput ? "group-hover/max:text-white" : ""
-                }`}
-              >
-                
-              </div>
-              {
-                <p
-                  className={`${
-                    allowInput && !isOutput ? "group-hover/max:text-white" : ""
-                  }`}
-                >
-                  {inputTokenbalance ? formattedTokenBalance : "0"}
-                </p>
-              }
-            </div> */}
             <div className="flex items-center">
               {showTokenSelector ? (
                 <ChainTokenSelector
                   selectedToken={selectedToken}
+                  selectedChain={selectedChain}
                   onSelectToken={handleTokenSelection}
-                  className="justify-end"
                   vaultData={vaultData}
+                  className="justify-end"
                 />
               ) : (
                 <div className="flex items-center">

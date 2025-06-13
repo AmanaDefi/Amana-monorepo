@@ -8,9 +8,9 @@ import {
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
 import { bigIntReplacer } from "@/utils/utils";
-import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx/index.tsx";
-import CloseModalIcon from "../svg/CloseModalIcon.tsx";
-import AutoDropdownIcon from "../svg/AutoDropdownIcon.tsx";
+import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx/index";
+import CloseModalIcon from "../svg/CloseModalIcon";
+import AutoDropdownIcon from "../svg/AutoDropdownIcon";
 
 export default function SlippageSettingsDropdown({
   setInputBalance,
