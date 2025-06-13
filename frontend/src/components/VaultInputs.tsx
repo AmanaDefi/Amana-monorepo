@@ -52,6 +52,8 @@ import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useChain } from "@account-kit/react";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
+import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
+import FeeDisplay from "./VaultsDetailsWrapper/components/FeeDisplay";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -209,6 +211,7 @@ export default function VaultInputs({
   );
 
   const { walletAddress } = useMultiChain();
+    const isConnected = !!walletAddress;
   const { chain: activeChain } = useChain();
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
@@ -1053,23 +1056,26 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
-
-      <div className="mt-6 mb-4">
-        <div className="text-white text-[18px] font-bold mb-3">
-          Select Network
+      {!isConnected && (
+        <div className="mb-4">
+          <SlippageSettingsBlock
+            setInputBalance={setInputBalance}
+            vaultId={vaultData.id}
+            showTransactionSettings={isSlippageExceedingLimit}
+          />
         </div>
+      )}
+      <div className="mb-4">
         {selectedChain && onSelectChain && vaultId && (
           <ChainSelector
             selectedChain={selectedChain}
             onSelectChain={onSelectChain}
             vaultId={vaultId}
-            className="w-full max-w-[240px]"
           />
         )}
       </div>
 
       <InputTokenWithError
-        captionText={isDeposit ? "Amount to Invest" : "Withdraw Amount"}
         onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
         allowInput={allowInput}
         vaultData={vaultData}
@@ -1097,6 +1103,16 @@ export default function VaultInputs({
           <DepositModalArrowsIcon width={24} height={24} />
         </button>
       </div>
+      <div className="mb-10">
+        <FeeDisplay
+          isDeposit={isDeposit}
+          vaultData={vaultData}
+          conversionOutput={conversionOutput}
+          debouncedInputBalance={debouncedInputBalance}
+          performanceFee={performanceFee}
+        />
+      </div>
+
       <InputTokenWithError
         captionText={"Output Amount"}
         onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
@@ -1121,130 +1137,6 @@ export default function VaultInputs({
         conversionOutput={conversionOutput}
         setInputBalance={setInputBalance}
       />
-      <div className="mt-[56px]">
-        {conversionOutput.slippageActualValue !== null &&
-          conversionOutput.slippageActualValue < 100 && (
-            <p className="text-white font-bold mb-2 text-start">
-              Estimated slippage value:
-              <span
-                className={`${
-                  isSlippageExceedingLimit ? "text-red-500" : "text-green-500"
-                } whitespace-pre`}
-              >
-                {" "}
-                {conversionOutput.slippageActualValue}%
-              </span>
-            </p>
-          )}
-
-        {/* Net Deposit to Vault display with tooltip */}
-        {isDeposit &&
-          !vaultData.depositFeePaidFromGasTank &&
-          conversionOutput.netDepositToVaultUSD &&
-          Number(debouncedInputBalance.value) > 0 && (
-            <p className="text-white font-bold mb-2 text-start flex items-center">
-              <span>
-                Net Deposit to Vault: ${conversionOutput.netDepositToVaultUSD}
-              </span>
-              <button id="net-deposit-breakdown" className="group ml-2">
-                <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors" />
-              </button>
-              <ResponsiveTooltip
-                id={"net-deposit-breakdown"}
-                content={
-                  <p className="w-60">
-                    Input amount (${conversionOutput.inputAmountInUSDFormatted})
-                    - Gas fee (${conversionOutput.gasFeeInUSD}) = Net deposit ($
-                    {conversionOutput.netDepositToVaultUSD})
-                  </p>
-                }
-              />
-            </p>
-          )}
-
-        {/* Display gas fee warning for Ethereum vaults if deposit is too low in USD */}
-        {isDeposit &&
-          !vaultData.depositFeePaidFromGasTank &&
-          debouncedInputBalance.value > 0n &&
-          Number(
-            conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-          ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "")) && (
-            <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
-              <p className="text-red-400 font-medium">
-                Your deposit amount is too low to cover the deposit gas fee.
-              </p>
-            </div>
-          )}
-
-        <p className="text-white text-[18px] font-bold text-start">
-          Fee Breakdown
-        </p>
-        <div className="w-full mt-3 bg-[#161C27] py-[18px] px-4 rounded-lg border text-[14px] font-normal text-white border-[#3E73C4]">
-          {/* Deposit Fee For Ethereum Vaults*/}
-          {isDeposit &&
-            !vaultData.depositFeePaidFromGasTank &&
-            conversionOutput.gasFeeInVaultAsset &&
-            Number(conversionOutput.gasFeeInVaultAsset) > 0 &&
-            conversionOutput.gasFeeInETH &&
-            conversionOutput.gasFeeInUSD && (
-              <span className="flex flex-row items-center justify-between text-white py-1">
-                <div className="flex items-center">
-                  <button id="gas-fee-info" className="mr-[10px] group">
-                    <ErrorInputIcon
-                      width={14}
-                      height={14}
-                      className="fill-[#1B46E0]"
-                    />
-                  </button>
-                  <p>Deposit Fee (deducted from your deposit)</p>
-                  <ResponsiveTooltip
-                    id="gas-fee-info"
-                    content={
-                      <p className="w-48">
-                        This fee is required for processing your deposit
-                        transaction on the Ethereum network. It is deducted
-                        directly from your deposit amount and is not covered by
-                        Amana.
-                      </p>
-                    }
-                  />
-                </div>
-                <span className="font-bold">
-                  {conversionOutput.gasFeeInETH} {getOnlyTokenSymbol("ETH")} (~$
-                  {conversionOutput.gasFeeInUSD})
-                </span>
-              </span>
-            )}
-          {/* Deposit Fee For Non-Ethereum Vaults*/}
-          {isDeposit && vaultData.depositFeePaidFromGasTank && (
-            <span className="flex flex-row items-center justify-between text-white py-1">
-              <p>Deposit Fee</p>
-              <span className="font-bold">0%</span>
-            </span>
-          )}
-
-          {/* Withdrawal Fee */}
-          {!isDeposit && (
-            <span className="flex flex-row items-center justify-between text-white py-1">
-              <p>Withdrawal Fee</p>
-              <span className="font-bold">0%</span>
-            </span>
-          )}
-
-          {/* Performance Fee */}
-          <span className="flex flex-row items-center justify-between text-white py-1">
-            <div className="flex items-center">
-              <div className="flex items-center mr-[10px]">
-                <InfoBlock>
-                  💡 15% deducted from the profit earned in the vault
-                </InfoBlock>
-              </div>
-              <p>Performance Fee (deducted upon withdrawal)</p>
-            </div>
-            <span className="font-bold">{performanceFee}%</span>
-          </span>
-        </div>
-      </div>
 
       {inputToken &&
         !loadingOutputToken &&

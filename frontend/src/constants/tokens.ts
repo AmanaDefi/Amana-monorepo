@@ -38,6 +38,37 @@ export const SUPPORTED_TOKENS: TokenInfo[] = [
   },
 ];
 
+export const CHAINS_ICONS: TokenInfo[] = [
+  {
+    symbol: "ZETA",
+    name: "ZETA",
+    icon: "/ZetaChainLogo.png",
+  },
+  {
+    symbol: "ETH",
+    name: "Ethereum",
+    icon: "/ETH.png",
+  },
+  {
+    symbol: "BNB",
+    name: "BNB",
+    icon: "/bnb-bnb-logo.png",
+  },
+  {
+    symbol: "AVALANCHE",
+    name: "AVALANCHE",
+    icon: "/avalanche-avax-logo.png",
+  },
+  {
+    symbol: "ARBITRUM",
+    name: "ARBITRUM",
+    icon: "/arbitrum-arb-logo.png",
+  },
+];
+
 export const getTokenBySymbol = (symbol: string): TokenInfo | undefined => {
   return SUPPORTED_TOKENS.find((token) => token.symbol === symbol);
+};
+export const getChainBySymbol = (symbol: string): TokenInfo | undefined => {
+  return CHAINS_ICONS.find((icon) => icon.symbol === symbol);
 };

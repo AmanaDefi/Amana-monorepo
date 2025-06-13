@@ -5,7 +5,6 @@ import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import SlippageSettingsDropdown from "@/components/modal/SlippageSettingsDropdown";
 import TokenIcon from "@/components/common/TokenIcon";
 import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
@@ -14,6 +13,9 @@ import { formatTokenBalance } from "@/utils/utils";
 import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
 import { Chain } from "viem";
 import clsx from "clsx";
+import SlippageSettingsBlock from "../VaultsDetailsWrapper/components/SlippageSettingsBlock";
+import FeeDisplay from "../VaultsDetailsWrapper/components/FeeDisplay";
+
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -28,10 +30,14 @@ export type InputTokenWithErrorProps = {
   allowInput?: boolean;
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
-  isDeposit: Boolean;
+  isDeposit: boolean;
   isOutput?: boolean;
   loadingOutputToken?: boolean;
   conversionOutput: ConversionOutput;
+  // Додаємо пропси для FeeDisplay
+  showFeeDisplay?: boolean;
+  debouncedInputBalance?: { value: bigint };
+  performanceFee?: number;
 };
 
 export default function InputTokenWithError({
@@ -53,7 +59,11 @@ export default function InputTokenWithError({
   conversionOutput,
   isSlippageExceedingLimit,
   setInputBalance,
-  selectedChain, 
+  selectedChain,
+  // Нові пропси для FeeDisplay
+  showFeeDisplay = false,
+  debouncedInputBalance,
+  performanceFee,
   ...props
 }: {
   errorMessage?: string;
@@ -69,24 +79,29 @@ export default function InputTokenWithError({
   allowInput?: boolean;
   inputMoreThanBalance?: boolean;
   disabled?: boolean;
-  isDeposit: Boolean;
+  isDeposit: boolean;
   userVaultBalance?: string;
   isOutput?: boolean;
   loadingOutputToken?: boolean;
   conversionOutput: ConversionOutput;
   isSlippageExceedingLimit?: boolean;
-  selectedChain?: Chain; 
+  selectedChain?: Chain;
+  // Нові пропси
+  showFeeDisplay?: boolean;
+  debouncedInputBalance?: { value: bigint };
+  performanceFee?: number;
 } & HTMLProps<HTMLInputElement>): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
-  const { activeChain } = useMultiChain();
+  const { walletAddress } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
+
+  const isConnected = !!walletAddress;
 
   const handleTokenSelection = (token: Token) => {
     onSelectToken(token);
   };
 
   const showTokenSelector = useMemo(() => {
-    // Show token selector only for deposit mode and if there are tokens available and chain is selected
     return (
       isDeposit &&
       !isOutput &&
@@ -96,7 +111,6 @@ export default function InputTokenWithError({
     );
   }, [isDeposit, isOutput, tokenList, selectedChain]);
 
-  // Format the balance with the appropriate number of decimal places
   const formattedTokenBalance = useMemo(() => {
     if (!inputTokenbalance || !selectedToken?.symbol) return "0";
     return formatTokenBalance(inputTokenbalance, selectedToken.symbol);
@@ -104,24 +118,30 @@ export default function InputTokenWithError({
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
-      <div className="flex items-center gap-2">
-        {!isOutput && isSlippageExceedingLimit && (
-          <p className="hidden lg:block">Transaction settings</p>
-        )}
-        {!isOutput && (
-          <div className="flex flex-row gap-2 mt-10 mb-[53px]">
-            <p>Estimated slippage value: 0.1%</p>
-            <SlippageSettingsDropdown
-              setInputBalance={setInputBalance}
-              vaultId={vaultData.id}
-            />
-          </div>
-        )}
-      </div>
+      {isOutput && isConnected && (
+        <div className="mb-10">
+          <SlippageSettingsBlock
+            setInputBalance={setInputBalance}
+            vaultId={vaultData.id}
+            showTransactionSettings={!isOutput && isSlippageExceedingLimit}
+          />
+        </div>
+      )}
+      {showFeeDisplay && debouncedInputBalance && (
+        <div className="mb-10">
+          <FeeDisplay
+            isDeposit={isDeposit}
+            vaultData={vaultData}
+            conversionOutput={conversionOutput}
+            debouncedInputBalance={debouncedInputBalance}
+            performanceFee={performanceFee}
+          />
+        </div>
+      )}
 
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between">
         {captionText && (
-          <div className="text-white text-start flex text-[18px] items-center gap-2">
+          <div className="text-white text-start flex text-[18px] font-bold items-center gap-2 mb-4">
             {captionText}
             {isOutput && (
               <InfoBlock isMiddle>
@@ -222,6 +242,7 @@ export default function InputTokenWithError({
             </div>
           </div>
         </div>
+
         {errorMessage && (
           <p
             className={`${

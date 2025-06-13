@@ -34,7 +34,6 @@ import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import InvestBlock from "@/components/InvestBlock";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
-import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
 import { Chain } from "viem";
