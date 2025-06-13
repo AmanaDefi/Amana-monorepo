@@ -51,6 +51,7 @@ import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useChain } from "@account-kit/react";
+import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -84,7 +85,9 @@ export interface VaultInputsProps {
   initialIsDeposit?: boolean;
   onTokenSelect?: (token: Token) => void;
   selectedToken?: Token;
-  selectedChain?: Chain; // Add selectedChain prop
+  selectedChain?: Chain; 
+  onSelectChain?: (chain: Chain) => void; 
+  vaultId: string; 
 }
 
 export type ConversionOutput = {
@@ -109,6 +112,8 @@ export default function VaultInputs({
   onTokenSelect,
   selectedToken,
   selectedChain,
+  onSelectChain, 
+  vaultId,
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -1048,6 +1053,20 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
+
+      <div className="mt-6 mb-4">
+        <div className="text-white text-[18px] font-bold mb-3">
+          Select Network
+        </div>
+        {selectedChain && onSelectChain && vaultId && (
+          <ChainSelector
+            selectedChain={selectedChain}
+            onSelectChain={onSelectChain}
+            vaultId={vaultId}
+            className="w-full max-w-[240px]"
+          />
+        )}
+      </div>
 
       <InputTokenWithError
         captionText={isDeposit ? "Amount to Invest" : "Withdraw Amount"}

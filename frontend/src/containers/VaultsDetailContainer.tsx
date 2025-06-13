@@ -39,7 +39,6 @@ import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
 import { Chain } from "viem";
 import clsx from "clsx";
-import ChainSelector from "@/components/VaultsDetailsWrapper/components/ChainSelector";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -303,18 +302,6 @@ const VaultsDetailContainer: React.FC<{
             totalAssets={vaultTotalAsset}
           />
 
-          <div className="mt-8 mb-4">
-            <div className="text-white text-[18px] font-bold mb-3">
-              Select Network
-            </div>
-            <ChainSelector
-              selectedChain={selectedChain}
-              onSelectChain={handleChainSelect}
-              vaultId={vaultID.toString()}
-              className="w-full max-w-[240px]"
-            />
-          </div>
-
           <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
             <VaultInputs
               vaultData={vaultData}
@@ -326,6 +313,8 @@ const VaultsDetailContainer: React.FC<{
               onTokenSelect={handleTokenSelect}
               selectedToken={selectedToken}
               selectedChain={selectedChain}
+              onSelectChain={handleChainSelect} 
+              vaultId={vaultID.toString()} 
             />
           </div>
         </div>
