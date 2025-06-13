@@ -54,6 +54,7 @@ import { useChain } from "@account-kit/react";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay from "./VaultsDetailsWrapper/components/FeeDisplay";
+import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -1137,6 +1138,7 @@ export default function VaultInputs({
         conversionOutput={conversionOutput}
         setInputBalance={setInputBalance}
       />
+      {!!isDeposit && <APYChangeCard />}
 
       {inputToken &&
         !loadingOutputToken &&
