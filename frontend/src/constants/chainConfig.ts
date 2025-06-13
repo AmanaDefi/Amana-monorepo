@@ -33,7 +33,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   SOL: "/solana_logo.png",
   POL: "/polygon_logo.png",
   AVAX: "/avalanche-avax-logo.png",
-  BNB: "/bnb_logo.png",
+  BNB: "/bnb-bnb-logo.png",
   USDC: "/USDC.png",
   USDT: "/usdt.png",
   COMPOUND: "/compound.png",

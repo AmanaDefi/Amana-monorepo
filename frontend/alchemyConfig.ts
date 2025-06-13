@@ -7,13 +7,13 @@ import { alchemy } from "@account-kit/infra";
 import { QueryClient } from "@tanstack/react-query";
 import { SUPPORTED_CHAINS, AlchemyZetachain } from "@/constants/chainConfig";
 
-const apiKey =
+export const alchemyApiKey =
   process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || "WOD1jehYaPtOI8ix7dFiP";
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ||
   "fc48f2e065ff110cc6683b9af8b654c5";
 
-if (!apiKey) throw new Error("Invalid Alchemy API KEY");
+if (!alchemyApiKey) throw new Error("Invalid Alchemy API KEY");
 if (!walletConnectProjectId) throw new Error("Invalid WalletConnect Id");
 
 const uiConfig: AlchemyAccountsUIConfig = {
@@ -38,7 +38,7 @@ const uiConfig: AlchemyAccountsUIConfig = {
 
 export const alchemyConfig = createConfig(
   {
-    transport: alchemy({ apiKey }),
+    transport: alchemy({ apiKey: alchemyApiKey }),
     chain: AlchemyZetachain,
     chains: SUPPORTED_CHAINS,
     ssr: true,

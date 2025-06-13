@@ -13,7 +13,7 @@ const MetaMaskIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     className={className}
     {...props}
   >
-    <g clip-path="url(#clip0_427_9472)">
+    <g clipPath="url(#clip0_427_9472)">
       <path
         d="M33.3455 0L18.6992 10.8372L21.4228 4.45053L33.3455 0Z"
         fill="#E17726"

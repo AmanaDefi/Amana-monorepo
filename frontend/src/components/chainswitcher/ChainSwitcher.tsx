@@ -159,12 +159,12 @@ const ChainSwitcher: React.FC = () => {
               : "Connect wallet to switch networks"
         }
       >
-        <div className="bg-[#24262f] rounded-full border border-[#9A9CB3] p-2 flex items-center justify-center">
+        <div className="bg-[#24262f] rounded-full flex items-center justify-center">
           <Image
             src={CHAIN_ICONS[currentChain.id].url}
-            width={24}
-            height={24}
-            alt="change chain"
+            width={40}
+            height={40}
+            alt={currentChain.name}
           />
         </div>
       </Button>

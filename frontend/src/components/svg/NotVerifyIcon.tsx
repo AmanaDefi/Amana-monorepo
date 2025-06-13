@@ -14,8 +14,8 @@ const NotVerifyIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     {...props}
   >
     <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
+      fillRule="evenodd"
+      clipRule="evenodd"
       d="M13.1404 3.80676L12.1937 2.86011L8.00035 7.06011L3.80701 2.86011L2.86035 3.80676L7.06035 8.00011L2.86035 12.1935L3.80701 13.1401L8.00035 8.94011L12.1937 13.1401L13.1404 12.1935L8.94035 8.00011L13.1404 3.80676Z"
       fill="#FF1E1E"
     />

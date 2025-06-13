@@ -9,14 +9,15 @@ import {
 } from "viem";
 
 import type { Chain } from "viem/chains";
+import { alchemyApiKey } from "../../alchemyConfig";
 
 const clientCache = new Map<number, PublicClient>();
 const walletClientCache = new Map<number, WalletClient>();
 
 export const getRpcUrl = (chain: Chain): string => {
-  const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
   if (alchemyApiKey) {
     const alchemyUrl = chain.rpcUrls.alchemy?.http[0];
+    console.log(alchemyUrl, 'alchemyUrl')
     if (alchemyUrl) {
       return `${alchemyUrl}/${alchemyApiKey}`;
     }

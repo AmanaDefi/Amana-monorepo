@@ -39,7 +39,7 @@ export type ActiveWalletClient = {
   client: undefined | WalletClient | AlchemySmartAccountClient;
   isSmartAccount: boolean;
   isLoading: boolean;
-}
+};
 
 interface MultiChainContextType {
   selectedChain: ChainType | null;
@@ -268,7 +268,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     <MultiChainContext.Provider
       value={{
         selectedChain,
-        activeChain,
+        activeChain: selectedChain === "solana" ? activeChain : chain,
         walletAddress,
         balance: selectedChain == "solana" ? solanaBalance : balance,
         connectSolana,

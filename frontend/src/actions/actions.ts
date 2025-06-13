@@ -2025,7 +2025,6 @@ export const fetchUserVaultBalance = async (
       args: [shares],
     });
 
-    // 5. Форматуємо кінцевий результат
     return formatUnits(balanceInAssets, decimals);
   } catch (error) {
     console.error("Помилка під час отримання балансу вольта:", error);
