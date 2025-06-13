@@ -5,7 +5,7 @@ import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import { formatCurrency } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import SlippageSettingsModal from "@/components/modal/SlippageSettingsModal";
+import SlippageSettingsDropdown from "@/components/modal/SlippageSettingsDropdown.tsx";
 import TokenIcon from "@/components/common/TokenIcon";
 import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
@@ -13,6 +13,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { formatTokenBalance } from "@/utils/utils";
 import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
 import clsx from "clsx";
+
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -104,7 +105,7 @@ export default function InputTokenWithError({
         {!isOutput && (
           <div className="flex flex-row gap-2 mt-10 mb-[53px]">
             <p>Estimated slippage value: 0.1%</p>
-            <SlippageSettingsModal
+            <SlippageSettingsDropdown
               setInputBalance={setInputBalance}
               vaultId={vaultData.id}
             />
