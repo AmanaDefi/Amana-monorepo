@@ -36,7 +36,7 @@ import InvestBlock from "@/components/InvestBlock";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
-import { useUserSettingsStore } from "@/store/UserSettingsStore";
+import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { Chain } from "viem";
 import clsx from "clsx";
 

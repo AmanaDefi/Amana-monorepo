@@ -1480,7 +1480,7 @@ function Interaction({
               <Button
                 variant="special"
                 // disabled={isDisabled}
-                className="w-full mt-[47px]"
+                className="w-full mt-[47px] !text-[16px] !font-bold !font-gotham"
                 onClick={handleMainAction}
               >
                 {label ?? (isDeposit ? "Invest" : "Withdrow")}

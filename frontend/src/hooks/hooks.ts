@@ -43,7 +43,8 @@ import { apiService } from "@/service";
 import { zetaProvider } from "@/utils/providers";
 import { Address, zeroAddress } from "viem";
 import { useChain } from "@account-kit/react";
-import { useUserSettingsStore } from "@/store/UserSettingsStore";
+import { useUserSettingsStore } from "@/store/userSettingsStore";
+
 
 type CashedVaultData = {
   vaultId: string;

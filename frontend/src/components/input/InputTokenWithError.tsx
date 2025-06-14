@@ -34,7 +34,7 @@ export type InputTokenWithErrorProps = {
   isOutput?: boolean;
   loadingOutputToken?: boolean;
   conversionOutput: ConversionOutput;
-  // Додаємо пропси для FeeDisplay
+
   showFeeDisplay?: boolean;
   debouncedInputBalance?: { value: bigint };
   performanceFee?: number;
@@ -60,7 +60,7 @@ export default function InputTokenWithError({
   isSlippageExceedingLimit,
   setInputBalance,
   selectedChain,
-  // Нові пропси для FeeDisplay
+
   showFeeDisplay = false,
   debouncedInputBalance,
   performanceFee,
@@ -86,7 +86,7 @@ export default function InputTokenWithError({
   conversionOutput: ConversionOutput;
   isSlippageExceedingLimit?: boolean;
   selectedChain?: Chain;
-  // Нові пропси
+
   showFeeDisplay?: boolean;
   debouncedInputBalance?: { value: bigint };
   performanceFee?: number;
@@ -103,8 +103,7 @@ export default function InputTokenWithError({
 
   const showTokenSelector = useMemo(() => {
     return (
-      isDeposit &&
-      !isOutput &&
+      ((isDeposit && !isOutput) || (!isDeposit && isOutput)) &&
       tokenList &&
       tokenList.length > 0 &&
       selectedChain
@@ -118,7 +117,7 @@ export default function InputTokenWithError({
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
-      {isOutput && isConnected && (
+      {isOutput && isConnected && isDeposit && (
         <div className="mb-10">
           <SlippageSettingsBlock
             setInputBalance={setInputBalance}
@@ -167,7 +166,7 @@ export default function InputTokenWithError({
           )}
         >
           <div className="flex items-center justify-between text-sm text-[#535E73]">
-            {!isOutput && (
+            {!isOutput && isDeposit && (
               <>
                 <span>You send (min 0.0015)</span>
                 <button
@@ -176,6 +175,32 @@ export default function InputTokenWithError({
                 >
                   MAX
                 </button>
+              </>
+            )}
+
+            {!isOutput && !isDeposit && (
+              <>
+                <button
+                  onClick={allowInput ? onMaxClick : undefined}
+                  className="text-[#3E73C4] hover:underline font-normal"
+                >
+                  MAX
+                </button>
+                <span></span> {/* Empty span for spacing */}
+              </>
+            )}
+
+            {isOutput && !isDeposit && (
+              <>
+                <span>You send (min 0.0015)</span>
+                <div className="flex-1 flex justify-center">
+                  <button
+                    onClick={allowInput ? onMaxClick : undefined}
+                    className="text-[#3E73C4] hover:underline font-normal"
+                  >
+                    MAX
+                  </button>
+                </div>
               </>
             )}
             <p className="group-hover/max:text-white">
@@ -201,8 +226,15 @@ export default function InputTokenWithError({
               <span className="text-white text-2xl">
                 {loadingOutputToken ? (
                   <PendingDots />
-                ) : inputTokenbalance && Number(inputTokenbalance) !== 0 ? (
-                  inputTokenbalance
+                ) : isDeposit ? (
+                  inputTokenbalance && Number(inputTokenbalance) !== 0 ? (
+                    inputTokenbalance
+                  ) : (
+                    " "
+                  )
+                ) : conversionOutput.outputAmountFormatted &&
+                  Number(conversionOutput.outputAmountFormatted) !== 0 ? (
+                  conversionOutput.outputAmountFormatted
                 ) : (
                   " "
                 )}

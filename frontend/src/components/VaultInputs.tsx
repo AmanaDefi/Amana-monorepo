@@ -1057,17 +1057,18 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
-      {!isConnected && (
-        <div className="mb-4">
-          <SlippageSettingsBlock
-            setInputBalance={setInputBalance}
-            vaultId={vaultData.id}
-            showTransactionSettings={isSlippageExceedingLimit}
-          />
-        </div>
-      )}
+      {!isConnected ||
+        (!isDeposit && (
+          <div className="mb-4">
+            <SlippageSettingsBlock
+              setInputBalance={setInputBalance}
+              vaultId={vaultData.id}
+              showTransactionSettings={isSlippageExceedingLimit}
+            />
+          </div>
+        ))}
       <div className="mb-4">
-        {selectedChain && onSelectChain && vaultId && (
+        {selectedChain && onSelectChain && vaultId && isDeposit && (
           <ChainSelector
             selectedChain={selectedChain}
             onSelectChain={onSelectChain}
@@ -1098,6 +1099,8 @@ export default function VaultInputs({
         conversionOutput={conversionOutput}
         isSlippageExceedingLimit={isSlippageExceedingLimit}
         setInputBalance={setInputBalance}
+        isOutput={false}
+        captionText={!isDeposit ? "Output Amount" : ''}
       />
       <div className="w-full my-10 flex items-center justify-center">
         <button className="group flex-center p-2" onClick={switchTokens}>
@@ -1114,8 +1117,18 @@ export default function VaultInputs({
         />
       </div>
 
+      <div className="mb-4">
+        {selectedChain && onSelectChain && vaultId && !isDeposit && (
+          <ChainSelector
+            selectedChain={selectedChain}
+            onSelectChain={onSelectChain}
+            vaultId={vaultId}
+          />
+        )}
+      </div>
+
       <InputTokenWithError
-        captionText={"Output Amount"}
+        captionText={isDeposit ? "Output Amount" : ""}
         onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
         allowInput={allowInput}
         vaultData={vaultData}
