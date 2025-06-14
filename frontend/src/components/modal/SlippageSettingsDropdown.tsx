@@ -28,31 +28,25 @@ export default function SlippageSettingsDropdown({
   const presetValues = [0.1, 0.5, 1.0];
 
   useEffect(() => {
-    const isTxIsInProggress = CheckTheTxIsInProgress(vaultId);
-    if (isTxIsInProggress) return;
+    if (CheckTheTxIsInProgress(vaultId)) return;
 
     if (isOpen) {
-      const isPresetValue = presetValues.includes(slippageValue) || isAuto;
-      if (!isPresetValue) {
-        setShowCustomInput(true);
-        setCustomInputValue(slippageValue.toString());
-      } else {
-        setShowCustomInput(false);
-        setCustomInputValue("");
-      }
+      const isPreset = presetValues.includes(slippageValue) || isAuto;
+      setShowCustomInput(!isPreset);
+      setCustomInputValue(!isPreset ? slippageValue.toString() : "");
 
       setInputBalance(EMPTY_BALANCE);
       updateLocalStorageObject(vaultId, {
         inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
       });
     }
-  }, [setInputBalance, slippageValue, isAuto, isOpen, vaultId]);
+  }, [isOpen, slippageValue, isAuto, setInputBalance, vaultId]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(e.target as Node)
       ) {
         setIsOpen(false);
       }
@@ -61,108 +55,70 @@ export default function SlippageSettingsDropdown({
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
 
   const handlePresetSelect = (value: number) => {
-    const isTxIsInProggress = CheckTheTxIsInProgress(vaultId);
-    if (isTxIsInProggress) return;
-
-    setSlippage(value);
-    if (isAuto) {
-      toggleAuto();
-    }
+    if (CheckTheTxIsInProgress(vaultId)) return;
+    if (isAuto) toggleAuto(vaultId);
+    setSlippage(vaultId, value);
     setShowCustomInput(false);
     setCustomInputValue("");
   };
 
   const handleAutoToggle = () => {
-    const isTxIsInProggress = CheckTheTxIsInProgress(vaultId);
-    if (isTxIsInProggress) return;
-
-    toggleAuto();
+    if (CheckTheTxIsInProgress(vaultId)) return;
+    toggleAuto(vaultId);
     setShowCustomInput(false);
     setCustomInputValue("");
   };
 
   const handleCustomClick = () => {
-    const isTxIsInProggress = CheckTheTxIsInProgress(vaultId);
-    if (isTxIsInProggress) return;
+    if (CheckTheTxIsInProgress(vaultId)) return;
 
     setShowCustomInput(true);
-    if (isAuto) {
-      toggleAuto();
-    }
-
-    if (!presetValues.includes(slippageValue)) {
-      setCustomInputValue(slippageValue.toString());
-    } else {
-      setCustomInputValue("");
-    }
+    setCustomInputValue(
+      presetValues.includes(slippageValue) ? "" : slippageValue.toFixed(2),
+    );
   };
-
   const handleCustomInputChange = (value: string) => {
-    const isTxIsInProggress = CheckTheTxIsInProgress(vaultId);
-    if (isTxIsInProggress) return;
-
-    if (value === "") {
-      setCustomInputValue("");
-      return;
-    }
-
-    if (/[^0-9.]/.test(value)) return;
-
-    if ((value.match(/\./g) || []).length > 1) return;
+    if (CheckTheTxIsInProgress(vaultId)) return;
+    if (/[^0-9.]/.test(value) || (value.match(/\./g) || []).length > 1) return;
 
     const numValue = parseFloat(value);
 
-    if (value[value.length - 1] === "." || numValue === 0) {
+    if (value.endsWith(".") || numValue === 0 || isNaN(numValue)) {
       setCustomInputValue(value);
       return;
     }
 
     if (numValue <= 100) {
-      if (numValue < 0.1) {
-        setCustomInputValue("0.1");
-        setSlippage(0.1);
-      } else {
-        if (value.includes(".") && value.split(".")[1].length > 2) {
-          const fixedValue = numValue.toFixed(2);
-          setCustomInputValue(fixedValue);
-          setSlippage(parseFloat(fixedValue));
-        } else {
-          setCustomInputValue(value);
-          if (!isNaN(numValue)) {
-            setSlippage(numValue);
-          }
-        }
-      }
+      const fixed = numValue < 0.1 ? "0.1" : numValue.toFixed(2);
+      setCustomInputValue(fixed);
+
+      if (isAuto) toggleAuto(vaultId);
+      setSlippage(vaultId, parseFloat(fixed));
     }
   };
 
   const handleCustomInputBlur = () => {
     if (customInputValue === "" || parseFloat(customInputValue) === 0) {
-      setCustomInputValue(slippageValue.toString());
+      setCustomInputValue(slippageValue.toFixed(2));
     }
   };
 
-  const isPresetActive = (value: number) => {
-    return !isAuto && !showCustomInput && slippageValue === value;
-  };
+  const isPresetActive = (v: number) =>
+    !isAuto && !showCustomInput && slippageValue === v;
 
-  const isCustomActive = () => {
-    return (
-      !isAuto && (!presetValues.includes(slippageValue) || showCustomInput)
-    );
-  };
+  const isCustomActive = () =>
+    !isAuto && (!presetValues.includes(slippageValue) || showCustomInput);
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button onClick={() => setIsOpen(!isOpen)} className="group">
-        <Cog6ToothIcon className="w-6 h-6 text-customGray300 group-hover:text-customGray200 group-hover:transition-transform group-hover:rotate-180 group-hover:!duration-700" />
+        <Cog6ToothIcon className="w-6 h-6 text-customGray300 group-hover:text-customGray200 group-hover:rotate-180 transition-transform duration-700" />
       </button>
 
       <AnimatePresence>
@@ -171,7 +127,7 @@ export default function SlippageSettingsDropdown({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.2 }}
             className="absolute top-full right-0 mt-2 z-50"
             style={{
               width: "240px",
@@ -182,75 +138,55 @@ export default function SlippageSettingsDropdown({
           >
             <button
               onClick={() => setIsOpen(false)}
-              className="block absolute top-2 right-2 text-gray-400 hover:text-white transition-colors p-3"
+              className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors p-3"
             >
               <CloseModalIcon width={12} height={12} />
             </button>
 
             <div className="flex items-center gap-2 mb-6 mt-10">
-              <span className="text-white text-[16px] font-normal">
-                Max slippage
-              </span>
+              <span className="text-white text-[16px]">Max slippage</span>
               <InfoBlock isRight>
                 💡 Your transaction will revert if the price changes by more
                 than the slippage percentage.
               </InfoBlock>
             </div>
 
-            <div className="flex flex-wrap mb-3 gap-2">
+            <div className="flex flex-wrap mb-3 gap-2 max-w-[214px]">
               <button
                 onClick={handleAutoToggle}
-                className={`px-[10px] py-1 rounded-full font-medium transition-all duration-200 flex flex-row items-center gap-[10px] ${
+                className={`px-[10px] py-1 rounded-full font-medium transition-all flex items-center gap-[10px] ${
                   isAuto
                     ? "bg-[#3E73C4] text-white"
-                    : "bg-[#161C27] text-gray-300 hover:bg-[#3E73C4] "
-                }`}
-              >
-                <AutoDropdownIcon width={16} height={17} />
-                <p className="text-[16px] font-normal">Auto</p>
-              </button>
-              <button
-                onClick={() => handlePresetSelect(0.1)}
-                className={`px-[10px] py-1 rounded-full text-[16px] font-normal transition-all duration-200 ${
-                  isPresetActive(0.1)
-                    ? "bg-[#3E73C4] text-white"
-                    : "bg-[#161C27] text-gray-300 hover:bg-[#3E73C4] "
-                }`}
-              >
-                0.1%
-              </button>
-              <button
-                onClick={() => handlePresetSelect(0.5)}
-                className={`px-[10px] py-1 rounded-full text-[16px] font-normal transition-all duration-200 ${
-                  isPresetActive(0.5)
-                    ? "bg-[#3E73C4] text-white"
-                    : "bg-[#161C27] text-gray-300 hover:bg-[#3E73C4] "
-                }`}
-              >
-                0.5%
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handlePresetSelect(1.0)}
-                className={`px-[10px] py-1 rounded-full text-[16px] font-normal transition-all duration-200 ${
-                  isPresetActive(1.0)
-                    ? "bg-[#3E73C4] text-white "
                     : "bg-[#161C27] text-gray-300 hover:bg-[#3E73C4]"
                 }`}
               >
-                1.0%
+                <AutoDropdownIcon width={16} height={17} />
+                <p className="text-[16px]">Auto</p>
               </button>
+
+              {presetValues.map((v) => (
+                <button
+                  key={v}
+                  onClick={() => handlePresetSelect(v)}
+                  className={`px-[10px] py-1 rounded-full text-[16px] transition-all ${
+                    isPresetActive(v)
+                      ? "bg-[#3E73C4] text-white"
+                      : "bg-[#161C27] text-gray-300 hover:bg-[#3E73C4]"
+                  }`}
+                >
+                  {v.toFixed(1)}%
+                </button>
+              ))}
 
               {showCustomInput ? (
                 <div
-                  className={`flex items-center px-3 py-2 rounded-full transition-all duration-200 flex-1 ${
-                    isCustomActive() && "bg-[#161C27]"
+                  className={`flex items-center px-3 py-2 rounded-full flex-1 ${
+                    isCustomActive() ? "bg-[#161C27]" : "bg-[#3E73C4]"
                   }`}
                 >
                   <input
                     type="text"
-                    className="bg-transparent text-white text-[16px] font-normal outline-none w-[100px]"
+                    className="bg-transparent text-white text-[16px] outline-none w-[100px]"
                     value={customInputValue}
                     onChange={(e) => handleCustomInputChange(e.target.value)}
                     onBlur={handleCustomInputBlur}
@@ -260,14 +196,13 @@ export default function SlippageSettingsDropdown({
               ) : (
                 <button
                   onClick={handleCustomClick}
-                  className={`px-[10px] py-1 rounded-full text-[16px] font-normal transition-all duration-200 flex-1 max-w-[100px] ${
+                  className={`px-[10px] py-1 rounded-full text-[16px] flex-1 max-w-[100px] ${
                     isCustomActive()
-                      ? "bg-[#3E73C4] text-white "
-                      : "bg-[#161C27] text-[#535E73] hover:bg-[#3E73C4] "
+                      ? "bg-[#3E73C4] text-white"
+                      : "bg-[#161C27] text-[#535E73] hover:bg-[#3E73C4]"
                   }`}
                 >
-                  Custom
-                  <span className="text-white"> %</span>
+                  Custom <span className="text-white">%</span>
                 </button>
               )}
             </div>

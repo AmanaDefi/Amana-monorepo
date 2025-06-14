@@ -231,6 +231,11 @@ export interface ITxLocalStorage {
   transactionCompleted: boolean;
   selectedChain?: string;
 
+  slippage?: {
+    value: number;
+    isAuto: boolean;
+  };
+
   transactionStepFeedback: TransactionStepMessages;
   lastTransactionStepFeedback: TransactionStepMessages;
 }

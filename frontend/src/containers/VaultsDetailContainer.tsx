@@ -36,6 +36,7 @@ import InvestBlock from "@/components/InvestBlock";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
+import { useUserSettingsStore } from "@/store/UserSettingsStore";
 import { Chain } from "viem";
 import clsx from "clsx";
 
@@ -69,6 +70,18 @@ const VaultsDetailContainer: React.FC<{
   const [activeChainId, setActiveChainId] = useState<number>();
 
   const { activeChain } = useMultiChain();
+
+  const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
+
+  const loadSlippageFromStorage = useUserSettingsStore(
+    (state) => state.loadSlippageFromStorage,
+  );
+
+  useEffect(() => {
+    if (vaultIdStr) {
+      loadSlippageFromStorage(vaultIdStr);
+    }
+  }, [vaultIdStr]);
 
   useEffect(() => {
     if (activeChain && !selectedChain) {

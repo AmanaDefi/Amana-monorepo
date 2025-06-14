@@ -84,24 +84,24 @@ export default function FeeDisplay({
   };
 
   // Slippage display
-  const SlippageDisplay = () => {
-    if (
-      conversionOutput.slippageActualValue === null ||
-      conversionOutput.slippageActualValue >= 100
-    ) {
-      return null;
-    }
+  // const SlippageDisplay = () => {
+  //   if (
+  //     conversionOutput.slippageActualValue === null ||
+  //     conversionOutput.slippageActualValue >= 100
+  //   ) {
+  //     return null;
+  //   }
 
-    return (
-      <p className="text-white font-bold mb-2 text-start">
-        Estimated slippage value:
-        <span className="text-green-500 whitespace-pre">
-          {" "}
-          {conversionOutput.slippageActualValue}%
-        </span>
-      </p>
-    );
-  };
+  //   return (
+  //     <p className="text-white font-bold mb-2 text-start">
+  //       Estimated slippage value:
+  //       <span className="text-green-500 whitespace-pre">
+  //         {" "}
+  //         {conversionOutput.slippageActualValue}%
+  //       </span>
+  //     </p>
+  //   );
+  // };
 
   // Ethereum Vault Deposit Fee
   const EthereumDepositFee = () => {
@@ -169,7 +169,7 @@ export default function FeeDisplay({
 
   return (
     <div>
-      <SlippageDisplay />
+      {/* <SlippageDisplay /> */}
       <NetDepositDisplay />
       <GasFeeWarning />
 
