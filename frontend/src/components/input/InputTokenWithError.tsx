@@ -9,63 +9,13 @@ import TokenIcon from "@/components/common/TokenIcon";
 import PendingDots from "@/components/PendingDots";
 import { ConversionOutput } from "@/components/VaultInputs";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { formatTokenBalance } from "@/utils/utils";
 import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
 import { Chain } from "viem";
 import clsx from "clsx";
 import SlippageSettingsBlock from "../VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay from "../VaultsDetailsWrapper/components/FeeDisplay";
 
-
 export type InputTokenWithErrorProps = {
-  errorMessage?: string;
-  onMaxClick: () => void;
-  onSelectToken: (token: Token) => void;
-  vaultData: VaultData;
-  tokenList: Token[];
-  selectedToken?: Token;
-  inputTokenbalance?: string;
-  captionText?: string;
-  getToken?: Function;
-  allowInput?: boolean;
-  inputMoreThanBalance?: boolean;
-  disabled?: boolean;
-  isDeposit: boolean;
-  isOutput?: boolean;
-  loadingOutputToken?: boolean;
-  conversionOutput: ConversionOutput;
-
-  showFeeDisplay?: boolean;
-  debouncedInputBalance?: { value: bigint };
-  performanceFee?: number;
-};
-
-export default function InputTokenWithError({
-  tokenList,
-  selectedToken,
-  inputTokenbalance,
-  errorMessage,
-  onMaxClick,
-  onSelectToken,
-  vaultData,
-  captionText,
-  getToken,
-  allowInput,
-  inputMoreThanBalance,
-  disabled = false,
-  isDeposit,
-  isOutput,
-  loadingOutputToken,
-  conversionOutput,
-  isSlippageExceedingLimit,
-  setInputBalance,
-  selectedChain,
-
-  showFeeDisplay = false,
-  debouncedInputBalance,
-  performanceFee,
-  ...props
-}: {
   errorMessage?: string;
   onMaxClick: () => void;
   onSelectToken: (token: Token) => void;
@@ -86,20 +36,40 @@ export default function InputTokenWithError({
   conversionOutput: ConversionOutput;
   isSlippageExceedingLimit?: boolean;
   selectedChain?: Chain;
-
   showFeeDisplay?: boolean;
   debouncedInputBalance?: { value: bigint };
   performanceFee?: number;
-} & HTMLProps<HTMLInputElement>): JSX.Element {
+} & HTMLProps<HTMLInputElement>;
+
+export default function InputTokenWithError({
+  tokenList,
+  selectedToken,
+  inputTokenbalance,
+  errorMessage,
+  onMaxClick,
+  onSelectToken,
+  vaultData,
+  captionText,
+  allowInput,
+  inputMoreThanBalance,
+  disabled = false,
+  isDeposit,
+  isOutput,
+  loadingOutputToken,
+  conversionOutput,
+  isSlippageExceedingLimit,
+  setInputBalance,
+  selectedChain,
+  showFeeDisplay = false,
+  debouncedInputBalance,
+  performanceFee,
+  ...props
+}: InputTokenWithErrorProps): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
   const { walletAddress } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   const isConnected = !!walletAddress;
-
-  const handleTokenSelection = (token: Token) => {
-    onSelectToken(token);
-  };
 
   const showTokenSelector = useMemo(() => {
     return (
@@ -110,10 +80,103 @@ export default function InputTokenWithError({
     );
   }, [isDeposit, isOutput, tokenList, selectedChain]);
 
-  const formattedTokenBalance = useMemo(() => {
-    if (!inputTokenbalance || !selectedToken?.symbol) return "0";
-    return formatTokenBalance(inputTokenbalance, selectedToken.symbol);
-  }, [inputTokenbalance, selectedToken?.symbol]);
+  const renderTopSection = () => {
+    if (!isOutput && isDeposit) {
+      return (
+        <>
+          <span>You send (min 0.0015)</span>
+          <button
+            onClick={allowInput ? onMaxClick : undefined}
+            className="text-[#3E73C4] hover:underline font-normal"
+          >
+            MAX
+          </button>
+        </>
+      );
+    }
+
+    if (!isOutput && !isDeposit) {
+      return (
+        <>
+          <button
+            onClick={allowInput ? onMaxClick : undefined}
+            className="text-[#3E73C4] hover:underline font-normal"
+          >
+            MAX
+          </button>
+          <span></span>
+        </>
+      );
+    }
+
+    if (isOutput && !isDeposit) {
+      return (
+        <>
+          <span>You send (min 0.0015)</span>
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={allowInput ? onMaxClick : undefined}
+              className="text-[#3E73C4] hover:underline font-normal"
+            >
+              MAX
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    return null;
+  };
+
+  const renderUSDValue = () => {
+    if (loadingOutputToken) {
+      return <PendingDots />;
+    }
+
+    if (isDeposit && !isOutput) {
+      return (
+        "$ " +
+        (selectedToken
+          ? formatCurrency(Number(inputTokenbalance || 0) * selectedTokenPrice)
+          : "0.00")
+      );
+    }
+
+    return (
+      "$ " +
+      (isOutput
+        ? conversionOutput.outputAmountInUSDFormatted
+        : conversionOutput.finalConvertedAmountInUSDFormatted)
+    );
+  };
+
+  const renderMainValue = () => {
+    if (isOutput) {
+      if (loadingOutputToken) {
+        return <PendingDots />;
+      }
+
+      if (isDeposit) {
+        return inputTokenbalance && Number(inputTokenbalance) !== 0
+          ? inputTokenbalance
+          : " ";
+      }
+
+      return conversionOutput.outputAmountFormatted &&
+        Number(conversionOutput.outputAmountFormatted) !== 0
+        ? conversionOutput.outputAmountFormatted
+        : " ";
+    }
+
+    return (
+      <InputNumber
+        {...props}
+        disabled={disabled}
+        onFocus={() => setIsInputFocused(true)}
+        onBlur={() => setIsInputFocused(false)}
+      />
+    );
+  };
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
@@ -126,6 +189,7 @@ export default function InputTokenWithError({
           />
         </div>
       )}
+
       {showFeeDisplay && debouncedInputBalance && (
         <div className="mb-10">
           <FeeDisplay
@@ -138,8 +202,8 @@ export default function InputTokenWithError({
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        {captionText && (
+      {captionText && (
+        <div className="flex items-center justify-between">
           <div className="text-white text-start flex text-[18px] font-bold items-center gap-2 mb-4">
             {captionText}
             {isOutput && (
@@ -152,8 +216,8 @@ export default function InputTokenWithError({
               <span className="text-red-500 ml-2">Input More than Balance</span>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="relative flex w-full flex-col">
         <div
@@ -166,94 +230,19 @@ export default function InputTokenWithError({
           )}
         >
           <div className="flex items-center justify-between text-sm text-[#535E73]">
-            {!isOutput && isDeposit && (
-              <>
-                <span>You send (min 0.0015)</span>
-                <button
-                  onClick={allowInput ? onMaxClick : undefined}
-                  className="text-[#3E73C4] hover:underline font-normal"
-                >
-                  MAX
-                </button>
-              </>
-            )}
-
-            {!isOutput && !isDeposit && (
-              <>
-                <button
-                  onClick={allowInput ? onMaxClick : undefined}
-                  className="text-[#3E73C4] hover:underline font-normal"
-                >
-                  MAX
-                </button>
-                <span></span> {/* Empty span for spacing */}
-              </>
-            )}
-
-            {isOutput && !isDeposit && (
-              <>
-                <span>You send (min 0.0015)</span>
-                <div className="flex-1 flex justify-center">
-                  <button
-                    onClick={allowInput ? onMaxClick : undefined}
-                    className="text-[#3E73C4] hover:underline font-normal"
-                  >
-                    MAX
-                  </button>
-                </div>
-              </>
-            )}
-            <p className="group-hover/max:text-white">
-              {isDeposit && !isOutput ? (
-                "$ " +
-                (selectedToken
-                  ? formatCurrency(
-                      Number(inputTokenbalance || 0) * selectedTokenPrice,
-                    )
-                  : "0.00")
-              ) : loadingOutputToken ? (
-                <PendingDots />
-              ) : (
-                "$ " +
-                (isOutput
-                  ? conversionOutput.outputAmountInUSDFormatted
-                  : conversionOutput.finalConvertedAmountInUSDFormatted)
-              )}
-            </p>
+            {renderTopSection()}
+            <p className="group-hover/max:text-white">{renderUSDValue()}</p>
           </div>
+
           <div className="flex items-center justify-between mt-1">
-            {isOutput ? (
-              <span className="text-white text-2xl">
-                {loadingOutputToken ? (
-                  <PendingDots />
-                ) : isDeposit ? (
-                  inputTokenbalance && Number(inputTokenbalance) !== 0 ? (
-                    inputTokenbalance
-                  ) : (
-                    " "
-                  )
-                ) : conversionOutput.outputAmountFormatted &&
-                  Number(conversionOutput.outputAmountFormatted) !== 0 ? (
-                  conversionOutput.outputAmountFormatted
-                ) : (
-                  " "
-                )}
-              </span>
-            ) : (
-              <InputNumber
-                {...props}
-                disabled={disabled}
-                onFocus={() => setIsInputFocused(true)}
-                onBlur={() => setIsInputFocused(false)}
-              />
-            )}
+            <span className="text-white text-2xl">{renderMainValue()}</span>
 
             <div className="flex items-center">
               {showTokenSelector ? (
                 <ChainTokenSelector
                   selectedToken={selectedToken}
                   selectedChain={selectedChain}
-                  onSelectToken={handleTokenSelection}
+                  onSelectToken={onSelectToken}
                   vaultData={vaultData}
                   className="justify-end"
                 />
