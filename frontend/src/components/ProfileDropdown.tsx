@@ -3,10 +3,10 @@
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProfileDropdownIcon from "./svg/ProfileDropdownIcon";
-import CopyIcon from "./svg/copyIcon";
 import CheckIcon from "./svg/CheckIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { LogOutIcon } from "./svg/sidebar/LogOutIcon";
+import CopyIcon from "./svg/CopyIcon";
 
 interface MenuItem {
   label: string;
