@@ -374,6 +374,7 @@ export default function InteractionContainer({
   errorMessage,
   isDeposit,
   refreshBalance,
+  hideStepsDisplay = false,
 }: {
   step: number;
   setStep: Function;
@@ -390,6 +391,7 @@ export default function InteractionContainer({
   errorMessage: string;
   isDeposit: boolean;
   refreshBalance: Function;
+  hideStepsDisplay?: boolean;
 }): JSX.Element {
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
 
@@ -439,6 +441,16 @@ export default function InteractionContainer({
 
   // Button label management based on current action
   useEffect(() => {
+    const hasValidInput =
+      _inputBalance.formatted &&
+      Number(_inputBalance.formatted) > 0 &&
+      !errorMessage;
+
+    if (!hasValidInput) {
+      setLabel(isDeposit ? "Invest" : "Withdraw");
+      return;
+    }
+
     switch (action) {
       case Action.depositApprove:
         setLabel("Approve");
@@ -454,14 +466,19 @@ export default function InteractionContainer({
         if (isTxInProgress) {
           setLabel((prev) => {
             if (!prev) return "Pending";
-
             return prev;
           });
         }
-        // Keep existing label for other states
         break;
     }
-  }, [action, setLabel, vaultData.id]);
+  }, [
+    action,
+    setLabel,
+    vaultData.id,
+    _inputBalance.formatted,
+    errorMessage,
+    isDeposit,
+  ]);
 
   // Add the function here so it has access to all the component state
   function completeTransactionProcess(
@@ -912,7 +929,7 @@ export default function InteractionContainer({
   }, []);
 
   return (
-    <div className="w-full flex flex-col mt-5">
+    <div className="w-full flex flex-col">
       <Interaction
         setStep={setStep}
         setAction={setAction}
@@ -949,6 +966,7 @@ export default function InteractionContainer({
         isComponentActiveRef={isComponentActiveRef}
         isTrackingActiveRef={isTrackingActiveRef}
         isDeposit={isDeposit}
+        hideStepsDisplay={hideStepsDisplay}
       />
     </div>
   );
@@ -987,6 +1005,7 @@ function Interaction({
   isComponentActiveRef,
   isTrackingActiveRef,
   isDeposit,
+  hideStepsDisplay = false,
 }: {
   setStep: Function;
   setAction: Function;
@@ -1027,6 +1046,7 @@ function Interaction({
   isComponentActiveRef: React.MutableRefObject<boolean>;
   isTrackingActiveRef: React.MutableRefObject<boolean>;
   isDeposit: boolean;
+  hideStepsDisplay?: boolean;
 }): JSX.Element {
   const activeAccount = useUser();
   const walletContext = useWallet();
@@ -1452,7 +1472,7 @@ function Interaction({
 
   return (
     <>
-      {
+      {!hideStepsDisplay && (
         <>
           {renderTransactionSteps(
             finishedTransaction,
@@ -1460,7 +1480,8 @@ function Interaction({
             transactionStepFeedback,
           )}
         </>
-      }
+      )}
+
       {finishedTransaction ? (
         <Button
           variant="special"
@@ -1470,22 +1491,30 @@ function Interaction({
           Done
         </Button>
       ) : (
-        (() => {
+          (() => {  
           const isDisabledByProcessing = isTransactionProcessing;
           const isDisabledByHash =
             crosschainInvestHash?.length > 0 && !finishedTransaction;
-          const isDisabled = isDisabledByProcessing || isDisabledByHash;
+
+          const isDisabledByValidation =
+            !inputBalance.formatted ||
+            Number(inputBalance.formatted) <= 0 ||
+            !!errorMessage;
+            
+          const isDisabled =
+            isDisabledByProcessing ||
+            isDisabledByHash ||
+            isDisabledByValidation;
 
           return (
-              <Button
-                variant="special"
-                // disabled={isDisabled}
-                className="w-full mt-[47px] !text-[16px] !font-bold !font-gotham"
-                onClick={handleMainAction}
-              >
-                {label ?? (isDeposit ? "Invest" : "Withdrow")}
-              </Button>
-   
+            <Button
+              variant="special"
+              disabled={isDisabled}
+              className="w-full mt-[47px] !text-[16px] !font-bold !font-gotham"
+              onClick={handleMainAction}
+            >
+              {label ?? (isDeposit ? "Invest" : "Withdraw")}
+            </Button>
           );
         })()
       )}

@@ -1100,7 +1100,7 @@ export default function VaultInputs({
         isSlippageExceedingLimit={isSlippageExceedingLimit}
         setInputBalance={setInputBalance}
         isOutput={false}
-        captionText={!isDeposit ? "Output Amount" : ''}
+        captionText={!isDeposit ? "Output Amount" : ""}
       />
       <div className="w-full my-10 flex items-center justify-center">
         <button className="group flex-center p-2" onClick={switchTokens}>
@@ -1180,6 +1180,7 @@ export default function VaultInputs({
             errorMessage={errorMessage || outputBoxErrorMessage || ""}
             isDeposit={isDeposit}
             refreshBalance={fetchBalance}
+            hideStepsDisplay={true}
           />
         )}
     </>
