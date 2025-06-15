@@ -157,13 +157,15 @@ export default function InputTokenWithError({
                       Number(inputTokenbalance || 0) * selectedTokenPrice,
                     )
                   : "0.00")
-              ) : loadingOutputToken ? (
+              ) : loadingOutputToken && isOutput ? (
                 <PendingDots />
               ) : (
                 "$ " +
                 (isOutput
                   ? conversionOutput.outputAmountInUSDFormatted
-                  : conversionOutput.finalConvertedAmountInUSDFormatted)
+                  : formatCurrency(
+                    Number(inputTokenbalance || 0),
+                  ))
               )}
             </p>
           </div>

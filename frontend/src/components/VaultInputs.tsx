@@ -1052,7 +1052,6 @@ export default function VaultInputs({
       return;
     }
     setLoadingOutputToken(true);
-    console.log("setLoadingOutputToken");
     if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
     else getWithdrawOutputAmount(debouncedInputBalance.value);
   }, [
@@ -1140,6 +1139,7 @@ export default function VaultInputs({
     conversionOutput.gasFeeInUSD,
   ]);
 
+  console.log(conversionOutput)
   return (
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}
