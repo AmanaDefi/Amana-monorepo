@@ -9,7 +9,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     | "custom"
     | "outlined"
     | "special"
-    | "secondary";
+    | "secondary"
+    | "wallet";
   className?: string;
 }
 
@@ -30,6 +31,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             return "border border-[#35383D] text-[#35383D] bg-transparent cursor-not-allowed font-bold text-[16px]";
           case "secondary":
             return "bg-[#35383D] text-[#6B7280] border-none shadow-[0_4px_4px_0_rgba(0,0,0,0.15)] cursor-not-allowed";
+          case "wallet":
+            return "border border-[#2A2F3A] text-[#6B7280] bg-[#1A1D23] cursor-not-allowed opacity-50";
         }
       }
 
@@ -68,6 +71,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             "shadow-[0_4px_4px_0_rgba(0,0,0,0.15)]",
             "hover:border-[#1B46E0]",
           );
+        case "wallet":
+          return cn(
+            "border border-[#535E73] text-white bg-transparent",
+            "hover:border-[#1B46E0] hover:bg-[rgba(27,70,224,0.05)]",
+            "active:transform active:translate-y-[1px] active:bg-[rgba(27,70,224,0.1)]",
+            "transition-all duration-200 ease-in-out",
+          );
         default:
           return "";
       }
@@ -76,6 +86,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const getButtonStyles = () => {
       if (variant === "special") {
         return "rounded-lg px-[39px] py-[14px] text-[16px] font-bold font-sans text-center flex items-center justify-center select-none transition";
+      }
+      if (variant === "wallet") {
+        return "max-h-[40px] rounded p-[10px] text-[16px] font-medium font-sans text-center flex items-center justify-center gap-1 select-none transition-all duration-200";
       }
       return "rounded-lg px-[16px] py-[17px] w-[192px] text-[18px] font-normal font-sans text-center flex items-center justify-center select-none transition";
     };
