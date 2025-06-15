@@ -243,7 +243,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         {vaultsList.length === 0 && (
           <div className="flex flex-col items-center py-12 gap-3">
             <p className="text-white text-lg">
-              No vaults found matching your filters
+              No vaults found.
             </p>
             <div className="w-[180px]">
               <AppButton onClick={clearAllFilters}>
