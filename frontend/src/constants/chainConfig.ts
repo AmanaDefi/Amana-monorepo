@@ -1,7 +1,6 @@
-import { defineChain } from "viem";
 import { Token, Icon } from "@/types/types";
 import { EMPTY_BALANCE } from "@/utils/helpers";
-import { PublicKey, Connection } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import {
   mainnet,
@@ -33,7 +32,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   SOL: "/solana_logo.png",
   POL: "/polygon_logo.png",
   AVAX: "/avalanche-avax-logo.png",
-  BNB: "/bnb_logo.png",
+  BNB: "/bnb-bnb-logo.png",
   USDC: "/USDC.png",
   USDT: "/usdt.png",
   COMPOUND: "/compound.png",
@@ -160,19 +159,22 @@ export const avalancheMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE || "";
 export const avalancheFujiRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_AVALANCHE_FUJI || "";
-export const sepoliaRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
+export const sepoliaRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_SEPOLIA || "";
 export const baseSepoliaRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE_SEPOLIA || "";
 export const polygonAmoyRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON_AMOY || "";
-export const ethMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
-export const baseMainnetRpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
+export const ethMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ETH || "";
+export const baseMainnetRpcUrl =
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_BASE || "";
 export const polygonMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_POLYGON || "";
 export const arbitrumMainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_ONE || "";
 export const arbitrumSepoliaRpcUrl =
-  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_SEPOLIA || "";
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL_ARBITRUM_GOERLI || "";
 
 export const solanaRpcUrl =
   deployEnv == "testnet"
@@ -199,6 +201,35 @@ export enum MulticallVersion {
   V2 = 2,
   V3 = 3,
 }
+
+const solanaChain = {
+  id: CHAIN_ID.solana,
+  name: deployEnv === "testnet" ? "devnet" : "mainnet",
+  shortName: "sol",
+  chain: "Solana",
+  rpcUrls: {
+    default: {
+      http: [solanaRpcUrl],
+    },
+  },
+  nativeCurrency: {
+    name: "Solana",
+    symbol: "SOL",
+    decimals: 9,
+  },
+  explorers: [
+    {
+      name: "Solana Explorer",
+      url:
+        deployEnv === "testnet"
+          ? "https://explorer.solana.com/?cluster=devnet"
+          : "https://explorer.solana.com/",
+      standard: "none",
+    },
+  ],
+  testnet: deployEnv === "testnet",
+  slug: "solana",
+};
 
 const bscChain = defineAlchemyChain({
   chain: bsc,
@@ -338,35 +369,6 @@ export const MULTICALL_ADDRS: Record<
     version: MulticallVersion.V3,
     address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Base
   },
-};
-
-const solanaChain = {
-  id: CHAIN_ID.solana,
-  name: deployEnv === "testnet" ? "devnet" : "mainnet",
-  shortName: "sol",
-  chain: "Solana",
-  rpcUrls: {
-    default: {
-      http: [solanaRpcUrl],
-    },
-  },
-  nativeCurrency: {
-    name: "Solana",
-    symbol: "SOL",
-    decimals: 9,
-  },
-  explorers: [
-    {
-      name: "Solana Explorer",
-      url:
-        deployEnv === "testnet"
-          ? "https://explorer.solana.com/?cluster=devnet"
-          : "https://explorer.solana.com/",
-      standard: "none",
-    },
-  ],
-  testnet: deployEnv === "testnet",
-  slug: "solana",
 };
 
 // export const SUPPORTED_CHAINS = [

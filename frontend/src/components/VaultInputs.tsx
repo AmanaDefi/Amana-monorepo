@@ -135,11 +135,10 @@ export default function VaultInputs({
 
   // Use searchParams to directly determine tab state
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
 
   // Update isDeposit when URL tab parameter changes
   useEffect(() => {
-    const shouldBeDeposit = tabParam !== "withdraw";
+    const shouldBeDeposit = searchParams.get("tab") !== "withdraw";
     if (vaultData?.id) {
       const TxInfo = getLocalStorageObject(vaultData.id);
       const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
@@ -151,7 +150,9 @@ export default function VaultInputs({
     } else {
       setIsDeposit(shouldBeDeposit);
     }
+
   }, [tabParam, searchParams, vaultData.id]);
+
 
   const [steps, setSteps] = useState<Action[]>([]);
   const [step, setStep] = useState<number>(0);
@@ -394,7 +395,7 @@ export default function VaultInputs({
     if (isTxInProgress) return;
 
     localStorage.removeItem(vaultData.id);
-    const newIsDeposit = tab === "Deposit";
+    const newIsDeposit = tab.toLowerCase() === "deposit";
     const newTab = newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW;
 
     // Update URL first to ensure consistency
@@ -402,6 +403,7 @@ export default function VaultInputs({
 
     // Reset input balance
     setInputBalance(EMPTY_BALANCE);
+    setDisplayValue("");
     updateLocalStorageObject(vaultData.id, {
       tab: newTab,
       inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
@@ -434,6 +436,7 @@ export default function VaultInputs({
   const switchTokens = async () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
     if (isTxInProgress) return;
+    const tabParam = searchParams.get("tab");
     // Get the opposite tab of what's currently in the URL
     const currentTabFromURL = tabParam !== "withdraw" ? "deposit" : "withdraw";
     const newTab = currentTabFromURL === "deposit" ? "withdraw" : "deposit";
@@ -605,7 +608,6 @@ export default function VaultInputs({
           setLoadingOutputToken(false);
           return;
         }
-
         let tokenConversionAmount = assetsAmount;
         if (actualInputToken.address !== vaultData.inputToken.address) {
           tokenConversionAmount = await getAmountOutFromSwap(
@@ -619,7 +621,6 @@ export default function VaultInputs({
         const assetsConversionInUSD =
           (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
           vaultTokenPrice;
-
         const tokenConversionFromWei =
           Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
         const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
@@ -635,7 +636,6 @@ export default function VaultInputs({
             tokenConversionFromWei,
             inputToken?.symbol || "",
           );
-
           setConversionOutput({
             slippageActualValue: Number(slippageActualValue.toFixed(2)),
             finalConvertedAmountInUSDFormatted: formatCurrency(
@@ -671,7 +671,6 @@ export default function VaultInputs({
           setLoadingOutputToken(false);
           return;
         }
-
         let assetsConversionAmount: bigint = inputAmountValue;
         if (actualInputToken.address !== vaultData.inputToken.address) {
           assetsConversionAmount = await getAmountOutFromSwap(
@@ -688,12 +687,13 @@ export default function VaultInputs({
         let gasFeeInETH = "0";
 
         if (!vaultData.depositFeePaidFromGasTank) {
+
           const publicClient = getPublicClient(selectedChain?.id ?? 7000);
           if (!publicClient) {
             setLoadingOutputToken(false);
             return;
           }
-
+          
           const vaultAbi = [
             {
               type: "function",
@@ -735,7 +735,6 @@ export default function VaultInputs({
             functionName: "withdrawGasFeeWithGasLimit",
             args: [gasLimitForWithdrawAndCall],
           });
-
           const gasZRC20 = result[0];
           const gasFee = result[1];
           // 3. If vault token and gas token match, subtract directly
@@ -1039,6 +1038,7 @@ export default function VaultInputs({
     conversionOutput.gasFeeInUSD,
   ]);
 
+  console.log(conversionOutput)
   return (
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}

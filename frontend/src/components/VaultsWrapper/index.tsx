@@ -12,6 +12,7 @@ import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
 import classNames from "classnames";
 import { useLayoutStore } from "@/store/store";
+import { useUser } from "@account-kit/react";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   return 1;
@@ -40,9 +41,20 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<"cards" | "list">("cards");
 
+  const [isShownMyVaults, setIsShownMyVaults] = useState(
+    !!Number(
+      vaults?.some(
+        (vault) =>
+          userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
+            ?.balance,
+      ),
+    ),
+  );
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
   const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
+  const user = useUser();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -77,8 +89,29 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     });
   }, [vaults, searchTerm, chainFilter, protocolFilter]);
 
+  const MyVaults = useMemo(() => {
+    return filteredVaults.filter((vault) => {
+      const hasDeposited = userVaultBalances
+        ? !!Number(
+            userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
+              ?.balance,
+          )
+        : false;
+
+      return hasDeposited;
+    });
+  }, [filteredVaults, userVaultBalances]);
+
+  const vaultsList = useMemo(() => {
+    if (isShownMyVaults) {
+      return MyVaults;
+    }
+
+    return filteredVaults;
+  }, [MyVaults, filteredVaults, isShownMyVaults]);
+
   const sortedVaults = useMemo(() => {
-    return [...filteredVaults].sort((a, b) => {
+    return [...vaultsList].sort((a, b) => {
       let aValue: any, bValue: any;
 
       switch (sortBy.toLowerCase()) {
@@ -110,7 +143,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });
-  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
+  }, [vaultsList, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
 
   const paginatedVaults = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -161,10 +194,13 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           clearAllFilters={clearAllFilters}
           setDisplayType={setDisplayType}
           displayType={displayType}
+          isShownMyVaults={isShownMyVaults}
+          setIsShownMyVaults={setIsShownMyVaults}
+          shouldShowTabs={!!user && !!MyVaults?.length}
         />
 
         <div className="text-gray-400 mb-4 text-sm">
-          Showing {paginatedVaults.length} of {filteredVaults.length} vaults
+          Showing {paginatedVaults.length} of {vaultsList.length} vaults
         </div>
 
         {displayType === "cards" ? (
@@ -186,11 +222,15 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="flex flex-row items-center justify-between">
-              <p className="w-[30%] mr-[10%] text-center">Pool</p>
-              <div className="w-[60%] flex flex-row items-center">
-                <p className="w-[40%] text-center xl:pl-[10%]">TVL</p>
-                <p className="w-[60%] text-center pr-[20%]">APY</p>
+            <div className="flex flex-row items-center justify-between ">
+              <p className="w-[30%] xl:w-[20%] mr-[10%] xl:mr-[20%] text-center">
+                Pool
+              </p>
+              <div className="w-[60%] flex flex-row items-center  xl:mr-[5%]">
+                <p className="w-[20%] xl:w-[40%] text-center ">TVL</p>
+                <div className="w-[20%]" />
+                <p className="w-[30%] xl:w-[60%] text-center">APY</p>
+                <div className="w-[30%]" />
               </div>
             </div>
             {paginatedVaults.map((vault) => (
@@ -204,11 +244,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
         )}
 
-        {paginatedVaults.length === 0 && (
+        {vaultsList.length === 0 && (
           <div className="flex flex-col items-center py-12 gap-3">
-            <p className="text-white text-lg">
-              No vaults found matching your filters
-            </p>
+            <p className="text-white text-lg">No vaults found.</p>
             <div className="w-[180px]">
               <AppButton onClick={clearAllFilters}>
                 <span className="relative z-2">Clear Filters</span>

@@ -25,16 +25,16 @@ const FinalConfirmationIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
         d="M1 9V2C1 1.45 1.45 1 2 1H16C16.55 1 17 1.45 17 2V16C17 16.55 16.55 17 16 17H2C1.45 17 1 16.55 1 16V9Z"
         fill="white"
         stroke="white"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M5 9L8 12L13 7"
         stroke="black"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </mask>
     <g mask="url(#mask0_2001_763)">

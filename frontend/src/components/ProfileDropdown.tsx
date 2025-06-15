@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProfileDropdownIcon from "./svg/ProfileDropdownIcon";
+import CopyIcon from "./svg/copyIcon";
+import CheckIcon from "./svg/CheckIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { LogOutIcon } from "./svg/sidebar/LogOutIcon";
 
@@ -28,6 +30,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { walletAddress, disconnectWallet } = useMultiChain();
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,6 +84,21 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     onClose();
   };
 
+  const handleCopy = async () => {
+    if (!walletAddress) return;
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      setCopySuccess(true);
+
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+    } catch (err) {
+      setCopySuccess(false);
+      console.error("Error copy address", err);
+    }
+  };
+
   if (!isOpen || !walletAddress) return null;
 
   return (
@@ -115,6 +133,9 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
               <p className="text-[14px] text-[#535E73] font-normal">
                 {walletAddress.slice(0, 1)}...{walletAddress.slice(-6)}
               </p>
+              <div onClick={handleCopy}>
+                {copySuccess ? <CheckIcon /> : <CopyIcon />}
+              </div>
             </div>
             <button
               onClick={handleDisconnect}

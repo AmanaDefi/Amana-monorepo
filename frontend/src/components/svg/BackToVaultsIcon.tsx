@@ -16,9 +16,9 @@ const BackToVaultsIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     <path
       d="M5.66663 10.167L1.49996 6.00033L5.66663 1.83366"
       stroke="#9A9CB3"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg>
 );

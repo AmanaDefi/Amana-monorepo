@@ -20,12 +20,23 @@ import { useConnect } from "@account-kit/react";
 import { Connector, CreateConnectorFn } from "wagmi";
 
 const AllWAllets = () => {
-  const { step, closeAll, openStep } = useAuthStore();
+  const { step, closeAll } = useAuthStore();
   const { connectors, connect, isPending: isConnectingWallet } = useConnect();
-  const walletConnectConnector = connectors.find(
-    (con) => con.name === "WalletConnect",
+  const walletConnectConnector = connectors.findLast(
+    (con) => con.id === "walletConnect",
   );
-  const metaMaskConnector = connectors.find((con) => con.name === "MetaMask");
+  const metaMaskConnector = connectors.find((con) => con.id === "io.metamask");
+  const uniSwapConnector = connectors.find(
+    (con) => con.id === "org.uniswap.app",
+  );
+  const coinbaseConnector = connectors.find(
+    (con) => con.id === "com.coinbase.wallet",
+  );
+  const okxConnector = connectors.find((con) => con.id === "com.okex.wallet");
+
+  //Solana providers
+  const solflareConnector = connectors.find((con) => con.id === ""); //We have no this connector on evm
+  const phantomConnector = connectors.find((con) => con.id === "app.phantom");
 
   const handleExternalWalletConnect = (
     connector: CreateConnectorFn | Connector,
@@ -42,7 +53,7 @@ const AllWAllets = () => {
     <Modal
       isOpen={step === "allWallets"}
       onClose={closeAll}
-      paddingClass="pt-[28px] pl-[50px] pb-[26px] pr-[24px]"
+      paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[940px]"
       minHeight="min-h-[560px]"
@@ -56,29 +67,89 @@ const AllWAllets = () => {
         </button>
       }
     >
-      <div className="flex flex-col justify-between min-h-[489px]">
-        <div className="flex max-w-[761px] flex-row gap-[56px]">
+      <div className="flex w-full flex-col justify-between min-h-[489px]">
+        <div className="flex w-full flex-row justify-between gap-5">
           <div className="flex flex-col justify-between mt-3">
             <ConnectWallet />
           </div>
-          <div className="flex flex-col ">
+          <div className="flex flex-col min-w-[50%]">
             <PopularOptions />
-            <div className="flex flex-col gap-4 mt-6">
-              <div className="flex flex-row gap-[11px]">
+            <div className="flex max-w-[500px] flex-row flex-wrap gap-2 mt-6">
+              {metaMaskConnector && (
                 <ModalButton
                   label="MetaMask"
                   icon={<MetaMaskIcon width={35} height={32} />}
                   onClick={() => {
-                    if (metaMaskConnector) {
-                      handleExternalWalletConnect(metaMaskConnector);
-                    } else {
-                      console.log("no metaMask connector");
-                    }
+                    handleExternalWalletConnect(metaMaskConnector);
                   }}
                 />
+              )}
+              <ModalButton
+                label="WalletConnect"
+                icon={<WalletConnectIcon width={24} height={16} />}
+                onClick={() => {
+                  if (walletConnectConnector) {
+                    handleExternalWalletConnect(walletConnectConnector);
+                  } else {
+                    console.log("no WalletConnect connector");
+                  }
+                }}
+              />
+              {solflareConnector && (
                 <ModalButton
-                  label="WalletConnect"
-                  icon={<WalletConnectIcon width={24} height={16} />}
+                  label="Solflare Wallet"
+                  icon={<SolflareWalletIcon width={32} height={32} />}
+                  onClick={() => {
+                    handleExternalWalletConnect(solflareConnector);
+                  }}
+                />
+              )}
+              {phantomConnector && (
+                <ModalButton
+                  label="Phantom"
+                  icon={<PhantomIcon width={24} height={20} />}
+                  onClick={() => {
+                    handleExternalWalletConnect(phantomConnector);
+                  }}
+                />
+              )}
+            </div>
+            <div className="mt-10">
+              <p className="mb-4 text-sm font-normal text-[#535E73]">
+                Other options
+              </p>
+              <div className="flex w-full flex-row flex-wrap gap-2 mt-6">
+                {uniSwapConnector && (
+                  <ModalButton
+                    label="Uniswap"
+                    icon={<UniswapIcon width={24} height={24} />}
+                    onClick={() => {
+                      handleExternalWalletConnect(uniSwapConnector);
+                    }}
+                  />
+                )}
+                {coinbaseConnector && (
+                  <ModalButton
+                    label="Coinbase Wallet"
+                    icon={<CoinbaseWalletIcon width={24} height={24} />}
+                    onClick={() => {
+                      handleExternalWalletConnect(coinbaseConnector);
+                    }}
+                  />
+                )}
+
+                {okxConnector && (
+                  <ModalButton
+                    label="OKX Wallet"
+                    icon={<OKXWalletIcon width={24} height={24} />}
+                    onClick={() => {
+                      handleExternalWalletConnect(okxConnector);
+                    }}
+                  />
+                )}
+                <ModalButton
+                  label="All Wallets (500+)"
+                  icon={<AllWalletsIcon width={28} height={27} />}
                   onClick={() => {
                     if (walletConnectConnector) {
                       handleExternalWalletConnect(walletConnectConnector);
@@ -87,48 +158,6 @@ const AllWAllets = () => {
                     }
                   }}
                 />
-              </div>
-              <div className="flex flex-row gap-[11px]">
-                <ModalButton
-                  label="Solflare Wallet"
-                  icon={<SolflareWalletIcon width={32} height={32} />}
-                  onClick={() => {}}
-                />
-                <ModalButton
-                  label="Phantom"
-                  icon={<PhantomIcon width={24} height={20} />}
-                  onClick={() => {}}
-                />
-              </div>
-            </div>
-            <div className="mt-10">
-              <p className="mb-4 text-sm font-normal text-[#535E73]">
-                Other options
-              </p>
-              <div className="flex flex-col gap-4 mt-6">
-                <div className="flex flex-row gap-[11px]">
-                  <ModalButton
-                    label="Uniswap"
-                    icon={<UniswapIcon width={24} height={24} />}
-                  />
-                  <ModalButton
-                    label="Coinbase Wallet"
-                    icon={<CoinbaseWalletIcon width={24} height={24} />}
-                    onClick={() => {}}
-                  />
-                </div>
-                <div className="flex flex-row gap-[11px]">
-                  <ModalButton
-                    label="OKX Wallet"
-                    icon={<OKXWalletIcon width={24} height={24} />}
-                    onClick={() => {}}
-                  />
-                  <ModalButton
-                    label="All Wallets (500+)"
-                    icon={<AllWalletsIcon width={28} height={27} />}
-                    onClick={() => {}}
-                  />
-                </div>
               </div>
             </div>
           </div>
