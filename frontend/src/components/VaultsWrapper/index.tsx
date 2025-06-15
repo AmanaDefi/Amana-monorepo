@@ -222,11 +222,15 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="flex flex-row items-center justify-between">
-              <p className="w-[30%] mr-[10%] text-center">Pool</p>
-              <div className="w-[60%] flex flex-row items-center">
-                <p className="w-[40%] text-center xl:pl-[10%]">TVL</p>
-                <p className="w-[60%] text-center pr-[20%]">APY</p>
+            <div className="flex flex-row items-center justify-between ">
+              <p className="w-[30%] xl:w-[20%] mr-[10%] xl:mr-[20%] text-center">
+                Pool
+              </p>
+              <div className="w-[60%] flex flex-row items-center  xl:mr-[5%]">
+                <p className="w-[20%] xl:w-[40%] text-center ">TVL</p>
+                <div className="w-[20%]" />
+                <p className="w-[30%] xl:w-[60%] text-center">APY</p>
+                <div className="w-[30%]" />
               </div>
             </div>
             {paginatedVaults.map((vault) => (
@@ -242,9 +246,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
         {vaultsList.length === 0 && (
           <div className="flex flex-col items-center py-12 gap-3">
-            <p className="text-white text-lg">
-              No vaults found.
-            </p>
+            <p className="text-white text-lg">No vaults found.</p>
             <div className="w-[180px]">
               <AppButton onClick={clearAllFilters}>
                 <span className="relative z-2">Clear Filters</span>
