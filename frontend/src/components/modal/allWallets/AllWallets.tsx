@@ -72,7 +72,7 @@ const AllWAllets = () => {
           <div className="flex flex-col justify-between mt-3">
             <ConnectWallet />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-[50%]">
             <PopularOptions />
             <div className="flex max-w-[500px] flex-row flex-wrap gap-2 mt-6">
               {metaMaskConnector && (

@@ -17,7 +17,7 @@ const walletClientCache = new Map<number, WalletClient>();
 export const getRpcUrl = (chain: Chain): string => {
   if (alchemyApiKey) {
     const alchemyUrl = chain.rpcUrls.alchemy?.http[0];
-    console.log(alchemyUrl, 'alchemyUrl')
+    console.log(alchemyUrl, "alchemyUrl");
     if (alchemyUrl) {
       return `${alchemyUrl}/${alchemyApiKey}`;
     }
@@ -57,6 +57,10 @@ export const getWalletClient = (chainId: number): WalletClient | null => {
   const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
     console.error(`Chain with id:${chainId} doesn't supported`);
+    return null;
+  }
+  if (!window?.ethereum || window.ethereum === undefined) {
+    console.error(`There is no wallet providers`);
     return null;
   }
 
