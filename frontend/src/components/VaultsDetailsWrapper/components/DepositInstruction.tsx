@@ -334,7 +334,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           )}
         </div>
         <div
-          className="absolute top-[-8px] transition-all duration-500 ease-out"
+          className="absolute top-[-16px] transition-all duration-500 ease-out"
           style={{
             left: isDynamicMode ? `${elephantPosition}%` : "0%",
             transform: "translateX(-50%)",
@@ -342,7 +342,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           }}
         >
           <img
-            src="/elephant.png"
+            src="/elephant.gif"
             alt="Progress elephant"
             className="w-6 h-6"
             style={{
