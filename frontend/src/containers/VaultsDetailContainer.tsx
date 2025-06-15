@@ -248,6 +248,10 @@ const VaultsDetailContainer: React.FC<{
     router.push(backPath);
   };
 
+  const informationDropdownTitle = walletAddress
+    ? "What happened with my Deposit?"
+    : "Information";
+
   return vaultData ? (
     <div className="overflow-x-auto font-gotham">
       {!walletAddress && <InvestBlock />}
@@ -325,18 +329,21 @@ const VaultsDetailContainer: React.FC<{
               onTokenSelect={handleTokenSelect}
               selectedToken={selectedToken}
               selectedChain={selectedChain}
-              onSelectChain={handleChainSelect} 
-              vaultId={vaultID.toString()} 
+              onSelectChain={handleChainSelect}
+              vaultId={vaultID.toString()}
             />
           </div>
         </div>
 
         <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
-          <Dropdown title="Information" defaultOpen={true}>
+          <Dropdown title={informationDropdownTitle} defaultOpen={true}>
             <VaultInformationContent
               vaultData={vaultData}
               vaultExplorerBaseUrl={vaultExplorerBaseUrl}
               strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+              walletAddress={walletAddress || undefined}
+              selectedToken={selectedToken}
+              selectedChain={selectedChain}
             />
           </Dropdown>
 
