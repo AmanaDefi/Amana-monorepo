@@ -413,6 +413,7 @@ export default function VaultInputs({
 
     // Reset input balance
     setInputBalance(EMPTY_BALANCE);
+    setDisplayValue("");
     updateLocalStorageObject(vaultData.id, {
       tab: newTab,
       inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
@@ -617,7 +618,7 @@ export default function VaultInputs({
   const getWithdrawOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
       try {
-        console.log('start')
+        console.log("start");
         /*console.log("Double Box - Starting getWithdrawOutputAmount:", {
         inputAmountValue: inputAmountValue.toString(),
       });*/
@@ -626,18 +627,18 @@ export default function VaultInputs({
           vaultData,
           activeChain?.id ?? SUPPORTED_CHAINS[0].chain.id,
         );
-        console.log('assetsAmount')
+        console.log("assetsAmount");
         /*console.log("Double Box - Assets from shares:", {
         assetsAmount: assetsAmount.toString(),
       });*/
         const actualInputToken = isZetachain(activeChain?.id as number)
           ? inputToken
           : inputToken?.ZRC20equivalent;
-          console.log('actualInputToken', actualInputToken)
+        console.log("actualInputToken", actualInputToken);
         if (!actualInputToken) {
           setLoadingOutputToken(false);
           return;
-        };
+        }
         /*console.log("Double Box - Token addresses:", {
         inputToken: actualInputToken?.address,
         isZetachain: isZetachain(activeChain?.id as number),
@@ -651,22 +652,21 @@ export default function VaultInputs({
             actualInputToken,
             vaultData.id,
           );
-          console.log('tokenConversionAmount')
+          console.log("tokenConversionAmount");
         }
         /*console.log("Double Box - Conversion amounts:", {
         tokenConversionAmount: tokenConversionAmount.toString(),
       });*/
 
-      
         const assetsConversionInUSD =
           (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
           vaultTokenPrice;
-          console.log('assetsConversionInUSD', assetsConversionInUSD)
+        console.log("assetsConversionInUSD", assetsConversionInUSD);
         const tokenConversionFromWei =
           Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
         const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
 
-        console.log('tokenConversionInUSD', tokenConversionInUSD)
+        console.log("tokenConversionInUSD", tokenConversionInUSD);
         const slippageActualValue = Math.max(
           0,
           100 - (tokenConversionInUSD * 100) / assetsConversionInUSD,
@@ -688,7 +688,7 @@ export default function VaultInputs({
           outputAmountInUSDFormatted:
             formatCurrency(tokenConversionInUSD).toString(),
         });*/
-        console.log('formattedOutputAmount', formattedOutputAmount)
+          console.log("formattedOutputAmount", formattedOutputAmount);
           setConversionOutput({
             slippageActualValue: Number(slippageActualValue.toFixed(2)),
             finalConvertedAmountInUSDFormatted: formatCurrency(
@@ -700,7 +700,7 @@ export default function VaultInputs({
           });
         }
       } finally {
-        console.log('setLoadingOutputToken(false)')
+        console.log("setLoadingOutputToken(false)");
         setLoadingOutputToken(false);
       }
     },
@@ -729,7 +729,7 @@ export default function VaultInputs({
         if (!actualInputToken) {
           setLoadingOutputToken(false);
           return;
-        };
+        }
         /*console.log("Double Box - 🏦 Token addresses:", {
         inputToken: actualInputToken.address,
         isZetachain: isZetachain(activeChain?.id as number),
@@ -746,8 +746,8 @@ export default function VaultInputs({
         }
 
         console.log("Double Box - Pre Gas Conversion amounts:", {
-        assetsConversionAmount: assetsConversionAmount.toString(),
-      });
+          assetsConversionAmount: assetsConversionAmount.toString(),
+        });
 
         // 2. Fetch gas fee info from the ZRC20 token
 
@@ -757,10 +757,10 @@ export default function VaultInputs({
         let netDepositToVaultUSD = "0";
         if (!vaultData.depositFeePaidFromGasTank) {
           const publicClient = getPublicClient(activeChain?.id ?? 7000);
-          if (!publicClient)  {
+          if (!publicClient) {
             setLoadingOutputToken(false);
             return;
-          };
+          }
           const vaultAbi = [
             {
               type: "function",
@@ -777,7 +777,7 @@ export default function VaultInputs({
             },
           ] as const;
 
-          console.log('publicClient')
+          console.log("publicClient");
 
           const tokenContractAbi = [
             {
@@ -798,7 +798,7 @@ export default function VaultInputs({
             functionName: "gasLimitForWithdrawAndCall",
           });
 
-          console.log('gasLimitForWithdrawAndCall')
+          console.log("gasLimitForWithdrawAndCall");
 
           const result = await publicClient.readContract({
             address: vaultData.inputToken.address,
@@ -806,7 +806,7 @@ export default function VaultInputs({
             functionName: "withdrawGasFeeWithGasLimit",
             args: [gasLimitForWithdrawAndCall],
           });
-          console.log("result")
+          console.log("result");
           const gasZRC20 = result[0];
           const gasFee = result[1];
           // 3. If vault token and gas token match, subtract directly
@@ -820,7 +820,7 @@ export default function VaultInputs({
               vaultData.inputToken,
               vaultData.id,
             );
-            console.log('gasZRC20')
+            console.log("gasZRC20");
           }
           // Format gas fee in USD and ETH
           const gasFeeInTokenUnits =
@@ -846,7 +846,7 @@ export default function VaultInputs({
           finalConvertedAmount,
           vaultData,
         );
-        console.log('sharesAmountRaw')
+        console.log("sharesAmountRaw");
 
         // Use formatTokenBalance for the output amount formatting
         const sharesAmountFormatted = formatTokenBalance(
@@ -907,7 +907,7 @@ export default function VaultInputs({
             netDepositToVaultUSD: formatUSDValue(finalConvertedAmountInUSD),
             inputAmountInUSDFormatted: formatUSDValue(inputAmountValueInUSD),
           });
-          console.log('setConversionOutput')
+          console.log("setConversionOutput");
         }
       } finally {
         setLoadingOutputToken(false);
@@ -1052,7 +1052,7 @@ export default function VaultInputs({
       return;
     }
     setLoadingOutputToken(true);
-    console.log('setLoadingOutputToken')
+    console.log("setLoadingOutputToken");
     if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
     else getWithdrawOutputAmount(debouncedInputBalance.value);
   }, [
