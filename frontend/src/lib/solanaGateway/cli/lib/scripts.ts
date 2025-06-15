@@ -13,6 +13,15 @@ import { CHAIN_ID } from "@/constants/chainConfig";
 
 const SEED = 'meta';
 
+// RevertOptions type definition to match the Solana program interface
+export interface RevertOptions {
+  abortAddress: Uint8Array;
+  callOnRevert: boolean;
+  onRevertGasLimit: anchor.BN;
+  revertAddress: PublicKey;
+  revertMessage: Buffer;
+}
+
 export const createSolanaDepositTx = async (payer: PublicKey, amount: number, recipient: string, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -33,7 +42,7 @@ export const createSolanaDepositTx = async (payer: PublicKey, amount: number, re
   return ix;
 }
 
-export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: number, recipient: string, args: any, program: anchor.Program) => {
+export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
@@ -49,7 +58,7 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
       new anchor.BN(amount),
       ethers.getBytes(recipient),
       message,
-      RevertOptions
+      revertOptions
     ).accounts({
       pda: pdaAccount,
       signer: payer,
@@ -59,11 +68,32 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
   return ix;
 }
 
-export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: string, args: any, program: anchor.Program) => {
-  return await createSolanaDepositAndCallTx(payer, 1, recipient, args, program);
+export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: string, args: any, revertOptions: RevertOptions, program: anchor.Program) => {
+  const seeds = [Buffer.from(SEED, "utf-8")];
+  const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+    seeds,
+    program.programId
+  );
+  const message = Buffer.from(
+    getBytes(
+      new AbiCoder().encode(args.types, args.values)
+    )
+  );
+  const ix = await program.methods
+    .withdrawAndCall(
+      ethers.getBytes(recipient),
+      message,
+      revertOptions
+    ).accounts({
+      pda: pdaAccount,
+      signer: payer,
+      systemProgram: SystemProgram.programId
+    }).instruction();
+
+  return ix;
 }
 
-export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, program: anchor.Program) => {
+export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, 'utf-8')];
   const whiteListEntrySeeds = [Buffer.from("whitelist", 'utf-8'), mint.toBytes()]
   const whiteListEntry = anchor.web3.PublicKey.findProgramAddressSync(
@@ -77,16 +107,6 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
   const from = getAssociatedTokenAddressSync(mint, payer);
   const to = getAssociatedTokenAddressSync(mint, pdaAccount, true);
   const message = Buffer.from(getBytes(new AbiCoder().encode(args.types, args.values)));
-
-  const revertOptions = {
-    abortAddress: ethers.getBytes(options.abortAddress),
-    callOnRevert: options.callOnRevert,
-    onRevertGasLimit: new anchor.BN(options.onRevertGasLimit ?? 0),
-    revertAddress: options.revertAddress
-      ? new PublicKey(options.revertAddress)
-      : provider.wallet.publicKey,
-    revertMessage: Buffer.from(options.revertMessage, "utf8"),
-  };
 
   const ix = await program.methods
     .depositSplTokenAndCall(
@@ -107,6 +127,5 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
 
   return ix;
 }
-
 
 export const createWithdrawSplTokenTx = async () => { }

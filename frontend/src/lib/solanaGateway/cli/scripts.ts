@@ -14,6 +14,7 @@ import {
   createSolanaDepositAndCallTx,
   createSolanaDepositTx,
   createSolanaWithdrawalTx,
+  RevertOptions,
 } from "./lib/scripts";
 import { solanaConnection } from "@/utils/utils";
 
@@ -72,11 +73,11 @@ export class SolanaZetaClient {
     }
   }
 
-  solanaDepositAndCall = async (amount: number, recipient: string, args: any) => {
+  solanaDepositAndCall = async (amount: number, recipient: string, args: any, revertOptions: RevertOptions) => {
     try {
       // Create transaction
       const tx = new Transaction().add(
-        await createSolanaDepositAndCallTx(this.wallet.publicKey, amount, recipient, args, this.program)
+        await createSolanaDepositAndCallTx(this.wallet.publicKey, amount, recipient, args, revertOptions, this.program)
       );
 
       // Set blockhash and fee payer
@@ -103,10 +104,10 @@ export class SolanaZetaClient {
     }
   }
 
-  solanaWithdrawal = async (recipient: string, args: any) => {
+  solanaWithdrawal = async (recipient: string, args: any, revertOptions: RevertOptions) => {
     try {
       const tx = new Transaction().add(
-        await createSolanaWithdrawalTx(this.wallet.publicKey, recipient, args, this.program)
+        await createSolanaWithdrawalTx(this.wallet.publicKey, recipient, args, revertOptions, this.program)
       );
       // Set blockhash and fee payer
       const { blockhash } = await this.connection.getLatestBlockhash();
@@ -131,7 +132,7 @@ export class SolanaZetaClient {
       throw new Error("Transacction Failed")
     }
   }
-  depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any) => {
+  depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any, revertOptions: RevertOptions) => {
     try {
       if (!this.wallet || !this.wallet.publicKey || !this.wallet.signTransaction) {
         throw new Error("Wallet not connected or signTransaction not available");
@@ -144,6 +145,7 @@ export class SolanaZetaClient {
           amount,
           recipient,
           args,
+          revertOptions,
           this.program
         )
       );

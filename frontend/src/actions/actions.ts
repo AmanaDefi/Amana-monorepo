@@ -56,6 +56,7 @@ import { ApiService } from "@/service";
 import { read } from "fs";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { trackEvent } from "@/utils/trackEvent";
+import { RevertOptions } from "@/lib/solanaGateway/cli/lib/scripts";
 
 dotenv.config();
 const provider = new JsonRpcProvider(
@@ -1171,8 +1172,24 @@ const executeSolanaDeposit = async (
   const client = new SolanaZetaClient(wallet);
   const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
 
+  // Create RevertOptions (similar to EVM implementation)
+  // Convert Solana address to Ethereum format for abiCoder compatibility
+  const evmWalletAddress = getSolanaEVMAddress(walletAddress);
+  const revertMessage = abiCoder.encode(
+    ["string", "bytes", "address"],
+    ["_crossChainDepositFailed", solanaWalletAddress, evmWalletAddress]
+  );
+
+  const revertOptions: RevertOptions = {
+    abortAddress: new TextEncoder().encode(walletAddress), // Solana wallet address as bytes
+    callOnRevert: true,
+    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
+    revertAddress: walletContext.publicKey!, // Use the user's Solana public key
+    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, removing '0x' prefix
+  };
+
   if (inputToken.isNative) {
-    // Case 1: Native token (ETH, BNB, etc.)
+    // Case 1: Native token (SOL)
     const args = {
       types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
       values: [
@@ -1189,7 +1206,8 @@ const executeSolanaDeposit = async (
     const txHash = await client.solanaDepositAndCall(
       Number(transactionAmount),
       vaultData.id,
-      args
+      args,
+      revertOptions
     );
     console.log("Deposit executed");
     setcrossChainTxId(transactionId);
@@ -1207,7 +1225,8 @@ const executeSolanaDeposit = async (
       inputToken.address,
       Number(transactionAmount),
       vaultData.id,
-      args
+      args,
+      revertOptions
     );
     console.log("Deposit executed");
     setcrossChainTxId(transactionId);
@@ -1231,14 +1250,15 @@ export const executeSolanaWithdrawal = async (
     withdrawAssetAmount
   );
   const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
+  const walletAddress = walletContext.publicKey!.toBase58();
+  
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
-    walletContext.publicKey!.toBase58(),
+    walletAddress,
     activeChain
   );
 
   const slippage = getCurrentSlippage();
-
   const slippageValue = (slippage * 100).toFixed(0);
 
   const wallet = {
@@ -1247,6 +1267,22 @@ export const executeSolanaWithdrawal = async (
     signAllTransactions: walletContext.signAllTransactions,
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
+
+  // Create RevertOptions (similar to EVM implementation)
+  // Convert Solana address to Ethereum format for abiCoder compatibility
+  const evmWalletAddress = getSolanaEVMAddress(walletAddress);
+  const revertMessage = abiCoder.encode(
+    ["string", "bytes32", "address"],
+    ["_crossChainWithdrawFailed", transactionId, evmWalletAddress]
+  );
+
+  const revertOptions: RevertOptions = {
+    abortAddress: new TextEncoder().encode(walletAddress), // Solana wallet address as bytes
+    callOnRevert: false, // Similar to EVM withdrawal
+    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
+    revertAddress: walletContext.publicKey!, // Use the user's Solana public key
+    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, removing '0x' prefix
+  };
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
@@ -1263,7 +1299,7 @@ export const executeSolanaWithdrawal = async (
     ],
   };
 
-  const txHash = await client.solanaWithdrawal(vaultData.id, args);
+  const txHash = await client.solanaWithdrawal(vaultData.id, args, revertOptions);
   console.log("Withdrawal executed");
   setcrossChainTxId(transactionId);
   return { transactionHash: txHash };
