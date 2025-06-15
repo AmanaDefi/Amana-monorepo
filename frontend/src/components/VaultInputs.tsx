@@ -125,11 +125,10 @@ export default function VaultInputs({
 
   // Use searchParams to directly determine tab state
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
 
   // Update isDeposit when URL tab parameter changes
   useEffect(() => {
-    const shouldBeDeposit = tabParam !== "withdraw";
+    const shouldBeDeposit = searchParams.get("tab") !== "withdraw";
     if (vaultData?.id) {
       const TxInfo = getLocalStorageObject(vaultData.id);
       const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
@@ -143,7 +142,7 @@ export default function VaultInputs({
     }
 
     // Only update if the state is different from what it should be
-  }, [tabParam, searchParams, vaultData.id]);
+  }, [searchParams, vaultData.id]);
 
   // // Check if user has balance for withdrawal if tab=withdraw
   // useEffect(() => {
@@ -406,7 +405,7 @@ export default function VaultInputs({
     if (isTxInProgress) return;
 
     localStorage.removeItem(vaultData.id);
-    const newIsDeposit = tab === "Deposit";
+    const newIsDeposit = tab.toLowerCase() === "deposit";
     const newTab = newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW;
 
     // Update URL first to ensure consistency
@@ -446,6 +445,7 @@ export default function VaultInputs({
   const switchTokens = async () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
     if (isTxInProgress) return;
+    const tabParam = searchParams.get("tab");
     // Get the opposite tab of what's currently in the URL
     const currentTabFromURL = tabParam !== "withdraw" ? "deposit" : "withdraw";
     const newTab = currentTabFromURL === "deposit" ? "withdraw" : "deposit";
