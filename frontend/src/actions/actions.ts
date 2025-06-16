@@ -759,8 +759,12 @@ export async function calculateVenusRewardsAPY(
 
 export async function fetchAegisAPR(): Promise<number> {
   try {
-    const response = await fetch("https://api.aegis.im/api/project-stats");
+    const response = await fetch("/api/aegis-apr");
     const json = await response.json();
+
+    if (json.error) {
+      throw new Error(json.error);
+    }
 
     if (json.status !== "success" || !json.data?.efficient_apr) {
       throw new Error("Invalid response from Aegis API");
