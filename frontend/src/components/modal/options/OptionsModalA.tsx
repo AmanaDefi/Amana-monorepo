@@ -14,6 +14,16 @@ import { useRouter } from "next/navigation";
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
 
+  const handleSmartWallets = () => {
+    const hasViewedOnboarding = localStorage.getItem('hasViewedOnboarding');
+    if (hasViewedOnboarding) {
+      openStep('optionsB')
+    } else {
+      localStorage.setItem('hasViewedOnboarding', 'true');
+      openStep("onboarding")
+    }
+  }
+
   return (
     <Modal
       isOpen={step === "optionsA"}
@@ -43,7 +53,7 @@ const OptionsModalA = () => {
               <ModalButton
                 label="Smart Wallet"
                 icon={<SmartWalletIcon width={29} height={25} />}
-                onClick={() => openStep("onboarding")}
+                onClick={handleSmartWallets}
               />
               <ModalButton
                 label="All Wallets"

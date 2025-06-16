@@ -65,16 +65,18 @@ export const VaultRow: FC<Props> = React.memo(
           </div>
         </div>
         <div className="flex w-[60%] flex-row xl:gap-14 gap-10 items-center justify-end">
-          <div className="w-[40%] flex flex-row gap-14 items-center justify-end">
-            <p className="text-white font-bold text-lg leading-5 -tracking-1">
+          <div className="flex w-[40%] flex-row gap-14 items-center justify-center">
+            <p className="text-white font-bold text-lg leading-5 -tracking-1 w-[50%] text-center">
               ${formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
             </p>
-            <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
-              <p className="text-white font-bold text-lg leading-5 ">A</p>
+            <div className="w-[50%] flex items-center justify-center">
+              <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
+                <p className="text-white font-bold text-lg leading-5 ">A</p>
+              </div>
             </div>
           </div>
-          <div className="xl:w-[55%] w-[60%] flex flex-row items-center gap-2 xl:gap-6 justify-between">
-            <div className="flex flex-row gap-1 items-center">
+          <div className="w-[60%] flex flex-row items-center gap-2 xl:gap-6 justify-end">
+            <div className="flex flex-row gap-1 items-center w-[50%] justify-center">
               <p
                 className={classNames(
                   "font-bold text-lg leading-5 ",

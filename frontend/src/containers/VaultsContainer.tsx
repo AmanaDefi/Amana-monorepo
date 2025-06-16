@@ -83,7 +83,7 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({
 
   return (
     <VaultsGrid
-      loading={loading}
+      loading={!vaultAPYs && !userVaultBalances && !vaultTotalAssets}
       vaults={vaults}
       vaultAPYs={vaultAPYs}
       userVaultBalances={userVaultBalances}
