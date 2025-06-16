@@ -150,7 +150,7 @@ export default function VaultInputs({
     } else {
       setIsDeposit(shouldBeDeposit);
     }
-  }, [tabParam, searchParams, vaultData.id]);
+  }, [searchParams, vaultData.id]);
 
 
   const [steps, setSteps] = useState<Action[]>([]);
