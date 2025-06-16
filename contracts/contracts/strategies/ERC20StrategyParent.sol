@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import "./StrategyParent.sol";
+import "hardhat/console.sol";
 
 /// @title ERC20StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -9,32 +10,21 @@ import "./StrategyParent.sol";
 abstract contract ERC20StrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
-    IERC20 public inputToken;
-
-    function __ERC20StrategyParent_init(
-        address _inputTokenAddress
-    ) internal onlyInitializing {
-        inputToken = IERC20(_inputTokenAddress);
-    }
-
     /// @notice Invests ERC20 into the yield source.
 
     function _invest() internal virtual override {
         BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
-        SafeERC20.safeTransferFrom(
-            inputToken,
-            msg.sender,
-            address(this),
-            txn.amountOrFraction
-        );
-        _depositFundsIntoYieldSource(txn.amountOrFraction, txn.minimumOut);
+
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+        _depositFundsIntoYieldSource(txn.assetAmount, txn.minimumOut);
         _sendInvestConfirmation(
+            totalUnderlyingAssets() - totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
             lastProcessedNonce + 1
         );
         emit FundsInvested(
             lastProcessedNonce + 1,
-            txn.amountOrFraction,
+            txn.assetAmount,
             totalUnderlyingAssets()
         );
     }
@@ -69,24 +59,20 @@ abstract contract ERC20StrategyParent is StrategyParent {
         if (IStrategy(txn.newStrategy).amanaVault() != amanaVault) {
             revert InvalidAmanaVault();
         }
-        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
-            1e18, // Withdraw all
-            txn.amountOrFraction
+        uint256 totalShares = IERC20(receiptTokenAddress).balanceOf(
+            address(this)
         );
-        approveOrIncreaseAllowance(
-            inputToken,
-            txn.newStrategy,
-            withdrawnAmount
-        );
+        // Transfer receipt tokens directly instead of approving + transferFrom
+        IERC20(receiptTokenAddress).transfer(txn.newStrategy, totalShares);
 
         IStrategy(txn.newStrategy).depositFromOldStrategy(
-            withdrawnAmount,
+            totalShares,
             txn.minimumOut,
             lastProcessedNonce + 1
         );
         emit AssetsTransferredToNewStrategy(
             txn.newStrategy,
-            withdrawnAmount,
+            totalShares,
             lastProcessedNonce + 1
         );
     }
@@ -104,9 +90,13 @@ abstract contract ERC20StrategyParent is StrategyParent {
     ) external virtual {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
         if (msg.sender != oldStrategy) revert NotAuthorized();
-        if (amount == 0) revert NoFundsReceived();
-        lastProcessedNonce = currentExecutionNonce;
-        _invest();
+        if (
+            amount == 0 ||
+            IERC20(receiptTokenAddress).balanceOf(address(this)) == 0
+        ) revert NoFundsReceived();
+        lastProcessedNonce = currentExecutionNonce - 1;
+        // IERC20(inputToken).safeTransferFrom(oldStrategy, address(this), amount);
+        // _invest();
         emit AssetsReceivedFromOldStrategy(
             oldStrategy,
             amount,
@@ -124,9 +114,8 @@ abstract contract ERC20StrategyParent is StrategyParent {
 
         IERC20(token).safeTransfer(swapHelper, amountIn);
 
-        uint16 maxDeadline = uint16(block.timestamp + 1 hours);
+        uint256 maxDeadline = 1 hours;
         uint16 slippage = initialSlippageBps;
-
         // Retry with increasing slippage up to 10% (1000 bps)
         while (slippage <= 1000) {
             try

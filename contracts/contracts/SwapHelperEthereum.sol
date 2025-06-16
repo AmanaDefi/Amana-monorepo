@@ -132,7 +132,7 @@ contract SwapHelperEthereum is SwapHelperParent {
         address outputToken,
         uint16 slippageBps,
         address strategy,
-        uint16 maxDeadline,
+        uint256 maxDeadline,
         bytes calldata data
     ) external override returns (uint256 amountOut) {
         require(
@@ -179,7 +179,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             address[] memory path,
             uint24[] memory feeTiers,
             bytes memory encodedPath
-        ) = getPathV3(inputToken, outputToken);
+        ) = getPathV3(inputToken, outputToken, UNISWAP_V3_FACTORY);
 
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
@@ -202,7 +202,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             }
         } else {
             // Uniswap V2 Swap
-            path = getPathV2(inputToken, outputToken);
+            path = getPathV2(inputToken, outputToken, UNISWAP_V2_FACTORY);
             if (path.length < 2) return 0;
 
             IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);

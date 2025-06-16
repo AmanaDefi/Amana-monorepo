@@ -29,9 +29,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             registry_,
             perfFee_,
             gasLimitWithdrawAndCall_,
-            gasLimitCall_
+            gasLimitCall_,
+            depositFeePaidFromGasTank_
         );
-        depositFeePaidFromGasTank = depositFeePaidFromGasTank_;
     }
 
     /**
@@ -62,34 +62,33 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
                 emit TotalAssetsUpdated(totalAssetsAfter, confirmationNonce);
             } else {
-                transactions[confirmationNonce]
+                pendingTransactions[confirmationNonce]
                     .totalAssetsAfter = totalAssetsAfter;
-                transactions[confirmationNonce].txStatus = txStatus; // non-zero means a revert
+                pendingTransactions[confirmationNonce].txStatus = txStatus;
                 if (
                     txStatus == TX_WITHDRAW_REVERTED ||
                     txStatus == TX_WITHDRAW_CONFIRMED
                 ) {
-                    // If the withdrawal reverted, we need to return the funds to the user
-                    address user = transactions[confirmationNonce].user;
+                    address user = pendingTransactions[confirmationNonce].user;
                     if (
-                        transactions[confirmationNonce].amount >=
+                        pendingTransactions[confirmationNonce].amount >=
                         pendingWithdrawals[user]
                     ) {
                         pendingWithdrawals[user] = 0;
                     } else {
-                        pendingWithdrawals[user] -= transactions[
+                        pendingWithdrawals[user] -= pendingTransactions[
                             confirmationNonce
                         ].amount;
                     }
                 }
-                transactions[confirmationNonce].amount = withdrawnAmount;
+                pendingTransactions[confirmationNonce].amount = withdrawnAmount;
             }
             if (confirmationNonce == lastProcessedNonce + 1) {
                 // Process the confirmation immediately if it's the next one in line
-                _processBufferedTransactions(true);
+                _processBufferedpendingTransactions(true);
             }
         } else {
-            Transaction storage txn = transactions[vaultNonce];
+            Transaction storage txn = pendingTransactions[vaultNonce];
             if (context.sender == address(0)) revert InvalidAddress();
             (
                 address withdrawZRC20,
@@ -98,10 +97,20 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 uint256 minimumOut,
                 uint16 slippage,
                 bytes memory nonEvmAddress,
+                bytes memory swapData,
                 bytes32 txStatus
             ) = abi.decode(
                     message,
-                    (address, address, uint256, uint256, uint16, bytes, bytes32)
+                    (
+                        address,
+                        address,
+                        uint256,
+                        uint256,
+                        uint16,
+                        bytes,
+                        bytes,
+                        bytes32
+                    )
                 );
             txn.user = context.sender; // common to both paths
             txn.receiver = context.sender; // could take in a different receiver?
@@ -111,6 +120,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             txn.withdrawERC20 = withdrawERC20;
             txn.slippage = slippage;
             nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
+            swapDataByNonce[vaultNonce] = swapData;
             // if (context.senderEVM != address(0)) {
             //     // Handle EVM-style sender logic
             //     txn.user = context.senderEVM;
@@ -164,7 +174,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         bytes32 _txStatus
     ) external onlyOwner {
         // Store the transaction in the buffer
-        Transaction storage txn = transactions[confirmationNonce];
+        Transaction storage txn = pendingTransactions[confirmationNonce];
         txn.amount = amount;
         txn.totalAssetsAfter = totalAssetsAfter;
         txn.txStatus = _txStatus;
@@ -176,14 +186,14 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) external onlyOwner {
         // Ensure the transaction exists
         if (
-            transactions[confirmationNonce].totalAssetsAfter == 0 &&
-            transactions[confirmationNonce].amount == 0
+            pendingTransactions[confirmationNonce].totalAssetsAfter == 0 &&
+            pendingTransactions[confirmationNonce].amount == 0
         ) {
             revert ConfirmationAlreadyProcessed();
         }
 
         // Attempt to process confirmations
-        _processBufferedTransactions(processEntireBuffer);
+        _processBufferedpendingTransactions(processEntireBuffer);
     }
 
     /**
@@ -191,14 +201,24 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
      *      Once a transaction is processed, it is removed from the buffer.
      */
-    function _processBufferedTransactions(bool processEntireBuffer) internal {
+    function _processBufferedpendingTransactions(
+        bool processEntireBuffer
+    ) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-            Transaction memory transaction = transactions[nextNonce];
+            Transaction memory transaction = pendingTransactions[nextNonce];
 
-            if (transaction.txStatus == TX_WITHDRAW_REVERTED) {
+            if (
+                transaction.txStatus == TX_WITHDRAW_REVERTED ||
+                transaction.txStatus == TX_TOTAL_ASSETS_UPDATE ||
+                transaction.txStatus == TX_DEPOSIT_REVERTED
+            ) {
                 latestTotalAssetsUpdateFromStrategy = transaction
                     .totalAssetsAfter;
+                emit TotalAssetsUpdated(
+                    transaction.totalAssetsAfter,
+                    nextNonce
+                );
             } else if (transaction.txStatus == TX_DEPOSIT_CONFIRMED) {
                 _confirmDepositAndMint();
             } else if (transaction.txStatus == TX_SWITCH_CONFIRMED) {
@@ -209,7 +229,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 break; // No valid transaction to process
             }
             lastProcessedNonce = nextNonce;
-            delete transactions[nextNonce];
+            delete pendingTransactions[nextNonce];
             if (!processEntireBuffer) break;
         }
     }
@@ -234,7 +254,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit StrategyUpdated(newStrategyAddress);
             return;
         }
-
         IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
             .handleSwitchCallToStrategy(
                 strategyAddress,
@@ -253,6 +272,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
     function toggleDepositFeePaidFromGasTank() external onlyOwner {
         depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
+    }
+
+    function incrementLastProcessedNonce() external onlyOwner {
+        lastProcessedNonce++;
     }
 
     /**
@@ -288,7 +311,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-        Transaction storage txn = transactions[vaultNonce];
+        Transaction storage txn = pendingTransactions[vaultNonce];
 
         txn.withdrawERC20 = asset(); // we store this in case of a revert, to return funds to user
         txn.withdrawZRC20 = asset();
@@ -315,7 +338,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     function _investAssets() internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
-        Transaction storage txn = transactions[vaultNonce];
+        Transaction storage txn = pendingTransactions[vaultNonce];
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
@@ -329,6 +352,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     txn.receiver,
                     nonEvmAddressByNonce[vaultNonce],
                     txn.withdrawZRC20,
+                    txn.withdrawERC20,
                     address(asset()),
                     txn.amount,
                     txn.minOut,
@@ -343,6 +367,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     txn.receiver,
                     nonEvmAddressByNonce[vaultNonce],
                     txn.withdrawZRC20,
+                    txn.withdrawERC20,
                     address(asset()),
                     txn.amount,
                     txn.minOut,
@@ -358,7 +383,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      *      Updates the total assets and receiver's principal accordingly.
      */
     function _confirmDepositAndMint() internal {
-        Transaction storage txn = transactions[lastProcessedNonce + 1];
+        Transaction storage txn = pendingTransactions[lastProcessedNonce + 1];
         userPrincipal[txn.receiver] += txn.amount;
         totalPrincipal += txn.amount;
 
@@ -398,7 +423,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         uint256 assets,
         uint16 slippage
     ) internal override {
-        Transaction storage txn = transactions[vaultNonce];
+        Transaction storage txn = pendingTransactions[vaultNonce];
 
         uint256 maxAmount = maxWithdraw(txn.user);
         if (txn.amount > maxAmount - pendingWithdrawals[txn.user]) {
@@ -443,7 +468,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
      */
     function _withdrawComingFromConnectedChain() internal override {
-        Transaction storage txn = transactions[vaultNonce];
+        Transaction storage txn = pendingTransactions[vaultNonce];
 
         if (txn.amount == 0) {
             revert AmountCantBeZero();
@@ -474,7 +499,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
      */
     function _confirmWithdrawAndBurn() internal {
-        Transaction storage txn = transactions[lastProcessedNonce + 1];
+        Transaction storage txn = pendingTransactions[lastProcessedNonce + 1];
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter + txn.amount;
 
         uint256 userShares = balanceOf(txn.user);

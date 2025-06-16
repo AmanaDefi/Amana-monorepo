@@ -9,10 +9,8 @@ import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
-import { AlchemyClientState, cookieToInitialState } from "@account-kit/core";
+import { AlchemyClientState } from "@account-kit/core";
 import { Providers } from "@/providers/AlchemyProviders";
-import { headers } from "next/headers";
-import { alchemyConfig } from "../../alchemyConfig";
 
 const inter = Inter({
   subsets: ["latin"],

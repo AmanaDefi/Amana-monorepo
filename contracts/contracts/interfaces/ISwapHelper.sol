@@ -15,7 +15,7 @@ interface ISwapHelper {
         address targetZRC20,
         uint16 slippageBps,
         address vault,
-        uint16 maxDeadline,
+        uint256 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountOut);
 
@@ -38,4 +38,33 @@ interface ISwapHelper {
         uint16 maxDeadline,
         bytes calldata data
     ) external returns (uint256 amountIn);
+
+    function getPathV3(
+        address zrc20,
+        address targetZRC20
+    )
+        external
+        view
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory /* encodedPath */
+        );
+
+    function getAmountOutV3(
+        uint256 amountIn,
+        address[] memory path,
+        uint24[] memory feeTiers
+    ) external view returns (uint256 amountOut);
+
+    function swapViaBalancerPool(
+        address inputToken,
+        address wrappedInputToken,
+        address outputToken,
+        uint256 amount,
+        uint256 minimumOut,
+        address receiver,
+        uint256 maxDeadline,
+        address pool
+    ) external returns (uint256 amountOut);
 }

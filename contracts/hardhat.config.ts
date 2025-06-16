@@ -22,12 +22,12 @@ import "./tasks/deployWithdrawHelper";
 import "./tasks/deployERC20_MoonwellStrategy";
 import "./tasks/deployAmanaRegistry";
 import "./tasks/clearNonces";
-import "./tasks/deployERC20_Strategy_SwapHelper";
 import "./tasks/depositMultiple";
 import "./tasks/findConvexPid";
 import "./tasks/updateWithdrawHelperOnStrats";
 import "./tasks/deployStrategyImpl";
 import "./tasks/deployBalancerStrategy";
+import "./tasks/getTxStatusHash";
 
 import "@nomicfoundation/hardhat-toolbox";
 import "@zetachain/toolkit/tasks";
@@ -39,7 +39,6 @@ import "@nomiclabs/hardhat-ethers";
 import { getHardhatConfigNetworks } from "@zetachain/networks";
 import { HardhatUserConfig } from "hardhat/config";
 import * as dotenv from "dotenv";
-import { mainnet } from "@zetachain/protocol-contracts";
 
 dotenv.config();
 
@@ -71,7 +70,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY],
     },
     bsc: {
-      url: "https://binance.llamarpc.com",
+      url: "https://bsc-dataseed1.binance.org",
       accounts: [process.env.PRIVATE_KEY],
     },
     bsc_testnet: {
@@ -121,7 +120,7 @@ const config: HardhatUserConfig = {
           evmVersion: "paris",
           optimizer: {
             enabled: true,
-            runs: 10000,
+            runs: 175,
           },
           viaIR: true,
         },

@@ -17,10 +17,13 @@ import {
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { PublicKey } from "@solana/web3.js";
-import { keccak_256 } from "js-sha3";
 import SolanaConnectionSingleton from "./solanaSingleton";
 import { erc20Abi, getContract, formatUnits } from "viem";
 import { getPublicClient, } from "./getPublicClient";;
+import { client } from "./client";
+import { Chain } from "viem";
+import { keccak_256 } from '@noble/hashes/sha3';
+import { bytesToHex } from '@noble/hashes/utils';
 
 export const formatTotalAssets = (
   totalAssets: string,
@@ -303,32 +306,14 @@ export function determineVaultTokenFromApprovedTokens(
   if (!approvedTokens?.length) return undefined;
 
   // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
-  const vaultTokenSymbol = vaultToken.symbol.split(".")[0].split(" ")[0];
+  const vaultTokenSymbol = vaultToken.symbol.split('.')[0].split(' ')[0];
 
   // Check if vault token is a native token (ETH, BNB, etc.)
-  const isNativeVaultToken = [
-    "ETH",
-    "BNB",
-    "MATIC",
-    "AVAX",
-    "FTM",
-    "ONE",
-    "CRO",
-    "SOL",
-    "GLMR",
-  ].includes(vaultTokenSymbol.toUpperCase());
+  const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
 
   // Check if vault token is a stablecoin
-  const isStablecoin = [
-    "USDT",
-    "USDC",
-    "DAI",
-    "BUSD",
-    "TUSD",
-    "USDP",
-    "FRAX",
-    "LUSD",
-  ].includes(vaultTokenSymbol.toUpperCase());
+  const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
+
 
   // Map of chain IDs to their symbol suffixes
   const chainIdToSuffix: Record<number, string> = {
@@ -357,9 +342,8 @@ export function determineVaultTokenFromApprovedTokens(
 
     if (chainSpecificTokens.length > 0) {
       // Extract the vault token's chain suffix if it has one
-      const vaultTokenParts = vaultToken.symbol.split(".");
-      const vaultTokenSuffix =
-        vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
+      const vaultTokenParts = vaultToken.symbol.split('.');
+      const vaultTokenSuffix = vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
 
       // PRIORITY:
       // 1. Connected chain's tokens (if on a specific chain)
@@ -367,14 +351,12 @@ export function determineVaultTokenFromApprovedTokens(
       // 3. For other tokens, use alphabetical order
 
       const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
-        const aSuffix = a.symbol.split(".")[1] || "";
-        const bSuffix = b.symbol.split(".")[1] || "";
+        const aSuffix = a.symbol.split('.')[1] || '';
+        const bSuffix = b.symbol.split('.')[1] || '';
 
         // If one token matches the current chain, it wins
-        if (aSuffix === currentChainSuffix && bSuffix !== currentChainSuffix)
-          return -1;
-        if (bSuffix === currentChainSuffix && aSuffix !== currentChainSuffix)
-          return 1;
+        if (aSuffix === currentChainSuffix && bSuffix !== currentChainSuffix) return -1;
+        if (bSuffix === currentChainSuffix && aSuffix !== currentChainSuffix) return 1;
 
         // If one token matches the vault token's original suffix, it comes next
         if (vaultTokenSuffix) {
@@ -400,10 +382,8 @@ export function determineVaultTokenFromApprovedTokens(
       if (tokenParts.length === 2) {
         const tokenBaseSymbol = tokenParts[0];
         const tokenSuffix = tokenParts[1];
-        return (
-          tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase() &&
-          tokenSuffix === currentChainSuffix
-        );
+        return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase() &&
+          tokenSuffix === currentChainSuffix;
       }
       return false;
     });
@@ -422,10 +402,9 @@ export function determineVaultTokenFromApprovedTokens(
   if (exactMatches.length > 0) {
     // For stablecoin vaults, prioritize non-native tokens
     if (isStablecoin) {
-      const nonNativeMatch = exactMatches.find(
-        (token) =>
-          token.address !== "0x0000000000000000000000000000000000000000" &&
-          token.address !== "11111111111111111111111111111111", // Solana native
+      const nonNativeMatch = exactMatches.find(token =>
+        token.address !== "0x0000000000000000000000000000000000000000" &&
+        token.address !== "11111111111111111111111111111111" // Solana native
       );
 
       if (nonNativeMatch) {
@@ -459,10 +438,9 @@ export function determineVaultTokenFromApprovedTokens(
 
   // PRIORITY 4: For native token vaults, prioritize native token
   if (isNativeVaultToken) {
-    const nativeToken = approvedTokens.find(
-      (token) =>
-        token.address === "0x0000000000000000000000000000000000000000" ||
-        token.address === "11111111111111111111111111111111", // Solana native
+    const nativeToken = approvedTokens.find(token =>
+      token.address === "0x0000000000000000000000000000000000000000" ||
+      token.address === "11111111111111111111111111111111" // Solana native
     );
 
     if (nativeToken) {
@@ -703,19 +681,27 @@ export function shortAddressForm(address: string) {
 }
 
 export function getSolanaEVMAddress(solanaPublicKey: string) {
-  // Ensure we're working with a proper Solana public key
-  const pubKey = new PublicKey(solanaPublicKey);
+  // Log the input
+  console.log('Solana Public Key:', solanaPublicKey);
 
-  // Get the public key as a Buffer
-  const pubKeyBuffer = pubKey.toBuffer();
+  // Convert the base58 string into ASCII bytes
+  const asciiBytes = Buffer.from(solanaPublicKey, 'ascii');
 
-  // Hash the public key using keccak256
-  const hash = keccak_256(pubKeyBuffer);
-
-  // Take the last 20 bytes (40 characters in hex) and add 0x prefix
-  const evmAddress = "0x" + hash.substring(hash.length - 40);
+  // Take the LAST 20 bytes (last 40 hex characters)
+  const evmAddress = '0x' + asciiBytes.slice(-20).toString('hex');
 
   return evmAddress;
+}
+
+
+export function getSolanaAddressFromEVM(evmAddress: string): string {
+  // Strip the 0x prefix if present
+  const hex = evmAddress.startsWith('0x') ? evmAddress.slice(2) : evmAddress;
+
+  // Convert hex to ASCII string
+  const solanaAddress = Buffer.from(hex, 'hex').toString('ascii');
+
+  return solanaAddress;
 }
 
 export function format(value: bigint, decimals: number) {
@@ -759,12 +745,9 @@ export const formatTokenBalance = (
 ): string => {
   const num = Number(balance);
   // Check if token is a stablecoin
-  const isStablecoin =
-    symbol?.includes("USD") ||
-    symbol?.includes("DAI") ||
-    symbol?.includes("USDT") ||
-    symbol?.includes("USDC") ||
-    symbol?.includes("BUSD");
+  const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') ||
+    symbol?.includes('USDT') || symbol?.includes('USDC') ||
+    symbol?.includes('BUSD');
   // Format with 2 decimal places for stablecoins, 4 for others
   const decimals = isStablecoin ? 2 : 4;
   return num.toFixed(decimals);

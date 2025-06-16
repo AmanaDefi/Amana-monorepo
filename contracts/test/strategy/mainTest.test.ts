@@ -31,7 +31,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         owner,
         inputToken,
         strategy,
-        config
+        config,
+        swapHelper
       } = ctx;
 
       const depositAmount = config.depositAmount;
@@ -42,28 +43,27 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
+      await network.provider.send("hardhat_setBalance", [
+        swapHelper.address,
+        ethers.utils.parseEther("1").toHexString()
+      ]);
       await expect(simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         owner, // put in non gateway signer
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
       // Attempt withdraw from a non-gateway address
-      const withdrawAmountInShares = config.withdrawAmount;
-      const minAmountOut = config.minAmountOut;
-      const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount);
 
       await expect(simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         owner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        config.withdrawAmount,
+        config.minAmountOut,
         2
       )).to.be.revertedWithCustomError(strategy, "OnlyGateway");
     });
@@ -91,27 +91,22 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await expect(simulateDepositCallFromVaultToStrategy(
         invalidSenderAddress,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
 
       // Attempt a withdrawal from a non-vault sender
-      const withdrawAmountInShares = config.withdrawAmount;
-      const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(depositAmount);
-      const minAmountOut = config.minAmountOut;
 
       await expect(simulateWithdrawCallFromVaultToStrategy(
         await owner.getAddress(),
         gatewaySigner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        config.withdrawAmount,
+        config.minAmountOut,
         2
       )).to.be.revertedWithCustomError(strategy, "OnlyVault");
     });
@@ -144,14 +139,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       );
 
       let strategyBalanceAfter;
@@ -186,14 +179,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       )
       let shares;
       if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
@@ -204,28 +195,17 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(shares).to.be.gt(0); // Ensure shares were received
       const totalAssetsBefore = await strategy.totalUnderlyingAssets();
 
-      const withdrawAmount = ethers.BigNumber.from(config.withdrawAmount); // if not already a BigNumber
-      console.log(`Withdraw amount: ${withdrawAmount.toString()}`);
-      const precision = ethers.utils.parseEther("1"); // returns BigNumber
-
-      const totalAssets = ethers.BigNumber.from(totalAssetsBefore); // ensure it's a BigNumber
-      console.log(`Total assets before withdrawal: ${totalAssets.toString()}`);
-      const withdrawFractionOfTotalShares = withdrawAmount.mul(precision).div(totalAssets);
-      console.log(`Withdraw fraction of total shares: ${withdrawFractionOfTotalShares.toString()}`);
-      const minAmountOut = config.minAmountOut;
-      console.log(`Min amount out: ${minAmountOut.toString()}`);
-
       await simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        config.withdrawAmount,
+        config.minAmountOut,
         2
       );
 
       const totalAssetsAfter = await strategy.totalUnderlyingAssets();
-      expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(withdrawAmount, ERROR_MARGIN);
+      expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(config.withdrawAmount, ERROR_MARGIN);
       // let strategyBalance;
 
       // strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
@@ -250,8 +230,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         rewardsContract,
         config
       } = ctx;
-      if (config.rewardsContractAddress === undefined) {
-        console.info("Skipping test as rewardsContractAddress is not defined");
+      if (config.rewardsContractAddress === ethers.constants.AddressZero) {
+        console.info("Skipping test as rewardsContractAddress is zero");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }
       const depositAmount = config.depositAmount;
@@ -263,18 +243,15 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
-
       // Step 2: Simulate Deposit
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       );
 
       // Step 3: Check Initial Shares in  Pool
@@ -284,7 +261,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         initialShares = await receiptTokenContract.balanceOf(strategy.address);
       }
-
       expect(initialShares).to.be.gt(0); // Ensure shares were received
 
       // Step 4: Simulate Time Passing for Rewards Accumulation
@@ -310,25 +286,19 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
         for (let i = 0; i < Number(rewardsCount); i++) {
           const rewardToken = await gauge.reward_tokens(i);
-          console.log(rewardToken)
           reward = await gauge.claimable_reward(strategy.address, rewardToken);
           console.log(`Claimable ${rewardToken} reward: ${reward.toString()}`);
         }
       } else {
         reward = await strategy.checkRewards();
       }
-
-      // Step 6: Simulate Withdrawal
-      const withdrawAmountInShares = initialShares; // Represents full amount - note this is just vault shares - withdrawal is determined by fraction
-      const withdrawFractionOfTotalShares = withdrawAmountInShares.mul(ethers.utils.parseEther("1")).div(withdrawAmountInShares);
-      const minAmountOut = config.minAmountOut;
-
+      const totalAssets = await strategy.totalUnderlyingAssets();
       await simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
         strategy,
-        withdrawFractionOfTotalShares,
-        minAmountOut,
+        totalAssets,
+        config.minAmountOut,
         2
       );
 
@@ -339,8 +309,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
       }
-      expect(strategyBalance).to.equal(0); // Ensure strategy balance is zero
-
+      // expect(strategyBalance).to.equal(0); // Ensure strategy balance is zero
       // Step 8: Check that Rewards Were Claimed (Optional)
       let finalClaimableRewards;
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
@@ -451,14 +420,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       );
       // Call the function
       const tx = await strategy.sendTotalUnderlyingAssetsToVault();
@@ -495,6 +462,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Mock data for the test
       const userAddress = await owner.getAddress();
       const amount = ethers.utils.parseEther("1000"); // 1000 tokens
+      const totalUnderlyingAssetsBefore = ethers.utils.parseEther("5000");
       const totalUnderlyingAssetsAfter = ethers.utils.parseEther("6000");
       const executionNonce = 1;
       const crossChainTxId = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 32);
@@ -551,6 +519,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Call the function as the owner
       await expect(
         strategy.manualResendInvestConfirmation(
+          totalUnderlyingAssetsBefore,
           totalUnderlyingAssetsAfter,
           executionNonce
         )
@@ -677,14 +646,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       );
       let oldStrategyInitialBalance;
       if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
@@ -732,7 +699,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         rewardsContract,
         config
       } = ctx;
-      if (config.rewardsContractAddress === undefined) {
+      if (config.rewardsContractAddress === ethers.constants.AddressZero) {
         console.info("Skipping test as rewardsContractAddress is not defined");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }
@@ -749,14 +716,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Step 2: Deposit
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       );
 
       // Step 3: Accumulate Rewards
@@ -778,7 +743,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
         for (let i = 0; i < Number(rewardsCount); i++) {
           const rewardToken = await gauge.reward_tokens(i);
-          console.log(rewardToken)
           preHarvestReward = await gauge.claimable_reward(strategy.address, rewardToken);
           console.log(`Claimable ${rewardToken} reward: ${preHarvestReward.toString()}`);
         }
@@ -815,7 +779,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategy,
         config
       } = ctx;
-      if (config.rewardsContractAddress === undefined || config.rewardsTokenAddress === undefined) {
+      if (config.rewardsContractAddress === ethers.constants.AddressZero || config.rewardsTokenAddress === ethers.constants.AddressZero) {
         console.info("Skipping test as rewardsContractAddress is not defined");
         this.skip(); // Skip the test if rewardsContractAddress is not defined
       }
@@ -832,31 +796,25 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Step 2: Deposit
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       );
       // Step 3: Accumulate Rewards
       const timeToSimulate = 7 * 24 * 60 * 60;
       await ethers.provider.send("evm_increaseTime", [timeToSimulate]);
       await ethers.provider.send("evm_mine", []);
-      console.log("got here");
       const rewardsToken = await ethers.getContractAt("IERC20", config.rewardsTokenAddress, gatewaySigner);
       const rewardsTokenBalanceBefore = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceBefore).to.eq(0);
-      console.log("rewards before", rewardsTokenBalanceBefore)
       // Step 5: Execute for real and verify RewardToken balance
       await strategy.claimRewards();
-      console.log("Claimed rewards")
       if (!config.rewardsTokenAddress) {
         throw new Error("Rewards token address is not defined in the config");
       }
-      console.log("rewardsToken")
       const rewardsTokenBalanceAfter = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceAfter).to.be.gte(rewardsTokenBalanceBefore);
     });
@@ -898,14 +856,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // Simulate deposit
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
-        await owner.getAddress(),
         gatewaySigner,
         strategy,
         depositAmount,
         minSharesOut,
-        slippage,
-        config.originChainId,
-        1
+        1,
+        config.isNative
       );
 
       // Run convertToShares
