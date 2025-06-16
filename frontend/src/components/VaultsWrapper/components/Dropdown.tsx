@@ -106,6 +106,7 @@ export const Dropdown: React.FC<Props> = ({
 
       {listType === "simple" ? (
         <DropdownList
+          variant="chain"
           isIconButton={!!IconButton}
           options={options}
           handleSelectedOption={handleSelectedOption}

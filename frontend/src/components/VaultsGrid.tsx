@@ -200,7 +200,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <select
-              className="p-2 rounded-md bg-customNeutral300 text-white border border-customNeutral100 focus:border-cyan-400 focus:outline-none"
+              className="p-2 rounded-md bg-customNeutral300  text-white border border-customNeutral100 focus:border-cyan-400 focus:outline-none"
               value={chainFilter}
               onChange={(e) => setChainFilter(e.target.value)}
             >
