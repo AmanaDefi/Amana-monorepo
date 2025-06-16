@@ -11,13 +11,11 @@ import {
   getAddress,
   Interface,
   solidityPacked,
-  JsonRpcProvider,
 } from "ethers";
 
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
-import curvePoolABI from "../../abis/curvePoolABI.json";
 import convexRewardPoolABI from "../../abis/convexRewardPoolABI.json";
 import IBalancerStablePoolABI from "../../abis/IBalancerStablePoolABI.json";
 import IBalancerLiquidityGaugeABI from "../../abis/IBalancerLiquidityGauge.json";
@@ -63,9 +61,6 @@ import {
   getWalletClient,
 } from "@/utils/getPublicClient";
 import type { IConnection } from "codemelt-retro-api-sdk";
-import { read } from "fs";
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
-import { trackEvent } from "@/utils/trackEvent";
 
 dotenv.config();
 
