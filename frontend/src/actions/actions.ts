@@ -757,6 +757,25 @@ export async function calculateVenusRewardsAPY(
   return Number(0.067);
 }
 
+export async function fetchAegisAPR(): Promise<number> {
+  try {
+    const response = await fetch("https://api.aegis.im/api/project-stats");
+    const json = await response.json();
+
+    if (json.status !== "success" || !json.data?.efficient_apr) {
+      throw new Error("Invalid response from Aegis API");
+    }
+
+    // efficient_apr is returned as a percentage, so we convert it to a decimal
+    const apr = Number(json.data.efficient_apr) / 100;
+
+    return apr;
+  } catch (error) {
+    console.error("Failed to fetch Aegis APR:", error);
+    throw error;
+  }
+}
+
 export const executeDeposit = async (
   vaultData: VaultData,
   inputToken: Token,

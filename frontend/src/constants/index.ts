@@ -585,6 +585,33 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
     },
   },
+  {
+    id: "0x4cb4dfC521a5C44817a1fda79FB7eafAf6F1952e", // BSC Venus USDT Vault
+    name: "Aegis YUSD",
+    type: "Yield Bearing Stablecoin",
+    des: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
+    symbol: "aAegisYUSD",
+    imgURL: "/bnb_logo.png",
+    depositFeePaidFromGasTank: true,
+    inputToken: {
+      symbol: "USDT.BSC",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aegis",
+      strategyAddress: "0x3bbB4509B4ffbc7fF48E33D74Ce9e2f7fFb041B8",
+      network: "BSC",
+      chainId: 56,
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      imgURL: "/aegis.jpeg",
+      des: "Aegis is a yield protocol that issues YUSD, a Bitcoin-backed stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into YUSD to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities."
+    },
+  },
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [

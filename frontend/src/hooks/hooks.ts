@@ -16,7 +16,8 @@ import {
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
-  calculateCombinedBalancerAPY
+  calculateCombinedBalancerAPY,
+  fetchAegisAPR
 
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
@@ -42,7 +43,7 @@ export const useUpdateVaultBalanceAndTotal = (
     const updateVaultBalanceAndTotal = async () => {
       // let address = isSolanaAddress(walletAddress) ? "0x5a55337a553557574C6E43506b48463373737669" : walletAddress
       let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
-      
+
       // 🧪 DEBUG: Log address conversion process
       console.log("=== ADDRESS CONVERSION DEBUG ===");
       console.log(`Original walletAddress: ${walletAddress}`);
@@ -52,7 +53,7 @@ export const useUpdateVaultBalanceAndTotal = (
       }
       console.log(`Final address used: ${address}`);
       console.log("================================");
-      
+
       console.log("Updating vault balances and total assets for address:", address);
       try {
         const balancesAndAssets = await Promise.all(
@@ -132,16 +133,16 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   transactionCompleted: boolean,
 ) => {
   const { selectedChain } = useMultiChain();
-  
+
   // Add a ref to track the last known balance
   const lastKnownBalanceRef = useRef<string>('0');
   const backgroundRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const refreshAttemptsRef = useRef<number>(0);
   const MAX_REFRESH_ATTEMPTS = 12; // 12 attempts * 10 seconds = 2 minutes of background checking
-  
+
   const updateVaultBalanceAndTotal = useCallback(async () => {
     const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
-    
+
     console.log('💰 [VAULT-BALANCE-HOOK] Starting balance update...', {
       vault: vault?.symbol,
       vaultId: vault?.id,
@@ -150,14 +151,14 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
       transactionCompleted,
       timestamp: new Date().toISOString()
     });
-    
+
     // 🧪 DEBUG: Address mapping in second hook
     console.log("=== SECOND HOOK DEBUG ===");
     console.log(`Original userAddress: ${userAddress}`);
     console.log(`Is Solana address? ${isSolanaAddress(userAddress)}`);
     console.log(`Final address: ${address}`);
     console.log("========================");
-    
+
     console.log("Updating vault balances and total assets for address:", address);
     try {
       if (vault && vault.id) {
@@ -166,7 +167,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           vaultId: vault.id,
           timestamp: new Date().toISOString()
         });
-        
+
         const balance = await fetchUserVaultBalance(
           address as Address,
           vault.id as Address
@@ -215,7 +216,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           balance,
           timestamp: new Date().toISOString()
         });
-        
+
         // Check if balance has changed
         if (balance !== lastKnownBalanceRef.current) {
           console.log('🎉 [VAULT-BALANCE-HOOK] Balance has changed! Stopping background refresh...', {
@@ -223,7 +224,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             newBalance: balance,
             timestamp: new Date().toISOString()
           });
-          
+
           // Clear background refresh since balance has updated
           if (backgroundRefreshIntervalRef.current) {
             clearInterval(backgroundRefreshIntervalRef.current);
@@ -231,7 +232,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             refreshAttemptsRef.current = 0;
           }
         }
-        
+
         // Update the last known balance
         lastKnownBalanceRef.current = balance;
         setUserVaultBalance(balance);
@@ -241,10 +242,10 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           newTotalAssets,
           timestamp: new Date().toISOString()
         });
-        
+
         setVaultTotalAsset(newTotalAssets);
         setVaultTotalAssetinToken(newTotalAssetsinToken);
-        
+
         console.log('✅ [VAULT-BALANCE-HOOK] All balances updated successfully!', {
           vault: vault.symbol,
           balance,
@@ -252,7 +253,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           newTotalAssetsinToken,
           timestamp: new Date().toISOString()
         });
-        
+
         return balance; // Return balance for comparison
       } else {
         console.log('⚠️ [VAULT-BALANCE-HOOK] Vault or vault ID is missing', {
@@ -272,7 +273,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
       return null;
     }
   }, [vault, userAddress]);
-  
+
   useEffect(() => {
     console.log('🔄 [VAULT-BALANCE-HOOK] Effect triggered with dependencies:', {
       vault: vault?.id,
@@ -280,7 +281,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
       transactionCompleted,
       timestamp: new Date().toISOString()
     });
-    
+
     if (userAddress && vault) {
       console.log('✅ [VAULT-BALANCE-HOOK] Prerequisites met, calling updateVaultBalanceAndTotal', {
         userAddress: !!userAddress,
@@ -288,7 +289,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         timestamp: new Date().toISOString()
       });
       updateVaultBalanceAndTotal();
-      
+
       // 🔄 NEW: Start background refresh when transaction completes
       if (transactionCompleted && !backgroundRefreshIntervalRef.current) {
         console.log('🔄 [BACKGROUND-REFRESH] Starting background balance refresh...', {
@@ -296,7 +297,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           maxAttempts: MAX_REFRESH_ATTEMPTS,
           timestamp: new Date().toISOString()
         });
-        
+
         refreshAttemptsRef.current = 0;
         backgroundRefreshIntervalRef.current = setInterval(async () => {
           refreshAttemptsRef.current++;
@@ -304,9 +305,9 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             vault: vault.symbol,
             timestamp: new Date().toISOString()
           });
-          
+
           await updateVaultBalanceAndTotal();
-          
+
           // Stop after max attempts
           if (refreshAttemptsRef.current >= MAX_REFRESH_ATTEMPTS) {
             console.log('⏹️ [BACKGROUND-REFRESH] Max attempts reached, stopping background refresh', {
@@ -314,7 +315,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
               attempts: refreshAttemptsRef.current,
               timestamp: new Date().toISOString()
             });
-            
+
             if (backgroundRefreshIntervalRef.current) {
               clearInterval(backgroundRefreshIntervalRef.current);
               backgroundRefreshIntervalRef.current = null;
@@ -330,7 +331,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // Cleanup interval on unmount or dependency change
     return () => {
       if (backgroundRefreshIntervalRef.current) {
@@ -377,6 +378,8 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "ZeroLend") {
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "Aegis") {
+                APY7d = await fetchAegisAPR();
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
                 RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);

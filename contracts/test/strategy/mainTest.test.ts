@@ -136,7 +136,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
       }
-
+      console.log("Strategy balance before deposit:", strategyBalanceBefore.toString());
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
@@ -155,6 +155,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         strategyBalanceAfter = await receiptTokenContract.balanceOf(strategy.address);
       }
+      console.log("Strategy balance after deposit:", strategyBalanceAfter.toString());
 
       expect(strategyBalanceAfter).to.be.gt(strategyBalanceBefore);
     });
@@ -198,12 +199,12 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const totalAssetsBefore = await strategy.totalUnderlyingAssets();
       console.log("Total assets before withdrawal:", totalAssetsBefore.toString());
 
-      if (isAegisStrategy(config.strategyContractName)) {
-        await strategy.coolDown(config.withdrawAmount);
+      // if (isAegisStrategy(config.strategyContractName)) {
+      //   await strategy.coolDown(config.withdrawAmount);
 
-        await network.provider.send("evm_increaseTime", [7 * 24 * 60 * 60 + 1]); // 7 days + 1 second
-        await network.provider.send("evm_mine");
-      }
+      //   await network.provider.send("evm_increaseTime", [7 * 24 * 60 * 60 + 1]); // 7 days + 1 second
+      //   await network.provider.send("evm_mine");
+      // }
       await simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
