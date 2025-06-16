@@ -1172,26 +1172,15 @@ const executeSolanaDeposit = async (
   const client = new SolanaZetaClient(wallet);
   const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
 
-  // Create RevertOptions (similar to EVM implementation)
-  // Convert Solana address to Ethereum format for abiCoder compatibility
+  // Create RevertOptions following ZetaChain toolkit pattern
   const evmWalletAddress = getSolanaEVMAddress(walletAddress);
-  const revertMessage = abiCoder.encode(
-    ["string", "bytes", "address"],
-    ["_crossChainDepositFailed", solanaWalletAddress, evmWalletAddress]
-  );
-
-  // Ensure abort address is exactly 20 bytes
-  const evmAddressBytes = evmWalletAddress.slice(2); // Remove 0x prefix
-  const abortAddressBuffer = Buffer.from(evmAddressBytes, 'hex');
-  const abortAddress = new Uint8Array(20);
-  abortAddress.set(abortAddressBuffer.slice(0, 20), 0);
-
-  const revertOptions: RevertOptions = {
-    revertAddress: walletContext.publicKey!, // Use the user's Solana public key
-    abortAddress: abortAddress, // Properly formatted 20-byte array
+  
+  const revertOptions = {
+    abortAddress: ethers.getBytes(evmWalletAddress),
     callOnRevert: true,
-    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, let Anchor handle Uint8Array conversion
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
+    revertAddress: walletContext.publicKey!,
+    revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"),
   };
 
   if (inputToken.isNative) {
@@ -1274,26 +1263,15 @@ export const executeSolanaWithdrawal = async (
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
 
-  // Create RevertOptions (similar to EVM implementation)
-  // Convert Solana address to Ethereum format for abiCoder compatibility
+  // Create RevertOptions following ZetaChain toolkit pattern
   const evmWalletAddress = getSolanaEVMAddress(walletAddress);
-  const revertMessage = abiCoder.encode(
-    ["string", "bytes32", "address"],
-    ["_crossChainWithdrawFailed", transactionId, evmWalletAddress]
-  );
-
-  // Ensure abort address is exactly 20 bytes
-  const evmAddressBytes = evmWalletAddress.slice(2); // Remove 0x prefix
-  const abortAddressBuffer = Buffer.from(evmAddressBytes, 'hex');
-  const abortAddress = new Uint8Array(20);
-  abortAddress.set(abortAddressBuffer.slice(0, 20), 0);
-
-  const revertOptions: RevertOptions = {
-    revertAddress: walletContext.publicKey!, // Use the user's Solana public key
-    abortAddress: abortAddress, // Properly formatted 20-byte array
-    callOnRevert: false, // Similar to EVM withdrawal
-    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, let Anchor handle Uint8Array conversion
+  
+  const revertOptions = {
+    abortAddress: ethers.getBytes(evmWalletAddress),
+    callOnRevert: false,
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
+    revertAddress: walletContext.publicKey!,
+    revertMessage: Buffer.from("_crossChainWithdrawFailed", "utf8"),
   };
 
   // Prepare payload (calldata to pass to the receiver)

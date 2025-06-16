@@ -37,13 +37,13 @@ const formatReceiver = (recipient: string): Uint8Array => {
   return buffer;
 };
 
-// RevertOptions type definition to match the Solana program interface
+// RevertOptions type definition following ZetaChain toolkit pattern
 export interface RevertOptions {
-  revertAddress: PublicKey;       // pubkey
   abortAddress: Uint8Array;       // array [u8, 20]
   callOnRevert: boolean;          // bool
-  revertMessage: Buffer;          // bytes (Buffer works better with Anchor)
   onRevertGasLimit: anchor.BN;    // u64
+  revertAddress: PublicKey;       // pubkey
+  revertMessage: Buffer;          // bytes
 }
 
 export const createSolanaDepositTx = async (payer: PublicKey, amount: number, recipient: string, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
@@ -53,24 +53,18 @@ export const createSolanaDepositTx = async (payer: PublicKey, amount: number, re
     program.programId
   );
   
-  try {
-    // Try with RevertOptions first
-    const ix = await program.methods
-      .deposit(
-        new anchor.BN(amount),
-        formatReceiver(recipient),
-        revertOptions
-      ).accounts({
-        signer: payer,
-        pda: pdaAccount,
-        system_program: SystemProgram.programId
-      }).instruction();
+  const ix = await program.methods
+    .deposit(
+      new anchor.BN(amount),
+      formatReceiver(recipient),
+      revertOptions
+    ).accounts({
+      signer: payer,
+      pda: pdaAccount,
+      system_program: SystemProgram.programId
+    }).instruction();
 
-    return ix;
-  } catch (error) {
-    console.error("Error creating deposit instruction with RevertOptions:", error);
-    throw error; // Let the error bubble up instead of falling back
-  }
+  return ix;
 }
 
 export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
@@ -85,25 +79,19 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
     )
   );
   
-  try {
-    // Try with RevertOptions first
-    const ix = await program.methods
-      .depositAndCall(
-        new anchor.BN(amount),
-        formatReceiver(recipient),
-        message,
-        revertOptions
-      ).accounts({
-        signer: payer,
-        pda: pdaAccount,
-        system_program: SystemProgram.programId
-      }).instruction();
+  const ix = await program.methods
+    .depositAndCall(
+      new anchor.BN(amount),
+      formatReceiver(recipient),
+      message,
+      revertOptions
+    ).accounts({
+      signer: payer,
+      pda: pdaAccount,
+      system_program: SystemProgram.programId
+    }).instruction();
 
-    return ix;
-  } catch (error) {
-    console.error("Error creating depositAndCall instruction with RevertOptions:", error);
-    throw error; // Let the error bubble up instead of falling back
-  }
+  return ix;
 }
 
 export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
@@ -118,24 +106,18 @@ export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: stri
     )
   );
   
-  try {
-    // Try with RevertOptions first
-    const ix = await program.methods
-      .withdrawAndCall(
-        formatReceiver(recipient),
-        message,
-        revertOptions
-      ).accounts({
-        signer: payer,
-        pda: pdaAccount,
-        system_program: SystemProgram.programId
-      }).instruction();
+  const ix = await program.methods
+    .withdrawAndCall(
+      formatReceiver(recipient),
+      message,
+      revertOptions
+    ).accounts({
+      signer: payer,
+      pda: pdaAccount,
+      system_program: SystemProgram.programId
+    }).instruction();
 
-    return ix;
-  } catch (error) {
-    console.error("Error creating withdrawAndCall instruction with RevertOptions:", error);
-    throw error; // Let the error bubble up instead of falling back
-  }
+  return ix;
 }
 
 export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
@@ -153,28 +135,24 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
   const to = getAssociatedTokenAddressSync(mint, pdaAccount, true);
   const message = formatMessage(getBytes(new AbiCoder().encode(args.types, args.values)));
 
-  try {
-    // Use minimal account specification, let Anchor resolve the rest
-    const ix = await program.methods
-      .depositSplTokenAndCall(
-        new anchor.BN(amount),
-        formatReceiver(recipient),
-        message,
-        revertOptions
-      ).accounts({
-        signer: payer,
-        pda: pdaAccount,
-        whitelist_entry: whiteListEntry,
-        mint_account: mint,
-        from,
-        to
-      }).instruction();
+  const ix = await program.methods
+    .depositSplTokenAndCall(
+      new anchor.BN(amount),
+      formatReceiver(recipient),
+      message,
+      revertOptions
+    ).accounts({
+      signer: payer,
+      pda: pdaAccount,
+      whitelist_entry: whiteListEntry,
+      mint_account: mint,
+      token_program: TOKEN_PROGRAM_ID,
+      from,
+      to,
+      system_program: SystemProgram.programId
+    }).instruction();
 
-    return ix;
-  } catch (error) {
-    console.error("Error creating depositSplTokenAndCall instruction with RevertOptions:", error);
-    throw error; // Let the error bubble up instead of falling back
-  }
+  return ix;
 }
 
 export const createWithdrawSplTokenTx = async () => { }
