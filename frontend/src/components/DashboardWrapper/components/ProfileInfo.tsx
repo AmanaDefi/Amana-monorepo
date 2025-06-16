@@ -1,15 +1,20 @@
 "use client";
-import ProfileCircle from "@/components/svg/ProfileCircle";
-import { useAuthStore } from "@/store/authStore";
-import ProfileIcon from "@/components/svg/Profile";
-import { ChevronDownIcon } from "@heroicons/react/24/solid";
-import EditIcon from "@/components/svg/EditIcon";
-import WalletActions from "./WalletActions";
 
-const ProfileInfo = ({}) => {
-  const { email, userAddress, isAuthenticated } = useAuthStore();
+import { useState } from "react";
+import ProfileCircle from "@/components/svg/ProfileCircle";
+import ProfileIcon from "@/components/svg/Profile";
+import EditIcon from "@/components/svg/EditIcon";
+import DropdownArrowIcon from "@/components/svg/DropdownArrowIcon";
+import WalletActions from "./WalletActions";
+import ProfileDropdown from "./ProfileDropdown";
+import { useAuthStore } from "@/store/authStore";
+
+const ProfileInfo = () => {
+  const { email, userAddress } = useAuthStore();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   return (
-    <div className="mt-8 flex flex-row">
+    <div className="mt-8 flex flex-row relative">
       <ProfileCircle width={100} height={100} className="mr-6" />
       <div className="flex flex-col gap-4">
         <div className="flex flex-row gap-8 text-[18px] font-normal text-white">
@@ -17,16 +22,32 @@ const ProfileInfo = ({}) => {
             <span>{email}olhasyd</span>
             <EditIcon width={12} height={12} />
           </div>
-          <div className="flex flex-row gap-2 items-center">
+          <div className="flex flex-row gap-2 items-center relative">
             <ProfileIcon />
             <span>
-              {/* {`${userAddress.slice(0, 6)}...${userAddress.slice(-4)}` || */}
-              63437463743
+              {userAddress
+                ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`
+                : "63437463743"}
             </span>
+            <button
+              className="p-2 transition-transform duration-200"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+            >
+              <DropdownArrowIcon
+                width={12}
+                height={7}
+                className={isDropdownOpen ? "rotate-0" : "rotate-180"}
+              />
+            </button>
+
+            <ProfileDropdown
+              isOpen={isDropdownOpen}
+              setIsOpen={setIsDropdownOpen}
+            />
           </div>
         </div>
-              <div className="text-[24px] font-medium">$0</div>
-              <WalletActions />
+        <div className="text-[24px] font-medium">$0</div>
+        <WalletActions />
       </div>
     </div>
   );
