@@ -321,4 +321,34 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   minAmountOut: ethers.utils.parseUnits("900", 6),
   //   slippage: 10000,
   // },
+  {
+    name: "YieldFi yUSD Strategy",
+    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Replace with actual gateway address
+    strategyContractName: "YieldFiERC20Strategy",
+    strategyChainId: 8453, // BNB
+    receiptTokenContractName: "IERC20", // LP token is a plain ERC20
+    swapHelperContractName: "SwapHelperonBase",
+    rewardsContractName: "",
+    forkBlock: 31433507, // Set your fork block
+
+    inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
+    inputTokenStorageSlot: 0, // Update if needed for forking balance injection
+    inputTokenIndexOrPlaceholder: 1,
+
+    receiptTokenAddress: "0x03ACc35286bAAE6D73d99a9f14Ef13752208C8dC", // Balancer LP token
+    rewardsContractAddress: "", // LiquidityGauge
+    rewardsTokenAddress: "", // axlOP - not actually needed in strategy, but useful here in the test
+
+    originChainId: 8453, // Base
+    withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
+    otherErc20Address: BASE_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
+    otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
+
+    isNative: false,
+    depositAmount: ethers.utils.parseUnits("1000", 18),
+    minSharesOut: ethers.utils.parseUnits("900", 18),
+    withdrawAmount: ethers.utils.parseUnits("100", 18),
+    minAmountOut: ethers.utils.parseUnits("90", 18),
+    slippage: 10000,
+  },
 ];
