@@ -43,6 +43,8 @@ import { apiService } from "@/service";
 import { zetaProvider } from "@/utils/providers";
 import { Address, zeroAddress } from "viem";
 import { useChain } from "@account-kit/react";
+import { useUserSettingsStore } from "@/store/userSettingsStore";
+
 
 type CashedVaultData = {
   vaultId: string;
@@ -536,32 +538,11 @@ export function useUserSettings() {
   return { userSettings, updateSettings };
 }
 
-export function useSlippage() {
-  const { userSettings, updateSettings } = useUserSettings();
-
-  const setSlippage = (value: number) => {
-    updateSettings("slippage", {
-      isAuto: false,
-      value,
-    });
-  };
-
-  const toggleAuto = () => {
-    updateSettings("slippage", {
-      isAuto: !userSettings.slippage?.isAuto,
-      value: DEFAULT_SETTINGS.slippage.value,
-    });
-  };
-
+export const useSlippage = () => {
+  const { slippage, setSlippage, toggleAuto } = useUserSettingsStore();
   return {
-    slippageValue: useMemo(
-      () => userSettings.slippage?.value,
-      [userSettings.slippage?.value],
-    ),
-    isAuto: useMemo(
-      () => userSettings.slippage?.isAuto,
-      [userSettings.slippage?.isAuto],
-    ),
+    slippageValue: slippage.value,
+    isAuto: slippage.isAuto,
     setSlippage,
     toggleAuto,
   };
