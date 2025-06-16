@@ -9,6 +9,9 @@ import type {
   TabsContentProps,
   EmptyStateProps,
 } from "@/types/dasboard";
+import Button from "@/components/Button";
+import WalletConnectIcon from "@/components/svg/WalletConnectIcon";
+import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
 
 const Tabs: React.FC<TabsProps> = ({
   children,
@@ -26,7 +29,7 @@ const Tabs: React.FC<TabsProps> = ({
 
 const TabsList: React.FC<TabsListProps> = ({ children, className }) => {
   return (
-    <div className={cn("flex border-b border-[#2A2F3A]", className)}>
+    <div className={cn("flex gap-12 border-b-2 border-[#161C27]", className)}>
       {children}
     </div>
   );
@@ -44,14 +47,14 @@ const TabsTrigger: React.FC<TabsTriggerProps> = ({
     <button
       onClick={() => setActiveTab(value)}
       className={cn(
-        "px-6 py-3 text-base font-medium transition-all duration-200 relative",
-        isActive ? "text-white" : "text-[#6B7280] hover:text-[#9CA3AF]",
+        "pb-4  text-base font-normal transition-all duration-200 relative",
+        isActive ? "text-white" : "hover:text-[#9CA3AF]",
         className,
       )}
     >
       {children}
       {isActive && (
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1B46E0] rounded-t-sm" />
+        <div className="absolute bottom-[-2px] left-0 right-0 h-[2px] bg-[#1B46E0] rounded-[4px] w-[90px]" />
       )}
     </button>
   );
@@ -78,30 +81,31 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div
       className={cn(
-        "bg-[#0F1419] border border-[#2A2F3A] rounded-2xl p-12 min-h-[400px]",
+        "backdrop-blur-[20px] shadow-custom bg-[rgba(20,23,31,0.15)] border border-[#3E3C59] rounded-[24px] min-h-[450px]",
         "flex flex-col items-center justify-center",
         className,
       )}
     >
-      <h3 className="text-2xl font-semibold text-white mb-3 text-center">
+      <div className="bg-[#14171F] border border-[#3E73C4] rounded-[8px] w-12 h-12 flex items-center justify-center mb-8">
+        <WalletIcon width={26} height={27} />
+      </div>
+
+      <h3 className="text-2xl font-medium text-white mb-4 text-center">
         {title}
       </h3>
 
-      <p className="text-[#6B7280] text-center mb-8 max-w-md">{description}</p>
+      <p className="text-[#535E73] text-[16px] text-center mb-6 font-normal">
+        {description}
+      </p>
 
       {action && (
-        <button
+        <Button
+          variant="custom"
           onClick={action.onClick}
-          className={cn(
-            "bg-[#1B46E0] text-white px-8 py-4 rounded-xl font-medium text-base",
-            "hover:bg-[#1640CC] active:bg-[#1437B8]",
-            "transition-all duration-200 ease-in-out",
-            "shadow-[0_4px_12px_rgba(27,70,224,0.3)]",
-            "hover:shadow-[0_6px_16px_rgba(27,70,224,0.4)]",
-          )}
+          className="!w-[412px] !h-10 !text-[16px] !font-normal !font-gotham"
         >
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

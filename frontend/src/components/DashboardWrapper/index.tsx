@@ -1,5 +1,6 @@
 import ProfileInfo from "./components/ProfileInfo";
 import PortfolioTabs from "./components/Tabs";
+import TopTokens from "./components/TopTokens";
 
 
 const DashboardWrapper = () => {
@@ -9,11 +10,13 @@ const DashboardWrapper = () => {
         <h2>Dashboard</h2>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-[45px]">
         <ProfileInfo />
       </div>
 
-      <div className="mt-8">
+      <div><TopTokens /></div>
+
+      <div className="mt-[82px]">
         <PortfolioTabs />
       </div>
     </div>
