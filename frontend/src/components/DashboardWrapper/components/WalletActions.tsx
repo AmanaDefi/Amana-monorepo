@@ -40,11 +40,6 @@ const WalletActions = () => {
         <TopUpIcon width={12} height={12} className="mr-1" />
         Top Up
       </Button>
-
-      <Button variant="wallet" onClick={handleWithdraw} disabled={false}>
-        <WithdrawIcon width={12} height={16} className="mr-1" />
-        Withdraw
-      </Button>
     </div>
   );
 };

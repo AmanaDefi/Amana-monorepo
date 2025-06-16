@@ -1,7 +1,6 @@
 "use client";
-
 import QRcodeIcon from "@/components/svg/QRcodeIcon";
-import CopyIcon from "@/components/svg/copyIcon";
+import CopyIcon from "@/components/svg/CopyIcon";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ProfileDropdownProps {

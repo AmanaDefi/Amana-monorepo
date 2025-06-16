@@ -179,7 +179,7 @@ const Sidebar = ({
   return (
     <div
       ref={sidebarRef}
-      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
+      className={`min-h-[908px] rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
     hidden md:flex
     ${isCollapsed ? "w-[136px] px-[29px]" : "w-[302px] px-[29px]"}
     py-[54px] h-full
