@@ -1,4 +1,5 @@
 
+import { ChooseBuyWith } from "./TopUpModals/ChooseBuyWith";
 import AllWAllets from "./allWallets/AllWallets";
 import OnboardingModal from "./onboarding/OnboardingModal";
 import OptionsModalA from "./options/OptionsModalA";
@@ -25,6 +26,7 @@ export const AppModals = () => {
       <SignatureCheck />
       <Checking />
       <NotVerify />
+      <ChooseBuyWith />
     </>
   );
 };

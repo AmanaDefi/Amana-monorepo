@@ -3,15 +3,17 @@
 import React from "react";
 import InvestIcon from "./svg/InvestIcon";
 import Button from "./Button";
-import { useSignerStatus } from "@account-kit/react";
+import { useUser } from "@account-kit/react";
 import { useAuthStore } from "@/store/authStore";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 
 const InvestBlock = () => {
-  const { isConnected } = useSignerStatus();
+  const user = useUser();
   const { openStep } = useAuthStore();
+  const { setStep } = useFundWalletStore();
 
   const handleFundWallet = () => {
-    // Logic for replenishing the wallet
+    setStep("chooseBuyWith");
     console.log("Fund wallet clicked");
   };
 
@@ -31,7 +33,7 @@ const InvestBlock = () => {
         </div>
       </div>
 
-      {isConnected ? (
+      {!!user?.address ? (
         <Button
           variant="primary"
           className="w-[192px] h-[56px] text-[14px] font-normal text-white"

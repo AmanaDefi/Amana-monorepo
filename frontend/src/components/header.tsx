@@ -14,7 +14,7 @@ import Button from "./Button";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import { ethereumProvider } from "@/utils/providers";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
-import { useUser } from "@account-kit/react";
+import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 
@@ -47,6 +47,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
   const activeAccount = useUser();
+  const account = useAccount({type: 'ModularAccountV2'});
   const { walletAddress, switchToChain, activeChain, balance } =
     useMultiChain();
   const isConnected = !!walletAddress;
@@ -57,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
 
   const [signer, setSigner] = useState<Signer | null>(null);
 
-  console.log("active chain", activeChain);
+  console.log("account", account, activeAccount);
 
   const { openStep } = useAuthStore();
 
