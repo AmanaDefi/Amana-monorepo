@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {AmanaConnectedChainVaultV1} from "../contracts/AmanaConnectedChainVaultV1.sol";
+import {SwapHelperOnBase} from "../contracts/SwapHelperOnBase.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        AmanaConnectedChainVaultV1 newImpl = new AmanaConnectedChainVaultV1();
+        SwapHelperOnBase newImpl = new SwapHelperOnBase();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }

@@ -17,7 +17,7 @@ export async function setupVaultFixture() {
   const config = vaultTestMatrix[0]; // ⬅️ use just the first config
 
   const { vaultConfig, strategyConfig, txConfig } = config;
-  const FORK_BLOCK_NUMBER = 8483727;
+  const FORK_BLOCK_NUMBER = 8736520;
   await network.provider.request({
     method: "hardhat_reset",
     params: [

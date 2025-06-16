@@ -62,11 +62,6 @@ abstract contract ERC20StrategyParent is StrategyParent {
         uint256 totalShares = IERC20(receiptTokenAddress).balanceOf(
             address(this)
         );
-        console.log(
-            "Transferring assets to new strategy",
-            txn.newStrategy,
-            totalShares
-        );
         // Transfer receipt tokens directly instead of approving + transferFrom
         IERC20(receiptTokenAddress).transfer(txn.newStrategy, totalShares);
 
@@ -121,7 +116,6 @@ abstract contract ERC20StrategyParent is StrategyParent {
 
         uint256 maxDeadline = 1 hours;
         uint16 slippage = initialSlippageBps;
-
         // Retry with increasing slippage up to 10% (1000 bps)
         while (slippage <= 1000) {
             try
