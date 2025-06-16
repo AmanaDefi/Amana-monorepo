@@ -929,9 +929,10 @@ export const Approvedeposit = async (
 ) => {
   //console.log("Executing DepositApprove");
   const walletClient = getWalletClient(activeChain.id);
-  if ((!walletClient && !sendUserOperation) || !activeAccount?.address)
+  if ((!walletClient && !sendUserOperation) || !activeAccount?.address) {
     console.log("No wallet client or active account found");
     return false;
+}
 
   console.log("Executing DepositApprove");
   console.log("inputToken", inputToken);

@@ -138,7 +138,7 @@ export default function InputTokenWithError({
       return <PendingDots />;
     }
 
-    if (isDeposit && !isOutput) {
+    if (!isOutput) {
       return (
         "$ " +
         (selectedToken

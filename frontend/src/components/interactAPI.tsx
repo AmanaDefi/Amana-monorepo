@@ -425,6 +425,8 @@ export default function InteractionContainer({
   hideStepsDisplay?: boolean;
 }): JSX.Element {
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
+  const activeAccount = useUser();
+  console.log(activeAccount, 'activeAccount container')
 
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
@@ -1202,6 +1204,7 @@ function Interaction({
     },
   });
 
+  console.log(activeAccount, 'activeAccount root')
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
     actionKey: Action,
