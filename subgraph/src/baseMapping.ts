@@ -49,7 +49,7 @@ function updatePriceAndAPY(vault: Vault, timestamp: BigInt): void {
 }
 
 export function handleVaultInitialized(event: VaultInitialized): void {
-  let id = event.address.toHex().toLowerCase();
+  let id = event.address.toHex();
   let v = new Vault(id);
   v.decimals = event.params.decimals.toI32()
   v.perfFee = event.params.perfFee;
@@ -95,14 +95,14 @@ export function handleVaultInitialized(event: VaultInitialized): void {
 }
 
 export function handleStrategyUpdated(event: StrategyUpdated): void {
-  let v = Vault.load(event.address.toHex().toLowerCase());
+  let v = Vault.load(event.address.toHex());
   if (v == null) return;
   v.strategy = event.params.newStrategyAddress;
   v.save();
 }
 
 export function handleDeposited(event: Deposited): void {
-  let id = event.address.toHex().toLowerCase();
+  let id = event.address.toHex();
   let v = Vault.load(id);
   if (v == null) return;
   v.totalDeposited = v.totalDeposited.plus(event.params.amount);
@@ -120,7 +120,7 @@ export function handleDeposited(event: Deposited): void {
 }
 
 export function handleWithdrawn(event: Withdrawn): void {
-  let id = event.address.toHex().toLowerCase();
+  let id = event.address.toHex();
   let v = Vault.load(id);
   if (v == null) return;
   v.totalWithdrawn = v.totalWithdrawn.plus(event.params.amount);
@@ -138,7 +138,7 @@ export function handleWithdrawn(event: Withdrawn): void {
 }
 
 export function handleBlock(block: ethereum.Block): void {
-  let id = dataSource.address().toHex().toLowerCase();
+  let id = dataSource.address().toHex();
   let v = Vault.load(id);
   if (v == null) return;
   updatePriceAndAPY(v, block.timestamp);

@@ -11,20 +11,20 @@ import { BigInt, BigDecimal, Bytes, Address } from "@graphprotocol/graph-ts";
 
 // Helper function to normalize addresses
 export function normalizeAddress(address: Address): string {
-  return address.toHex().toLowerCase();
+  return address.toHex();
 }
 
 // Helper function to normalize bytes (user addresses)
 export function normalizeBytes(bytes: Bytes): string {
-  return bytes.toHex().toLowerCase();
+  return bytes.toHex();
 }
 
 // Vault metadata mapping
 function getVaultMetadata(vaultAddress: string): VaultMetadata {
-  let addr = vaultAddress.toLowerCase()
+  let addr = vaultAddress
   
   // ZeroLend USDC Vault -> Base
-  if (addr == "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e".toLowerCase()) {
+  if (addr == "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e") {
     return {
       type: "Lending Pool",
       description: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market.",
@@ -45,7 +45,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Fluid USDC Vault -> Base  
-  if (addr == "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69".toLowerCase()) {
+  if (addr == "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69") {
     return {
       type: "Lending Pool",
       description: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers.",
@@ -66,7 +66,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Compound USDT Vault -> Polygon
-  if (addr == "0x622E956626Cc6aBa655E3d92a3629b04cB038E80".toLowerCase()) {
+  if (addr == "0x622E956626Cc6aBa655E3d92a3629b04cB038E80") {
     return {
       type: "Lending Pool",
       description: "Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers.",
@@ -87,7 +87,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Aave USDT Vault -> BNB
-  if (addr == "0xe5fa0E4BA13D516908c5313b3375b7Ede24BFe7a".toLowerCase()) {
+  if (addr == "0xe5fa0E4BA13D516908c5313b3375b7Ede24BFe7a") {
     return {
       type: "Lending Pool",
       description: "Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers.",
@@ -108,7 +108,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Curve Convex ETH Vault -> Ethereum
-  if (addr == "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE".toLowerCase()) {
+  if (addr == "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE") {
     return {
       type: "Liquidity Pool",
       description: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards.",
@@ -129,7 +129,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Curve Convex USDT Vault -> Ethereum
-  if (addr == "0x0552D4C51491D9bFeD97eb795E101E90a5F16d44".toLowerCase()) {
+  if (addr == "0x0552D4C51491D9bFeD97eb795E101E90a5F16d44") {
     return {
       type: "Liquidity Pool",
       description: "This strategy deposits USDT into the Curve USDT/USDe pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards.",
@@ -150,7 +150,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Curve Convex USDC Vault -> Arbitrum
-  if (addr == "0xAbE7a5C760B030421B5C9815fE91f9Ba68058769".toLowerCase()) {
+  if (addr == "0xAbE7a5C760B030421B5C9815fE91f9Ba68058769") {
     return {
       type: "Liquidity Pool",
       description: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards.",
@@ -171,7 +171,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Balancer USDC Vault -> Base
-  if (addr == "0x8b934de59fDE50a91DAa7E788389f8fCAD35A14F".toLowerCase()) {
+  if (addr == "0x8b934de59fDE50a91DAa7E788389f8fCAD35A14F") {
     return {
       type: "Liquidity Pool",
       description: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives.",
@@ -275,7 +275,7 @@ function updateVaultTotals(vaultAddress: Address, vault: Vault): void {
   }
   
   // Update price per share
-  vault.pricePerShare = calculatePricePerShare(vaultAddress.toHex().toLowerCase());
+  vault.pricePerShare = calculatePricePerShare(vaultAddress.toHex());
 }
 
 export function handleVaultInitialized(event: VaultInitialized): void {
