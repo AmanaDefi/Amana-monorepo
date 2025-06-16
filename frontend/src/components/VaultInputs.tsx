@@ -71,7 +71,7 @@ const formatTokenBalance = (
     symbol?.includes("BUSD");
   // Format with 2 decimal places for stablecoins, 4 for others
   const decimals = isStablecoin ? 2 : 4;
-  return num.toFixed(decimals);
+  return parseFloat(num.toFixed(decimals)).toString();
 };
 
 // When displaying USD value for outputs or net deposits, ensure it's never negative
@@ -1070,7 +1070,9 @@ export default function VaultInputs({
         debouncedInputBalance.value > 0n &&
         Number(
           conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "")))
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))) ||
+      (Number(inputBalance.formatted || 0) > 0 &&
+        Number(tokenBalance.formatted || 0) === 0)
     );
   }, [
     walletAddress,
@@ -1083,6 +1085,7 @@ export default function VaultInputs({
     debouncedInputBalance.value,
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
+    tokenBalance.formatted,
   ]);
 
   console.log(conversionOutput)

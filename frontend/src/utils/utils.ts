@@ -65,6 +65,9 @@ export function getVaultErrorMessage(
   inputValue: string | undefined,
   steps: Action[],
 ): string {
+  if (Number(value) > 0 && (!inputValue || Number(inputValue) === 0)) {
+    return "Insufficient balance";
+  }
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
     return "Insufficient balance";
@@ -767,7 +770,7 @@ export const formatTokenBalance = (
     symbol?.includes("BUSD");
   // Format with 2 decimal places for stablecoins, 4 for others
   const decimals = isStablecoin ? 2 : 4;
-  return num.toFixed(decimals);
+ return parseFloat(num.toFixed(decimals)).toString();
 };
 
 export function bigIntReplacer(key: string, value: any) {
