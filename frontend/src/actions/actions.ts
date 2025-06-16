@@ -687,23 +687,6 @@ export async function calculateCompoundAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain,
 ) {
-  const compoundVaultAbi = [
-    {
-      name: "getUtilization",
-      type: "function",
-      stateMutability: "view",
-      inputs: [],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-    {
-      name: "getSupplyRate",
-      type: "function",
-      stateMutability: "view",
-      inputs: [{ name: "utilization", type: "uint256" }],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-  ] as const;
-
   const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
     console.error(`Failed to get public client with id ${strategyChain.id}`);
@@ -947,6 +930,7 @@ export const Approvedeposit = async (
   //console.log("Executing DepositApprove");
   const walletClient = getWalletClient(activeChain.id);
   if ((!walletClient && !sendUserOperation) || !activeAccount?.address)
+    console.log("No wallet client or active account found");
     return false;
 
   console.log("Executing DepositApprove");

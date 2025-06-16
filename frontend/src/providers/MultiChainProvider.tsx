@@ -97,7 +97,7 @@ interface MultiChainContextType {
   isModalOpen: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
   switchToChain: (chain: Chain) => Promise<void>;
-  refetchBalance: (address: string) => void;
+  refetchBalance: (address: string) => Promise<Balance | undefined>;
   isHydrated: boolean;
 }
 
@@ -260,6 +260,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         const formattedBalance = formatEther(balanceInEth);
 
         setBalance({ formatted: formattedBalance, value: balanceInEth });
+        return { formatted: formattedBalance, value: balanceInEth };
       } catch (error) {
         console.error("Error get balance:", error);
       }

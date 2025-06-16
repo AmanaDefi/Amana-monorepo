@@ -18,7 +18,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const {
     walletAddress,
     activeChain,
-    balance: nativeBalance,
     refetchBalance: refetchNativeBalance,
   } = useMultiChain();
 
@@ -51,16 +50,17 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       return;
     }
 
-    refetchNativeBalance(walletAddress);
+    try {
+    const balance = await refetchNativeBalance(walletAddress);
     setIsLoading(true);
     setError(null);
 
     if (currentToken.isNative) {
       console.log("🪙 [TOKEN-BALANCE] Using native balance", {
-        nativeBalance: nativeBalance.formatted,
+        nativeBalance: balance?.formatted,
         timestamp: new Date().toISOString(),
       });
-      setBalance(nativeBalance);
+      setBalance(balance ?? { value: 0n, formatted: "0" });
       setIsLoading(false);
       retryCountRef.current = 0;
       return;
@@ -139,11 +139,15 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
         }
       }
     }
+  } catch (error) {
+    console.error("Error fetching Native token balance:", error);
+    setBalance({ value: 0n, formatted: "0" });
+    setIsLoading(false);
+  }
   }, [
     currentToken,
     walletAddress,
     activeChain,
-    nativeBalance,
     error,
     refetchNativeBalance,
   ]);
