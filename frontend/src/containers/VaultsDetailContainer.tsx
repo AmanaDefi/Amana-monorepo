@@ -34,9 +34,10 @@ import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import InvestBlock from "@/components/InvestBlock";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
-import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import DepositInstruction from "@/components/VaultsDetailsWrapper/components/DepositInstruction";
+import { useUserSettingsStore } from "@/store/userSettingsStore";
+import { Chain } from "viem";
 import clsx from "clsx";
 
 const VaultsDetailContainer: React.FC<{
@@ -58,6 +59,7 @@ const VaultsDetailContainer: React.FC<{
     useState<VaultTotalAssetsinToken>();
   const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
+  const [selectedChain, setSelectedChain] = useState<Chain | undefined>();
 
   const [transactionStepFeedback, setTransactionStepFeedback] =
     useState<TransactionStepMessages>({});
@@ -68,6 +70,37 @@ const VaultsDetailContainer: React.FC<{
   const [activeChainId, setActiveChainId] = useState<number>();
 
   const { activeChain } = useMultiChain();
+
+  const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
+
+  const loadSlippageFromStorage = useUserSettingsStore(
+    (state) => state.loadSlippageFromStorage,
+  );
+
+  useEffect(() => {
+    if (vaultIdStr) {
+      loadSlippageFromStorage(vaultIdStr);
+    }
+  }, [vaultIdStr]);
+
+  useEffect(() => {
+    if (activeChain && !selectedChain) {
+      setSelectedChain(activeChain);
+    }
+  }, [activeChain, selectedChain]);
+
+  const handleChainSelect = useCallback(
+    (chain: Chain) => {
+      setSelectedChain(chain);
+
+      if (vaultID) {
+        updateLocalStorageObject(vaultID.toString(), {
+          selectedChain: JSON.stringify(chain, bigIntReplacer),
+        });
+      }
+    },
+    [vaultID],
+  );
 
   useEffect(() => {
     const checkTransactionState = () => {
@@ -85,6 +118,12 @@ const VaultsDetailContainer: React.FC<{
         setIsTransactionProcessing(
           vaultTxData?.isTransactionProcessing ?? false,
         );
+
+        if (vaultTxData?.selectedChain) {
+          setSelectedChain(
+            JSON.parse(vaultTxData.selectedChain, bigIntReviver),
+          );
+        }
       } else {
         setTransactionStepFeedback({});
         setLastTransactionStepFeedback({});
@@ -125,6 +164,9 @@ const VaultsDetailContainer: React.FC<{
       if (isTxInProgress) {
         if (vaultInfo?.selectedToken) {
           setSelectedToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+        }
+        if (vaultInfo?.selectedChain) {
+          setSelectedChain(JSON.parse(vaultInfo.selectedChain, bigIntReviver));
         }
         setTransactionCompleted(vaultInfo?.transactionCompleted ?? false);
       } else {
@@ -206,6 +248,10 @@ const VaultsDetailContainer: React.FC<{
     router.push(backPath);
   };
 
+  const informationDropdownTitle = walletAddress
+    ? "What happened with my Deposit?"
+    : "Information";
+
   return vaultData ? (
     <div className="overflow-x-auto font-gotham">
       {!walletAddress && <InvestBlock />}
@@ -271,6 +317,7 @@ const VaultsDetailContainer: React.FC<{
             vaultAPY={vaultAPYs.find((a) => a.vaultId === vaultID.toString())}
             totalAssets={vaultTotalAsset}
           />
+
           <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
             <VaultInputs
               vaultData={vaultData}
@@ -281,16 +328,22 @@ const VaultsDetailContainer: React.FC<{
               initialIsDeposit={initialIsDeposit}
               onTokenSelect={handleTokenSelect}
               selectedToken={selectedToken}
+              selectedChain={selectedChain}
+              onSelectChain={handleChainSelect}
+              vaultId={vaultID.toString()}
             />
           </div>
         </div>
 
         <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
-          <Dropdown title="Information" defaultOpen={true}>
+          <Dropdown title={informationDropdownTitle} defaultOpen={true}>
             <VaultInformationContent
               vaultData={vaultData}
               vaultExplorerBaseUrl={vaultExplorerBaseUrl}
               strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+              walletAddress={walletAddress || undefined}
+              selectedToken={selectedToken}
+              selectedChain={selectedChain}
             />
           </Dropdown>
 

@@ -217,8 +217,8 @@ export interface ITxLocalStorage {
   steps: Action[];
 
   selectedToken: string; //JSON.stringify fo save BigInt
-  inputBal: string;  //JSON.stringify fo save BigInt
-  displayValue: string
+  inputBal: string; //JSON.stringify fo save BigInt
+  displayValue: string;
 
   crosschainInvestHash: string;
   lastEventTxHash: string;
@@ -229,7 +229,13 @@ export interface ITxLocalStorage {
   isTransactionProcessing: boolean;
   finishedTransaction: boolean;
   transactionCompleted: boolean;
-  
+  selectedChain?: string;
+
+  slippage?: {
+    value: number;
+    isAuto: boolean;
+  };
+
   transactionStepFeedback: TransactionStepMessages;
   lastTransactionStepFeedback: TransactionStepMessages;
 }
