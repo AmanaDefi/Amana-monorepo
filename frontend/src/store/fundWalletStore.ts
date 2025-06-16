@@ -1,3 +1,5 @@
+import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { Chain } from "viem";
 import { create } from "zustand";
 
 export type FundStep =
@@ -15,7 +17,7 @@ export enum BuyWithEnum {
 const initialState = {
   step: null,
   buyWith: null,
-  networkId: null,
+  chain: SUPPORTED_CHAINS[0].chain,
   depositAmount: 0,
   currency: null,
 };
@@ -23,13 +25,13 @@ const initialState = {
 interface FundWalletState {
   step: FundStep;
   buyWith: BuyWithEnum | null;
-  networkId: number | null;
+  chain: Chain;
   depositAmount: number;
   currency: string | null;
 
   setStep: (step: FundStep) => void;
   setBuyWith: (buyWith: BuyWithEnum) => void;
-  setNetworkId: (networkId: number) => void;
+  setChain: (chain: Chain) => void;
   setDepositAmount: (depositAmount: number) => void;
   setCurrency: (currency: string) => void;
   successTopUp: () => void;
@@ -44,12 +46,12 @@ export const useFundWalletStore = create<FundWalletState>((set) => ({
     set({
       step: null,
       buyWith: null,
-      networkId: null,
+      chain: SUPPORTED_CHAINS[0].chain,
       depositAmount: 0,
       currency: null,
     }),
   setBuyWith: (buyWith) => set({ buyWith }),
-  setNetworkId: (networkId) => set({ networkId }),
+  setChain: (chain) => set({ chain }),
   setDepositAmount: (depositAmount) => set({ depositAmount }),
   setCurrency: (currency) =>
     set({

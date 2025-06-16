@@ -3,17 +3,16 @@
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
-import CardIcon from "@/components/svg/CardIcon";
-import ArrowIcon from "@/components/svg/arrowIcon";
-import { BuyWithEnum, useFundWalletStore } from "@/store/fundWalletStore";
-import ModalButton from "../shared/ModalButton";
+import { useFundWalletStore } from "@/store/fundWalletStore";
+import ChainSelector from "@/components/VaultsDetailsWrapper/components/ChainSelector";
+import { Chain } from "viem";
+import InputTokenWithError from "@/components/input/InputTokenWithError";
 
 export const Deposit = () => {
-  const { step, setStep, closeAll } = useFundWalletStore();
+  const { step, setStep, closeAll, setChain, chain } = useFundWalletStore();
 
-  const handleChoose = (method: BuyWithEnum) => {
-
-    setStep("setValues");
+  const handleSelectChain = (chain: Chain) => {
+    setChain(chain);
   };
 
   return (
@@ -44,22 +43,13 @@ export const Deposit = () => {
             Add Funds
           </h2>
           <div className="flex flex-col gap-4">
-            <ModalButton
-              text="Apple Pay, card or bank transfer"
-              className="w-[484px]"
-              label="Byu crypto"
-              withArrow
-              icon={<CardIcon width={35} height={32} />}
-              onClick={() => handleChoose(BuyWithEnum.CRYPTO)}
-            />
-            <ModalButton
-              text="From another wallet, exchange or chain"
-              className="w-[484px]"
-              label="Transfer in"
-              withArrow
-              icon={<ArrowIcon width={35} height={32} />}
-              onClick={() => handleChoose(BuyWithEnum.FIAT)}
-            />
+            <div className="mb-4">
+              <ChainSelector
+                selectedChain={chain}
+                onSelectChain={handleSelectChain}
+              />
+            </div>
+
           </div>
         </div>
       </motion.div>

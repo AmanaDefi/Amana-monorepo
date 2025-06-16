@@ -5,9 +5,9 @@ import { motion } from "framer-motion";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
 import CardIcon from "@/components/svg/CardIcon";
-import ArrowIcon from "@/components/svg/arrowIcon";
 import { BuyWithEnum, useFundWalletStore } from "@/store/fundWalletStore";
 import ModalButton from "../shared/ModalButton";
+import ArrowIcon from "@/components/svg/ArrowIcon";
 
 export const ChooseBuyWith = () => {
   const { step, setStep, setBuyWith, closeAll } = useFundWalletStore();
