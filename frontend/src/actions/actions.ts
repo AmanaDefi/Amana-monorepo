@@ -1180,12 +1180,18 @@ const executeSolanaDeposit = async (
     ["_crossChainDepositFailed", solanaWalletAddress, evmWalletAddress]
   );
 
+  // Ensure abort address is exactly 20 bytes
+  const evmAddressBytes = evmWalletAddress.slice(2); // Remove 0x prefix
+  const abortAddressBuffer = Buffer.from(evmAddressBytes, 'hex');
+  const abortAddress = new Uint8Array(20);
+  abortAddress.set(abortAddressBuffer.slice(0, 20), 0);
+
   const revertOptions: RevertOptions = {
-    abortAddress: new TextEncoder().encode(walletAddress), // Solana wallet address as bytes
-    callOnRevert: true,
-    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
     revertAddress: walletContext.publicKey!, // Use the user's Solana public key
-    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, removing '0x' prefix
+    abortAddress: abortAddress, // Properly formatted 20-byte array
+    callOnRevert: true,
+    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, let Anchor handle Uint8Array conversion
+    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
   };
 
   if (inputToken.isNative) {
@@ -1276,12 +1282,18 @@ export const executeSolanaWithdrawal = async (
     ["_crossChainWithdrawFailed", transactionId, evmWalletAddress]
   );
 
+  // Ensure abort address is exactly 20 bytes
+  const evmAddressBytes = evmWalletAddress.slice(2); // Remove 0x prefix
+  const abortAddressBuffer = Buffer.from(evmAddressBytes, 'hex');
+  const abortAddress = new Uint8Array(20);
+  abortAddress.set(abortAddressBuffer.slice(0, 20), 0);
+
   const revertOptions: RevertOptions = {
-    abortAddress: new TextEncoder().encode(walletAddress), // Solana wallet address as bytes
-    callOnRevert: false, // Similar to EVM withdrawal
-    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
     revertAddress: walletContext.publicKey!, // Use the user's Solana public key
-    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, removing '0x' prefix
+    abortAddress: abortAddress, // Properly formatted 20-byte array
+    callOnRevert: false, // Similar to EVM withdrawal
+    revertMessage: Buffer.from(revertMessage.slice(2), "hex"), // Convert hex string to Buffer, let Anchor handle Uint8Array conversion
+    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
   };
 
   // Prepare payload (calldata to pass to the receiver)

@@ -51,11 +51,11 @@ export class SolanaZetaClient {
     this.program = new anchor.Program(IDL as anchor.Idl, this.provider);
   }
 
-  solanaDeposit = async (amount: BigInt, recipient: string) => {
+  solanaDeposit = async (amount: BigInt, recipient: string, revertOptions: RevertOptions | null = null) => {
     try {
       console.log(`Depositing ${amount} SOL to ${recipient}`)
       const tx = new Transaction().add(
-        await createSolanaDepositTx(this.wallet.publicKey, Number(amount), recipient, this.program)
+        await createSolanaDepositTx(this.wallet.publicKey, Number(amount), recipient, revertOptions, this.program)
       );
 
       const { blockhash } = await this.connection.getLatestBlockhash();
@@ -73,7 +73,7 @@ export class SolanaZetaClient {
     }
   }
 
-  solanaDepositAndCall = async (amount: number, recipient: string, args: any, revertOptions: RevertOptions) => {
+  solanaDepositAndCall = async (amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null) => {
     try {
       // Create transaction
       const tx = new Transaction().add(
@@ -104,7 +104,7 @@ export class SolanaZetaClient {
     }
   }
 
-  solanaWithdrawal = async (recipient: string, args: any, revertOptions: RevertOptions) => {
+  solanaWithdrawal = async (recipient: string, args: any, revertOptions: RevertOptions | null = null) => {
     try {
       const tx = new Transaction().add(
         await createSolanaWithdrawalTx(this.wallet.publicKey, recipient, args, revertOptions, this.program)
@@ -132,7 +132,7 @@ export class SolanaZetaClient {
       throw new Error("Transacction Failed")
     }
   }
-  depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any, revertOptions: RevertOptions) => {
+  depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null) => {
     try {
       if (!this.wallet || !this.wallet.publicKey || !this.wallet.signTransaction) {
         throw new Error("Wallet not connected or signTransaction not available");
