@@ -11,6 +11,7 @@ type ModalProps = {
   customCloseButton?: ReactNode;
   maxWidth?: string;
   minHeight?: string;
+  noBlur?: boolean;
 };
 
 export const Modal = ({
@@ -22,6 +23,7 @@ export const Modal = ({
   customCloseButton,
   maxWidth = "max-w-md",
   minHeight,
+  noBlur = false,
 }: ModalProps) => {
   return (
     <AnimatePresence>
@@ -33,7 +35,11 @@ export const Modal = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="fixed inset-0 bg-[rgba(12,16,21,0.5)] backdrop-blur-[20px]"
+              className={`fixed inset-0 ${
+                noBlur
+                  ? "bg-transparent"
+                  : "bg-[rgba(12,16,21,0.5)] backdrop-blur-[20px]"
+              }`}
             />
 
             <div className="fixed inset-0 flex items-center justify-center p-4">
