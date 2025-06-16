@@ -11,6 +11,7 @@ const InvestBlock = () => {
   const user = useUser();
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
+  console.log(user)
 
   const handleFundWallet = () => {
     setStep("chooseBuyWith");

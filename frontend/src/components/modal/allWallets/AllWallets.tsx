@@ -18,9 +18,11 @@ import OKXWalletIcon from "@/components/svg/OKXWalletIcon";
 import UniswapIcon from "@/components/svg/UniswapIcon";
 import { useConnect } from "@account-kit/react";
 import { Connector, CreateConnectorFn } from "wagmi";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 
 const AllWAllets = () => {
-  const { step, closeAll } = useAuthStore();
+  const { step, successAuth, closeAll } = useAuthStore();
+  const { step: fundWalletStep, setStep } = useFundWalletStore();
   const { connectors, connect, isPending: isConnectingWallet } = useConnect();
   const walletConnectConnector = connectors.findLast(
     (con) => con.id === "walletConnect",
@@ -38,20 +40,26 @@ const AllWAllets = () => {
   const solflareConnector = connectors.find((con) => con.id === ""); //We have no this connector on evm
   const phantomConnector = connectors.find((con) => con.id === "app.phantom");
 
+  const fundWalletConnect = () => {
+    setStep("confirm");
+  };
+
   const handleExternalWalletConnect = (
     connector: CreateConnectorFn | Connector,
   ) => {
+    if (fundWalletStep === "connectWallet") return fundWalletConnect();
+    
     if (isConnectingWallet) return;
     connect(
       { connector },
       {
-        onSuccess: closeAll,
+        onSuccess: successAuth,
       },
     );
   };
   return (
     <Modal
-      isOpen={step === "allWallets"}
+      isOpen={step === "allWallets" || fundWalletStep === "connectWallet"}
       onClose={closeAll}
       paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px]"
       roundedClass="rounded-[16px]"

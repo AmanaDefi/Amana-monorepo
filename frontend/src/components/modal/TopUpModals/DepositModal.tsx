@@ -1,55 +1,82 @@
 "use client";
 
-import { Modal } from "../base/Modal";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import CloseModalIcon from "@/components/svg/CloseModalIcon";
+import { Chain } from "viem";
+
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import ChainSelector from "@/components/VaultsDetailsWrapper/components/ChainSelector";
-import { Chain } from "viem";
-import InputTokenWithError from "@/components/input/InputTokenWithError";
+import { Modal } from "../base/Modal";
+import { DepositInput } from "./components/DepositInput";
+import Button from "@/components/Button";
+import ZetaChainLogo from "@public/logo/zetachain.svg";
+import { AppButton } from "@/components/button/AppButton";
 
 export const Deposit = () => {
-  const { step, setStep, closeAll, setChain, chain } = useFundWalletStore();
+  const { step, setStep, closeAll, setChain, chain, currency, depositAmount } =
+    useFundWalletStore();
 
   const handleSelectChain = (chain: Chain) => {
     setChain(chain);
   };
 
+  const handleConnectWallet = () => {
+    setStep("connectWallet");
+  };
+
+  const isButtonDisabled =
+    (!chain || !currency || !depositAmount) && step === "confirm";
+
   return (
     <Modal
-      isOpen={step === "setValues"}
+      isOpen={step === "setValues" || step === "confirm"}
       onClose={closeAll}
       paddingClass="px-4 pt-5 pb-6"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[526px]"
     >
-      <div className="flex justify-end">
-        <button
-          onClick={closeAll}
-          className="rounded-[8px] flex items-center justify-center w-10 h-10"
-          aria-label="Close"
-        >
-          <CloseModalIcon width={16} height={16} />
-        </button>
-      </div>
-
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
       >
-        <div className="flex flex-col justify-center items-center gap-[45px] px-7 font-gotham">
-          <h2 className="text-center text-[24px] font-medium text-white">
-            Add Funds
-          </h2>
-          <div className="flex flex-col gap-4">
-            <div className="mb-4">
+        <div className="flex flex-col justify-center items-center gap-[32px] px-7 w-full font-gotham">
+          <div className="flex flex-col w-full">
+            <h2 className="text-[24px] font-medium text-white">Deposit</h2>
+            <p className="text-[16px] font-normal text-[#4874DB]">
+              Select network and asset
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 w-full">
+            <div className="mb-4 w-full ">
               <ChainSelector
                 selectedChain={chain}
                 onSelectChain={handleSelectChain}
               />
             </div>
+            <DepositInput />
+          </div>
+          <div className="mt-3 w-full">
+            <div className="bg-[#181D29] h-[1px] w-full mb-6" />
+            <AppButton
+              disabled={isButtonDisabled}
+              variant="reverse"
+              onClick={handleConnectWallet}
+            >
+              {step === "confirm" ? "Confirm" : "Connect Wallet"}
+            </AppButton>
+          </div>
 
+          <div className="flex items-center gap-3 opacity-40">
+            <span
+              className="uppercase text-white text-sm font-normal tracking-wide"
+              style={{ fontSize: "16px", lineHeight: "112%" }}
+            >
+              Backed by
+            </span>
+            <Link href="https://www.zetachain.com/" target="_blank">
+              <ZetaChainLogo height={26} className="w-auto h-[26px]" />
+            </Link>
           </div>
         </div>
       </motion.div>

@@ -1,4 +1,5 @@
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { Token } from "@/types/types";
 import { Chain } from "viem";
 import { create } from "zustand";
 
@@ -18,7 +19,7 @@ const initialState = {
   step: null,
   buyWith: null,
   chain: SUPPORTED_CHAINS[0].chain,
-  depositAmount: 0,
+  depositAmount: "",
   currency: null,
 };
 
@@ -26,14 +27,14 @@ interface FundWalletState {
   step: FundStep;
   buyWith: BuyWithEnum | null;
   chain: Chain;
-  depositAmount: number;
-  currency: string | null;
+  depositAmount: string;
+  currency: Token | null;
 
   setStep: (step: FundStep) => void;
   setBuyWith: (buyWith: BuyWithEnum) => void;
   setChain: (chain: Chain) => void;
-  setDepositAmount: (depositAmount: number) => void;
-  setCurrency: (currency: string) => void;
+  setDepositAmount: (depositAmount: string) => void;
+  setCurrency: (currency: Token) => void;
   successTopUp: () => void;
   closeAll: () => void;
 }
@@ -47,7 +48,7 @@ export const useFundWalletStore = create<FundWalletState>((set) => ({
       step: null,
       buyWith: null,
       chain: SUPPORTED_CHAINS[0].chain,
-      depositAmount: 0,
+      depositAmount: "",
       currency: null,
     }),
   setBuyWith: (buyWith) => set({ buyWith }),

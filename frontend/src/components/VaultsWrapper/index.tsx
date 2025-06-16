@@ -248,7 +248,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           <div className="flex flex-col items-center py-12 gap-3">
             <p className="text-white text-lg">No vaults found.</p>
             <div className="w-[180px]">
-              <AppButton onClick={clearAllFilters}>
+              <AppButton variant="reverse" onClick={clearAllFilters}>
                 <span className="relative z-2">Clear Filters</span>
               </AppButton>
             </div>
@@ -261,6 +261,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           <div className="flex gap-2 flex-row items-center">
             <div className={`${currentPage === 1 && "cursor-not-allowed"}`}>
               <AppButton
+                variant="gray"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
               >
@@ -271,7 +272,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             {Array.from({ length: totalPages }).map((_, index) => (
               <div key={index} className="w-12">
                 <AppButton
-                  isBlue={index + 1 === currentPage}
+                  variant={index + 1 === currentPage ? "blue" : "gray"}
                   onClick={() => setCurrentPage(index + 1)}
                 >
                   {index + 1}
@@ -283,6 +284,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               className={`${currentPage === totalPages && "cursor-not-allowed"}`}
             >
               <AppButton
+                variant="gray"
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }

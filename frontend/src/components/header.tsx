@@ -8,7 +8,6 @@ import MobileSidebar from "./MobileSidebarMenu";
 import { useRef, useState } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
 import { Signer } from "ethers";
