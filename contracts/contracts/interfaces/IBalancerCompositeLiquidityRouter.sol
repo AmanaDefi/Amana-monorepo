@@ -13,6 +13,18 @@ interface IBalancerCompositeLiquidityRouter {
         bytes calldata userData
     ) external payable returns (uint256 bptAmountOut);
 
+    function addLiquidityProportionalToERC4626Pool(
+        address pool,
+        bool[] calldata wrapUnderlying,
+        uint256[] calldata maxAmountsIn,
+        uint256 exactBptAmountOut,
+        bool wethIsEth,
+        bytes calldata userData
+    )
+        external
+        payable
+        returns (address[] memory tokensIn, uint256[] memory amountsIn);
+
     function removeLiquidityProportional(
         address pool,
         uint256 exactBptAmountIn,

@@ -34,7 +34,14 @@ contract Eth_4626_Strategy is EthStrategyParent {
         address _wethAddress,
         address _withdrawHelper
     ) external initializer {
-        __StrategyParent_init(_name, _amanaVault, _gateway, _withdrawHelper);
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gateway,
+            _withdrawHelper,
+            address(0),
+            _receiptTokenAddress
+        );
 
         receiptToken = I4626Vault(_receiptTokenAddress);
         weth = IWETH(_wethAddress);
