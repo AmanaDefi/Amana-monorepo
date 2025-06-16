@@ -223,7 +223,7 @@ contract CurveEthStrategy is EthStrategyParent {
 
         uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
             1e18,
-            txn.amountOrFraction
+            txn.assetAmount
         );
         approveOrIncreaseAllowance(weth, txn.newStrategy, withdrawnAmount);
 

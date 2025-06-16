@@ -113,6 +113,7 @@ const config: Config = withAccountKitUi({
         dot3: "dot3 2s steps(1, end) infinite",
       },
       boxShadow: {
+        custom: "0 4px 6px 0 rgba(0, 0, 0, 0.1)",
         sidebar:
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
       },

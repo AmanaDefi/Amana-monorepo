@@ -20,6 +20,7 @@ import "./interfaces/ICurveRegistry.sol";
 
 import "./interfaces/ICurvePoolDynamic.sol";
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 abstract contract SwapHelperParent is
     Initializable,
@@ -124,7 +125,6 @@ abstract contract SwapHelperParent is
         // Convert USD value to output token amount
         uint256 amountOut = (amountInUsd * (10 ** outputDecimals)) /
             outputPrice;
-
         // Apply slippage
         return amountOut - ((amountOut * slippageBps) / 10000);
     }
@@ -204,9 +204,10 @@ abstract contract SwapHelperParent is
 
     function _existsPairPool(
         address tokenA,
-        address tokenB
+        address tokenB,
+        address factoryAddress
     ) internal view returns (bool) {
-        address pair = IUniswapV2Factory(UNISWAP_V2_FACTORY).getPair(
+        address pair = IUniswapV2Factory(factoryAddress).getPair(
             tokenA,
             tokenB
         );
@@ -215,7 +216,8 @@ abstract contract SwapHelperParent is
 
     function _getBestV3Pool(
         address tokenA,
-        address tokenB
+        address tokenB,
+        address factoryAddress
     ) internal view returns (bool exists, uint24 bestFeeTier) {
         uint24[4] memory tiers = [
             uint24(100),
@@ -228,11 +230,12 @@ abstract contract SwapHelperParent is
         exists = false;
 
         for (uint256 i = 0; i < tiers.length; i++) {
-            address pool = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
+            address pool = IUniswapV3Factory(factoryAddress).getPool(
                 tokenA,
                 tokenB,
                 tiers[i]
             );
+
             if (pool != address(0)) {
                 uint128 liquidity = IUniswapV3Pool(pool).liquidity();
                 if (liquidity > highestLiquidity) {
@@ -242,20 +245,20 @@ abstract contract SwapHelperParent is
                 }
             }
         }
-
         return (exists, bestFeeTier);
     }
 
     function getPathV2(
         address inputToken,
-        address outputToken
+        address outputToken,
+        address factoryAddress
     ) public view returns (address[] memory path) {
         if (inputToken == outputToken) {
             revert IErrors.InvalidAddress();
         }
 
         // UniswapV2 Direct Swap
-        if (_existsPairPool(inputToken, outputToken)) {
+        if (_existsPairPool(inputToken, outputToken, factoryAddress)) {
             path = new address[](2);
             path[0] = inputToken;
             path[1] = outputToken;
@@ -264,8 +267,8 @@ abstract contract SwapHelperParent is
 
         // UniswapV2 Indirect Swap via intermediateToken
         if (
-            _existsPairPool(inputToken, intermediateToken) &&
-            _existsPairPool(intermediateToken, outputToken)
+            _existsPairPool(inputToken, intermediateToken, factoryAddress) &&
+            _existsPairPool(intermediateToken, outputToken, factoryAddress)
         ) {
             path = new address[](3);
             path[0] = inputToken;
@@ -278,7 +281,8 @@ abstract contract SwapHelperParent is
 
     function getPathV3(
         address inputToken,
-        address outputToken
+        address outputToken,
+        address factoryAddress
     )
         public
         view
@@ -296,7 +300,11 @@ abstract contract SwapHelperParent is
         uint24 feeTier;
 
         // UniswapV3 Direct Swap (Checks both fee tiers, prioritizes 0.05%)
-        (exists, feeTier) = _getBestV3Pool(inputToken, outputToken);
+        (exists, feeTier) = _getBestV3Pool(
+            inputToken,
+            outputToken,
+            factoryAddress
+        );
         if (exists) {
             path = new address[](2);
             feeTiers = new uint24[](1);
@@ -308,10 +316,18 @@ abstract contract SwapHelperParent is
         }
 
         // UniswapV3 Indirect Swap via intermediateToken (Checks both fee tiers)
-        (exists, feeTier) = _getBestV3Pool(inputToken, intermediateToken);
+        (exists, feeTier) = _getBestV3Pool(
+            inputToken,
+            intermediateToken,
+            factoryAddress
+        );
         if (exists) {
             uint24 feeTier2;
-            (exists, feeTier2) = _getBestV3Pool(intermediateToken, outputToken);
+            (exists, feeTier2) = _getBestV3Pool(
+                intermediateToken,
+                outputToken,
+                factoryAddress
+            );
             if (exists) {
                 path = new address[](3);
                 feeTiers = new uint24[](2);
@@ -381,7 +397,7 @@ abstract contract SwapHelperParent is
         uint amountIn,
         address[] memory path,
         uint24[] memory feeTiers
-    ) internal view returns (uint amountOut) {
+    ) public view returns (uint amountOut) {
         if (
             amountIn == 0 ||
             path.length < 2 ||
@@ -490,53 +506,63 @@ abstract contract SwapHelperParent is
         uint256 amount,
         address outputToken,
         uint16 slippageBps,
-        address vault,
-        uint16 maxDeadline,
-        bytes calldata data
+        address receiver,
+        uint256 maxDeadline,
+        bytes calldata swapData
     ) external virtual returns (uint256 amountOut) {
         require(
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-
         uint256 minimumOut = calculateMinAmountOut(
             inputToken,
             outputToken,
             amount,
             slippageBps
         );
+        bytes memory encodedPath;
 
-        (
-            address[] memory pathV3,
-            uint24[] memory feeTiers,
-            bytes memory encodedPath
-        ) = getPathV3(inputToken, outputToken);
+        if (swapData.length == 0) {
+            (, , encodedPath) = getPathV3(
+                inputToken,
+                outputToken,
+                UNISWAP_V3_FACTORY
+            );
+        } else {
+            encodedPath = swapData;
+        }
 
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
-
             try
                 ISwapRouter(UNISWAP_V3_ROUTER).exactInput(
                     ISwapRouter.ExactInputParams({
                         path: encodedPath,
-                        recipient: vault,
-                        deadline: 99999999999,
+                        recipient: receiver,
+                        deadline: block.timestamp + maxDeadline,
                         amountIn: amount,
-                        amountOutMinimum: 0
+                        amountOutMinimum: minimumOut
                     })
                 )
             returns (uint256 out) {
                 amountOut = out;
                 return amountOut;
-            } catch {
+            } catch (bytes memory reason) {
+                console.log("Uniswap V3 swap failed with reason:");
+                console.logBytes(reason); // this logs the raw revert data
                 return 0;
             }
         }
 
         // Uniswap V2 fallback
-        address[] memory path = getPathV2(inputToken, outputToken);
+        address[] memory path = getPathV2(
+            inputToken,
+            outputToken,
+            UNISWAP_V2_FACTORY
+        );
         if (path.length < 2) {
+            console.log("No valid Uniswap V2 path found");
             // No valid path found
             return 0;
         }
@@ -547,13 +573,14 @@ abstract contract SwapHelperParent is
                 amount,
                 minimumOut,
                 path,
-                vault,
+                receiver,
                 block.timestamp + maxDeadline
             )
         returns (uint256[] memory amounts) {
             amountOut = amounts[amounts.length - 1];
             return amountOut;
         } catch {
+            console.log("Uniswap V2 swap failed");
             return 0;
         }
     }
@@ -564,7 +591,7 @@ abstract contract SwapHelperParent is
         uint256 amountOut,
         address outputToken,
         uint16 slippageBps,
-        address vault,
+        address receiver,
         uint16 maxDeadline,
         bytes calldata data
     ) external virtual returns (uint256 amountIn) {
@@ -584,7 +611,7 @@ abstract contract SwapHelperParent is
             address[] memory pathV3,
             uint24[] memory feeTiers,
             bytes memory encodedPath
-        ) = getPathV3(outputToken, inputToken);
+        ) = getPathV3(outputToken, inputToken, UNISWAP_V3_FACTORY);
 
         if (encodedPath.length > 0) {
             // Try Uniswap V3 swap
@@ -594,7 +621,7 @@ abstract contract SwapHelperParent is
                 ISwapRouter(UNISWAP_V3_ROUTER).exactOutput(
                     ISwapRouter.ExactOutputParams({
                         path: encodedPath,
-                        recipient: vault,
+                        recipient: receiver,
                         deadline: block.timestamp,
                         amountOut: amountOut,
                         amountInMaximum: maxAmountIn
@@ -607,7 +634,11 @@ abstract contract SwapHelperParent is
             }
         } else {
             // Try Uniswap V2 swap
-            address[] memory path = getPathV2(inputToken, outputToken);
+            address[] memory path = getPathV2(
+                inputToken,
+                outputToken,
+                UNISWAP_V2_FACTORY
+            );
             if (path.length < 2) {
                 return 0; // No valid path
             }
@@ -618,7 +649,7 @@ abstract contract SwapHelperParent is
                     amountOut,
                     maxAmountIn,
                     path,
-                    vault,
+                    receiver,
                     block.timestamp + maxDeadline
                 )
             returns (uint256[] memory amounts) {
@@ -628,9 +659,12 @@ abstract contract SwapHelperParent is
             }
         }
 
-        // Transfer any excess input token to vault (only if swap succeeded)
+        // Transfer any excess input token to receiver (only if swap succeeded)
         if (amountIn > 0 && totalAmountAvailable > amountIn) {
-            IERC20(inputToken).transfer(vault, totalAmountAvailable - amountIn);
+            IERC20(inputToken).transfer(
+                receiver,
+                totalAmountAvailable - amountIn
+            );
         }
 
         return amountIn;

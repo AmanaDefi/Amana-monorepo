@@ -129,29 +129,45 @@ export class SolanaZetaClient {
   }
   depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any) => {
     try {
+      if (!this.wallet || !this.wallet.publicKey || !this.wallet.signTransaction) {
+        throw new Error("Wallet not connected or signTransaction not available");
+      }
+
       const tx = new Transaction().add(
-        await createDepositSplTokenAndCallTx(this.wallet.publicKey, new PublicKey(mint), amount, recipient, args, this.program)
+        await createDepositSplTokenAndCallTx(
+          this.wallet.publicKey,
+          new PublicKey(mint),
+          amount,
+          recipient,
+          args,
+          this.program
+        )
       );
-      // Set blockhash and fee payer
-      const { blockhash } = await this.connection.getLatestBlockhash();
+
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
       tx.recentBlockhash = blockhash;
       tx.feePayer = this.wallet.publicKey;
 
-      // For wallet adapters, use the signTransaction from the adapter 
       const signedTx = await this.wallet.signTransaction(tx);
 
-      // Send the pre-signed transaction
-      const signature = await this.connection.sendRawTransaction(
-        signedTx.serialize(),
-        { skipPreflight: false }
-      );
+      const signature = await this.connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+      });
 
-      // Wait for confirmation
-      const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
+      const confirmation = await this.connection.confirmTransaction(
+        {
+          signature,
+          blockhash,
+          lastValidBlockHeight,
+        },
+        "confirmed"
+      );
 
       return signature;
     } catch (error) {
+      console.error("Deposit error:", error);
       throw new Error(`Transaction failed`);
     }
-  }
+  };
+
 }

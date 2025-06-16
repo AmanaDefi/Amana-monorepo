@@ -11,8 +11,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
-import { BrowserProvider, ethers, Signer } from "ethers";
-import { ethereumProvider } from "@/utils/providers";
+import { Signer } from "ethers";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
@@ -55,10 +54,6 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
-
-  const [signer, setSigner] = useState<Signer | null>(null);
-
-  console.log("account", account, activeAccount);
 
   const { openStep } = useAuthStore();
 

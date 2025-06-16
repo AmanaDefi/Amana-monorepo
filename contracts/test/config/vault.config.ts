@@ -7,7 +7,9 @@ import {
   ZC_ETH_BASE_ADDRESS,
   ZC_ETH_ARB_ADDRESS,
   ZC_USDC_ARB_ADDRESS,
-  ZC_USDC_POL_ADDRESS
+  ZC_USDC_POL_ADDRESS,
+  ZC_SOL_SOL_ADDRESS,
+  ZC_USDC_SOL_ADDRESS,
 } from "../../../constants";
 
 export const vaultTestMatrix = [
@@ -31,17 +33,18 @@ export const vaultTestMatrix = [
       gasTankAmount: ethers.utils.parseUnits("10", 18),
     },
     txConfig: {
-      originChainId: 1,
-      originGasToken: ZC_ETH_ETH_ADDRESS,
-      originERC20Input: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // user deposits on origin chain using this
-      originNonEvmUserAddress: "0x0000000000000000000000000000000000000000000000000000000000000000",
-      originZRC20Input: ZC_USDC_ETH_ADDRESS, // zrc20 equivalent of the asset on origin chain - if you change this, watch decimals below
+      originChainId: 900,
+      originGasToken: ZC_SOL_SOL_ADDRESS,
+      originERC20Input: "0x3131313131313131313131313131313131313131", //"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // user deposits on origin chain using this
+      originERC20InputDecimals: 9, // SOL on Solana
+      originNonEvmUserAddress: "0x62ca5055fd4bd065301d278209c2cf6bd7750fc4aa7c1fdabe186d71cca91963",
+      originZRC20Input: ZC_SOL_SOL_ADDRESS, // zrc20 equivalent of the asset on origin chain - if you change this, watch decimals below
 
       otherZRC20Input: ZC_USDC_POL_ADDRESS,
 
       crossChainDepositAmount1: ethers.utils.parseUnits("10", 6),
       crossChainDepositAmount2: ethers.utils.parseUnits("5", 6),
-      slippage: 500,
+      slippage: 2000,
 
       gasTankAmount: ethers.utils.parseUnits("100", 18),
       directDepositAmount1: ethers.utils.parseUnits("10", 6),

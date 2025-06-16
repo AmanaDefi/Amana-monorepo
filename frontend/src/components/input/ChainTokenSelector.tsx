@@ -15,6 +15,8 @@ import {
 import { Chain } from "viem";
 import "@/styles/ChainTokenSelector.css";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
+import { warningToast } from "@/toasts/toastStyles";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -34,6 +36,7 @@ export default function ChainTokenSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { walletAddress } = useMultiChain();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -49,7 +52,8 @@ export default function ChainTokenSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleTokenSelect = (token: Token, event: React.MouseEvent) => {
+
+  const handleTokenSelect = async (token: Token, event: React.MouseEvent) => {
     if (vaultData?.id) {
       const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
       if (isTxInProgress) return;
@@ -57,6 +61,11 @@ export default function ChainTokenSelector({
 
     event.stopPropagation();
     event.preventDefault();
+
+    if (!walletAddress) {
+      warningToast("Please connect your wallet to select a token");
+      return;
+    }
 
     onSelectToken(token);
     setIsOpen(false);
@@ -190,7 +199,7 @@ export default function ChainTokenSelector({
                   return (
                     <button
                       key={token.address + token.symbol}
-                      onClick={(e) => handleTokenSelect(token, e)}
+                      onClick={(e) => handleTokenSelect(token,  e)}
                       className={`token-button ${isVaultToken ? "vault-token" : ""} ${isSelectedToken ? "selected-token" : ""}`}
                     >
                       <Image

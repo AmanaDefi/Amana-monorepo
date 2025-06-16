@@ -6,12 +6,16 @@ import {
   chainConfigs,
   MULTICALL_ADDRS,
 } from "../constants/chainConfig";
-import { ethers, getAddress, Interface, solidityPacked } from "ethers";
+import {
+  ethers,
+  getAddress,
+  Interface,
+  solidityPacked,
+} from "ethers";
 
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
 import beefyVaultABI from "../../abis/beefyVaultABI.json";
-import curvePoolABI from "../../abis/curvePoolABI.json";
 import convexRewardPoolABI from "../../abis/convexRewardPoolABI.json";
 import IBalancerStablePoolABI from "../../abis/IBalancerStablePoolABI.json";
 import IBalancerLiquidityGaugeABI from "../../abis/IBalancerLiquidityGauge.json";
@@ -27,6 +31,7 @@ import {
   keccak256,
   Address,
   encodeAbiParameters,
+  parseAbiItem,
 } from "viem";
 import {
   getCurrentSlippage,
@@ -43,8 +48,6 @@ import { Wallet } from "@coral-xyz/anchor";
 import axios from "axios";
 import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
-
-import type { IConnection } from "codemelt-retro-api-sdk";
 import { apiService } from "@/service";
 import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
@@ -57,6 +60,7 @@ import {
   getRpcUrl,
   getWalletClient,
 } from "@/utils/getPublicClient";
+import type { IConnection } from "codemelt-retro-api-sdk";
 
 dotenv.config();
 
@@ -75,103 +79,6 @@ const BLOCK_TIME: { [chainId: number]: number } = {
   137: 2, // Polygon
   8453: 2, // Base
   42161: 0.25, // Arbitrum
-};
-
-export const getPathDataAndAmountOut = async (
-  amount: bigint,
-  inputToken: Token,
-  outputToken: Token,
-  userAddress: string,
-): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
-  console.log("inputToken address:", inputToken.address);
-  console.log("outputToken address:", outputToken.address);
-  const [inputTokenId, outputTokenId] = await Promise.all([
-    getBeamTokenId(inputToken.address),
-    getBeamTokenId(outputToken.address),
-  ]);
-
-  if (!inputTokenId || !outputTokenId) {
-    console.warn("❌ Missing Beam token ID(s)");
-    return { encodedPath: null, amountOut: BigInt(0) };
-  }
-
-  const swapDetails: swap.native.getSwapData.Input = {
-    tokenAId: inputTokenId,
-    tokenBId: outputTokenId,
-    slippage: 500,
-    amount: formatUnits(amount, inputToken.decimals), // ✅ string with decimals
-    sender: userAddress,
-    recipient: userAddress,
-  };
-
-  try {
-    console.log("🚀 Fetching Beam quote...");
-    const beamQuote = (await swap.native.getSwapData(
-      beamConnection,
-      swapDetails,
-    )) as {
-      data?: {
-        data?: {
-          path?: string[];
-          expectedAmountOut?: number;
-        };
-      };
-    };
-    console.log("✅ Beam quote fetched successfully:", beamQuote);
-    const path = beamQuote.data?.data?.path;
-    const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
-    if (expectedAmountOut == null) {
-      throw new Error("Beam quote is missing expectedAmountOut");
-    }
-
-    if (!path || !Array.isArray(path) || path.length < 2) {
-      throw new Error("Beam quote returned invalid path");
-    }
-
-    const encodedPath = solidityPacked(
-      Array(path.length).fill("address"),
-      path,
-    ) as `0x${string}`;
-
-    console.log("✅ Encoded path:", encodedPath);
-    console.log("✅ Expected amount out:", expectedAmountOut);
-
-    const amountOutRaw = (
-      expectedAmountOut *
-      10 ** outputToken.decimals
-    ).toFixed(0);
-    return {
-      encodedPath,
-      amountOut: BigInt(amountOutRaw),
-    };
-  } catch (e: any) {
-    console.error("❌ Beam swap fetch failed:", e.message || e);
-    return { encodedPath: null, amountOut: BigInt(0) };
-  }
-};
-
-const getPathDataAndMinAmountOut = async (
-  vaultData: VaultData,
-  outputToken: Token,
-  transactionAmount: bigint,
-) => {
-  const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
-  const minAmountOut =
-    (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
-
-  let swapPath: `0x${string}` = "0x";
-
-  if (outputToken.address !== vaultData.inputToken.address) {
-    const result = await getPathDataAndAmountOut(
-      transactionAmount,
-      vaultData.inputToken,
-      outputToken,
-      vaultData.id as Address,
-    );
-    swapPath = result.encodedPath ?? "0x";
-  }
-
-  return { swapPath, minAmountOut };
 };
 
 export async function calculateEddyAPY(
@@ -780,53 +687,32 @@ export async function calculateCompoundAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain,
 ) {
-  const compoundVaultAbi = [
-    {
-      name: "getUtilization",
-      type: "function",
-      stateMutability: "view",
-      inputs: [],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-    {
-      name: "getSupplyRate",
-      type: "function",
-      stateMutability: "view",
-      inputs: [{ name: "utilization", type: "uint256" }],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-  ] as const;
-
   const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
     console.error(`Failed to get public client with id ${strategyChain.id}`);
     return 0;
   }
+  const currentUtilization = await publicClient.readContract({
+    address: receiptTokenAddress,
+    abi: [parseAbiItem("function getUtilization() view returns (uint256)")],
+    functionName: "getUtilization",
+  });
 
-  try {
-    const currentUtilization = await publicClient.readContract({
-      address: receiptTokenAddress,
-      abi: compoundVaultAbi,
-      functionName: "getUtilization",
-    });
+  const currentSupplyRate = await publicClient.readContract({
+    address: receiptTokenAddress,
+    abi: [
+      parseAbiItem("function getSupplyRate(uint256) view returns (uint256)"),
+    ],
+    functionName: "getSupplyRate",
+    args: [currentUtilization],
+  });
 
-    const currentSupplyRate = await publicClient.readContract({
-      address: receiptTokenAddress,
-      abi: compoundVaultAbi,
-      functionName: "getSupplyRate",
-      args: [currentUtilization],
-    });
-
-    const secondsInAYear = 31536000;
-    const supplyApy = (Number(currentSupplyRate) * secondsInAYear) / 1e18;
-
-    console.log("Compound Supply APY:", supplyApy);
-
-    return supplyApy;
-  } catch (error) {
-    console.error("failed to get supplyApy:", error);
-    return 0;
-  }
+  const secondsInAYear = 31536000; // 365 * 24 * 60 * 60
+  const currentSupplyRateScaled = Number(currentSupplyRate) / Number(1e18);
+  console.log("Current Supply Rate Scaled:", currentSupplyRateScaled);
+  const currentAPY = Math.pow(1 + currentSupplyRateScaled, secondsInAYear) - 1;
+  console.log("Current APY:", currentAPY);
+  return currentAPY;
 }
 
 /**
@@ -842,70 +728,68 @@ export async function calculateCompoundRewardsAPY(
   strategyChain: Chain,
   compUsdPrice: number,
 ): Promise<number> {
-  /*
-  const cometContract = getContract({
-    client,
-    chain: strategyChain,
-    address: cometAddress,
-  });
+  // const cometContract = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: cometAddress,
+  // });
 
-  let baseTrackingSupplySpeed = await readContract({
-    contract: cometContract,
-    method: "function baseTrackingSupplySpeed() view returns (uint256)",
-  });
+  // let baseTrackingSupplySpeed = await readContract({
+  //   contract: cometContract,
+  //   method: "function baseTrackingSupplySpeed() view returns (uint256)",
+  // });
 
-  // Get the CometRewards contract
-  const rewardsContract = getContract({
-    client,
-    chain: strategyChain,
-    address: rewardsContractAddress,
-  });
-  const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+  // // Get the CometRewards contract
+  // const rewardsContract = getContract({
+  //   client,
+  //   chain: strategyChain,
+  //   address: rewardsContractAddress,
+  // });
+  // const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
 
-  // Fetch COMP reward emission per second
-  const rewardConfig = await readContract({
-    contract: rewardsContract,
-    method:
-      "function rewardConfig(address) view returns (address token, uint64 rescaleFactor, bool shouldUpscale)",
-    params: [cometAddress],
-  });
-  const rescaleFactor = rewardConfig[1];
-  const shouldUpscale = rewardConfig[2];
+  // // Fetch COMP reward emission per second
+  // const rewardConfig = await readContract({
+  //   contract: rewardsContract,
+  //   method:
+  //     "function rewardConfig(address) view returns (address token, uint64 rescaleFactor, bool shouldUpscale)",
+  //   params: [cometAddress],
+  // });
+  // const rescaleFactor = rewardConfig[1];
+  // const shouldUpscale = rewardConfig[2];
+  // // if (shouldUpscale) {
+  // //   baseTrackingSupplySpeed *= rescaleFactor
+  // // } else {
+  // //   baseTrackingSupplySpeed /= rescaleFactor
+  // // }
+
+  // const totalSupply = await readContract({
+  //   contract: cometContract,
+  //   method: "function totalSupply() view returns (uint256)",
+  // });
+
+  // // Calculate rewards APY:
+
+  // // Ensure baseTrackingSupplySpeed is a BigInt before dividing
+  // const baseTrackingSupplySpeedBN = BigInt(baseTrackingSupplySpeed);
+
+  // // Apply rescale factor adjustment
+  // let scaledAPR: bigint;
   // if (shouldUpscale) {
-  //   baseTrackingSupplySpeed *= rescaleFactor
+  //   scaledAPR = baseTrackingSupplySpeedBN * BigInt(rescaleFactor);
   // } else {
-  //   baseTrackingSupplySpeed /= rescaleFactor
+  //   scaledAPR = baseTrackingSupplySpeedBN / BigInt(rescaleFactor);
   // }
 
-  const totalSupply = await readContract({
-    contract: cometContract,
-    method: "function totalSupply() view returns (uint256)",
-  });
+  // // Convert scaledAPR to a number
+  // const apr = Number(scaledAPR) / 1e18;
+  // if (apr <= 0) {
+  //   throw new Error("Invalid APR value: APR should be greater than 0.");
+  // }
 
-  // Calculate rewards APY:
+  // // Convert APR to APY using continuous compounding
+  // const rewardsAPY = Math.exp(apr) - 1;
 
-  // Ensure baseTrackingSupplySpeed is a BigInt before dividing
-  const baseTrackingSupplySpeedBN = BigInt(baseTrackingSupplySpeed);
-
-  // Apply rescale factor adjustment
-  let scaledAPR: bigint;
-  if (shouldUpscale) {
-    scaledAPR = baseTrackingSupplySpeedBN * BigInt(rescaleFactor);
-  } else {
-    scaledAPR = baseTrackingSupplySpeedBN / BigInt(rescaleFactor);
-  }
-
-  // Convert scaledAPR to a number
-  const apr = Number(scaledAPR) / 1e18;
-  if (apr <= 0) {
-    throw new Error("Invalid APR value: APR should be greater than 0.");
-  }
-
-  // Convert APR to APY using continuous compounding
-  const rewardsAPY = Math.exp(apr) - 1;
-*/
-
-  return Number(0.02); // TODO replace with proper value
+  return Number(0); // currently no rewards for our Compound V3 vault
 }
 
 export async function calculateVenusAPY(
@@ -1045,9 +929,13 @@ export const Approvedeposit = async (
 ) => {
   //console.log("Executing DepositApprove");
   const walletClient = getWalletClient(activeChain.id);
-  if ((!walletClient && !sendUserOperation) || !activeAccount?.address)
+  if ((!walletClient && !sendUserOperation) || !activeAccount?.address) {
+    console.log("No wallet client or active account found");
     return false;
+}
 
+  console.log("Executing DepositApprove");
+  console.log("inputToken", inputToken);
   try {
     let spender = EVM_GATEWAY_ADDRESSES[activeChain.id];
     if (activeChain.id === 7000 || activeChain.id === 7001) {
@@ -1055,17 +943,9 @@ export const Approvedeposit = async (
     } else {
       spender = EVM_GATEWAY_ADDRESSES[activeChain.id];
     }
+
     const erc20ApproveAbi = [
-      {
-        name: "approve",
-        type: "function",
-        stateMutability: "nonpayable",
-        inputs: [
-          { name: "spender", type: "address" },
-          { name: "amount", type: "uint256" },
-        ],
-        outputs: [{ name: "", type: "bool" }],
-      },
+      parseAbiItem("function approve(address to, uint256 value)"),
     ] as const;
 
     let txHash;
@@ -1117,134 +997,78 @@ export const Approvedeposit = async (
   }
 };
 
-const getMinSharesOut = async (
+const getPathDataAndMinSharesOut = async (
   vaultData: VaultData,
   inputToken: Token,
   transactionAmount: bigint,
   activeChain: Chain,
-) => {
-  const inputTokenAddress = isZetachain(activeChain.id)
-    ? inputToken?.address
+): Promise<{ swapPath: `0x${string}`; minSharesOut: bigint }> => {
+  const inputTokenZeta = isZetachain(activeChain.id)
+    ? inputToken
     : inputToken?.ZRC20equivalent;
+  if (!inputTokenZeta) {
+    throw new Error("Input token not found on Zetachain");
+  }
+  let assetsConversionAmount: bigint = transactionAmount;
+  let swapPath: `0x${string}` = "0x";
 
-  let assetsToConvert = transactionAmount;
-
-  if (inputTokenAddress !== vaultData.inputToken.address) {
-    assetsToConvert = await getAmountOutFromSwap(
+  if (inputTokenZeta.address !== vaultData.inputToken.address) {
+    const { encodedPath, amountOut } = await getPathDataAndAmountOut(
       transactionAmount,
-      inputToken,
+      inputTokenZeta,
       vaultData.inputToken,
       vaultData.id as Address,
+      getCurrentSlippage() * 100,
     );
+    swapPath = encodedPath ?? "0x";
+    assetsConversionAmount = amountOut;
   }
 
   const publicClient = getPublicClient(vaultData.protocol.chainId);
-  if (!publicClient) {
-    throw new Error(
-      `Failed to get client for chain id: ${vaultData.protocol.chainId}`,
-    );
-  }
-
-  const strategyAbi = [
-    {
-      name: "convertToShares",
-      type: "function",
-      stateMutability: "view",
-      inputs: [{ name: "assets", type: "uint256" }],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-  ] as const;
+  if (!publicClient) throw new Error("Error get public client");
 
   const sharesOutForUnderlying = await publicClient.readContract({
-    address: vaultData.protocol.strategyAddress,
-    abi: strategyAbi,
+    address: vaultData.protocol.strategyAddress as Address,
+    abi: [
+      parseAbiItem("function convertToShares(uint256) view returns (uint256)"),
+    ],
     functionName: "convertToShares",
-    args: [assetsToConvert],
+    args: [assetsConversionAmount],
   });
 
-  const slippage = getCurrentSlippage();
-  const slippageFactor = BigInt(10000 - slippage * 100);
-
   const minSharesOut =
-    (sharesOutForUnderlying * slippageFactor) / BigInt(10000);
+    (sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100)) /
+    BigInt(10000);
 
-  return minSharesOut;
+  return {
+    swapPath,
+    minSharesOut,
+  };
 };
 
-const getMinAmountOut = async (
-  vaultId: string,
+const getPathDataAndMinAmountOut = async (
+  vaultData: VaultData,
+  outputToken: Token,
   transactionAmount: bigint,
-  strategyAddress: Address,
-  strategyChainId: number,
 ) => {
-  const vaultAbi = [
-    {
-      name: "totalSupply",
-      type: "function",
-      stateMutability: "view",
-      inputs: [],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-  ] as const;
+  const slippageBps = Number(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
+  const minAmountOut =
+    (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
 
-  const strategyAbi = [
-    {
-      name: "getStrategyWithdrawShareAmount",
-      type: "function",
-      stateMutability: "view",
-      inputs: [{ name: "fraction", type: "uint256" }],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-    {
-      name: "convertToAssets",
-      type: "function",
-      stateMutability: "view",
-      inputs: [{ name: "shares", type: "uint256" }],
-      outputs: [{ name: "", type: "uint256" }],
-    },
-  ] as const;
+  let swapPath: `0x${string}` = "0x";
 
-  const publicClient = getPublicClient(strategyChainId);
-
-  if (!publicClient) {
-    throw new Error("failed to get clients");
+  if (outputToken.address !== vaultData.inputToken.address) {
+    const result = await getPathDataAndAmountOut(
+      transactionAmount,
+      vaultData.inputToken,
+      outputToken,
+      vaultData.id as Address,
+      slippageBps,
+    );
+    swapPath = result.encodedPath ?? "0x";
   }
 
-  try {
-    const vaultTotalSupply = await publicClient.readContract({
-      address: vaultId,
-      abi: vaultAbi,
-      functionName: "totalSupply",
-    });
-    if (vaultTotalSupply === 0n) {
-      return 0n;
-    }
-    const fractionOfTotalShares =
-      (transactionAmount * BigInt(10 ** 18)) / vaultTotalSupply;
-
-    const strategyWithdrawShareAmount = await publicClient.readContract({
-      address: strategyAddress,
-      abi: strategyAbi,
-      functionName: "getStrategyWithdrawShareAmount",
-      args: [fractionOfTotalShares],
-    });
-
-    const amountOutForShares = await publicClient.readContract({
-      address: strategyAddress,
-      abi: strategyAbi,
-      functionName: "convertToAssets",
-      args: [strategyWithdrawShareAmount],
-    });
-
-    const slippage = getCurrentSlippage();
-    const slippageFactor = BigInt(10000 - slippage * 100);
-    const minAmountOut = (amountOutForShares * slippageFactor) / BigInt(10000);
-
-    return minAmountOut;
-  } catch (error) {
-    console.error("error geet min amount out:", error);
-    throw error;
-  }
+  return { swapPath, minAmountOut };
 };
 
 const executeDirectDeposit = async (
@@ -1253,72 +1077,53 @@ const executeDirectDeposit = async (
   activeAccount: UseUserResult,
   activeChain: Chain,
   transactionAmount: bigint,
-  sendUserOperation: any,
+  sendUserOperation: Function,
 ) => {
-  //console.log("Executing Direct Deposit");
-  const minSharesOut: bigint = await getMinSharesOut(
+  if (!activeAccount)
+    throw new Error("no activeAccount found for perform deposit");
+  console.log("Executing Direct Deposit");
+  const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
     transactionAmount,
     activeChain,
   );
   const walletClient = getWalletClient(activeChain.id);
-  if (!sendUserOperation && !walletClient) return;
-
-  const depositAbi = [
-    {
-      name: "deposit",
-      type: "function",
-      stateMutability: "payable",
-      inputs: [
-        { name: "assets", type: "uint256" },
-        { name: "minSharesOut", type: "uint256" },
-        { name: "receiver", type: "address" },
-      ],
-      outputs: [{ name: "shares", type: "uint256" }],
-    },
-  ] as const;
 
   let txHash;
-
-  if (activeAccount?.type === "sca" && sendUserOperation) {
+  if (activeAccount.type === "sca" && sendUserOperation) {
     const { hash } = await sendUserOperation({
       uo: [
         {
-          target: vaultData.id,
+          target: inputToken,
           data: encodeFunctionData({
-            abi: depositAbi,
+            abi: [
+              parseAbiItem(
+                "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
+              ),
+            ],
             functionName: "deposit",
-            args: [transactionAmount, minSharesOut, activeAccount?.address!],
+            args: [transactionAmount, minSharesOut, activeAccount.address],
           }),
         },
       ],
     });
     txHash = hash;
-  } else {
-    const txHash = await walletClient?.writeContract({
-      address: vaultData.id,
-      abi: depositAbi,
-      functionName: "deposit",
-      args: [transactionAmount, minSharesOut, activeAccount?.address!],
-      chain: walletClient.chain,
-      value: transactionAmount,
-      account: activeAccount?.address!,
-    });
-    console.log("Tx is send", txHash);
-  }
-
-  const publicClient = getPublicClient(activeChain.id);
-
-  const receipt = await publicClient?.waitForTransactionReceipt({
-    hash: txHash!,
+  } else if (!!walletClient) {
+  txHash = await walletClient.writeContract({
+    address: vaultData.id as Address,
+    abi: [
+      parseAbiItem(
+        "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
+      ),
+    ],
+    functionName: "deposit",
+    args: [transactionAmount, minSharesOut, activeAccount.address],
+    account: activeAccount.address,
+    chain: walletClient.chain,
   });
-  if (receipt?.status === "success") {
-    console.log("tx success!", receipt);
-  } else {
-    console.error("fail to perform tx", receipt);
-    return receipt;
-  }
+}
+  return { transactionHash: txHash };
 };
 
 // Helper function to generate a unique transaction ID (bytes32)
@@ -1342,8 +1147,8 @@ const executeCrossChainDeposit = async (
 ) => {
   const walletClient = getWalletClient(activeChain.id);
   if (!activeAccount || !walletClient) return { transactionHash: null };
-  //console.log("Executing Cross-Chain Deposit");
-  const minSharesOut = await getMinSharesOut(
+  console.log("Executing Cross-Chain Deposit");
+  const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
     transactionAmount,
@@ -1362,34 +1167,17 @@ const executeCrossChainDeposit = async (
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
 
-  // Prepare payload (calldata to pass to the receiver)
-
-  const gatewayDepositAbi = [
-    {
-      type: "function",
-      name: "depositAndCall",
-      stateMutability: "payable",
-      inputs: [
-        { name: "receiver", type: "address" },
-        { name: "payload", type: "bytes" },
-        {
-          name: "revertOptions",
-          type: "tuple",
-          components: [
-            { name: "revertAddress", type: "address" },
-            { name: "callOnRevert", type: "bool" },
-            { name: "abortAddress", type: "address" },
-            { name: "revertMessage", type: "bytes" },
-            { name: "onRevertGasLimit", type: "uint256" },
-          ],
-        },
-      ],
-      outputs: [],
-    },
-  ] as const;
-
   payload = abiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes32"],
+    [
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "uint16",
+      "bytes",
+      "bytes",
+      "bytes32",
+    ],
     [
       ZeroAddress,
       inputToken.address,
@@ -1397,6 +1185,7 @@ const executeCrossChainDeposit = async (
       minSharesOut,
       slippageValue,
       nonEvmAddress,
+      swapPath,
       keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`,
     ],
   ) as `0x${string}`;
@@ -1418,18 +1207,14 @@ const executeCrossChainDeposit = async (
     BigInt(1000000), // onRevertGasLimit
   ] as const;
 
-  const revertOptionsObject = {
-    revertAddress: contractWithdrawalReceiverAddress,
-    callOnRevert: true,
-    abortAddress: activeAccount.address,
-    revertMessage: revertMessage as `0x${string}`,
-    onRevertGasLimit: BigInt(1000000),
-  };
-
   const data = encodeFunctionData({
-    abi: gatewayDepositAbi,
+    abi: [
+      parseAbiItem(
+        "function depositAndCall(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+      ),
+    ],
     functionName: "depositAndCall",
-    args: [vaultData.id, payload, revertOptionsObject],
+    args: [vaultData.id, payload, revertOptions],
   });
   // Case 1: Native token (ETH, BNB, etc.)
   if (inputToken.isNative) {
@@ -1487,32 +1272,6 @@ const executeCrossChainDeposit = async (
     // console.log("Approval confirmed");
 
     // Step 2: Deposit ERC20 tokens through the Gateway contract
-    const depositAndCallAbi = [
-      {
-        name: "depositAndCall",
-        type: "function",
-        stateMutability: "nonpayable",
-        inputs: [
-          { name: "receiver", type: "address" },
-          { name: "amount", type: "uint256" },
-          { name: "asset", type: "address" },
-          { name: "payload", type: "bytes" },
-          {
-            name: "revertOptions",
-            type: "tuple",
-            components: [
-              { name: "revertAddress", type: "address" },
-              { name: "callOnRevert", type: "bool" },
-              { name: "abortAddress", type: "address" },
-              { name: "revertMessage", type: "bytes" },
-              { name: "onRevertGasLimit", type: "uint256" },
-            ],
-          },
-        ],
-        outputs: [],
-      },
-    ] as const;
-
     if (!walletClient?.chain) {
       console.error("failed to get chain from WalletClient.");
       return { transactionHash: null };
@@ -1521,14 +1280,18 @@ const executeCrossChainDeposit = async (
     try {
       const txHash = await walletClient.writeContract({
         address: EVM_GATEWAY_ADDRESSES[activeChain.id],
-        abi: depositAndCallAbi,
+        abi: [
+          parseAbiItem(
+            "function depositAndCall(address receiver, uint256 amount, address asset, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+          ),
+        ],
         functionName: "depositAndCall",
         args: [
           vaultData.id,
           transactionAmount,
           inputToken.address,
           payload,
-          revertOptionsObject,
+          revertOptions,
         ],
         chain: walletClient.chain,
         account: activeAccount.address,
@@ -1569,14 +1332,15 @@ const executeSolanaDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function,
 ) => {
-  //console.log("Executing Cross-Chain Deposit");
-  const minSharesOut = await getMinSharesOut(
+  console.log("Executing Cross-Chain Deposit");
+  const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
     transactionAmount,
     activeChain,
   );
-
+  console.log("swapPath", swapPath);
+  console.log("minSharesOut", minSharesOut);
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID
@@ -1590,8 +1354,10 @@ const executeSolanaDeposit = async (
     signAllTransactions: walletContext.signAllTransactions,
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
-  const depositorBytes = walletContext.publicKey!.toBytes();
   updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
+  const solanaWalletAddress = new TextEncoder().encode(
+    walletContext.publicKey!.toBase58(),
+  );
 
   if (inputToken.isNative) {
     // Case 1: Native token (ETH, BNB, etc.)
@@ -1603,6 +1369,7 @@ const executeSolanaDeposit = async (
         "uint256",
         "uint16",
         "bytes",
+        "bytes",
         "bytes32",
       ],
       values: [
@@ -1611,7 +1378,8 @@ const executeSolanaDeposit = async (
         0,
         minSharesOut,
         slippageValue,
-        depositorBytes,
+        solanaWalletAddress,
+        swapPath,
         keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`,
       ],
     };
@@ -1634,6 +1402,7 @@ const executeSolanaDeposit = async (
         "uint256",
         "uint16",
         "bytes",
+        "bytes",
         "bytes32",
       ],
       values: [
@@ -1642,7 +1411,8 @@ const executeSolanaDeposit = async (
         0,
         minSharesOut,
         slippageValue,
-        depositorBytes,
+        solanaWalletAddress,
+        swapPath,
         keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`,
       ],
     };
@@ -1668,13 +1438,12 @@ export const executeSolanaWithdrawal = async (
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
 ) => {
-  //console.log("Executing Solana Cross-Chain Withdrawal");
+  console.log("Executing Solana Cross-Chain Withdrawal");
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
     withdrawZRC20,
     withdrawAssetAmount,
   );
-
   const solanaWalletAddress = new TextEncoder().encode(
     walletContext.publicKey!.toBase58(),
   );
@@ -1718,7 +1487,9 @@ export const executeSolanaWithdrawal = async (
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`,
     ],
   };
+
   updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
+
   const txHash = await client.solanaWithdrawal(vaultData.id, args);
   console.log("Withdrawal executed");
   setcrossChainTxId(transactionId);
@@ -1736,6 +1507,8 @@ export const executeWithdrawal = async (
   setcrossChainTxId: Function,
   sendUserOperation: Function,
 ) => {
+  console.log("Executing Withdrawal");
+  console.log("To chain ID:", activeChain.id);
   if (activeChain.id == CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
     return executeDirectWithdrawal(
@@ -1746,6 +1519,7 @@ export const executeWithdrawal = async (
       sendUserOperation,
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
+    console.log("Solana withdrawal detected");
     return executeSolanaWithdrawal(
       vaultData,
       walletContext,
@@ -1782,20 +1556,6 @@ const executeDirectWithdrawal = async (
     withdrawAssetAmount,
   );
   const walletClient = getWalletClient(activeChain.id);
-  const redeemAbi = [
-    {
-      name: "redeem",
-      type: "function",
-      stateMutability: "nonpayable",
-      inputs: [
-        { name: "assets", type: "uint256" },
-        { name: "minimumOut", type: "uint256" },
-        { name: "receiver", type: "address" },
-        { name: "owner", type: "address" },
-      ],
-      outputs: [{ name: "assets", type: "uint256" }],
-    },
-  ] as const;
 
   if (
     ((!walletClient || !walletClient.chain) && !sendUserOperation) ||
@@ -1812,8 +1572,12 @@ const executeDirectWithdrawal = async (
         {
           target: vaultData.id,
           data: encodeFunctionData({
-            abi: redeemAbi,
-            functionName: "redeem",
+            abi: [
+              parseAbiItem(
+                "function withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner)",
+              ),
+            ],
+            functionName: "withdraw",
             args: [
               withdrawAssetAmount,
               minAmountOut,
@@ -1828,8 +1592,12 @@ const executeDirectWithdrawal = async (
   } else if (walletClient) {
     txHash = await walletClient.writeContract({
       address: vaultData.id,
-      abi: redeemAbi,
-      functionName: "redeem",
+      abi: [
+        parseAbiItem(
+          "function withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner)",
+        ),
+      ],
+      functionName: "withdraw",
       args: [
         withdrawAssetAmount,
         minAmountOut,
@@ -1910,49 +1678,36 @@ const executeCrossChainWithdrawal = async (
       swapPath,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`,
     ],
-  );
-  const revertMessage = encodeAbiParameters(
-    [{ type: "string" }, { type: "bytes32" }, { type: "address" }],
+  ) as `0x${string}`;
+  const revertMessage = abiCoder.encode(
+    ["string", "bytes32", "address"],
     ["_crossChainWithdrawFailed", transactionId, activeAccount.address],
   );
 
-  const revertOptionsObject = {
-    revertAddress: contractWithdrawalReceiverAddress,
-    callOnRevert: false,
-    abortAddress: activeAccount.address,
-    revertMessage: revertMessage,
-    onRevertGasLimit: 1000000n,
-  };
-  const gatewayCallAbi = [
-    {
-      name: "call",
-      type: "function",
-      stateMutability: "nonpayable",
-      inputs: [
-        { name: "receiver", type: "address" },
-        { name: "payload", type: "bytes" },
-        {
-          name: "revertOptions",
-          type: "tuple",
-          components: [
-            { name: "revertAddress", type: "address" },
-            { name: "callOnRevert", type: "bool" },
-            { name: "abortAddress", type: "address" },
-            { name: "revertMessage", type: "bytes" },
-            { name: "onRevertGasLimit", type: "uint256" },
-          ],
-        },
-      ],
-      outputs: [],
-    },
+  const revertOptions = [
+    contractWithdrawalReceiverAddress, // revertAddress
+    false, // callOnRevert
+    activeAccount.address, // abortAddress
+    revertMessage as `0x${string}`, // revertMessage
+    BigInt(1000000), // onRevertGasLimit
   ] as const;
+
   updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
+  // const txOptions = {
+  //   gasLimit: BigInt(1000000), // Example value, update as needed
+  //   gasPrice: BigInt(100000), // This will have to change depending on the chain
+  // };
+
   try {
     const txHash = await walletClient.writeContract({
       address: EVM_GATEWAY_ADDRESSES[activeChain.id],
-      abi: gatewayCallAbi,
+      abi: [
+        parseAbiItem(
+          "function call(address receiver, bytes calldata payload, (address,bool,address,bytes,uint256) revertOptions)",
+        ),
+      ],
       functionName: "call",
-      args: [vaultData.id, payload, revertOptionsObject],
+      args: [vaultData.id, payload, revertOptions],
       chain: activeChain,
       account: activeAccount.address,
     });
@@ -2050,9 +1805,7 @@ export const fetchUserVaultMaxRedeem = async (
   // 2. Отримуємо publicClient
   const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
   if (!publicClient) {
-    console.error(
-      `Не вдалося отримати publicClient для мережі з ID ${SUPPORTED_CHAINS[0].chain.id}`,
-    );
+    console.error(`Error get public client ${SUPPORTED_CHAINS[0].chain.id}`);
     return null;
   }
 
@@ -2066,9 +1819,38 @@ export const fetchUserVaultMaxRedeem = async (
 
     return formatUnits(maxRedeemAmount, decimals);
   } catch (error) {
-    console.error("Помилка під час отримання maxRedeem:", error);
+    console.error("Failed get maxRedeem:", error);
     return null;
   }
+};
+
+export const fetchUserVaultMaxWithdraw = async (
+  decimals: number,
+  userAddress: Address,
+  vaultAddress: Address,
+) => {
+  console.log("🔍 Calling fetchUserVaultMaxWithdraw:", {
+    userAddress,
+    vaultAddress,
+    decimals,
+  });
+
+  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
+  if (!publicClient) throw new Error("failed to get publicClient");
+  const maxWithdraw = await publicClient.readContract({
+    address: vaultAddress,
+    abi: [parseAbiItem("function maxWithdraw(address) view returns (uint256)")],
+    functionName: "maxWithdraw",
+    args: [userAddress],
+  });
+
+  const formatted = formatUnits(maxWithdraw, decimals);
+  console.log(
+    `✅ maxWithdraw result: ${maxWithdraw.toString()} raw -> ${formatted} formatted`,
+  );
+
+  // Use formatUnits instead of Number conversion
+  return formatted;
 };
 
 export const fetchTotalAssets = async (vaultAddress: Address) => {
@@ -2091,7 +1873,7 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
 };
 
 const beamConnection: IConnection = {
-  host: "https://public-beam-backend-mainnet.codemelt.codes", // Replace with actual Beam API host
+  host: "https://public-beam-backend-mainnet.codemelt.codes",
   headers: {
     "x-api-key": process.env.NEXT_PUBLIC_BEAM_API_KEY!,
   },
@@ -2120,106 +1902,78 @@ export const getBeamTokenId = async (
   }
 };
 
-export const getAmountOutFromSwap = async (
+export const getPathDataAndAmountOut = async (
   amount: bigint,
   inputToken: Token,
   outputToken: Token,
   userAddress: string,
-): Promise<bigint> => {
-  // const BeamApi = require('codemelt-retro-api-sdk/functional/api');
-  console.log("start getAmountOutFromSwap");
-  const sourceChainId = 7000;
-  const destinationChainId = 7000;
-  const inputTokenAddress = inputToken.address;
-  const outputTokenAddress = outputToken.address;
-
-  // Step 1: Get Beam token IDs
+  slippage: Number,
+): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
+  console.log("inputToken address:", inputToken.address);
+  console.log("outputToken address:", outputToken.address);
   const [inputTokenId, outputTokenId] = await Promise.all([
-    getBeamTokenId(inputTokenAddress),
-    getBeamTokenId(outputTokenAddress),
+    getBeamTokenId(inputToken.address),
+    getBeamTokenId(outputToken.address),
   ]);
 
-  console.log("finsih Promise.all");
+  if (!inputTokenId || !outputTokenId) {
+    console.warn("❌ Missing Beam token ID(s)");
+    return { encodedPath: null, amountOut: BigInt(0) };
+  }
+
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
-    slippage: 500,
-    amount: Number(amount) / 10 ** inputToken.decimals,
+    slippage: Number(slippage), // e.g. 500 for 0.5%
+    amount: formatUnits(amount, inputToken.decimals), // ✅ string with decimals
     sender: userAddress,
     recipient: userAddress,
   };
-  console.log("swapDetails");
-  // Step 2: If both token IDs are found, try Beam API first
-  if (inputTokenId && outputTokenId) {
-    try {
-      //console.log("🚀 Getting quote from Beam API...");
-      const beamQuote = await swap.native.getSwapData(
-        beamConnection,
-        swapDetails,
-      );
-      console.log("beamQuote");
 
-      if (!beamQuote.success) {
-        //console.warn("⚠️ Beam quote unsuccessful, falling back to Eddy");
-      } else if (
-        !beamQuote.data ||
-        !beamQuote.data.status ||
-        !beamQuote.data.data
-      ) {
-        /*console.warn(
-          "⚠️ Beam quote returned invalid structure:",
-          beamQuote.data?.message || "Unknown error",
-        );*/
-      } else {
-        const quoteAmount = beamQuote.data.data.expectedAmountOut;
-
-        console.log("quoteAmount");
-        if (quoteAmount > 0) {
-          //console.log("✅ Beam quote found");
-          const quoteAmountRaw = (
-            quoteAmount *
-            10 ** outputToken.decimals
-          ).toFixed(0);
-          return BigInt(quoteAmountRaw);
-        }
-
-        //console.warn("⚠️ Beam quote returned zero amount");
-      }
-    } catch (e: any) {
-      /*console.warn(
-        "⚠️ Beam quote threw error, falling back to Eddy:",
-        e.message || e,
-      );*/
-      console.log("catch 1");
+  try {
+    console.log("🚀 Fetching Beam quote...");
+    const beamQuote = (await swap.native.getSwapData(
+      beamConnection,
+      swapDetails,
+    )) as {
+      data?: {
+        data?: {
+          path?: string[];
+          expectedAmountOut?: number;
+        };
+      };
+    };
+    console.log("✅ Beam quote fetched successfully:", beamQuote);
+    const path = beamQuote.data?.data?.path;
+    const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
+    if (expectedAmountOut == null) {
+      throw new Error("Beam quote is missing expectedAmountOut");
     }
 
-    // Step 3: Fallback to Eddy
-    try {
-      //console.log("🌐 Trying Eddy as fallback...");
-      const eddyQuote = await sdk.bridge.getQuoteForBridge({
-        inputTokenAddress: inputToken.address,
-        outputTokenAddress: outputToken.address,
-        sourceChainId: sourceChainId,
-        destinationChainId: destinationChainId,
-        amount: amount.toString(),
-        slippage: 0.5,
-      });
-      console.log("eddyQuote");
-
-      //console.log("✅ Eddy quote found");
-      return BigInt(eddyQuote.quoteAmount);
-    } catch (e) {
-      console.error("❌ Eddy quote failed:", e);
-
-      return BigInt(0);
+    if (!path || !Array.isArray(path) || path.length < 2) {
+      throw new Error("Beam quote returned invalid path");
     }
+
+    const encodedPath = solidityPacked(
+      Array(path.length).fill("address"),
+      path,
+    ) as `0x${string}`;
+
+    console.log("✅ Encoded path:", encodedPath);
+    console.log("✅ Expected amount out:", expectedAmountOut);
+
+    const amountOutRaw = (
+      expectedAmountOut *
+      10 ** outputToken.decimals
+    ).toFixed(0);
+    return {
+      encodedPath,
+      amountOut: BigInt(amountOutRaw),
+    };
+  } catch (e: any) {
+    console.error("❌ Beam swap fetch failed:", e.message || e);
+    return { encodedPath: null, amountOut: BigInt(0) };
   }
-  // 🛠️ Final catch-all return
-  console.warn(
-    "❌ Could not get Beam token IDs or all fallback methods failed",
-  );
-  console.log("getAmountOutFromSwap");
-  return BigInt(0);
 };
 
 export const getSharesFromDeposit = async (

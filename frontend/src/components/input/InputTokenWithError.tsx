@@ -71,6 +71,11 @@ export default function InputTokenWithError({
 
   const isConnected = !!walletAddress;
 
+  console.log(
+    "conversionOutput.outputAmountInUSDFormatted",
+    conversionOutput.outputAmountInUSDFormatted,
+  );
+
   const showTokenSelector = useMemo(() => {
     return (
       ((isDeposit && !isOutput) || (!isDeposit && isOutput)) &&
@@ -133,7 +138,7 @@ export default function InputTokenWithError({
       return <PendingDots />;
     }
 
-    if (isDeposit && !isOutput) {
+    if (!isOutput) {
       return (
         "$ " +
         (selectedToken
@@ -156,16 +161,7 @@ export default function InputTokenWithError({
         return <PendingDots />;
       }
 
-      if (isDeposit) {
-        return inputTokenbalance && Number(inputTokenbalance) !== 0
-          ? inputTokenbalance
-          : " ";
-      }
-
-      return conversionOutput.outputAmountFormatted &&
-        Number(conversionOutput.outputAmountFormatted) !== 0
-        ? conversionOutput.outputAmountFormatted
-        : " ";
+      return props.value || " ";
     }
 
     return (

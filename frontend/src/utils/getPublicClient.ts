@@ -59,7 +59,7 @@ export const getWalletClient = (chainId: number): WalletClient | null => {
     console.error(`Chain with id:${chainId} doesn't supported`);
     return null;
   }
-  if (!window?.ethereum || window.ethereum === undefined) {
+  if (!window || !window?.ethereum || window.ethereum === undefined) {
     console.error(`There is no wallet providers`);
     return null;
   }

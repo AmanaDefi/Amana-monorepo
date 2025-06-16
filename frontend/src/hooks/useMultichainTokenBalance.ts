@@ -18,7 +18,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const {
     walletAddress,
     activeChain,
-    balance: nativeBalance,
     refetchBalance: refetchNativeBalance,
   } = useMultiChain();
 
@@ -31,53 +30,89 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const MAX_RETRIES = 3;
 
   const internalFetchBalance = useCallback(async () => {
+    console.log("💰 [TOKEN-BALANCE] fetchBalance called", {
+      walletAddress,
+      token: token?.symbol,
+      tokenAddress: token?.address,
+      isNative: token?.isNative,
+      activeChain: activeChain?.id,
+      timestamp: new Date().toISOString(),
+    });
+
     if (!currentToken || !walletAddress || !activeChain?.id) {
+      console.log("⚠️ [TOKEN-BALANCE] Missing wallet address or token", {
+        walletAddress: !!walletAddress,
+        token: !!token,
+        timestamp: new Date().toISOString(),
+      });
       setBalance(DEFAULT_BALANCE);
       setIsLoading(false);
       return;
     }
 
-    // refetchNativeBalance(walletAddress);
+    try {
+    const balance = await refetchNativeBalance(walletAddress);
     setIsLoading(true);
     setError(null);
 
-    try {
-      if (currentToken.isNative) {
-        setBalance(nativeBalance);
-        setIsLoading(false);
-        retryCountRef.current = 0;
-        return;
-      }
+    if (currentToken.isNative) {
+      console.log("🪙 [TOKEN-BALANCE] Using native balance", {
+        nativeBalance: balance?.formatted,
+        timestamp: new Date().toISOString(),
+      });
+      setBalance(balance ?? { value: 0n, formatted: "0" });
+      setIsLoading(false);
+      retryCountRef.current = 0;
+      return;
+    }
 
-      let newBalance: Balance | null = null;
-
-      if (
-        isSolanaAddress(currentToken.address) &&
-        isSolanaAddress(walletAddress)
-      ) {
-        const { balance: splBalance, decimals } = await getSplTokenBalance(
+    let newBalance: Balance | null = null;
+    if (
+      isSolanaAddress(currentToken.address) &&
+      isSolanaAddress(walletAddress)
+    ) {
+      console.log("🌟 [TOKEN-BALANCE] Fetching Solana token balance...", {
+        tokenAddress: currentToken.address,
+        timestamp: new Date().toISOString(),
+      });
+      try {
+        const { balance, decimals } = await getSplTokenBalance(
           walletAddress,
           currentToken.address,
         );
         newBalance = {
-          value: splBalance,
-          formatted: format(splBalance, decimals),
+          value: balance,
+          formatted: format(balance, decimals),
         };
-      } else if (
-        isEthereumAddress(currentToken.address) &&
-        isEthereumAddress(walletAddress)
-      ) {
-        const isTokenApproved = APPROVED_TOKENS[activeChain.id]?.some(
-          (t: Token) =>
-            t.address.toLowerCase() === currentToken.address.toLowerCase(),
-        );
+      } catch (error) {
+        console.error("Error fetching Solana token balance:", error);
+        setBalance({ value: 0n, formatted: "0" });
+        setIsLoading(false);
+      }
+    } else if (
+      isEthereumAddress(currentToken.address) &&
+      isEthereumAddress(walletAddress)
+    ) {
+      // Verify the token is supported on this chain before fetching balance
+      if (!activeChain?.id) {
+        console.warn("No active chain detected when fetching balance");
+        setBalance({ value: 0n, formatted: "0" });
+        return;
+      }
 
-        if (!isTokenApproved) {
-          console.warn(
-            `Token ${currentToken.symbol} (${currentToken.address}) is not approved for chain ${activeChain.id}`,
-          );
-          newBalance = DEFAULT_BALANCE;
-        } else {
+      // Check if the token is in the APPROVED_TOKENS list for this chain
+      const isTokenApproved = APPROVED_TOKENS[activeChain.id]?.some(
+        (t: Token) =>
+          t.address.toLowerCase() === currentToken.address.toLowerCase(),
+      );
+
+      if (!isTokenApproved) {
+        console.warn(
+          `Token ${currentToken.symbol} (${currentToken.address}) is not approved for chain ${activeChain.id}`,
+        );
+        newBalance = DEFAULT_BALANCE;
+      } else {
+        try {
           const { balance: ercBalance, decimals } = await getERC20TokenBalance(
             walletAddress,
             currentToken.address,
@@ -87,29 +122,32 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
             value: ercBalance,
             formatted: format(ercBalance, decimals),
           };
-        }
-      }
 
-      if (newBalance) {
-        setBalance(newBalance);
-        if (newBalance.value >= 0n && !error) {
-          retryCountRef.current = 0;
+          // If we got a valid balance, reset retry count
+          if (newBalance) {
+            setBalance(newBalance);
+            if (newBalance.value >= 0n && !error) {
+              retryCountRef.current = 0;
+            }
+          } else {
+            setBalance(DEFAULT_BALANCE);
+          }
+        } catch (error) {
+          console.error("Error fetching EVM token balance:", error);
+          setBalance({ value: 0n, formatted: "0" });
+          setIsLoading(false);
         }
-      } else {
-        setBalance(DEFAULT_BALANCE);
       }
-    } catch (err) {
-      console.error(`Error fetching ${currentToken.symbol} balance:`, err);
-      setBalance(DEFAULT_BALANCE);
-      setError(err instanceof Error ? err.message : "Failed to fetch balance");
-    } finally {
-      setIsLoading(false);
     }
+  } catch (error) {
+    console.error("Error fetching Native token balance:", error);
+    setBalance({ value: 0n, formatted: "0" });
+    setIsLoading(false);
+  }
   }, [
     currentToken,
     walletAddress,
     activeChain,
-    nativeBalance,
     error,
     refetchNativeBalance,
   ]);

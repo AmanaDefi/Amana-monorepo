@@ -41,9 +41,10 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
             _name,
             _amanaVault,
             _gatewayAddress,
-            _withdrawHelper
+            _withdrawHelper,
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
-        __ERC20StrategyParent_init(_inputTokenAddress);
 
         swapHelper = _swapHelper;
         receiptToken = ICompoundVault(_receiptTokenAddress);
@@ -78,13 +79,21 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 compBalance = IERC20(rewardsTokenAddress).balanceOf(
             address(this)
         );
-        if (compBalance > minClaimableReward) {
+        if (
+            compBalance >
+            minClaimableReward *
+                10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
+        ) {
             uint256 usdcReceived = swapToInputToken(
                 rewardsTokenAddress,
                 compBalance,
                 harvestSwapSlippage
             );
-            if (usdcReceived > 0) {
+            if (
+                usdcReceived >
+                minClaimableReward *
+                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+            ) {
                 _depositFundsIntoYieldSource(usdcReceived, 0);
                 emit RewardsHarvested(
                     rewardsTokenAddress,
@@ -115,19 +124,17 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param fractionToWithdraw The amount of funds to withdraw from the yield source.
+     * @param assetAmount The amount of funds to withdraw from the yield source.
      * @param minAmountOut The minimum amount of funds to withdraw.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest(); // Harvest rewards before withdrawing
         uint256 initialBalance = inputToken.balanceOf(address(this)); // take initial balance after harvest
-        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
-            fractionToWithdraw
-        );
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         receiptToken.withdraw(address(inputToken), sharesToWithdraw);
         uint256 finalBalance = inputToken.balanceOf(address(this));
         amountWithdrawn = finalBalance - initialBalance;
@@ -144,16 +151,17 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = receiptToken.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        if (withdrawShareAmount > totalShares) {
-            withdrawShareAmount = totalShares;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
         }
-        return withdrawShareAmount;
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
     }
 
     function checkRewards() public returns (uint256) {
