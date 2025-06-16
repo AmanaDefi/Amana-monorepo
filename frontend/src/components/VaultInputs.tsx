@@ -153,6 +153,7 @@ export default function VaultInputs({
   }, [searchParams, vaultData.id]);
 
 
+
   const [steps, setSteps] = useState<Action[]>([]);
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
@@ -597,6 +598,7 @@ export default function VaultInputs({
         /*console.log("Double Box - Starting getWithdrawOutputAmount:", {
         inputAmountValue: inputAmountValue.toString(),
       });*/
+
         const assetsAmount = await getAssetsFromShares(
           inputAmountValue,
           vaultData,
@@ -616,6 +618,7 @@ export default function VaultInputs({
         isZetachain: isZetachain(activeChain?.id as number),
         vaultInputToken: vaultData.inputToken.address,
       });*/
+
         let tokenConversionAmount = assetsAmount;
         if (actualInputToken.address !== vaultData.inputToken.address) {
           tokenConversionAmount = await getAmountOutFromSwap(
@@ -629,12 +632,15 @@ export default function VaultInputs({
         const assetsConversionInUSD =
           (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
           vaultTokenPrice;
+
         console.log("assetsConversionInUSD", assetsConversionInUSD);
+
         const tokenConversionFromWei =
           Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
         const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
 
         console.log("tokenConversionInUSD", tokenConversionInUSD);
+
         const slippageActualValue = Math.max(
           0,
           100 - (tokenConversionInUSD * 100) / assetsConversionInUSD,
@@ -657,6 +663,7 @@ export default function VaultInputs({
             formatCurrency(tokenConversionInUSD).toString(),
         });*/
           console.log("formattedOutputAmount", formattedOutputAmount);
+
           setConversionOutput({
             slippageActualValue: Number(slippageActualValue.toFixed(2)),
             finalConvertedAmountInUSDFormatted: formatCurrency(
@@ -669,6 +676,7 @@ export default function VaultInputs({
         }
       } finally {
         console.log("setLoadingOutputToken(false)");
+
         setLoadingOutputToken(false);
       }
     },
@@ -698,6 +706,7 @@ export default function VaultInputs({
         isZetachain: isZetachain(activeChain?.id as number),
         vaultInputToken: vaultData.inputToken.address,
       });*/
+
         let assetsConversionAmount: bigint = inputAmountValue;
         if (actualInputToken.address !== vaultData.inputToken.address) {
           assetsConversionAmount = await getAmountOutFromSwap(
@@ -769,6 +778,7 @@ export default function VaultInputs({
             args: [gasLimitForWithdrawAndCall],
           });
           console.log("result");
+
           const gasZRC20 = result[0];
           const gasFee = result[1];
           // 3. If vault token and gas token match, subtract directly
