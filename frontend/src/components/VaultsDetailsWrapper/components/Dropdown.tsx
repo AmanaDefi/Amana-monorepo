@@ -35,7 +35,7 @@ const Dropdown: FC<Props> = ({ title, defaultOpen = false, children }) => {
           isOpen ? "h-full opacity-100 mt-6" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="bg-[#161C27] rounded-lg p-6 md:p-8">{children}</div>
+        <div className="bg-[#161C27] min-h-[180px] rounded-lg p-6 md:p-8">{children}</div>
       </div>
     </div>
   );

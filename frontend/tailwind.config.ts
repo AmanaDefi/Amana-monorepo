@@ -65,6 +65,7 @@ const config: Config = withAccountKitUi({
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
         "deep-blue-gradient":
           "linear-gradient(90deg, rgba(20, 23, 31, 0.15), #1B46E0)",
+        'custom-gradient': 'linear-gradient(139deg, #14171f 0%, #14171f 55%, rgba(27,70,224,0.25) 70%, rgba(27,70,224,0.5) 90%, #1b46e0 120%)',
       },
       borderRadius: {
         "4xl": "2rem",
