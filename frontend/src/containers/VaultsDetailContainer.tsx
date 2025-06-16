@@ -253,7 +253,7 @@ const VaultsDetailContainer: React.FC<{
     : "Information";
 
   return vaultData ? (
-    <div className="overflow-x-auto font-gotham">
+    <div className=" font-gotham">
       {!walletAddress && <InvestBlock />}
 
       <div

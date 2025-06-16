@@ -1107,16 +1107,15 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
-      {!isConnected ||
-        (!isDeposit && (
-          <div className="mb-4">
-            <SlippageSettingsBlock
-              setInputBalance={setInputBalance}
-              vaultId={vaultData.id}
-              showTransactionSettings={isSlippageExceedingLimit}
-            />
-          </div>
-        ))}
+      {(!isConnected || !isDeposit) && (
+        <div className="mb-4">
+          <SlippageSettingsBlock
+            setInputBalance={setInputBalance}
+            vaultId={vaultData.id}
+            showTransactionSettings={isSlippageExceedingLimit}
+          />
+        </div>
+      )}
       <div className="mb-4">
         {selectedChain && onSelectChain && vaultId && isDeposit && (
           <ChainSelector
