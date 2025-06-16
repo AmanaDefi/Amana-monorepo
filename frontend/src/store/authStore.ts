@@ -14,6 +14,7 @@ export type AuthStep =
   | "signature"
   | "checking"
   | "notVerify"
+  | "recieve"
   | null;
 
 interface AuthState {

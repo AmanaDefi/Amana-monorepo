@@ -8,12 +8,21 @@ import DropdownArrowIcon from "@/components/svg/DropdownArrowIcon";
 import WalletActions from "./WalletActions";
 import ProfileDropdown from "./ProfileDropdown";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { AppModals } from "@/components/modal/AppModals";
 
 const ProfileInfo = () => {
-  const { walletAddress } =
-    useMultiChain();
+  const { walletAddress, balance, selectedChain } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const formatBalance = (balance: { value: bigint; formatted: string }) => {
+    const numericBalance = parseFloat(balance.formatted);
+    return numericBalance.toFixed(4); 
+  };
+
+  const getCurrencySymbol = () => {
+    return selectedChain === "solana" ? "SOL" : "ETH";
+  };
 
   return (
     <>
@@ -22,7 +31,6 @@ const ProfileInfo = () => {
           <ProfileCircle width={100} height={100} className="mr-6" />
           <div className="flex flex-col gap-4">
             <div className="flex flex-row gap-8 text-[18px] font-normal text-white">
-             
               {/* <div className="flex flex-row gap-1 items-center">
                 <span>{email || "Не вказано"}</span>
                 <EditIcon width={12} height={12} />
@@ -50,9 +58,14 @@ const ProfileInfo = () => {
                 />
               </div>
             </div>
-            <div className="text-[24px] font-medium">$0</div>
+
+            <div className="text-[24px] font-medium">
+              {formatBalance(balance)} {getCurrencySymbol()}
+            </div>
+
             <WalletActions />
           </div>
+          <AppModals />
         </div>
       )}
     </>

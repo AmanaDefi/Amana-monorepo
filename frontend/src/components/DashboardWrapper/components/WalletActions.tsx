@@ -3,40 +3,35 @@ import Button from "@/components/Button";
 import ReceiveIcon from "@/components/svg/ReceiveIcon";
 import SaveIcon from "@/components/svg/SaveIcon";
 import TopUpIcon from "@/components/svg/TopUpIcon";
-import WithdrawIcon from "@/components/svg/WithdrawIcon";
 import React from "react";
 
 
 const WalletActions = () => {
+ 
   const handleSend = () => {
     console.log("Send clicked");
   };
-
-  const handleReceive = () => {
-    console.log("Receive clicked");
-  };
+   const handleReceive = () => {
+     console.log("Receive clicked");
+   };
 
   const handleTopUp = () => {
     console.log("Top Up clicked");
   };
 
-  const handleWithdraw = () => {
-    console.log("Withdraw clicked");
-  };
-
   return (
     <div className="flex flex-wrap gap-4">
-      <Button variant="wallet" onClick={handleSend}>
+      <Button variant="wallet" onClick={handleSend} disabled={true}>
         <SaveIcon width={12} height={10} className="mr-1" />
         Send
       </Button>
 
-      <Button variant="wallet" onClick={handleReceive}>
+      <Button variant="wallet" onClick={handleReceive} disabled={true}>
         <ReceiveIcon width={12} height={12} className="mr-1" />
         Receive
       </Button>
 
-      <Button variant="wallet" onClick={handleTopUp}>
+      <Button variant="wallet" onClick={handleTopUp} disabled={true}>
         <TopUpIcon width={12} height={12} className="mr-1" />
         Top Up
       </Button>

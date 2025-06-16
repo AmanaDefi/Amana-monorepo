@@ -2,6 +2,9 @@
 import QRcodeIcon from "@/components/svg/QRcodeIcon";
 import CopyIcon from "@/components/svg/CopyIcon";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "@/store/authStore";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useState } from "react";
 
 interface ProfileDropdownProps {
   isOpen: boolean;
@@ -12,14 +15,17 @@ export default function ProfileDropdown({
   isOpen,
   setIsOpen,
 }: ProfileDropdownProps) {
-  const handleQRCode = () => {
-    console.log("QR Code clicked");
-    setIsOpen(false);
-  };
+  const { openStep } = useAuthStore();
 
-  const handleCopyAddress = () => {
-    console.log("Copy Address clicked");
-    setIsOpen(false);
+  const [copied, setCopied] = useState(false);
+
+  const { walletAddress } = useMultiChain();
+
+  const handleCopy = () => {
+    if (!walletAddress) return;
+    navigator.clipboard.writeText(walletAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (
@@ -52,9 +58,9 @@ export default function ProfileDropdown({
                   fontSize: "14px",
                   fontWeight: 400,
                 }}
-                onClick={handleQRCode}
+                onClick={() => openStep("recieve")}
               >
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <QRcodeIcon width={16} height={17} />
                   <span className="text-[14px]">QR Code</span>
                 </div>
@@ -71,13 +77,19 @@ export default function ProfileDropdown({
                   fontSize: "14px",
                   fontWeight: 400,
                 }}
-                onClick={handleCopyAddress}
+                onClick={handleCopy}
               >
-                <div className="flex gap-2">
-                  <CopyIcon width={16} height={17} color="#fff" />
-                  <span className="text-[14px] whitespace-nowrap">
-                    Copy Address
-                  </span>
+                <div className="flex gap-2 items-center">
+                  {copied ? (
+                    <p className="text-green-400 text-sm">Copied!</p>
+                  ) : (
+                    <>
+                      <CopyIcon width={16} height={17} color="#fff" />
+                      <span className="text-[14px] whitespace-nowrap">
+                        Copy Address
+                      </span>
+                    </>
+                  )}
                 </div>
               </motion.button>
             </div>
