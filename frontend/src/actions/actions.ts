@@ -1170,13 +1170,24 @@ const executeSolanaDeposit = async (
     signAllTransactions: walletContext.signAllTransactions,
   } as Wallet;
   const client = new SolanaZetaClient(wallet);
-  const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
+  // Fix: Convert Solana wallet address to proper bytes format for ABI encoding
+  const solanaWalletBytes = ethers.hexlify(new TextEncoder().encode(walletContext.publicKey!.toBase58()));
+  
+  console.log("🔧 Creating RevertOptions for deposit");
+  console.log("📍 Original Solana wallet:", walletAddress);
+  console.log("📍 Solana wallet as hex bytes:", solanaWalletBytes);
+  console.log("📍 SwapPath type:", typeof swapPath);
+  console.log("📍 SwapPath value:", swapPath);
+  console.log("📍 SwapPath length:", swapPath?.length);
+  
+  // Validate swapPath is proper hex string
+  if (typeof swapPath === 'string' && !swapPath.startsWith('0x')) {
+    console.warn("⚠️  WARNING: swapPath doesn't start with 0x, this may cause ABI encoding issues");
+  }
 
   // Create RevertOptions following ZetaChain toolkit pattern
   const evmWalletAddress = getSolanaEVMAddress(walletAddress);
-  console.log("🔧 Creating RevertOptions for deposit");
   console.log("📍 EVMWalletAddress:", evmWalletAddress);
-  console.log("📍 SolanaWalletAddress:", walletAddress);
   
   // Anchor handles camelCase to snake_case conversion automatically
   const revertOptions = {
@@ -1197,26 +1208,57 @@ const executeSolanaDeposit = async (
 
   if (inputToken.isNative) {
     // Case 1: Native token (SOL)
-    const args = {
-      types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
-      values: [
-        ZeroAddress,
-        getSolanaEVMAddress(inputToken.address),
-        0,
-        minSharesOut,
-        slippageValue,
-        solanaWalletAddress,
-        swapPath,
-        keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
-      ],
-    };
+      console.log("🔍 ABI Encoding parameters for SOL deposit:");
+  console.log("  Position 0 (address):", ZeroAddress);
+  console.log("  Position 1 (address):", getSolanaEVMAddress(inputToken.address));  
+  console.log("  Position 2 (uint256):", 0);
+  console.log("  Position 3 (uint256):", minSharesOut.toString());
+  console.log("  Position 4 (uint16):", slippageValue);
+  console.log("  Position 5 (bytes):", solanaWalletBytes);
+  console.log("  Position 6 (bytes):", swapPath);
+  console.log("  Position 7 (bytes32):", keccak256(toUtf8Bytes("DepositInitiated")));
+  
+  const args = {
+    types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
+    values: [
+      ZeroAddress,
+      getSolanaEVMAddress(inputToken.address),
+      0,
+      minSharesOut,
+      slippageValue,
+      solanaWalletBytes,
+      swapPath,
+      keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+    ],
+  };
+
+  console.log("📦 Complete args object for SOL deposit:");
+  console.log("  Types:", JSON.stringify(args.types, null, 2));
+  console.log("  Values:", JSON.stringify(args.values.map((v, i) => ({
+    position: i,
+    type: args.types[i],
+    value: typeof v === 'bigint' ? v.toString() : v,
+    valueType: typeof v,
+    length: typeof v === 'string' ? v.length : 'N/A'
+  })), null, 2));
     const txHash = await client.solanaDepositAndCall(
       Number(transactionAmount),
       vaultData.id,
       args,
       revertOptions
     );
-    console.log("Deposit executed");
+    
+    console.log("🎉 SOL Deposit Transaction Completed:");
+    console.log("  Transaction Hash:", txHash);
+    console.log("  Transaction ID:", transactionId);
+    console.log("  Amount:", transactionAmount.toString());
+    console.log("  Vault:", vaultData.id);
+    console.log("  Final Args Summary:", {
+      typesCount: args.types.length,
+      valuesCount: args.values.length,
+      messageSize: "Will be logged in gateway script"
+    });
+    
     setcrossChainTxId(transactionId);
     return { transactionHash: txHash };
   } else {
@@ -1224,20 +1266,42 @@ const executeSolanaDeposit = async (
     const evmAddress = getSolanaEVMAddress(inputToken.address);
     const args = {
       types: ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
-      values: [ZeroAddress, evmAddress, 0, minSharesOut, slippageValue, solanaWalletAddress, swapPath, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
+      values: [ZeroAddress, evmAddress, 0, minSharesOut, slippageValue, solanaWalletBytes, swapPath, keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ],
     };
+
+    console.log("📦 Complete args object for SPL token deposit:");
+    console.log("  Types:", JSON.stringify(args.types, null, 2));
+    console.log("  Values:", JSON.stringify(args.values.map((v, i) => ({
+      position: i,
+      type: args.types[i],
+      value: typeof v === 'bigint' ? v.toString() : v,
+      valueType: typeof v,
+      length: typeof v === 'string' ? v.length : 'N/A'
+    })), null, 2));
     console.log("SPL token deposit detected");
-    const txHash = await client.depositSplTokenAndCall(
-      inputToken.address,
-      Number(transactionAmount),
-      vaultData.id,
-      args,
-      revertOptions
-    );
-    console.log("Deposit executed");
-    setcrossChainTxId(transactionId);
-    return { transactionHash: txHash };
+          const txHash = await client.depositSplTokenAndCall(
+        inputToken.address,
+        Number(transactionAmount),
+        vaultData.id,
+        args,
+        revertOptions
+      );
+      
+      console.log("🎉 SPL Token Deposit Transaction Completed:");
+      console.log("  Transaction Hash:", txHash);
+      console.log("  Transaction ID:", transactionId);
+      console.log("  Token:", inputToken.address);
+      console.log("  Amount:", transactionAmount.toString());
+      console.log("  Vault:", vaultData.id);
+      console.log("  Final Args Summary:", {
+        typesCount: args.types.length,
+        valuesCount: args.values.length,
+        messageSize: "Will be logged in gateway script"
+      });
+      
+      setcrossChainTxId(transactionId);
+      return { transactionHash: txHash };
   }
 };
 
@@ -1256,7 +1320,8 @@ export const executeSolanaWithdrawal = async (
     withdrawZRC20,
     withdrawAssetAmount
   );
-  const solanaWalletAddress = new TextEncoder().encode(walletContext.publicKey!.toBase58());
+  // Fix: Convert Solana wallet address to proper bytes format for ABI encoding
+  const solanaWalletBytes = ethers.hexlify(new TextEncoder().encode(walletContext.publicKey!.toBase58()));
   const walletAddress = walletContext.publicKey!.toBase58();
   
   // Generate a unique transaction ID
@@ -1307,14 +1372,45 @@ export const executeSolanaWithdrawal = async (
       withdrawAssetAmount,
       minAmountOut,
       slippageValue,
-      solanaWalletAddress,
+      solanaWalletBytes,
       swapPath,
       keccak256(toUtf8Bytes("WithdrawInitiated")) as `0x${string}`
     ],
   };
 
+  console.log("🔍 ABI Encoding parameters for Solana withdrawal:");
+  console.log("  Position 0 (address):", withdrawZRC20.address);
+  console.log("  Position 1 (address):", getSolanaEVMAddress(splMint));  
+  console.log("  Position 2 (uint256):", withdrawAssetAmount.toString());
+  console.log("  Position 3 (uint256):", minAmountOut.toString());
+  console.log("  Position 4 (uint16):", slippageValue);
+  console.log("  Position 5 (bytes):", solanaWalletBytes);
+  console.log("  Position 6 (bytes):", swapPath);
+  console.log("  Position 7 (bytes32):", keccak256(toUtf8Bytes("WithdrawInitiated")));
+
+  console.log("📦 Complete args object for Solana withdrawal:");
+  console.log("  Types:", JSON.stringify(args.types, null, 2));
+  console.log("  Values:", JSON.stringify(args.values.map((v, i) => ({
+    position: i,
+    type: args.types[i],
+    value: typeof v === 'bigint' ? v.toString() : v,
+    valueType: typeof v,
+    length: typeof v === 'string' ? v.length : 'N/A'
+  })), null, 2));
+
   const txHash = await client.solanaWithdrawal(vaultData.id, args, revertOptions);
-  console.log("Withdrawal executed");
+  
+  console.log("🎉 Solana Withdrawal Transaction Completed:");
+  console.log("  Transaction Hash:", txHash);
+  console.log("  Transaction ID:", transactionId);
+  console.log("  Vault:", vaultData.id);
+  console.log("  Withdraw Amount:", withdrawAssetAmount.toString());
+  console.log("  Final Args Summary:", {
+    typesCount: args.types.length,
+    valuesCount: args.values.length,
+    messageSize: "Will be logged in gateway script"
+  });
+  
   setcrossChainTxId(transactionId);
   return { transactionHash: txHash };
 };

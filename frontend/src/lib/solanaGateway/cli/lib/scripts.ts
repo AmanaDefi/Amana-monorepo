@@ -12,17 +12,10 @@ import { AbiCoder, ethers, getBytes } from "ethers";
 import { CHAIN_ID } from "@/constants/chainConfig";
 
 const SEED = 'meta';
-const MESSAGE_SIZE = 256; // Expected message size by the Solana program
 
-// Helper function to ensure message is exactly the required size
-const formatMessage = (data: Uint8Array): Uint8Array => {
-  const buffer = new Uint8Array(MESSAGE_SIZE);
-  if (data.length <= MESSAGE_SIZE) {
-    buffer.set(data, 0);
-  } else {
-    buffer.set(data.slice(0, MESSAGE_SIZE), 0);
-  }
-  return buffer;
+// Helper function to convert Uint8Array to Buffer without changing length
+const formatMessage = (data: Uint8Array): Buffer => {
+  return Buffer.from(data);  // Just convert type, preserve original length
 };
 
 // Helper function to ensure receiver is exactly 20 bytes
@@ -72,11 +65,13 @@ export const createSolanaDepositTx = async (payer: PublicKey, amount: number, re
   }
   
   try {
+    console.log("🧪 TESTING: Using null instead of revertOptions for SOL deposit");
+    
     const ix = await program.methods
       .deposit(
         new anchor.BN(amount),
         formatReceiver(recipient),
-        revertOptions
+        null  // Testing with null instead of revertOptions
       ).accounts({
         signer: payer,
         pda: pdaAccount,
@@ -103,14 +98,35 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
     seeds,
     program.programId
   );
-  const message = formatMessage(
-    getBytes(
-      new AbiCoder().encode(args.types, args.values)
-    )
-  );
+  console.log('🔧 BEFORE formatMessage - SOL depositAndCall args:');
+  console.log('  Types:', JSON.stringify(args.types, null, 2));
+  console.log('  Values (detailed):', JSON.stringify(args.values.map((v: any, i: number) => ({
+    position: i,
+    type: args.types[i],
+    value: typeof v === 'bigint' ? v.toString() : v,
+    valueType: typeof v,
+    length: typeof v === 'string' ? v.length : 'N/A',
+    hexLength: typeof v === 'string' && v.startsWith('0x') ? (v.length - 2) / 2 : 'N/A'
+  })), null, 2));
+
+  const encodedData = getBytes(new AbiCoder().encode(args.types, args.values));
+  console.log('🔄 ABI encoded data:');
+  console.log('  Length:', encodedData.length);
+  console.log('  Type:', typeof encodedData);
+  console.log('  As hex:', '0x' + Buffer.from(encodedData).toString('hex'));
+  
+  const message = formatMessage(encodedData);
+  
+  console.log('✅ AFTER formatMessage - SOL depositAndCall result:');
+  console.log('  Message length:', message.length);
+  console.log('  Message type:', typeof message);
+  console.log('  Message constructor:', message.constructor.name);
+  console.log('  Is Buffer?:', Buffer.isBuffer(message));
+  console.log('  Message as hex:', '0x' + Buffer.from(message).toString('hex'));
+  console.log('  Message first 64 bytes:', '0x' + Buffer.from(message.slice(0, Math.min(64, message.length))).toString('hex'));
+  console.log('  Message last 64 bytes:', '0x' + Buffer.from(message.slice(-Math.min(64, message.length))).toString('hex'));
   
   console.log("🏛️ PDA Account:", pdaAccount.toString());
-  console.log("📨 Message length:", message.length);
   console.log("📋 RevertOptions provided:", revertOptions ? "Yes" : "No");
   
   if (revertOptions) {
@@ -124,6 +140,8 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
   }
   
   try {
+    console.log("🧪 TESTING: Using null instead of revertOptions for SOL depositAndCall");
+    
     const ix = await program.methods
       .depositAndCall(
         new anchor.BN(amount),
@@ -150,17 +168,41 @@ export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: stri
     seeds,
     program.programId
   );
-  const message = formatMessage(
-    getBytes(
-      new AbiCoder().encode(args.types, args.values)
-    )
-  );
+  console.log('🔧 BEFORE formatMessage - Withdrawal args:');
+  console.log('  Types:', JSON.stringify(args.types, null, 2));
+  console.log('  Values (detailed):', JSON.stringify(args.values.map((v: any, i: number) => ({
+    position: i,
+    type: args.types[i],
+    value: typeof v === 'bigint' ? v.toString() : v,
+    valueType: typeof v,
+    length: typeof v === 'string' ? v.length : 'N/A',
+    hexLength: typeof v === 'string' && v.startsWith('0x') ? (v.length - 2) / 2 : 'N/A'
+  })), null, 2));
+
+  const encodedData = getBytes(new AbiCoder().encode(args.types, args.values));
+  console.log('🔄 ABI encoded data:');
+  console.log('  Length:', encodedData.length);
+  console.log('  Type:', typeof encodedData);
+  console.log('  As hex:', '0x' + Buffer.from(encodedData).toString('hex'));
+  
+  const message = formatMessage(encodedData);
+  
+  console.log('✅ AFTER formatMessage - Withdrawal result:');
+  console.log('  Message length:', message.length);
+  console.log('  Message type:', typeof message);
+  console.log('  Message constructor:', message.constructor.name);
+  console.log('  Is Buffer?:', Buffer.isBuffer(message));
+  console.log('  Message as hex:', '0x' + Buffer.from(message).toString('hex'));
+  console.log('  Message first 64 bytes:', '0x' + Buffer.from(message.slice(0, Math.min(64, message.length))).toString('hex'));
+  console.log('  Message last 64 bytes:', '0x' + Buffer.from(message.slice(-Math.min(64, message.length))).toString('hex'));
+  
+  console.log("🧪 TESTING: Using null instead of revertOptions for withdrawal");
   
   const ix = await program.methods
     .withdrawAndCall(
       formatReceiver(recipient),
       message,
-      revertOptions
+      revertOptions 
     ).accounts({
       signer: payer,
       pda: pdaAccount,
@@ -190,13 +232,39 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
   );
   const from = getAssociatedTokenAddressSync(mint, payer);
   const to = getAssociatedTokenAddressSync(mint, pdaAccount, true);
-  const message = formatMessage(getBytes(new AbiCoder().encode(args.types, args.values)));
+  
+  console.log('🔧 BEFORE formatMessage - SPL depositAndCall args:');
+  console.log('  Types:', JSON.stringify(args.types, null, 2));
+  console.log('  Values (detailed):', JSON.stringify(args.values.map((v: any, i: number) => ({
+    position: i,
+    type: args.types[i],
+    value: typeof v === 'bigint' ? v.toString() : v,
+    valueType: typeof v,
+    length: typeof v === 'string' ? v.length : 'N/A',
+    hexLength: typeof v === 'string' && v.startsWith('0x') ? (v.length - 2) / 2 : 'N/A'
+  })), null, 2));
 
+  const encodedData = getBytes(new AbiCoder().encode(args.types, args.values));
+  console.log('🔄 ABI encoded data:');
+  console.log('  Length:', encodedData.length);
+  console.log('  Type:', typeof encodedData);
+  console.log('  As hex:', '0x' + Buffer.from(encodedData).toString('hex'));
+  
+  const message = formatMessage(encodedData);
+  
+  console.log('✅ AFTER formatMessage - SPL depositAndCall result:');
+  console.log('  Message length:', message.length);
+  console.log('  Message type:', typeof message);
+  console.log('  Message constructor:', message.constructor.name);
+  console.log('  Is Buffer?:', Buffer.isBuffer(message));
+  console.log('  Message as hex:', '0x' + Buffer.from(message).toString('hex'));
+  console.log('  Message first 64 bytes:', '0x' + Buffer.from(message.slice(0, Math.min(64, message.length))).toString('hex'));
+  console.log('  Message last 64 bytes:', '0x' + Buffer.from(message.slice(-Math.min(64, message.length))).toString('hex'));
+  
   console.log("🏛️ PDA Account:", pdaAccount.toString());
   console.log("📝 Whitelist Entry:", whiteListEntry.toString());
   console.log("📤 From Account:", from.toString());
   console.log("📥 To Account:", to.toString());
-  console.log("📨 Message length:", message.length);
   console.log("📋 RevertOptions provided:", revertOptions ? "Yes" : "No");
   
   // Add comprehensive account logging for debugging
@@ -224,12 +292,14 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
     // Manual PDA derivation to avoid Anchor 0.30.1 account resolution issues
     console.log("🔧 Deriving accounts manually to avoid resolution conflicts");
     
+    console.log("🔧 Using revertOptions again - testing the bytes encoding fix");
+    
     const ix = await program.methods
       .depositSplTokenAndCall(
         new anchor.BN(amount),
         formatReceiver(recipient),
         message,
-        revertOptions
+        revertOptions  
       )
       .accounts({
         signer: payer,
