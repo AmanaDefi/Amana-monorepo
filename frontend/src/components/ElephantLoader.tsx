@@ -20,7 +20,7 @@ const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
    setProgress(0);
    setHasCompleted(false); 
    const interval = setInterval(() => {
-     setProgress((prev) => (prev >= 100 ? 100 : prev + 0.7));
+     setProgress((prev) => (prev >= 100 ? 100 : prev + 1));
    }, 30);
 
    return () => clearInterval(interval);

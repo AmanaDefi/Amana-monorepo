@@ -33,7 +33,7 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   const isDisabled =
     item.id !== "dashboard" && item.id !== "logout" && item.id !== "earn";
 
-  const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-bold text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
+  const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-medium text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
     isCollapsed ? "justify-center max-w-[64px]" : "gap-3"
   }`;
 
@@ -201,7 +201,7 @@ const Sidebar = ({
 
           <button
             onClick={toggleSidebar}
-            className={`transition-all duration-500 ease-in-out flex-shrink-0 p-1 ${
+            className={`flex-shrink-0 p-1 ${
               isCollapsed
                 ? "opacity-0 max-w-0 overflow-hidden ml-0"
                 : "opacity-100 max-w-[24px] ml-3"
@@ -212,7 +212,7 @@ const Sidebar = ({
         </div>
 
         <div
-          className={`absolute z-10 top-[160px] right-3 transition-all duration-500 ease-in-out ${
+          className={`absolute z-10 top-[160px] right-3 ${
             isCollapsed
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
@@ -225,7 +225,7 @@ const Sidebar = ({
 
         <div className="mb-8 overflow-hidden">
           <div
-            className={`text-[24px] font-bold text-white mb-8 transition-all duration-500 ease-in-out whitespace-nowrap ${
+            className={`text-[24px] font-bold text-white mb-8 transition-all duration-200 whitespace-nowrap ${
               isCollapsed
                 ? "opacity-0 max-height-0 overflow-hidden"
                 : "opacity-100 max-height-[32px]"

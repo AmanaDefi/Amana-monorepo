@@ -253,7 +253,7 @@ const VaultsDetailContainer: React.FC<{
     : "Information";
 
   return vaultData ? (
-    <div className="overflow-x-auto font-gotham">
+    <div className=" font-gotham">
       {!walletAddress && <InvestBlock />}
 
       <div
@@ -298,7 +298,7 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
       </div>
-      {walletAddress && (
+  
         <VaultHeader
           vaultData={vaultData}
           userVaultBalance={userVaultBalance}
@@ -308,7 +308,6 @@ const VaultsDetailContainer: React.FC<{
           transactionCompleted={transactionCompleted}
           selectedToken={selectedToken}
         />
-      )}
 
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-[56px] font-gotham">
         <div>

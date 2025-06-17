@@ -117,15 +117,8 @@ export default function InputTokenWithError({
     if (isOutput && !isDeposit) {
       return (
         <>
-          <span>You send (min 0.0015)</span>
-          <div className="flex-1 flex justify-center">
-            <button
-              onClick={allowInput ? onMaxClick : undefined}
-              className="text-[#3E73C4] hover:underline font-normal"
-            >
-              MAX
-            </button>
-          </div>
+          <span>You receive</span>
+          <span></span>
         </>
       );
     }
@@ -161,7 +154,11 @@ export default function InputTokenWithError({
         return <PendingDots />;
       }
 
-      return props.value || " ";
+      return conversionOutput.outputAmountFormatted &&
+        Number(conversionOutput.outputAmountFormatted) !== 0
+        ? conversionOutput.outputAmountFormatted
+        : " ";
+
     }
 
     return (

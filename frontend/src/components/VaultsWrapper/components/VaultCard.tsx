@@ -207,7 +207,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </VaultCardInfoBlock>
           </div>
         </div>
-        {walletAddress && (
+      
           <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
             <div className="flex flex-row gap-1">
               <p className="font-normal text-sm leading-4 text-white pl-[11px]">
@@ -227,7 +227,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
               })()}
             />
           </div>
-        )}
+
         <p className="font-normal text-xs leading-4 text-white mb-6 mt-2">
           This vault auto-compounds Lenders Tokens on{" "}
           <span className="flex flex-row gap-1">

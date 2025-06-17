@@ -149,9 +149,7 @@ export const VaultFilters: FC<Props> = ({
             <>
               <Button
                 variant="secondary"
-                onClick={() =>
-                  setIsShownMyVaults(true)
-                }
+                onClick={() => setIsShownMyVaults(true)}
                 className={classNames("!py-4 !px-[31px] !h-[56px]", {
                   "!border-[#1B46E0]": isShownMyVaults,
                 })}
@@ -201,6 +199,7 @@ export const VaultFilters: FC<Props> = ({
               selectedOption={sortBy}
               setSelectedOption={handleFilterClick}
               IconButton={FiltersIcon}
+              listType="simple"
             />
           </div>
           <div
