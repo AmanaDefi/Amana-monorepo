@@ -37,37 +37,67 @@ const formatReceiver = (recipient: string): Uint8Array => {
   return buffer;
 };
 
-// RevertOptions type definition following ZetaChain toolkit pattern
+// RevertOptions type definition - Anchor handles camelCase to snake_case conversion
 export interface RevertOptions {
+  revertAddress: PublicKey;       // pubkey
   abortAddress: Uint8Array;       // array [u8, 20]
   callOnRevert: boolean;          // bool
-  onRevertGasLimit: anchor.BN;    // u64
-  revertAddress: PublicKey;       // pubkey
   revertMessage: Buffer;          // bytes
+  onRevertGasLimit: anchor.BN;    // u64
 }
 
 export const createSolanaDepositTx = async (payer: PublicKey, amount: number, recipient: string, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
+  console.log("🚀 Creating SOL deposit transaction");
+  console.log("💰 Amount:", amount);
+  console.log("🎯 Recipient:", recipient);
+  console.log("👤 Payer:", payer.toString());
+  
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
     program.programId
   );
   
-  const ix = await program.methods
-    .deposit(
-      new anchor.BN(amount),
-      formatReceiver(recipient),
-      revertOptions
-    ).accounts({
-      signer: payer,
-      pda: pdaAccount,
-      system_program: SystemProgram.programId
-    }).instruction();
+  console.log("🏛️ PDA Account:", pdaAccount.toString());
+  console.log("📋 RevertOptions provided:", revertOptions ? "Yes" : "No");
+  
+  if (revertOptions) {
+    console.log("📋 RevertOptions details:", {
+      revertAddress: revertOptions.revertAddress.toString(),
+      abortAddress: Array.from(revertOptions.abortAddress),
+      callOnRevert: revertOptions.callOnRevert,
+      revertMessage: revertOptions.revertMessage.toString(),
+      onRevertGasLimit: revertOptions.onRevertGasLimit.toString()
+    });
+  }
+  
+  try {
+    const ix = await program.methods
+      .deposit(
+        new anchor.BN(amount),
+        formatReceiver(recipient),
+        revertOptions
+      ).accounts({
+        signer: payer,
+        pda: pdaAccount,
+        systemProgram: SystemProgram.programId  // Use camelCase as per Anchor 0.30
+      }).instruction();
 
-  return ix;
+    console.log("✅ SOL deposit instruction created successfully");
+    return ix;
+  } catch (error) {
+    console.error("❌ Error creating SOL deposit instruction:", error);
+    throw error;
+  }
 }
 
 export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
+  console.log("🚀 Creating SOL depositAndCall transaction");
+  console.log("💰 Amount:", amount);
+  console.log("🎯 Recipient:", recipient);
+  console.log("👤 Payer:", payer.toString());
+  console.log("📜 Args:", args);
+  
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
@@ -79,19 +109,39 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
     )
   );
   
-  const ix = await program.methods
-    .depositAndCall(
-      new anchor.BN(amount),
-      formatReceiver(recipient),
-      message,
-      revertOptions
-    ).accounts({
-      signer: payer,
-      pda: pdaAccount,
-      system_program: SystemProgram.programId
-    }).instruction();
+  console.log("🏛️ PDA Account:", pdaAccount.toString());
+  console.log("📨 Message length:", message.length);
+  console.log("📋 RevertOptions provided:", revertOptions ? "Yes" : "No");
+  
+  if (revertOptions) {
+    console.log("📋 RevertOptions details:", {
+      revertAddress: revertOptions.revertAddress.toString(),
+      abortAddress: Array.from(revertOptions.abortAddress),
+      callOnRevert: revertOptions.callOnRevert,
+      revertMessage: revertOptions.revertMessage.toString(),
+      onRevertGasLimit: revertOptions.onRevertGasLimit.toString()
+    });
+  }
+  
+  try {
+    const ix = await program.methods
+      .depositAndCall(
+        new anchor.BN(amount),
+        formatReceiver(recipient),
+        message,
+        revertOptions
+      ).accounts({
+        signer: payer,
+        pda: pdaAccount,
+        systemProgram: SystemProgram.programId  // Use camelCase as per Anchor 0.30
+      }).instruction();
 
-  return ix;
+    console.log("✅ SOL depositAndCall instruction created successfully");
+    return ix;
+  } catch (error) {
+    console.error("❌ Error creating SOL depositAndCall instruction:", error);
+    throw error;
+  }
 }
 
 export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
@@ -114,13 +164,20 @@ export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: stri
     ).accounts({
       signer: payer,
       pda: pdaAccount,
-      system_program: SystemProgram.programId
+      systemProgram: SystemProgram.programId  // Use camelCase as per Anchor 0.30
     }).instruction();
 
   return ix;
 }
 
 export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
+  console.log("🚀 Creating SPL token depositAndCall transaction");
+  console.log("💰 Amount:", amount);
+  console.log("🪙 Mint:", mint.toString());
+  console.log("🎯 Recipient:", recipient);
+  console.log("👤 Payer:", payer.toString());
+  console.log("📜 Args:", args);
+  
   const seeds = [Buffer.from(SEED, 'utf-8')];
   const whiteListEntrySeeds = [Buffer.from("whitelist", 'utf-8'), mint.toBytes()]
   const [whiteListEntry] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -135,24 +192,68 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
   const to = getAssociatedTokenAddressSync(mint, pdaAccount, true);
   const message = formatMessage(getBytes(new AbiCoder().encode(args.types, args.values)));
 
-  const ix = await program.methods
-    .depositSplTokenAndCall(
-      new anchor.BN(amount),
-      formatReceiver(recipient),
-      message,
-      revertOptions
-    ).accounts({
-      signer: payer,
-      pda: pdaAccount,
-      whitelist_entry: whiteListEntry,
-      mint_account: mint,
-      token_program: TOKEN_PROGRAM_ID,
-      from,
-      to,
-      system_program: SystemProgram.programId
-    }).instruction();
+  console.log("🏛️ PDA Account:", pdaAccount.toString());
+  console.log("📝 Whitelist Entry:", whiteListEntry.toString());
+  console.log("📤 From Account:", from.toString());
+  console.log("📥 To Account:", to.toString());
+  console.log("📨 Message length:", message.length);
+  console.log("📋 RevertOptions provided:", revertOptions ? "Yes" : "No");
+  
+  // Add comprehensive account logging for debugging
+  console.log("🔍 All accounts being passed:");
+  console.log("  - signer:", payer.toString());
+  console.log("  - pda:", pdaAccount.toString());
+  console.log("  - whitelistEntry:", whiteListEntry.toString());
+  console.log("  - mintAccount:", mint.toString());
+  console.log("  - tokenProgram:", TOKEN_PROGRAM_ID.toString());
+  console.log("  - from:", from.toString());
+  console.log("  - to:", to.toString());
+  console.log("  - systemProgram:", SystemProgram.programId.toString());
+  
+  if (revertOptions) {
+    console.log("📋 RevertOptions details:", {
+      revertAddress: revertOptions.revertAddress.toString(),
+      abortAddress: Array.from(revertOptions.abortAddress),
+      callOnRevert: revertOptions.callOnRevert,
+      revertMessage: revertOptions.revertMessage.toString(),
+      onRevertGasLimit: revertOptions.onRevertGasLimit.toString()
+    });
+  }
 
-  return ix;
+  try {
+    // Manual PDA derivation to avoid Anchor 0.30.1 account resolution issues
+    console.log("🔧 Deriving accounts manually to avoid resolution conflicts");
+    
+    const ix = await program.methods
+      .depositSplTokenAndCall(
+        new anchor.BN(amount),
+        formatReceiver(recipient),
+        message,
+        revertOptions
+      )
+      .accounts({
+        signer: payer,
+        pda: pdaAccount,
+        whitelistEntry: whiteListEntry,  // Use camelCase as per Anchor 0.30
+        mintAccount: mint,               // Use camelCase as per Anchor 0.30  
+        tokenProgram: TOKEN_PROGRAM_ID,
+        from,
+        to,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+
+    console.log("✅ SPL token depositAndCall instruction created successfully");
+    return ix;
+  } catch (error) {
+    console.error("❌ Error creating SPL token depositAndCall instruction:", error);
+    console.error("❌ Error details:", {
+      name: (error as Error).name,
+      message: (error as Error).message,
+      stack: (error as Error).stack
+    });
+    throw error;
+  }
 }
 
 export const createWithdrawSplTokenTx = async () => { }

@@ -1174,14 +1174,26 @@ const executeSolanaDeposit = async (
 
   // Create RevertOptions following ZetaChain toolkit pattern
   const evmWalletAddress = getSolanaEVMAddress(walletAddress);
+  console.log("🔧 Creating RevertOptions for deposit");
+  console.log("📍 EVMWalletAddress:", evmWalletAddress);
+  console.log("📍 SolanaWalletAddress:", walletAddress);
   
+  // Anchor handles camelCase to snake_case conversion automatically
   const revertOptions = {
-    abortAddress: ethers.getBytes(evmWalletAddress),
-    callOnRevert: true,
-    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
-    revertAddress: walletContext.publicKey!,
-    revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"),
+    revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
+    abortAddress: ethers.getBytes(evmWalletAddress),           // abort_address (array [u8, 20])
+    callOnRevert: true,                                        // call_on_revert (bool)
+    revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"), // revert_message (bytes)
+    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
   };
+  
+  console.log("📋 RevertOptions created:", {
+    revertAddress: revertOptions.revertAddress.toString(),
+    abortAddress: Array.from(revertOptions.abortAddress),
+    callOnRevert: revertOptions.callOnRevert,
+    revertMessage: revertOptions.revertMessage.toString(),
+    onRevertGasLimit: revertOptions.onRevertGasLimit.toString()
+  });
 
   if (inputToken.isNative) {
     // Case 1: Native token (SOL)
@@ -1265,14 +1277,26 @@ export const executeSolanaWithdrawal = async (
 
   // Create RevertOptions following ZetaChain toolkit pattern
   const evmWalletAddress = getSolanaEVMAddress(walletAddress);
+  console.log("🔧 Creating RevertOptions for withdrawal");
+  console.log("📍 EVMWalletAddress:", evmWalletAddress);
+  console.log("📍 SolanaWalletAddress:", walletAddress);
   
+  // IDL expects: revert_address, abort_address, call_on_revert, revert_message, on_revert_gas_limit
   const revertOptions = {
-    abortAddress: ethers.getBytes(evmWalletAddress),
-    callOnRevert: false,
-    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000),
-    revertAddress: walletContext.publicKey!,
-    revertMessage: Buffer.from("_crossChainWithdrawFailed", "utf8"),
+    revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
+    abortAddress: ethers.getBytes(evmWalletAddress),           // abort_address (array [u8, 20])
+    callOnRevert: false,                                       // call_on_revert (bool) - false for withdrawals
+    revertMessage: Buffer.from("_crossChainWithdrawFailed", "utf8"), // revert_message (bytes)
+    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
   };
+  
+  console.log("📋 RevertOptions created:", {
+    revertAddress: revertOptions.revertAddress.toString(),
+    abortAddress: Array.from(revertOptions.abortAddress),
+    callOnRevert: revertOptions.callOnRevert,
+    revertMessage: revertOptions.revertMessage.toString(),
+    onRevertGasLimit: revertOptions.onRevertGasLimit.toString()
+  });
 
   // Prepare payload (calldata to pass to the receiver)
   const args = {
