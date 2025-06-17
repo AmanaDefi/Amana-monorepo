@@ -9,8 +9,11 @@ import Button from "@/components/Button";
 import { useState, useEffect } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { ChevronDownIcon } from "@heroicons/react/24/solid";
-import NetworkDropdown from "./components/NetworkDropdown";
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/solid";
 import { CHAIN_ICONS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 
 const sendSchema = z.object({
@@ -33,9 +36,25 @@ type SendFormData = z.infer<typeof sendSchema>;
 export const Send = () => {
   const { step, closeAll, updateField, setLoading, setError, openStep } =
     useAuthStore();
-  const [isOpen, setIsOpen] = useState(false);
+  const [showNetworkSelection, setShowNetworkSelection] = useState(false);
+  const [networkSearchQuery, setNetworkSearchQuery] = useState("");
 
-  const { walletAddress, activeChain } = useMultiChain();
+  const { walletAddress, activeChain, switchToChain, balance } =
+    useMultiChain();
+
+  const validateAmount = (value: string) => {
+    const num = parseFloat(value);
+    if (isNaN(num) || num <= 0) {
+      return "Amount must be a positive number";
+    }
+
+    const userBalance = parseFloat(balance?.formatted || "0");
+    if (num > userBalance) {
+      return "Not enough tokens on your wallet";
+    }
+
+    return true;
+  };
 
   const {
     register,
@@ -61,6 +80,41 @@ export const Send = () => {
   }, []);
 
   const selectedNetworkValue = watch("network") || "";
+
+  // Filter networks based on search query
+  const filteredNetworks = SUPPORTED_CHAINS.filter((chainConfig) =>
+    chainConfig.chain.name
+      .toLowerCase()
+      .includes(networkSearchQuery.toLowerCase()),
+  );
+
+  const handleNetworkSelect = async (chainName: string) => {
+    const chainConfig = SUPPORTED_CHAINS.find(
+      (config) => config.chain.name === chainName,
+    );
+
+    if (!chainConfig) {
+      console.error(`Chain config not found for: ${chainName}`);
+      return;
+    }
+
+    const chain = chainConfig.chain;
+
+    setValue("network", chainName, { shouldValidate: true });
+
+    setShowNetworkSelection(false);
+    setNetworkSearchQuery(""); // Reset search query
+
+    if (activeChain?.id === chain.id) {
+      return;
+    }
+
+    try {
+      await switchToChain(chain);
+    } catch (error) {
+      console.error("Failed to switch chain:", error);
+    }
+  };
 
   const onSubmit = async (data: SendFormData) => {
     try {
@@ -91,11 +145,22 @@ export const Send = () => {
     >
       <div className="flex justify-start">
         <button
-          onClick={closeAll}
+          onClick={() => {
+            if (showNetworkSelection) {
+              setShowNetworkSelection(false);
+              setNetworkSearchQuery("");
+            } else {
+              closeAll();
+            }
+          }}
           className="rounded-[8px] flex items-center justify-center w-10 h-10"
-          aria-label="Close"
+          aria-label={showNetworkSelection ? "Back" : "Close"}
         >
-          <CloseModalIcon width={16} height={16} />
+          {showNetworkSelection ? (
+            <ChevronLeftIcon width={16} height={16} />
+          ) : (
+            <CloseModalIcon width={16} height={16} />
+          )}
         </button>
       </div>
 
@@ -105,153 +170,217 @@ export const Send = () => {
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
         className="text-sm font-normal text-white mt-5"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <p className="text-[18px] font-bold mb-4">Send from</p>
-            <div className="font-gotham w-full h-[48px] bg-[#161C27] px-6 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center">
-              {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-[18px] font-bold mb-4">Send to</p>
-            <input
-              type="text"
-              placeholder="Enter wallet address..."
-              {...register("recipientAddress")}
-              className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
-                errors.recipientAddress
-                  ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
-                  : "border-[#2C2F36]"
-              }`}
-            />
-            {errors.recipientAddress && (
-              <div className="flex gap-1 items-center mt-2">
-                <ErrorInputIcon
-                  width={16}
-                  height={16}
-                  className="fill-[#FFC700]"
+        {showNetworkSelection ? (
+          // Network Selection Block
+          <div className="space-y-4">
+            <div>
+              {/* Search Field */}
+              <div className="relative mb-4">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search name or paste address"
+                  value={networkSearchQuery}
+                  onChange={(e) => setNetworkSearchQuery(e.target.value)}
+                  className="w-full rounded-[8px] pl-10 pr-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border border-[#2C2F36] transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4]"
                 />
-                <p className="text-[#FFC700] text-[12px] font-normal">
-                  {errors.recipientAddress.message}
-                </p>
               </div>
-            )}
-          </div>
 
-          {/* Network Selection */}
-          <div>
-            <p className="text-[18px] font-bold mb-4">Network</p>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
-                  errors.network
-                    ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
-                    : "border-[#2C2F36]"
-                } flex flex-row justify-between items-center`}
+              {/* Networks List */}
+              <div
+                className="flex flex-col gap-2 max-h-[300px] overflow-y-auto mt-6 pr-1"
+                style={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#1B46E0 transparent",
+                }}
               >
-                <div className="flex items-center gap-3">
-                  {(selectedNetworkValue || activeChain?.name) &&
-                    (() => {
-                      const networkName =
-                        selectedNetworkValue || activeChain?.name;
-                      const chainConfig = SUPPORTED_CHAINS.find(
-                        (config) => config.chain.name === networkName,
-                      );
-                      return chainConfig ? (
+                <style jsx>{`
+                  div::-webkit-scrollbar {
+                    width: 6px;
+                  }
+                  div::-webkit-scrollbar-track {
+                    background: #161c27;
+                  }
+                  div::-webkit-scrollbar-thumb {
+                    background-color: #1b46e0;
+                    border-radius: 4px;
+                  }
+                `}</style>
+                <p className="text-[#4874DB] text-[16px]">Popular</p>
+                {filteredNetworks.map((chainConfig, index) => (
+                  <motion.div
+                    key={chainConfig.chain.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.03, duration: 0.2 }}
+                    className="group hover:cursor-pointer hover:shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] hover:bg-[#1D2A41] hover:rounded-[4px] max-h-9 flex rounded-[4px] py-3 w-full flex-row justify-between items-center transition-colors duration-200"
+                    onClick={() => handleNetworkSelect(chainConfig.chain.name)}
+                    whileHover={{ scale: 1 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="font-normal flex flex-row gap-2 items-center py-2 px-4">
+                      {CHAIN_ICONS[chainConfig.chain.id]?.url && (
                         <img
                           src={CHAIN_ICONS[chainConfig.chain.id]?.url}
-                          alt={networkName}
+                          alt={chainConfig.chain.name}
                           className="w-[20px] h-[20px] rounded-full"
                         />
-                      ) : null;
-                    })()}
-                  <span
-                    className={
-                      selectedNetworkValue || activeChain?.name
-                        ? "text-white"
-                        : "text-[#535E73]"
-                    }
-                  >
-                    {selectedNetworkValue ||
-                      activeChain?.name ||
-                      "Select network"}
-                  </span>
-                </div>
-                <ChevronDownIcon
-                  className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+                      )}
+                      <p className="text-white">{chainConfig.chain.name}</p>
+                    </div>
+                    {selectedNetworkValue === chainConfig.chain.name && (
+                      <div className="w-2 h-2 bg-[#3E73C4] rounded-full mr-4"></div>
+                    )}
+                  </motion.div>
+                ))}
 
-              <input type="hidden" {...register("network")} />
+                {filteredNetworks.length === 0 && (
+                  <div className="text-center py-8 text-[#535E73]">
+                    <p>No networks found matching "{networkSearchQuery}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Original Send Form
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <p className="text-[18px] font-bold mb-4">Send from</p>
+              <div className="font-gotham w-full h-[48px] bg-[#161C27] px-6 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </div>
+            </div>
 
-              {/* Dropdown */}
-              {isOpen && (
-                <div className="absolute top-full left-0 z-50 mt-1">
-                  <NetworkDropdown
-                    isOpen={isOpen}
-                    setIsOpen={setIsOpen}
-                    setValue={setValue}
+            <div>
+              <p className="text-[18px] font-bold mb-4">Send to</p>
+              <input
+                type="text"
+                placeholder="Enter wallet address..."
+                {...register("recipientAddress")}
+                className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                  errors.recipientAddress
+                    ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
+                    : "border-[#2C2F36]"
+                }`}
+              />
+              {errors.recipientAddress && (
+                <div className="flex gap-1 items-center mt-2">
+                  <ErrorInputIcon
+                    width={16}
+                    height={16}
+                    className="fill-[#FFC700]"
                   />
+                  <p className="text-[#FFC700] text-[12px] font-normal">
+                    {errors.recipientAddress.message}
+                  </p>
                 </div>
               )}
             </div>
 
-            {errors.network && (
-              <div className="flex gap-1 items-center mt-2">
-                <ErrorInputIcon
-                  width={16}
-                  height={16}
-                  className="fill-[#FFC700]"
-                />
-                <p className="text-[#FFC700] text-[12px] font-normal">
-                  {errors.network.message}
-                </p>
-              </div>
-            )}
-          </div>
+            {/* Network Selection */}
+            <div>
+              <p className="text-[18px] font-bold mb-4">Network</p>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowNetworkSelection(true)}
+                  className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                    errors.network
+                      ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
+                      : "border-[#2C2F36]"
+                  } flex flex-row justify-between items-center`}
+                >
+                  <div className="flex items-center gap-3">
+                    {(selectedNetworkValue || activeChain?.name) &&
+                      (() => {
+                        const networkName =
+                          selectedNetworkValue || activeChain?.name;
+                        const chainConfig = SUPPORTED_CHAINS.find(
+                          (config) => config.chain.name === networkName,
+                        );
+                        return chainConfig ? (
+                          <img
+                            src={CHAIN_ICONS[chainConfig.chain.id]?.url}
+                            alt={networkName}
+                            className="w-[20px] h-[20px] rounded-full"
+                          />
+                        ) : null;
+                      })()}
+                    <span
+                      className={
+                        selectedNetworkValue || activeChain?.name
+                          ? "text-white"
+                          : "text-[#535E73]"
+                      }
+                    >
+                      {selectedNetworkValue ||
+                        activeChain?.name ||
+                        "Select network"}
+                    </span>
+                  </div>
+                  <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3]" />
+                </button>
 
-          <div>
-            <p className="text-[18px] font-bold mb-4">Amount</p>
-            <input
-              type="text"
-              placeholder="0.00"
-              {...register("amount")}
-              className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
-                errors.amount
-                  ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
-                  : "border-[#2C2F36]"
-              }`}
-            />
-            {errors.amount && (
-              <div className="flex gap-1 items-center mt-2">
-                <ErrorInputIcon
-                  width={16}
-                  height={16}
-                  className="fill-[#FFC700]"
-                />
-                <p className="text-[#FFC700] text-[12px] font-normal">
-                  {errors.amount.message}
-                </p>
+                <input type="hidden" {...register("network")} />
               </div>
-            )}
-          </div>
 
-          <div className="">
-            <Button
-              variant="primary"
-              type="submit"
-              disabled={!isValid}
-              className="!max-h-[48px] !w-full !mt-6"
-            >
-              Send
-            </Button>
-          </div>
-        </form>
+              {errors.network && (
+                <div className="flex gap-1 items-center mt-2">
+                  <ErrorInputIcon
+                    width={16}
+                    height={16}
+                    className="fill-[#FFC700]"
+                  />
+                  <p className="text-[#FFC700] text-[12px] font-normal">
+                    {errors.network.message}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className="text-[18px] font-bold mb-4">Amount</p>
+              <input
+                type="text"
+                placeholder="0.00"
+                {...register("amount", {
+                  validate: validateAmount,
+                })}
+                className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                  errors.amount
+                    ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
+                    : "border-[#2C2F36]"
+                }`}
+              />
+              {errors.amount && (
+                <div className="flex gap-1 items-center mt-2">
+                  <ErrorInputIcon
+                    width={16}
+                    height={16}
+                    className="fill-[#FFC700]"
+                  />
+                  <p className="text-[#FFC700] text-[12px] font-normal">
+                    {errors.amount.message}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="">
+              <Button
+                variant="custom"
+                type="submit"
+                disabled={!isValid}
+                className="!max-h-[48px] !w-full !mt-6"
+              >
+                Send
+              </Button>
+            </div>
+          </form>
+        )}
       </motion.div>
     </Modal>
   );
