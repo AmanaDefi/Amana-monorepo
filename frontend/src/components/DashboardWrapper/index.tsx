@@ -1,9 +1,13 @@
+"use client";
+import { useVaultData } from "@/hooks/useVaultData";
 import ProfileInfo from "./components/ProfileInfo";
 import PortfolioTabs from "./components/Tabs";
 import TopTokens from "./components/TopTokens";
 
-
 const DashboardWrapper = () => {
+  const { loading, vaults, vaultAPYs, userVaultBalances, vaultTotalAssets } =
+    useVaultData();
+
   return (
     <div className="font-gotham">
       <div className="text-white text-[40px] font-bold mb-8">
@@ -14,10 +18,18 @@ const DashboardWrapper = () => {
         <ProfileInfo />
       </div>
 
-      <div><TopTokens /></div>
+      <div>
+        <TopTokens />
+      </div>
 
       <div className="mt-[82px]">
-        <PortfolioTabs />
+        <PortfolioTabs
+          vaults={vaults}
+          vaultAPYs={vaultAPYs}
+          userVaultBalances={userVaultBalances}
+          vaultTotalAssets={vaultTotalAssets}
+          loading={loading}
+        />
       </div>
     </div>
   );

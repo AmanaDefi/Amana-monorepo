@@ -9,9 +9,17 @@ import type {
   TabsContentProps,
   EmptyStateProps,
 } from "@/types/dasboard";
+import type {
+  VaultData,
+  VaultAPY,
+  VaultTotalAssets,
+  UserVaultBalance,
+} from "@/types/types";
 import Button from "@/components/Button";
-import WalletConnectIcon from "@/components/svg/WalletConnectIcon";
 import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
+import { useMyVaults } from "@/hooks/useMyVaults";
+import { VaultCard } from "@/components/VaultsWrapper/components/VaultCard";
+
 
 const Tabs: React.FC<TabsProps> = ({
   children,
@@ -111,7 +119,23 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   );
 };
 
-const PortfolioTabs: React.FC = () => {
+interface PortfolioTabsProps {
+  vaults?: VaultData[];
+  vaultAPYs?: VaultAPY[];
+  userVaultBalances?: UserVaultBalance[];
+  vaultTotalAssets?: VaultTotalAssets[];
+  loading?: boolean;
+}
+
+const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
+  vaults = [],
+  vaultAPYs = [],
+  userVaultBalances = [],
+  vaultTotalAssets = [],
+  loading = false,
+}) => {
+  const myVaults = useMyVaults({ vaults, userVaultBalances });
+
   const handleEarningClick = () => {
     console.log("Earning in one click clicked");
   };
@@ -119,19 +143,58 @@ const PortfolioTabs: React.FC = () => {
   return (
     <Tabs defaultValue="portfolio">
       <TabsList>
-        <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+        <TabsTrigger value="portfolio">
+          Portfolio {myVaults.length > 0 && `(${myVaults.length})`}
+        </TabsTrigger>
         <TabsTrigger value="history">History</TabsTrigger>
       </TabsList>
 
       <TabsContent value="portfolio">
-        <EmptyState
-          title="No positions"
-          description="This account has not yet added any assets"
-          action={{
-            label: "Earning in one click",
-            onClick: handleEarningClick,
-          }}
-        />
+        {myVaults.length === 0 ? (
+          <EmptyState
+            title="No positions"
+            description="This account has not yet added any assets"
+            action={{
+              label: "Earning in one click",
+              onClick: handleEarningClick,
+            }}
+          />
+        ) : (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-medium text-white">
+                Your Positions ({myVaults.length})
+              </h3>
+            </div>
+
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+              }}
+            >
+              {myVaults.map((vault) => (
+                <VaultCard
+                  key={vault.id}
+                  vault={vault}
+                  vaultAPYs={vaultAPYs}
+                  vaultTotalAssets={vaultTotalAssets}
+                  userVaultBalances={userVaultBalances}
+                />
+              ))}
+            </div>
+
+            <div className="text-center mt-6">
+              <Button
+                variant="custom"
+                onClick={handleEarningClick}
+                className="!w-auto !h-10 !text-[14px] !font-normal !font-gotham"
+              >
+                Explore More Vaults
+              </Button>
+            </div>
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="history">
