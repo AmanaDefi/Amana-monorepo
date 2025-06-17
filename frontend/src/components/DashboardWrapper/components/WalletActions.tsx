@@ -4,21 +4,22 @@ import ReceiveIcon from "@/components/svg/ReceiveIcon";
 import SaveIcon from "@/components/svg/SaveIcon";
 import TopUpIcon from "@/components/svg/TopUpIcon";
 import { useFundWalletStore } from "@/store/fundWalletStore";
+import { useUser } from "@account-kit/react";
 import React from "react";
 
-
 const WalletActions = () => {
-  const {setStep} = useFundWalletStore();
- 
+  const { setStep } = useFundWalletStore();
+  const user = useUser();
+
   const handleSend = () => {
     console.log("Send clicked");
   };
-   const handleReceive = () => {
-     console.log("Receive clicked");
-   };
+  const handleReceive = () => {
+    console.log("Receive clicked");
+  };
 
   const handleTopUp = () => {
-    setStep('chooseBuyWith');
+    setStep("chooseBuyWith");
   };
 
   return (
@@ -33,10 +34,12 @@ const WalletActions = () => {
         Receive
       </Button>
 
-      <Button variant="wallet" onClick={handleTopUp}>
-        <TopUpIcon width={12} height={12} className="mr-1" />
-        Top Up
-      </Button>
+      {user?.type === "sca" && (
+        <Button variant="wallet" onClick={handleTopUp}>
+          <TopUpIcon width={12} height={12} className="mr-1" />
+          Top Up
+        </Button>
+      )}
     </div>
   );
 };
