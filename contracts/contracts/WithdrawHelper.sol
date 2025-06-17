@@ -28,7 +28,7 @@ contract WithdrawHelper is
     using SafeERC20 for IZRC20;
 
     address public GATEWAY_ADDRESS;
-    uint256 public gasLimitForRevertCall = 200000;
+    uint256 public gasLimitForRevertCall;
 
     enum TxType {
         Deposit,

@@ -1,9 +1,11 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { ethers, upgrades } from "hardhat";
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
+  const { ethers, upgrades } = hre;
   const [signer] = await hre.ethers.getSigners();
+  const network = hre.network.name;
+
   const gateway = args.gateway;
   const gasTank = args.gasTank;
 
@@ -13,49 +15,48 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (!gasTank) {
     throw new Error("🚨 GasTank address is required.");
   }
+  console.log(`🔑 Deploying UUPS Upgradeable WithdrawHelper with signer: ${signer.address}`);
 
-  console.log(`🔑 Deploying UUPS upgradeable WithdrawHelper with signer: ${signer.address}`);
+  const ContractFactory = await ethers.getContractFactory("WithdrawHelper", signer);
 
-  const WithdrawHelper = await ethers.getContractFactory("WithdrawHelper", signer);
+  const proxy = await upgrades.deployProxy(ContractFactory, [gateway], {
+    kind: "uups",
+    initializer: "initialize",
+  });
 
-  const withdrawHelper = await upgrades.deployProxy(
-    WithdrawHelper,
-    [gateway],
-    {
-      kind: "uups",
-      initializer: "initialize",
-    }
-  );
-  await withdrawHelper.deployed();
+  await proxy.deployed();
+  console.log(`✅ WithdrawHelper proxy deployed at: ${proxy.address}`);
 
-  console.log(`✅ WithdrawHelper deployed at proxy address: ${withdrawHelper.address}`);
+  const implementationAddress = await upgrades.erc1967.getImplementationAddress(proxy.address);
+  console.log(`📦 Implementation address: ${implementationAddress}`);
 
   console.log(`⚙️ Authorizing WithdrawHelper with GasTank at ${gasTank}...`);
 
-  const gasTankContract = await ethers.getContractAt("GasTank", gasTank);
-  const tx = await gasTankContract.authorizeVault(withdrawHelper.address);
+  const gasTankContract = await hre.ethers.getContractAt("GasTank", gasTank);
+  const tx = await gasTankContract.authorizeVault(proxy.address);
   await tx.wait();
   console.log(`✅ WithdrawHelper authorized with GasTank.`);
 
-  // 🧠 Optional: log implementation address
-  const implementation = await upgrades.erc1967.getImplementationAddress(withdrawHelper.address);
-  console.log(`📦 Implementation deployed at: ${implementation}`);
-
   // ✅ Verification
-  console.log(`🔍 Verifying implementation contract on Etherscan...`);
-  try {
-    await hre.run("verify:verify", {
-      address: implementation,
-      constructorArguments: [],
-    });
-    console.log(`✅ Contract verified on Etherscan.`);
-  } catch (err: any) {
-    console.error(`❌ Verification failed:`, err.message || err);
+  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
+  if (etherscanApiKey) {
+    console.log(`🛠 Verifying implementation contract on ${network} explorer...`);
+    try {
+      await hre.run("verify:verify", {
+        address: implementationAddress,
+        constructorArguments: [],
+      });
+      console.log(`✅ Contract verified on ${network} explorer`);
+    } catch (err) {
+      console.error("❌ Contract verification failed:", err);
+    }
+  } else {
+    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
   }
 };
 
 task("deploy-withdraw-helper", "Deploys the WithdrawHelper contract", main)
   .addParam("gateway", "The address of the Gateway contract")
-  .addParam("gasTank", "The address of the GasTank contract");
+  .addParam("gasTank", "The address of the GasTank contract")
 
 export default {};
