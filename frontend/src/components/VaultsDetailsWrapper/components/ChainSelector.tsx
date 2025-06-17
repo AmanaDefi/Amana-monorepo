@@ -13,6 +13,7 @@ interface ChainSelectorProps {
   onSelectChain: (chain: Chain) => void;
   className?: string;
   vaultId?: string;
+  isFromTopUp?: boolean;
 }
 
 export default function ChainSelector({
@@ -20,6 +21,7 @@ export default function ChainSelector({
   onSelectChain,
   className = "",
   vaultId,
+  isFromTopUp,
 }: ChainSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { activeChain, switchToChain, walletAddress } = useMultiChain();
@@ -85,7 +87,9 @@ export default function ChainSelector({
 
   const displayedChain = selectedChain || activeChain;
 
-  const chainOptions = SUPPORTED_CHAINS.map((chainConfig) => ({
+  const chainList = isFromTopUp ? SUPPORTED_CHAINS.slice(1) : SUPPORTED_CHAINS;
+
+  const chainOptions = chainList.map((chainConfig) => ({
     value: chainConfig.chain.name,
     icon: CHAIN_ICONS[chainConfig.chain.id]?.url,
   }));

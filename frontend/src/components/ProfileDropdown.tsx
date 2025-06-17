@@ -8,8 +8,6 @@ import CopyIcon from "./svg/CopyIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { LogOutIcon } from "./svg/sidebar/LogOutIcon";
 
-
-
 interface MenuItem {
   label: string;
   href?: string;

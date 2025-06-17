@@ -28,7 +28,6 @@ const OptionsModalB = () => {
       },
       {
         onSuccess: (result) => {
-          console.log(result);
           console.log("Success google auth", result);
           successAuth();
         },
