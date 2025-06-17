@@ -245,37 +245,43 @@ export default function VaultInputs({
 
   useEffect(() => {
     const setToken = () => {
-      if (selectedToken) {
-        setInputToken(selectedToken);
-      } else if (
+      if (
         selectedChain &&
         (selectedChain.id === 7001 || selectedChain.id === 7000) &&
         vaultData?.inputToken
       ) {
         setInputToken(vaultData.inputToken);
       } else if (vaultData?.inputToken && selectedChain) {
-        const token = determineVaultTokenFromApprovedTokens(
-          selectedChain.id as number,
-          vaultData.inputToken,
-        );
-        setInputToken(token);
+        const tokens = APPROVED_TOKENS[selectedChain.id] || [];
+        const defaultToken =
+          tokens.find((token) => token.symbol === "USDC") || tokens[0];
+
+        if (defaultToken) {
+          setInputToken(defaultToken);
+          if (onTokenSelect) {
+            onTokenSelect(defaultToken);
+          }
+        }
       }
     };
 
     if (vaultData?.id) {
       const vaultInfo = getLocalStorageObject(vaultData?.id);
       const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+
       if (isTxInProgress && vaultInfo?.selectedToken) {
         setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
       } else {
+        setInputToken(undefined);
         setToken();
       }
     } else {
+      setInputToken(undefined);
       setToken();
     }
 
     setAllowInput(true);
-  }, [selectedChain, vaultData, selectedToken]);
+  }, [selectedChain?.id, vaultData, onTokenSelect]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const { balance: tokenBalance, fetchBalance } =
