@@ -117,14 +117,6 @@ export default function VaultInputs({
     // Only update if the state is different from what it should be
     if (isDeposit !== shouldBeDeposit) {
       setIsDeposit(shouldBeDeposit);
-      
-      // 🧪 TESTING: Log UI state changes
-      console.log("=== UI STATE TESTING ===");
-      console.log(`🔄 Tab changed to: ${shouldBeDeposit ? 'DEPOSIT' : 'WITHDRAW'}`);
-      console.log(`💰 Vault underlying token: ${vaultData.inputToken.symbol}`);
-      console.log(`🏦 Vault share token: ${vaultData.symbol}`);
-      console.log(`📊 Balance shown will be: ${shouldBeDeposit ? 'user wallet balance' : 'maxWithdraw amount'}`);
-      console.log("========================");
     }
   }, [tabParam, searchParams, vaultData.inputToken.symbol, vaultData.symbol]);
 
@@ -272,16 +264,6 @@ export default function VaultInputs({
           ? SmartVaultActionType.Deposit
           : SmartVaultActionType.Withdrawal;
         
-        console.log("🔧 [ACTIONS] === SELECTING ACTIONS ===");
-        console.log("🔧 [ACTIONS] - actionType:", actionType === SmartVaultActionType.Deposit ? 'Deposit' : 'Withdrawal');
-        console.log("🔧 [ACTIONS] - vaultData.symbol:", vaultData.symbol);
-        console.log("🔧 [ACTIONS] - activeChain:", activeChain?.name, `(${activeChain?.id})`);
-        console.log("🔧 [ACTIONS] - walletAddress:", walletAddress);
-        console.log("🔧 [ACTIONS] - inputBalance.value:", inputBalance.value.toString());
-        console.log("🔧 [ACTIONS] - inputToken.symbol:", inputToken.symbol);
-        console.log("🔧 [ACTIONS] - inputToken.address:", inputToken.address);
-        console.log("🔧 [ACTIONS] - inputToken.isNative:", inputToken.isNative);
-        
         const newStepsConfig = await selectActions(
           actionType,
           vaultData,
@@ -292,15 +274,8 @@ export default function VaultInputs({
         );
         
         setSteps(newStepsConfig);
-        console.log("🔧 [ACTIONS] === ACTIONS SELECTED ===");
-        console.log("🔧 [ACTIONS] Raw actions:", newStepsConfig);
-        console.log("🔧 [ACTIONS] Mapped actions:", newStepsConfig.map((e, i) => `${i}: ${Action[e]}`));
-        console.log("🔧 [ACTIONS] First action:", Action[newStepsConfig[0]]);
-        console.log("🔧 [ACTIONS] Second action:", newStepsConfig[1] ? Action[newStepsConfig[1]] : 'undefined');
-        console.log("🔧 [ACTIONS] === END ACTION SELECTION ===");
       } else {
         setSteps([]);
-        console.log("🔧 [ACTIONS] No valid input, clearing steps");
       }
     };
     // Call the async function
@@ -318,12 +293,9 @@ export default function VaultInputs({
 
   // Replace the handleTokenSelect function with this improved version
   const handleTokenSelect = (selectedToken: Token) => {
-    console.log("Selected token:", selectedToken);
-
     // If the selected token is the vault token but from a different chain,
     // we should still use it directly without trying to find an equivalent
     if (selectedToken.address === vaultData.inputToken.address) {
-      console.log("Selected vault token directly");
       setInputToken(selectedToken);
       setAllowInput(true);
     } else {
@@ -463,27 +435,15 @@ export default function VaultInputs({
 
   const getWithdrawOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
-      console.log("Double Box - Starting getWithdrawOutputAmount:", {
-        inputAmountValue: inputAmountValue.toString(),
-      });
-      
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
       let assetsAmount = inputAmountValue;
-      
-      console.log("Double Box - Assets amount (direct from input):", {
-        assetsAmount: assetsAmount.toString(),
-      });
       
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;
       if (!actualInputToken) return;
-      console.log("Double Box - Token addresses:", {
-        inputToken: actualInputToken?.address,
-        isZetachain: isZetachain(activeChain?.id as number),
-        vaultInputToken: vaultData.inputToken.address,
-      });
+
       let tokenConversionAmount = assetsAmount;
       if (actualInputToken.address !== vaultData.inputToken.address) {
          const result = await getPathDataAndAmountOut(
@@ -495,9 +455,6 @@ export default function VaultInputs({
         );
         tokenConversionAmount = result.amountOut
       }
-      console.log("Double Box - Conversion amounts:", {
-        tokenConversionAmount: tokenConversionAmount.toString(),
-      });
 
       const assetsConversionInUSD =
         (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
@@ -518,15 +475,6 @@ export default function VaultInputs({
           inputToken?.symbol || ""
         );
 
-        console.log("Double Box - Conversion Output:", {
-          slippageActualValue: Number(slippageActualValue.toFixed(2)),
-          finalConvertedAmountInUSDFormatted: formatCurrency(
-            assetsConversionInUSD
-          ).toString(),
-          outputAmountFormatted: formattedOutputAmount,
-          outputAmountInUSDFormatted:
-            formatCurrency(tokenConversionInUSD).toString(),
-        });
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
           finalConvertedAmountInUSDFormatted: formatCurrency(
@@ -554,21 +502,11 @@ export default function VaultInputs({
 
   const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
-      console.log("Double Box - Starting getDepositOutputAmount:", {
-        inputAmountValue: inputAmountValue.toString(),
-      });
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;
-      console.log("inputToken: ", inputToken);
-      console.log("inputToken.ZRC20equivalent: ", inputToken?.ZRC20equivalent);
-      console.log("actualInputToken: ", actualInputToken);
       if (!actualInputToken) return;
-      console.log("Double Box - 🏦 Token addresses:", {
-        inputToken: actualInputToken.address,
-        isZetachain: isZetachain(activeChain?.id as number),
-        vaultInputToken: vaultData.inputToken.address,
-      });
+
       let assetsConversionAmount: bigint = inputAmountValue;
       if (actualInputToken.address !== vaultData.inputToken.address) {
          const result = await getPathDataAndAmountOut(
@@ -581,12 +519,7 @@ export default function VaultInputs({
         assetsConversionAmount = result.amountOut;
       }
 
-      console.log("Double Box - Pre Gas Conversion amounts:", {
-        assetsConversionAmount: assetsConversionAmount.toString(),
-      });
-
       // 2. Fetch gas fee info from the ZRC20 token
-
       let gasFeeInVaultAsset = BigInt(0);
       let gasFeeInUSD = "0";
       let gasFeeInETH = "0";
@@ -643,11 +576,6 @@ export default function VaultInputs({
           ? assetsConversionAmount - gasFeeInVaultAsset
           : BigInt(0);
 
-      console.log("Double Box - Final converted amount after gas fee:", {
-        finalConvertedAmount: finalConvertedAmount.toString(),
-        gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-      });
-
       const sharesAmountRaw = await getSharesFromDeposit(
         finalConvertedAmount,
         vaultData
@@ -659,10 +587,6 @@ export default function VaultInputs({
         vaultData.symbol
       );
 
-      console.log("Double Box - Shares calculation:", {
-        sharesAmountFormatted,
-        finalConvertedAmount: finalConvertedAmount.toString(),
-      });
       const inputAmountValueInUSD =
         (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
         inputTokenPrice;
@@ -678,22 +602,6 @@ export default function VaultInputs({
         0,
         100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD
       );
-
-      // === LOGGING FOR DEBUGGING ===
-      if (!vaultData.depositFeePaidFromGasTank) {
-        const slippageFeeUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
-        const slippageFeeETH = convertUsdToEth(slippageFeeUSD, ethPriceUsd);
-        const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ''));
-        const gasFeeETH = parseFloat(gasFeeInETH);
-        console.log("==== FEE BREAKDOWN ====");
-        console.log("Gas Fee (ETH):", gasFeeETH);
-        console.log("Gas Fee (USD):", gasFeeUSD);
-        console.log("Slippage Fee (USD):", slippageFeeUSD.toFixed(5));
-        console.log("Slippage Fee (ETH):", slippageFeeETH.toFixed(5));
-        console.log("Difference (Gas Fee USD - Slippage Fee USD):", (gasFeeUSD - slippageFeeUSD).toFixed(5));
-        console.log("Difference (Gas Fee ETH - Slippage Fee ETH):", (gasFeeETH - slippageFeeETH).toFixed(5));
-        console.log("=======================");
-      }
 
       if (inputAmountValue === debouncedInputBalance.value) {
         setConversionOutput({
@@ -784,20 +692,7 @@ export default function VaultInputs({
 
   // Reset input state after transaction completes or fails
   useEffect(() => {
-    console.log('🔄 [VAULT-INPUTS] transactionCompleted effect triggered:', {
-      transactionCompleted,
-      timestamp: new Date().toISOString(),
-      inputBalance: inputBalance.formatted,
-      displayValue
-    });
-    
     if (transactionCompleted) {
-      console.log('✅ [VAULT-INPUTS] Transaction completed - resetting input state...', {
-        timestamp: new Date().toISOString(),
-        previousInputBalance: inputBalance.formatted,
-        previousDisplayValue: displayValue
-      });
-      
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("");
       setConversionOutput(initialConversionOutput);
@@ -805,15 +700,8 @@ export default function VaultInputs({
       setOutputBoxErrorMessage("");
       setIsSlippageExceedingLimit(false);
       
-      console.log('🧹 [VAULT-INPUTS] Input state reset completed!', {
-        timestamp: new Date().toISOString()
-      });
-      
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
-        console.log('⏰ [VAULT-INPUTS] Resetting transactionCompleted to false after timeout...', {
-          timestamp: new Date().toISOString()
-        });
         setTransactionCompleted(false);
       }, 1000);
     }
@@ -868,7 +756,6 @@ export default function VaultInputs({
   const handleWithdrawTokenSelect = (token: Token) => {
     // In withdraw mode, we still want to update the input token
     // This ensures proper token selection in both modes
-    console.log("Selected withdraw token:", token);
     setInputToken(token);
     
     // Notify parent component about token selection

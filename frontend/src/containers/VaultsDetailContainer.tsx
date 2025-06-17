@@ -41,12 +41,12 @@ const VaultsDetailContainer: React.FC<{
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
       
       if (foundVault) {
-        console.log(`VaultsDetailContainer: Switching to vault ${vaultID}`);
+       
         setVaultData(foundVault);
-        
+
         // Explicitly reset selectedToken when vault changes
         // This is critical to ensure proper auto-selection in child components
-        console.log(`VaultsDetailContainer: Resetting selected token for new vault`);
+       
         setSelectedToken(undefined);
       }
     }, [vaultID, vaults]);
@@ -57,14 +57,6 @@ const VaultsDetailContainer: React.FC<{
     }, [vaultData?.protocol?.chainId])
 
     const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000]
-
-    // Always call the hook unconditionally, but pass empty/default values when vaultData is undefined
-    console.log('🏗️ [VAULT-DETAIL] Calling useUpdateVaultBalanceAndTotalPerVault with:', {
-      vaultData: vaultData?.id,
-      walletAddress,
-      transactionCompleted,
-      timestamp: new Date().toISOString()
-    });
     
     useUpdateVaultBalanceAndTotalPerVault(vaultData || null, walletAddress, setUserVaultBalance, setVaultTotalAsset, setVaultTotalAssetinToken, transactionCompleted);
     
@@ -77,13 +69,7 @@ const VaultsDetailContainer: React.FC<{
         const rawBalance = typeof userVaultBalance === 'string' ? userVaultBalance : userVaultBalance.formatted;
         const usdValue = Number(rawBalance) * (vaultTokenPrice || 0);
         
-        console.log(`Vault Deposit Details for ${vaultData.name}:`, {
-          vaultId: vaultData.id,
-          tokenSymbol: vaultData.inputToken.symbol,
-          rawBalance: rawBalance,
-          usdValue: `$${usdValue.toFixed(2)}`,
-          tokenPrice: `$${vaultTokenPrice || 0}`
-        });
+       
       }
     }, [userVaultBalance, vaultData, vaultTokenPrice]);
     
@@ -96,7 +82,7 @@ const VaultsDetailContainer: React.FC<{
 
     // Handle token selection from child components
     const handleTokenSelect = (token: Token) => {
-      console.log(`VaultsDetailContainer: Token selection changed to ${token.symbol}`);
+     
       setSelectedToken(token);
     };
 
