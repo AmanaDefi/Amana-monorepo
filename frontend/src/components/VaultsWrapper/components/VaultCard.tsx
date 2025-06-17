@@ -237,7 +237,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
         <div className="flex gap-4">
           <>
-            <AppButton isBlue onClick={handlePressButton}>
+            <AppButton variant="blue" onClick={handlePressButton}>
               {!!walletAddress ? "Deposit" : "Invest"}
             </AppButton>
 
@@ -246,6 +246,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 userVaultBalances.find((b) => b.vaultId === vault.id)?.balance,
               ) > 0 && (
                 <AppButton
+                variant="reverse"
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/vaults/${vault.id}?tab=withdraw`);

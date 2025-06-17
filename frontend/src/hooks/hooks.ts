@@ -458,9 +458,6 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         refreshAttemptsRef.current = 0;
       }
     };
-    if (userAddress && vault) {
-      updateVaultBalanceAndTotal();
-    }
 
   }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken, updateVaultBalanceAndTotal]);
 };

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Action,
   Balance,
@@ -39,10 +47,10 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import { Address, Chain, encodeFunctionData } from "viem";
+import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import Button from "./Button";
-import { ReceiptRefundIcon } from "@heroicons/react/24/outline";
+import { useTransactionStore } from "@/store/transactionStore";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -60,9 +68,9 @@ const handleDepositTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
-  sendUserOperation: Function
+  sendUserOperation: Function,
 ) => {
-  console.log('deposit', activeAccount)
+  console.log("deposit", activeAccount);
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
   console.log("Active Chain ID:", activeChain.id);
@@ -93,17 +101,23 @@ const handleDepositTransaction = async (
       activeChain,
       depositAmount,
       setcrossChainTxId,
-      sendUserOperation
+      sendUserOperation,
     );
     if (!receipt || !receipt.transactionHash) {
-      throw new Error('Failed Tx')
+      throw new Error("Failed Tx");
     }
 
     console.log("✅ [DEPOSIT] executeDeposit completed successfully!");
     console.log("📋 [DEPOSIT] Receipt received:", receipt);
-    console.log("🔗 [DEPOSIT] Receipt.transactionHash:", receipt.transactionHash);
+    console.log(
+      "🔗 [DEPOSIT] Receipt.transactionHash:",
+      receipt.transactionHash,
+    );
     console.log("🆔 [DEPOSIT] Receipt type:", typeof receipt.transactionHash);
-    console.log("📏 [DEPOSIT] Receipt hash length:", receipt.transactionHash?.length);
+    console.log(
+      "📏 [DEPOSIT] Receipt hash length:",
+      receipt.transactionHash?.length,
+    );
 
     // 🔧 ARCHITECTURAL FIX: Wrap analytics in its own try-catch so it can't break core functionality
     try {
@@ -112,15 +126,21 @@ const handleDepositTransaction = async (
         vault: vaultData.id.toString(),
         amount: depositAmount.toString(),
         inputToken: inputToken.symbol,
-        amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
-        user: activeChain.id === CHAIN_ID.solana 
-          ? walletContext.publicKey?.toBase58() 
-          : activeAccount.address,
+        amountUSD:
+          inputBalance.formattedUSD ||
+          (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
+        user:
+          activeChain.id === CHAIN_ID.solana
+            ? walletContext.publicKey?.toBase58()
+            : activeAccount.address,
         chain: activeChain.id,
       });
     } catch (analyticsError) {
       // 📊 Analytics failures should not affect core transaction logic
-      console.warn("📊 [ANALYTICS] Failed to track deposit event:", analyticsError);
+      console.warn(
+        "📊 [ANALYTICS] Failed to track deposit event:",
+        analyticsError,
+      );
     }
 
     console.log("=== DEPOSIT TRANSACTION RECEIPT RECEIVED ===");
@@ -135,7 +155,9 @@ const handleDepositTransaction = async (
     });
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling - no waitForReceipt needed
-      console.log("🌊 [SOLANA] Solana transaction handling - receipt confirmed on-chain");
+      console.log(
+        "🌊 [SOLANA] Solana transaction handling - receipt confirmed on-chain",
+      );
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
 
@@ -224,7 +246,7 @@ const handleDepositTransaction = async (
     console.error("🔥 [DEPOSIT] Error details:", error);
     console.error("🔥 [DEPOSIT] Error message:", error.message);
     console.error("🔥 [DEPOSIT] Error stack:", error.stack);
-    
+
     // 🔧 ARCHITECTURAL FIX: Only track actual transaction failures, not analytics failures
     try {
       if (!error.message.includes("User denied transaction")) {
@@ -232,13 +254,20 @@ const handleDepositTransaction = async (
           vaultSymbol: vaultData.symbol,
           vault: vaultData.id.toString(),
           amount: inputBalance.value.toString(),
-          amountUSD: inputBalance.formattedUSD || (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
+          amountUSD:
+            inputBalance.formattedUSD ||
+            (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(
+              2,
+            ),
         });
       }
     } catch (analyticsError) {
-      console.warn("📊 [ANALYTICS] Failed to track deposit failure event:", analyticsError);
+      console.warn(
+        "📊 [ANALYTICS] Failed to track deposit failure event:",
+        analyticsError,
+      );
     }
-    
+
     console.log("🔴 [DEPOSIT] DEPOSIT TRANSACTION RETURNING FALSE ===");
     return false;
   }
@@ -256,7 +285,7 @@ const handleWithdrawTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
-  sendUserOperation: Function
+  sendUserOperation: Function,
 ) => {
   if (!activeAccount) return;
   console.log("=== WITHDRAW TRANSACTION START ===");
@@ -276,15 +305,28 @@ const handleWithdrawTransaction = async (
 
   try {
     const withdrawAssetAmount = inputBalance.value;
-    console.log("[Withdraw Debug] vault=", vaultData.id.toString(),
-      "assetAmount=", withdrawAssetAmount.toString(),
-      "usdAmount=", inputBalance.formattedUSD || (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(2)
+    console.log(
+      "[Withdraw Debug] vault=",
+      vaultData.id.toString(),
+      "assetAmount=",
+      withdrawAssetAmount.toString(),
+      "usdAmount=",
+      inputBalance.formattedUSD ||
+        (Number(inputBalance.formatted) * (withdrawToken.price || 0)).toFixed(
+          2,
+        ),
     );
-    
+
     // 🔄 FIXED: No longer converting from shares to assets since withdrawAssetAmount IS already in asset terms
-    const withdrawAmountFormatted = Number(withdrawAssetAmount) / 10 ** withdrawToken.decimals;
-    console.log("[Withdraw Debug] withdrawAmountFormatted=", withdrawAmountFormatted.toString());
-    const amountUSD = (withdrawAmountFormatted * (withdrawToken.price || 0)).toFixed(2);
+    const withdrawAmountFormatted =
+      Number(withdrawAssetAmount) / 10 ** withdrawToken.decimals;
+    console.log(
+      "[Withdraw Debug] withdrawAmountFormatted=",
+      withdrawAmountFormatted.toString(),
+    );
+    const amountUSD = (
+      withdrawAmountFormatted * (withdrawToken.price || 0)
+    ).toFixed(2);
     console.log("[Withdraw Debug] amountUSD=", amountUSD);
 
     // trackEvent("Withdraw Submitted", {
@@ -306,11 +348,11 @@ const handleWithdrawTransaction = async (
       withdrawToken.address as Address,
       withdrawZRC20 as Token,
       setcrossChainTxId,
-      sendUserOperation
+      sendUserOperation,
     );
 
     if (!receipt.transactionHash) {
-      throw new Error('error withdraw tx')
+      throw new Error("error withdraw tx");
     }
 
     const activeChainExplorerBaseUrl =
@@ -382,9 +424,12 @@ const handleWithdrawTransaction = async (
         vaultSymbol: vaultData.symbol,
       });
     } catch (analyticsError) {
-      console.warn("📊 [ANALYTICS] Failed to track withdraw failure event:", analyticsError);
+      console.warn(
+        "📊 [ANALYTICS] Failed to track withdraw failure event:",
+        analyticsError,
+      );
     }
-    
+
     return false;
   }
 };
@@ -406,6 +451,8 @@ export default function InteractionContainer({
   isDeposit,
   refreshBalance,
   hideStepsDisplay = false,
+  setLabel,
+  label,
 }: {
   step: number;
   setStep: Function;
@@ -423,24 +470,27 @@ export default function InteractionContainer({
   isDeposit: boolean;
   refreshBalance: Function;
   hideStepsDisplay?: boolean;
+  setLabel: Dispatch<SetStateAction<string>>;
+  label: string;
 }): JSX.Element {
-  const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
   const activeAccount = useUser();
-  console.log(activeAccount, 'activeAccount container')
-
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
   const [crossChainTxId, setcrossChainTxId] = useState<string>("");
   const [isTransactionStarted, setIsTransactionStarted] = useState(false);
-  const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
-  const [finishedTransaction, setFinishedTransaction] = useState(false);
   const [lastEventTxHash, setLastEventTxHash] = useState("");
+  const {
+    setFinishedTransaction,
+    setLastTransactionStepFeedback,
+    setTransactionStepFeedback,
+    transactionStepFeedback,
+    lastTransactionStepFeedback,
+    finishedTransaction,
+    isTransactionProcessing,
+    setIsTransactionProcessing,
+  } = useTransactionStore();
 
   // BlockPI-only feedback system
-  const [transactionStepFeedback, setTransactionStepFeedback] =
-    useState<TransactionStepMessages>({});
-  const [lastTransactionStepFeedback, setLastTransactionStepFeedback] =
-    useState<TransactionStepMessages>({});
 
   useEffect(() => {
     if (vaultData?.id) {
@@ -471,47 +521,6 @@ export default function InteractionContainer({
 
   // Ref to prevent multiple concurrent tracking processes
   const isTrackingActiveRef = useRef(false);
-
-  // Button label management based on current action
-  useEffect(() => {
-    const hasValidInput =
-      _inputBalance.formatted &&
-      Number(_inputBalance.formatted) > 0 &&
-      !errorMessage;
-
-    if (!hasValidInput) {
-      setLabel(isDeposit ? "Invest" : "Withdraw");
-      return;
-    }
-
-    switch (action) {
-      case Action.depositApprove:
-        setLabel("Approve");
-        break;
-      case Action.deposit:
-        setLabel("Invest");
-        break;
-      case Action.withdraw:
-        setLabel("Withdraw");
-        break;
-      default:
-        const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
-        if (isTxInProgress) {
-          setLabel((prev) => {
-            if (!prev) return "Pending";
-            return prev;
-          });
-        }
-        break;
-    }
-  }, [
-    action,
-    setLabel,
-    vaultData.id,
-    _inputBalance.formatted,
-    errorMessage,
-    isDeposit,
-  ]);
 
   // Add the function here so it has access to all the component state
   function completeTransactionProcess(
@@ -564,61 +573,67 @@ export default function InteractionContainer({
           ];
     } else {
       // Type 4 and other transactions (5-6 steps)
-      actionMapping = isDeposit ? [
-        Action.deposit,           // Step 0
-        Action.depositConfirmed,  // Step 1
-        Action.crosschainInvest,  // Step 2
-        Action.FundsInvest,       // Step 3
-        Action.ReturnFundsToUserSent, // Step 4
-        Action.FundsReturned,     // Step 5 - Confirmation message from strategy to vault
-        Action.deposited          // Step 6 - Minting of shares on vault
-      ] : [
-        Action.withdraw,              // Step 0
-        Action.withdrawconfirmed,     // Step 1
-        Action.DivestSent,           // Step 2
-        Action.FundsDivested,        // Step 3
-        Action.ReturnFundsToUserSent, // Step 4
-        Action.withdrew              // Step 5
-      ];
+      actionMapping = isDeposit
+        ? [
+            Action.deposit, // Step 0
+            Action.depositConfirmed, // Step 1
+            Action.crosschainInvest, // Step 2
+            Action.FundsInvest, // Step 3
+            Action.ReturnFundsToUserSent, // Step 4
+            Action.FundsReturned, // Step 5 - Confirmation message from strategy to vault
+            Action.deposited, // Step 6 - Minting of shares on vault
+          ]
+        : [
+            Action.withdraw, // Step 0
+            Action.withdrawconfirmed, // Step 1
+            Action.DivestSent, // Step 2
+            Action.FundsDivested, // Step 3
+            Action.ReturnFundsToUserSent, // Step 4
+            Action.withdrew, // Step 5
+          ];
 
-      stepDescriptions = isDeposit ? [
-        'Initial deposit transaction on local chain completed',
-        'Cross chain transfer of funds to vault completed',
-        'Transfer of funds from vault to strategy completed',
-        'Investment of funds into yield source completed',
-        'Confirmation message from strategy to vault completed',
-        'Minting of shares on vault completed'
-      ] : [
-        'Initial withdraw transaction on local chain completed',
-        'Cross chain request to vault completed',
-        'Request from vault to strategy completed',
-        'Divestment of funds from yield source completed',
-        'Return of funds from strategy to vault completed',
-        'Return of funds from vault to user completed'
-      ];
+      stepDescriptions = isDeposit
+        ? [
+            "Initial deposit transaction on local chain completed",
+            "Cross chain transfer of funds to vault completed",
+            "Transfer of funds from vault to strategy completed",
+            "Investment of funds into yield source completed",
+            "Confirmation message from strategy to vault completed",
+            "Minting of shares on vault completed",
+          ]
+        : [
+            "Initial withdraw transaction on local chain completed",
+            "Cross chain request to vault completed",
+            "Request from vault to strategy completed",
+            "Divestment of funds from yield source completed",
+            "Return of funds from strategy to vault completed",
+            "Return of funds from vault to user completed",
+          ];
     }
 
     console.log(`[Transaction Complete] Marking all steps as completed`);
 
     // Update all steps to completed
-    setTransactionStepFeedback((prev) => {
-      const updatedFeedback = { ...prev };
+    useTransactionStore.setState((prev) => {
+      const updatedFeedback = { ...prev.transactionStepFeedback };
 
       actionMapping.forEach((actionKey, index) => {
         if (actionKey) {
           updatedFeedback[actionKey] = {
+            ...prev.transactionStepFeedback[actionKey],
+
             label: isDeposit ? "Deposit" : "Withdraw",
             description: stepDescriptions[index],
             status: TransactionStepStatus.completed,
-            txHash: updatedFeedback[actionKey]?.txHash,
           };
         }
       });
+
       updateLocalStorageObject(vaultData.id, {
         transactionStepFeedback: updatedFeedback,
       });
 
-      return updatedFeedback;
+      return { transactionStepFeedback: updatedFeedback };
     });
 
     // 2. Set the final UI state
@@ -659,22 +674,26 @@ export default function InteractionContainer({
   }
 
   useEffect(() => {
-    const isTxIsInProggress = CheckTheTxIsInProgress(vaultData.id);
+    const isTxIsInProggress = CheckTheTxIsInProgress(vaultData?.id);
     if (isTxIsInProggress) return;
-
-
 
     console.log("🔧 [DONE-BUTTON-DEBUG] actions useEffect triggered", {
       actionsLength: actions.length,
       finishedTransaction,
-      hasTransactionSteps: Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0,
+      hasTransactionSteps:
+        Object.keys(transactionStepFeedback).length > 0 ||
+        Object.keys(lastTransactionStepFeedback).length > 0,
       isTransactionStarted,
-      isTransactionProcessing
+      isTransactionProcessing,
     });
-    
+
     // 🔧 CRITICAL FIX: Don't reset action/step if we're in the middle of a transaction
     // This prevents the button label from going back to "Approve" during transaction flow
-    if (!isTransactionStarted && !isTransactionProcessing && !finishedTransaction) {
+    if (
+      !isTransactionStarted &&
+      !isTransactionProcessing &&
+      !finishedTransaction
+    ) {
       console.log("🔧 [DONE-BUTTON-DEBUG] Safe to reset action and step");
       setAction(_action);
       setStep(0);
@@ -685,32 +704,46 @@ export default function InteractionContainer({
         step: 0,
       });
     } else {
-      console.log("🔧 [DONE-BUTTON-DEBUG] NOT resetting action/step - transaction in progress or completed", {
-        isTransactionStarted,
-        isTransactionProcessing,
-        finishedTransaction
-      });
+      console.log(
+        "🔧 [DONE-BUTTON-DEBUG] NOT resetting action/step - transaction in progress or completed",
+        {
+          isTransactionStarted,
+          isTransactionProcessing,
+          finishedTransaction,
+        },
+      );
     }
-    
+
     // Reset transaction processing states when actions change (new vault)
     // Only reset if we're truly changing vaults (not during transaction flow)
-    if (!isTransactionStarted && !isTransactionProcessing && !finishedTransaction) {
+    if (
+      !isTransactionStarted &&
+      !isTransactionProcessing &&
+      !finishedTransaction
+    ) {
       setIsTransactionProcessing(false);
       setIsTransactionStarted(false);
     }
-    
+
     // 🚨 CRITICAL FIX: Don't reset finishedTransaction if we have completed transaction steps
     // This prevents the Done button from disappearing after successful completion
-    const hasCompletedTransactionSteps = Object.keys(transactionStepFeedback).length > 0 || Object.keys(lastTransactionStepFeedback).length > 0;
-    
+    const hasCompletedTransactionSteps =
+      Object.keys(transactionStepFeedback).length > 0 ||
+      Object.keys(lastTransactionStepFeedback).length > 0;
+
     if (!finishedTransaction && !hasCompletedTransactionSteps) {
-      console.log("🔧 [DONE-BUTTON-DEBUG] Resetting finishedTransaction to false (no completed transaction)");
+      console.log(
+        "🔧 [DONE-BUTTON-DEBUG] Resetting finishedTransaction to false (no completed transaction)",
+      );
       setFinishedTransaction(false);
     } else {
-      console.log("🔧 [DONE-BUTTON-DEBUG] NOT resetting finishedTransaction - preserving completed state", {
-        finishedTransaction,
-        hasCompletedTransactionSteps
-      });
+      console.log(
+        "🔧 [DONE-BUTTON-DEBUG] NOT resetting finishedTransaction - preserving completed state",
+        {
+          finishedTransaction,
+          hasCompletedTransactionSteps,
+        },
+      );
     }
   }, [actions, _action, vaultData.id, setAction, setStep]);
 
@@ -722,15 +755,33 @@ export default function InteractionContainer({
     console.log("isTrackingActive:", isTrackingActiveRef.current);
     console.log("finishedTransaction:", finishedTransaction);
     console.log("🔍 [DONE-BUTTON-DEBUG] Effect conditions check:");
-    console.log("🔍 [DONE-BUTTON-DEBUG] - action === undefined:", action === undefined);
-    console.log("🔍 [DONE-BUTTON-DEBUG] - finishedTransaction:", finishedTransaction);
-    console.log("🔍 [DONE-BUTTON-DEBUG] - !crosschainInvestHash:", !crosschainInvestHash);
-    console.log("🔍 [DONE-BUTTON-DEBUG] - isTrackingActiveRef.current:", isTrackingActiveRef.current);
-    
+    console.log(
+      "🔍 [DONE-BUTTON-DEBUG] - action === undefined:",
+      action === undefined,
+    );
+    console.log(
+      "🔍 [DONE-BUTTON-DEBUG] - finishedTransaction:",
+      finishedTransaction,
+    );
+    console.log(
+      "🔍 [DONE-BUTTON-DEBUG] - !crosschainInvestHash:",
+      !crosschainInvestHash,
+    );
+    console.log(
+      "🔍 [DONE-BUTTON-DEBUG] - isTrackingActiveRef.current:",
+      isTrackingActiveRef.current,
+    );
+
     // Only proceed if we have the right conditions
     if (action === undefined || finishedTransaction || !crosschainInvestHash) {
-      console.log("=== SKIPPING TRACKING ===", { action, finishedTransaction, hasHash: !!crosschainInvestHash });
-      console.log("🔍 [DONE-BUTTON-DEBUG] SKIPPING - one of the skip conditions is true");
+      console.log("=== SKIPPING TRACKING ===", {
+        action,
+        finishedTransaction,
+        hasHash: !!crosschainInvestHash,
+      });
+      console.log(
+        "🔍 [DONE-BUTTON-DEBUG] SKIPPING - one of the skip conditions is true",
+      );
       return;
     }
 
@@ -742,16 +793,26 @@ export default function InteractionContainer({
     }
 
     // Check if this is the right action to start tracking
-    const isDepositConfirmed = action === Action.depositConfirmed || action === Action.deposit;
-    const isWithdrawConfirmed = action === Action.withdrawconfirmed || action === Action.withdraw;
-    
+    const isDepositConfirmed =
+      action === Action.depositConfirmed || action === Action.deposit;
+    const isWithdrawConfirmed =
+      action === Action.withdrawconfirmed || action === Action.withdraw;
+
     console.log("🔍 [DONE-BUTTON-DEBUG] Action checks:");
-    console.log("🔍 [DONE-BUTTON-DEBUG] - isDepositConfirmed:", isDepositConfirmed);
-    console.log("🔍 [DONE-BUTTON-DEBUG] - isWithdrawConfirmed:", isWithdrawConfirmed);
-    
+    console.log(
+      "🔍 [DONE-BUTTON-DEBUG] - isDepositConfirmed:",
+      isDepositConfirmed,
+    );
+    console.log(
+      "🔍 [DONE-BUTTON-DEBUG] - isWithdrawConfirmed:",
+      isWithdrawConfirmed,
+    );
+
     if (!isDepositConfirmed && !isWithdrawConfirmed) {
       console.log("=== WRONG ACTION FOR TRACKING ===", action);
-      console.log("🔍 [DONE-BUTTON-DEBUG] SKIPPING - wrong action for tracking");
+      console.log(
+        "🔍 [DONE-BUTTON-DEBUG] SKIPPING - wrong action for tracking",
+      );
       return;
     }
 
@@ -769,42 +830,60 @@ export default function InteractionContainer({
 
     // Skip tracking for Type 1 transactions
     if (isUserOnZetachain && isVaultOnZetachain) {
-      console.log('[BlockPI Simple] Type 1 - moving directly to completion');
-      console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 transaction - setting finishedTransaction to true directly");
+      console.log("[BlockPI Simple] Type 1 - moving directly to completion");
+      console.log(
+        "🎯 [DONE-BUTTON-DEBUG] Type 1 transaction - setting finishedTransaction to true directly",
+      );
       setTimeout(() => {
-        const finalAction = transactionType === 'deposit' ? Action.deposited : Action.withdrew;
-        const nextStep = actions.findIndex(el => el === finalAction);
-        console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 finalAction:", finalAction, `(${Action[finalAction]})`);
+        const finalAction =
+          transactionType === "deposit" ? Action.deposited : Action.withdrew;
+        const nextStep = actions.findIndex((el) => el === finalAction);
+        console.log(
+          "🎯 [DONE-BUTTON-DEBUG] Type 1 finalAction:",
+          finalAction,
+          `(${Action[finalAction]})`,
+        );
         console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 nextStep:", nextStep);
         if (nextStep >= 0) {
           setAction(finalAction);
           setStep(nextStep);
-          console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 - Calling setFinishedTransaction(true)");
+          console.log(
+            "🎯 [DONE-BUTTON-DEBUG] Type 1 - Calling setFinishedTransaction(true)",
+          );
           setFinishedTransaction(true);
 
           updateLocalStorageObject(vaultData.id, {
             action: finalAction,
             step: nextStep,
             finishedTransaction: true,
-            transactionCompleted: true
+            transactionCompleted: true,
           });
-          console.log("🎯 [DONE-BUTTON-DEBUG] Type 1 - Called setFinishedTransaction(true) - Done button should appear");
-          
+          console.log(
+            "🎯 [DONE-BUTTON-DEBUG] Type 1 - Called setFinishedTransaction(true) - Done button should appear",
+          );
+
           // 🔄 NEW: Trigger automatic balance refresh for Type 1 transactions
-          console.log('🎯 [AUTO-REFRESH-TYPE1] Type 1 transaction completed - triggering automatic balance refresh...', {
-            finalAction,
-            transactionType,
-            timestamp: new Date().toISOString()
-          });
-          
+          console.log(
+            "🎯 [AUTO-REFRESH-TYPE1] Type 1 transaction completed - triggering automatic balance refresh...",
+            {
+              finalAction,
+              transactionType,
+              timestamp: new Date().toISOString(),
+            },
+          );
+
           // Set transactionCompleted to true to trigger balance refresh
+          console.log("setTransactionCompleted useEffect");
           setTransactionCompleted(true);
-          
+
           // Also call manual refresh for good measure
           setTimeout(() => {
-            console.log('💰 [AUTO-REFRESH-TYPE1] Calling manual refreshBalance after Type 1 transaction completion...', {
-              timestamp: new Date().toISOString()
-            });
+            console.log(
+              "💰 [AUTO-REFRESH-TYPE1] Calling manual refreshBalance after Type 1 transaction completion...",
+              {
+                timestamp: new Date().toISOString(),
+              },
+            );
             refreshBalance();
           }, 2000); // Wait 2 seconds for the blockchain to update
         }
@@ -820,14 +899,29 @@ export default function InteractionContainer({
         console.log("[BlockPI Progressive] Starting transaction tracking...");
 
         // Define action mapping once
-        const actionMapping = isType2 
-          ? (transactionType === 'deposit' 
-              ? [Action.deposit, Action.crosschainInvest, Action.deposited]
-              : [Action.withdraw, Action.DivestSent, Action.withdrew])
-          : (transactionType === 'deposit' 
-              ? [Action.deposit, Action.depositConfirmed, Action.crosschainInvest, Action.FundsInvest, Action.ReturnFundsToUserSent, Action.FundsReturned, Action.deposited]
-              : [Action.withdraw, Action.withdrawconfirmed, Action.DivestSent, Action.FundsDivested, Action.ReturnFundsToUserSent, Action.withdrew]);
-        
+        const actionMapping = isType2
+          ? transactionType === "deposit"
+            ? [Action.deposit, Action.crosschainInvest, Action.deposited]
+            : [Action.withdraw, Action.DivestSent, Action.withdrew]
+          : transactionType === "deposit"
+            ? [
+                Action.deposit,
+                Action.depositConfirmed,
+                Action.crosschainInvest,
+                Action.FundsInvest,
+                Action.ReturnFundsToUserSent,
+                Action.FundsReturned,
+                Action.deposited,
+              ]
+            : [
+                Action.withdraw,
+                Action.withdrawconfirmed,
+                Action.DivestSent,
+                Action.FundsDivested,
+                Action.ReturnFundsToUserSent,
+                Action.withdrew,
+              ];
+
         // Define callback for real-time step updates
         const onStepComplete = (stepIndex: number, stepData: any) => {
           console.log(
@@ -839,10 +933,10 @@ export default function InteractionContainer({
           if (!actionKey) return;
 
           // Update just this step in real-time
-          setTransactionStepFeedback((prev) => {
+          useTransactionStore.setState((prev) => {
             updateLocalStorageObject(vaultData.id, {
               transactionStepFeedback: {
-                ...prev,
+                ...prev.transactionStepFeedback,
                 [actionKey]: {
                   label: transactionType === "deposit" ? "Deposit" : "Withdraw",
                   description: stepData.description,
@@ -859,18 +953,20 @@ export default function InteractionContainer({
             });
 
             return {
-              ...prev,
-              [actionKey]: {
-                label: transactionType === "deposit" ? "Deposit" : "Withdraw",
-                description: stepData.description,
-                status:
-                  stepData.status === "completed"
-                    ? TransactionStepStatus.completed
-                    : stepData.status === "error"
-                      ? TransactionStepStatus.error
-                      : TransactionStepStatus.processing,
-                txHash: stepData.txHash,
-                isWaitingTooLong: stepData.isWaitingTooLong,
+              transactionStepFeedback: {
+                ...prev.transactionStepFeedback,
+                [actionKey]: {
+                  label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+                  description: stepData.description,
+                  status:
+                    stepData.status === "completed"
+                      ? TransactionStepStatus.completed
+                      : stepData.status === "error"
+                        ? TransactionStepStatus.error
+                        : TransactionStepStatus.processing,
+                  txHash: stepData.txHash,
+                  isWaitingTooLong: stepData.isWaitingTooLong,
+                },
               },
             };
           });
@@ -895,7 +991,10 @@ export default function InteractionContainer({
           crosschainInvestHash,
           transactionType,
           onStepComplete,
-          { isType2, totalSteps: isType2 ? 3 : (transactionType === 'deposit' ? 6 : 6) },
+          {
+            isType2,
+            totalSteps: isType2 ? 3 : transactionType === "deposit" ? 6 : 6,
+          },
           activeChain.id,
           vaultData.protocol.chainId,
         );
@@ -912,30 +1011,44 @@ export default function InteractionContainer({
         );
 
         if (result.success) {
-          console.log("🎉 [DONE-BUTTON-DEBUG] BlockPI tracking SUCCESS - setting finishedTransaction to true");
-          console.log("🎉 [DONE-BUTTON-DEBUG] transactionType:", transactionType);
-          console.log("🎉 [DONE-BUTTON-DEBUG] About to call setFinishedTransaction(true)");
-          
+          console.log(
+            "🎉 [DONE-BUTTON-DEBUG] BlockPI tracking SUCCESS - setting finishedTransaction to true",
+          );
+          console.log(
+            "🎉 [DONE-BUTTON-DEBUG] transactionType:",
+            transactionType,
+          );
+          console.log(
+            "🎉 [DONE-BUTTON-DEBUG] About to call setFinishedTransaction(true)",
+          );
+
           // Move to final completed state
-          const finalAction = transactionType === 'deposit' ? Action.deposited : Action.withdrew;
-          console.log("🎉 [DONE-BUTTON-DEBUG] finalAction:", finalAction, `(${Action[finalAction]})`);
-          
+          const finalAction =
+            transactionType === "deposit" ? Action.deposited : Action.withdrew;
+          console.log(
+            "🎉 [DONE-BUTTON-DEBUG] finalAction:",
+            finalAction,
+            `(${Action[finalAction]})`,
+          );
+
           setAction(finalAction);
           setStep(actionMapping.length - 1);
 
           // IMPORTANT: Capture current transaction steps before switching to finished state
-          setTransactionStepFeedback((prev) => {
-            // Save the current feedback to lastTransactionStepFeedback so steps stay visible
-            setLastTransactionStepFeedback(prev);
+          useTransactionStore.setState((prev) => {
+            setLastTransactionStepFeedback(prev.transactionStepFeedback);
             updateLocalStorageObject(vaultData.id, {
-              transactionStepFeedback: prev,
-              lastTransactionStepFeedback: prev,
+              transactionStepFeedback: prev.transactionStepFeedback,
+              lastTransactionStepFeedback: prev.transactionStepFeedback,
             });
-            return prev;
+
+            return { transactionStepFeedback: prev.transactionStepFeedback };
           });
 
           setFinishedTransaction(true);
-          console.log("🎉 [DONE-BUTTON-DEBUG] Called setFinishedTransaction(true) - Done button should appear");
+          console.log(
+            "🎉 [DONE-BUTTON-DEBUG] Called setFinishedTransaction(true) - Done button should appear",
+          );
           setIsTransactionProcessing(false);
 
           updateLocalStorageObject(vaultData.id, {
@@ -945,25 +1058,31 @@ export default function InteractionContainer({
             isTransactionProcessing: false,
           });
 
-          
           // 🔄 NEW: Trigger automatic balance refresh when transaction completes
-          console.log('🎯 [AUTO-REFRESH] Transaction completed successfully - triggering automatic balance refresh...', {
-            finalAction,
-            transactionType,
-            timestamp: new Date().toISOString()
-          });
-          
+          console.log(
+            "🎯 [AUTO-REFRESH] Transaction completed successfully - triggering automatic balance refresh...",
+            {
+              finalAction,
+              transactionType,
+              timestamp: new Date().toISOString(),
+            },
+          );
+
           // Set transactionCompleted to true to trigger balance refresh
+          console.log("setTransactionCompleted result.success");
           setTransactionCompleted(true);
-          
+
           // Also call manual refresh for good measure
           setTimeout(() => {
-            console.log('💰 [AUTO-REFRESH] Calling manual refreshBalance after transaction completion...', {
-              timestamp: new Date().toISOString()
-            });
+            console.log(
+              "💰 [AUTO-REFRESH] Calling manual refreshBalance after transaction completion...",
+              {
+                timestamp: new Date().toISOString(),
+              },
+            );
             refreshBalance();
           }, 2000); // Wait 2 seconds for the blockchain to update
-          
+
           trackEvent("Transaction Crosschain Complete", {
             vaultSymbol: vaultData.symbol,
             vault: vaultData.id,
@@ -976,27 +1095,35 @@ export default function InteractionContainer({
             result.error,
           );
 
-          console.error('[BlockPI Progressive] Transaction failed:', result.error);
-          console.log("❌ [DONE-BUTTON-DEBUG] BlockPI tracking FAILED - setting finishedTransaction to true for error case");
-          
+          console.error(
+            "[BlockPI Progressive] Transaction failed:",
+            result.error,
+          );
+          console.log(
+            "❌ [DONE-BUTTON-DEBUG] BlockPI tracking FAILED - setting finishedTransaction to true for error case",
+          );
+
           // IMPORTANT: Capture current transaction steps before clearing state (for failed transactions)
-          setTransactionStepFeedback((prev) => {
-            // Save the current feedback to lastTransactionStepFeedback so error steps stay visible
-            console.log("set error in state");
-            setLastTransactionStepFeedback(prev);
+          useTransactionStore.setState((prev) => {
+            setLastTransactionStepFeedback(prev.transactionStepFeedback);
             updateLocalStorageObject(vaultData.id, {
-              transactionStepFeedback: prev,
-              lastTransactionStepFeedback: prev,
+              transactionStepFeedback: prev.transactionStepFeedback,
+              lastTransactionStepFeedback: prev.transactionStepFeedback,
               finishedTransaction: true,
               isTransactionProcessing: false,
               isTransactionStarted: false,
             });
-            return prev;
+
+            return { transactionStepFeedback: prev.transactionStepFeedback };
           });
-          
-          console.log("❌ [DONE-BUTTON-DEBUG] Calling setFinishedTransaction(true) for failed transaction");
+
+          console.log(
+            "❌ [DONE-BUTTON-DEBUG] Calling setFinishedTransaction(true) for failed transaction",
+          );
           setFinishedTransaction(true); // Show "Done" button even for failures
-          console.log("❌ [DONE-BUTTON-DEBUG] Called setFinishedTransaction(true) - Done button should appear for failed transaction");
+          console.log(
+            "❌ [DONE-BUTTON-DEBUG] Called setFinishedTransaction(true) - Done button should appear for failed transaction",
+          );
           setIsTransactionProcessing(false);
           setIsTransactionStarted(false);
         }
@@ -1039,20 +1166,31 @@ export default function InteractionContainer({
 
   // Track finishedTransaction state changes
   useEffect(() => {
-    console.log('🔍 [DONE-BUTTON-DEBUG] finishedTransaction state changed to:', finishedTransaction);
+    console.log(
+      "🔍 [DONE-BUTTON-DEBUG] finishedTransaction state changed to:",
+      finishedTransaction,
+    );
     if (finishedTransaction) {
-      console.log('🔍 [DONE-BUTTON-DEBUG] finishedTransaction is now TRUE - Done button should be visible');
-      console.log('🔍 [DONE-BUTTON-DEBUG] Current state snapshot:', {
+      console.log(
+        "🔍 [DONE-BUTTON-DEBUG] finishedTransaction is now TRUE - Done button should be visible",
+      );
+      console.log("🔍 [DONE-BUTTON-DEBUG] Current state snapshot:", {
         finishedTransaction,
         transactionStepFeedbackKeys: Object.keys(transactionStepFeedback),
-        lastTransactionStepFeedbackKeys: Object.keys(lastTransactionStepFeedback),
+        lastTransactionStepFeedbackKeys: Object.keys(
+          lastTransactionStepFeedback,
+        ),
         isTransactionProcessing,
         isTransactionStarted,
-        crosschainInvestHash: !!crosschainInvestHash
+        crosschainInvestHash: !!crosschainInvestHash,
       });
     } else {
-      console.log('🚨 [DONE-BUTTON-DEBUG] finishedTransaction was set to FALSE - this is why Done button disappears!');
-      console.trace('🚨 [DONE-BUTTON-DEBUG] Stack trace for finishedTransaction=false:');
+      console.log(
+        "🚨 [DONE-BUTTON-DEBUG] finishedTransaction was set to FALSE - this is why Done button disappears!",
+      );
+      console.trace(
+        "🚨 [DONE-BUTTON-DEBUG] Stack trace for finishedTransaction=false:",
+      );
     }
   }, [finishedTransaction]);
 
@@ -1158,11 +1296,7 @@ function Interaction({
   setInputBalance: Function;
   step: number;
   transactionStepFeedback: TransactionStepMessages;
-  setTransactionStepFeedback: (
-    newData:
-      | TransactionStepMessages
-      | ((prev: TransactionStepMessages) => TransactionStepMessages),
-  ) => void;
+  setTransactionStepFeedback: (newData: TransactionStepMessages) => void;
   label: string;
   setLabel: (label: string) => void;
   errorMessage: string;
@@ -1203,8 +1337,6 @@ function Interaction({
       }
     },
   });
-
-  console.log(activeAccount, 'activeAccount root')
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
     actionKey: Action,
@@ -1216,11 +1348,8 @@ function Interaction({
       `[Local Feedback] Updating ${actionKey} with status: ${status}`,
     );
 
-    setTransactionStepFeedback((prev) => {
-      // CRITICAL FIX: Preserve existing completed steps
-      const updated = { ...prev };
-
-      // Only update the specific action, don't overwrite the entire state
+    useTransactionStore.setState((prev) => {
+      const updated = { ...prev.transactionStepFeedback };
       updated[actionKey] = {
         label:
           actionKey === Action.depositApprove
@@ -1232,30 +1361,35 @@ function Interaction({
         status,
         txHash: txHash || updated[actionKey]?.txHash, // Preserve existing txHash if none provided
       };
-
-      console.log(
-        `[Local Feedback] Updated ${actionKey} while preserving other steps:`,
-        updated,
-      );
-
       updateLocalStorageObject(vaultData.id, {
         transactionStepFeedback: updated,
       });
-      return updated;
+
+      return { transactionStepFeedback: updated };
     });
   }
 
   async function interactionPostHook(success: boolean) {
     console.log("=== INTERACTION POST HOOK CALLED ===");
     console.log("🔍 [POST-HOOK] Success:", success);
-    console.log("🎯 [POST-HOOK] Current action:", action, `(${Action[action]})`);
+    console.log(
+      "🎯 [POST-HOOK] Current action:",
+      action,
+      `(${Action[action]})`,
+    );
     console.log("📍 [POST-HOOK] Current step:", step);
-    console.log("📋 [POST-HOOK] Actions array:", actions.map((a, i) => `${i}: ${Action[a]}`));
-    console.log("➡️ [POST-HOOK] Next action would be:", actions[step + 1] ? Action[actions[step + 1]] : 'undefined');
-    
+    console.log(
+      "📋 [POST-HOOK] Actions array:",
+      actions.map((a, i) => `${i}: ${Action[a]}`),
+    );
+    console.log(
+      "➡️ [POST-HOOK] Next action would be:",
+      actions[step + 1] ? Action[actions[step + 1]] : "undefined",
+    );
+
     if (success) {
       console.log("✅ [POST-HOOK] === SUCCESS BRANCH ===");
-      
+
       // Check approval flow
       if (actions[step + 1] == Action.depositApproveConfirmed) {
         console.log("💰 [POST-HOOK] === APPROVAL CONFIRMED BRANCH ===");
@@ -1286,112 +1420,172 @@ function Interaction({
           });
         }, 100);
       }
-      
+
       // Check deposit flow
       console.log("🔍 [POST-HOOK] Checking deposit conditions:");
-      console.log("🔍 [POST-HOOK] - action == Action.deposit:", action == Action.deposit);
-      console.log("🔍 [POST-HOOK] - actions[step + 1]:", actions[step + 1], actions[step + 1] ? `(${Action[actions[step + 1]]})` : 'undefined');
-      console.log("🔍 [POST-HOOK] - Action.depositConfirmed:", Action.depositConfirmed);
-      console.log("🔍 [POST-HOOK] - actions[step + 1] == Action.depositConfirmed:", actions[step + 1] == Action.depositConfirmed);
-      
+      console.log(
+        "🔍 [POST-HOOK] - action == Action.deposit:",
+        action == Action.deposit,
+      );
+      console.log(
+        "🔍 [POST-HOOK] - actions[step + 1]:",
+        actions[step + 1],
+        actions[step + 1] ? `(${Action[actions[step + 1]]})` : "undefined",
+      );
+      console.log(
+        "🔍 [POST-HOOK] - Action.depositConfirmed:",
+        Action.depositConfirmed,
+      );
+      console.log(
+        "🔍 [POST-HOOK] - actions[step + 1] == Action.depositConfirmed:",
+        actions[step + 1] == Action.depositConfirmed,
+      );
+
       // 🔧 CRITICAL FIX: Handle both Type 2 and Type 4 deposit transactions
       // Type 2: action=deposit, next might be crosschainInvest or deposited directly
       // Type 4: action=deposit, next should be depositConfirmed
       const isDepositFlow = action == Action.deposit;
       const hasDepositConfirmed = actions[step + 1] == Action.depositConfirmed;
       const isType2Flow = isDepositFlow && !hasDepositConfirmed; // Type 2 doesn't have depositConfirmed
-      
+
       console.log("🔍 [POST-HOOK] Flow analysis:");
       console.log("🔍 [POST-HOOK] - isDepositFlow:", isDepositFlow);
       console.log("🔍 [POST-HOOK] - hasDepositConfirmed:", hasDepositConfirmed);
       console.log("🔍 [POST-HOOK] - isType2Flow:", isType2Flow);
-      
+
       if (isDepositFlow && (hasDepositConfirmed || isType2Flow)) {
-        console.log("🏦 [POST-HOOK] === DEPOSIT TO DEPOSIT CONFIRMED TRANSITION ===");
-        console.log('📍 [POST-HOOK] Current step:', step, 'Next step:', step + 1);
-        console.log('➡️ [POST-HOOK] Next action should be:', actions[step + 1], `(${Action[actions[step + 1]]})`);
-        
+        console.log(
+          "🏦 [POST-HOOK] === DEPOSIT TO DEPOSIT CONFIRMED TRANSITION ===",
+        );
+        console.log(
+          "📍 [POST-HOOK] Current step:",
+          step,
+          "Next step:",
+          step + 1,
+        );
+        console.log(
+          "➡️ [POST-HOOK] Next action should be:",
+          actions[step + 1],
+          `(${Action[actions[step + 1]]})`,
+        );
+
         // Update deposit feedback to completed before moving to next step
         const isUserOnZetachain = isZetachain(activeChain.id);
         const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
-        
+
         console.log("🔍 [POST-HOOK] Chain analysis:");
         console.log("🔍 [POST-HOOK] - isUserOnZetachain:", isUserOnZetachain);
         console.log("🔍 [POST-HOOK] - isVaultOnZetachain:", isVaultOnZetachain);
         console.log("🔍 [POST-HOOK] - activeChain.id:", activeChain.id);
         console.log("🔍 [POST-HOOK] - activeChain.name:", activeChain.name);
-        
+
         let successMessage;
         if (isUserOnZetachain && !isVaultOnZetachain) {
           // Type 2: Direct deposit from Zetachain to vault with non-Zetachain strategy
           successMessage = "Initial deposit transaction on Zetachain completed";
-          console.log('🔗 [POST-HOOK] Type 2 detected - BlockPI should start after action change');
+          console.log(
+            "🔗 [POST-HOOK] Type 2 detected - BlockPI should start after action change",
+          );
         } else if (isUserOnZetachain && isVaultOnZetachain) {
           // Type 1: Direct deposit from Zetachain to vault with Zetachain strategy
           successMessage = "Deposit transaction completed";
-          console.log('✅ [POST-HOOK] Type 1 detected - no BlockPI needed');
+          console.log("✅ [POST-HOOK] Type 1 detected - no BlockPI needed");
         } else {
           // Type 3 & 4: Cross-chain deposits (including Solana)
-          const chainName = activeChain.name || 'local chain';
+          const chainName = activeChain.name || "local chain";
           successMessage = `Initial deposit transaction on ${chainName} completed`;
-          console.log('🌐 [POST-HOOK] Type 3/4 detected - BlockPI should start after action change');
+          console.log(
+            "🌐 [POST-HOOK] Type 3/4 detected - BlockPI should start after action change",
+          );
         }
-        
+
         console.log("💬 [POST-HOOK] Success message:", successMessage);
         console.log("🔗 [POST-HOOK] lastEventTxHash:", lastEventTxHash);
-        
+
         // CRITICAL FIX: Pass the transaction hash from lastEventTxHash for completed feedback
         updateLocalTransactionFeedback(
           Action.deposit,
           TransactionStepStatus.completed,
           successMessage,
-          lastEventTxHash // Pass the transaction hash to show in UI
+          lastEventTxHash, // Pass the transaction hash to show in UI
         );
 
         // Reset transaction processing state - BlockPI will take over
         setIsTransactionProcessing(false);
         console.log("⏸️ [POST-HOOK] Set isTransactionProcessing to false");
-        
+
         if (hasDepositConfirmed) {
           // Type 4 flow: move to depositConfirmed
           const nextStep = step + 1;
-          console.log('➡️ [POST-HOOK] Type 4: Setting action to:', actions[nextStep], `(${Action[actions[nextStep]]})`, 'and step to:', nextStep);
-          
+          console.log(
+            "➡️ [POST-HOOK] Type 4: Setting action to:",
+            actions[nextStep],
+            `(${Action[actions[nextStep]]})`,
+            "and step to:",
+            nextStep,
+          );
+
           // CRITICAL FIX: Ensure the next action exists before updating state
           if (actions[nextStep] === undefined) {
-            console.error(`🚨 [POST-HOOK] CRITICAL ERROR: Action at index ${nextStep} is undefined. actions array:`, actions);
+            console.error(
+              `🚨 [POST-HOOK] CRITICAL ERROR: Action at index ${nextStep} is undefined. actions array:`,
+              actions,
+            );
             return; // Don't update state if the next action is undefined
           }
-          
+
           // Set both state updates in a single render cycle to prevent inconsistency
           setTimeout(() => {
-            console.log(`✅ [POST-HOOK] SAFE UPDATE: Setting action to ${Action[actions[nextStep]]} and step to ${nextStep}`);
+            console.log(
+              `✅ [POST-HOOK] SAFE UPDATE: Setting action to ${Action[actions[nextStep]]} and step to ${nextStep}`,
+            );
             setAction(actions[nextStep]);
             setStep(nextStep);
-            console.log("🔄 [POST-HOOK] Action and step updated in sync - this should trigger BlockPI effect");
+            console.log(
+              "🔄 [POST-HOOK] Action and step updated in sync - this should trigger BlockPI effect",
+            );
           }, 50);
         } else if (isType2Flow) {
           // Type 2 flow: transition directly to depositConfirmed for BlockPI tracking
-          console.log('➡️ [POST-HOOK] Type 2: Setting action to depositConfirmed for BlockPI tracking');
+          console.log(
+            "➡️ [POST-HOOK] Type 2: Setting action to depositConfirmed for BlockPI tracking",
+          );
           setTimeout(() => {
-            console.log(`✅ [POST-HOOK] Type 2: Setting action to depositConfirmed and keeping step at ${step}`);
+            console.log(
+              `✅ [POST-HOOK] Type 2: Setting action to depositConfirmed and keeping step at ${step}`,
+            );
             setAction(Action.depositConfirmed);
             // Don't increment step for Type 2, let BlockPI handle the progression
-            console.log("🔄 [POST-HOOK] Type 2: Action set to depositConfirmed - this should trigger BlockPI effect");
+            console.log(
+              "🔄 [POST-HOOK] Type 2: Action set to depositConfirmed - this should trigger BlockPI effect",
+            );
           }, 50);
         }
       } else {
-        console.log("⏭️ [POST-HOOK] Deposit condition not met, checking withdraw...");
+        console.log(
+          "⏭️ [POST-HOOK] Deposit condition not met, checking withdraw...",
+        );
       }
-      
+
       // Check withdraw flow
       console.log("🔍 [POST-HOOK] Checking withdraw conditions:");
-      console.log("🔍 [POST-HOOK] - action == Action.withdraw:", action == Action.withdraw);
-      console.log("🔍 [POST-HOOK] - actions[step + 1] == Action.withdrawconfirmed:", actions[step + 1] == Action.withdrawconfirmed);
-      
-      if (action == Action.withdraw && actions[step + 1] == Action.withdrawconfirmed) {
-        console.log("🏧 [POST-HOOK] === WITHDRAW TO WITHDRAW CONFIRMED TRANSITION ===");
-        
+      console.log(
+        "🔍 [POST-HOOK] - action == Action.withdraw:",
+        action == Action.withdraw,
+      );
+      console.log(
+        "🔍 [POST-HOOK] - actions[step + 1] == Action.withdrawconfirmed:",
+        actions[step + 1] == Action.withdrawconfirmed,
+      );
+
+      if (
+        action == Action.withdraw &&
+        actions[step + 1] == Action.withdrawconfirmed
+      ) {
+        console.log(
+          "🏧 [POST-HOOK] === WITHDRAW TO WITHDRAW CONFIRMED TRANSITION ===",
+        );
+
         // Update withdraw feedback to completed before moving to next step
         const isUserOnZetachain = isZetachain(activeChain.id);
         const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
@@ -1406,18 +1600,18 @@ function Interaction({
           successMessage = "Withdraw transaction completed";
         } else {
           // Type 3 & 4: Cross-chain withdrawals (including Solana)
-          const chainName = activeChain.name || 'local chain';
+          const chainName = activeChain.name || "local chain";
           successMessage = `Initial withdraw transaction on ${chainName} completed`;
         }
-        
+
         console.log("💬 [POST-HOOK] Withdraw success message:", successMessage);
-        
+
         // CRITICAL FIX: Pass the transaction hash from lastEventTxHash for completed feedback
         updateLocalTransactionFeedback(
           Action.withdraw,
           TransactionStepStatus.completed,
           successMessage,
-          lastEventTxHash // Pass the transaction hash to show in UI
+          lastEventTxHash, // Pass the transaction hash to show in UI
         );
 
         // Reset transaction processing state - BlockPI will take over
@@ -1434,23 +1628,34 @@ function Interaction({
       } else {
         console.log("⏭️ [POST-HOOK] Withdraw condition not met");
       }
-      
+
       // If no conditions were met, log it
-      const depositConditionMet = action == Action.deposit && (actions[step + 1] == Action.depositConfirmed || !actions.includes(Action.depositConfirmed));
-      if (!(actions[step + 1] == Action.depositApproveConfirmed) && 
-          !depositConditionMet &&
-          !(action == Action.withdraw && actions[step + 1] == Action.withdrawconfirmed)) {
+      const depositConditionMet =
+        action == Action.deposit &&
+        (actions[step + 1] == Action.depositConfirmed ||
+          !actions.includes(Action.depositConfirmed));
+      if (
+        !(actions[step + 1] == Action.depositApproveConfirmed) &&
+        !depositConditionMet &&
+        !(
+          action == Action.withdraw &&
+          actions[step + 1] == Action.withdrawconfirmed
+        )
+      ) {
         console.log("🤔 [POST-HOOK] NO SUCCESS CONDITIONS MET!");
-        console.log("🤔 [POST-HOOK] This might be why the UI shows failure even though transaction succeeded");
+        console.log(
+          "🤔 [POST-HOOK] This might be why the UI shows failure even though transaction succeeded",
+        );
         console.log("🤔 [POST-HOOK] Debug info:", {
           action: Action[action],
           step,
-          nextAction: actions[step + 1] ? Action[actions[step + 1]] : 'undefined',
-          actions: actions.map(a => Action[a]),
-          depositConditionMet
+          nextAction: actions[step + 1]
+            ? Action[actions[step + 1]]
+            : "undefined",
+          actions: actions.map((a) => Action[a]),
+          depositConditionMet,
         });
       }
-      
     } else {
       console.log("❌ [POST-HOOK] === FAILURE BRANCH ===");
       // Handle local transaction failures
@@ -1480,23 +1685,31 @@ function Interaction({
       }
 
       // Reset transaction state to allow retry
-      setIsTransactionProcessing(false);
-      setIsTransactionStarted(false);
-
       updateLocalStorageObject(vaultData.id, {
         isTransactionProcessing: false,
         isTransactionStarted: false,
+        transactionStepFeedback: {}
       });
+      setIsTransactionProcessing(false);
+      setIsTransactionStarted(false);
+      setTransactionStepFeedback({})
     }
-    
+
     console.log("🏁 [POST-HOOK] === INTERACTION POST HOOK COMPLETED ===");
   }
 
   const handleMainAction = async () => {
     console.log("=== HANDLE MAIN ACTION CALLED ===");
-    console.log("🎯 [MAIN-ACTION] Current action:", action, `(${Action[action]})`);
-    console.log("🔄 [MAIN-ACTION] isTransactionProcessing:", isTransactionProcessing);
-    
+    console.log(
+      "🎯 [MAIN-ACTION] Current action:",
+      action,
+      `(${Action[action]})`,
+    );
+    console.log(
+      "🔄 [MAIN-ACTION] isTransactionProcessing:",
+      isTransactionProcessing,
+    );
+
     if (isTransactionProcessing) {
       console.log("⏸️ [MAIN-ACTION] === EARLY RETURN - ALREADY PROCESSING ===");
       return;
@@ -1557,7 +1770,7 @@ function Interaction({
         // Type 3 & 4: Cross-chain deposits
         description = `Initial deposit transaction on ${activeChain.name} in progress`;
       }
-      
+
       console.log("🏦 [MAIN-ACTION] Deposit description:", description);
       updateLocalTransactionFeedback(
         action,
@@ -1582,7 +1795,7 @@ function Interaction({
         // Type 3 & 4: Cross-chain withdrawals
         description = `Initial withdraw transaction on ${activeChain.name} in progress`;
       }
-      
+
       console.log("🏧 [MAIN-ACTION] Withdraw description:", description);
       updateLocalTransactionFeedback(
         action,
@@ -1597,10 +1810,17 @@ function Interaction({
     console.log("📋 [MAIN-ACTION] - inputBalance:", inputBalance.formatted);
     console.log("📋 [MAIN-ACTION] - inputToken:", inputToken.symbol);
     console.log("📋 [MAIN-ACTION] - activeAccount:", activeAccount?.address);
-    console.log("📋 [MAIN-ACTION] - walletContext public key:", walletContext.publicKey?.toBase58());
-    console.log("📋 [MAIN-ACTION] - activeChain:", activeChain.name, `(${activeChain.id})`);
+    console.log(
+      "📋 [MAIN-ACTION] - walletContext public key:",
+      walletContext.publicKey?.toBase58(),
+    );
+    console.log(
+      "📋 [MAIN-ACTION] - activeChain:",
+      activeChain.name,
+      `(${activeChain.id})`,
+    );
     console.log("📋 [MAIN-ACTION] - action:", Action[action]);
-    
+
     const success = await handleInteraction(
       vaultData,
       inputBalance,
@@ -1616,29 +1836,35 @@ function Interaction({
       setLastEventTxHash,
       sendUserOperation,
     )();
-    
+
     console.log("✅ [MAIN-ACTION] === HANDLE INTERACTION COMPLETED ===");
     console.log("🎯 [MAIN-ACTION] Success result:", success);
     console.log("🆔 [MAIN-ACTION] Success result type:", typeof success);
     console.log("🔢 [MAIN-ACTION] Success result as boolean:", !!success);
-    
+
     console.log("📞 [MAIN-ACTION] === CALLING INTERACTION POST HOOK ===");
     await interactionPostHook(!!success);
     console.log("🏁 [MAIN-ACTION] === MAIN ACTION COMPLETED ===");
   };
 
   const handleDone = useCallback(() => {
-    console.log('[UI] handleDone called - clearing all transaction state');
-    console.log('🎯 [DONE-BUTTON-DEBUG] handleDone function executed - this means Done button was clicked!');
-    console.log('🎯 [TRANSACTION-COMPLETE] User clicked Done button, starting cleanup...', {
-      timestamp: new Date().toISOString(),
-      transactionStepFeedback: Object.keys(transactionStepFeedback).length,
-      lastTransactionStepFeedback: Object.keys(lastTransactionStepFeedback).length,
-      crosschainInvestHash: !!crosschainInvestHash,
-      isTransactionProcessing,
-      finishedTransaction
-    });
-    
+    console.log("[UI] handleDone called - clearing all transaction state");
+    console.log(
+      "🎯 [DONE-BUTTON-DEBUG] handleDone function executed - this means Done button was clicked!",
+    );
+    console.log(
+      "🎯 [TRANSACTION-COMPLETE] User clicked Done button, starting cleanup...",
+      {
+        timestamp: new Date().toISOString(),
+        transactionStepFeedback: Object.keys(transactionStepFeedback).length,
+        lastTransactionStepFeedback: Object.keys(lastTransactionStepFeedback)
+          .length,
+        crosschainInvestHash: !!crosschainInvestHash,
+        isTransactionProcessing,
+        finishedTransaction,
+      },
+    );
+
     // Mark component as inactive to prevent any ongoing BlockPI updates
     isComponentActiveRef.current = false;
     // Also stop any active tracking
@@ -1648,12 +1874,15 @@ function Interaction({
     setLastTransactionStepFeedback({});
     setTransactionStepFeedback({});
     setFinishedTransaction(false);
-    
-    console.log('🔄 [TRANSACTION-COMPLETE] Setting transactionCompleted to true - this should trigger balance refresh...', {
-      timestamp: new Date().toISOString()
-    });
+
+    console.log(
+      "🔄 [TRANSACTION-COMPLETE] Setting transactionCompleted to true - this should trigger balance refresh...",
+      {
+        timestamp: new Date().toISOString(),
+      },
+    );
     setTransactionCompleted(true);
-    
+
     setIsTransactionProcessing(false);
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
@@ -1673,15 +1902,21 @@ function Interaction({
     // Reactivate component after clearing
     setTimeout(() => {
       isComponentActiveRef.current = true;
-      console.log('⏰ [TRANSACTION-COMPLETE] Component reactivated after timeout', {
-        timestamp: new Date().toISOString()
-      });
+      console.log(
+        "⏰ [TRANSACTION-COMPLETE] Component reactivated after timeout",
+        {
+          timestamp: new Date().toISOString(),
+        },
+      );
     }, 100);
 
     // Refresh balance
-    console.log('💰 [TRANSACTION-COMPLETE] Calling refreshBalance manually...', {
-      timestamp: new Date().toISOString()
-    });
+    console.log(
+      "💰 [TRANSACTION-COMPLETE] Calling refreshBalance manually...",
+      {
+        timestamp: new Date().toISOString(),
+      },
+    );
     refreshBalance();
     console.log("[UI] All transaction state cleared, component reactivated");
   }, [refreshBalance]);
@@ -1692,14 +1927,7 @@ function Interaction({
     }
     prevLebel.current = label;
   }, [label, handleDone]);
-    
-    console.log('[UI] All transaction state cleared, component reactivated');
-    console.log('✅ [TRANSACTION-COMPLETE] Done button processing completed!', {
-      timestamp: new Date().toISOString()
-    });
-  
 
-  
   return (
     <>
       {!hideStepsDisplay && (
@@ -1721,7 +1949,7 @@ function Interaction({
           Done
         </Button>
       ) : (
-          (() => {  
+        (() => {
           const isDisabledByProcessing = isTransactionProcessing;
           const isDisabledByHash =
             crosschainInvestHash?.length > 0 && !finishedTransaction;
@@ -1730,7 +1958,7 @@ function Interaction({
             !inputBalance.formatted ||
             Number(inputBalance.formatted) <= 0 ||
             !!errorMessage;
-            
+
           const isDisabled =
             isDisabledByProcessing ||
             isDisabledByHash ||
@@ -1821,20 +2049,21 @@ function renderTransactionSteps(
                   </p>
                 )}
               </div>
-              {actionFeedback?.txHash && actionFeedback.status === TransactionStepStatus.completed && (
-                <Link
-                  href={actionFeedback.txHash}
-                  className="flex items-center gap-1 group text-white hover:text-blue-600"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ArrowTopRightOnSquareIcon
-                    width="20"
-                    height="20"
-                    className="size-5"
-                  />
-                </Link>
-              )}
+              {actionFeedback?.txHash &&
+                actionFeedback.status === TransactionStepStatus.completed && (
+                  <Link
+                    href={actionFeedback.txHash}
+                    className="flex items-center gap-1 group text-white hover:text-blue-600"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ArrowTopRightOnSquareIcon
+                      width="20"
+                      height="20"
+                      className="size-5"
+                    />
+                  </Link>
+                )}
             </div>
           </div>
         );
@@ -1925,7 +2154,7 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
-          sendUserOperation
+          sendUserOperation,
         );
         return result;
       };
@@ -1943,7 +2172,7 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
-          sendUserOperation
+          sendUserOperation,
         );
         return result;
       };

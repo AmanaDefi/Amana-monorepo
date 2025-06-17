@@ -8,12 +8,11 @@ import MobileSidebar from "./MobileSidebarMenu";
 import { useRef, useState } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
 import { Signer } from "ethers";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
-import { useUser } from "@account-kit/react";
+import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 
@@ -46,6 +45,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
   const activeAccount = useUser();
+  const account = useAccount({type: 'ModularAccountV2'});
   const { walletAddress, switchToChain, activeChain, balance } =
     useMultiChain();
   const isConnected = !!walletAddress;

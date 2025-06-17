@@ -113,7 +113,7 @@ export default function ChainTokenSelector({
               height={24}
               className="rounded-full"
             />
-            <span>{selectedToken.symbol}</span>
+            <p >{selectedToken.symbol}</p>
           </>
         ) : (
           <span>Select Token</span>
