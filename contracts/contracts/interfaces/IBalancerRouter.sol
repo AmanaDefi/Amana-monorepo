@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IBalancerRouter {
     /**
@@ -31,8 +32,40 @@ interface IBalancerRouter {
     function removeLiquidityProportional(
         address pool,
         uint256 exactBptAmountIn,
-        uint256[] calldata minAmountsOut,
+        uint256[] memory minAmountsOut,
+        bool wethIsEth,
+        bytes memory userData
+    ) external payable returns (uint256[] memory amountsOut);
+
+    /**
+     * @notice Executes a swap operation specifying an exact input token amount.
+     * @param pool Address of the liquidity pool
+     * @param tokenIn Token to be swapped from
+     * @param tokenOut Token to be swapped to
+     * @param exactAmountIn Exact amounts of input tokens to send
+     * @param minAmountOut Minimum amount of tokens to be received
+     * @param deadline Deadline for the swap
+     * @param userData Additional (optional) data required for the swap
+     * @param wethIsEth If true, incoming ETH will be wrapped to WETH; otherwise the Vault will pull WETH tokens
+     * @return amountOut Calculated amount of output tokens to be received in exchange for the given input tokens
+     */
+    function swapSingleTokenExactIn(
+        address pool,
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint256 exactAmountIn,
+        uint256 minAmountOut,
+        uint256 deadline,
         bool wethIsEth,
         bytes calldata userData
-    ) external payable returns (uint256[] memory amountsOut);
+    ) external payable returns (uint256 amountOut);
+
+    function querySwapSingleTokenExactIn(
+        address pool,
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint256 exactAmountIn,
+        address sender,
+        bytes calldata userData
+    ) external returns (uint256 amountOut);
 }

@@ -12,6 +12,8 @@ import { Chain } from "viem";
 
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
+import { warningToast } from "@/toasts/toastStyles";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 
 interface ChainTokenSelectorProps {
@@ -31,6 +33,7 @@ export default function ChainTokenSelector({
 }: ChainTokenSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { walletAddress } = useMultiChain();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -127,6 +130,7 @@ export default function ChainTokenSelector({
         isShownList={isOpen}
         needReset={false}
       />
+
     </div>
   );
 }

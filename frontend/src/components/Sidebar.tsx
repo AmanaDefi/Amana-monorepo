@@ -31,7 +31,7 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   isCollapsed = false,
 }) => {
   const isDisabled =
-    item.id !== "wallet" && item.id !== "logout" && item.id !== "earn";
+    item.id !== "dashboard" && item.id !== "logout" && item.id !== "earn";
 
   const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-medium text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
     isCollapsed ? "justify-center max-w-[64px]" : "gap-3"
@@ -179,7 +179,7 @@ const Sidebar = ({
   return (
     <div
       ref={sidebarRef}
-      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
+      className={`min-h-[908px] rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
     hidden md:flex
     ${isCollapsed ? "w-[136px] px-[29px]" : "w-[302px] px-[29px]"}
     py-[54px] h-full

@@ -11,7 +11,7 @@ import "./interfaces/IAmanaRegistry.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
-import "hardhat/console.sol";
+import "./interfaces/IZapContract.sol";
 
 contract WithdrawHelper is Revertable {
     using SafeERC20 for IERC20;
@@ -126,11 +126,6 @@ contract WithdrawHelper is Revertable {
             ),
             onRevertGasLimit: 0
         });
-        console.log(
-            "handleGasFeeAndWithdrawToUser: amount: %s, withdrawZRC20: %s",
-            amount,
-            withdrawZRC20
-        );
         IGatewayZEVM(GATEWAY_ADDRESS).withdraw(
             recipient,
             amount,
@@ -150,6 +145,7 @@ contract WithdrawHelper is Revertable {
         address receiver,
         bytes memory nonEvmAddress,
         address withdrawZRC20,
+        address withdrawERC20,
         address vaultAsset,
         uint256 amount,
         uint256 minimumOut,
@@ -200,6 +196,7 @@ contract WithdrawHelper is Revertable {
                 amount,
                 receiver,
                 withdrawZRC20,
+                withdrawERC20,
                 vaultAsset,
                 registry,
                 msg.sender,
@@ -224,6 +221,7 @@ contract WithdrawHelper is Revertable {
         address receiver,
         bytes memory nonEvmAddress,
         address withdrawZRC20,
+        address withdrawERC20,
         address vaultAsset,
         uint256 amount,
         uint256 minimumOut,
@@ -320,6 +318,7 @@ contract WithdrawHelper is Revertable {
                 amount - amountToDeduct,
                 receiver,
                 withdrawZRC20,
+                withdrawERC20,
                 vaultAsset,
                 registry,
                 msg.sender,
@@ -513,7 +512,7 @@ contract WithdrawHelper is Revertable {
         uint256 vaultNonce,
         address registry
     ) private {
-        _handleGasFee(gasLimitForRevertCall, vaultAsset, registry); // we combine these two limits as this tx involves a divest and an invest
+        _handleGasFee(gasLimitForRevertCall, vaultAsset, registry);
 
         bytes memory outgoingMessage = abi.encode(
             TxType.Revert,
@@ -563,6 +562,7 @@ contract WithdrawHelper is Revertable {
             uint256 amount,
             address receiver,
             address withdrawZRC20,
+            address withdrawERC20,
             address vaultAsset,
             address registry,
             address vault,
@@ -579,6 +579,7 @@ contract WithdrawHelper is Revertable {
                     address,
                     address,
                     address,
+                    address,
                     uint256,
                     bytes
                 )
@@ -587,19 +588,37 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            bytes memory recipient;
-            if (nonEvmAddress.length > 0) {
-                recipient = abi.encode(nonEvmAddress);
-            } else {
-                recipient = abi.encodePacked(receiver);
+            if (context.amount > 0) {
+                if (withdrawZRC20 == withdrawERC20) {
+                    IERC20(withdrawZRC20).approve(
+                        IAmanaRegistry(registry).zapContract(),
+                        context.amount
+                    );
+                    IZapContract(IAmanaRegistry(registry).zapContract())
+                        .zapSwapAndReturnToUser(
+                            context.amount,
+                            address(this),
+                            withdrawZRC20,
+                            withdrawZRC20,
+                            1000,
+                            receiver
+                        );
+                } else {
+                    bytes memory recipient;
+                    if (nonEvmAddress.length > 0) {
+                        recipient = abi.encode(nonEvmAddress);
+                    } else {
+                        recipient = abi.encodePacked(receiver);
+                    }
+                    handleGasFeeAndWithdrawToUser(
+                        recipient,
+                        withdrawZRC20,
+                        context.amount,
+                        registry,
+                        vaultNonce
+                    );
+                }
             }
-            handleGasFeeAndWithdrawToUser(
-                recipient,
-                withdrawZRC20,
-                context.amount,
-                registry,
-                vaultNonce
-            );
             _sendRevertToStrategy(
                 strategyAddress,
                 vaultAsset,
@@ -658,6 +677,7 @@ contract WithdrawHelper is Revertable {
             uint256 amount,
             address receiver,
             address withdrawZRC20,
+            address withdrawERC20,
             address vaultAsset,
             address registry,
             address vault,
@@ -674,6 +694,7 @@ contract WithdrawHelper is Revertable {
                     address,
                     address,
                     address,
+                    address,
                     uint256,
                     bytes
                 )
@@ -683,19 +704,37 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            bytes memory recipient;
-            if (nonEvmAddress.length > 0) {
-                recipient = abi.encode(nonEvmAddress);
-            } else {
-                recipient = abi.encodePacked(receiver);
+            if (context.amount > 0) {
+                if (withdrawZRC20 == withdrawERC20) {
+                    IERC20(withdrawZRC20).approve(
+                        IAmanaRegistry(registry).zapContract(),
+                        context.amount
+                    );
+                    IZapContract(IAmanaRegistry(registry).zapContract())
+                        .zapSwapAndReturnToUser(
+                            context.amount,
+                            address(this),
+                            withdrawZRC20,
+                            withdrawZRC20,
+                            1000,
+                            receiver
+                        );
+                } else {
+                    bytes memory recipient;
+                    if (nonEvmAddress.length > 0) {
+                        recipient = abi.encode(nonEvmAddress);
+                    } else {
+                        recipient = abi.encodePacked(receiver);
+                    }
+                    handleGasFeeAndWithdrawToUser(
+                        recipient,
+                        withdrawZRC20,
+                        context.amount,
+                        registry,
+                        vaultNonce
+                    );
+                }
             }
-            handleGasFeeAndWithdrawToUser(
-                recipient,
-                withdrawZRC20,
-                context.amount,
-                registry,
-                vaultNonce
-            );
             _sendRevertToStrategy(
                 strategyAddress,
                 vaultAsset,

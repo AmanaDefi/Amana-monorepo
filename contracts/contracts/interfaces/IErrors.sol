@@ -35,4 +35,5 @@ interface IErrors {
 
     error InvalidMessage();
     error InvalidAmanaVault();
+    error InvalidNonce();
 }
