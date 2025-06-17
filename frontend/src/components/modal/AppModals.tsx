@@ -8,6 +8,7 @@ import { NotVerify } from "./passkey/NotVerify";
 import { SignIn } from "./passkey/SignIn";
 import { SignatureCheck } from "./passkey/SignatureCheck";
 import ReceiveModal from "./recieve/RecieveModal";
+import { Send } from "./send/Send";
 import { SignUpModal } from "./smartWallet/SignUpModal";
 import { VerifyOtpModal } from "./smartWallet/VerifyOtpModal";
 import WelcomeModal from "./welcome/WelcomeModal";
@@ -27,6 +28,7 @@ export const AppModals = () => {
       <Checking />
       <NotVerify />
       <ReceiveModal />
+      <Send />
     </>
   );
 };
