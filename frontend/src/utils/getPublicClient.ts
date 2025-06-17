@@ -26,9 +26,9 @@ export const getRpcUrl = (chain: Chain): string => {
 };
 
 export const getPublicClient = (chainId: number): PublicClient | null => {
-  if (clientCache.has(chainId)) {
-    return clientCache.get(chainId)!;
-  }
+  // if (clientCache.has(chainId)) {
+  //   return clientCache.get(chainId)!;
+  // }
 
   const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
@@ -45,6 +45,8 @@ export const getPublicClient = (chainId: number): PublicClient | null => {
   });
 
   clientCache.set(chainId, client);
+
+  console.log(client, chainId)
 
   return client;
 };

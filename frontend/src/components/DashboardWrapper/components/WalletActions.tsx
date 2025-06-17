@@ -3,10 +3,12 @@ import Button from "@/components/Button";
 import ReceiveIcon from "@/components/svg/ReceiveIcon";
 import SaveIcon from "@/components/svg/SaveIcon";
 import TopUpIcon from "@/components/svg/TopUpIcon";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 import React from "react";
 
 
 const WalletActions = () => {
+  const {setStep} = useFundWalletStore();
  
   const handleSend = () => {
     console.log("Send clicked");
@@ -16,7 +18,7 @@ const WalletActions = () => {
    };
 
   const handleTopUp = () => {
-    console.log("Top Up clicked");
+    setStep('chooseBuyWith');
   };
 
   return (
@@ -31,7 +33,7 @@ const WalletActions = () => {
         Receive
       </Button>
 
-      <Button variant="wallet" onClick={handleTopUp} disabled={true}>
+      <Button variant="wallet" onClick={handleTopUp}>
         <TopUpIcon width={12} height={12} className="mr-1" />
         Top Up
       </Button>

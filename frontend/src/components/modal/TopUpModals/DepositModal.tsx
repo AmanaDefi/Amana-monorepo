@@ -8,29 +8,63 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import ChainSelector from "@/components/VaultsDetailsWrapper/components/ChainSelector";
 import { Modal } from "../base/Modal";
 import { DepositInput } from "./components/DepositInput";
-import Button from "@/components/Button";
 import ZetaChainLogo from "@public/logo/zetachain.svg";
 import { AppButton } from "@/components/button/AppButton";
+import { showSuccessToast } from "@/toasts";
+import { useState } from "react";
 
 export const Deposit = () => {
-  const { step, setStep, closeAll, setChain, chain, currency, depositAmount } =
-    useFundWalletStore();
+  const {
+    step,
+    setStep,
+    closeAll,
+    setChain,
+    chain,
+    currency,
+    depositAmount,
+    activeConnector,
+    setCurrency,
+    setDepositAmount,
+  } = useFundWalletStore();
+
+  const [error, setError] = useState("");
 
   const handleSelectChain = (chain: Chain) => {
     setChain(chain);
+    setCurrency(undefined);
+    setDepositAmount("");
   };
 
   const handleConnectWallet = () => {
     setStep("connectWallet");
   };
 
+  const handleClose = () => {
+    activeConnector?.disconnect();
+    closeAll();
+  };
+
+  const handleConfirm = () => {
+    showSuccessToast("Successfully Topped Up");
+    activeConnector?.disconnect();
+    handleClose();
+  };
+
+  const handlePressButton = () => {
+    if (step === "confirm") {
+      handleConfirm();
+    } else {
+      handleConnectWallet();
+    }
+  };
+
   const isButtonDisabled =
-    (!chain || !currency || !depositAmount) && step === "confirm";
+    (!chain || !currency || !depositAmount || !!error) && step === "confirm";
 
   return (
     <Modal
       isOpen={step === "setValues" || step === "confirm"}
-      onClose={closeAll}
+      onClose={handleClose}
       paddingClass="px-4 pt-5 pb-6"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[526px]"
@@ -52,16 +86,17 @@ export const Deposit = () => {
               <ChainSelector
                 selectedChain={chain}
                 onSelectChain={handleSelectChain}
+                isFromTopUp
               />
             </div>
-            <DepositInput />
+            <DepositInput setError={setError} error={error} />
           </div>
           <div className="mt-3 w-full">
             <div className="bg-[#181D29] h-[1px] w-full mb-6" />
             <AppButton
               disabled={isButtonDisabled}
               variant="reverse"
-              onClick={handleConnectWallet}
+              onClick={handlePressButton}
             >
               {step === "confirm" ? "Confirm" : "Connect Wallet"}
             </AppButton>

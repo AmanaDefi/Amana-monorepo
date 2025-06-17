@@ -1,6 +1,7 @@
 import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { Token } from "@/types/types";
 import { Chain } from "viem";
+import { Connector } from "wagmi";
 import { create } from "zustand";
 
 export type FundStep =
@@ -18,9 +19,11 @@ export enum BuyWithEnum {
 const initialState = {
   step: null,
   buyWith: null,
-  chain: SUPPORTED_CHAINS[0].chain,
+  chain: SUPPORTED_CHAINS[1].chain,
   depositAmount: "",
-  currency: null,
+  currency: undefined,
+  activeConnector: null,
+  walletAddress: "",
 };
 
 interface FundWalletState {
@@ -28,32 +31,31 @@ interface FundWalletState {
   buyWith: BuyWithEnum | null;
   chain: Chain;
   depositAmount: string;
-  currency: Token | null;
+  currency: Token | undefined;
+  activeConnector: Connector | null;
+  walletAddress: string;
 
   setStep: (step: FundStep) => void;
   setBuyWith: (buyWith: BuyWithEnum) => void;
   setChain: (chain: Chain) => void;
   setDepositAmount: (depositAmount: string) => void;
-  setCurrency: (currency: Token) => void;
-  successTopUp: () => void;
+  setCurrency: (currency: Token | undefined) => void;
   closeAll: () => void;
+  setActiveConnector: (connector: Connector) => void;
+  setWalletAddress: (walletAddress: string) => void;
 }
 export const useFundWalletStore = create<FundWalletState>((set) => ({
   ...initialState,
 
   setStep: (step) => set({ step }),
-  closeAll: () => {set({...initialState})},
-  successTopUp: () =>
-    set({
-      step: null,
-      buyWith: null,
-      chain: SUPPORTED_CHAINS[0].chain,
-      depositAmount: "",
-      currency: null,
-    }),
+  closeAll: () => {
+    set({ ...initialState });
+  },
+  setActiveConnector: (activeConnector) => set({ activeConnector }),
   setBuyWith: (buyWith) => set({ buyWith }),
   setChain: (chain) => set({ chain }),
   setDepositAmount: (depositAmount) => set({ depositAmount }),
+  setWalletAddress: (walletAddress) => set({ walletAddress }),
   setCurrency: (currency) =>
     set({
       currency,

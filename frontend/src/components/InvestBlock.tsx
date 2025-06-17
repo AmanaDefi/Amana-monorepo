@@ -6,12 +6,13 @@ import Button from "./Button";
 import { useUser } from "@account-kit/react";
 import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const InvestBlock = () => {
-  const user = useUser();
+  const {walletAddress} = useMultiChain();
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
-  console.log(user)
+  console.log(walletAddress)
 
   const handleFundWallet = () => {
     setStep("chooseBuyWith");
@@ -34,7 +35,7 @@ const InvestBlock = () => {
         </div>
       </div>
 
-      {!!user?.address ? (
+      {!!walletAddress ? (
         <Button
           variant="primary"
           className="w-[192px] h-[56px] text-[14px] font-normal text-white"

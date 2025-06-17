@@ -17,12 +17,18 @@ import CoinbaseWalletIcon from "@/components/svg/CoinbaseWalletIcon";
 import OKXWalletIcon from "@/components/svg/OKXWalletIcon";
 import UniswapIcon from "@/components/svg/UniswapIcon";
 import { useConnect } from "@account-kit/react";
-import { Connector, CreateConnectorFn } from "wagmi";
+import { Connector } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
+import { showInfoToast } from "@/toasts";
 
 const AllWAllets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
-  const { step: fundWalletStep, setStep } = useFundWalletStore();
+  const {
+    step: fundWalletStep,
+    setStep,
+    setActiveConnector,
+    setWalletAddress,
+  } = useFundWalletStore();
   const { connectors, connect, isPending: isConnectingWallet } = useConnect();
   const walletConnectConnector = connectors.findLast(
     (con) => con.id === "walletConnect",
@@ -44,30 +50,51 @@ const AllWAllets = () => {
     setStep("confirm");
   };
 
-  const handleExternalWalletConnect = (
-    connector: CreateConnectorFn | Connector,
-  ) => {
-    if (fundWalletStep === "connectWallet") return fundWalletConnect();
-    
+  const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
     connect(
       { connector },
       {
-        onSuccess: successAuth,
+        onSuccess: (result) => {
+          if (fundWalletStep === "connectWallet") {
+            setActiveConnector(connector);
+            setWalletAddress(result.accounts[0]);
+            return fundWalletConnect();
+          }
+          return successAuth();
+        },
+        onError: (error) => {
+          console.log(error);
+
+          if (error.name === "ConnectorAlreadyConnectedError") {
+            connector.disconnect();
+
+            showInfoToast("Please try to connect wallet again");
+          }
+        },
       },
     );
   };
+
+  const handleClose = () => {
+    if (fundWalletStep === "connectWallet") {
+      setStep("setValues");
+    } else {
+      closeAll();
+    }
+  };
+
   return (
     <Modal
       isOpen={step === "allWallets" || fundWalletStep === "connectWallet"}
-      onClose={closeAll}
+      onClose={handleClose}
       paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[940px]"
       minHeight="min-h-[560px]"
       customCloseButton={
         <button
-          onClick={closeAll}
+          onClick={handleClose}
           className="absolute top-[20px] right-[16px] z-10 rounded-[8px] flex items-center justify-center w-10 h-10"
           aria-label="Close"
         >

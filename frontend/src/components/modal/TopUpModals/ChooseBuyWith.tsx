@@ -14,7 +14,9 @@ export const ChooseBuyWith = () => {
 
   const handleChoose = (method: BuyWithEnum) => {
     setBuyWith(method);
-    setStep("setValues");
+    if (method === BuyWithEnum.CRYPTO) {
+      setStep("setValues");
+    }
   };
 
   return (
@@ -51,15 +53,15 @@ export const ChooseBuyWith = () => {
               label="Byu crypto"
               withArrow
               icon={<CardIcon width={35} height={32} />}
-              onClick={() => handleChoose(BuyWithEnum.CRYPTO)}
-            />
+              onClick={() => handleChoose(BuyWithEnum.FIAT)}
+              />
             <ModalButton
               text="From another wallet, exchange or chain"
               className="w-[484px]"
               label="Transfer in"
               withArrow
+              onClick={() => handleChoose(BuyWithEnum.CRYPTO)}
               icon={<ArrowIcon width={35} height={32} />}
-              onClick={() => handleChoose(BuyWithEnum.FIAT)}
             />
           </div>
         </div>
