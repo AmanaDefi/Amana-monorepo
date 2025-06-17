@@ -4,6 +4,9 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@zetachain/protocol-contracts/contracts/zevm/interfaces/IGatewayZEVM.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "./interfaces/IGasTank.sol";
 import "./interfaces/IZRC20.sol";
@@ -13,11 +16,18 @@ import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
 import "./interfaces/IZapContract.sol";
 
-contract WithdrawHelper is Revertable {
+import "hardhat/console.sol";
+
+contract WithdrawHelper is
+    Initializable,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    Revertable
+{
     using SafeERC20 for IERC20;
     using SafeERC20 for IZRC20;
 
-    address public immutable GATEWAY_ADDRESS;
+    address public GATEWAY_ADDRESS;
     uint256 public gasLimitForRevertCall = 200000;
 
     enum TxType {
@@ -70,9 +80,17 @@ contract WithdrawHelper is Revertable {
     );
     event SwitchStrategyFailed(uint256 indexed vaultNonce, address vault);
 
-    constructor(address _gatewayAddress) {
+    function initialize(address _gatewayAddress) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+
         GATEWAY_ADDRESS = _gatewayAddress;
+        gasLimitForRevertCall = 200000;
     }
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 
     function setGasLimitForRevertCall(uint256 _gasLimitForRevertCall) external {
         // TODO - add access control
@@ -588,8 +606,11 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
+            console.log("Reverting from cross-chain invest");
             if (context.amount > 0) {
+                console.log("context.amount", context.amount);
                 if (withdrawZRC20 == withdrawERC20) {
+                    console.log("Withdrawing ZRC20");
                     IERC20(withdrawZRC20).approve(
                         IAmanaRegistry(registry).zapContract(),
                         context.amount
@@ -604,12 +625,53 @@ contract WithdrawHelper is Revertable {
                             receiver
                         );
                 } else {
+                    console.log("Withdrawing to user cross chain");
                     bytes memory recipient;
                     if (nonEvmAddress.length > 0) {
                         recipient = abi.encode(nonEvmAddress);
                     } else {
                         recipient = abi.encodePacked(receiver);
                     }
+                    if (IAmanaRegistry(registry).swapHelper() == address(0))
+                        revert IErrors.InvalidAddress();
+
+                    SafeERC20.safeTransfer(
+                        IERC20(vaultAsset),
+                        IAmanaRegistry(registry).swapHelper(),
+                        context.amount
+                    );
+                    uint256 amountToWithdraw;
+                    try
+                        ISwapHelper(IAmanaRegistry(registry).swapHelper()).swap(
+                            vaultAsset,
+                            context.amount,
+                            withdrawZRC20,
+                            250, // first attempt slippage
+                            address(this),
+                            200,
+                            "" // TO-DO - how can we get swap data for this swap?
+                        )
+                    returns (uint256 result) {
+                        amountToWithdraw = result;
+                    } catch {
+                        try
+                            ISwapHelper(IAmanaRegistry(registry).swapHelper())
+                                .swap(
+                                    vaultAsset,
+                                    context.amount,
+                                    withdrawZRC20,
+                                    750, // first attempt slippage
+                                    address(this),
+                                    200,
+                                    ""
+                                )
+                        returns (uint256 result) {
+                            amountToWithdraw = result;
+                        } catch {
+                            revert("Swap failed at both slippage levels");
+                        }
+                    }
+
                     handleGasFeeAndWithdrawToUser(
                         recipient,
                         withdrawZRC20,
@@ -704,37 +766,7 @@ contract WithdrawHelper is Revertable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            if (context.amount > 0) {
-                if (withdrawZRC20 == withdrawERC20) {
-                    IERC20(withdrawZRC20).approve(
-                        IAmanaRegistry(registry).zapContract(),
-                        context.amount
-                    );
-                    IZapContract(IAmanaRegistry(registry).zapContract())
-                        .zapSwapAndReturnToUser(
-                            context.amount,
-                            address(this),
-                            withdrawZRC20,
-                            withdrawZRC20,
-                            1000,
-                            receiver
-                        );
-                } else {
-                    bytes memory recipient;
-                    if (nonEvmAddress.length > 0) {
-                        recipient = abi.encode(nonEvmAddress);
-                    } else {
-                        recipient = abi.encodePacked(receiver);
-                    }
-                    handleGasFeeAndWithdrawToUser(
-                        recipient,
-                        withdrawZRC20,
-                        context.amount,
-                        registry,
-                        vaultNonce
-                    );
-                }
-            }
+            console.log("Aborting");
             _sendRevertToStrategy(
                 strategyAddress,
                 vaultAsset,
