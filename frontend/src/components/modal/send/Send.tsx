@@ -238,7 +238,7 @@ export const Send = () => {
 
                 {filteredNetworks.length === 0 && (
                   <div className="text-center py-8 text-[#535E73]">
-                    <p>No networks found matching "{networkSearchQuery}"</p>
+                    <p>No networks found matching {networkSearchQuery}</p>
                   </div>
                 )}
               </div>
