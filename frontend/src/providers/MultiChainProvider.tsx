@@ -149,6 +149,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const latestChainRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   // HYDRATION FIX: Load saved state only after hydration
   // useEffect(() => {
   //   if (typeof window !== "undefined") {

@@ -1,6 +1,7 @@
 "use client";
 
 import Footer from "@/components/Footer";
+import Loader from "@/components/Loader";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/header";
 import { AppModals } from "@/components/modal/AppModals";
@@ -11,8 +12,7 @@ import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
-  const { walletAddress } = useMultiChain();
-  const isConnected = !!walletAddress;
+  const { isHydrated, walletAddress } = useMultiChain();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -32,6 +32,20 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       window.removeEventListener("resize", checkIsMobile);
     };
   }, []);
+
+  if (!isHydrated) {
+    return (
+      <div className="relative overflow-hidden min-h-screen z-0">
+        <GlowIcon position="top-right" />
+        <GlowIcon position="bottom-left" />
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader />
+        </div>
+      </div>
+    );
+  }
+
+   const isConnected = !!walletAddress;
 
   return (
     <div className="relative overflow-hidden min-h-screen z-0">
