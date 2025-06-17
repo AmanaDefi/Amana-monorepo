@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Chain } from "viem";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { SUPPORTED_CHAINS, CHAIN_ICONS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
-import { CHAINS_ICONS } from "@/constants/tokens";
+import { DropdownChainsList } from "@/components/DropdownChainsList";
+import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
 
 interface ChainSelectorProps {
   selectedChain?: Chain;
@@ -38,7 +39,12 @@ export default function ChainSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleChainSelect = async (chain: Chain, event: React.MouseEvent) => {
+  const handleChainSelect = async (
+    event:
+      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
+      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    chainName: string,
+  ) => {
     event.stopPropagation();
     event.preventDefault();
 
@@ -51,6 +57,13 @@ export default function ChainSelector({
       warningToast("Please connect your wallet to select a chain");
       return;
     }
+
+    const chainConfig = SUPPORTED_CHAINS.find(
+      (config) => config.chain.name === chainName,
+    );
+    if (!chainConfig) return;
+
+    const chain = chainConfig.chain;
 
     if (selectedChain?.id === chain.id) {
       setIsOpen(false);
@@ -72,77 +85,71 @@ export default function ChainSelector({
 
   const displayedChain = selectedChain || activeChain;
 
-    return (
-      <div className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
-        <div>
-          <p className="text-[16px] font-normal">{displayedChain?.name || "ZetaChain"} </p>
-        </div>
+  const chainOptions = SUPPORTED_CHAINS.map((chainConfig) => ({
+    value: chainConfig.chain.name,
+    icon: CHAIN_ICONS[chainConfig.chain.id]?.url,
+  }));
 
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (vaultId) {
-                const isTxInProgress = CheckTheTxIsInProgress(vaultId);
-                if (isTxInProgress) return;
-              }
-              setIsOpen(!isOpen);
-            }}
-            className={`flex items-center justify-between gap-4 py-[6px] ${className}`}
-          >
-            <div className="flex items-center -space-x-2">
-              {CHAINS_ICONS.map((icon, index) => (
-                <div
-                  key={icon.symbol}
-                  className="w-[20px] h-[20px] rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
-                  style={{ zIndex: index }}
-                >
-                  <img
-                    src={icon.icon}
-                    alt={icon.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-            <ChevronDownIcon
-              className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
-                isOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-
-          {isOpen && (
-            <div className="absolute z-50 mt-2 w-full min-w-[200px] bg-[#161C27] border border-[#535E73] rounded-lg shadow-lg overflow-hidden">
-              <div className="max-h-60 overflow-y-auto">
-                {SUPPORTED_CHAINS.map((chainConfig) => {
-                  const isSelected =
-                    displayedChain?.id === chainConfig.chain.id;
-                  const isActive = activeChain?.id === chainConfig.chain.id;
-
-                  return (
-                    <button
-                      key={chainConfig.chain.id}
-                      onClick={(e) => handleChainSelect(chainConfig.chain, e)}
-                      className={`w-full px-4 py-3 text-left hover:bg-[#262830] transition-colors flex items-center justify-between ${
-                        isSelected ? "bg-[#262830]" : ""
-                      }`}
-                    >
-                      <span className="text-white">
-                        {chainConfig.chain.name}
-                      </span>
-                      {isActive && (
-                        <span className="text-xs px-2 py-0.5 text-white bg-gradient-to-r from-[#262830] to-[#06afbc] rounded-full">
-                          Connected
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+  return (
+    <div className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
+      <div className="flex items-center gap-4">
+        {displayedChain?.id && (
+          <img
+            src={CHAIN_ICONS[displayedChain.id]?.url}
+            alt={displayedChain.name}
+            className="w-[32px] h-[32px] rounded-full"
+          />
+        )}
+        <p className="text-[16px] font-normal">
+          {displayedChain?.name || "ZetaChain"}
+        </p>
       </div>
-    );
+
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (vaultId) {
+              const isTxInProgress = CheckTheTxIsInProgress(vaultId);
+              if (isTxInProgress) return;
+            }
+            setIsOpen(!isOpen);
+          }}
+          className={`flex items-center justify-between gap-4 py-[6px] ${className}`}
+        >
+          <div className="flex items-center -space-x-2">
+            {CHAINS_ICONS_BUTTON.map((icon, index) => (
+              <div
+                key={icon.symbol}
+                className="w-[20px] h-[20px] rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
+                style={{ zIndex: index }}
+              >
+                <img
+                  src={icon.icon}
+                  alt={icon.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+          <ChevronDownIcon
+            className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        <DropdownChainsList
+          width={263}
+          isIconButton={false}
+          options={chainOptions}
+          selectedOption={displayedChain?.name || ""}
+          handleSelectedOption={handleChainSelect}
+          isShownList={isOpen}
+          needReset={false}
+          alignment="right"
+        />
+      </div>
+    </div>
+  );
 }

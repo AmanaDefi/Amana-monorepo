@@ -4,6 +4,7 @@ import classNames from "classnames";
 import { SetStateAction } from "jotai";
 
 import LeftArrowIcon from "@/components/svg/LeftArrowIcon";
+import { DropdownChainsList } from "@/components/DropdownChainsList";
 import { DropdownList } from "./DropdownList";
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
   width?: number;
   emptyLabel?: string;
   IconButton?: React.ElementType;
+  listType?: "chains" | "simple";
 };
 
 export const Dropdown: React.FC<Props> = ({
@@ -24,6 +26,7 @@ export const Dropdown: React.FC<Props> = ({
   width,
   emptyLabel,
   IconButton,
+  listType,
 }) => {
   const [isShownList, setIsShownList] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -69,7 +72,7 @@ export const Dropdown: React.FC<Props> = ({
   return (
     <div
       ref={dropdownRef}
-      className="flex relative font-bold text-lg leading-[19px] tracking-1 text-white "
+      className="flex relative font-medium text-lg leading-[18px] tracking-1 text-white font-gotham "
     >
       {IconButton ? (
         <button type="button" onClick={handleToggleDropdown}>
@@ -101,14 +104,27 @@ export const Dropdown: React.FC<Props> = ({
         </div>
       )}
 
-      <DropdownList
-        isIconButton={!!IconButton}
-        options={options}
-        handleSelectedOption={handleSelectedOption}
-        selectedOption={selectedOption}
-        width={!width ? 200 : width + 20}
-        isShownList={isShownList}
-      />
+      {listType === "simple" ? (
+        <DropdownList
+          variant="chain"
+          isIconButton={!!IconButton}
+          options={options}
+          handleSelectedOption={handleSelectedOption}
+          selectedOption={selectedOption}
+          width={!width ? 200 : width + 20}
+          isShownList={isShownList}
+        />
+      ) : (
+        <DropdownChainsList
+          isIconButton={!!IconButton}
+          options={options}
+          handleSelectedOption={handleSelectedOption}
+          selectedOption={selectedOption}
+          width={!width ? 200 : width + 20}
+          isShownList={isShownList}
+          minWidth={526}
+        />
+      )}
     </div>
   );
 };

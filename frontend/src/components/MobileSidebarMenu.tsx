@@ -34,7 +34,7 @@ const MobileNavItem: React.FC<MobileNavItemProps> = ({
   return (
     <button
       onClick={handleClick}
-      className={`flex items-center px-[22px] rounded-lg h-12 font-bold text-lg transition-all duration-300 ease-in-out w-[240px] relative text-white hover:menu-item-hover ${
+      className={`flex items-center px-[22px] rounded-lg h-12 font-medium text-lg transition-all duration-300 ease-in-out w-[240px] relative text-white hover:menu-item-hover ${
         isActive ? "menu-item-hover text-white" : ""
       }`}
     >
@@ -69,7 +69,7 @@ const MobileSidebarMenuItem: React.FC<MobileSidebarMenuItemProps> = ({
   const isDisabled =
     item.id !== "wallet" && item.id !== "logout" && item.id !== "earn";
 
-  const commonClasses = `flex items-center gap-3 px-[22px] rounded-lg h-12 font-bold text-lg transition-all duration-300 ease-in-out w-[240px]`;
+  const commonClasses = `flex items-center gap-3 px-[22px] rounded-lg h-12 font-medium text-lg transition-all duration-300 ease-in-out w-[240px]`;
 
   const enabledClasses = "hover:text-white text-gray-400";
   const disabledClasses = "bg-[#35383D] text-gray-400 cursor-not-allowed";
