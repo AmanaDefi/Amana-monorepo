@@ -9,20 +9,14 @@ import WalletActions from "./WalletActions";
 import ProfileDropdown from "./ProfileDropdown";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppModals } from "@/components/modal/AppModals";
+import { useChain } from "@account-kit/react";
 
 const ProfileInfo = () => {
-  const { walletAddress, balance, selectedChain } = useMultiChain();
+  const { walletAddress, balance } = useMultiChain();
+  const { chain } = useChain();
   const isConnected = !!walletAddress;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const formatBalance = (balance: { value: bigint; formatted: string }) => {
-    const numericBalance = parseFloat(balance.formatted);
-    return numericBalance.toFixed(4); 
-  };
-
-  const getCurrencySymbol = () => {
-    return selectedChain === "solana" ? "SOL" : "ETH";
-  };
+  console.log(chain.nativeCurrency)
 
   return (
     <>
@@ -32,7 +26,7 @@ const ProfileInfo = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-row gap-8 text-[18px] font-normal text-white">
               {/* <div className="flex flex-row gap-1 items-center">
-                <span>{email || "Не вказано"}</span>
+                <span>{email || "No email"}</span>
                 <EditIcon width={12} height={12} />
               </div> */}
 
@@ -60,7 +54,7 @@ const ProfileInfo = () => {
             </div>
 
             <div className="text-[24px] font-medium">
-              {formatBalance(balance)} {getCurrencySymbol()}
+              {Number(balance.formatted).toFixed(4)} {chain.nativeCurrency.symbol}
             </div>
 
             <WalletActions />

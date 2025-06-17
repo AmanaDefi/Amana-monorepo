@@ -386,7 +386,6 @@ export async function calculateConvexEthereumRewardsAPY(
       args: [0n],
     });
 
-    // Крок 2: Отримуємо швидкість нагородження з цього контракту
     const cvxRewardRate = await publicClient.readContract({
       address: extraRewardAddress,
       abi: extraRewardAbi,
@@ -464,12 +463,8 @@ export async function calculateConvexArbitrumRewardsAPY(
       },
     ] as const;
 
-    // 2. Отримуємо publicClient для відповідної мережі
     const publicClient = getPublicClient(strategyChain.id);
     if (!publicClient) {
-      console.error(
-        `Не вдалося отримати publicClient для мережі з ID ${strategyChain.id}`,
-      );
       return 0;
     }
 
@@ -1782,7 +1777,6 @@ export const fetchUserVaultBalance = async (
 
     return formatUnits(balanceInAssets, decimals);
   } catch (error) {
-    console.error("Помилка під час отримання балансу вольта:", error);
     return null;
   }
 };
@@ -1802,7 +1796,6 @@ export const fetchUserVaultMaxRedeem = async (
     },
   ] as const;
 
-  // 2. Отримуємо publicClient
   const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
   if (!publicClient) {
     console.error(`Error get public client ${SUPPORTED_CHAINS[0].chain.id}`);
@@ -2160,7 +2153,7 @@ export async function fetchReceiptTokens(
           const publicClient = getPublicClient(chainId);
           if (!publicClient) {
             console.error(
-              `АFailed to get public client for chain id: ${chainId}`,
+              `Failed to get public client for chain id: ${chainId}`,
             );
             result[v.id] = ethers.ZeroAddress;
             continue;

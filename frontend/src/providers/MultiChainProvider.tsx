@@ -132,7 +132,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const scaAccount = useAccount({ type: "ModularAccountV2" });
-  console.log(activeAccount, "activeAccount");
 
   const { setChain, chain } = useChain();
   const [activeChain, setActiveChain] = useState<Chain | null>(chain);
@@ -474,6 +473,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     },
     [activeAccount, setChain],
   );
+
+  useEffect(() => {
+    if (chain && activeAccount?.address) {
+      getEvmBalance(activeAccount.address);
+    }
+  }, [chain, activeAccount?.address]);
 
   return (
     <MultiChainContext.Provider

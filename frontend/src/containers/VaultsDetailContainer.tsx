@@ -12,6 +12,7 @@ import {
   Balance,
   Tabs,
   TransactionStepMessages,
+  TransactionStepStatus,
 } from "@/types/types";
 import { VAULT_DATA } from "@/constants";
 import {
@@ -39,6 +40,7 @@ import DepositInstruction from "@/components/VaultsDetailsWrapper/components/Dep
 import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { Chain } from "viem";
 import clsx from "clsx";
+import { useTransactionStore } from "@/store/transactionStore";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -61,13 +63,18 @@ const VaultsDetailContainer: React.FC<{
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [selectedChain, setSelectedChain] = useState<Chain | undefined>();
 
-  const [transactionStepFeedback, setTransactionStepFeedback] =
-    useState<TransactionStepMessages>({});
-  const [lastTransactionStepFeedback, setLastTransactionStepFeedback] =
-    useState<TransactionStepMessages>({});
-  const [finishedTransaction, setFinishedTransaction] = useState(false);
-  const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
   const [activeChainId, setActiveChainId] = useState<number>();
+
+  const {
+    transactionStepFeedback,
+    lastTransactionStepFeedback,
+    finishedTransaction,
+    setFinishedTransaction,
+    setLastTransactionStepFeedback,
+    setTransactionStepFeedback,
+    setIsTransactionProcessing,
+    isTransactionProcessing,
+  } = useTransactionStore();
 
   const { activeChain } = useMultiChain();
 
@@ -240,6 +247,11 @@ const VaultsDetailContainer: React.FC<{
     [vaultID],
   );
 
+  const isProcessingTx =
+    !finishedTransaction &&
+    (isTransactionProcessing ||
+      (Object.keys(transactionStepFeedback).length > 0 &&
+        transactionStepFeedback[0]?.status !== TransactionStepStatus.error));
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
     if (!isTxInProgress) {
@@ -298,16 +310,16 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
       </div>
-  
-        <VaultHeader
-          vaultData={vaultData}
-          userVaultBalance={userVaultBalance}
-          selectedVaultId={vaultID.toString()}
-          vaultTotalAsset={vaultTotalAsset}
-          vaultAPYs={vaultAPYs}
-          transactionCompleted={transactionCompleted}
-          selectedToken={selectedToken}
-        />
+
+      <VaultHeader
+        vaultData={vaultData}
+        userVaultBalance={userVaultBalance}
+        selectedVaultId={vaultID.toString()}
+        vaultTotalAsset={vaultTotalAsset}
+        vaultAPYs={vaultAPYs}
+        transactionCompleted={transactionCompleted}
+        selectedToken={selectedToken}
+      />
 
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-[56px] font-gotham">
         <div>
@@ -352,15 +364,14 @@ const VaultsDetailContainer: React.FC<{
           {walletAddress && (
             <Dropdown
               title={
-                isTransactionProcessing ||
-                Object.keys(transactionStepFeedback).length > 0
-                  ? "Transaction Progress"
-                  : "Deposit instruction"
+                isProcessingTx ? "Transaction Progress" : "Deposit instruction"
               }
               defaultOpen={true}
             >
               <DepositInstruction
-                transactionStepFeedback={transactionStepFeedback}
+                transactionStepFeedback={
+                  isProcessingTx ? transactionStepFeedback : {}
+                }
                 lastTransactionStepFeedback={lastTransactionStepFeedback}
                 finishedTransaction={finishedTransaction}
                 activeChainId={activeChainId}
