@@ -5,21 +5,13 @@ import { useAuthStore } from "@/store/authStore";
 import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
-import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
-import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
 import BackedBy from "../shared/BackedBy";
-import MetaMaskIcon from "@/components/svg/MetaMaskIcon";
-import WalletConnectIcon from "@/components/svg/WalletConnectIcon";
-import PhantomIcon from "@/components/svg/PhantomIcon";
-import CoinbaseWalletIcon from "@/components/svg/CoinbaseWalletIcon";
-import OKXWalletIcon from "@/components/svg/OKXWalletIcon";
-import UniswapIcon from "@/components/svg/UniswapIcon";
 import { useConnect } from "@account-kit/react";
 import { Connector } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
-import Image from "next/image";
+
 import { ConnectorIcon } from "./components/ConnectorIcon";
 
 const AllWAllets = () => {
@@ -31,21 +23,6 @@ const AllWAllets = () => {
     setWalletAddress,
   } = useFundWalletStore();
   const { connectors, connect, isPending: isConnectingWallet } = useConnect();
-  const walletConnectConnector = connectors.findLast(
-    (con) => con.id === "walletConnect",
-  );
-  const metaMaskConnector = connectors.find((con) => con.id === "io.metamask");
-  const uniSwapConnector = connectors.find(
-    (con) => con.id === "org.uniswap.app",
-  );
-  const coinbaseConnector = connectors.find(
-    (con) => con.id === "com.coinbase.wallet",
-  );
-  const okxConnector = connectors.find((con) => con.id === "com.okex.wallet");
-
-  //Solana providers
-  const solflareConnector = connectors.find((con) => con.id === ""); //We have no this connector on evm
-  const phantomConnector = connectors.find((con) => con.id === "app.phantom");
 
   const fundWalletConnect = () => {
     setStep("confirm");
@@ -112,7 +89,7 @@ const AllWAllets = () => {
             <PopularOptions />
             <div
               style={{ scrollbarColor: "#1B46E0 transparent" }}
-              className="overflow-scroll scroll-[#1B46E0] h-full mt-6 flex-1"
+              className="overflow-auto h-full mt-6 flex-1"
             >
               <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
                 {connectors.map((connector) => (
@@ -126,7 +103,54 @@ const AllWAllets = () => {
                         connectorIcon={connector.icon}
                       />
                     }
-                    // icon={<UniswapIcon width={24} height={24} />}
+                    onClick={() => {
+                      handleExternalWalletConnect(connector);
+                    }}
+                  />
+                ))}
+                {connectors.map((connector) => (
+                  <ModalButton
+                    key={connector.id}
+                    label={connector.name}
+                    icon={
+                      <ConnectorIcon
+                        connectorId={connector.id}
+                        name={connector.name}
+                        connectorIcon={connector.icon}
+                      />
+                    }
+                    onClick={() => {
+                      handleExternalWalletConnect(connector);
+                    }}
+                  />
+                ))}
+                {connectors.map((connector) => (
+                  <ModalButton
+                    key={connector.id}
+                    label={connector.name}
+                    icon={
+                      <ConnectorIcon
+                        connectorId={connector.id}
+                        name={connector.name}
+                        connectorIcon={connector.icon}
+                      />
+                    }
+                    onClick={() => {
+                      handleExternalWalletConnect(connector);
+                    }}
+                  />
+                ))}
+                {connectors.map((connector) => (
+                  <ModalButton
+                    key={connector.id}
+                    label={connector.name}
+                    icon={
+                      <ConnectorIcon
+                        connectorId={connector.id}
+                        name={connector.name}
+                        connectorIcon={connector.icon}
+                      />
+                    }
                     onClick={() => {
                       handleExternalWalletConnect(connector);
                     }}

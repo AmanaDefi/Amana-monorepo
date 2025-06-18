@@ -23,7 +23,7 @@ export const ChooseBuyWith = () => {
     <Modal
       isOpen={step === "chooseBuyWith"}
       onClose={closeAll}
-      paddingClass="px-4 pt-5 pb-6"
+      paddingClass="px-[21px] pt-5 pb-6"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[526px]"
     >
@@ -42,7 +42,7 @@ export const ChooseBuyWith = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
       >
-        <div className="flex flex-col justify-center items-center gap-[45px] px-7 font-gotham">
+        <div className="flex flex-col justify-center items-center gap-[45px] font-gotham">
           <h2 className="text-center text-[24px] font-medium text-white">
             Add Funds
           </h2>
