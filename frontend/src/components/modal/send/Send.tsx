@@ -94,7 +94,7 @@ export const Send = () => {
     );
 
     if (!chainConfig) {
-      console.error(`Chain config not found for: ${chainName}`);
+      console.log(`Chain config not found for: ${chainName}`);
       return;
     }
 
@@ -112,7 +112,7 @@ export const Send = () => {
     try {
       await switchToChain(chain);
     } catch (error) {
-      console.error("Failed to switch chain:", error);
+      console.log("Failed to switch chain:", error);
     }
   };
 
@@ -125,7 +125,7 @@ export const Send = () => {
       closeAll();
     } catch (err) {
       setError("Failed to send transaction");
-      console.error(err);
+      console.log(err);
     } finally {
       setLoading(false);
     }

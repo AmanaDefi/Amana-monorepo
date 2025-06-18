@@ -33,7 +33,7 @@ export function updateLocalStorageObject(
           }
         }
       } catch (error) {
-        console.error(
+        console.log(
           `Error parsing existing data for key "${storageKey}" from localStorage. ` +
             `A new object will be formed using only the partial data. Original error:`,
           error,
@@ -49,7 +49,7 @@ export function updateLocalStorageObject(
     localStorage.setItem(storageKey, JSON.stringify(updatedObject));
     return true;
   } catch (error) {
-    console.error(
+    console.log(
       `Failed to set/update localStorage item with key "${storageKey}":`,
       error,
     );

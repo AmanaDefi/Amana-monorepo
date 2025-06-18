@@ -32,7 +32,7 @@ export const getPublicClient = (chainId: number): PublicClient | null => {
 
   const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
-    console.error(`Chain with id:${chainId} doesn't supported`);
+    console.log(`Chain with id:${chainId} doesn't supported`);
     return null;
   }
 
@@ -57,11 +57,11 @@ export const getWalletClient = (chainId: number): WalletClient | null => {
 
   const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
-    console.error(`Chain with id:${chainId} doesn't supported`);
+    console.log(`Chain with id:${chainId} doesn't supported`);
     return null;
   }
   if (!window || !window?.ethereum || window.ethereum === undefined) {
-    console.error(`There is no wallet providers`);
+    console.log(`There is no wallet providers`);
     return null;
   }
 

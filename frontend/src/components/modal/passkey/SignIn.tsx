@@ -39,7 +39,7 @@ export const SignIn = () => {
       successAuth();
     },
     onError: (err) => {
-      console.error("Error passkey auth:", err);
+      console.log("Error passkey auth:", err);
       setError(err.message);
     },
   });

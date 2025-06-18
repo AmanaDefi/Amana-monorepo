@@ -78,7 +78,7 @@ export default function ChainSelector({
       try {
         await switchToChain(chain);
       } catch (error) {
-        console.error("Failed to switch chain:", error);
+        console.log("Failed to switch chain:", error);
       }
     }
 

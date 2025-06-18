@@ -98,7 +98,7 @@ export async function calculateEddyAPY(
   const publicClient = getPublicClient(strategyChain.id);
 
   if (!publicClient) {
-    console.error(`Failed to get public client ID ${strategyChain.id}`);
+    console.log(`Failed to get public client ID ${strategyChain.id}`);
     return 0;
   }
 
@@ -143,7 +143,7 @@ export async function calculateEddyAPY(
 
     return depositAPY;
   } catch (error) {
-    console.error("Error calculating APY for Eddy Finance:", error);
+    console.log("Error calculating APY for Eddy Finance:", error);
     return 0;
   }
 }
@@ -187,7 +187,7 @@ export async function calculateBeefyAPY(
 
     return depositAPY;
   } catch (error) {
-    console.error("Error calculating APY for Eddy Finance:", error);
+    console.log("Error calculating APY for Eddy Finance:", error);
     return 0;
   }
 }
@@ -260,7 +260,7 @@ export async function calculateAaveAPY(
   const publicClient = getPublicClient(strategyChain.id);
 
   if (!publicClient) {
-    console.error(`Failed to fetch public client for id: ${strategyChain.id}`);
+    console.log(`Failed to fetch public client for id: ${strategyChain.id}`);
     return 0;
   }
 
@@ -371,7 +371,7 @@ export async function calculateConvexEthereumRewardsAPY(
 
   const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
-    console.error(
+    console.log(
       `Failed to get public client for chain id: ${strategyChain.id}`,
     );
     return 0;
@@ -411,7 +411,7 @@ export async function calculateConvexEthereumRewardsAPY(
     const annualApy = crvApy + cvxApy;
     return annualApy;
   } catch (error) {
-    console.error("calculateConvexEthereumRewardsAPY failed:", error);
+    console.log("calculateConvexEthereumRewardsAPY failed:", error);
     return 0;
   }
 }
@@ -491,7 +491,7 @@ export async function calculateConvexArbitrumRewardsAPY(
     //console.log("CRV APY:", crvApy);
     return crvApy;
   } catch (err) {
-    console.error("CRV APY calculation failed:", err);
+    console.log("CRV APY calculation failed:", err);
     return 0;
   }
 }
@@ -587,7 +587,7 @@ export async function calculateCombinedBalancerAPY({
     console.log("Rewards APY:", rewardsAPY);
     return { baseAPY, rewardsAPY, totalAPY: baseAPY + rewardsAPY };
   } catch (error) {
-    console.error("calculateCombinedBalancerAPY failed:", error);
+    console.log("calculateCombinedBalancerAPY failed:", error);
     return { baseAPY: 0, rewardsAPY: 0, totalAPY: 0 };
   }
 }
@@ -684,7 +684,7 @@ export async function calculateCompoundAPY(
 ) {
   const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
-    console.error(`Failed to get public client with id ${strategyChain.id}`);
+    console.log(`Failed to get public client with id ${strategyChain.id}`);
     return 0;
   }
   const currentUtilization = await publicClient.readContract({
@@ -803,7 +803,7 @@ export async function calculateVenusAPY(
 
   const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
-    console.error(`Failed to get client for chain: ID ${strategyChain.id}`);
+    console.log(`Failed to get client for chain: ID ${strategyChain.id}`);
     return 0;
   }
 
@@ -823,7 +823,7 @@ export async function calculateVenusAPY(
 
     return currentAPY;
   } catch (error) {
-    console.error("failed to get vToken APY:", error);
+    console.log("failed to get vToken APY:", error);
     return 0;
   }
 }
@@ -984,7 +984,7 @@ export const Approvedeposit = async (
       console.log("success approve");
       return receipt;
     } else {
-      console.error("error approve");
+      console.log("error approve");
       return false;
     }
   } catch (error: any) {
@@ -1268,7 +1268,7 @@ const executeCrossChainDeposit = async (
 
     // Step 2: Deposit ERC20 tokens through the Gateway contract
     if (!walletClient?.chain) {
-      console.error("failed to get chain from WalletClient.");
+      console.log("failed to get chain from WalletClient.");
       return { transactionHash: null };
     }
     updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
@@ -1308,12 +1308,12 @@ const executeCrossChainDeposit = async (
       if (receipt.status === "success") {
         console.log("depositAndCall success", receipt);
       } else {
-        console.error("depositAndCall failed", receipt);
+        console.log("depositAndCall failed", receipt);
       }
       setcrossChainTxId(transactionId);
       return receipt;
     } catch (error) {
-      console.error("failed depositAndCall:", error);
+      console.log("failed depositAndCall:", error);
       return { transactionHash: null };
     }
   }
@@ -1556,7 +1556,7 @@ const executeDirectWithdrawal = async (
     ((!walletClient || !walletClient.chain) && !sendUserOperation) ||
     !activeAccount?.address
   ) {
-    console.error("Failet go get WalletClient.");
+    console.log("Failet go get WalletClient.");
     return { transactionHash: null };
   }
   console.log(walletClient?.chain, "walletClient.chain");
@@ -1619,7 +1619,7 @@ const executeDirectWithdrawal = async (
   if (receipt.status === "success") {
     console.log("tx success", receipt);
   } else {
-    console.error("tx failed.", receipt);
+    console.log("tx failed.", receipt);
   }
 
   return receipt;
@@ -1720,12 +1720,12 @@ const executeCrossChainWithdrawal = async (
     if (receipt.status === "success") {
       console.log("call success", receipt);
     } else {
-      console.error("tx failed:", receipt);
+      console.log("tx failed:", receipt);
     }
     setcrossChainTxId(transactionId);
     return receipt;
   } catch (error) {
-    console.error("error call tx:", error);
+    console.log("error call tx:", error);
     return { transactionHash: null };
   }
 };
@@ -1754,7 +1754,7 @@ export const fetchUserVaultBalance = async (
 
   const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
   if (!publicClient) {
-    console.error(
+    console.log(
       `Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].chain.id}`,
     );
     return null;
@@ -1798,7 +1798,7 @@ export const fetchUserVaultMaxRedeem = async (
 
   const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
   if (!publicClient) {
-    console.error(`Error get public client ${SUPPORTED_CHAINS[0].chain.id}`);
+    console.log(`Error get public client ${SUPPORTED_CHAINS[0].chain.id}`);
     return null;
   }
 
@@ -1812,7 +1812,7 @@ export const fetchUserVaultMaxRedeem = async (
 
     return formatUnits(maxRedeemAmount, decimals);
   } catch (error) {
-    console.error("Failed get maxRedeem:", error);
+    console.log("Failed get maxRedeem:", error);
     return null;
   }
 };
@@ -1890,7 +1890,7 @@ export const getBeamTokenId = async (
     );
     return token?.id ?? null;
   } catch (err) {
-    console.error("Failed to fetch token ID:", err);
+    console.log("Failed to fetch token ID:", err);
     return null;
   }
 };
@@ -1964,7 +1964,7 @@ export const getPathDataAndAmountOut = async (
       amountOut: BigInt(amountOutRaw),
     };
   } catch (e: any) {
-    console.error("❌ Beam swap fetch failed:", e.message || e);
+    console.log("❌ Beam swap fetch failed:", e.message || e);
     return { encodedPath: null, amountOut: BigInt(0) };
   }
 };
@@ -1987,7 +1987,7 @@ export const getSharesFromDeposit = async (
 
   if (!publicClient) {
     const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].chain.id}`;
-    console.error(errorMsg);
+    console.log(errorMsg);
     throw new Error(errorMsg);
   }
 
@@ -2031,7 +2031,7 @@ export const getAssetsFromShares = async (
   const publicClient = getPublicClient(chainId);
 
   if (!publicClient) {
-    console.error(`error get publicClient  for chain with ID ${chainId}`);
+    console.log(`error get publicClient  for chain with ID ${chainId}`);
     return 0n;
   }
 
@@ -2152,7 +2152,7 @@ export async function fetchReceiptTokens(
         try {
           const publicClient = getPublicClient(chainId);
           if (!publicClient) {
-            console.error(
+            console.log(
               `Failed to get public client for chain id: ${chainId}`,
             );
             result[v.id] = ethers.ZeroAddress;

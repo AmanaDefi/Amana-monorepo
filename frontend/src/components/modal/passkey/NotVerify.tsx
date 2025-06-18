@@ -18,7 +18,7 @@ export const NotVerify = () => {
       successAuth();
     },
     onError: (err) => {
-      console.error("Error passkey auth:", err);
+      console.log("Error passkey auth:", err);
     },
   },);
 

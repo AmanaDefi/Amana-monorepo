@@ -36,7 +36,7 @@ export const SignUpModal = () => {
       console.log("Success email auth", result);
     },
     onError: (err) => {
-      console.error("Error email auth:", err);
+      console.log("Error email auth:", err);
       setError(err.message);
     },
   });

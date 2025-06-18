@@ -95,7 +95,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       }, 2000);
     } catch (err) {
       setCopySuccess(false);
-      console.error("Error copy address", err);
+      console.log("Error copy address", err);
     }
   };
 

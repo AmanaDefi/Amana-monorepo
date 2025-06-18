@@ -106,7 +106,7 @@ const ChainSwitcher: React.FC = () => {
       // Close dropdown
       setIsOpen(false);
     } catch (error) {
-      console.error("Failed to switch chain:", error);
+      console.log("Failed to switch chain:", error);
       // Pass the error directly to the error toast function
       // which will extract the revert reason if available
       showErrorToast(error);

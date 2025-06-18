@@ -21,7 +21,7 @@ const OptionsModalB = () => {
       successAuth();
     },
     onError: (err) => {
-      console.error("Error google auth:", err);
+      console.log("Error google auth:", err);
       setError(err.message);
     },
   });
