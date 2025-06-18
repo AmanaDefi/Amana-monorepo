@@ -249,10 +249,9 @@ const VaultsDetailContainer: React.FC<{
   );
 
   const isProcessingTx =
-    !finishedTransaction &&
-    (isTransactionProcessing ||
-      (Object.keys(transactionStepFeedback).length > 0 &&
-        transactionStepFeedback[0]?.status !== TransactionStepStatus.error));
+    isTransactionProcessing ||
+    (!finishedTransaction && Object.keys(transactionStepFeedback).length > 0);
+  
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
     if (!isTxInProgress) {
@@ -394,9 +393,7 @@ const VaultsDetailContainer: React.FC<{
               defaultOpen={true}
             >
               <DepositInstruction
-                transactionStepFeedback={
-                  isProcessingTx ? transactionStepFeedback : {}
-                }
+                transactionStepFeedback={transactionStepFeedback}
                 lastTransactionStepFeedback={lastTransactionStepFeedback}
                 finishedTransaction={finishedTransaction}
                 activeChainId={activeChainId}

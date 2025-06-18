@@ -478,11 +478,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     [activeAccount, setChain],
   );
 
-  useEffect(() => {
-    if (chain && activeAccount?.address) {
-      getEvmBalance(activeAccount.address);
-    }
-  }, [chain, activeAccount?.address]);
+  // useEffect(() => {
+  //   if (chain && activeAccount?.address) {
+  //     getEvmBalance(activeAccount.address);
+  //   }
+  // }, [chain, activeAccount?.address]);
 
   return (
     <MultiChainContext.Provider
