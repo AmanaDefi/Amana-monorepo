@@ -95,7 +95,7 @@ export const VaultRow: FC<Props> = React.memo(
               />
             </div>
             <div className="w-[50%]">
-              <AppButton onClick={handleNavigate}>
+              <AppButton variant="gray" onClick={handleNavigate}>
                 {!!walletAddress ? "Details" : "Invest"}
               </AppButton>
             </div>

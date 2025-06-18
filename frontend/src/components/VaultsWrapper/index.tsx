@@ -13,6 +13,8 @@ import { AppButton } from "../button/AppButton";
 import classNames from "classnames";
 import { useLayoutStore } from "@/store/store";
 import { useUser } from "@account-kit/react";
+import { useMyVaults } from "@/hooks/useMyVaults";
+import { EmptyState } from "../DashboardWrapper/components/Tabs";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   return 1;
@@ -40,6 +42,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [displayType, setDisplayType] = useState<"cards" | "list">("cards");
+  const MyVaults = useMyVaults({ vaults, userVaultBalances });
 
   const [isShownMyVaults, setIsShownMyVaults] = useState(
     !!Number(
@@ -72,8 +75,16 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     return () => observer.disconnect();
   }, [setItemsPerPage]);
 
+  const vaultsList = useMemo(() => {
+    if (isShownMyVaults) {
+      return MyVaults;
+    }
+
+    return vaults;
+  }, [MyVaults, vaults, isShownMyVaults]);
+
   const filteredVaults = useMemo(() => {
-    return vaults.filter((vault) => {
+    return vaultsList.filter((vault) => {
       const matchesSearch =
         searchTerm === "" ||
         vault.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,31 +98,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       return matchesSearch && matchesChain && matchesProtocol;
     });
-  }, [vaults, searchTerm, chainFilter, protocolFilter]);
-
-  const MyVaults = useMemo(() => {
-    return filteredVaults.filter((vault) => {
-      const hasDeposited = userVaultBalances
-        ? !!Number(
-            userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
-              ?.balance,
-          )
-        : false;
-
-      return hasDeposited;
-    });
-  }, [filteredVaults, userVaultBalances]);
-
-  const vaultsList = useMemo(() => {
-    if (isShownMyVaults) {
-      return MyVaults;
-    }
-
-    return filteredVaults;
-  }, [MyVaults, filteredVaults, isShownMyVaults]);
+  }, [vaultsList, searchTerm, chainFilter, protocolFilter]);
 
   const sortedVaults = useMemo(() => {
-    return [...vaultsList].sort((a, b) => {
+    return [...filteredVaults].sort((a, b) => {
       let aValue: any, bValue: any;
 
       switch (sortBy.toLowerCase()) {
@@ -143,7 +133,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });
-  }, [vaultsList, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
+  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
 
   const paginatedVaults = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -196,18 +186,17 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           displayType={displayType}
           isShownMyVaults={isShownMyVaults}
           setIsShownMyVaults={setIsShownMyVaults}
-          shouldShowTabs={!!user && !!MyVaults?.length}
         />
 
         <div className="text-gray-400 mb-4 text-sm">
-          Showing {paginatedVaults.length} of {vaultsList.length} vaults
+          Showing {paginatedVaults.length} of {filteredVaults.length} vaults
         </div>
 
         {displayType === "cards" ? (
           <div
             className="grid gap-4"
             style={{
-              gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
             }}
           >
             {paginatedVaults.map((vault) => (
@@ -244,15 +233,29 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
         )}
 
-        {vaultsList.length === 0 && (
-          <div className="flex flex-col items-center py-12 gap-3">
-            <p className="text-white text-lg">No vaults found.</p>
-            <div className="w-[180px]">
-              <AppButton onClick={clearAllFilters}>
-                <span className="relative z-2">Clear Filters</span>
-              </AppButton>
-            </div>
-          </div>
+        {filteredVaults.length === 0 && (
+          <>
+            {!MyVaults?.length ? (
+              <EmptyState
+                title="No positions"
+                description="This account has not yet added any assets"
+                action={{
+                  label: "Earning in one click",
+                  onClick: () => setIsShownMyVaults(false),
+                }}
+                className="border-none shadow-none backdrop-blur-none bg-transparent"
+              />
+            ) : (
+              <div className="flex flex-col items-center py-12 gap-3">
+                <p className="text-white text-lg">No vaults found.</p>
+                <div className="w-[180px]">
+                  <AppButton variant="reverse" onClick={clearAllFilters}>
+                    <span className="relative z-2">Clear Filters</span>
+                  </AppButton>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -261,6 +264,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           <div className="flex gap-2 flex-row items-center">
             <div className={`${currentPage === 1 && "cursor-not-allowed"}`}>
               <AppButton
+                variant="gray"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
               >
@@ -271,7 +275,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             {Array.from({ length: totalPages }).map((_, index) => (
               <div key={index} className="w-12">
                 <AppButton
-                  isBlue={index + 1 === currentPage}
+                  variant={index + 1 === currentPage ? "blue" : "gray"}
                   onClick={() => setCurrentPage(index + 1)}
                 >
                   {index + 1}
@@ -283,6 +287,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               className={`${currentPage === totalPages && "cursor-not-allowed"}`}
             >
               <AppButton
+                variant="gray"
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }

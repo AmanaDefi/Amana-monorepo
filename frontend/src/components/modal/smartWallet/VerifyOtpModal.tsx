@@ -23,24 +23,44 @@ const formatEmail = (email: string) => {
 
 export const VerifyOtpModal = () => {
   const { step, email, closeAll, authenticate, successAuth } = useAuthStore();
-  const { authenticate: OTPAuth } = useAuthenticate();
+  const [error, setError] = useState<"sent" | "invalid" | "">();
+  const { authenticate: OTPAuth, isPending } = useAuthenticate({
+    onSuccess: (result) => {
+      console.log(result);
+      console.log("Success email auth", result);
+      authenticate(result.address);
+      successAuth();
+    },
+    onError: (error) => {
+      console.log("Error email auth:", error.message);
+      if (
+        error.message.includes("otpId not found") ||
+        error.message.includes("Invalid OTP code")
+      ) {
+        setError("invalid");
+      } else if (error.message.includes("Max number of OTPs")) {
+        setError("sent");
+      }
+    },
+  });
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const [error, setError] = useState(false);
   const [isResentdedOtp, setIsResendedOtp] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const clearAllFields = () => {
     setCode(["", "", "", "", "", ""]);
-    setError(false);
+    setError("");
     inputRefs.current[0]?.focus();
   };
+
+  console.log(isResentdedOtp, "isResentdedOtp");
 
   const handleChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-    setError(false);
+    setError("");
 
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
@@ -55,7 +75,7 @@ export const VerifyOtpModal = () => {
       } else {
         newCode[index] = "";
         setCode(newCode);
-        setError(false);
+        setError("");
       }
     }
 
@@ -84,7 +104,7 @@ export const VerifyOtpModal = () => {
         newCode[i] = digits[i] || "";
       }
       setCode(newCode);
-      setError(false);
+      setError("");
 
       const lastFilledIndex = Math.min(digits.length - 1, 5);
       inputRefs.current[lastFilledIndex]?.focus();
@@ -92,56 +112,26 @@ export const VerifyOtpModal = () => {
   };
 
   const handleSendOTP = (code: string) => {
-    OTPAuth(
-      {
-        type: "otp",
-        otpCode: code,
-      },
-      {
-        onSuccess: (result) => {
-          console.log(result);
-          console.log("Success google auth", result);
-          authenticate(result.address);
-          successAuth();
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-          setError(true);
-        },
-      },
-    );
+    OTPAuth({
+      type: "otp",
+      otpCode: code,
+    });
   };
 
   const resendEmail = () => {
-    OTPAuth(
-      {
-        type: "email",
-        email: email,
-      },
-      {
-        onSuccess: (result) => {
-          console.log(result);
-          console.log("Success google auth", result);
-          setIsResendedOtp(true);
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-          setError(true);
-        },
-      },
-    );
+    if (isPending || isResentdedOtp) return;
+    OTPAuth({
+      type: "email",
+      email: email,
+    });
+
+    setIsResendedOtp(true);
   };
 
   const handleSubmit = () => {
     const otp = code.join("");
     if (otp.length < 6) return;
     handleSendOTP(otp);
-
-    // if (otp !== "123456") {
-    //   setError(true);
-    // } else {
-    //   authenticate("0xMockUserWallet");
-    // }
   };
 
   useEffect(() => {
@@ -153,7 +143,7 @@ export const VerifyOtpModal = () => {
   useEffect(() => {
     if (step !== "verify") {
       setCode(["", "", "", "", "", ""]);
-      setError(false);
+      setError("");
     }
   }, [step]);
 
@@ -214,7 +204,7 @@ export const VerifyOtpModal = () => {
                     "border border-[#3E73C4]": digit !== "" && !error,
                     "border border-transparent hover:border-[#3E73C4] focus:border-[#3E73C4]":
                       digit === "" && !error,
-                    "border border-[#FF1E1E]": error,
+                    "border border-[#FF1E1E]": error === "invalid",
                   },
                 )}
               />
@@ -229,7 +219,11 @@ export const VerifyOtpModal = () => {
                   height={16}
                   className="fill-[#FF1E1E]"
                 />
-                <p className="text-[12px] font-normal">The wrong code</p>
+                <p className="text-[12px] font-normal">
+                  {error === "invalid"
+                    ? "Invalid OTP code"
+                    : "Max number of OTPs was send. Try again later"}
+                </p>
               </div>
             </div>
           )}
@@ -239,9 +233,13 @@ export const VerifyOtpModal = () => {
           <button
             type="button"
             onClick={resendEmail}
-            className="text-[#1B46E0] font-normal text-sm hover:underline transition"
+            disabled={isResentdedOtp}
+            className={clsx(
+              "text-[#1B46E0] font-normal text-sm hover:underline transition disabled:no-underline",
+              { "text-gray-500 hover:no-underline": isResentdedOtp },
+            )}
           >
-            {isResentdedOtp
+            {isResentdedOtp && error !== 'sent'
               ? "New code was send to your email"
               : "Not received the email?"}
           </button>

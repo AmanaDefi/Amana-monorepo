@@ -9,18 +9,17 @@ import {
 } from "@/types/types";
 import { isApproved } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
-import {
-  APPROVED_TOKENS,
-  CHAIN_ID,
-  HERMES_URL,
-} from "@/constants/chainConfig";
+import { APPROVED_TOKENS, CHAIN_ID, HERMES_URL } from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { PublicKey } from "@solana/web3.js";
-import { keccak_256 } from "js-sha3";
 import SolanaConnectionSingleton from "./solanaSingleton";
 import { erc20Abi, getContract, formatUnits } from "viem";
-import { getPublicClient, } from "./getPublicClient";;
+import { getPublicClient } from "./getPublicClient";
+import { client } from "./client";
+import { Chain } from "viem";
+import { keccak_256 } from "@noble/hashes/sha3";
+import { bytesToHex } from "@noble/hashes/utils";
 
 export const formatTotalAssets = (
   totalAssets: string,
@@ -65,6 +64,9 @@ export function getVaultErrorMessage(
   inputValue: string | undefined,
   steps: Action[],
 ): string {
+  if (Number(value) > 0 && (!inputValue || Number(inputValue) === 0)) {
+    return "Insufficient balance";
+  }
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
     return "Insufficient balance";
@@ -600,17 +602,21 @@ export const getERC20TokenBalance = async (
     }
 
     const publicClient = getPublicClient(chain.id);
-    if (!publicClient)
+    if (!publicClient) {
+      console.log("NO publicClient for chainId", chain.id);
       return {
         balance: 0n,
         decimals: 18,
       };
+    }
 
     const contract = getContract({
-      client: { public: publicClient},
+      client: { public: publicClient },
       address: tokenAddress,
       abi: erc20Abi,
     });
+
+    console.log(publicClient, 'publicClient.account')
 
     try {
       // Get token decimals first to avoid potential read issues
@@ -627,6 +633,8 @@ export const getERC20TokenBalance = async (
 
       // Now get the balance
       const balance = await contract.read.balanceOf([walletAddress]);
+
+      console.log(balance, decimals, 'balance, decimals')
 
       return {
         balance: balance,
@@ -703,19 +711,26 @@ export function shortAddressForm(address: string) {
 }
 
 export function getSolanaEVMAddress(solanaPublicKey: string) {
-  // Ensure we're working with a proper Solana public key
-  const pubKey = new PublicKey(solanaPublicKey);
+  // Log the input
+  console.log("Solana Public Key:", solanaPublicKey);
 
-  // Get the public key as a Buffer
-  const pubKeyBuffer = pubKey.toBuffer();
+  // Convert the base58 string into ASCII bytes
+  const asciiBytes = Buffer.from(solanaPublicKey, "ascii");
 
-  // Hash the public key using keccak256
-  const hash = keccak_256(pubKeyBuffer);
-
-  // Take the last 20 bytes (40 characters in hex) and add 0x prefix
-  const evmAddress = "0x" + hash.substring(hash.length - 40);
+  // Take the LAST 20 bytes (last 40 hex characters)
+  const evmAddress = "0x" + asciiBytes.slice(-20).toString("hex");
 
   return evmAddress;
+}
+
+export function getSolanaAddressFromEVM(evmAddress: string): string {
+  // Strip the 0x prefix if present
+  const hex = evmAddress.startsWith("0x") ? evmAddress.slice(2) : evmAddress;
+
+  // Convert hex to ASCII string
+  const solanaAddress = Buffer.from(hex, "hex").toString("ascii");
+
+  return solanaAddress;
 }
 
 export function format(value: bigint, decimals: number) {
@@ -767,7 +782,7 @@ export const formatTokenBalance = (
     symbol?.includes("BUSD");
   // Format with 2 decimal places for stablecoins, 4 for others
   const decimals = isStablecoin ? 2 : 4;
-  return num.toFixed(decimals);
+  return parseFloat(num.toFixed(decimals)).toString();
 };
 
 export function bigIntReplacer(key: string, value: any) {

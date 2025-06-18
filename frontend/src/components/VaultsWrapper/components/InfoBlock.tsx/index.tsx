@@ -14,16 +14,18 @@ export const InfoBlock = ({
   isMiddle?: boolean;
 }) => {
   return (
-    <div className="hover:cursor-pointer relative group ">
+    <div className="hover:cursor-pointer relative group">
       <InfoIcon />
       <div
         className={classNames(
           "absolute bottom-10 -left-5 hidden group-hover:block transition-all",
-          {"-left-[295px] ": isRight},
-          {"-left-[130px] ": isMiddle}
+          { "-left-[295px] ": isRight },
+          { "-left-[130px] ": isMiddle },
         )}
       >
-        <InfoPopup isRight={isRight} isMiddle={isMiddle} >{children}</InfoPopup>
+        <InfoPopup isRight={isRight} isMiddle={isMiddle}>
+          {children}
+        </InfoPopup>
       </div>
     </div>
   );

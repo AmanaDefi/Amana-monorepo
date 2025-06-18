@@ -10384,10 +10384,10 @@ clsx@^2.0.0, clsx@^2.1.0, clsx@^2.1.1:
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-2.1.1.tgz#eed397c9fd8bd882bfb18deab7102049a2f32999"
   integrity sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==
 
-codemelt-retro-api-sdk@^0.9.5:
-  version "0.9.6"
-  resolved "https://registry.yarnpkg.com/codemelt-retro-api-sdk/-/codemelt-retro-api-sdk-0.9.6.tgz#afe30cb9401ae38030eacc4a249f032dab4bf651"
-  integrity sha512-GGuXqmguLD5HPmrp5lpVVTlOPsajYf574SQNsqP60x4sjj+d1EViEZ06fW5axgW3ajpM2sxTeFMWLau70vZBIQ==
+codemelt-retro-api-sdk@^0.9.7:
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/codemelt-retro-api-sdk/-/codemelt-retro-api-sdk-0.9.7.tgz#b9140d4e6ff33a86056ba77244d9969da5fd5110"
+  integrity sha512-FdT8oiAKVLSvSdy3BK1zdwS7Nsu79US8u/2pEN2jXOdSGWOTZWtRdcqhSHEMd3lptHw1k/oBon3aZ9Vr+rTB6Q==
   dependencies:
     "@nestia/fetcher" "^3.4.1"
 
@@ -15473,6 +15473,11 @@ qrcode.react@^1.0.1:
     loose-envify "^1.4.0"
     prop-types "^15.6.0"
     qr.js "0.0.0"
+
+qrcode.react@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/qrcode.react/-/qrcode.react-4.2.0.tgz#1bce8363f348197d145c0da640929a24c83cbca3"
+  integrity sha512-QpgqWi8rD9DsS9EP3z7BT+5lY5SFhsqGjpgW5DY/i3mK4M9DTBNz3ErMi8BWYEfI3L0d8GIbGmcdFAS1uIRGjA==
 
 qrcode@1.5.3:
   version "1.5.3"

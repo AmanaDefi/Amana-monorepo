@@ -8,15 +8,14 @@ import MobileSidebar from "./MobileSidebarMenu";
 import { useRef, useState } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { AppButton } from "./button/AppButton";
 import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
-import { BrowserProvider, ethers, Signer } from "ethers";
-import { ethereumProvider } from "@/utils/providers";
+import { Signer } from "ethers";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
-import { useUser } from "@account-kit/react";
+import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
+import BurgerMenuIcon from "./svg/BurgerMenu";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -47,17 +46,15 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
   const activeAccount = useUser();
+  const account = useAccount({ type: "ModularAccountV2" });
   const { walletAddress, switchToChain, activeChain, balance } =
     useMultiChain();
   const isConnected = !!walletAddress;
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMenuOpened, setIsMenuOpened] = useState(false);
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
-
-  const [signer, setSigner] = useState<Signer | null>(null);
-
-  console.log("active chain", activeChain);
 
   const { openStep } = useAuthStore();
 
@@ -68,6 +65,10 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const toggleMobileSidebar = () => {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);
   };
+
+  const toggleMenu = () => {
+    setIsMenuOpened(prev => !prev)
+  }
 
   return (
     <>
@@ -111,10 +112,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-
           {isConnected && activeAccount?.type === "eoa" && <ChainSwitcher />}
           <div className="hidden md:block">
-
             {!isConnected ? (
               <Button variant="signIn" onClick={() => openStep("optionsA")}>
                 Sign in
@@ -132,10 +131,6 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                     <p className="text-[18px] text-white font-normal">
                       {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                     </p>
-                    {/* <p className="text-[#535E73]">
-                      {Number(balance.formatted).toFixed(4)}{" "}
-                      {activeChain?.nativeCurrency?.symbol}
-                    </p> */}
                   </div>
                 </div>
               </Button>
@@ -143,7 +138,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </div>
 
           {path === "/" && (
-            <div className="md:hidden ">
+            <div className="md:hidden flex flex-row item-center gap-2">
               {!isConnected ? (
                 <Button variant="signIn" onClick={() => openStep("optionsA")}>
                   Sign in
@@ -163,14 +158,17 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                       <p className="text-[18px] text-white font-normal">
                         {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                       </p>
-                      {/* <p className="text-[#535E73]">
-                      {Number(balance.formatted).toFixed(4)}{" "}
-                      {activeChain?.nativeCurrency?.symbol}
-                    </p> */}
                     </div>
                   </div>
                 </Button>
               )}
+              <button
+                onClick={toggleMenu}
+                className="md:hidden text-white p-2"
+                aria-label="Toggle mobile menu"
+              >
+                <BurgerMenuIcon />
+              </button>
             </div>
           )}
         </div>

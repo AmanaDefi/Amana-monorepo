@@ -1,6 +1,5 @@
 import { DashboardIcon } from "@/components/svg/sidebar/DashboardIcon";
 import { EarnIcon } from "@/components/svg/sidebar/EarnIcon";
-import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
 import { ActivityIcon } from "@/components/svg/sidebar/ActivityIcon";
 import { SettingsIcon } from "@/components/svg/sidebar/SettingsIcon";
 import { QandAIcon } from "@/components/svg/sidebar/QandAIcon";
@@ -20,12 +19,6 @@ export const menuItems = [
     icon: EarnIcon,
     type: "link" as const,
     href: "/",
-  },
-  {
-    id: "wallet",
-    label: "Wallet",
-    icon: WalletIcon,
-    type: "button" as const,
   },
   {
     id: "activity",

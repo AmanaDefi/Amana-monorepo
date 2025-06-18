@@ -13,9 +13,12 @@ abstract contract EthStrategyParent is StrategyParent {
     function _invest() internal override {
         if (msg.value == 0) revert NoFundsReceived();
         BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
+
         _depositFundsIntoYieldSource(msg.value, txn.minimumOut);
 
         _sendInvestConfirmation(
+            totalUnderlyingAssets() - totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),
             lastProcessedNonce + 1
         );
@@ -58,7 +61,7 @@ abstract contract EthStrategyParent is StrategyParent {
         }
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             1e18,
-            txn.amountOrFraction
+            txn.assetAmount
         );
 
         IStrategy(txn.newStrategy).depositFromOldStrategy{

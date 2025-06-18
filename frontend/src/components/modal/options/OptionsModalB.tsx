@@ -15,7 +15,16 @@ import { useAuthenticate } from "@account-kit/react";
 const OptionsModalB = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
 
-  const { authenticate, isPending, error } = useAuthenticate();
+  const { authenticate, isPending, error } = useAuthenticate({
+    onSuccess: (result) => {
+      console.log("Success google auth", result);
+      successAuth();
+    },
+    onError: (err) => {
+      console.log("Error google auth:", err);
+      setError(err.message);
+    },
+  });
 
   const handleLogin = () => {
     if (isPending) return;
@@ -25,17 +34,6 @@ const OptionsModalB = () => {
         authProviderId: "google",
         isCustomProvider: false,
         mode: "popup",
-      },
-      {
-        onSuccess: (result) => {
-          console.log(result);
-          console.log("Success google auth", result);
-          successAuth();
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-          setError(err.message);
-        },
       },
     );
   };

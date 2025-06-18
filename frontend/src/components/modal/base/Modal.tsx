@@ -11,6 +11,7 @@ type ModalProps = {
   customCloseButton?: ReactNode;
   maxWidth?: string;
   minHeight?: string;
+  noBlur?: boolean;
 };
 
 export const Modal = ({
@@ -22,6 +23,7 @@ export const Modal = ({
   customCloseButton,
   maxWidth = "max-w-md",
   minHeight,
+  noBlur = false,
 }: ModalProps) => {
   return (
     <AnimatePresence>
@@ -33,10 +35,14 @@ export const Modal = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="fixed inset-0 bg-[rgba(12,16,21,0.5)] backdrop-blur-[20px]"
+              className={`fixed h-[100vh] inset-0 ${
+                noBlur
+                  ? "bg-transparent"
+                  : "bg-[rgba(12,16,21,0.5)] backdrop-blur-[20px]"
+              }`}
             />
 
-            <div className="fixed inset-0 flex items-center justify-center p-4">
+            <div className="fixed inset-0 flex h-[100vh] items-center justify-center p-4">
               <DialogPanel as={Fragment}>
                 <motion.div
                   key="modal"
@@ -48,7 +54,7 @@ export const Modal = ({
                     stiffness: 300,
                     damping: 24,
                   }}
-                  className={`relative w-full ${maxWidth} ${minHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
+                  className={`relative flex max-h-[80%] w-full ${maxWidth} ${minHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
                 >
                   {customCloseButton}
                   <div className={paddingClass}>{children}</div>

@@ -3,23 +3,30 @@
 import React from "react";
 import InvestIcon from "./svg/InvestIcon";
 import Button from "./Button";
-import { useSignerStatus } from "@account-kit/react";
+import { useUser } from "@account-kit/react";
 import { useAuthStore } from "@/store/authStore";
+import { useFundWalletStore } from "@/store/fundWalletStore";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const InvestBlock = () => {
-  const { isConnected } = useSignerStatus();
+  const { walletAddress } = useMultiChain();
   const { openStep } = useAuthStore();
+  const { setStep } = useFundWalletStore();
+  const user = useUser();
 
   const handleFundWallet = () => {
-    // Logic for replenishing the wallet
-    console.log("Fund wallet clicked");
+    if (user?.type === "eoa") {
+      openStep("recieve");
+    } else {
+      setStep("chooseBuyWith");
+    }
   };
 
   return (
     <div className="font-gotham pl-[44px] pr-[40px] py-[18px] flex items-center justify-between rounded-[16px] bg-[rgba(20,23,31,0.15)] backdrop-blur-[20px] shadow-md before-gradient-border">
       <div className="flex flex-row gap-4">
         <div className="rounded-full bg-[#1B46E0] w-[44px] h-[44px] flex items-center justify-center">
-          <InvestIcon width={20} height={21} />
+          <InvestIcon width={25} height={25} />
         </div>
         <div className="flex flex-col">
           <p className="text-white font-medium text-[24px]">
@@ -31,7 +38,7 @@ const InvestBlock = () => {
         </div>
       </div>
 
-      {isConnected ? (
+      {!!walletAddress ? (
         <Button
           variant="primary"
           className="w-[192px] h-[56px] text-[14px] font-normal text-white"

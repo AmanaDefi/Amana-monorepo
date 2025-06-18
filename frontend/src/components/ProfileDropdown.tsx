@@ -8,8 +8,6 @@ import CopyIcon from "./svg/CopyIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { LogOutIcon } from "./svg/sidebar/LogOutIcon";
 
-
-
 interface MenuItem {
   label: string;
   href?: string;
@@ -97,7 +95,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       }, 2000);
     } catch (err) {
       setCopySuccess(false);
-      console.error("Error copy address", err);
+      console.log("Error copy address", err);
     }
   };
 

@@ -31,24 +31,21 @@ type FormData = z.infer<typeof schema>;
 export const SignUpModal = () => {
   const { step, closeAll, updateField, setLoading, setError, openStep } =
     useAuthStore();
-  const { authenticate, isPending, error } = useAuthenticate();
+  const { authenticate, isPending, error } = useAuthenticate({
+    onSuccess: (result) => {
+      console.log("Success email auth", result);
+    },
+    onError: (err) => {
+      console.log("Error email auth:", err);
+      setError(err.message);
+    },
+  });
 
   const handleLogin = (email: string) => {
-    authenticate(
-      {
-        type: "email",
-        email,
-      },
-      {
-        onSuccess: (result) => {
-          console.log("Success google auth", result);
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-          setError(err.message);
-        },
-      },
-    );
+    authenticate({
+      type: "email",
+      email,
+    });
   };
 
   const {
@@ -79,7 +76,7 @@ export const SignUpModal = () => {
 
   useEffect(() => {
     if (step !== "signup") {
-      reset(); 
+      reset();
     }
   }, [step]);
 

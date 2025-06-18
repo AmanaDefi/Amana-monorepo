@@ -31,9 +31,9 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   isCollapsed = false,
 }) => {
   const isDisabled =
-    item.id !== "wallet" && item.id !== "logout" && item.id !== "earn";
+    item.id !== "dashboard" && item.id !== "logout" && item.id !== "earn";
 
-  const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-bold text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
+  const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-medium text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
     isCollapsed ? "justify-center max-w-[64px]" : "gap-3"
   }`;
 
@@ -179,7 +179,7 @@ const Sidebar = ({
   return (
     <div
       ref={sidebarRef}
-      className={`rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
+      className={`min-h-[908px] rounded-3xl sidebar-shadow bg-[#0D1117] flex flex-col justify-between transition-all duration-500 ease-in-out relative font-gotham overflow-hidden
     hidden md:flex
     ${isCollapsed ? "w-[136px] px-[29px]" : "w-[302px] px-[29px]"}
     py-[54px] h-full
@@ -201,7 +201,7 @@ const Sidebar = ({
 
           <button
             onClick={toggleSidebar}
-            className={`transition-all duration-500 ease-in-out flex-shrink-0 p-1 ${
+            className={`flex-shrink-0 p-1 ${
               isCollapsed
                 ? "opacity-0 max-w-0 overflow-hidden ml-0"
                 : "opacity-100 max-w-[24px] ml-3"
@@ -212,20 +212,20 @@ const Sidebar = ({
         </div>
 
         <div
-          className={`absolute z-10 top-[160px] right-3 transition-all duration-500 ease-in-out ${
+          className={`absolute z-10 top-[160px] right-3 ${
             isCollapsed
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
           }`}
         >
           <button onClick={toggleSidebar}>
-            <OpenSidebarIcon width={24} height={25} />
+            <OpenSidebarIcon width={20} height={20} />
           </button>
         </div>
 
         <div className="mb-8 overflow-hidden">
           <div
-            className={`text-[24px] font-bold text-white mb-8 transition-all duration-500 ease-in-out whitespace-nowrap ${
+            className={`text-[24px] font-bold text-white mb-8 transition-all duration-200 whitespace-nowrap ${
               isCollapsed
                 ? "opacity-0 max-height-0 overflow-hidden"
                 : "opacity-100 max-height-[32px]"
@@ -236,7 +236,7 @@ const Sidebar = ({
 
           <nav
             className={`transition-all duration-500 ease-in-out ${
-              isCollapsed ? "space-y-4 flex flex-col items-center" : "space-y-4"
+              isCollapsed ? "space-y-4 flex flex-col" : "space-y-4"
             }`}
           >
             {enhancedMenuItems.map((item) => (
@@ -254,7 +254,7 @@ const Sidebar = ({
         </div>
       </div>
 
-      <div className="flex flex-col items-center overflow-hidden">
+      <div className="flex flex-col overflow-hidden">
         <div
           className={`border-t border-[#535E73] my-4 transition-all duration-500 ease-in-out ${
             isCollapsed ? "w-[64px]" : "w-full"

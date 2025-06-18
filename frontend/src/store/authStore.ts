@@ -14,6 +14,8 @@ export type AuthStep =
   | "signature"
   | "checking"
   | "notVerify"
+  | "recieve"
+  | "send"
   | null;
 
 interface AuthState {
@@ -60,7 +62,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       step: "success",
       isLoading: false,
       error: null,
-      email: "",
       username: "",
       otp: "",
     }),
@@ -72,7 +73,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: true,
       userAddress: address,
       step: null,
-      email: "",
       username: "",
       otp: "",
       error: null,

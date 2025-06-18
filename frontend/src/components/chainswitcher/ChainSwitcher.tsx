@@ -11,6 +11,7 @@ import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
@@ -18,6 +19,7 @@ const [zetaChain] = SUPPORTED_CHAINS;
 // ChainSwitcher Component
 const ChainSwitcher: React.FC = () => {
   const wallet = useUser();
+  const { refetchBalance } = useMultiChain();
   const { chain: currentChain, setChain } = useChain(); // Get the current chain (updates automatically)
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
@@ -71,7 +73,7 @@ const ChainSwitcher: React.FC = () => {
   const handleChainSwitch = async (
     chain: (typeof SUPPORTED_CHAINS)[number],
   ) => {
-    if (!wallet) {
+    if (!wallet?.address) {
       try {
         showErrorToast("Please connect your wallet to switch chains.");
       } catch (error) {
@@ -104,7 +106,7 @@ const ChainSwitcher: React.FC = () => {
       // Close dropdown
       setIsOpen(false);
     } catch (error) {
-      console.error("Failed to switch chain:", error);
+      console.log("Failed to switch chain:", error);
       // Pass the error directly to the error toast function
       // which will extract the revert reason if available
       showErrorToast(error);
@@ -142,7 +144,7 @@ const ChainSwitcher: React.FC = () => {
 
   return (
     <div
-      className="z-50 relative bg-gradient-to-b from-[#262830] to-[#06afbc] rounded-full lg:bg-none lg:rounded-none"
+      className="z-50 relative rounded-full "
       ref={dropdownRef}
     >
       <Button
@@ -180,37 +182,6 @@ const ChainSwitcher: React.FC = () => {
         isShownList={isOpen}
         needReset={false}
       />
-      {/* {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-800 rounded-md shadow-lg">
-          {SUPPORTED_CHAINS.map((chain) => (
-            <button
-              key={chain.chain.id}
-              onClick={() => handleChainSwitch(chain)}
-              className="flex items-center w-full px-4 py-2 text-white hover:bg-gray-700 rounded-md"
-              disabled={isLoading !== null}
-              data-tooltip-id={`chain-${chain.chain.id}-tooltip`}
-              data-tooltip-content={`Switch to ${chain.chain.name}`}
-            >
-              <Image
-                src={CHAIN_ICONS[chain.chain.id].url}
-                alt={chain.chain.name}
-                width={40}
-                height={40}
-                sizes="40px"
-              />
-              <span>{chain.chain.name}</span>
-              {isLoading === chain.chain.id ? (
-                <div className="ml-auto">
-                  <ClipLoader size={16} color="#ffffff" />
-                </div>
-              ) : currentChain?.id === chain.chain.id ? (
-                <CheckIcon className="ml-auto h-4 w-4 text-green-500" />
-              ) : null}
-              <Tooltip id={`chain-${chain.chain.id}-tooltip`} />
-            </button>
-          ))}
-        </div>
-      )} */}
     </div>
   );
 };

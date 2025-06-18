@@ -38,7 +38,7 @@ export const SUPPORTED_TOKENS: TokenInfo[] = [
   },
 ];
 
-export const CHAINS_ICONS: TokenInfo[] = [
+export const CHAINS_ICONS_BUTTON: TokenInfo[] = [
   {
     symbol: "ZETA",
     name: "ZETA",
@@ -70,5 +70,5 @@ export const getTokenBySymbol = (symbol: string): TokenInfo | undefined => {
   return SUPPORTED_TOKENS.find((token) => token.symbol === symbol);
 };
 export const getChainBySymbol = (symbol: string): TokenInfo | undefined => {
-  return CHAINS_ICONS.find((icon) => icon.symbol === symbol);
+  return CHAINS_ICONS_BUTTON.find((icon) => icon.symbol === symbol);
 };

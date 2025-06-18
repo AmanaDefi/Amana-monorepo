@@ -31,30 +31,26 @@ export const SignIn = () => {
   } = useForm<PasskeyForm>({
     resolver: zodResolver(passkeySchema),
   });
-  
-  const { authenticate, isPending, error } = useAuthenticate();
+
+  const { authenticate, isPending } = useAuthenticate({
+    onSuccess: (result) => {
+      console.log(result);
+      console.log("Success passkey auth", result);
+      successAuth();
+    },
+    onError: (err) => {
+      console.log("Error passkey auth:", err);
+      setError(err.message);
+    },
+  });
   const onSubmit = (data: PasskeyForm) => {
-    authenticate(
-      {
-        type: "passkey",
-        createNew: true,
-        username: data.passkey,
-      },
-      {
-        onSuccess: (result) => {
-          console.log(result);
-          console.log("Success google auth", result);
-          successAuth();
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-          setError(err.message);
-        },
-      },
-    );
+    if (isPending) return;
+    authenticate({
+      type: "passkey",
+      createNew: true,
+      username: data.passkey,
+    });
   };
-
-
 
   return (
     <Modal

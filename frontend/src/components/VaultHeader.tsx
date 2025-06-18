@@ -28,7 +28,7 @@ export default function VaultHeader({
   transactionCompleted: boolean;
   selectedToken?: Token;
 }): JSX.Element {
-  const { activeChain } = useMultiChain();
+  const { activeChain, walletAddress } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [depositAmount, setDepositAmount] = useState("0");
   const lastVaultIdRef = useRef<string | null>(null);
@@ -224,29 +224,29 @@ export default function VaultHeader({
           </div>
         </div>
       </div>
-      <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:pr-10 gap-4 md:gap-[56px]">
-          <LargeCardStat
-            id="deposits"
-            label="Deposits"
-            value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
-              vaultData.inputToken.symbol
-            }`}
-            secondaryValue={`$ ${formatCurrency(
-              depositAmountNumber * vaultTokenPrice
-            )}`}
-            tooltip="Value of your vault deposits"
-          />
-          <LargeCardStat
-            id="wallet"
-            label="Your Wallet"
-            value={`${formattedWalletBalance} ${symbol}`}
-            secondaryValue={`$ ${formatCurrency(
-              Number(walletTokenBalance.formatted) * price
-            )}`}
-            tooltip="Value of deposit assets held in your wallet"
-          />
-          {/* <LargeCardStat
+      {walletAddress && (
+        <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:pr-10 gap-4 md:gap-[56px]">
+            <LargeCardStat
+              id="deposits"
+              label="Deposits"
+              value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${vaultData.inputToken.symbol
+                }`}
+              secondaryValue={`$ ${formatCurrency(
+                depositAmountNumber * vaultTokenPrice
+              )}`}
+              tooltip="Value of your vault deposits"
+            />
+            <LargeCardStat
+              id="wallet"
+              label="Your Wallet"
+              value={`${formattedWalletBalance} ${symbol}`}
+              secondaryValue={`$ ${formatCurrency(
+                Number(walletTokenBalance.formatted) * price
+              )}`}
+              tooltip="Value of deposit assets held in your wallet"
+            />
+            {/* <LargeCardStat
             id="APY"
             label="7d APY"
             value={
@@ -264,8 +264,9 @@ export default function VaultHeader({
             }
             tooltip="APY for the last 7 days"
           /> */}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

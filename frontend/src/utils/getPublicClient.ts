@@ -26,13 +26,13 @@ export const getRpcUrl = (chain: Chain): string => {
 };
 
 export const getPublicClient = (chainId: number): PublicClient | null => {
-  if (clientCache.has(chainId)) {
-    return clientCache.get(chainId)!;
-  }
+  // if (clientCache.has(chainId)) {
+  //   return clientCache.get(chainId)!;
+  // }
 
   const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
-    console.error(`Chain with id:${chainId} doesn't supported`);
+    console.log(`Chain with id:${chainId} doesn't supported`);
     return null;
   }
 
@@ -46,6 +46,7 @@ export const getPublicClient = (chainId: number): PublicClient | null => {
 
   clientCache.set(chainId, client);
 
+
   return client;
 };
 
@@ -56,17 +57,17 @@ export const getWalletClient = (chainId: number): WalletClient | null => {
 
   const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
   if (!chain) {
-    console.error(`Chain with id:${chainId} doesn't supported`);
+    console.log(`Chain with id:${chainId} doesn't supported`);
     return null;
   }
-  if (!window?.ethereum || window.ethereum === undefined) {
-    console.error(`There is no wallet providers`);
+  if (!window || !window?.ethereum || window.ethereum === undefined) {
+    console.log(`There is no wallet providers`);
     return null;
   }
 
   const client = createWalletClient({
     chain: chain,
-    transport: custom(window?.ethereum!),
+    transport: custom(window.ethereum),
   });
 
   walletClientCache.set(chainId, client);

@@ -31,13 +31,6 @@ export default function MobileMenuModal() {
                         Vaults
                     </span>
                     <span
-                        className={`cursor-pointer py-6 ${path === "/buy" ? "font-bold text-themeColor" : ""
-                            }`}
-                        onClick={() => router.push("/wallet")}
-                    >
-                        Wallet
-                    </span>
-                    <span
                         className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-themeColor" : ""
                             }`}
                         onClick={() => router.push("/about")}
@@ -58,13 +51,6 @@ export default function MobileMenuModal() {
                     >
                         Roadmap
                     </span>
-                    {/* <span
-                        className={`cursor-pointer py-6 ${path === "/old-vaults" ? "font-bold text-themeColor" : ""
-                            }`}
-                        onClick={() => router.push("/old-vaults")}
-                    >
-                        Old Vaults
-                    </span> */}
                 </nav>
             </div>
         </>

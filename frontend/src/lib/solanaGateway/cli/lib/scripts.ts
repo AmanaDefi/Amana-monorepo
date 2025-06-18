@@ -59,7 +59,7 @@ export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: num
 }
 
 export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: string, args: any, program: anchor.Program) => {
-  return await createSolanaDepositAndCallTx(payer, 0, recipient, args, program);
+  return await createSolanaDepositAndCallTx(payer, 1, recipient, args, program);
 }
 
 export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, program: anchor.Program) => {

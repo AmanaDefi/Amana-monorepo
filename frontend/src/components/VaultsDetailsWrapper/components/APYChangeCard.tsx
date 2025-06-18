@@ -23,16 +23,18 @@ export default function APYChangeCard() {
         <span className="text-[#1B46E0] text-sm font-bold"> 6,427%</span>
       </div>
       <div className="relative flex items-center mt-8">
-        <div className="bg-[#1B46E0] w-full h-1 rounded-full"></div>
+        <div className="bg-[#535E73] w-full h-1 rounded-full"></div>
         <img
           src="/elephant.gif"
           alt="Elephant"
           width={24}
           height={24}
-          className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 drop-shadow-lg"
+          className="absolute left-2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 drop-shadow-lg"
         />
       </div>
-      <p className="text-[12px] text-[#535E73] mt-4">Last updated 21 minutes ago</p>
+      <p className="text-[12px] text-[#535E73] mt-4">
+        Last updated 21 minutes ago
+      </p>
     </div>
   );
 }
