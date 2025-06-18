@@ -23,24 +23,37 @@ const formatEmail = (email: string) => {
 
 export const VerifyOtpModal = () => {
   const { step, email, closeAll, authenticate, successAuth } = useAuthStore();
-  const { authenticate: OTPAuth } = useAuthenticate();
+  const [error, setError] = useState("");
+  const { authenticate: OTPAuth, isPending,} = useAuthenticate({
+    onSuccess: (result) => {
+      console.log(result);
+      console.log("Success google auth", result);
+      authenticate(result.address);
+      successAuth();
+    },
+    onError: (error) => {
+      console.log("Error google auth:", error);
+      setError('Failed to check OTP');
+    },
+  });
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const [error, setError] = useState(false);
   const [isResentdedOtp, setIsResendedOtp] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const clearAllFields = () => {
     setCode(["", "", "", "", "", ""]);
-    setError(false);
+    setError("");
     inputRefs.current[0]?.focus();
   };
+
+  console.log(isResentdedOtp, 'isResentdedOtp')
 
   const handleChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-    setError(false);
+    setError("");
 
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
@@ -55,7 +68,7 @@ export const VerifyOtpModal = () => {
       } else {
         newCode[index] = "";
         setCode(newCode);
-        setError(false);
+        setError("");
       }
     }
 
@@ -84,7 +97,7 @@ export const VerifyOtpModal = () => {
         newCode[i] = digits[i] || "";
       }
       setCode(newCode);
-      setError(false);
+      setError("");
 
       const lastFilledIndex = Math.min(digits.length - 1, 5);
       inputRefs.current[lastFilledIndex]?.focus();
@@ -92,56 +105,28 @@ export const VerifyOtpModal = () => {
   };
 
   const handleSendOTP = (code: string) => {
-    OTPAuth(
-      {
-        type: "otp",
-        otpCode: code,
-      },
-      {
-        onSuccess: (result) => {
-          console.log(result);
-          console.log("Success google auth", result);
-          authenticate(result.address);
-          successAuth();
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-          setError(true);
-        },
-      },
-    );
+    OTPAuth({
+      type: "otp",
+      otpCode: code,
+    });
   };
 
   const resendEmail = () => {
+    if (isPending || isResentdedOtp) return;
     OTPAuth(
       {
         type: "email",
         email: email,
       },
-      {
-        onSuccess: (result) => {
-          console.log(result);
-          console.log("Success google auth", result);
-          setIsResendedOtp(true);
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-          setError(true);
-        },
-      },
     );
+
+    setIsResendedOtp(true)
   };
 
   const handleSubmit = () => {
     const otp = code.join("");
     if (otp.length < 6) return;
     handleSendOTP(otp);
-
-    // if (otp !== "123456") {
-    //   setError(true);
-    // } else {
-    //   authenticate("0xMockUserWallet");
-    // }
   };
 
   useEffect(() => {
@@ -153,7 +138,7 @@ export const VerifyOtpModal = () => {
   useEffect(() => {
     if (step !== "verify") {
       setCode(["", "", "", "", "", ""]);
-      setError(false);
+      setError("");
     }
   }, [step]);
 
@@ -229,7 +214,7 @@ export const VerifyOtpModal = () => {
                   height={16}
                   className="fill-[#FF1E1E]"
                 />
-                <p className="text-[12px] font-normal">The wrong code</p>
+                <p className="text-[12px] font-normal">{error}</p>
               </div>
             </div>
           )}
