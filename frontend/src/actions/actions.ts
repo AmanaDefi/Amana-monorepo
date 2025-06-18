@@ -39,6 +39,8 @@ import {
   isZetachain,
   getSolanaEVMAddress,
 } from "@/utils/utils";
+import { ZRC20_TOKENS_BY_ADDRESS } from "../constants/ZRC20TokensByAddress";
+import { calculateGasFeeInVaultAsset, convertGasFeeToInputToken } from "../utils/gasFeeCalculations";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -956,14 +958,58 @@ const getPathDataAndMinAmountOut = async (
 
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
-  console.log("Executing Direct Deposit");
+  console.log("🚀 Executing Direct Deposit");
+  console.log("📊 Direct Deposit - Initial Data:", {
+    vaultId: vaultData.id,
+    vaultName: vaultData.name,
+    inputTokenSymbol: inputToken.symbol,
+    originalTransactionAmount: transactionAmount.toString(),
+    depositFeePaidFromGasTank: vaultData.depositFeePaidFromGasTank
+  });
+  
+  // Calculate the actual deposit amount after gas fee deduction if needed (using centralized helper)
+  let actualDepositAmount = transactionAmount;
+  console.log("📍 Direct Deposit - Using centralized gas fee calculation");
+  
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for direct deposits, only for USD formatting which we don't use here
+    1, // Not needed for direct deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
+    const beforeDeduction = actualDepositAmount;
+    actualDepositAmount = transactionAmount > gasFeeResult.gasFeeInVaultAsset ? 
+      transactionAmount - gasFeeResult.gasFeeInVaultAsset : 0n;
+    
+    console.log("💰 Direct Deposit - Gas fee deduction summary:", {
+      originalAmount: beforeDeduction.toString(),
+      gasFeeDeducted: gasFeeResult.gasFeeInVaultAsset.toString(),
+      finalDepositAmount: actualDepositAmount.toString(),
+      deductionPercentage: ((Number(gasFeeResult.gasFeeInVaultAsset) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
+    });
+  } else {
+    console.log("✅ Direct Deposit - Gas fee paid from gas tank, no deduction needed");
+  }
+  
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
-    transactionAmount,
+    actualDepositAmount,
     activeChain
   );
-  console.log("minSharesOut", minSharesOut);
+  
+  console.log("🎯 Direct Deposit - MinSharesOut Calculation:", {
+    inputForCalculation: actualDepositAmount.toString(),
+    originalAmount: transactionAmount.toString(),
+    amountChanged: actualDepositAmount !== transactionAmount,
+    minSharesOut: minSharesOut.toString(),
+    swapPathLength: swapPath.length
+  });
   let contract = getContract({
     client,
     chain: activeChain,
@@ -1005,13 +1051,69 @@ const executeCrossChainDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function
 ) => {
-  console.log("Executing Cross-Chain Deposit");
+  console.log("🌐 Executing Cross-Chain Deposit");
+  console.log("📊 Cross-Chain Deposit - Initial Data:", {
+    vaultId: vaultData.id,
+    vaultName: vaultData.name,
+    inputTokenSymbol: inputToken.symbol,
+    activeChainId: activeChain.id,
+    originalTransactionAmount: transactionAmount.toString(),
+    depositFeePaidFromGasTank: vaultData.depositFeePaidFromGasTank,
+    isZetachainDeposit: isZetachain(activeChain.id)
+  });
+  
+  // Calculate the actual deposit amount after gas fee deduction if needed (using centralized helper)
+  let actualDepositAmount = transactionAmount;
+  console.log("📍 Cross-Chain Deposit - Using centralized gas fee calculation");
+  
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
+    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
+    // For cross-chain deposits, convert gas fee to input token terms if needed
+    const gasFeeInInputTokens = await convertGasFeeToInputToken(
+      gasFeeResult.gasFeeInVaultAsset,
+      vaultData,
+      inputToken,
+      activeChain
+    );
+    
+    const beforeDeduction = actualDepositAmount;
+    actualDepositAmount = transactionAmount > gasFeeInInputTokens ? 
+      transactionAmount - gasFeeInInputTokens : 0n;
+    
+    console.log("💰 Cross-Chain Deposit - Gas fee deduction summary:", {
+      originalAmount: beforeDeduction.toString(),
+      gasFeeInVaultAsset: gasFeeResult.gasFeeInVaultAsset.toString(),
+      gasFeeInInputTokens: gasFeeInInputTokens.toString(),
+      finalDepositAmount: actualDepositAmount.toString(),
+      deductionPercentage: ((Number(gasFeeInInputTokens) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
+    });
+  } else {
+    console.log("✅ Cross-Chain Deposit - Gas fee paid from gas tank, no deduction needed");
+  }
+  
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
-    transactionAmount,
+    actualDepositAmount,
     activeChain
   );
+  
+  console.log("🎯 Cross-Chain Deposit - MinSharesOut Calculation:", {
+    inputForCalculation: actualDepositAmount.toString(),
+    originalAmount: transactionAmount.toString(),
+    amountChanged: actualDepositAmount !== transactionAmount,
+    minSharesOut: minSharesOut.toString(),
+    swapPathLength: swapPath.length
+  });
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
