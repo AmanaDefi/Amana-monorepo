@@ -27,11 +27,11 @@ const ReceiveModal = () => {
       isOpen={step === "recieve"}
       onClose={closeAll}
       noBlur={true}
-      paddingClass="py-[45px] px-[20px]"
+      paddingClass="py-[45px] px-[20px] w-full"
     >
       <div className="flex flex-col items-center font-gotham text-white w-full">
         <h2 className="text-[16px] font-bold mb-4">Use this deposit address</h2>
-        <p className="text-sm font-normal text-start mb-10">
+        <p className="text-sm font-normal text-start mb-10 flex-wrap">
           Always double-check your deposit address - it may change without
           notice.
         </p>

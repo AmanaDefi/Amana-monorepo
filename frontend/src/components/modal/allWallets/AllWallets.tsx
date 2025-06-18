@@ -108,54 +108,6 @@ const AllWAllets = () => {
                     }}
                   />
                 ))}
-                {connectors.map((connector) => (
-                  <ModalButton
-                    key={connector.id}
-                    label={connector.name}
-                    icon={
-                      <ConnectorIcon
-                        connectorId={connector.id}
-                        name={connector.name}
-                        connectorIcon={connector.icon}
-                      />
-                    }
-                    onClick={() => {
-                      handleExternalWalletConnect(connector);
-                    }}
-                  />
-                ))}
-                {connectors.map((connector) => (
-                  <ModalButton
-                    key={connector.id}
-                    label={connector.name}
-                    icon={
-                      <ConnectorIcon
-                        connectorId={connector.id}
-                        name={connector.name}
-                        connectorIcon={connector.icon}
-                      />
-                    }
-                    onClick={() => {
-                      handleExternalWalletConnect(connector);
-                    }}
-                  />
-                ))}
-                {connectors.map((connector) => (
-                  <ModalButton
-                    key={connector.id}
-                    label={connector.name}
-                    icon={
-                      <ConnectorIcon
-                        connectorId={connector.id}
-                        name={connector.name}
-                        connectorIcon={connector.icon}
-                      />
-                    }
-                    onClick={() => {
-                      handleExternalWalletConnect(connector);
-                    }}
-                  />
-                ))}
               </div>
             </div>
           </div>
