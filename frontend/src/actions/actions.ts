@@ -39,6 +39,10 @@ import {
   isZetachain,
   getSolanaEVMAddress,
 } from "@/utils/utils";
+import { ZRC20_TOKENS_BY_ADDRESS } from "../constants/ZRC20TokensByAddress";
+import { calculateGasFeeInVaultAsset, convertGasFeeToInputToken } from "../utils/gasFeeCalculations";
+
+// import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
 import { Token, VaultData } from "@/types/types";
@@ -831,12 +835,58 @@ const getPathDataAndMinAmountOut = async (
 
 
 const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, activeAccount: Account, activeChain: Chain, transactionAmount: bigint) => {
+  console.log("🚀 Executing Direct Deposit");
+  console.log("📊 Direct Deposit - Initial Data:", {
+    vaultId: vaultData.id,
+    vaultName: vaultData.name,
+    inputTokenSymbol: inputToken.symbol,
+    originalTransactionAmount: transactionAmount.toString(),
+    depositFeePaidFromGasTank: vaultData.depositFeePaidFromGasTank
+  });
+
+  // Calculate the actual deposit amount after gas fee deduction if needed (using centralized helper)
+  let actualDepositAmount = transactionAmount;
+  console.log("📍 Direct Deposit - Using centralized gas fee calculation");
+
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for direct deposits, only for USD formatting which we don't use here
+    1, // Not needed for direct deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
+    const beforeDeduction = actualDepositAmount;
+    actualDepositAmount = transactionAmount > gasFeeResult.gasFeeInVaultAsset ?
+      transactionAmount - gasFeeResult.gasFeeInVaultAsset : 0n;
+
+    console.log("💰 Direct Deposit - Gas fee deduction summary:", {
+      originalAmount: beforeDeduction.toString(),
+      gasFeeDeducted: gasFeeResult.gasFeeInVaultAsset.toString(),
+      finalDepositAmount: actualDepositAmount.toString(),
+      deductionPercentage: ((Number(gasFeeResult.gasFeeInVaultAsset) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
+    });
+  } else {
+    console.log("✅ Direct Deposit - Gas fee paid from gas tank, no deduction needed");
+  }
+
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
-    transactionAmount,
+    actualDepositAmount,
     activeChain
   );
+
+  console.log("🎯 Direct Deposit - MinSharesOut Calculation:", {
+    inputForCalculation: actualDepositAmount.toString(),
+    originalAmount: transactionAmount.toString(),
+    amountChanged: actualDepositAmount !== transactionAmount,
+    minSharesOut: minSharesOut.toString(),
+    swapPathLength: swapPath.length
+  });
   let contract = getContract({
     client,
     chain: activeChain,
@@ -874,12 +924,69 @@ const executeCrossChainDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function
 ) => {
+  console.log("🌐 Executing Cross-Chain Deposit");
+  console.log("📊 Cross-Chain Deposit - Initial Data:", {
+    vaultId: vaultData.id,
+    vaultName: vaultData.name,
+    inputTokenSymbol: inputToken.symbol,
+    activeChainId: activeChain.id,
+    originalTransactionAmount: transactionAmount.toString(),
+    depositFeePaidFromGasTank: vaultData.depositFeePaidFromGasTank,
+    isZetachainDeposit: isZetachain(activeChain.id)
+  });
+
+  // Calculate the actual deposit amount after gas fee deduction if needed (using centralized helper)
+  let actualDepositAmount = transactionAmount;
+  console.log("📍 Cross-Chain Deposit - Using centralized gas fee calculation");
+
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
+    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
+    // For cross-chain deposits, convert gas fee to input token terms if needed
+    const gasFeeInInputTokens = await convertGasFeeToInputToken(
+      gasFeeResult.gasFeeInVaultAsset,
+      vaultData,
+      inputToken,
+      activeChain
+    );
+
+    const beforeDeduction = actualDepositAmount;
+    actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
+      transactionAmount - gasFeeInInputTokens : 0n;
+
+    console.log("💰 Cross-Chain Deposit - Gas fee deduction summary:", {
+      originalAmount: beforeDeduction.toString(),
+      gasFeeInVaultAsset: gasFeeResult.gasFeeInVaultAsset.toString(),
+      gasFeeInInputTokens: gasFeeInInputTokens.toString(),
+      finalDepositAmount: actualDepositAmount.toString(),
+      deductionPercentage: ((Number(gasFeeInInputTokens) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
+    });
+  } else {
+    console.log("✅ Cross-Chain Deposit - Gas fee paid from gas tank, no deduction needed");
+  }
+
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
-    transactionAmount,
+    actualDepositAmount,
     activeChain
   );
+
+  console.log("🎯 Cross-Chain Deposit - MinSharesOut Calculation:", {
+    inputForCalculation: actualDepositAmount.toString(),
+    originalAmount: transactionAmount.toString(),
+    amountChanged: actualDepositAmount !== transactionAmount,
+    minSharesOut: minSharesOut.toString(),
+    swapPathLength: swapPath.length
+  });
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1003,10 +1110,10 @@ const executeSolanaDeposit = async (
   const client = new SolanaZetaClient(wallet);
   // Fix: Convert Solana wallet address to proper bytes format for ABI encoding
   const solanaWalletBytes = ethers.hexlify(new TextEncoder().encode(walletContext.publicKey!.toBase58()));
-  
+
   // Create RevertOptions following ZetaChain toolkit pattern
   const evmWalletAddress = getSolanaEVMAddress(walletAddress);
-  
+
   // Anchor handles camelCase to snake_case conversion automatically
   const revertOptions = {
     revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
@@ -1015,7 +1122,7 @@ const executeSolanaDeposit = async (
     revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"), // revert_message (bytes)
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
   };
-  
+
   if (inputToken.isNative) {
     // Case 1: Native token (SOL)
     const args = {
@@ -1038,7 +1145,7 @@ const executeSolanaDeposit = async (
       args,
       revertOptions
     );
-    
+
     setcrossChainTxId(transactionId);
     return { transactionHash: txHash };
   } else {
@@ -1057,7 +1164,7 @@ const executeSolanaDeposit = async (
       args,
       revertOptions
     );
-    
+
     setcrossChainTxId(transactionId);
     return { transactionHash: txHash };
   }
@@ -1080,7 +1187,7 @@ export const executeSolanaWithdrawal = async (
   // Fix: Convert Solana wallet address to proper bytes format for ABI encoding
   const solanaWalletBytes = ethers.hexlify(new TextEncoder().encode(walletContext.publicKey!.toBase58()));
   const walletAddress = walletContext.publicKey!.toBase58();
-  
+
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     walletAddress,
@@ -1099,7 +1206,7 @@ export const executeSolanaWithdrawal = async (
 
   // Create RevertOptions following ZetaChain toolkit pattern
   const evmWalletAddress = getSolanaEVMAddress(walletAddress);
-  
+
   // IDL expects: revert_address, abort_address, call_on_revert, revert_message, on_revert_gas_limit
   const revertOptions = {
     revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
@@ -1125,7 +1232,7 @@ export const executeSolanaWithdrawal = async (
   };
 
   const txHash = await client.solanaWithdrawal(vaultData.id, args, revertOptions);
-  
+
   setcrossChainTxId(transactionId);
   return { transactionHash: txHash };
 };
