@@ -35,6 +35,7 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
+import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
@@ -604,83 +605,29 @@ export default function VaultInputs({
         assetsConversionAmount: assetsConversionAmount.toString(),
       });
 
-      // Step 2: Calculate gas fee if needed
-      let gasFeeInVaultAsset = BigInt(0);
-      let gasFeeInUSD = "0";
-      let gasFeeInETH = "0";
-      let netDepositToVaultUSD = "0";
-      
-      if (!vaultData.depositFeePaidFromGasTank) {
-        console.log("⛽ PREVIEW - Gas fee will be deducted from deposit amount");
-        
-        const vaultContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.id as Address,
-        });
-        const gasLimitForWithdrawAndCall = await readContract({
-          contract: vaultContract,
-          method:
-            "function gasLimitForWithdrawAndCall() view returns (uint256)",
-        });
-        console.log("⛽ PREVIEW - Gas limit:", gasLimitForWithdrawAndCall.toString());
-        
-        const tokenContract = getContract({
-          client,
-          chain: SUPPORTED_CHAINS[0],
-          address: vaultData.inputToken.address as Address,
-        });
-        const result = await readContract({
-          contract: tokenContract,
-          method:
-            "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
-          params: [gasLimitForWithdrawAndCall],
-        });
-        const gasZRC20 = result[0] as Address;
-        const gasFee = result[1] as bigint;
-        
-        console.log("⛽ PREVIEW - Gas fee details:", {
-          gasZRC20,
-          gasFeeRaw: gasFee.toString(),
-          vaultInputToken: vaultData.inputToken.address,
-          gasTokenMatchesVaultToken: gasZRC20 === vaultData.inputToken.address
-        });
-        
-        // If vault token and gas token match, use directly
-        gasFeeInVaultAsset = gasFee;
+      // Step 2: Calculate gas fee if needed (using centralized helper)
+      console.log("📍 PREVIEW - Using centralized gas fee calculation");
+      const gasFeeResult = await calculateGasFeeInVaultAsset(
+        vaultData,
+        actualInputToken,
+        activeChain as Chain,
+        vaultTokenPrice,
+        ethPriceUsd,
+        formatCurrency,
+        convertUsdToEth
+      );
 
-        if (gasZRC20 !== vaultData.inputToken.address) {
-          console.log("🔄 PREVIEW - Converting gas fee from gas token to vault asset");
-          // Convert fee from gas token into vault asset terms
-          const result = await getPathDataAndAmountOut(
-            gasFee,
-            ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
-            vaultData.inputToken,
-            vaultData.id as Address
-          );
-          gasFeeInVaultAsset = result.amountOut;
-          console.log("🔄 PREVIEW - Gas fee conversion:", {
-            originalGasFee: gasFee.toString(),
-            convertedGasFee: gasFeeInVaultAsset.toString()
-          });
-        }
-        
-        // Format gas fee in USD and ETH
-        const gasFeeInTokenUnits = Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
-        const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
-        gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-        const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
-        gasFeeInETH = ethAmount.toFixed(5);
-        
-        console.log("⛽ PREVIEW - Gas fee formatting:", {
-          gasFeeInTokenUnits: gasFeeInTokenUnits.toString(),
-          gasFeeInUSDAmount: gasFeeInUSDAmount.toString(),
-          gasFeeInUSD,
-          gasFeeInETH
-        });
-      } else {
-        console.log("✅ PREVIEW - Gas fee paid from gas tank, no deduction needed");
-      }
+      const gasFeeInVaultAsset = gasFeeResult.gasFeeInVaultAsset;
+      const gasFeeInUSD = gasFeeResult.gasFeeInUSD;
+      const gasFeeInETH = gasFeeResult.gasFeeInETH;
+      let netDepositToVaultUSD = "0";
+
+      console.log("📍 PREVIEW - Centralized gas fee result:", {
+        needsDeduction: gasFeeResult.needsDeduction,
+        gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
+        gasFeeInUSD,
+        gasFeeInETH
+      });
 
       // Step 3: Subtract gas fee from converted amount
       const beforeGasDeduction = assetsConversionAmount;

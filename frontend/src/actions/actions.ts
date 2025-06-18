@@ -40,6 +40,7 @@ import {
   getSolanaEVMAddress,
 } from "@/utils/utils";
 import { ZRC20_TOKENS_BY_ADDRESS } from "../constants/ZRC20TokensByAddress";
+import { calculateGasFeeInVaultAsset, convertGasFeeToInputToken } from "../utils/gasFeeCalculations";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -972,72 +973,30 @@ const executeDirectDeposit = async (vaultData: VaultData, inputToken: Token, act
     depositFeePaidFromGasTank: vaultData.depositFeePaidFromGasTank
   });
   
-  // Calculate the actual deposit amount after gas fee deduction if needed
+  // Calculate the actual deposit amount after gas fee deduction if needed (using centralized helper)
   let actualDepositAmount = transactionAmount;
-  if (!vaultData.depositFeePaidFromGasTank) {
-    console.log("⛽ Direct Deposit - Gas fee will be deducted from deposit amount");
-    
-    // Calculate gas fee for this vault
-    const vaultContract = getContract({
-      client,
-      chain: activeChain,
-      address: vaultData.id,
-    });
-    
-    const gasLimitForWithdrawAndCall = await readContract({
-      contract: vaultContract,
-      method: "function gasLimitForWithdrawAndCall() view returns (uint256)",
-    });
-    console.log("⛽ Direct Deposit - Gas limit for withdraw and call:", gasLimitForWithdrawAndCall.toString());
-    
-    const tokenContract = getContract({
-      client,
-      chain: activeChain,
-      address: vaultData.inputToken.address,
-    });
-    
-    const result = await readContract({
-      contract: tokenContract,
-      method: "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
-      params: [gasLimitForWithdrawAndCall],
-    });
-    
-    const gasZRC20 = result[0];
-    const gasFee = result[1];
-    console.log("⛽ Direct Deposit - Gas fee details:", {
-      gasZRC20,
-      gasFeeRaw: gasFee.toString(),
-      vaultInputToken: vaultData.inputToken.address,
-      gasTokenMatchesVaultToken: gasZRC20 === vaultData.inputToken.address
-    });
-    
-    let gasFeeInVaultAsset = gasFee;
-    
-    // If gas token is different from vault input token, convert the fee
-    if (gasZRC20 !== vaultData.inputToken.address) {
-      console.log("🔄 Direct Deposit - Converting gas fee from gas token to vault asset");
-      const { amountOut } = await getPathDataAndAmountOut(
-        gasFee,
-        { address: gasZRC20, symbol: 'GAS', decimals: 18, imgURL: '', price: 0, balance: { value: 0n, formatted: '0' }, isNative: false } as Token,
-        vaultData.inputToken,
-        vaultData.id
-      );
-      gasFeeInVaultAsset = amountOut;
-      console.log("🔄 Direct Deposit - Converted gas fee:", {
-        originalGasFee: gasFee.toString(),
-        convertedGasFee: gasFeeInVaultAsset.toString()
-      });
-    }
-    
-    // Subtract gas fee from deposit amount
+  console.log("📍 Direct Deposit - Using centralized gas fee calculation");
+  
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for direct deposits, only for USD formatting which we don't use here
+    1, // Not needed for direct deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
     const beforeDeduction = actualDepositAmount;
-    actualDepositAmount = transactionAmount > gasFeeInVaultAsset ? transactionAmount - gasFeeInVaultAsset : 0n;
+    actualDepositAmount = transactionAmount > gasFeeResult.gasFeeInVaultAsset ? 
+      transactionAmount - gasFeeResult.gasFeeInVaultAsset : 0n;
     
     console.log("💰 Direct Deposit - Gas fee deduction summary:", {
       originalAmount: beforeDeduction.toString(),
-      gasFeeDeducted: gasFeeInVaultAsset.toString(),
+      gasFeeDeducted: gasFeeResult.gasFeeInVaultAsset.toString(),
       finalDepositAmount: actualDepositAmount.toString(),
-      deductionPercentage: ((Number(gasFeeInVaultAsset) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
+      deductionPercentage: ((Number(gasFeeResult.gasFeeInVaultAsset) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
     });
   } else {
     console.log("✅ Direct Deposit - Gas fee paid from gas tank, no deduction needed");
@@ -1109,115 +1068,40 @@ const executeCrossChainDeposit = async (
     isZetachainDeposit: isZetachain(activeChain.id)
   });
   
-  // Calculate the actual deposit amount after gas fee deduction if needed
+  // Calculate the actual deposit amount after gas fee deduction if needed (using centralized helper)
   let actualDepositAmount = transactionAmount;
-  if (!vaultData.depositFeePaidFromGasTank) {
-    console.log("⛽ Cross-Chain Deposit - Gas fee will be deducted from deposit amount");
+  console.log("📍 Cross-Chain Deposit - Using centralized gas fee calculation");
+  
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
+    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
+    // For cross-chain deposits, convert gas fee to input token terms if needed
+    const gasFeeInInputTokens = await convertGasFeeToInputToken(
+      gasFeeResult.gasFeeInVaultAsset,
+      vaultData,
+      inputToken,
+      activeChain
+    );
     
-    // For cross-chain deposits, we need to use the ZRC20 equivalent token to calculate gas fees
-    const inputTokenZeta = isZetachain(activeChain.id)
-      ? inputToken
-      : inputToken?.ZRC20equivalent;
+    const beforeDeduction = actualDepositAmount;
+    actualDepositAmount = transactionAmount > gasFeeInInputTokens ? 
+      transactionAmount - gasFeeInInputTokens : 0n;
     
-    console.log("🔗 Cross-Chain Deposit - Token mapping:", {
-      inputTokenAddress: inputToken.address,
-      inputTokenSymbol: inputToken.symbol,
-      zetaEquivalentAddress: inputTokenZeta?.address,
-      zetaEquivalentSymbol: inputTokenZeta?.symbol,
-      hasZetaEquivalent: !!inputTokenZeta
+    console.log("💰 Cross-Chain Deposit - Gas fee deduction summary:", {
+      originalAmount: beforeDeduction.toString(),
+      gasFeeInVaultAsset: gasFeeResult.gasFeeInVaultAsset.toString(),
+      gasFeeInInputTokens: gasFeeInInputTokens.toString(),
+      finalDepositAmount: actualDepositAmount.toString(),
+      deductionPercentage: ((Number(gasFeeInInputTokens) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
     });
-    
-    if (inputTokenZeta) {
-      // Calculate gas fee for this vault
-      const vaultContract = getContract({
-        client,
-        chain: SUPPORTED_CHAINS[0], // Zetachain is the first chain in the list
-        address: vaultData.id,
-      });
-      
-      const gasLimitForWithdrawAndCall = await readContract({
-        contract: vaultContract,
-        method: "function gasLimitForWithdrawAndCall() view returns (uint256)",
-      });
-      console.log("⛽ Cross-Chain Deposit - Gas limit for withdraw and call:", gasLimitForWithdrawAndCall.toString());
-      
-      const tokenContract = getContract({
-        client,
-        chain: SUPPORTED_CHAINS[0], // Zetachain
-        address: vaultData.inputToken.address,
-      });
-      
-      const result = await readContract({
-        contract: tokenContract,
-        method: "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)",
-        params: [gasLimitForWithdrawAndCall],
-      });
-      
-      const gasZRC20 = result[0];
-      const gasFee = result[1];
-      console.log("⛽ Cross-Chain Deposit - Gas fee details:", {
-        gasZRC20,
-        gasFeeRaw: gasFee.toString(),
-        vaultInputToken: vaultData.inputToken.address,
-        gasTokenMatchesVaultToken: gasZRC20 === vaultData.inputToken.address
-      });
-      
-      let gasFeeInVaultAsset = gasFee;
-      
-      // If gas token is different from vault input token, convert the fee
-      if (gasZRC20 !== vaultData.inputToken.address) {
-        console.log("🔄 Cross-Chain Deposit - Converting gas fee from gas token to vault asset");
-        const { amountOut } = await getPathDataAndAmountOut(
-          gasFee,
-          { address: gasZRC20, symbol: 'GAS', decimals: 18, imgURL: '', price: 0, balance: { value: 0n, formatted: '0' }, isNative: false } as Token,
-          vaultData.inputToken,
-          vaultData.id
-        );
-        gasFeeInVaultAsset = amountOut;
-        console.log("🔄 Cross-Chain Deposit - Gas fee converted to vault asset:", {
-          originalGasFee: gasFee.toString(),
-          convertedToVaultAsset: gasFeeInVaultAsset.toString()
-        });
-      }
-      
-      // For cross-chain deposits, we need to convert the gas fee to the input token amount
-      // if the input token needs to be swapped to vault input token
-      if (inputTokenZeta.address !== vaultData.inputToken.address) {
-        console.log("🔄 Cross-Chain Deposit - Converting gas fee from vault asset back to input token equivalent");
-        console.log("🔄 Cross-Chain Deposit - Conversion details:", {
-          fromToken: vaultData.inputToken.address,
-          fromSymbol: vaultData.inputToken.symbol,
-          toToken: inputTokenZeta.address,
-          toSymbol: inputTokenZeta.symbol,
-          gasFeeInVaultAsset: gasFeeInVaultAsset.toString()
-        });
-        
-        // Convert the gas fee from vault asset back to input token equivalent
-        const { amountOut } = await getPathDataAndAmountOut(
-          gasFeeInVaultAsset,
-          vaultData.inputToken,
-          inputTokenZeta,
-          vaultData.id
-        );
-        gasFeeInVaultAsset = amountOut;
-        console.log("🔄 Cross-Chain Deposit - Final gas fee in input token terms:", {
-          gasFeeInInputToken: gasFeeInVaultAsset.toString()
-        });
-      }
-      
-      // Subtract gas fee from deposit amount
-      const beforeDeduction = actualDepositAmount;
-      actualDepositAmount = transactionAmount > gasFeeInVaultAsset ? transactionAmount - gasFeeInVaultAsset : 0n;
-      
-      console.log("💰 Cross-Chain Deposit - Gas fee deduction summary:", {
-        originalAmount: beforeDeduction.toString(),
-        gasFeeDeducted: gasFeeInVaultAsset.toString(),
-        finalDepositAmount: actualDepositAmount.toString(),
-        deductionPercentage: ((Number(gasFeeInVaultAsset) / Number(beforeDeduction)) * 100).toFixed(4) + "%"
-      });
-    } else {
-      console.log("❌ Cross-Chain Deposit - No ZRC20 equivalent token found, cannot calculate gas fee");
-    }
   } else {
     console.log("✅ Cross-Chain Deposit - Gas fee paid from gas tank, no deduction needed");
   }
