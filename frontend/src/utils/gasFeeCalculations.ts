@@ -100,17 +100,18 @@ export const calculateGasFeeInVaultAsset = async (
     console.log("🔄 GAS CALC - Converting gas fee from gas token to vault asset");
     const { amountOut } = await getPathDataAndAmountOut(
       gasFee,
-      ZRC20_TOKENS_BY_ADDRESS[gasZRC20] || { 
-        address: gasZRC20, 
-        symbol: 'GAS', 
-        decimals: 18, 
-        imgURL: '', 
-        price: 0, 
-        balance: { value: 0n, formatted: '0' }, 
-        isNative: false 
+      ZRC20_TOKENS_BY_ADDRESS[gasZRC20] || {
+        address: gasZRC20,
+        symbol: 'GAS',
+        decimals: 18,
+        imgURL: '',
+        price: 0,
+        balance: { value: 0n, formatted: '0' },
+        isNative: false
       } as Token,
       vaultData.inputToken,
-      vaultData.id
+      vaultData.id,
+      500
     );
     gasFeeInVaultAsset = amountOut;
     console.log("🔄 GAS CALC - Gas fee conversion:", {
@@ -157,7 +158,7 @@ export const convertGasFeeToInputToken = async (
 ): Promise<bigint> => {
   // Get the ZRC20 equivalent for cross-chain
   const inputTokenZeta = isZetachain(activeChain.id) ? inputToken : inputToken?.ZRC20equivalent;
-  
+
   if (!inputTokenZeta) {
     console.log("❌ GAS CALC - No ZRC20 equivalent found for input token");
     return gasFeeInVaultAsset;
@@ -178,7 +179,8 @@ export const convertGasFeeToInputToken = async (
       gasFeeInVaultAsset,
       vaultData.inputToken,
       inputTokenZeta,
-      vaultData.id
+      vaultData.id,
+      500
     );
 
     console.log("🔄 GAS CALC - Final gas fee in input token terms:", {
