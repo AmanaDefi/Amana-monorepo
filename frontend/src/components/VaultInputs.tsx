@@ -88,7 +88,7 @@ export interface VaultInputsProps {
   initialIsDeposit?: boolean;
   onTokenSelect?: (token: Token) => void;
   selectedToken?: Token;
-  selectedChain?: Chain;
+  selectedChain?: Chain | null;
   onSelectChain?: (chain: Chain) => void;
   vaultId: string;
 }
@@ -969,7 +969,8 @@ export default function VaultInputs({
         !vaultData.depositFeePaidFromGasTank &&
         debouncedInputBalance.value > 0n &&
         Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ?? 0
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+            0,
         ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
       )
     ) {
@@ -982,9 +983,12 @@ export default function VaultInputs({
           !vaultData.depositFeePaidFromGasTank &&
           debouncedInputBalance.value > 0n &&
           Number(
-            conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ?? 0
+            conversionOutput.inputAmountInUSDFormatted?.replace(
+              /[^0-9.]/g,
+              "",
+            ) ?? 0,
           ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
-        )
+        ),
       );
       setOutputBoxErrorMessage("Swap route not found");
     }
@@ -1072,6 +1076,10 @@ export default function VaultInputs({
   }, [inputBalance, initialConversionOutput]);
 
   useEffect(() => {
+    if (vaultData?.id) {
+      const isTxIsInProggress = CheckTheTxIsInProgress(vaultData?.id);
+      if (isTxIsInProggress) return;
+    }
     if (
       !debouncedInputBalance.formatted ||
       Number(debouncedInputBalance.formatted) <= 0
@@ -1080,6 +1088,7 @@ export default function VaultInputs({
       setConversionOutput(initialConversionOutput);
       return;
     }
+
     setLoadingOutputToken(true);
     if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
     else getWithdrawOutputAmount(debouncedInputBalance.value);
@@ -1090,6 +1099,7 @@ export default function VaultInputs({
     getWithdrawOutputAmount,
     initialConversionOutput,
     isDeposit,
+    vaultData,
   ]);
 
   // Create an adapter function for InputTokenWithError in Deposit mode

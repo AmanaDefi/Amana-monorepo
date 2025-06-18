@@ -42,6 +42,8 @@ import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
+import { useChain } from "@account-kit/react";
+
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -62,7 +64,6 @@ const VaultsDetailContainer: React.FC<{
     useState<VaultTotalAssetsinToken>();
   const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
-  const [selectedChain, setSelectedChain] = useState<Chain | undefined>();
 
   const [activeChainId, setActiveChainId] = useState<number>();
 
@@ -77,7 +78,8 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
   } = useTransactionStore();
 
-  const { activeChain } = useMultiChain();
+  const { switchToChain } = useMultiChain();
+  const { chain: activeChain } = useChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -91,15 +93,9 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultIdStr]);
 
-  useEffect(() => {
-    if (activeChain && !selectedChain) {
-      setSelectedChain(activeChain);
-    }
-  }, [activeChain, selectedChain]);
-
   const handleChainSelect = useCallback(
     (chain: Chain) => {
-      setSelectedChain(chain);
+      switchToChain(chain);
 
       if (vaultID) {
         updateLocalStorageObject(vaultID.toString(), {
@@ -107,7 +103,7 @@ const VaultsDetailContainer: React.FC<{
         });
       }
     },
-    [vaultID],
+    [vaultID, switchToChain],
   );
 
   useEffect(() => {
@@ -126,12 +122,6 @@ const VaultsDetailContainer: React.FC<{
         setIsTransactionProcessing(
           vaultTxData?.isTransactionProcessing ?? false,
         );
-
-        if (vaultTxData?.selectedChain) {
-          setSelectedChain(
-            JSON.parse(vaultTxData.selectedChain, bigIntReviver),
-          );
-        }
       } else {
         setTransactionStepFeedback({});
         setLastTransactionStepFeedback({});
@@ -172,9 +162,6 @@ const VaultsDetailContainer: React.FC<{
       if (isTxInProgress) {
         if (vaultInfo?.selectedToken) {
           setSelectedToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
-        }
-        if (vaultInfo?.selectedChain) {
-          setSelectedChain(JSON.parse(vaultInfo.selectedChain, bigIntReviver));
         }
         setTransactionCompleted(vaultInfo?.transactionCompleted ?? false);
       } else {
@@ -341,9 +328,6 @@ const VaultsDetailContainer: React.FC<{
               selectedToken={selectedToken}
               userVaultBalance={userVaultBalance}
               onClose={() => {
-                console.log(
-                  "🔄 Closing DepositComplete - resetting store state",
-                );
                 setFinishedTransaction(false);
                 setLastTransactionStepFeedback({});
                 setTransactionStepFeedback({});
@@ -354,6 +338,9 @@ const VaultsDetailContainer: React.FC<{
                 }
                 setTransactionCompleted(true);
               }}
+              selectedChain={activeChain}
+              onSelectChain={handleChainSelect}
+              vaultId={vaultID.toString()}
             />
           ) : (
             <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
@@ -382,7 +369,7 @@ const VaultsDetailContainer: React.FC<{
               strategyExplorerBaseUrl={strategyExplorerBaseUrl}
               walletAddress={walletAddress || undefined}
               selectedToken={selectedToken}
-              selectedChain={selectedChain}
+              selectedChain={activeChain}
             />
           </Dropdown>
           {walletAddress && (

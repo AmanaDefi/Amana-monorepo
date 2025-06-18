@@ -46,7 +46,6 @@ export const getPublicClient = (chainId: number): PublicClient | null => {
 
   clientCache.set(chainId, client);
 
-  console.log(client, chainId)
 
   return client;
 };
@@ -68,7 +67,7 @@ export const getWalletClient = (chainId: number): WalletClient | null => {
 
   const client = createWalletClient({
     chain: chain,
-    transport: custom(window?.ethereum!),
+    transport: custom(window.ethereum),
   });
 
   walletClientCache.set(chainId, client);

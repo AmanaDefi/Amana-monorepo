@@ -89,7 +89,7 @@ const TabsContent: React.FC<TabsContentProps> = ({
   return <div className={cn("mt-8", className)}>{children}</div>;
 };
 
-const EmptyState: React.FC<EmptyStateProps> = ({
+export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   action,

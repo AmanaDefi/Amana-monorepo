@@ -152,9 +152,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const latestChainRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  // useEffect(() => {
+  //   setIsHydrated(true);
+  // }, []);
 
   // HYDRATION FIX: Load saved state only after hydration
   // useEffect(() => {
@@ -327,7 +327,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
             debugLog("EVM wallet connected:", activeAccount?.address);
             console.log("set wallet from initTimer ");
             setWalletAddress(activeAccount?.address);
-            getEvmBalance(activeAccount.address);
+            // getEvmBalance(activeAccount.address);
             setSelectedChain("evm");
             setIsModalOpen(false);
           }
@@ -483,11 +483,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     [activeAccount, setChain],
   );
 
-  // useEffect(() => {
-  //   if (chain && activeAccount?.address) {
-  //     getEvmBalance(activeAccount.address);
-  //   }
-  // }, [chain, activeAccount?.address]);
+  useEffect(() => {
+    if (chain && activeAccount?.address) {
+      getEvmBalance(activeAccount.address);
+    }
+  }, [chain.id, activeAccount?.address]);
 
   return (
     <MultiChainContext.Provider

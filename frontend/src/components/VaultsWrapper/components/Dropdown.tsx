@@ -81,7 +81,7 @@ export const Dropdown: React.FC<Props> = ({
       ) : (
         <div
           style={{ width: width }}
-          className="flex hover:cursor-pointer hover:border-[#535E73] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1 border-blue-button h-fit"
+          className="flex hover:cursor-pointer border-[#535E73] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1 hover:border-blue-button h-fit"
           onClick={handleToggleDropdown}
         >
           <input
