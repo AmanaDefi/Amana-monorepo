@@ -11,11 +11,35 @@ import "../interfaces/I4626Vault.sol";
 
 import "hardhat/console.sol";
 
+interface IManager {
+    function deposit(
+        address _yToken,
+        address _asset,
+        uint256 _amount,
+        address _receiver,
+        address _callback,
+        bytes calldata _callbackData,
+        bytes32 _referralCode
+    ) external;
+
+    function redeem(
+        address caller,
+        address _yToken,
+        address _asset,
+        uint256 _shares,
+        address _receiver,
+        address _callback,
+        bytes calldata _callbackData
+    ) external;
+}
+
 contract YieldFiERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
     address public receiptToken;
     uint256 public inputTokenIndex;
+    address public stakingContract; // sYUSD 4626 vault
+    address public manager;
 
     function initialize(
         string memory _name,
@@ -25,7 +49,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         address _swapHelper,
         address _receiptTokenAddress, // this is YUSD
         address _inputTokenAddress, // inputToken
-        address, // _liquidityGaugeAddress, // this is the YUSD staking gauge
+        address _stakingContractAddress, // _liquidityGaugeAddress, // this is the YUSD staking gauge
         address /* _rewardsTokenAddress — not needed */,
         uint256 // _inputTokenIndex - not needed
     ) external initializer {
@@ -41,37 +65,47 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         swapHelper = _swapHelper;
 
         receiptToken = _receiptTokenAddress;
+        stakingContract = _stakingContractAddress;
+        manager = 0x03ACc35286bAAE6D73d99a9f14Ef13752208C8dC;
     }
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
         uint256 minAmountOut
     ) internal override {
-        // need to check if we swap USDC into YUSD first, or if we can directly deposit USDC into the sYUSD 4626 vault
-        // swap USDC into YUSD - either uniswap or curve on BNB
-        // need to create a BNB swapHelper for this
-        // stake YUSD into sYUSD
-        // check min out
         require(amount > 0, "Deposit amount must be greater than zero");
 
         console.log(
-            "Depositing %s of input token %s into swapHelper",
+            "Depositing %s of input token %s into vyUSD",
             amount,
             address(inputToken)
         );
-        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 
-        // Swap input token to receipt token (YUSD)
+        approveOrIncreaseAllowance(inputToken, receiptToken, amount);
+
         uint256 amountOut = I4626Vault(receiptToken).deposit(
             amount,
             address(this)
         );
-        console.log(
-            "Amount out after swap from %s to %s: %s",
-            address(inputToken),
-            receiptToken,
-            amountOut
-        );
+        // approveOrIncreaseAllowance(IERC20(inputToken), manager, amount);
+        // uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
+        // IManager(manager).deposit(
+        //     receiptToken,
+        //     address(inputToken),
+        //     amount,
+        //     address(this),
+        //     address(this),
+        //     "",
+        //     bytes32(0)
+        // );
+
+        // uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
+        // uint256 amountOut = inputTokenBalanceBefore - inputTokenBalanceAfter;
+        // console.log(
+        //     "Deposited %s of input token %s into vyUSD",
+        //     amountOut,
+        //     address(inputToken)
+        // );
         require(amountOut >= minAmountOut, "Insufficient output amount");
     }
 
@@ -79,14 +113,50 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        harvest();
-        uint256 yusdToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
+        console.log(
+            "This contracts balance of receipt token %s: %s",
+            receiptToken,
+            IERC20(receiptToken).balanceOf(address(this))
+        );
+        uint256 vyusdToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
+        console.log(
+            "Withdrawing %s of receipt token %s from vyUSD",
+            vyusdToWithdraw,
+            receiptToken
+        );
+        approveOrIncreaseAllowance(
+            IERC20(receiptToken),
+            address(this),
+            vyusdToWithdraw
+        );
+
         uint256 amountOut = I4626Vault(receiptToken).redeem(
-            yusdToWithdraw,
+            vyusdToWithdraw,
             address(this),
             address(this)
         );
 
+        // IERC20(receiptToken).approve(manager, type(uint256).max);
+
+        // uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
+
+        // IManager(manager).redeem(
+        //     address(this),
+        //     receiptToken,
+        //     address(inputToken),
+        //     vyusdToWithdraw,
+        //     address(this),
+        //     address(0),
+        //     ""
+        // );
+
+        // uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
+        // uint256 amountOut = inputTokenBalanceAfter - inputTokenBalanceBefore;
+        console.log(
+            "Withdrew %s of input token %s from vyUSD",
+            amountOut,
+            address(inputToken)
+        );
         require(amountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = amountOut;
     }
@@ -100,20 +170,20 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         harvest();
 
         // Withdraw all BPT from the liquidity gauge
-        uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
+        uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
 
         // Transfer the LP tokens to the new strategy
-        IERC20(receiptToken).transfer(txn.newStrategy, totalinYusd);
+        IERC20(receiptToken).transfer(txn.newStrategy, totalinvyUsd);
 
         IStrategy(txn.newStrategy).depositFromOldStrategy(
-            totalinYusd,
+            totalinvyUsd,
             txn.minimumOut,
             lastProcessedNonce + 1
         );
 
         emit AssetsTransferredToNewStrategy(
             txn.newStrategy,
-            totalinYusd,
+            totalinvyUsd,
             lastProcessedNonce + 1
         );
     }
@@ -150,82 +220,34 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256 assets) {
-        if (address(inputToken) == receiptToken || shares == 0) {
-            return shares;
-        }
-
-        try
-            ISwapHelper(swapHelper).getPathV3(receiptToken, address(inputToken))
-        returns (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory /* encodedPath */
-        ) {
-            if (path.length == 0 || feeTiers.length == 0) {
-                return shares; // fallback to 1:1 if no path found
-            }
-
-            try
-                ISwapHelper(swapHelper).getAmountOutV3(shares, path, feeTiers)
-            returns (uint amountOut) {
-                return amountOut;
-            } catch {
-                return shares; // fallback if price estimation fails
-            }
-        } catch {
-            return shares; // fallback if path retrieval fails
-        }
+        assets = I4626Vault(receiptToken).convertToAssets(shares);
     }
 
     function convertToShares(
         uint256 assets
     ) public view override returns (uint256 shares) {
-        if (address(inputToken) == receiptToken || assets == 0) {
-            return assets;
-        }
-
-        try
-            ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptToken)
-        returns (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory /* encodedPath */
-        ) {
-            if (path.length == 0 || feeTiers.length == 0) {
-                return assets; // fallback to 1:1 if no path found
-            }
-
-            try
-                ISwapHelper(swapHelper).getAmountOutV3(assets, path, feeTiers)
-            returns (uint amountOut) {
-                return amountOut;
-            } catch {
-                return assets; // fallback if price estimation fails
-            }
-        } catch {
-            return assets; // fallback if path retrieval fails
-        }
+        shares = I4626Vault(receiptToken).convertToShares(assets);
     }
 
     function getStrategyWithdrawShareAmount(
         uint256 assetAmount
-    ) public view override returns (uint256 withdrawShareAmount) {
-        uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
-        uint256 yusdToWithdraw = convertToShares(assetAmount);
+    ) public view override returns (uint256 yusdToWithdraw) {
+        uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
+        yusdToWithdraw = convertToShares(assetAmount);
         console.log(
             "Shares to withdraw based on asset amount %s: %s",
             assetAmount,
             yusdToWithdraw
         );
-        if (yusdToWithdraw > totalinYusd) {
-            yusdToWithdraw = totalinYusd;
+        if (yusdToWithdraw > totalinvyUsd) {
+            yusdToWithdraw = totalinvyUsd;
             console.log(
                 "Rounding down to withdraw full staked balance: %s",
                 yusdToWithdraw
             );
         }
-        if (totalinYusd > 0 && totalinYusd - yusdToWithdraw <= 1e3) {
-            yusdToWithdraw = totalinYusd;
+        if (totalinvyUsd > 0 && totalinvyUsd - yusdToWithdraw <= 1e3) {
+            yusdToWithdraw = totalinvyUsd;
             console.log(
                 "Rounding up to withdraw full staked balance: %s",
                 yusdToWithdraw
