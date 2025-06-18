@@ -144,7 +144,7 @@ const ChainSwitcher: React.FC = () => {
 
   return (
     <div
-      className="z-50 relative bg-gradient-to-b from-[#262830] to-[#06afbc] rounded-full lg:bg-none lg:rounded-none"
+      className="z-50 relative rounded-full "
       ref={dropdownRef}
     >
       <Button

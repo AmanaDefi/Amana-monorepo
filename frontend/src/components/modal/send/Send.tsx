@@ -139,7 +139,7 @@ export const Send = () => {
     <Modal
       isOpen={step === "send"}
       onClose={closeAll}
-      paddingClass="p-6"
+      paddingClass="p-6 w-full"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[436px]"
     >

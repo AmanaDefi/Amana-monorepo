@@ -18,8 +18,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const [isMobile, setIsMobile] = useState(false);
   const {step} = useAuthStore();
 
-  console.log(step, 'step')
-
   const pathname = usePathname();
   const activeSection = getActiveSectionFromPathname(pathname);
 

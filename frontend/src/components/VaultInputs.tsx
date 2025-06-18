@@ -987,19 +987,19 @@ export default function VaultInputs({
     ) {
       console.log(
         "Swap route not found",
-        inputBalance.value > 0n,
-        Number(conversionOutput.outputAmountFormatted) == 0,
-        !(
-          isDeposit &&
-          !vaultData.depositFeePaidFromGasTank &&
-          debouncedInputBalance.value > 0n &&
+        inputBalance.value ,
+        Number(conversionOutput.outputAmountFormatted),
+     
+          isDeposit,
+          !vaultData.depositFeePaidFromGasTank,
+          debouncedInputBalance,
           Number(
             conversionOutput.inputAmountInUSDFormatted?.replace(
               /[^0-9.]/g,
               "",
             ) ?? 0,
-          ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
-        ),
+          ), Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
+        ,
       );
       setOutputBoxErrorMessage("Swap route not found");
     }
