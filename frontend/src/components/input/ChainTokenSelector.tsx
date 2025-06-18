@@ -19,7 +19,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
   selectedToken?: Token;
-  selectedChain?: Chain;
+  selectedChain?: Chain | null;
   className?: string;
   vaultData?: VaultData;
 }

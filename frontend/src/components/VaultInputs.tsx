@@ -88,7 +88,7 @@ export interface VaultInputsProps {
   initialIsDeposit?: boolean;
   onTokenSelect?: (token: Token) => void;
   selectedToken?: Token;
-  selectedChain?: Chain;
+  selectedChain?: Chain | null;
   onSelectChain?: (chain: Chain) => void;
   vaultId: string;
 }

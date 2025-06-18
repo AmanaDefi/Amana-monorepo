@@ -61,7 +61,6 @@ const VaultsDetailContainer: React.FC<{
     useState<VaultTotalAssetsinToken>();
   const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
-  const [selectedChain, setSelectedChain] = useState<Chain | undefined>();
 
   const [activeChainId, setActiveChainId] = useState<number>();
 
@@ -76,7 +75,7 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
   } = useTransactionStore();
 
-  const { activeChain } = useMultiChain();
+  const { activeChain, switchToChain } = useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -90,15 +89,10 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultIdStr]);
 
-  useEffect(() => {
-    if (activeChain && !selectedChain) {
-      setSelectedChain(activeChain);
-    }
-  }, [activeChain, selectedChain]);
 
   const handleChainSelect = useCallback(
     (chain: Chain) => {
-      setSelectedChain(chain);
+      switchToChain(chain);
 
       if (vaultID) {
         updateLocalStorageObject(vaultID.toString(), {
@@ -106,7 +100,7 @@ const VaultsDetailContainer: React.FC<{
         });
       }
     },
-    [vaultID],
+    [vaultID, switchToChain],
   );
 
   useEffect(() => {
@@ -125,12 +119,6 @@ const VaultsDetailContainer: React.FC<{
         setIsTransactionProcessing(
           vaultTxData?.isTransactionProcessing ?? false,
         );
-
-        if (vaultTxData?.selectedChain) {
-          setSelectedChain(
-            JSON.parse(vaultTxData.selectedChain, bigIntReviver),
-          );
-        }
       } else {
         setTransactionStepFeedback({});
         setLastTransactionStepFeedback({});
@@ -171,9 +159,6 @@ const VaultsDetailContainer: React.FC<{
       if (isTxInProgress) {
         if (vaultInfo?.selectedToken) {
           setSelectedToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
-        }
-        if (vaultInfo?.selectedChain) {
-          setSelectedChain(JSON.parse(vaultInfo.selectedChain, bigIntReviver));
         }
         setTransactionCompleted(vaultInfo?.transactionCompleted ?? false);
       } else {
@@ -339,7 +324,7 @@ const VaultsDetailContainer: React.FC<{
               initialIsDeposit={initialIsDeposit}
               onTokenSelect={handleTokenSelect}
               selectedToken={selectedToken}
-              selectedChain={selectedChain}
+              selectedChain={activeChain}
               onSelectChain={handleChainSelect}
               vaultId={vaultID.toString()}
             />
@@ -354,7 +339,7 @@ const VaultsDetailContainer: React.FC<{
               strategyExplorerBaseUrl={strategyExplorerBaseUrl}
               walletAddress={walletAddress || undefined}
               selectedToken={selectedToken}
-              selectedChain={selectedChain}
+              selectedChain={activeChain}
             />
           </Dropdown>
 

@@ -35,7 +35,7 @@ export type InputTokenWithErrorProps = {
   loadingOutputToken?: boolean;
   conversionOutput: ConversionOutput;
   isSlippageExceedingLimit?: boolean;
-  selectedChain?: Chain;
+  selectedChain?: Chain | null;
   showFeeDisplay?: boolean;
   debouncedInputBalance?: { value: bigint };
   performanceFee?: number;
@@ -70,7 +70,7 @@ export default function InputTokenWithError({
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   const isConnected = !!walletAddress;
-  
+
   const showTokenSelector = useMemo(() => {
     return (
       ((isDeposit && !isOutput) || (!isDeposit && isOutput)) &&
