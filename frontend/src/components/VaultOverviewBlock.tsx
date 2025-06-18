@@ -51,8 +51,8 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               based on volatility, smart contract audits, and liquidity depth.
             </InfoBlock>
           </div>
-          <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
-            <p className="text-white font-bold text-lg leading-5">
+          <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center pb-[2px]">
+            <p className="text-white font-bold text-lg leading-[18px]">
               {RISK_LEVELS[riskRating]?.level}
             </p>
           </div>

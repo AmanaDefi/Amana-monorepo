@@ -10,7 +10,7 @@ import SearchIcon from "@/components/svg/Search";
 import Button from "@/components/Button";
 import classNames from "classnames";
 
-const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "RISK" }];
+const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "Risk" }];
 
 type Props = {
   vaults: VaultData[];

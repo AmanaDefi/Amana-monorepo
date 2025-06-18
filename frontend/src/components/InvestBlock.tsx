@@ -26,7 +26,7 @@ const InvestBlock = () => {
     <div className="font-gotham pl-[44px] pr-[40px] py-[18px] flex items-center justify-between rounded-[16px] bg-[rgba(20,23,31,0.15)] backdrop-blur-[20px] shadow-md before-gradient-border">
       <div className="flex flex-row gap-4">
         <div className="rounded-full bg-[#1B46E0] w-[44px] h-[44px] flex items-center justify-center">
-          <InvestIcon width={20} height={21} />
+          <InvestIcon width={25} height={25} />
         </div>
         <div className="flex flex-col">
           <p className="text-white font-medium text-[24px]">
