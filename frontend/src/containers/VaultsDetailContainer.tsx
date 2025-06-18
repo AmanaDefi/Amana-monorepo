@@ -41,7 +41,9 @@ import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
+import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
 import { useChain } from "@account-kit/react";
+
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -234,10 +236,9 @@ const VaultsDetailContainer: React.FC<{
   );
 
   const isProcessingTx =
-    !finishedTransaction &&
-    (isTransactionProcessing ||
-      (Object.keys(transactionStepFeedback).length > 0 &&
-        transactionStepFeedback[0]?.status !== TransactionStepStatus.error));
+    isTransactionProcessing ||
+    (!finishedTransaction && Object.keys(transactionStepFeedback).length > 0);
+  
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
     if (!isTxInProgress) {
@@ -249,6 +250,12 @@ const VaultsDetailContainer: React.FC<{
   const informationDropdownTitle = walletAddress
     ? "What happened with my Deposit?"
     : "Information";
+  
+   const shouldShowDepositComplete =
+     finishedTransaction &&
+     initialIsDeposit &&
+     (Object.keys(lastTransactionStepFeedback).length > 0 ||
+       Object.keys(transactionStepFeedback).length > 0);
 
   return vaultData ? (
     <div className=" font-gotham">
@@ -315,21 +322,40 @@ const VaultsDetailContainer: React.FC<{
             totalAssets={vaultTotalAsset}
           />
 
-          <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
-            <VaultInputs
+          {shouldShowDepositComplete ? (
+            <DepositComplete
               vaultData={vaultData}
-              setTransactionCompleted={setTransactionCompleted}
-              userVaultBalance={userVaultBalance}
-              vaultTotalAssetinToken={vaultTotalAssetinToken}
-              transactionCompleted={transactionCompleted}
-              initialIsDeposit={initialIsDeposit}
-              onTokenSelect={handleTokenSelect}
               selectedToken={selectedToken}
-              selectedChain={activeChain}
-              onSelectChain={handleChainSelect}
-              vaultId={vaultID.toString()}
+              userVaultBalance={userVaultBalance}
+              onClose={() => {
+                setFinishedTransaction(false);
+                setLastTransactionStepFeedback({});
+                setTransactionStepFeedback({});
+                setIsTransactionProcessing(false);
+
+                if (vaultID) {
+                  localStorage.removeItem(vaultID.toString());
+                }
+                setTransactionCompleted(true);
+              }}
             />
-          </div>
+          ) : (
+            <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
+              <VaultInputs
+                vaultData={vaultData}
+                setTransactionCompleted={setTransactionCompleted}
+                userVaultBalance={userVaultBalance}
+                vaultTotalAssetinToken={vaultTotalAssetinToken}
+                transactionCompleted={transactionCompleted}
+                initialIsDeposit={initialIsDeposit}
+                onTokenSelect={handleTokenSelect}
+                selectedToken={selectedToken}
+                selectedChain={activeChain}
+                onSelectChain={handleChainSelect}
+                vaultId={vaultID.toString()}
+              />
+            </div>
+          )}
         </div>
 
         <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
@@ -343,10 +369,6 @@ const VaultsDetailContainer: React.FC<{
               selectedChain={activeChain}
             />
           </Dropdown>
-
-          <Dropdown title="Which Tokens I can invest?">
-            <p className="text-white text-sm font-normal">Content</p>
-          </Dropdown>
           {walletAddress && (
             <Dropdown
               title={
@@ -355,9 +377,7 @@ const VaultsDetailContainer: React.FC<{
               defaultOpen={true}
             >
               <DepositInstruction
-                transactionStepFeedback={
-                  isProcessingTx ? transactionStepFeedback : {}
-                }
+                transactionStepFeedback={transactionStepFeedback}
                 lastTransactionStepFeedback={lastTransactionStepFeedback}
                 finishedTransaction={finishedTransaction}
                 activeChainId={activeChainId}

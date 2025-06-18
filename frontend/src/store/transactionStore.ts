@@ -10,10 +10,10 @@ interface TransactionState {
   setIsTransactionProcessing: (isTransactionProcessing: boolean) => void;
   setFinishedTransaction: (finishedTransaction: boolean) => void;
   setTransactionStepFeedback: (
-    lastTransactionStepFeedback: TransactionStepMessages,
+    transactionStepFeedback: TransactionStepMessages,
   ) => void;
   setLastTransactionStepFeedback: (
-    transactionStepFeedback: TransactionStepMessages,
+    lastTransactionStepFeedback: TransactionStepMessages,
   ) => void;
 }
 export const useTransactionStore = create<TransactionState>((set) => ({
@@ -22,10 +22,12 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   transactionStepFeedback: {},
   isTransactionProcessing: false,
 
-  setIsTransactionProcessing: (isTransactionProcessing) => set({ isTransactionProcessing }),
+  setIsTransactionProcessing: (isTransactionProcessing) =>
+    set({ isTransactionProcessing }),
   setFinishedTransaction: (finishedTransaction) => set({ finishedTransaction }),
-  setTransactionStepFeedback: (lastTransactionStepFeedback) =>
-    set({ lastTransactionStepFeedback }),
-  setLastTransactionStepFeedback: (transactionStepFeedback) =>
+
+  setTransactionStepFeedback: (transactionStepFeedback) =>
     set({ transactionStepFeedback }),
+  setLastTransactionStepFeedback: (lastTransactionStepFeedback) =>
+    set({ lastTransactionStepFeedback }),
 }));

@@ -22,16 +22,16 @@ const OnboardingContainer = () => {
             className="w-[122px] h-[85px] mb-4"
           />
 
-          <h1 className="text-[48px] sm:text-[64px] font-bold gradient-text text-center mb-6">
+          <h1 className="text-[32px] sm:text-[48px] md:text-[64px] font-bold gradient-text text-center mb-6">
             What are <span className="">smart accounts?</span>
           </h1>
 
-          <p className="text-[24px] text-[#535E73] font-medium text-center max-w-3xl mb-10 font-gotham">
+          <p className="text-[18px] sm:text-[20px] md:text-[24px] text-[#535E73] font-medium text-center max-w-xl md:max-w-3xl mb-10 font-gotham">
             A new, secure way to use DeFi — no seed phrases, no gas fees, just
             simple login and powerful features.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[46px] w-full mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10 w-full mx-auto px-4 max-w-[1560px]">
           {smartAccountInfo.map((info, index) => (
             <motion.div
               key={index}
@@ -43,13 +43,13 @@ const OnboardingContainer = () => {
             </motion.div>
           ))}
         </div>
-        <div className="max-w-[400px] mt-12 mb-8 mx-auto">
+        <div className="max-w-[352px] mt-10 mb-6 mx-auto w-full px-4">
           <Button
             onClick={() => openStep("optionsB")}
-            className="w-full h-[48px]"
+            className="!w-full !h-[48px]"
             variant="custom"
           >
-            Continue
+            Create Wallet
           </Button>
         </div>
       </>

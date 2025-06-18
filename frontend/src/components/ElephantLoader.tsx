@@ -41,7 +41,7 @@ const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="relative max-w-[427px] w-full h-1 mt-[59px] mx-auto"
+          className="relative w-full max-w-[427px] h-1 mt-12 sm:mt-[59px] mx-auto px-4 sm:px-0"
         >
           <motion.div
             className="absolute top-0 left-0 w-full h-full bg-[#535E73] rounded-[4px]"

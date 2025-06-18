@@ -230,12 +230,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
           />
         ) : (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-medium text-white">
-                Your Positions ({myVaults.length})
-              </h3>
-            </div>
-
+            
             <div
               className="grid gap-4"
               style={{
@@ -251,16 +246,6 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
                   userVaultBalances={userVaultBalances}
                 />
               ))}
-            </div>
-
-            <div className="text-center mt-6">
-              <Button
-                variant="custom"
-                onClick={handleEarningClick}
-                className="!w-auto !h-10 !text-[14px] !font-normal !font-gotham"
-              >
-                Explore More Vaults
-              </Button>
             </div>
           </div>
         )}

@@ -25,11 +25,13 @@ const WelcomeContainer = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <AmanaLogo width={122} height={85} />
+        <div className="mt-6 sm:mt-8">
+          <AmanaLogo width={100} height={70} />
+        </div>
       </motion.div>
 
       <motion.h1
-        className="text-3xl md:text-6xl font-bold mt-8"
+        className="text-2xl sm:text-3xl md:text-6xl font-bold mt-6 sm:mt-8"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
@@ -66,11 +68,11 @@ const WelcomeContainer = () => {
         Congratulations! You’ve successfully created a wallet on ZetaChain!
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-[940px] w-full px-6">
+      <div className="flex flex-wrap justify-center gap-6 sm:gap-8 mt-10 sm:mt-12 max-w-[940px] w-full px-4 sm:px-6">
         {benefits.map(({ title, Icon }, index) => (
           <motion.div
             key={index}
-            className="rounded-[16px] py-6 px-6 md:px-10 flex flex-col items-center gap-4 backdrop-blur-[20px] before-gradient-border bg-[#0E1014]/50 border border-[#3E73C4]/30"
+            className="max-w-[276px] w-full rounded-[16px] py-5 px-4 sm:px-6 md:px-10 flex flex-col items-center gap-4 backdrop-blur-[20px] before-gradient-border bg-[#0E1014]/50 border border-[#3E73C4]/30"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + index * 0.1 }}
@@ -78,7 +80,9 @@ const WelcomeContainer = () => {
             <div className="rounded-lg bg-[#14171F] h-12 w-12 border border-[#3E73C4] flex justify-center items-center">
               <Icon width={20} height={20} />
             </div>
-            <span className="text-base md:text-lg font-medium">{title}</span>
+            <span className="text-sm sm:text-base md:text-lg font-medium">
+              {title}
+            </span>
           </motion.div>
         ))}
       </div>

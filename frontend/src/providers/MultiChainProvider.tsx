@@ -26,6 +26,7 @@ import { Balance } from "@/types/types";
 import { Chain, formatEther, WalletClient } from "viem";
 import { getPublicClient, getWalletClient } from "@/utils/getPublicClient";
 import { AlchemySmartAccountClient, disconnect } from "@account-kit/core";
+import { useRouter } from "next/navigation";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
@@ -132,6 +133,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const scaAccount = useAccount({ type: "ModularAccountV2" });
+
+  const router = useRouter();
 
   const { setChain, chain } = useChain();
   const [activeChain, setActiveChain] = useState<Chain | null>(chain);
@@ -258,7 +261,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setIsModalOpen(false);
     clearWalletState();
     debugLog("All wallets disconnected");
-  }, [disconnect, evmDisconnect]);
+
+    router.push("/");
+  }, [disconnect, evmDisconnect, router]);
 
   const getEvmBalance = useCallback(
     async (walletAddress: string) => {

@@ -219,7 +219,7 @@ const Sidebar = ({
           }`}
         >
           <button onClick={toggleSidebar}>
-            <OpenSidebarIcon width={24} height={25} />
+            <OpenSidebarIcon width={20} height={20} />
           </button>
         </div>
 
@@ -236,7 +236,7 @@ const Sidebar = ({
 
           <nav
             className={`transition-all duration-500 ease-in-out ${
-              isCollapsed ? "space-y-4 flex flex-col items-center" : "space-y-4"
+              isCollapsed ? "space-y-4 flex flex-col" : "space-y-4"
             }`}
           >
             {enhancedMenuItems.map((item) => (
@@ -254,7 +254,7 @@ const Sidebar = ({
         </div>
       </div>
 
-      <div className="flex flex-col items-center overflow-hidden">
+      <div className="flex flex-col overflow-hidden">
         <div
           className={`border-t border-[#535E73] my-4 transition-all duration-500 ease-in-out ${
             isCollapsed ? "w-[64px]" : "w-full"

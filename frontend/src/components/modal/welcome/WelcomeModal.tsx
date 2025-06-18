@@ -19,7 +19,7 @@ const WelcomeModal = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-50 bg-[#0C1015] text-white font-gotham overflow-y-auto"
+          className="fixed inset-0 z-50 bg-[#0C1015] text-white font-gotham"
         >
           <GlowIcon position="top-right" />
           <GlowIcon position="bottom-left" />
