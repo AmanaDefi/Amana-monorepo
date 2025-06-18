@@ -33,17 +33,17 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  if (!isHydrated) {
-    return (
-      <div className="relative overflow-hidden min-h-screen z-0">
-        <GlowIcon position="top-right" />
-        <GlowIcon position="bottom-left" />
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader />
-        </div>
-      </div>
-    );
-  }
+  // if (!isHydrated) {
+  //   return (
+  //     <div className="relative overflow-hidden min-h-screen z-0">
+  //       <GlowIcon position="top-right" />
+  //       <GlowIcon position="bottom-left" />
+  //       <div className="flex items-center justify-center min-h-screen">
+  //         <Loader />
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
    const isConnected = !!walletAddress;
 
