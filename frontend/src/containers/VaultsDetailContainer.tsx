@@ -338,9 +338,6 @@ const VaultsDetailContainer: React.FC<{
                 }
                 setTransactionCompleted(true);
               }}
-              selectedChain={activeChain}
-              onSelectChain={handleChainSelect}
-              vaultId={vaultID.toString()}
             />
           ) : (
             <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
