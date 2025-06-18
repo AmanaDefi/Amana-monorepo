@@ -14,10 +14,10 @@ import { useMultiChain } from '@/providers/MultiChainProvider';
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
-const RISK_LEVELS: Record<number, { level: string; color: string }> = {
-  1: { level: 'Low', color: 'bg-green-500' },
-  2: { level: 'Medium', color: 'bg-yellow-500' },
-  3: { level: 'High', color: 'bg-red-500' },
+export const RISK_LEVELS: Record<number, { level: string; color: string }> = {
+  1: { level: "A", color: "bg-green-500" },
+  2: { level: "B", color: "bg-yellow-500" },
+  3: { level: "C", color: "bg-red-500" },
 };
 
 // Calculate risk level based on protocol (this is just an example, you'd want to use real risk metrics)

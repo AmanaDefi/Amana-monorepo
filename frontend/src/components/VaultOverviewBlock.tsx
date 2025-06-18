@@ -6,6 +6,7 @@ import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
 import { VaultCardInfoBlock } from "./VaultsWrapper/components/VaultCardInfoBlock";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
+import { RISK_LEVELS } from "./VaultsGrid";
 
 type Props = {
   vault: VaultData;
@@ -20,6 +21,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
 }) => {
   const apyValue = Number(vaultAPY?.APY7d || 0);
   const riskRating = calculateRiskLevel(vault);
+
 
   return (
     <VaultCardInfoBlock>
@@ -51,7 +53,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
           </div>
           <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
             <p className="text-white font-bold text-lg leading-5">
-              {riskRating}
+              {RISK_LEVELS[riskRating]?.level}
             </p>
           </div>
         </div>

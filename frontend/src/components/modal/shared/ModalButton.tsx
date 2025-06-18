@@ -34,7 +34,7 @@ const ModalButton = ({
         })}
       >
         <span
-          className="text-[18px] text-left"
+          className="text-[18px] text-left whitespace-nowrap"
           style={{ letterSpacing: "-0.06em" }}
         >
           {label}

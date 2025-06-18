@@ -15,6 +15,8 @@ const WalletActions = () => {
   const { setStep } = useFundWalletStore();
   const user = useUser();
 
+  const {openStep} = useAuthStore()
+
   const handleSend = () => {
     console.log("Send clicked");
   };
@@ -33,7 +35,10 @@ const WalletActions = () => {
         Send
       </Button>
 
-      <Button variant="wallet" onClick={handleReceive} disabled={true}>
+      <Button
+        variant="wallet"
+        onClick={() => openStep("recieve")}
+      >
         <ReceiveIcon width={12} height={12} className="mr-1" />
         Receive
       </Button>
