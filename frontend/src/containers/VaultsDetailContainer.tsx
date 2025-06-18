@@ -264,6 +264,12 @@ const VaultsDetailContainer: React.FC<{
   const informationDropdownTitle = walletAddress
     ? "What happened with my Deposit?"
     : "Information";
+  
+   const shouldShowDepositComplete =
+     finishedTransaction &&
+     initialIsDeposit &&
+     (Object.keys(lastTransactionStepFeedback).length > 0 ||
+       Object.keys(transactionStepFeedback).length > 0);
 
   return vaultData ? (
     <div className=" font-gotham">
@@ -330,21 +336,43 @@ const VaultsDetailContainer: React.FC<{
             totalAssets={vaultTotalAsset}
           />
 
-          <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
-            <VaultInputs
+          {shouldShowDepositComplete ? (
+            <DepositComplete
               vaultData={vaultData}
-              setTransactionCompleted={setTransactionCompleted}
-              userVaultBalance={userVaultBalance}
-              vaultTotalAssetinToken={vaultTotalAssetinToken}
-              transactionCompleted={transactionCompleted}
-              initialIsDeposit={initialIsDeposit}
-              onTokenSelect={handleTokenSelect}
               selectedToken={selectedToken}
-              selectedChain={selectedChain}
-              onSelectChain={handleChainSelect}
-              vaultId={vaultID.toString()}
+              userVaultBalance={userVaultBalance}
+              onClose={() => {
+                console.log(
+                  "🔄 Closing DepositComplete - resetting store state",
+                );
+                setFinishedTransaction(false);
+                setLastTransactionStepFeedback({});
+                setTransactionStepFeedback({});
+                setIsTransactionProcessing(false);
+
+                if (vaultID) {
+                  localStorage.removeItem(vaultID.toString());
+                }
+                setTransactionCompleted(true);
+              }}
             />
-          </div>
+          ) : (
+            <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
+              <VaultInputs
+                vaultData={vaultData}
+                setTransactionCompleted={setTransactionCompleted}
+                userVaultBalance={userVaultBalance}
+                vaultTotalAssetinToken={vaultTotalAssetinToken}
+                transactionCompleted={transactionCompleted}
+                initialIsDeposit={initialIsDeposit}
+                onTokenSelect={handleTokenSelect}
+                selectedToken={selectedToken}
+                selectedChain={selectedChain}
+                onSelectChain={handleChainSelect}
+                vaultId={vaultID.toString()}
+              />
+            </div>
+          )}
         </div>
 
         <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
