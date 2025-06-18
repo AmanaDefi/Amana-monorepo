@@ -833,17 +833,17 @@ export class Deposit extends Entity {
     this.set("shares", Value.fromBigInt(value));
   }
 
-  get crossChainTxId(): Bytes {
-    let value = this.get("crossChainTxId");
+  get vaultNonce(): BigInt {
+    let value = this.get("vaultNonce");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
-      return value.toBytes();
+      return value.toBigInt();
     }
   }
 
-  set crossChainTxId(value: Bytes) {
-    this.set("crossChainTxId", Value.fromBytes(value));
+  set vaultNonce(value: BigInt) {
+    this.set("vaultNonce", Value.fromBigInt(value));
   }
 
   get blockNumber(): BigInt {
@@ -990,17 +990,17 @@ export class Withdrawal extends Entity {
     this.set("shares", Value.fromBigInt(value));
   }
 
-  get crossChainTxId(): Bytes {
-    let value = this.get("crossChainTxId");
+  get vaultNonce(): BigInt {
+    let value = this.get("vaultNonce");
     if (!value || value.kind == ValueKind.NULL) {
       throw new Error("Cannot return null for a required field.");
     } else {
-      return value.toBytes();
+      return value.toBigInt();
     }
   }
 
-  set crossChainTxId(value: Bytes) {
-    this.set("crossChainTxId", Value.fromBytes(value));
+  set vaultNonce(value: BigInt) {
+    this.set("vaultNonce", Value.fromBigInt(value));
   }
 
   get blockNumber(): BigInt {

@@ -167,8 +167,8 @@ type Deposit @entity(immutable: true) {
   "Shares received"
   shares: BigInt!
 
-  "Cross-chain transaction ID"
-  crossChainTxId: Bytes!
+  "Vault nonce (or cross-chain transaction ID in older version)"
+  vaultNonce: BigInt!
 
   "Block number"
   blockNumber: BigInt!
@@ -200,8 +200,8 @@ type Withdrawal @entity(immutable: true) {
   "Shares redeemed"
   shares: BigInt!
 
-  "Cross-chain transaction ID"
-  crossChainTxId: Bytes!
+  "Vault nonce (or cross-chain transaction ID in older version)"
+  vaultNonce: BigInt!
 
   "Block number"
   blockNumber: BigInt!

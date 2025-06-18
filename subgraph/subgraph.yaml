@@ -27,10 +27,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -54,10 +58,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -81,10 +89,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -108,10 +120,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -135,10 +151,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -162,10 +182,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -189,10 +213,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -216,10 +244,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts
 
   - kind: ethereum
@@ -243,8 +275,12 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ./src/mapping.ts 

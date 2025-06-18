@@ -1,6 +1,6 @@
 import { VaultInitialized, StrategyUpdated, Deposited, Withdrawn } from "../generated/VenusUSDT_BSC/AmanaVault";
 import { AmanaVault } from "../generated/VenusUSDT_BSC/AmanaVault";
-import { Vault, VaultDayData } from "../generated/schema";
+import { Vault, VaultDayData, Deposit, Withdrawal } from "../generated/schema";
 import { BigInt, ethereum, dataSource, BigDecimal } from "@graphprotocol/graph-ts";
 
 function getOrCreateVaultDayData(vaultId: string, timestamp: BigInt): VaultDayData {
@@ -116,6 +116,34 @@ export function handleDeposited(event: Deposited): void {
   d.sharesSupply = v.sharesSupply;
   d.tvl = v.tvl;
   d.save();
+  
+  // Create deposit record
+  let depositId = event.transaction.hash.toHex() + "-" + event.logIndex.toString();
+  let deposit = new Deposit(depositId);
+  deposit.vault = id;
+  deposit.user = event.params.user;
+  deposit.amount = event.params.amount;
+  deposit.shares = event.params.shares;
+  
+  // Adapted code for working with both old (crossChainTxId) and new (vaultNonce) formats
+  if (event.parameters.length >= 4) {
+    let nonceParam = event.parameters[3].value;
+    if (nonceParam.kind == ethereum.ValueKind.BYTES) {
+      // Old version: convert bytes32 to BigInt for compatibility
+      deposit.vaultNonce = BigInt.fromI32(0); // can't convert bytes32 -> BigInt, use 0
+    } else {
+      // New version
+      deposit.vaultNonce = nonceParam.toBigInt();
+    }
+  } else {
+    deposit.vaultNonce = BigInt.fromI32(0);
+  }
+  
+  deposit.blockNumber = event.block.number;
+  deposit.timestamp = event.block.timestamp;
+  deposit.transactionHash = event.transaction.hash;
+  deposit.pricePerShare = v.pricePerShare || BigDecimal.fromString("1.0");
+  deposit.save();
 }
 
 export function handleWithdrawn(event: Withdrawn): void {
@@ -134,6 +162,34 @@ export function handleWithdrawn(event: Withdrawn): void {
   d.sharesSupply = v.sharesSupply;
   d.tvl = v.tvl;
   d.save();
+  
+  // Create withdrawal record
+  let withdrawalId = event.transaction.hash.toHex() + "-" + event.logIndex.toString();
+  let withdrawal = new Withdrawal(withdrawalId);
+  withdrawal.vault = id;
+  withdrawal.user = event.params.user;
+  withdrawal.amount = event.params.amount;
+  withdrawal.shares = event.params.shares;
+  
+  // Adapted code for working with both old (crossChainTxId) and new (vaultNonce) formats
+  if (event.parameters.length >= 4) {
+    let nonceParam = event.parameters[3].value;
+    if (nonceParam.kind == ethereum.ValueKind.BYTES) {
+      // Old version: convert bytes32 to BigInt for compatibility
+      withdrawal.vaultNonce = BigInt.fromI32(0); // can't convert bytes32 -> BigInt, use 0
+    } else {
+      // New version
+      withdrawal.vaultNonce = nonceParam.toBigInt();
+    }
+  } else {
+    withdrawal.vaultNonce = BigInt.fromI32(0);
+  }
+  
+  withdrawal.blockNumber = event.block.number;
+  withdrawal.timestamp = event.block.timestamp;
+  withdrawal.transactionHash = event.transaction.hash;
+  withdrawal.pricePerShare = v.pricePerShare || BigDecimal.fromString("1.0");
+  withdrawal.save();
 }
 
 export function handleBlock(block: ethereum.Block): void {
@@ -142,4 +198,70 @@ export function handleBlock(block: ethereum.Block): void {
   if (v == null) return;
   updatePriceAndAPY(v, block.timestamp);
   v.save();
+}
+
+export function handleDepositedLegacy(event: Deposited): void {
+  let id = event.address.toHex();
+  let v = Vault.load(id);
+  if (v == null) return;
+  v.totalDeposited = v.totalDeposited.plus(event.params.amount);
+  v.sharesSupply = v.sharesSupply.plus(event.params.shares);
+  let contract = AmanaVault.bind(event.address);
+  let tvl = contract.try_totalAssets();
+  if (!tvl.reverted) v.tvl = tvl.value;
+  v.save();
+
+  let d = getOrCreateVaultDayData(id, event.block.timestamp);
+  d.dailyDeposit = d.dailyDeposit.plus(event.params.amount);
+  d.sharesSupply = v.sharesSupply;
+  d.tvl = v.tvl;
+  d.save();
+  
+  // Create deposit record - for legacy events
+  let depositId = event.transaction.hash.toHex() + "-" + event.logIndex.toString();
+  let deposit = new Deposit(depositId);
+  deposit.vault = id;
+  deposit.user = event.params.user;
+  deposit.amount = event.params.amount;
+  deposit.shares = event.params.shares;
+  // For legacy events, we don't have vaultNonce, so set to 0
+  deposit.vaultNonce = BigInt.fromI32(0);
+  deposit.blockNumber = event.block.number;
+  deposit.timestamp = event.block.timestamp;
+  deposit.transactionHash = event.transaction.hash;
+  deposit.pricePerShare = v.pricePerShare || BigDecimal.fromString("1.0");
+  deposit.save();
+}
+
+export function handleWithdrawnLegacy(event: Withdrawn): void {
+  let id = event.address.toHex();
+  let v = Vault.load(id);
+  if (v == null) return;
+  v.totalWithdrawn = v.totalWithdrawn.plus(event.params.amount);
+  v.sharesSupply = v.sharesSupply.minus(event.params.shares);
+  let contract = AmanaVault.bind(event.address);
+  let tvl = contract.try_totalAssets();
+  if (!tvl.reverted) v.tvl = tvl.value;
+  v.save();
+
+  let d = getOrCreateVaultDayData(id, event.block.timestamp);
+  d.dailyWithdraw = d.dailyWithdraw.plus(event.params.amount);
+  d.sharesSupply = v.sharesSupply;
+  d.tvl = v.tvl;
+  d.save();
+  
+  // Create withdrawal record - for legacy events
+  let withdrawalId = event.transaction.hash.toHex() + "-" + event.logIndex.toString();
+  let withdrawal = new Withdrawal(withdrawalId);
+  withdrawal.vault = id;
+  withdrawal.user = event.params.user;
+  withdrawal.amount = event.params.amount;
+  withdrawal.shares = event.params.shares;
+  // For legacy events, we don't have vaultNonce, so set to 0
+  withdrawal.vaultNonce = BigInt.fromI32(0);
+  withdrawal.blockNumber = event.block.number;
+  withdrawal.timestamp = event.block.timestamp;
+  withdrawal.transactionHash = event.transaction.hash;
+  withdrawal.pricePerShare = v.pricePerShare || BigDecimal.fromString("1.0");
+  withdrawal.save();
 } 

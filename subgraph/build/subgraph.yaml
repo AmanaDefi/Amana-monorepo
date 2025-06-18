@@ -25,10 +25,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: FluidUSDC_Vault
@@ -51,10 +55,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CompoundUSDT_Vault
@@ -77,10 +85,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: AaveUSDT_Vault
@@ -103,10 +115,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CurveConvexETH_Vault
@@ -129,10 +145,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CurveConvexUSDT_Vault
@@ -155,10 +175,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CurveConvexUSDC_Vault
@@ -181,10 +205,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: BalancerUSDC_Vault
@@ -207,10 +235,14 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: NewVault_7F3B
@@ -233,8 +265,12 @@ dataSources:
           handler: handleVaultInitialized
         - event: StrategyUpdated(indexed address)
           handler: handleStrategyUpdated
-        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
           handler: handleDeposited
-        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
           handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm

@@ -9,25 +9,26 @@ import { Vault, UserPosition, Deposit, Withdrawal } from "../generated/schema";
 import { VaultDayData, UserPositionDayData } from "../generated/schema";
 import { BigInt, BigDecimal, Bytes, Address } from "@graphprotocol/graph-ts";
 
-// Helper function to normalize addresses
+// Helper function to normalize addresses (preserves original case)
 export function normalizeAddress(address: Address): string {
-  return address.toHex();
+  return address.toHexString();
 }
 
-// Helper function to normalize bytes (user addresses)
+// Helper function to normalize bytes (user addresses, preserves original case)
 export function normalizeBytes(bytes: Bytes): string {
-  return bytes.toHex();
+  return bytes.toHexString();
 }
 
 // Vault metadata mapping
 function getVaultMetadata(vaultAddress: string): VaultMetadata {
-  let addr = vaultAddress
+  let addr = vaultAddress.toLowerCase(); // normalize for comparison
   
   // ZeroLend USDC Vault -> Base
-  if (addr == "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e") {
+  if (addr == "0x0f6514e3e4760efc8f34fc67a05c4987367af14e") {
     return {
       type: "Lending Pool",
-      description: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market.",
+      name: "USDC Lend Pool",
+      description: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
       assetSymbol: "USDC.BASE",
@@ -38,17 +39,19 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 8453,
       protocolName: "ZeroLend",
       protocolImgURL: "/ZeroLend.png",
-      protocolDescription: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration.",
-      networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility.",
-      riskLevel: 2
+      protocolDescription: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements.",
+      networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum's decentralized security.",
+      riskLevel: 2,
+      rewardsContractAddress: null
     };
   }
   
   // Fluid USDC Vault -> Base  
-  if (addr == "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69") {
+  if (addr == "0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69") {
     return {
       type: "Lending Pool",
-      description: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers.",
+      name: "USDC Lend Pool",
+      description: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
       assetSymbol: "USDC.BASE",
@@ -59,17 +62,19 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 8453,
       protocolName: "Fluid",
       protocolImgURL: "/fluid.png",
-      protocolDescription: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization.",
-      networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility.",
-      riskLevel: 2
+      protocolDescription: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters.",
+      networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum's decentralized security.",
+      riskLevel: 2,
+      rewardsContractAddress: null
     };
   }
   
   // Compound USDT Vault -> Polygon
-  if (addr == "0x622E956626Cc6aBa655E3d92a3629b04cB038E80") {
+  if (addr == "0x622e956626cc6aba655e3d92a3629b04cb038e80") {
     return {
       type: "Lending Pool",
-      description: "Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers.",
+      name: "USDT Lend Pool",
+      description: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
       imgURL: "/polygon_logo.png",
       depositFeePaidFromGasTank: true,
       assetSymbol: "USDT.POL",
@@ -80,17 +85,19 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 137,
       protocolName: "Compound",
       protocolImgURL: "/compound.png",
-      protocolDescription: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral.",
-      networkDescription: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility.",
-      riskLevel: 2
+      protocolDescription: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters.",
+      networkDescription: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum's decentralized security and liquidity.",
+      riskLevel: 2,
+      rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581"
     };
   }
   
   // Aave USDT Vault -> BNB
-  if (addr == "0xe5fa0E4BA13D516908c5313b3375b7Ede24BFe7a") {
+  if (addr == "0xe5fa0e4ba13d516908c5313b3375b7ede24bfe7a") {
     return {
       type: "Lending Pool",
-      description: "Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers.",
+      name: "USDT Lend Pool",
+      description: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
       imgURL: "/bnb_logo.png",
       depositFeePaidFromGasTank: true,
       assetSymbol: "USDT.BNB",
@@ -101,17 +108,19 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 56,
       protocolName: "Aave",
       protocolImgURL: "/aave.png",
-      protocolDescription: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds.",
-      networkDescription: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps.",
-      riskLevel: 2
+      protocolDescription: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements.",
+      networkDescription: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      riskLevel: 2,
+      rewardsContractAddress: null
     };
   }
   
   // Curve Convex ETH Vault -> Ethereum
-  if (addr == "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE") {
+  if (addr == "0xf4fa4d8115e78acf52308fdbad10a5f9042991de") {
     return {
       type: "Liquidity Pool",
-      description: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards.",
+      name: "msETH/WETH Pool",
+      description: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since msETH and WETH are pegged to the same underlying asset (ETH), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
       assetSymbol: "ETH.ETH",
@@ -122,17 +131,19 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 1,
       protocolName: "Curve-Convex",
       protocolImgURL: "/convex.png",
-      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps. Convex Finance is a yield optimization protocol built on top of Curve.",
-      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps.",
-      riskLevel: 3
+      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c"
     };
   }
   
   // Curve Convex USDT Vault -> Ethereum
-  if (addr == "0x0552D4C51491D9bFeD97eb795E101E90a5F16d44") {
+  if (addr == "0x0552d4c51491d9bfed97eb795e101e90a5f16d44") {
     return {
       type: "Liquidity Pool",
-      description: "This strategy deposits USDT into the Curve USDT/USDe pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards.",
+      name: "USDT/USDe Pool",
+      description: "This strategy deposits USDT into the Curve USDT/USDe pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
       assetSymbol: "USDT.ETH",
@@ -143,17 +154,19 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 1,
       protocolName: "Curve-Convex",
       protocolImgURL: "/curve.png",
-      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps. Convex Finance is a yield optimization protocol built on top of Curve.",
-      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps.",
-      riskLevel: 3
+      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: "0x60eF3c53c86E1eCEc76d900B6cf2f0B39ffD98B2"
     };
   }
   
   // Curve Convex USDC Vault -> Arbitrum
-  if (addr == "0xAbE7a5C760B030421B5C9815fE91f9Ba68058769") {
+  if (addr == "0xabe7a5c760b030421b5c9815fe91f9ba68058769") {
     return {
       type: "Liquidity Pool",
-      description: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards.",
+      name: "eUSD/USDC Pool",
+      description: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/arbitrum-arb-logo.png",
       depositFeePaidFromGasTank: true,
       assetSymbol: "USDC.ARB",
@@ -164,17 +177,19 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 42161,
       protocolName: "Curve-Convex",
       protocolImgURL: "/convex.png",
-      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps. Convex Finance is a yield optimization protocol built on top of Curve.",
-      networkDescription: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum's security through rollup technology.",
-      riskLevel: 3
+      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
+      networkDescription: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum's security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
+      riskLevel: 3,
+      rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4"
     };
   }
   
   // Balancer USDC Vault -> Base
-  if (addr == "0x8b934de59fDE50a91DAa7E788389f8fCAD35A14F") {
+  if (addr == "0x8b934de59fde50a91daa7e788389f8fcad35a14f") {
     return {
       type: "Liquidity Pool",
-      description: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives.",
+      name: "yUSD/USDC Pool",
+      description: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer's LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
       assetSymbol: "USDC.BASE",
@@ -185,15 +200,17 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyChainId: 8453,
       protocolName: "Balancer",
       protocolImgURL: "/balancer.png",
-      protocolDescription: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools.",
-      networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility.",
-      riskLevel: 3
+      protocolDescription: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer's design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies.",
+      networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum's decentralized security.",
+      riskLevel: 3,
+      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645"
     };
   }
   
   // Default fallback
   return {
     type: "Unknown",
+    name: "Unknown Vault",
     description: "Unknown vault",
     imgURL: "/default.png",
     depositFeePaidFromGasTank: false,
@@ -207,12 +224,14 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     protocolImgURL: "/default.png",
     protocolDescription: "Unknown protocol",
     networkDescription: "Unknown network",
-    riskLevel: 1
+    riskLevel: 1,
+    rewardsContractAddress: null
   };
 }
 
 class VaultMetadata {
   type: string;
+  name: string;
   description: string;
   imgURL: string;
   depositFeePaidFromGasTank: boolean;
@@ -227,6 +246,7 @@ class VaultMetadata {
   protocolDescription: string;
   networkDescription: string;
   riskLevel: i32;
+  rewardsContractAddress: string | null;
 }
 
 // Legacy function for backward compatibility
@@ -296,6 +316,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
 
   // Set metadata fields
   entity.type = metadata.type;
+  entity.name = metadata.name;
   entity.description = metadata.description;
   entity.imgURL = metadata.imgURL;
   entity.depositFeePaidFromGasTank = metadata.depositFeePaidFromGasTank;
@@ -310,13 +331,17 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   entity.protocolDescription = metadata.protocolDescription;
   entity.networkDescription = metadata.networkDescription;
   entity.riskLevel = metadata.riskLevel;
+  
+  // Set rewards contract address if provided
+  if (metadata.rewardsContractAddress != null) {
+    let rewardsAddress = metadata.rewardsContractAddress as string;
+    entity.rewardsContractAddress = Bytes.fromHexString(rewardsAddress);
+  } else {
+    entity.rewardsContractAddress = null;
+  }
 
   // Bind contract to access view functions
   let vaultContract = AmanaVault.bind(event.address);
-  let nameCall = vaultContract.try_name();
-  if (!nameCall.reverted) {
-    entity.name = nameCall.value;
-  }
   let symbolCall = vaultContract.try_symbol();
   if (!symbolCall.reverted) {
     entity.symbol = symbolCall.value;
@@ -363,6 +388,7 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     
     // Set metadata fields
     entity.type = metadata.type;
+    entity.name = metadata.name;
     entity.description = metadata.description;
     entity.imgURL = metadata.imgURL;
     entity.depositFeePaidFromGasTank = metadata.depositFeePaidFromGasTank;
@@ -378,15 +404,16 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     entity.networkDescription = metadata.networkDescription;
     entity.riskLevel = metadata.riskLevel;
     
-    // Bind contract to access view functions
-    let vaultContract = AmanaVault.bind(event.address);
-    let nameCall = vaultContract.try_name();
-    if (!nameCall.reverted) {
-      entity.name = nameCall.value;
+    // Set rewards contract address if provided
+    if (metadata.rewardsContractAddress != null) {
+      let rewardsAddress = metadata.rewardsContractAddress as string;
+      entity.rewardsContractAddress = Bytes.fromHexString(rewardsAddress);
     } else {
-      entity.name = "Unknown Vault";
+      entity.rewardsContractAddress = null;
     }
     
+    // Bind contract to access view functions
+    let vaultContract = AmanaVault.bind(event.address);
     let symbolCall = vaultContract.try_symbol();
     if (!symbolCall.reverted) {
       entity.symbol = symbolCall.value;
@@ -560,7 +587,7 @@ export function handleDeposited(event: Deposited): void {
   deposit.user = event.params.user;
   deposit.amount = event.params.amount;
   deposit.shares = event.params.shares;
-  deposit.crossChainTxId = event.params.crossChainTxId;
+  deposit.vaultNonce = event.params.vaultNonce;
   deposit.blockNumber = event.block.number;
   deposit.timestamp = event.block.timestamp;
   deposit.transactionHash = event.transaction.hash;
@@ -618,7 +645,129 @@ export function handleWithdrawn(event: Withdrawn): void {
   withdrawal.user = event.params.user;
   withdrawal.amount = event.params.amount;
   withdrawal.shares = event.params.shares;
-  withdrawal.crossChainTxId = event.params.crossChainTxId;
+  withdrawal.vaultNonce = event.params.vaultNonce;
+  withdrawal.blockNumber = event.block.number;
+  withdrawal.timestamp = event.block.timestamp;
+  withdrawal.transactionHash = event.transaction.hash;
+  withdrawal.pricePerShare = vault.pricePerShare;
+  withdrawal.save();
+
+  // Update daily aggregation
+  let dayData = getOrCreateVaultDayData(vaultId, event.block.timestamp);
+  dayData.dailyWithdraw = dayData.dailyWithdraw.plus(event.params.amount);
+  dayData.sharesSupply = vault.sharesSupply;
+  dayData.tvl = vault.tvl;
+  dayData.pricePerShare = vault.pricePerShare;
+  dayData.withdrawalCount = dayData.withdrawalCount + 1;
+  dayData.save();
+  
+  // Update user position day data
+  let userPositionDayData = getOrCreateUserPositionDayData(userPosition.id, event.block.timestamp);
+  userPositionDayData.dailyWithdrawn = userPositionDayData.dailyWithdrawn.plus(event.params.amount);
+  userPositionDayData.sharesBalance = userPosition.sharesBalance;
+  userPositionDayData.assetsBalance = userPosition.assetsBalance;
+  userPositionDayData.pricePerShare = vault.pricePerShare;
+  userPositionDayData.save();
+}
+
+export function handleDepositedLegacy(event: Deposited): void {
+  let vaultId = normalizeAddress(event.address);
+  let vault = Vault.load(vaultId);
+  if (vault == null) {
+    // Not initialized yet – should not happen
+    return;
+  }
+  
+  // Update vault totals
+  vault.totalDeposited = (vault.totalDeposited || BigInt.zero()).plus(event.params.amount);
+  
+  // Update vault totals from contract (more reliable)
+  updateVaultTotals(event.address, vault);
+  vault.save();
+
+  // Create or update user position
+  let userPosition = getOrCreateUserPosition(vaultId, event.params.user);
+  userPosition.totalDeposited = userPosition.totalDeposited.plus(event.params.amount);
+  userPosition.totalSharesReceived = userPosition.totalSharesReceived.plus(event.params.shares);
+  userPosition.lastInteractionAt = event.block.timestamp;
+  userPosition.depositCount = userPosition.depositCount + 1;
+  
+  // Set first deposit timestamp if this is the first deposit
+  if (userPosition.firstDepositAt.isZero()) {
+    userPosition.firstDepositAt = event.block.timestamp;
+  }
+  
+  // Update user balance from contract (more reliable than manual calculation)
+  updateUserBalance(event.address, event.params.user, userPosition);
+  
+  userPosition.save();
+
+  // Create deposit record - for legacy events, vaultNonce = 0
+  let depositId = event.transaction.hash.toHex() + "-" + event.logIndex.toString();
+  let deposit = new Deposit(depositId);
+  deposit.vault = vaultId;
+  deposit.user = event.params.user;
+  deposit.amount = event.params.amount;
+  deposit.shares = event.params.shares;
+  deposit.vaultNonce = BigInt.fromI32(0); // Legacy events don't have vaultNonce
+  deposit.blockNumber = event.block.number;
+  deposit.timestamp = event.block.timestamp;
+  deposit.transactionHash = event.transaction.hash;
+  deposit.pricePerShare = vault.pricePerShare;
+  deposit.save();
+
+  // Update daily aggregation
+  let dayData = getOrCreateVaultDayData(vaultId, event.block.timestamp);
+  dayData.dailyDeposit = dayData.dailyDeposit.plus(event.params.amount);
+  dayData.sharesSupply = vault.sharesSupply;
+  dayData.tvl = vault.tvl;
+  dayData.pricePerShare = vault.pricePerShare;
+  dayData.depositCount = dayData.depositCount + 1;
+  dayData.save();
+  
+  // Update user position day data
+  let userPositionDayData = getOrCreateUserPositionDayData(userPosition.id, event.block.timestamp);
+  userPositionDayData.dailyDeposited = userPositionDayData.dailyDeposited.plus(event.params.amount);
+  userPositionDayData.sharesBalance = userPosition.sharesBalance;
+  userPositionDayData.assetsBalance = userPosition.assetsBalance;
+  userPositionDayData.pricePerShare = vault.pricePerShare;
+  userPositionDayData.save();
+}
+
+export function handleWithdrawnLegacy(event: Withdrawn): void {
+  let vaultId = normalizeAddress(event.address);
+  let vault = Vault.load(vaultId);
+  if (vault == null) {
+    return;
+  }
+  
+  // Update vault totals
+  vault.totalWithdrawn = (vault.totalWithdrawn || BigInt.zero()).plus(event.params.amount);
+  
+  // Update vault totals from contract (more reliable)
+  updateVaultTotals(event.address, vault);
+  vault.save();
+
+  // Update user position
+  let userPosition = getOrCreateUserPosition(vaultId, event.params.user);
+  userPosition.totalWithdrawn = userPosition.totalWithdrawn.plus(event.params.amount);
+  userPosition.totalSharesRedeemed = userPosition.totalSharesRedeemed.plus(event.params.shares);
+  userPosition.lastInteractionAt = event.block.timestamp;
+  userPosition.withdrawalCount = userPosition.withdrawalCount + 1;
+  
+  // Update user balance from contract (more reliable than manual calculation)
+  updateUserBalance(event.address, event.params.user, userPosition);
+  
+  userPosition.save();
+
+  // Create withdrawal record - for legacy events, vaultNonce = 0
+  let withdrawalId = event.transaction.hash.toHex() + "-" + event.logIndex.toString();
+  let withdrawal = new Withdrawal(withdrawalId);
+  withdrawal.vault = vaultId;
+  withdrawal.user = event.params.user;
+  withdrawal.amount = event.params.amount;
+  withdrawal.shares = event.params.shares;
+  withdrawal.vaultNonce = BigInt.fromI32(0); // Legacy events don't have vaultNonce
   withdrawal.blockNumber = event.block.number;
   withdrawal.timestamp = event.block.timestamp;
   withdrawal.transactionHash = event.transaction.hash;
