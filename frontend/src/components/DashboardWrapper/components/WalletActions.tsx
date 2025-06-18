@@ -9,6 +9,9 @@ import { useUser } from "@account-kit/react";
 import React from "react";
 
 const WalletActions = () => {
+   const { openStep } =
+     useAuthStore();
+
   const { setStep } = useFundWalletStore();
   const user = useUser();
 
@@ -22,7 +25,7 @@ const WalletActions = () => {
 
   return (
     <div className="flex flex-wrap gap-4">
-      <Button variant="wallet" onClick={handleSend} disabled={true}>
+      <Button variant="wallet" onClick={() => openStep("send")}>
         <SaveIcon width={12} height={10} className="mr-1" />
         Send
       </Button>

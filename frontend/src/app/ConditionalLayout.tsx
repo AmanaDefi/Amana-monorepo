@@ -7,6 +7,7 @@ import Header from "@/components/header";
 import { AppModals } from "@/components/modal/AppModals";
 import GlowIcon from "@/components/svg/GlowIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useAuthStore } from "@/store/authStore";
 import { getActiveSectionFromPathname } from "@/utils/getActiveSectionFromPathname";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
@@ -15,6 +16,9 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { isHydrated, walletAddress } = useMultiChain();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const {step} = useAuthStore();
+
+  console.log(step, 'step')
 
   const pathname = usePathname();
   const activeSection = getActiveSectionFromPathname(pathname);

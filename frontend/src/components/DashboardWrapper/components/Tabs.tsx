@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import cn from "classnames";
 import { useTabsStore } from "@/store/portfolioTabsStore";
 import type {
@@ -9,9 +9,26 @@ import type {
   TabsContentProps,
   EmptyStateProps,
 } from "@/types/dasboard";
+import type {
+  VaultData,
+  VaultAPY,
+  VaultTotalAssets,
+  UserVaultBalance,
+} from "@/types/types";
 import Button from "@/components/Button";
-import WalletConnectIcon from "@/components/svg/WalletConnectIcon";
 import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
+import { useMyVaults } from "@/hooks/useMyVaults";
+import { VaultCard } from "@/components/VaultsWrapper/components/VaultCard";
+import {
+  MOCK_TRANSACTIONS,
+  type Transaction,
+} from "@/constants/mockTransactions";
+import Image from "next/image";
+import ProfileCircle from "@/components/svg/ProfileCircle";
+import TransactionDetailsIcon from "@/components/svg/TransactionDetailsIcon";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
+
+const ZetaChainIcon = "/ZetaChain.webp";
 
 const Tabs: React.FC<TabsProps> = ({
   children,
@@ -47,7 +64,7 @@ const TabsTrigger: React.FC<TabsTriggerProps> = ({
     <button
       onClick={() => setActiveTab(value)}
       className={cn(
-        "pb-4  text-base font-normal transition-all duration-200 relative",
+        "pb-4 text-base font-normal transition-all duration-200 relative",
         isActive ? "text-white" : "hover:text-[#9CA3AF]",
         className,
       )}
@@ -111,7 +128,83 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   );
 };
 
-const PortfolioTabs: React.FC = () => {
+// Transaction Item Component
+const TransactionItem: React.FC<{ transaction: Transaction }> = ({
+  transaction,
+}) => {
+  const handleDetailsClick = () => {
+    // Disabled for now
+    console.log("Transaction details:", transaction.id);
+  };
+
+  return (
+    <div className="flex items-center justify-between text-white">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center">
+          <Image
+            src={ZetaChainIcon}
+            alt="ZetaChainIcon"
+            width={44}
+            height={44}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center">
+            <span className="font-bold text-lg capitalize">
+              {transaction.type}
+            </span>
+          </div>
+
+          <div className="text-sm">
+            <span className="">{transaction.timestamp}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* From Address */}
+      <div className="flex gap-3 text-sm text-white">
+        <ProfileCircle width={44} height={44} />
+        <div className="flex flex-col gap-1 justify-start">
+          <span className="font-bold text-lg">From</span>
+          <span>{transaction.from}</span>
+        </div>
+      </div>
+
+      <button
+        onClick={handleDetailsClick}
+        disabled={true}
+        className="p-2 text-[#9A9CB3] cursor-not-allowed"
+      >
+        <TransactionDetailsIcon width={20} height={20} />
+      </button>
+    </div>
+  );
+};
+
+interface PortfolioTabsProps {
+  vaults?: VaultData[];
+  vaultAPYs?: VaultAPY[];
+  userVaultBalances?: UserVaultBalance[];
+  vaultTotalAssets?: VaultTotalAssets[];
+  loading?: boolean;
+  transactions?: Transaction[]; // New prop for when backend is ready
+}
+
+const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
+  vaults = [],
+  vaultAPYs = [],
+  userVaultBalances = [],
+  vaultTotalAssets = [],
+  loading = false,
+  transactions,
+}) => {
+  const myVaults = useMyVaults({ vaults, userVaultBalances });
+
+  const [networkSearchQuery, setNetworkSearchQuery] = useState("");
+
+  const displayTransactions = transactions || MOCK_TRANSACTIONS;
+
   const handleEarningClick = () => {
     console.log("Earning in one click clicked");
   };
@@ -119,26 +212,93 @@ const PortfolioTabs: React.FC = () => {
   return (
     <Tabs defaultValue="portfolio">
       <TabsList>
-        <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+        <TabsTrigger value="portfolio">
+          Portfolio {myVaults.length > 0 && `(${myVaults.length})`}
+        </TabsTrigger>
         <TabsTrigger value="history">History</TabsTrigger>
       </TabsList>
 
       <TabsContent value="portfolio">
-        <EmptyState
-          title="No positions"
-          description="This account has not yet added any assets"
-          action={{
-            label: "Earning in one click",
-            onClick: handleEarningClick,
-          }}
-        />
+        {myVaults.length === 0 ? (
+          <EmptyState
+            title="No positions"
+            description="This account has not yet added any assets"
+            action={{
+              label: "Earning in one click",
+              onClick: handleEarningClick,
+            }}
+          />
+        ) : (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-medium text-white">
+                Your Positions ({myVaults.length})
+              </h3>
+            </div>
+
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+              }}
+            >
+              {myVaults.map((vault) => (
+                <VaultCard
+                  key={vault.id}
+                  vault={vault}
+                  vaultAPYs={vaultAPYs}
+                  vaultTotalAssets={vaultTotalAssets}
+                  userVaultBalances={userVaultBalances}
+                />
+              ))}
+            </div>
+
+            <div className="text-center mt-6">
+              <Button
+                variant="custom"
+                onClick={handleEarningClick}
+                className="!w-auto !h-10 !text-[14px] !font-normal !font-gotham"
+              >
+                Explore More Vaults
+              </Button>
+            </div>
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="history">
-        <EmptyState
-          title="No history"
-          description="You haven't made any transactions yet"
-        />
+        {displayTransactions.length === 0 ? (
+          <EmptyState
+            title="No history"
+            description="You haven't made any transactions yet"
+          />
+        ) : (
+          <div>
+            <div className="flex justify-end mb-6">
+              <div className="relative max-w-[340px] w-full">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search name or paste address"
+                  value={networkSearchQuery}
+                  onChange={(e) => setNetworkSearchQuery(e.target.value)}
+                  className="w-full rounded-[8px] pl-10 pr-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border border-[#2C2F36] transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {displayTransactions.map((transaction) => (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </TabsContent>
     </Tabs>
   );
@@ -146,3 +306,4 @@ const PortfolioTabs: React.FC = () => {
 
 export default PortfolioTabs;
 export { useTabsStore };
+export type { Transaction };

@@ -11,7 +11,16 @@ import { useAuthenticate } from "@account-kit/react";
 
 export const NotVerify = () => {
   const { step, closeAll, successAuth } = useAuthStore();
-  const { authenticate, isPending, error } = useAuthenticate();
+  const { authenticate, isPending, error } = useAuthenticate({
+    onSuccess: (result) => {
+      console.log(result);
+      console.log("Success passkey auth", result);
+      successAuth();
+    },
+    onError: (err) => {
+      console.error("Error passkey auth:", err);
+    },
+  },);
 
   const handleLogin = () => {
     if (isPending) return;
@@ -20,16 +29,6 @@ export const NotVerify = () => {
       {
         type: "passkey",
         createNew: false,
-      },
-      {
-        onSuccess: (result) => {
-          console.log(result);
-          console.log("Success google auth", result);
-          successAuth();
-        },
-        onError: (err) => {
-          console.error("Error google auth:", err);
-        },
       },
     );
   };

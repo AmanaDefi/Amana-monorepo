@@ -13,6 +13,7 @@ import { AppButton } from "../button/AppButton";
 import classNames from "classnames";
 import { useLayoutStore } from "@/store/store";
 import { useUser } from "@account-kit/react";
+import { useMyVaults } from "@/hooks/useMyVaults";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   return 1;
@@ -89,18 +90,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     });
   }, [vaults, searchTerm, chainFilter, protocolFilter]);
 
-  const MyVaults = useMemo(() => {
-    return filteredVaults.filter((vault) => {
-      const hasDeposited = userVaultBalances
-        ? !!Number(
-            userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
-              ?.balance,
-          )
-        : false;
-
-      return hasDeposited;
-    });
-  }, [filteredVaults, userVaultBalances]);
+  const MyVaults = useMyVaults({ vaults: filteredVaults, userVaultBalances });
 
   const vaultsList = useMemo(() => {
     if (isShownMyVaults) {
