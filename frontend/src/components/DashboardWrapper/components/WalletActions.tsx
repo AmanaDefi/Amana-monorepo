@@ -18,9 +18,6 @@ const WalletActions = () => {
   const handleSend = () => {
     console.log("Send clicked");
   };
-  const handleReceive = () => {
-    console.log("Receive clicked");
-  };
 
   const handleTopUp = () => {
     setStep("chooseBuyWith");
