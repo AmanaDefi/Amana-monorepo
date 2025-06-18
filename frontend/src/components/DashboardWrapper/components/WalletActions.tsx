@@ -12,13 +12,8 @@ const WalletActions = () => {
   const { setStep } = useFundWalletStore();
   const user = useUser();
 
-  const {openStep} = useAuthStore()
-
   const handleSend = () => {
     console.log("Send clicked");
-  };
-  const handleReceive = () => {
-    console.log("Receive clicked");
   };
 
   const handleTopUp = () => {
