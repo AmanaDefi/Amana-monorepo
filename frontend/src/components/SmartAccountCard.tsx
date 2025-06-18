@@ -16,32 +16,35 @@ const SmartAccountCard = ({
   className = "",
 }: SmartAccountCardProps) => {
   return (
-    <div className="min-h-[598px] pl-[47px] pr-[38px] pt-8 rounded-[16px] shadow-md bg-dark-card transition-all backdrop-blur-[20px] cursor-pointer before-gradient-border font-gotham">
-      <div className="flex items-center justify-center">
+    <div
+      className="w-full max-w-[480px] mx-auto min-h-[460px] sm:min-h-[520px] md:min-h-[598px] 
+             px-6 py-6 sm:px-[38px] sm:pt-8 rounded-[16px] shadow-md bg-dark-card 
+             transition-all backdrop-blur-[20px] cursor-pointer before-gradient-border font-gotham"
+    >
+      <div className="flex items-center justify-center mb-6">
         <Image
           src={img}
           alt={`${title} icon`}
-          width={206}
-          height={206}
-          className="object-contain"
+          width={140}
+          height={140}
+          className="object-contain sm:w-[206px] sm:h-[206px]"
           priority={img === IconPaths.PASSKEY}
         />
       </div>
-
-      <h3 className="font-medium text-[24px] mb-6 text-white">{title}</h3>
-      {list && (
-        <ul className="text-white list-none flex flex-col gap-6">
-          {list.map((item, idx) => (
-            <li
-              key={idx}
-              className="text-[16px] font-normal flex flex-row items-center gap-2"
-            >
-              <OnboardingIcon width={16} height={12} />
-              {item}
-            </li>
-          ))}
-        </ul>
-      )}
+      <h3 className="font-medium text-[20px] sm:text-[24px] mb-4 text-white">
+        {title}
+      </h3>
+      <ul className="text-white list-none flex flex-col gap-4 sm:gap-6">
+        {list.map((item, idx) => (
+          <li
+            key={idx}
+            className="text-[14px] sm:text-[16px] font-normal flex items-center gap-2"
+          >
+            <OnboardingIcon width={16} height={12} />
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
