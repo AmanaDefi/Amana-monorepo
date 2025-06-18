@@ -243,7 +243,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (!config.isNative) {
         await inputToken.connect(gatewaySigner).approve(strategy.address, depositAmount);
       }
-      console.log("Deposit amount:", depositAmount.toString());
       // Step 2: Simulate Deposit
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
@@ -262,7 +261,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         initialShares = await receiptTokenContract.balanceOf(strategy.address);
       }
-      console.log("Initial shares in strategy:", initialShares.toString());
       expect(initialShares).to.be.gt(0); // Ensure shares were received
 
       // Step 4: Simulate Time Passing for Rewards Accumulation
@@ -288,18 +286,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
         for (let i = 0; i < Number(rewardsCount); i++) {
           const rewardToken = await gauge.reward_tokens(i);
-          console.log(rewardToken)
           reward = await gauge.claimable_reward(strategy.address, rewardToken);
           console.log(`Claimable ${rewardToken} reward: ${reward.toString()}`);
         }
       } else {
         reward = await strategy.checkRewards();
       }
-      console.log("Withdrawing amount:", config.withdrawAmount.toString());
-      const totalAssets = await strategy.totalUnderlyingAssets(
-
-      );
-      console.log("Assets at this point: ", totalAssets);      // Step 6: Simulate Withdrawal
+      const totalAssets = await strategy.totalUnderlyingAssets();
       await simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
         gatewaySigner,
@@ -317,7 +310,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         strategyBalance = await receiptTokenContract.balanceOf(strategy.address);
       }
       // expect(strategyBalance).to.equal(0); // Ensure strategy balance is zero
-      console.log("Strategy balance after withdrawal:", strategyBalance.toString());
       // Step 8: Check that Rewards Were Claimed (Optional)
       let finalClaimableRewards;
       if (config.strategyContractName === "ERC20_Compound_Strategy") {
@@ -751,7 +743,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
         for (let i = 0; i < Number(rewardsCount); i++) {
           const rewardToken = await gauge.reward_tokens(i);
-          console.log(rewardToken)
           preHarvestReward = await gauge.claimable_reward(strategy.address, rewardToken);
           console.log(`Claimable ${rewardToken} reward: ${preHarvestReward.toString()}`);
         }
@@ -816,18 +807,14 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       const timeToSimulate = 7 * 24 * 60 * 60;
       await ethers.provider.send("evm_increaseTime", [timeToSimulate]);
       await ethers.provider.send("evm_mine", []);
-      console.log("got here");
       const rewardsToken = await ethers.getContractAt("IERC20", config.rewardsTokenAddress, gatewaySigner);
       const rewardsTokenBalanceBefore = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceBefore).to.eq(0);
-      console.log("rewards before", rewardsTokenBalanceBefore)
       // Step 5: Execute for real and verify RewardToken balance
       await strategy.claimRewards();
-      console.log("Claimed rewards")
       if (!config.rewardsTokenAddress) {
         throw new Error("Rewards token address is not defined in the config");
       }
-      console.log("rewardsToken")
       const rewardsTokenBalanceAfter = await rewardsToken.balanceOf(strategy.address);
       expect(rewardsTokenBalanceAfter).to.be.gte(rewardsTokenBalanceBefore);
     });

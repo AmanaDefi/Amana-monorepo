@@ -56,4 +56,15 @@ interface ISwapHelper {
         address[] memory path,
         uint24[] memory feeTiers
     ) external view returns (uint256 amountOut);
+
+    function swapViaBalancerPool(
+        address inputToken,
+        address wrappedInputToken,
+        address outputToken,
+        uint256 amount,
+        uint256 minimumOut,
+        address receiver,
+        uint256 maxDeadline,
+        address pool
+    ) external returns (uint256 amountOut);
 }

@@ -899,7 +899,8 @@ const getPathDataAndMinSharesOut = async (
       transactionAmount,
       inputTokenZeta,
       vaultData.inputToken,
-      vaultData.id as Address
+      vaultData.id as Address,
+      getCurrentSlippage() * 100
     );
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
@@ -933,29 +934,22 @@ const getPathDataAndMinAmountOut = async (
   outputToken: Token,
   transactionAmount: bigint
 ) => {
-  const slippageBps = BigInt(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
-  const minAmountOutInOutputToken =
+  const slippageBps = Number(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
+  const minAmountOut =
     (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
 
-  let minAmountOut = minAmountOutInOutputToken;
   let swapPath: `0x${string}` = "0x";
 
   if (outputToken.address !== vaultData.inputToken.address) {
-    const result = await getPathDataAndAmountOut(
-      minAmountOutInOutputToken,
-      outputToken,
-      vaultData.inputToken,
-      vaultData.id as Address
-    );
 
-    minAmountOut = result.amountOut;
-    const result2 = await getPathDataAndAmountOut(
+    const result = await getPathDataAndAmountOut(
       transactionAmount,
       vaultData.inputToken,
       outputToken,
-      vaultData.id as Address
+      vaultData.id as Address,
+      slippageBps
     );
-    swapPath = result2.encodedPath ?? "0x";
+    swapPath = result.encodedPath ?? "0x";
   }
 
   return { swapPath, minAmountOut };
@@ -1667,7 +1661,8 @@ export const getPathDataAndAmountOut = async (
   amount: bigint,
   inputToken: Token,
   outputToken: Token,
-  userAddress: string
+  userAddress: string,
+  slippage: Number
 ): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
   console.log("inputToken address:", inputToken.address);
   console.log("outputToken address:", outputToken.address);
@@ -1684,7 +1679,7 @@ export const getPathDataAndAmountOut = async (
   const swapDetails: swap.native.getSwapData.Input = {
     tokenAId: inputTokenId,
     tokenBId: outputTokenId,
-    slippage: 500,
+    slippage: Number(slippage), // e.g. 500 for 0.5%
     amount: formatUnits(amount, inputToken.decimals), // ✅ string with decimals
     sender: userAddress,
     recipient: userAddress,

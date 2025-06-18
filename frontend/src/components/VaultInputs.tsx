@@ -40,6 +40,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+import { get } from "http";
 
 
 // Helper function for formatting token balances based on token type
@@ -490,7 +491,8 @@ export default function VaultInputs({
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
-          vaultData.id as Address
+          vaultData.id as Address,
+          getCurrentSlippage() * 100
         );
         tokenConversionAmount = result.amountOut
       }
@@ -589,7 +591,8 @@ export default function VaultInputs({
           inputAmountValue,
           actualInputToken,
           vaultData.inputToken,
-          vaultData.id as Address
+          vaultData.id as Address,
+          getCurrentSlippage() *100
         );
         assetsConversionAmount = result.amountOut;
                  console.log("🔄 PREVIEW - Token conversion result:", {

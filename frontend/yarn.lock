@@ -7607,10 +7607,10 @@ clsx@^2.0.0, clsx@^2.1.0, clsx@^2.1.1:
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-2.1.1.tgz#eed397c9fd8bd882bfb18deab7102049a2f32999"
   integrity sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==
 
-codemelt-retro-api-sdk@^0.9.5:
-  version "0.9.5"
-  resolved "https://registry.yarnpkg.com/codemelt-retro-api-sdk/-/codemelt-retro-api-sdk-0.9.5.tgz#f80b5588b10265fe60b1e26107d630953cf295a2"
-  integrity sha512-vzHlw1dW+F0MUs2yvnQ9gb3orq9353B0ekG9280dcij2gSx1p9gKHMXZsyddi2XbzR62wnykUU4tJTqJYgdU1A==
+codemelt-retro-api-sdk@^0.9.7:
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/codemelt-retro-api-sdk/-/codemelt-retro-api-sdk-0.9.7.tgz#b9140d4e6ff33a86056ba77244d9969da5fd5110"
+  integrity sha512-FdT8oiAKVLSvSdy3BK1zdwS7Nsu79US8u/2pEN2jXOdSGWOTZWtRdcqhSHEMd3lptHw1k/oBon3aZ9Vr+rTB6Q==
   dependencies:
     "@nestia/fetcher" "^3.4.1"
 

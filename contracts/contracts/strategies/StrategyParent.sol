@@ -327,7 +327,7 @@ abstract contract StrategyParent is
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view virtual returns (uint256 withdrawShareAmount);
 
     /// @notice Invests assets into the yield source
@@ -478,7 +478,7 @@ abstract contract StrategyParent is
                 totalUnderlyingAssetsAfter,
                 vaultNonce
             ),
-            uint256(1000000)
+            uint256(1500000)
         );
         _sendDepositAndCall(
             amountWithdrawn,
@@ -562,7 +562,6 @@ abstract contract StrategyParent is
         address spender,
         uint256 amount
     ) internal {
-        console.log("Approving spender %s for amount %s", spender, amount);
         bytes memory approveCalldata = abi.encodeWithSelector(
             IERC20.approve.selector,
             spender,
@@ -580,7 +579,6 @@ abstract contract StrategyParent is
         );
         (bool resetSuccess, ) = address(token).call(resetCalldata);
         require(resetSuccess, "Reset to 0 failed");
-        console.log("Reset to 0 succeeded, retrying approve");
         (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
         require(secondApproveSuccess, "Second approve failed");
     }
