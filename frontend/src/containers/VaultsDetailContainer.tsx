@@ -41,6 +41,7 @@ import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
+import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -356,10 +357,6 @@ const VaultsDetailContainer: React.FC<{
               selectedToken={selectedToken}
               selectedChain={selectedChain}
             />
-          </Dropdown>
-
-          <Dropdown title="Which Tokens I can invest?">
-            <p className="text-white text-sm font-normal">Content</p>
           </Dropdown>
           {walletAddress && (
             <Dropdown

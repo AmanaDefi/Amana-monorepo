@@ -1,0 +1,66 @@
+import ArrowRightIcon from "@/components/svg/ArrowRightIcon";
+import { EarnIcon } from "@/components/svg/sidebar/EarnIcon";
+import Button from "@/components/Button";
+import DiscordLogo from "@public/logo/discord.svg";
+
+const DepositComplete = ({}) => {
+  return (
+    <div className="flex flex-col gap-6 font-gotham">
+      <div className="rounded-[16px] before-gradient-border px-4 py-8 bg-[#14171F]">
+        <div className="flex flex-col mb-10">
+          <p className="text-[24px] font-medium mb-1">Deposit complete</p>
+          <p className="text-[#4874db] text-[16px] font-normal leading-[1.75] max-w-[440px]">
+            Your deposit and the underlying transaction has been completed
+            successfully. You can see your position in Your Earnings now.
+          </p>
+        </div>
+
+        <div className="bg-[#161C27] border border-[#3E73C4] py-8 px-4 rounded-lg flex justify-between w-full">
+          <div className="flex flex-row gap-2">
+            <div className="w-[62px] h-[62px]"></div>
+            <div className="flex flex-col font-bold text-sm justify-between">
+              Deposited:
+              <div className="font-normal flex flex-row gap-1 items-center">
+                <p>USDC</p>
+                <ArrowRightIcon width={12} height={10} />
+                <p>aConvexUSDC</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-end justify-between">
+            <p>-1,000USDC</p>
+            <p>+1,000aConvexUSDC</p>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-row gap-[47px] ">
+        <div className="py-[21px] px-[20px] shadow-xl font-gotham before-gradient-border bg-[#14171F] max-h-[222px] min-w-[240px]">
+          <div className="flex flex-row gap-4 text-lg font-bold items-center">
+            <EarnIcon width={34} height={32} />
+            <p>Deposit More</p>
+          </div>
+          <p className="text-[16px] font-normal mt-[15px] max-w-[200px]">
+            Reinvest in this vault or explore others.
+          </p>
+          <Button variant="custom" className="!w-full !max-h-10 !mt-10">
+            Explore
+          </Button>
+        </div>
+        <div className="py-[23px] px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] max-h-[222px] min-w-[240px]">
+          <div className="flex flex-row gap-4 text-lg font-bold items-center">
+            <DiscordLogo height={34} className="w-[34px] h-[34px]" />
+            <p>Socials</p>
+          </div>
+          <p className="text-[16px] font-normal mt-[13px] max-w-[210px]">
+            Subscribe for our social media.
+          </p>
+          <Button variant="custom" className="!w-full !max-h-10 !mt-10">
+            Check
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DepositComplete;
