@@ -25,7 +25,7 @@ const ModalButton = ({
                font-bold hover:bg-[#3E73C4]/10 transition w-[240px] h-[80px], ${className}`}
   >
     <div className="flex flex-row items-center justify-start gap-4">
-      <div className="flex justify-center items-center rounded-[8px] bg-[#14171F] border border-[#3E73C4] p-2">
+      <div className="flex justify-center items-center rounded-[8px] bg-[#14171F] border border-[#3E73C4] shrink-0 p-1 h-[48px] w-[48px]">
         {icon}
       </div>
       <div
@@ -34,7 +34,7 @@ const ModalButton = ({
         })}
       >
         <span
-          className="text-[18px] text-left whitespace-nowrap"
+          className="text-[18px] leading-5 text-left flex-wrap"
           style={{ letterSpacing: "-0.06em" }}
         >
           {label}

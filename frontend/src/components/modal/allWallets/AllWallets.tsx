@@ -11,7 +11,6 @@ import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
 import BackedBy from "../shared/BackedBy";
 import MetaMaskIcon from "@/components/svg/MetaMaskIcon";
 import WalletConnectIcon from "@/components/svg/WalletConnectIcon";
-import SolflareWalletIcon from "@/components/svg/SolflareWallet";
 import PhantomIcon from "@/components/svg/PhantomIcon";
 import CoinbaseWalletIcon from "@/components/svg/CoinbaseWalletIcon";
 import OKXWalletIcon from "@/components/svg/OKXWalletIcon";
@@ -20,6 +19,8 @@ import { useConnect } from "@account-kit/react";
 import { Connector } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
+import Image from "next/image";
+import { ConnectorIcon } from "./components/ConnectorIcon";
 
 const AllWAllets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -88,7 +89,7 @@ const AllWAllets = () => {
     <Modal
       isOpen={step === "allWallets" || fundWalletStep === "connectWallet"}
       onClose={handleClose}
-      paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px]"
+      paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px] flex"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[940px]"
       minHeight="min-h-[560px]"
@@ -103,101 +104,39 @@ const AllWAllets = () => {
       }
     >
       <div className="flex w-full flex-col justify-between min-h-[489px]">
-        <div className="flex w-full flex-row justify-between gap-5">
+        <div className="flex w-full h-[95%] mt-[5%] flex-row justify-between gap-5">
           <div className="flex flex-col justify-between mt-3">
             <ConnectWallet />
           </div>
-          <div className="flex flex-col min-w-[50%]">
+          <div className="flex flex-col min-w-[50%] overflow-hidden">
             <PopularOptions />
-            <div className="flex max-w-[500px] flex-row flex-wrap gap-2 mt-6">
-              {metaMaskConnector && (
-                <ModalButton
-                  label="MetaMask"
-                  icon={<MetaMaskIcon width={35} height={32} />}
-                  onClick={() => {
-                    handleExternalWalletConnect(metaMaskConnector);
-                  }}
-                />
-              )}
-              <ModalButton
-                label="WalletConnect"
-                icon={<WalletConnectIcon width={24} height={16} />}
-                onClick={() => {
-                  if (walletConnectConnector) {
-                    handleExternalWalletConnect(walletConnectConnector);
-                  } else {
-                    console.log("no WalletConnect connector");
-                  }
-                }}
-              />
-              {solflareConnector && (
-                <ModalButton
-                  label="Solflare Wallet"
-                  icon={<SolflareWalletIcon width={32} height={32} />}
-                  onClick={() => {
-                    handleExternalWalletConnect(solflareConnector);
-                  }}
-                />
-              )}
-              {phantomConnector && (
-                <ModalButton
-                  label="Phantom"
-                  icon={<PhantomIcon width={24} height={20} />}
-                  onClick={() => {
-                    handleExternalWalletConnect(phantomConnector);
-                  }}
-                />
-              )}
-            </div>
-            <div className="mt-10">
-              <p className="mb-4 text-sm font-normal text-[#535E73]">
-                Other options
-              </p>
-              <div className="flex w-full flex-row flex-wrap gap-2 mt-6">
-                {uniSwapConnector && (
+            <div
+              style={{ scrollbarColor: "#1B46E0 transparent" }}
+              className="overflow-scroll scroll-[#1B46E0] h-full mt-6 flex-1"
+            >
+              <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
+                {connectors.map((connector) => (
                   <ModalButton
-                    label="Uniswap"
-                    icon={<UniswapIcon width={24} height={24} />}
-                    onClick={() => {
-                      handleExternalWalletConnect(uniSwapConnector);
-                    }}
-                  />
-                )}
-                {coinbaseConnector && (
-                  <ModalButton
-                    label="Coinbase Wallet"
-                    icon={<CoinbaseWalletIcon width={24} height={24} />}
-                    onClick={() => {
-                      handleExternalWalletConnect(coinbaseConnector);
-                    }}
-                  />
-                )}
-
-                {okxConnector && (
-                  <ModalButton
-                    label="OKX Wallet"
-                    icon={<OKXWalletIcon width={24} height={24} />}
-                    onClick={() => {
-                      handleExternalWalletConnect(okxConnector);
-                    }}
-                  />
-                )}
-                <ModalButton
-                  label="All Wallets (500+)"
-                  icon={<AllWalletsIcon width={28} height={27} />}
-                  onClick={() => {
-                    if (walletConnectConnector) {
-                      handleExternalWalletConnect(walletConnectConnector);
-                    } else {
-                      console.log("no WalletConnect connector");
+                    key={connector.id}
+                    label={connector.name}
+                    icon={
+                      <ConnectorIcon
+                        connectorId={connector.id}
+                        name={connector.name}
+                        connectorIcon={connector.icon}
+                      />
                     }
-                  }}
-                />
+                    // icon={<UniswapIcon width={24} height={24} />}
+                    onClick={() => {
+                      handleExternalWalletConnect(connector);
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </div>
         </div>
-        <div>
+        <div className="absolute bottom-[26px] left-[67px]">
           <BackedBy />
         </div>
       </div>

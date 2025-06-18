@@ -41,6 +41,7 @@ import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
+import { useChain } from "@account-kit/react";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -75,7 +76,8 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
   } = useTransactionStore();
 
-  const { activeChain, switchToChain } = useMultiChain();
+  const { switchToChain } = useMultiChain();
+  const { chain: activeChain } = useChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -88,7 +90,6 @@ const VaultsDetailContainer: React.FC<{
       loadSlippageFromStorage(vaultIdStr);
     }
   }, [vaultIdStr]);
-
 
   const handleChainSelect = useCallback(
     (chain: Chain) => {
