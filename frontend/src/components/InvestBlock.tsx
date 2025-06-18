@@ -9,14 +9,17 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const InvestBlock = () => {
-  const {walletAddress} = useMultiChain();
+  const { walletAddress } = useMultiChain();
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
-  console.log(walletAddress)
+  const user = useUser();
 
   const handleFundWallet = () => {
-    setStep("chooseBuyWith");
-    console.log("Fund wallet clicked");
+    if (user?.type === "eoa") {
+      openStep("recieve");
+    } else {
+      setStep("chooseBuyWith");
+    }
   };
 
   return (

@@ -16,7 +16,6 @@ const ProfileInfo = () => {
   const { chain } = useChain();
   const isConnected = !!walletAddress;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  console.log(chain.nativeCurrency)
 
   return (
     <>

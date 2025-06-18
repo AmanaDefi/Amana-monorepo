@@ -16,7 +16,7 @@ const WalletActions = () => {
   const user = useUser();
 
   const handleSend = () => {
-    console.log("Send clicked");
+    openStep("send")
   };
 
   const handleTopUp = () => {
@@ -25,7 +25,7 @@ const WalletActions = () => {
 
   return (
     <div className="flex flex-wrap gap-4">
-      <Button variant="wallet" onClick={() => openStep("send")}>
+      <Button variant="wallet" onClick={handleSend}>
         <SaveIcon width={12} height={10} className="mr-1" />
         Send
       </Button>
