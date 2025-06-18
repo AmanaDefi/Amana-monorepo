@@ -353,7 +353,7 @@ const VaultsDetailContainer: React.FC<{
                 initialIsDeposit={initialIsDeposit}
                 onTokenSelect={handleTokenSelect}
                 selectedToken={selectedToken}
-                selectedChain={selectedChain}
+                selectedChain={activeChain}
                 onSelectChain={handleChainSelect}
                 vaultId={vaultID.toString()}
               />
