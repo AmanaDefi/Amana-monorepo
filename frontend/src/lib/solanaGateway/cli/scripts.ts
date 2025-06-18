@@ -128,10 +128,10 @@ export class SolanaZetaClient {
 
       return signature;
     } catch (error) {
-    
-      throw new Error("Transacction Failed")
+      throw new Error("Transaction Failed")
     }
   }
+
   depositSplTokenAndCall = async (mint: string, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null) => {
     try {
       if (!this.wallet || !this.wallet.publicKey || !this.wallet.signTransaction) {

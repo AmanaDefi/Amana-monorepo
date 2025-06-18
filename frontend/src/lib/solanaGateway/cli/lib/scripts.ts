@@ -51,7 +51,7 @@ export const createSolanaDepositTx = async (payer: PublicKey, amount: number, re
       .deposit(
         new anchor.BN(amount),
         formatReceiver(recipient),
-        null
+        revertOptions
       ).accounts({
         signer: payer,
         pda: pdaAccount,
@@ -104,18 +104,16 @@ export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: stri
   const message = formatMessage(encodedData);
   
   const ix = await program.methods
-    .withdrawAndCall(
+    .call(
       formatReceiver(recipient),
       message,
       revertOptions 
     ).accounts({
-      signer: payer,
-      pda: pdaAccount,
-      systemProgram: SystemProgram.programId
+      signer: payer
     }).instruction();
 
   return ix;
-}
+};
 
 export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, 'utf-8')];

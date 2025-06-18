@@ -866,22 +866,55 @@ function Interaction({
       );
     }
     
-    const success = await handleInteraction(
-      vaultData,
-      inputBalance,
-      inputToken,
-      activeAccount!,
-      walletContext,
-      setTransactionCompleted,
-      activeChain,
-      action,
-      setCrosschainInvestHash,
-      setcrossChainTxId,
-      setInputBalance,
-      setLastEventTxHash
-    )();
-    
-    await interactionPostHook(!!success);
+    console.log("🔄 [UI] Calling handleInteraction function...");
+    console.log("📋 [UI] HandleInteraction parameters:", {
+      vaultDataId: vaultData.id,
+      inputBalanceValue: inputBalance.value.toString(),
+      inputTokenSymbol: inputToken.symbol,
+      activeAccountAddress: activeAccount?.address,
+      walletConnected: walletContext.connected,
+      activeChainId: activeChain.id,
+      action
+    });
+
+    try {
+      const success = await handleInteraction(
+        vaultData,
+        inputBalance,
+        inputToken,
+        activeAccount!,
+        walletContext,
+        setTransactionCompleted,
+        activeChain,
+        action,
+        setCrosschainInvestHash,
+        setcrossChainTxId,
+        setInputBalance,
+        setLastEventTxHash
+      )();
+      
+      console.log("✅ [UI] HandleInteraction completed:", {
+        success: !!success,
+        action
+      });
+      
+      console.log("🔄 [UI] Calling interactionPostHook...");
+      await interactionPostHook(!!success);
+      console.log("✅ [UI] InteractionPostHook completed");
+
+    } catch (error) {
+      console.error("💥 [UI] CRITICAL ERROR in handleMainAction interaction:", error);
+      console.error("💥 [UI] Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : typeof error,
+        action,
+        activeChainId: activeChain.id
+      });
+      
+      // Call interactionPostHook with failure
+      await interactionPostHook(false);
+    }
   };
 
   function handleDone() {
