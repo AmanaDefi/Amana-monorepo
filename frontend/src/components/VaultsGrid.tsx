@@ -388,7 +388,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               <div className="p-4">
                 <div className='flex md:flex-row flex-col gap-2 justify-between'>
 
-                {/* Lending Pool with Logo (was Protocol) */}
+                {/* Vault Type with Logo (was Protocol) */}
                 <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
                   <Image
                     src={vault.inputToken.imgURL}
@@ -399,7 +399,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     sizes="36px"
                   />
                   <div>
-                    <span className="text-gray-400 text-xs">Lending Pool</span>
+                    <span className="text-gray-400 text-xs">{vault.type}</span>
                     <p className="text-white font-medium">{vault.name}</p>
                   </div>
                 </div>
