@@ -1,14 +1,18 @@
 const GlowIcon = ({
   position = "top-right",
 }: {
-  position?: "top-right" | "bottom-left";
+  position?: "top-right" | "bottom-left" | "top-mobile" | "bottom-mobile";
 }) => {
   const commonClasses =
     "pointer-events-none blur-[200px] absolute z-[-1] rounded-full";
   const styles =
     position === "top-right"
       ? "top-[100px] right-[-80px] w-[533px] h-[637px]"
-      : "bottom-[-300px] left-[-220px] w-[533px] h-[637px]";
+      : position === "bottom-left"
+        ? "bottom-[-300px] left-[-220px] w-[533px] h-[637px]"
+        : position === "top-mobile"
+          ? "top-[-200px] right-[-120px] w-[533px] h-[637px]"
+          : "bottom-[-300px] left-[-220px] w-[533px] h-[637px]";
 
   return (
     <svg
