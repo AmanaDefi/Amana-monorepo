@@ -26,12 +26,18 @@ const WelcomeContainer = () => {
         transition={{ duration: 0.6 }}
       >
         <div className="mt-6 sm:mt-8">
-          <AmanaLogo width={100} height={70} />
+          <div className="block md:hidden">
+            <AmanaLogo width={122} height={85} />
+          </div>
+          <div className="hidden md:block">
+            <AmanaLogo width={100} height={70} />
+          </div>
         </div>
       </motion.div>
 
       <motion.h1
-        className="text-2xl sm:text-3xl md:text-6xl font-bold mt-6 sm:mt-8"
+        className="mt-6 sm:mt-8 font-bold
+                   text-[20px]  leading-tight tracking-[-0.05em] md:text-6xl lg:text-7xl"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
@@ -61,14 +67,10 @@ const WelcomeContainer = () => {
         isLoading={isWalletLoading}
         onComplete={() => closeAll()}
       />
-
-      <p className="text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
-        {/* {username ? `Congratulations ${username},` : "Congratulations!"} you’ve
-        successfully created a wallet on ZetaChain! */}
-        Congratulations! You’ve successfully created a wallet on ZetaChain!
+      <p className="hidden md:block text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
+        Congratulations! You've successfully created a wallet on ZetaChain!
       </p>
-
-      <div className="flex flex-wrap justify-center gap-6 sm:gap-8 mt-10 sm:mt-12 max-w-[940px] w-full px-4 sm:px-6">
+      <div className="hidden md:flex flex-wrap justify-center gap-6 sm:gap-8 mt-10 sm:mt-12 max-w-[940px] w-full px-4 sm:px-6">
         {benefits.map(({ title, Icon }, index) => (
           <motion.div
             key={index}

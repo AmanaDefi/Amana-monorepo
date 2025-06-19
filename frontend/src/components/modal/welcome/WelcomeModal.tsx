@@ -28,7 +28,8 @@ const WelcomeModal = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.98 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex min-h-screen items-center justify-center px-6 py-10"
+            className="flex min-h-screen px-6 py-10
+             items-start justify-center pt-[130px] md:items-center md:pt-10"
           >
             <div className="w-full max-w-[1200px]">
               <WelcomeContainer />
