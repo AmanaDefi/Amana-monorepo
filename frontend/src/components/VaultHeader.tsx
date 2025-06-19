@@ -260,12 +260,14 @@ export default function VaultHeader({
             id="APY"
             label="7d APY"
             value={
-              Number.isNaN(
-                Number(
-                  vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                    ?.APY7d
-                )
-              )
+              selectedVaultId === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8"
+                ? "5.00%"
+                : Number.isNaN(
+                    Number(
+                      vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
+                        ?.APY7d
+                    )
+                  )
                 ? "0%"
                 : `${(
                     Number(
