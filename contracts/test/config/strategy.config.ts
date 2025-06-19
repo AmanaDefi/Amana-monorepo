@@ -173,35 +173,35 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   cvxTokenAddress: ethers.constants.AddressZero, // There is no cvx token on Arbitrum, but sometimes ethereum CVX is used
   //   convexPoolId: 36 // use hardhat task to find this, or look on convex website
   // },
-  {
-    name: "Convex eth Strategy - Arbitrum",
-    gatewayAddress: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549",
-    strategyContractName: "ConvexEthStrategyArbitrum",
-    strategyChainId: 42161,
-    receiptTokenContractName: "ICurvePoolFixed",
-    swapHelperContractName: "SwapHelperArbitrum",
-    rewardsContractName: "IConvexRewardPoolArbitrum",
-    forkBlock: 329133267,
-    inputTokenAddress: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // Native ETH or put WETH here?
-    inputTokenStorageSlot: 9, // or 0?
-    inputTokenIndexOrPlaceholder: 2,
-    receiptTokenAddress: "0xF7Fed8Ae0c5B78c19Aadd68b700696933B0Cefd9",
-    rewardsContractAddress: "0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4",
-    rewardsTokenAddress: ARB_CRV_ADDRESS, // crv
-    originChainId: 8453,
-    withdrawZRC20: ZC_USDC_BASE_ADDRESS,
-    otherErc20Address: ARB_USDC_ADDRESS,
-    otherErc20BalanceStorageSlot: 9,
-    isNative: true,
-    depositAmount: ethers.utils.parseUnits("1", 18),
-    minSharesOut: ethers.utils.parseUnits("0.9", 18),
-    withdrawAmount: ethers.utils.parseUnits("1", 18),
-    minAmountOut: ethers.utils.parseUnits("0.9", 18),
-    slippage: 500,
-    convexBooster: "0xf403c135812408bfbe8713b5a23a04b3d48aae31",
-    cvxTokenAddress: ethers.constants.AddressZero, // There is no cvx token on Arbitrum, but sometimes ethereum CVX is used
-    convexPoolId: 15 // use hardhat task to find this, or look on convex website
-  },
+  // {
+  //   name: "Convex eth Strategy - Arbitrum",
+  //   gatewayAddress: "0x1C53e188Bc2E471f9D4A4762CFf843d32C2C8549",
+  //   strategyContractName: "ConvexEthStrategyArbitrum",
+  //   strategyChainId: 42161,
+  //   receiptTokenContractName: "ICurvePoolFixed",
+  //   swapHelperContractName: "SwapHelperArbitrum",
+  //   rewardsContractName: "IConvexRewardPoolArbitrum",
+  //   forkBlock: 329133267,
+  //   inputTokenAddress: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // Native ETH or put WETH here?
+  //   inputTokenStorageSlot: 9, // or 0?
+  //   inputTokenIndexOrPlaceholder: 2,
+  //   receiptTokenAddress: "0xF7Fed8Ae0c5B78c19Aadd68b700696933B0Cefd9",
+  //   rewardsContractAddress: "0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4",
+  //   rewardsTokenAddress: ARB_CRV_ADDRESS, // crv
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+  //   otherErc20Address: ARB_USDC_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 9,
+  //   isNative: true,
+  //   depositAmount: ethers.utils.parseUnits("1", 18),
+  //   minSharesOut: ethers.utils.parseUnits("0.9", 18),
+  //   withdrawAmount: ethers.utils.parseUnits("1", 18),
+  //   minAmountOut: ethers.utils.parseUnits("0.9", 18),
+  //   slippage: 500,
+  //   convexBooster: "0xf403c135812408bfbe8713b5a23a04b3d48aae31",
+  //   cvxTokenAddress: ethers.constants.AddressZero, // There is no cvx token on Arbitrum, but sometimes ethereum CVX is used
+  //   convexPoolId: 15 // use hardhat task to find this, or look on convex website
+  // },
   // {
   //   name: "Convex USDTUSDe Strategy - Ethereum",
   //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",

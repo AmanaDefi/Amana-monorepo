@@ -16,6 +16,7 @@ contract NoonERC20Strategy is ERC20StrategyParent {
 
     address public receiptToken;
     uint256 public inputTokenIndex;
+    address public USN_ADDRESS;
 
     function initialize(
         string memory _name,
@@ -41,6 +42,7 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         swapHelper = _swapHelper;
 
         receiptToken = _receiptTokenAddress;
+        USN_ADDRESS = 0xdA67B4284609d2d48e5d10cfAc411572727dc1eD; // USN address on Ethereum
     }
 
     function _depositFundsIntoYieldSource(
@@ -54,29 +56,35 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         // check min out
         require(amount > 0, "Deposit amount must be greater than zero");
 
-        approveOrIncreaseAllowance(inputToken, receiptToken, amount);
+        // approveOrIncreaseAllowance(inputToken, receiptToken, amount);
 
-        uint256 amountOut = I4626Vault(receiptToken).deposit(
-            amount,
-            address(this)
+        // uint256 amountOut = I4626Vault(receiptToken).deposit(
+        //     amount,
+        //     address(this)
+        // );
+        console.log(
+            "Balance of input token before deposit",
+            IERC20(inputToken).balanceOf(address(this))
         );
-
-        // IERC20(inputToken).transfer(address(swapHelper), amount);
-        // console.log(
-        //     "Depositing %s of input token %s into swapHelper",
-        //     amount,
-        //     address(inputToken)
-        // );
-        // // Swap input token to receipt token (YUSD)
-        // uint256 amountOut = ISwapHelper(swapHelper).swap(
-        //     address(inputToken),
-        //     amount,
-        //     receiptToken,
-        //     500,
-        //     address(this),
-        //     9999,
-        //     "0x"
-        // );
+        SafeERC20.safeTransfer(IERC20(inputToken), address(swapHelper), amount);
+        console.log(
+            "Depositing %s of input token %s into swapHelper",
+            amount,
+            address(inputToken)
+        );
+        console.log("swapHelper address", address(swapHelper));
+        // Swap input token to receipt token (sUSN) via Uni v4
+        uint256 amountOut = ISwapHelper(swapHelper)
+            .swapViaUniV3SpecificIntermediateToken(
+                address(inputToken),
+                USN_ADDRESS, // USN as intermediate token
+                amount,
+                receiptToken,
+                10000,
+                address(this),
+                9999,
+                "0x"
+            );
         console.log("Amount out after deposit", amountOut);
         require(amountOut >= minAmountOut, "Insufficient output amount");
     }
@@ -85,33 +93,26 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        harvest();
-
-        uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
-        uint256 yusdToWithdraw = convertToShares(assetAmount);
+        uint256 susnToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         console.log(
             "Shares to withdraw based on asset amount %s: %s",
             assetAmount,
-            yusdToWithdraw
+            susnToWithdraw
         );
-        if (totalinYusd > 0 && totalinYusd - yusdToWithdraw <= 1e3) {
-            yusdToWithdraw = totalinYusd;
-            console.log(
-                "Rounding up to withdraw full staked balance: %s",
-                yusdToWithdraw
-            );
-        }
-        IERC20(receiptToken).transfer(address(swapHelper), yusdToWithdraw);
 
-        uint256 amountOut = ISwapHelper(swapHelper).swap(
-            receiptToken,
-            yusdToWithdraw,
-            address(inputToken),
-            500,
-            address(this),
-            9999,
-            "0x"
-        );
+        IERC20(receiptToken).transfer(address(swapHelper), susnToWithdraw);
+
+        uint256 amountOut = ISwapHelper(swapHelper)
+            .swapViaUniV3SpecificIntermediateToken(
+                receiptToken,
+                USN_ADDRESS, // USN as intermediate token
+                susnToWithdraw,
+                address(inputToken),
+                10000, // 100% slippage allowed for this operation
+                address(this),
+                9999,
+                "0x"
+            );
 
         require(amountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = amountOut;
@@ -179,28 +180,30 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         if (address(inputToken) == receiptToken || shares == 0) {
             return shares;
         }
+        uint256 totalInUsn = I4626Vault(receiptToken).convertToAssets(shares);
+        uint256 totalInUsdt = totalInUsn / 10 ** 12; // assuming USN:USDT is 1:1
+        return totalInUsdt;
+        // try
+        //     ISwapHelper(swapHelper).getPathV3(receiptToken, address(inputToken))
+        // returns (
+        //     address[] memory path,
+        //     uint24[] memory feeTiers,
+        //     bytes memory /* encodedPath */
+        // ) {
+        //     if (path.length == 0 || feeTiers.length == 0) {
+        //         return shares; // fallback to 1:1 if no path found
+        //     }
 
-        try
-            ISwapHelper(swapHelper).getPathV3(receiptToken, address(inputToken))
-        returns (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory /* encodedPath */
-        ) {
-            if (path.length == 0 || feeTiers.length == 0) {
-                return shares; // fallback to 1:1 if no path found
-            }
-
-            try
-                ISwapHelper(swapHelper).getAmountOutV3(shares, path, feeTiers)
-            returns (uint amountOut) {
-                return amountOut;
-            } catch {
-                return shares; // fallback if price estimation fails
-            }
-        } catch {
-            return shares; // fallback if path retrieval fails
-        }
+        //     try
+        //         ISwapHelper(swapHelper).getAmountOutV3(shares, path, feeTiers)
+        //     returns (uint amountOut) {
+        //         return amountOut;
+        //     } catch {
+        //         return shares; // fallback if price estimation fails
+        //     }
+        // } catch {
+        //     return shares; // fallback if path retrieval fails
+        // }
     }
 
     function convertToShares(
@@ -209,31 +212,45 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         if (address(inputToken) == receiptToken || assets == 0) {
             return assets;
         }
+        uint256 totalinUsn = assets * 10 ** 12; // assuming USN:USDT is 1:1
+        uint256 totalinSusn = I4626Vault(receiptToken).convertToShares(
+            totalinUsn
+        );
+        return totalinSusn;
+        // try
+        //     ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptToken)
+        // returns (
+        //     address[] memory path,
+        //     uint24[] memory feeTiers,
+        //     bytes memory /* encodedPath */
+        // ) {
+        //     if (path.length == 0 || feeTiers.length == 0) {
+        //         return assets; // fallback to 1:1 if no path found
+        //     }
 
-        try
-            ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptToken)
-        returns (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory /* encodedPath */
-        ) {
-            if (path.length == 0 || feeTiers.length == 0) {
-                return assets; // fallback to 1:1 if no path found
-            }
-
-            try
-                ISwapHelper(swapHelper).getAmountOutV3(assets, path, feeTiers)
-            returns (uint amountOut) {
-                return amountOut;
-            } catch {
-                return assets; // fallback if price estimation fails
-            }
-        } catch {
-            return assets; // fallback if path retrieval fails
-        }
+        //     try
+        //         ISwapHelper(swapHelper).getAmountOutV3(assets, path, feeTiers)
+        //     returns (uint amountOut) {
+        //         return amountOut;
+        //     } catch {
+        //         return assets; // fallback if price estimation fails
+        //     }
+        // } catch {
+        //     return assets; // fallback if path retrieval fails
+        // }
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
-    ) public view override returns (uint256 withdrawShareAmount) {}
+        uint256 assetAmount
+    ) public view override returns (uint256 withdrawShareAmount) {
+        uint256 totalShares = IERC20(receiptToken).balanceOf(address(this));
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
+        }
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e9) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
+    }
 }
