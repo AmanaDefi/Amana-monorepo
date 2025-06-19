@@ -511,30 +511,11 @@ export default function VaultInputs({
 
   const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
-      console.log("🔍 PREVIEW - Starting deposit output calculation");
-      console.log("📊 PREVIEW - Initial Data:", {
-        vaultName: vaultData.name,
-        inputAmountValue: inputAmountValue.toString(),
-        inputTokenSymbol: inputToken?.symbol,
-        activeChainId: activeChain?.id,
-        depositFeePaidFromGasTank: vaultData.depositFeePaidFromGasTank,
-        isZetachain: isZetachain(activeChain?.id as number)
-      });
-
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;
       
-      console.log("🔗 PREVIEW - Token mapping:", {
-        originalToken: inputToken?.symbol,
-        actualToken: actualInputToken?.symbol,
-        originalAddress: inputToken?.address,
-        actualAddress: actualInputToken?.address,
-        hasZetaEquivalent: !!actualInputToken
-      });
-
       if (!actualInputToken) {
-        console.log("❌ PREVIEW - No actual input token found, exiting");
         return;
       }
 
@@ -542,7 +523,6 @@ export default function VaultInputs({
       
       // Step 1: Convert input token to vault token if needed
       if (actualInputToken.address !== vaultData.inputToken.address) {
-        console.log("🔄 PREVIEW - Converting input token to vault token");
         const result = await getPathDataAndAmountOut(
           inputAmountValue,
           actualInputToken,
@@ -551,21 +531,9 @@ export default function VaultInputs({
           getCurrentSlippage() *100
         );
         assetsConversionAmount = result.amountOut;
-                 console.log("🔄 PREVIEW - Token conversion result:", {
-           inputAmount: inputAmountValue.toString(),
-           convertedAmount: assetsConversionAmount.toString(),
-           conversionRate: (Number(assetsConversionAmount) / Number(inputAmountValue)).toFixed(6) + "x"
-         });
-      } else {
-        console.log("✅ PREVIEW - No token conversion needed (input = vault token)");
       }
 
-      console.log("💰 PREVIEW - Amount before gas fee deduction:", {
-        assetsConversionAmount: assetsConversionAmount.toString(),
-      });
-
       // Step 2: Calculate gas fee if needed (using centralized helper)
-      console.log("📍 PREVIEW - Using centralized gas fee calculation");
       const gasFeeResult = await calculateGasFeeInVaultAsset(
         vaultData,
         actualInputToken,
@@ -581,28 +549,12 @@ export default function VaultInputs({
       const gasFeeInETH = gasFeeResult.gasFeeInETH;
       let netDepositToVaultUSD = "0";
 
-      console.log("📍 PREVIEW - Centralized gas fee result:", {
-        needsDeduction: gasFeeResult.needsDeduction,
-        gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-        gasFeeInUSD,
-        gasFeeInETH
-      });
-
       // Step 3: Subtract gas fee from converted amount
       const beforeGasDeduction = assetsConversionAmount;
       const finalConvertedAmount =
         assetsConversionAmount > gasFeeInVaultAsset
           ? assetsConversionAmount - gasFeeInVaultAsset
           : BigInt(0);
-
-      console.log("💰 PREVIEW - Gas fee deduction summary:", {
-        beforeDeduction: beforeGasDeduction.toString(),
-        gasFeeDeducted: gasFeeInVaultAsset.toString(),
-        afterDeduction: finalConvertedAmount.toString(),
-        deductionPercentage: gasFeeInVaultAsset > 0n ? 
-          ((Number(gasFeeInVaultAsset) / Number(beforeGasDeduction)) * 100).toFixed(4) + "%" : "0%",
-        willReceiveZeroAmount: finalConvertedAmount === 0n
-      });
 
       // Step 4: Convert final amount to shares
       const sharesAmountRaw = await getSharesFromDeposit(
@@ -615,15 +567,6 @@ export default function VaultInputs({
         sharesAmountRaw, 
         vaultData.symbol
       );
-
-             console.log("🎯 PREVIEW - Final output calculation:", {
-         finalDepositAmount: finalConvertedAmount.toString(),
-         sharesReceived: sharesAmountRaw.toString(),
-         sharesFormatted: sharesAmountFormatted,
-         originalInputAmount: inputAmountValue.toString(),
-         totalReductionFromOriginal: inputAmountValue > 0n ? 
-           ((Number(inputAmountValue) - Number(finalConvertedAmount)) / Number(inputAmountValue) * 100).toFixed(4) + "%" : "0%"
-       });
       const inputAmountValueInUSD =
         (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
         inputTokenPrice;
@@ -640,28 +583,11 @@ export default function VaultInputs({
         100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD
       );
 
-      // Step 5: Final USD calculations and comparisons
-      console.log("💵 PREVIEW - USD value breakdown:", {
-        inputAmountUSD: inputAmountValueInUSD.toFixed(4),
-        finalConvertedAmountUSD: finalConvertedAmountInUSD.toFixed(4),
-        totalLossUSD: (inputAmountValueInUSD - finalConvertedAmountInUSD).toFixed(4),
-        slippagePercentage: slippageActualValue.toFixed(4) + "%"
-      });
-
       if (!vaultData.depositFeePaidFromGasTank && gasFeeInVaultAsset > 0n) {
         const totalLossUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
         const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ''));
         const gasFeeETH = parseFloat(gasFeeInETH);
         const swapLossUSD = totalLossUSD - gasFeeUSD;
-        
-        console.log("📊 PREVIEW - Detailed fee breakdown:", {
-          totalLossUSD: totalLossUSD.toFixed(5),
-          gasFeeUSD: gasFeeUSD.toFixed(5),
-          gasFeeETH: gasFeeETH.toFixed(5),
-          swapLossUSD: swapLossUSD.toFixed(5),
-          gasFeePercentage: ((gasFeeUSD / inputAmountValueInUSD) * 100).toFixed(4) + "%",
-          swapLossPercentage: ((swapLossUSD / inputAmountValueInUSD) * 100).toFixed(4) + "%"
-        });
       }
 
       if (inputAmountValue === debouncedInputBalance.value) {
@@ -875,19 +801,7 @@ export default function VaultInputs({
     }
   }, [loadingOutputToken, conversionOutput, debouncedInputBalance]);
 
-  // 🧪 TESTING: Log final values being displayed
-  useEffect(() => {
-    if (inputToken && vaultTotalAssetinToken) {
-      console.log("=== FINAL UI VALUES ===");
-      console.log(`🎯 Mode: ${isDeposit ? 'DEPOSIT' : 'WITHDRAW'}`);
-      console.log(`🪙 Input token: ${isDeposit ? inputToken?.symbol : vaultData.inputToken.symbol}`);
-      console.log(`🪙 Output token: ${vaultData.inputToken.symbol} (underlying asset)`);
-      console.log(`💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : vaultTotalAssetinToken.toString()}`);
-      console.log(`📊 Balance type: ${isDeposit ? 'wallet balance' : 'maxWithdraw amount'}`);
-      console.log(`✅ Consistent UX: Both modes show underlying asset!`);
-      console.log("=====================");
-    }
-  }, [isDeposit, inputToken?.symbol, vaultData.inputToken.symbol, tokenBalance.formatted, vaultTotalAssetinToken]);
+
 
   return (
     <>
@@ -995,7 +909,7 @@ export default function VaultInputs({
          !vaultData.depositFeePaidFromGasTank && 
          conversionOutput.netDepositToVaultUSD && 
          Number(debouncedInputBalance.value) > 0 && (
-          <p className="text-white font-bold mb-2 text-start flex items-center">
+          <div className="text-white font-bold mb-2 text-start flex items-center">
             <span>Net Deposit to Vault: ${conversionOutput.netDepositToVaultUSD}</span>
             <button id="net-deposit-breakdown" className="group ml-2">
               <InformationCircleIcon className="w-4 h-4 text-customGray300 group-hover:text-white transition-colors" />
@@ -1008,7 +922,7 @@ export default function VaultInputs({
                 </p>
               }
             />
-          </p>
+          </div>
         )}
 
  {/* Display gas fee warning for Ethereum vaults if deposit is too low in USD */}
