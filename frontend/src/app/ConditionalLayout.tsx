@@ -1,7 +1,6 @@
 "use client";
 
 import Footer from "@/components/Footer";
-import Loader from "@/components/Loader";
 import Sidebar from "@/components/sidebar/Sidebar";
 import Header from "@/components/header";
 import { AppModals } from "@/components/modal/AppModals";
@@ -11,12 +10,13 @@ import { useAuthStore } from "@/store/authStore";
 import { getActiveSectionFromPathname } from "@/utils/getActiveSectionFromPathname";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import MobileBottomMenu from "@/components/modal/MobileFixedMenu";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
-  const { isHydrated, walletAddress } = useMultiChain();
+  const { walletAddress } = useMultiChain();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const {step} = useAuthStore();
+  const { step } = useAuthStore();
 
   const pathname = usePathname();
   const activeSection = getActiveSectionFromPathname(pathname);
@@ -35,19 +35,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // if (!isHydrated) {
-  //   return (
-  //     <div className="relative overflow-hidden min-h-screen z-0">
-  //       <GlowIcon position="top-right" />
-  //       <GlowIcon position="bottom-left" />
-  //       <div className="flex items-center justify-center min-h-screen">
-  //         <Loader />
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
-   const isConnected = !!walletAddress;
+  const isConnected = !!walletAddress;
 
   return (
     <div className="relative overflow-hidden min-h-screen z-0">
@@ -56,10 +44,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
       {isConnected ? (
         <div className="flex flex-col mx-auto w-full min-h-screen pt-[60px] pb-[30px] px-4 md:px-0">
-          <Header
-            activeSection={activeSection}
-            
-          />
+          <Header activeSection={activeSection} />
           <div className="flex flex-1">
             <div className="flex-shrink-0 min-h-[908px] max-h-[1001px]">
               <Sidebar
@@ -81,7 +66,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
                       }px)`,
                     }
                   : {
-                      padding: "0 16px",
+                      padding: "0",
                     }
               }
             >
@@ -90,12 +75,11 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <Footer isConnected />
           <AppModals />
+          {isMobile && <MobileBottomMenu />}
         </div>
       ) : (
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-[40px] px-4 md:pr-[108px] md:px-0">
-          <Header
-            activeSection={activeSection}
-          />
+          <Header activeSection={activeSection} />
           <div className="flex-1 md:ml-16 md:pl-[44px]">{children}</div>
           <div className="md:ml-16">
             <Footer isConnected={false} />

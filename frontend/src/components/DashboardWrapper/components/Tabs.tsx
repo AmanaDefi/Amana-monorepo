@@ -29,7 +29,6 @@ import TransactionDetailsIcon from "@/components/svg/TransactionDetailsIcon";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/navigation";
 
-
 const ZetaChainIcon = "/ZetaChain.webp";
 
 const Tabs: React.FC<TabsProps> = ({
@@ -100,7 +99,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div
       className={cn(
-        "backdrop-blur-[20px] shadow-custom bg-[rgba(20,23,31,0.15)] border border-[#3E3C59] rounded-[24px] min-h-[450px]",
+        "min-h-[302px] px-[18px] w-full backdrop-blur-[20px] shadow-custom bg-[rgba(20,23,31,0.15)] border border-[#3E3C59] rounded-[24px] md:min-h-[450px] md:px-0",
         "flex flex-col items-center justify-center",
         className,
       )}
@@ -109,11 +108,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <WalletIcon width={26} height={27} />
       </div>
 
-      <h3 className="text-2xl font-medium text-white mb-4 text-center">
+      <h3 className="text-lg md:text-2xl font-medium text-white mb-4 text-center">
         {title}
       </h3>
 
-      <p className="text-[#535E73] text-[16px] text-center mb-6 font-normal">
+      <p className="text-[#535E73] text-sm md:text-[16px] text-center mb-4 md:mb-6 font-normal">
         {description}
       </p>
 
@@ -121,7 +120,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Button
           variant="custom"
           onClick={action.onClick}
-          className="!w-[412px] !h-10 !text-[16px] !font-normal !font-gotham"
+          className="!w-[322px] md:!w-[423px] !h-10 !text-[16px] !font-normal !font-gotham"
         >
           {action.label}
         </Button>
@@ -201,7 +200,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
   loading = false,
   transactions,
 }) => {
-  const router = useRouter()
+  const router = useRouter();
   const myVaults = useMyVaults({ vaults, userVaultBalances });
 
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
@@ -233,7 +232,6 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
           />
         ) : (
           <div className="space-y-6">
-            
             <div
               className="grid gap-4"
               style={{

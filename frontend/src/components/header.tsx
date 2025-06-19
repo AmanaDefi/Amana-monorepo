@@ -4,13 +4,11 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
-import MobileSidebar from "./MobileSidebarMenu";
 import { useRef, useState } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
-import { Signer } from "ethers";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
@@ -18,25 +16,7 @@ import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
 
-const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
-  <div className="flex flex-col w-6 h-6 justify-center items-center">
-    <span
-      className={`block h-0.5 w-6 bg-white transform transition duration-300 ease-in-out ${
-        isOpen ? "rotate-45 translate-y-1.5" : ""
-      }`}
-    />
-    <span
-      className={`block h-0.5 w-6 bg-white transform transition duration-300 ease-in-out ${
-        isOpen ? "opacity-0" : "opacity-100"
-      } mt-1`}
-    />
-    <span
-      className={`block h-0.5 w-6 bg-white transform transition duration-300 ease-in-out ${
-        isOpen ? "-rotate-45 -translate-y-1.5" : ""
-      } mt-1`}
-    />
-  </div>
-);
+
 
 interface HeaderProps {
   activeSection?: string;
@@ -51,7 +31,6 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const { walletAddress, switchToChain, activeChain, balance } =
     useMultiChain();
   const isConnected = !!walletAddress;
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMenuOpened, setIsMenuOpened] = useState(false);
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -62,10 +41,6 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const navLinks = isConnected
     ? [{ label: "Home", href: "/" }, ...NAV_LINKS.slice(1)]
     : NAV_LINKS;
-
-  const toggleMobileSidebar = () => {
-    setIsMobileSidebarOpen(!isMobileSidebarOpen);
-  };
 
   const toggleMenu = () => {
     setIsMenuOpened((prev) => !prev);
@@ -81,21 +56,12 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         }`}
       >
         <div className="flex items-center gap-[41px]">
-          {isConnected && (
-            <button
-              onClick={toggleMobileSidebar}
-              className="md:hidden text-white p-2"
-              aria-label="Toggle mobile menu"
-            >
-              <BurgerIcon isOpen={isMobileSidebarOpen} />
-            </button>
-          )}
-
-          {!isConnected && (
-            <Link href="/" className="flex items-center">
-              <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
-            </Link>
-          )}
+          <Link
+            href="/"
+            className={`flex items-center ${!isConnected ? "block" : "md:hidden"}`}
+          >
+            <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
+          </Link>
 
           <nav className="hidden md:flex items-center min-w-[427px]">
             {navLinks.map(({ label, href }) => (
@@ -191,15 +157,6 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           setIsProfileDropdownOpen(false);
         }}
       />
-
-      {isConnected && (
-        <MobileSidebar
-          activeSection={activeSection}
-          onSectionChange={onSectionChange}
-          isOpen={isMobileSidebarOpen}
-          onClose={() => setIsMobileSidebarOpen(false)}
-        />
-      )}
       <MobileMenuModal isOpen={isMenuOpened} toggleMenu={toggleMenu} />
     </>
   );

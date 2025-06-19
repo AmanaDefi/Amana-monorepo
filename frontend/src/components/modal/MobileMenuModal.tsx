@@ -79,7 +79,7 @@ export default function MobileMenuModal({
       <GlowIcon position="bottom-mobile" />
       <nav className="flex flex-col h-full w-full items-center justify-between">
         <div className="flex flex-col w-full items-center">
-          <div className="flex flex-row items-center w-full justify-between mb-[90px]">
+          <div className="flex flex-row items-center w-full justify-between mb-10">
             <div className="w-[50px] h-10" />
             <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
             <button
