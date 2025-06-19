@@ -86,7 +86,7 @@ export const SignUpModal = () => {
       onClose={closeAll}
       paddingClass="px-4 pt-5 pb-6"
       roundedClass="rounded-[16px]"
-      maxWidth="max-w-[436px]"
+      maxWidth="max-w-[358px] md:max-w-[436px]"
     >
       <div className="flex justify-start">
         <button
@@ -118,7 +118,7 @@ export const SignUpModal = () => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 220, damping: 20, delay: 0.1 }}
-        className="flex flex-col gap-4 mb-8 px-[26px]"
+        className="flex flex-col gap-4 mb-8 px-0 md:px-[26px]"
       >
         {/* <input
           type="text"
@@ -181,7 +181,7 @@ export const SignUpModal = () => {
           <div className="bg-[#3f3d5a] h-[1px] w-full"></div>
         </div> */}
 
-        <div className="px-[26px]">
+        <div className="px-0 md:px-[26px]">
           {/* <div className="flex justify-center mb-8">
             <button
               onClick={() => openStep("import")}

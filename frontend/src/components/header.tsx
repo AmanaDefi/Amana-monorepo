@@ -113,7 +113,9 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && <ChainSwitcher />}
+          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && (
+            <ChainSwitcher />
+          )}
           <div className="hidden md:block">
             {!isConnected ? (
               <Button variant="signIn" onClick={() => openStep("optionsA")}>
@@ -145,7 +147,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                   <Button
                     variant="signIn"
                     className="w-[96px] !h-10"
-                    onClick={() => openStep("optionsA")}
+                    onClick={() => openStep("mobileOptionsA")}
                   >
                     Sign in
                   </Button>

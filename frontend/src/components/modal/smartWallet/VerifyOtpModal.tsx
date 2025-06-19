@@ -153,7 +153,7 @@ export const VerifyOtpModal = () => {
       onClose={closeAll}
       paddingClass="px-9 pt-5 pb-6"
       roundedClass="rounded-[16px]"
-      maxWidth="max-w-[440px]"
+      maxWidth="max-w-[358px] md:max-w-[440px]"
     >
       <div className="flex justify-start">
         <button
@@ -174,16 +174,19 @@ export const VerifyOtpModal = () => {
             <AmanaLogo width={39} height={28} />
           </div>
         </div>
+        <div className="w-full flex justify-center items-center">
+          
+          <h2 className="max-w-[210px] md:max-w-[400px] text-center text-[24px] font-medium text-white mb-4">
+            Enter the code we sent to
+          </h2>
+        </div>
 
-        <h2 className="text-center text-[24px] font-medium text-white mb-4">
-          Enter the code we sent to
-        </h2>
         <p className="text-center text-white text-[16px] font-normal mb-[26px]">
           {formatEmail(email)}
         </p>
 
         <form className="flex flex-col gap-4">
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4">
             {code.map((digit, index) => (
               <input
                 key={index}
@@ -199,7 +202,7 @@ export const VerifyOtpModal = () => {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={handlePaste}
                 className={clsx(
-                  "w-12 h-12 text-center text-white text-xl rounded-md bg-[#161C27] outline-none transition-all duration-200",
+                  "w-10 h-10 md:w-12 md:h-12 text-center text-white text-xl rounded-md bg-[#161C27] outline-none transition-all duration-200",
                   {
                     "border border-[#3E73C4]": digit !== "" && !error,
                     "border border-transparent hover:border-[#3E73C4] focus:border-[#3E73C4]":
@@ -239,7 +242,7 @@ export const VerifyOtpModal = () => {
               { "text-gray-500 hover:no-underline": isResentdedOtp },
             )}
           >
-            {isResentdedOtp && error !== 'sent'
+            {isResentdedOtp && error !== "sent"
               ? "New code was send to your email"
               : "Not received the email?"}
           </button>

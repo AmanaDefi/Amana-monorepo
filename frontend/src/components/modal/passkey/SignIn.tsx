@@ -58,7 +58,7 @@ export const SignIn = () => {
       onClose={closeAll}
       paddingClass="px-4 pt-5 pb-6"
       roundedClass="rounded-[16px]"
-      maxWidth="max-w-[440px]"
+      maxWidth="max-w-[358px] md:max-w-[440px]"
     >
       <div className="flex justify-start">
         <button
@@ -75,7 +75,7 @@ export const SignIn = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
       >
-        <div className="flex flex-col justify-center items-center px-7 font-gotham">
+        <div className="flex flex-col justify-center items-center px-0 md:px-7 font-gotham">
           <div className="w-12 h-12 rounded-[8px] bg-[rgba(62,115,196,0.05)] flex items-center justify-center">
             <ProfileDropdownIcon
               width={26}
@@ -114,7 +114,7 @@ export const SignIn = () => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 220, damping: 20, delay: 0.1 }}
-        className="flex flex-col gap-4 mt-6 px-[26px]"
+        className="flex flex-col gap-4 mt-6 px-0 md:px-[26px]"
       >
         <input
           type="text"
@@ -148,7 +148,7 @@ export const SignIn = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="px-[26px] mt-6">
+        <div className="px-0 md:px-[26px] mt-6">
           <div className="w-full text-[#535E73] text-[12px] font-normal bg-[rgba(62,115,196,0.05)] rounded-[8px] px-[17px] py-[15px]">
             Store your passkeys securely. Losing your passkey means losing
             access to your account and any associated funds permanently.
