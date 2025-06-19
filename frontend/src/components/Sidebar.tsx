@@ -189,27 +189,27 @@ const Sidebar = ({
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 1px 0 2px 0 rgba(255, 255, 255, 0.1)",
       }}
     >
+      <div className="absolute top-[54px] left-[29px] z-20">
+        <AmanaLogo width={78} height={53} className="w-[78px] h-[53px]" />
+      </div>
+
+      <button
+        onClick={toggleSidebar}
+        className={`absolute top-[54px] right-[29px] z-20 flex-shrink-0 p-1 ${
+          isCollapsed
+            ? "opacity-0 pointer-events-none"
+            : "opacity-100 pointer-events-auto"
+        }`}
+      >
+        <CloseSidebarIcon width={20} height={20} />
+      </button>
+
       <div className="text-white overflow-hidden">
         <div
-          className={`flex items-center transition-all duration-500 ease-in-out mb-[65px] ${
-            isCollapsed ? "justify-center" : "justify-between"
+          className={`transition-all duration-500 ease-in-out mb-[65px] ${
+            isCollapsed ? "h-[53px]" : "h-[53px]"
           }`}
-        >
-          <div className="flex-shrink-0">
-            <AmanaLogo width={78} height={53} className="w-[78px] h-[53px]" />
-          </div>
-
-          <button
-            onClick={toggleSidebar}
-            className={`flex-shrink-0 p-1 ${
-              isCollapsed
-                ? "opacity-0 max-w-0 overflow-hidden ml-0"
-                : "opacity-100 max-w-[24px] ml-3"
-            }`}
-          >
-            <CloseSidebarIcon width={20} height={20} />
-          </button>
-        </div>
+        ></div>
 
         <div
           className={`absolute z-10 top-[160px] right-3 ${
