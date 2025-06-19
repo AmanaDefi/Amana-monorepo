@@ -17,7 +17,6 @@ const walletClientCache = new Map<number, WalletClient>();
 export const getRpcUrl = (chain: Chain): string => {
   if (alchemyApiKey) {
     const alchemyUrl = chain.rpcUrls.alchemy?.http[0];
-    console.log(alchemyUrl, "alchemyUrl");
     if (alchemyUrl) {
       return `${alchemyUrl}/${alchemyApiKey}`;
     }

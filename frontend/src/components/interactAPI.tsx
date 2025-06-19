@@ -1688,11 +1688,11 @@ function Interaction({
       updateLocalStorageObject(vaultData.id, {
         isTransactionProcessing: false,
         isTransactionStarted: false,
-        transactionStepFeedback: {}
+        transactionStepFeedback: {},
       });
       setIsTransactionProcessing(false);
       setIsTransactionStarted(false);
-      setTransactionStepFeedback({})
+      setTransactionStepFeedback({});
     }
 
     console.log("🏁 [POST-HOOK] === INTERACTION POST HOOK COMPLETED ===");

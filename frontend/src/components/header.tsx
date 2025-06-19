@@ -10,7 +10,6 @@ import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
-import { Signer } from "ethers";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
@@ -112,10 +111,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-6">
-          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && (
-            <ChainSwitcher />
-          )}
+        <div className="flex items-center gap-2 md:gap-6">
+          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && <ChainSwitcher />}
           <div className="hidden md:block">
             {!isConnected ? (
               <Button variant="signIn" onClick={() => openStep("optionsA")}>
@@ -126,7 +123,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                 ref={profileButtonRef}
                 variant="secondary"
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="!py-4 !px-[31px] !h-[56px]"
+                className="py-4 !px-[31px] !h-[56px]"
               >
                 <div className="flex flex-row gap-2 leading-[18px] items-center">
                   <ProfileIcon width={18} height={18} />
@@ -158,7 +155,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                     onClick={() =>
                       setIsProfileDropdownOpen(!isProfileDropdownOpen)
                     }
-                    className="!py-4 !px-[31px] !h-[56px]"
+                    className="!px-4 !h-10"
                   >
                     <div className="flex flex-row gap-2 leading-[18px] items-center">
                       <ProfileIcon width={18} height={18} />
