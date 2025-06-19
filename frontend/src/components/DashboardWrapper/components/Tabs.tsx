@@ -27,6 +27,8 @@ import Image from "next/image";
 import ProfileCircle from "@/components/svg/ProfileCircle";
 import TransactionDetailsIcon from "@/components/svg/TransactionDetailsIcon";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
+import { useRouter } from "next/navigation";
+
 
 const ZetaChainIcon = "/ZetaChain.webp";
 
@@ -199,6 +201,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
   loading = false,
   transactions,
 }) => {
+  const router = useRouter()
   const myVaults = useMyVaults({ vaults, userVaultBalances });
 
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
@@ -206,7 +209,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
   const displayTransactions = transactions || MOCK_TRANSACTIONS;
 
   const handleEarningClick = () => {
-    console.log("Earning in one click clicked");
+    router.push("/");
   };
 
   return (

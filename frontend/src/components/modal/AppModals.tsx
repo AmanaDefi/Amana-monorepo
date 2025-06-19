@@ -2,6 +2,8 @@
 import { ChooseBuyWith } from "./TopUpModals/ChooseBuyWith";
 import { Deposit } from "./TopUpModals/DepositModal";
 import AllWAllets from "./allWallets/AllWallets";
+import MobileOptionsModalA from "./mobile/MobileOptionsModalA";
+import MobileOptionsModalB from "./mobile/MobileOptionsModalB";
 import OnboardingModal from "./onboarding/OnboardingModal";
 import OptionsModalA from "./options/OptionsModalA";
 import OptionsModalB from "./options/OptionsModalB";
@@ -22,6 +24,8 @@ export const AppModals = () => {
       <VerifyOtpModal />
       <OptionsModalA />
       <OptionsModalB />
+      <MobileOptionsModalA />
+      <MobileOptionsModalB />
       <AllWAllets />
       <WelcomeModal />
       <OnboardingModal />
