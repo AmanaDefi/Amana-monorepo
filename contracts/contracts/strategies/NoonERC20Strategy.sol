@@ -54,28 +54,30 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         // check min out
         require(amount > 0, "Deposit amount must be greater than zero");
 
-        IERC20(inputToken).transfer(address(swapHelper), amount);
-        console.log(
-            "Depositing %s of input token %s into swapHelper",
+        approveOrIncreaseAllowance(inputToken, receiptToken, amount);
+
+        uint256 amountOut = I4626Vault(receiptToken).deposit(
             amount,
-            address(inputToken)
+            address(this)
         );
-        // Swap input token to receipt token (YUSD)
-        uint256 amountOut = ISwapHelper(swapHelper).swap(
-            address(inputToken),
-            amount,
-            receiptToken,
-            500,
-            address(this),
-            9999,
-            "0x"
-        );
-        console.log(
-            "Amount out after swap from %s to %s: %s",
-            address(inputToken),
-            receiptToken,
-            amountOut
-        );
+
+        // IERC20(inputToken).transfer(address(swapHelper), amount);
+        // console.log(
+        //     "Depositing %s of input token %s into swapHelper",
+        //     amount,
+        //     address(inputToken)
+        // );
+        // // Swap input token to receipt token (YUSD)
+        // uint256 amountOut = ISwapHelper(swapHelper).swap(
+        //     address(inputToken),
+        //     amount,
+        //     receiptToken,
+        //     500,
+        //     address(this),
+        //     9999,
+        //     "0x"
+        // );
+        console.log("Amount out after deposit", amountOut);
         require(amountOut >= minAmountOut, "Insufficient output amount");
     }
 

@@ -328,7 +328,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     strategyChainId: 1,
     receiptTokenContractName: "I4626Vault",
     swapHelperContractName: "SwapHelperEthereum",
-    rewardsContractName: "",
+    rewardsContractName: "I4626Vault",
     forkBlock: 22315281,
     inputTokenAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
     inputTokenStorageSlot: 0,
