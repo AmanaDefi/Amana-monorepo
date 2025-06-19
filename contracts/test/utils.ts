@@ -19,7 +19,7 @@ const WHALE_ADDRESSES: Record<string, string> = {
   "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d":
     "0x8894E0a0c962CB723c1976a4421c95949bE2D4E3",
   // USDT BNB
-  "0x55d398326f99059fF775485246999027B3197955":
+  "0x55d398326f99059ff775485246999027b3197955":
     "0xfD5840Cd36d94D7229439859C0112a4185BC0255",
 };
 
@@ -74,6 +74,9 @@ export async function setTokenBalance(
   console.log(
     `[setTokenBalance] New balance for ${tokenAddress} at ${account}: ${newBalance.toString()}`
   );
+  console.log("newBalance.isZero():", newBalance.isZero());
+  console.log("WHALE_ADDRESSES[tokenAddress]:", WHALE_ADDRESSES[tokenAddress]);
+  console.log("tokenAddress:", tokenAddress);
   if (newBalance.isZero() && WHALE_ADDRESSES[tokenAddress]) {
     console.warn(`[setTokenBalance] Storage set failed. Falling back to whale transfer for ${tokenAddress}`);
 
@@ -554,6 +557,12 @@ export function isConvexStrategy(name: string): boolean {
     "ConvexERC20Strategy",
     "ConvexERC20StrategyArbitrum",
     "ConvexEthStrategyArbitrum"
+  ].includes(name);
+}
+
+export function isAegisStrategy(name: string): boolean {
+  return [
+    "AegisERC20Strategy"
   ].includes(name);
 }
 

@@ -16,7 +16,9 @@ import {
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
-  calculateCombinedBalancerAPY
+  calculateCombinedBalancerAPY,
+  fetchAegisAPR
+
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
 import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
@@ -40,7 +42,7 @@ export const useUpdateVaultBalanceAndTotal = (
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
       let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
-      
+
       try {
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
@@ -118,15 +120,15 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   transactionCompleted: boolean,
 ) => {
   const { selectedChain } = useMultiChain();
-  
+
   const lastKnownBalanceRef = useRef<string>('0');
   const backgroundRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const refreshAttemptsRef = useRef<number>(0);
-  const MAX_REFRESH_ATTEMPTS = 12;
-  
+  const MAX_REFRESH_ATTEMPTS = 12; // 12 attempts * 10 seconds = 2 minutes of background checking
+
   const updateVaultBalanceAndTotal = useCallback(async () => {
     const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
-    
+
     try {
       if (vault && vault.id) {
         const balance = await fetchUserVaultBalance(
@@ -141,7 +143,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             refreshAttemptsRef.current = 0;
           }
         }
-        
+
         lastKnownBalanceRef.current = balance;
         setUserVaultBalance(balance);
 
@@ -152,10 +154,10 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         );
 
         const newTotalAssets = await fetchTotalAssets(vault.id as Address);
-        
+
         setVaultTotalAsset(newTotalAssets);
         setVaultTotalAssetinToken(newTotalAssetsinToken);
-        
+
         return balance;
       } else {
         return null;
@@ -164,18 +166,19 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
       return null;
     }
   }, [vault, userAddress]);
-  
+
   useEffect(() => {
     if (userAddress && vault) {
       updateVaultBalanceAndTotal();
-      
+
       if (transactionCompleted && !backgroundRefreshIntervalRef.current) {
         refreshAttemptsRef.current = 0;
         backgroundRefreshIntervalRef.current = setInterval(async () => {
           refreshAttemptsRef.current++;
-          
+
           await updateVaultBalanceAndTotal();
-          
+
+          // Stop after max attempts
           if (refreshAttemptsRef.current >= MAX_REFRESH_ATTEMPTS) {
             if (backgroundRefreshIntervalRef.current) {
               clearInterval(backgroundRefreshIntervalRef.current);
@@ -186,7 +189,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
         }, 10000);
       }
     }
-    
+
     return () => {
       if (backgroundRefreshIntervalRef.current) {
         clearInterval(backgroundRefreshIntervalRef.current);
@@ -229,6 +232,8 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "ZeroLend") {
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "Aegis") {
+                APY7d = await fetchAegisAPR();
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
                 RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);

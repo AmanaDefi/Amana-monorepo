@@ -28,4 +28,8 @@ interface I4626Vault {
     function convertToShares(uint256 assets) external view returns (uint256);
 
     function maxWithdraw(address account) external view returns (uint256);
+
+    function previewDeposit(
+        uint256 assets
+    ) external view returns (uint256 shares);
 }
