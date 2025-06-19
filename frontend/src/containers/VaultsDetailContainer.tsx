@@ -67,6 +67,12 @@ const VaultsDetailContainer: React.FC<{
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
 
+  const [depositData, setDepositData] = useState({
+    amount: "0",
+    symbol: "",
+    usdValue: 0,
+  });
+
   const {
     transactionStepFeedback,
     lastTransactionStepFeedback,
@@ -117,6 +123,13 @@ const VaultsDetailContainer: React.FC<{
     }
     window.history.pushState({}, "", newUrl.toString());
   };
+
+  const handleDepositDataUpdate = useCallback(
+    (amount: string, symbol: string, usdValue: number) => {
+      setDepositData({ amount, symbol, usdValue });
+    },
+    [],
+  );
 
   const loadSlippageFromStorage = useUserSettingsStore(
     (state) => state.loadSlippageFromStorage,
@@ -351,6 +364,8 @@ const VaultsDetailContainer: React.FC<{
         vaultAPYs={vaultAPYs}
         transactionCompleted={transactionCompleted}
         selectedToken={selectedToken}
+        onDepositDataUpdate={handleDepositDataUpdate}
+        isDeposit={isDeposit}
       />
 
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-[56px] font-gotham">
@@ -404,7 +419,11 @@ const VaultsDetailContainer: React.FC<{
 
         <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress ? (
-            <YourInvestment />
+            <YourInvestment
+              depositAmount={depositData.amount}
+              vaultTokenSymbol={depositData.symbol}
+              depositUSDValue={depositData.usdValue}
+            />
           ) : (
             <Dropdown title={informationDropdownTitle} defaultOpen={true}>
               <VaultInformationContent
