@@ -97,7 +97,7 @@ export function getVaultErrorMessage(
     const amountInUSD = Number(value) * inputTokenPrice;
     
     if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(value) > 0) {
-      return `You must deposit at least $${vaultData.minDeposit}`;
+      return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
     }
     
     if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(value) > 0) {

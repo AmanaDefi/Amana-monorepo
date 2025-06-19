@@ -228,15 +228,25 @@ export default function VaultInputs({
   
   // Trigger error message handling
   useEffect(() => {
-    if (inputToken && vaultTotalAssetinToken) {
+    if (inputToken && vaultTotalAssetinToken && !loadingOutputToken) {
       if (isDeposit) {
+        // For Ethereum vaults, use net deposit amount for validation
+        // For other vaults, use input amount
+        const amountToValidate = !vaultData.depositFeePaidFromGasTank 
+          ? conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, '') || inputBalance.formatted
+          : inputBalance.formatted;
+        
+        const priceToUse = !vaultData.depositFeePaidFromGasTank 
+          ? 1 // netDepositToVaultUSD is already in USD
+          : inputTokenPrice;
+
         setErrorMessage(
           getVaultErrorMessage(
-            inputBalance.formatted,
+            amountToValidate,
             tokenBalance.formatted,
             steps,
             vaultData,
-            inputTokenPrice,
+            priceToUse,
             isDeposit
           )
         );
@@ -252,6 +262,9 @@ export default function VaultInputs({
           )
         );
       }
+    } else if (loadingOutputToken) {
+      // Clear error message while loading
+      setErrorMessage("");
     }
   }, [
     inputToken,
@@ -263,6 +276,8 @@ export default function VaultInputs({
     steps,
     inputTokenPrice,
     vaultTokenPrice,
+    conversionOutput.netDepositToVaultUSD,
+    loadingOutputToken,
   ]);
 
   // Watch input balance and trigger steps config selection
