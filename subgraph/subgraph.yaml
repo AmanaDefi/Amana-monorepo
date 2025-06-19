@@ -196,7 +196,7 @@ dataSources:
     name: CurveConvexUSDC_Vault
     network: zetachain
     source:
-      address: "0xAbE7a5C760B030421B5C9815fE91f9Ba68058769"
+      address: "0x32fECdEf376E2aD74C53663BDE933116C09408f3"
       abi: AmanaVault
       startBlock: 8498913
     mapping:

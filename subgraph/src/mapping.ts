@@ -162,7 +162,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
   
   // Curve Convex USDC Vault -> Arbitrum
-  if (addr == "0xabe7a5c760b030421b5c9815fe91f9ba68058769") {
+  if (addr == "0x32fecdef376e2ad74c53663bde933116c09408f3") {
     return {
       type: "Liquidity Pool",
       name: "eUSD/USDC Pool",
