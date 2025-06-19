@@ -196,6 +196,19 @@ export const VaultFilters: FC<Props> = ({
             onClick={() => inputRef?.current?.focus()}
             className="focus-within:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
           >
+            <>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={
+                "Search name or paste address"
+              }
+              className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
+              value={searchTerm}
+              onFocus={() => setIsHiddenFilterButton(true)}
+              onBlur={() => setIsHiddenFilterButton(false)}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
             <input
               ref={inputRef}
               type="text"
@@ -204,12 +217,13 @@ export const VaultFilters: FC<Props> = ({
                   ? "Search name..."
                   : "Search name or paste address"
               }
-              className="text-white focus:outline-none bg-transparent w-full"
+              className="text-white lg:hidden focus:outline-none bg-transparent w-full"
               value={searchTerm}
               onFocus={() => setIsHiddenFilterButton(true)}
               onBlur={() => setIsHiddenFilterButton(false)}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            </>
             <div className="absolute left-4 top-3">
               <SearchIcon />
             </div>

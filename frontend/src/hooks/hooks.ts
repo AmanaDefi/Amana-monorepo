@@ -644,7 +644,6 @@ export const useUpdateAPYs = (
         setLoading(false);
         return; //Update only if interval > 5 min or if user has deposited in Pool
       } else {
-        setLoading(true);
         updateAPYs();
       }
     }

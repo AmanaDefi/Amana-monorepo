@@ -59,7 +59,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
           handleVaultClick(vault.id);
         }}
         ref={ref}
-        className="w-full min-w-[330px] h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
+        className="w-full min-w-[350px] h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
       >
         <div className="flex flex-row gap-1 justify-between">
           <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
