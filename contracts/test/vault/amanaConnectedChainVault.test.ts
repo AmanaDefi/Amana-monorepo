@@ -485,7 +485,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
 
     // the revert will send back some vault asset
-    await setTokenBalance(txConfig.originZRC20Input, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
+    await setTokenBalance(vaultAsset.address, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
     console.log("user balance of zrc20 before revert", await originZRC20Input.balanceOf(await user1.getAddress()));
     await expect(
       withdrawHelper.connect(gatewaySigner).onRevert({
@@ -624,7 +624,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     );
 
     // the abort will send back some vault asset
-    await setTokenBalance(txConfig.originZRC20Input, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
+    await setTokenBalance(vaultAsset.address, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
     await expect(
       withdrawHelper.connect(gatewaySigner).onAbort({
         sender: strategyConfig.address,
