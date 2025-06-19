@@ -1,0 +1,257 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.26;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "./ERC20StrategyParent.sol";
+
+import "../interfaces/ISwapHelper.sol";
+import "../interfaces/I4626Vault.sol";
+
+import "hardhat/console.sol";
+
+interface IManager {
+    function deposit(
+        address _yToken,
+        address _asset,
+        uint256 _amount,
+        address _receiver,
+        address _callback,
+        bytes calldata _callbackData,
+        bytes32 _referralCode
+    ) external;
+
+    function redeem(
+        address caller,
+        address _yToken,
+        address _asset,
+        uint256 _shares,
+        address _receiver,
+        address _callback,
+        bytes calldata _callbackData
+    ) external;
+}
+
+contract YieldFiERC20Strategy is ERC20StrategyParent {
+    using SafeERC20 for IERC20;
+
+    address public receiptToken;
+    uint256 public inputTokenIndex;
+    address public stakingContract; // sYUSD 4626 vault
+    address public manager;
+
+    function initialize(
+        string memory _name,
+        address _gatewayAddress,
+        address _amanaVault,
+        address _withdrawHelper,
+        address _swapHelper,
+        address _receiptTokenAddress, // this is YUSD
+        address _inputTokenAddress, // inputToken
+        address _stakingContractAddress, // _liquidityGaugeAddress, // this is the YUSD staking gauge
+        address /* _rewardsTokenAddress — not needed */,
+        uint256 // _inputTokenIndex - not needed
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper,
+            _inputTokenAddress,
+            _receiptTokenAddress
+        );
+
+        swapHelper = _swapHelper;
+
+        receiptToken = _receiptTokenAddress;
+        stakingContract = _stakingContractAddress;
+        manager = 0x03ACc35286bAAE6D73d99a9f14Ef13752208C8dC;
+    }
+
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minAmountOut
+    ) internal override {
+        require(amount > 0, "Deposit amount must be greater than zero");
+
+        console.log(
+            "Depositing %s of input token %s into vyUSD",
+            amount,
+            address(inputToken)
+        );
+
+        approveOrIncreaseAllowance(inputToken, receiptToken, amount);
+
+        uint256 amountOut = I4626Vault(receiptToken).deposit(
+            amount,
+            address(this)
+        );
+        // approveOrIncreaseAllowance(IERC20(inputToken), manager, amount);
+        // uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
+        // IManager(manager).deposit(
+        //     receiptToken,
+        //     address(inputToken),
+        //     amount,
+        //     address(this),
+        //     address(this),
+        //     "",
+        //     bytes32(0)
+        // );
+
+        // uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
+        // uint256 amountOut = inputTokenBalanceBefore - inputTokenBalanceAfter;
+        // console.log(
+        //     "Deposited %s of input token %s into vyUSD",
+        //     amountOut,
+        //     address(inputToken)
+        // );
+        require(amountOut >= minAmountOut, "Insufficient output amount");
+    }
+
+    function _withdrawFundsFromYieldSource(
+        uint256 assetAmount,
+        uint256 minAmountOut
+    ) internal override returns (uint256 amountWithdrawn) {
+        console.log(
+            "This contracts balance of receipt token %s: %s",
+            receiptToken,
+            IERC20(receiptToken).balanceOf(address(this))
+        );
+        uint256 vyusdToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
+        console.log(
+            "Withdrawing %s of receipt token %s from vyUSD",
+            vyusdToWithdraw,
+            receiptToken
+        );
+        approveOrIncreaseAllowance(
+            IERC20(receiptToken),
+            address(this),
+            vyusdToWithdraw
+        );
+
+        uint256 amountOut = I4626Vault(receiptToken).redeem(
+            vyusdToWithdraw,
+            address(this),
+            address(this)
+        );
+
+        // IERC20(receiptToken).approve(manager, type(uint256).max);
+
+        // uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
+
+        // IManager(manager).redeem(
+        //     address(this),
+        //     receiptToken,
+        //     address(inputToken),
+        //     vyusdToWithdraw,
+        //     address(this),
+        //     address(0),
+        //     ""
+        // );
+
+        // uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
+        // uint256 amountOut = inputTokenBalanceAfter - inputTokenBalanceBefore;
+        console.log(
+            "Withdrew %s of input token %s from vyUSD",
+            amountOut,
+            address(inputToken)
+        );
+        require(amountOut >= minAmountOut, "Insufficient output amount");
+        amountWithdrawn = amountOut;
+    }
+
+    function _transferAssetsToNewStrategy() internal override {
+        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
+
+        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
+            revert InvalidAmanaVault();
+
+        harvest();
+
+        // Withdraw all BPT from the liquidity gauge
+        uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
+
+        // Transfer the LP tokens to the new strategy
+        IERC20(receiptToken).transfer(txn.newStrategy, totalinvyUsd);
+
+        IStrategy(txn.newStrategy).depositFromOldStrategy(
+            totalinvyUsd,
+            txn.minimumOut,
+            lastProcessedNonce + 1
+        );
+
+        emit AssetsTransferredToNewStrategy(
+            txn.newStrategy,
+            totalinvyUsd,
+            lastProcessedNonce + 1
+        );
+    }
+
+    /**
+     * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
+     *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
+     * @param currentExecutionNonce The current execution nonce from the old strategy.
+     */
+    function depositFromOldStrategy(
+        uint256 amount,
+        uint256 minimumSharesOut,
+        uint256 currentExecutionNonce
+    ) external override {
+        if (oldStrategy == address(0)) revert OldStrategyNotSet();
+        if (msg.sender != oldStrategy) revert NotAuthorized();
+
+        lastProcessedNonce = currentExecutionNonce;
+
+        emit AssetsReceivedFromOldStrategy(
+            oldStrategy,
+            amount,
+            currentExecutionNonce
+        );
+
+        oldStrategy = address(0);
+    }
+
+    function totalUnderlyingAssets() public view override returns (uint256) {
+        uint256 total = IERC20(receiptToken).balanceOf(address(this));
+        return total > 0 ? convertToAssets(total) : 0;
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256 assets) {
+        assets = I4626Vault(receiptToken).convertToAssets(shares);
+    }
+
+    function convertToShares(
+        uint256 assets
+    ) public view override returns (uint256 shares) {
+        shares = I4626Vault(receiptToken).convertToShares(assets);
+    }
+
+    function getStrategyWithdrawShareAmount(
+        uint256 assetAmount
+    ) public view override returns (uint256 yusdToWithdraw) {
+        uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
+        yusdToWithdraw = convertToShares(assetAmount);
+        console.log(
+            "Shares to withdraw based on asset amount %s: %s",
+            assetAmount,
+            yusdToWithdraw
+        );
+        if (yusdToWithdraw > totalinvyUsd) {
+            yusdToWithdraw = totalinvyUsd;
+            console.log(
+                "Rounding down to withdraw full staked balance: %s",
+                yusdToWithdraw
+            );
+        }
+        if (totalinvyUsd > 0 && totalinvyUsd - yusdToWithdraw <= 1e3) {
+            yusdToWithdraw = totalinvyUsd;
+            console.log(
+                "Rounding up to withdraw full staked balance: %s",
+                yusdToWithdraw
+            );
+        }
+    }
+}

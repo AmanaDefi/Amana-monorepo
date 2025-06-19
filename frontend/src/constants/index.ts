@@ -585,6 +585,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
   //   },
   // },
+  {
+    id: "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8",
+    name: "YieldFi vyUSD",
+    type: "Yield-Bearing Stablecoin",
+    des: "This strategy deposits USDC into the vyUSD vault on Ethereum, a yield-optimized vault built on top of yUSD. vyUSD amplifies returns through automated DeFi strategies such as stablecoin LP positions and leverage looping. Yield is generated from protocol-driven strategies and auto-compounded within the vault. Because the underlying assets are stablecoins, risk from impermanent loss is minimal. APY is variable and influenced by vault utilization, market conditions, and strategy performance within the YieldFi protocol.",
+    symbol: "aYieldFiUsdc",
+    imgURL: "/ETH.png",
+    depositFeePaidFromGasTank: false,
+    inputToken: {
+      symbol: "USDC.ETH",
+      decimals: 6,
+      address: ZC_USDC_ETH_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "YieldFi",
+      strategyAddress: "0xC058E93347162563f53893e1dF20e3cC017C85b3",
+      rewardsContractAddress: "",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/yieldfi.png",
+      des: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi."
+    },
+  },
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [
