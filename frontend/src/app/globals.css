@@ -199,36 +199,10 @@ body .page-container {
   height: 4px;
 }
 
-.thirdweb-connect-override button {
-  background: #0a0a0a !important;
-  color: white !important;
-  border: 1px solid #9ca3af !important;
-  border-radius: 8px !important;
-  padding: 9px 16px !important;
-  width: 192px !important;
-  height: 56px !important;
-  font-size: 18px !important;
-  font-weight: normal !important;
-  transition: all 0.3s ease !important;
+.modal-open {
+  overflow: hidden !important;
 }
-.thirdweb-connect-override button:hover,
-.thirdweb-connect-override button:active {
-  background: linear-gradient(
-    139deg,
-    #14171f 0%,
-    #14171f 55%,
-    rgba(27, 70, 224, 0.25) 70%,
-    rgba(27, 70, 224, 0.5) 90%,
-    #1b46e0 120%
-  ) !important;
-}
-.thirdweb-invest-button button,
-.thirdweb-invest-button button:hover,
-.thirdweb-invest-button button:active {
-  background: #1B46E0 !important;
-  backdrop-filter: blur(20px) !important;
-  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.15), inset 0 2px 4px 0 #5251c5 !important;
-}
+
 .gradient-text {
   background: linear-gradient(150deg, #d7d7d9 11%, #1b46e0 100%);
   background-clip: text;
