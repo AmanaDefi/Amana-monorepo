@@ -144,13 +144,13 @@ const getStepDescription = (
 
   switch (step) {
     case DepositStep.SELECT_TOKEN:
-      return `Select the token you want to ${operationType === "deposit" ? "deposit" : "withdraw"}`;
+      return `Select the token ${operationType === "deposit" ? "you want to deposit" : "and amount to withdraw "}`;
     case DepositStep.CONFIRM_DEPOSIT:
       return `Confirm ${operationType}`;
     case DepositStep.CROSS_CHAIN_TRANSFER:
-      return `Cross-chain transfer and ${operationType === "deposit" ? "investment" : "return"} of funds`;
+      return `Cross-chain transfer ${operationType === "deposit" ? " and investment of funds" : "(if needed)"}`;
     case DepositStep.FINAL_CONFIRMATION:
-      return `Final confirmation and ${operationType === "deposit" ? "issue of shares" : "completion"}`;
+      return `${operationType === "deposit" ? "Final confirmation and issue of shares" : "Funds arrive in your wallet"}`;
     default:
       return `${operationType} step`;
   }
