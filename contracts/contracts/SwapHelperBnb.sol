@@ -203,8 +203,14 @@ contract SwapHelperBnb is SwapHelperParent {
             )
         {
             console.log("Universal Router V4 swap executed");
-            amountOut = IERC20(outputToken).balanceOf(receiver);
+            amountOut = IERC20(outputToken).balanceOf(address(this));
             console.log("Amount out: %s of %s", amountOut, outputToken);
+            console.log("msg.sender: %s", msg.sender);
+            IERC20(outputToken).transfer(receiver, amountOut);
+            console.log(
+                "Balance after transfer: %s",
+                IERC20(outputToken).balanceOf(address(this))
+            );
         } catch (bytes memory errorData) {
             console.log("Universal Router V4 swap failed");
             console.logBytes(errorData);
