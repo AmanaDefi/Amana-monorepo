@@ -35,7 +35,7 @@ import {
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 import { InformationCircleIcon } from "@heroicons/react/24/solid";
 import ResponsiveTooltip from "@/components/common/Tooltip";
@@ -54,7 +54,6 @@ import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
-import { get } from "http";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -91,6 +90,8 @@ export interface VaultInputsProps {
   selectedChain?: Chain | null;
   onSelectChain?: (chain: Chain) => void;
   vaultId: string;
+  isDeposit: boolean;
+  onTabChange: (tab: string) => void;
 }
 
 export type ConversionOutput = {
@@ -117,6 +118,8 @@ export default function VaultInputs({
   selectedChain,
   onSelectChain,
   vaultId,
+  isDeposit,
+  onTabChange,
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -125,7 +128,6 @@ export default function VaultInputs({
   const [displayValue, setDisplayValue] = useState<string>("");
   const [debouncedInputBalance, setDebouncedInputBalance] =
     useState<Balance>(EMPTY_BALANCE);
-  const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [isSlippageExceedingLimit, setIsSlippageExceedingLimit] =
     useState<boolean>(true);
   const [outputBoxErrorMessage, setOutputBoxErrorMessage] =
@@ -134,36 +136,10 @@ export default function VaultInputs({
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
 
-  // Use searchParams to directly determine tab state
-  const searchParams = useSearchParams();
-
-  // Update isDeposit when URL tab parameter changes
+  // Update label when isDeposit prop changes
   useEffect(() => {
-    const shouldBeDeposit = searchParams.get("tab") !== "withdraw";
-    if (vaultData?.id) {
-      const TxInfo = getLocalStorageObject(vaultData.id);
-      const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
-      if (isTxInProgress && TxInfo?.tab) {
-        setIsDeposit(TxInfo.tab === Tabs.DEPOSIT);
-      } else {
-        setIsDeposit(shouldBeDeposit);
-      }
-    } else {
-      setIsDeposit(shouldBeDeposit);
-
-      // 🧪 TESTING: Log UI state changes
-      console.log("=== UI STATE TESTING ===");
-      console.log(
-        `🔄 Tab changed to: ${shouldBeDeposit ? "DEPOSIT" : "WITHDRAW"}`,
-      );
-      console.log(`💰 Vault underlying token: ${vaultData.inputToken.symbol}`);
-      console.log(`🏦 Vault share token: ${vaultData.symbol}`);
-      console.log(
-        `📊 Balance shown will be: ${shouldBeDeposit ? "user wallet balance" : "maxWithdraw amount"}`,
-      );
-      console.log("========================");
-    }
-  }, [searchParams, vaultData]);
+    setLabel(isDeposit ? "Invest" : "Withdraw");
+  }, [isDeposit]);
 
   const [steps, setSteps] = useState<Action[]>([]);
   const [step, setStep] = useState<number>(0);
@@ -439,9 +415,8 @@ export default function VaultInputs({
     const newIsDeposit = tab.toLowerCase() === "deposit";
     const newTab = newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW;
 
-    // Update URL first to ensure consistency
+    // Update label
     setLabel(newIsDeposit ? "Deposit" : "Withdraw");
-    setIsDeposit(newIsDeposit);
 
     // Reset input balance
     setInputBalance(EMPTY_BALANCE);
@@ -450,6 +425,9 @@ export default function VaultInputs({
       tab: newTab,
       inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
     });
+
+    // Notify parent component about tab change
+    onTabChange(tab);
 
     // Only attempt to set steps if we have a token and chain
     if (inputToken && selectedChain) {
@@ -632,6 +610,8 @@ export default function VaultInputs({
     }
     return tokens;
   }, [selectedChain?.id, vaultData.inputToken]);
+
+  // ... (інші методи getWithdrawOutputAmount, getDepositOutputAmount і т.д. залишаються без змін)
 
   const getWithdrawOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
@@ -987,19 +967,17 @@ export default function VaultInputs({
     ) {
       console.log(
         "Swap route not found",
-        inputBalance.value ,
+        inputBalance.value,
         Number(conversionOutput.outputAmountFormatted),
-     
-          isDeposit,
-          !vaultData.depositFeePaidFromGasTank,
-          debouncedInputBalance,
-          Number(
-            conversionOutput.inputAmountInUSDFormatted?.replace(
-              /[^0-9.]/g,
-              "",
-            ) ?? 0,
-          ), Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
-        ,
+
+        isDeposit,
+        !vaultData.depositFeePaidFromGasTank,
+        debouncedInputBalance,
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+            0,
+        ),
+        Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0),
       );
       setOutputBoxErrorMessage("Swap route not found");
     }
