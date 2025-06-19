@@ -36,6 +36,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aZeroLendUSDC",
     imgURL: "/base.png",
     depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
     inputToken: {
       symbol: "USDC.BASE",
       decimals: 6,
@@ -88,6 +90,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aFluidUSDC",
     imgURL: "/base.png",
     depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
     inputToken: {
       symbol: "USDC.BASE",
       decimals: 6,
@@ -115,6 +119,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aPolUSDT",
     imgURL: "/polygon_logo.png",
     depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
     inputToken: {
       symbol: "USDT.POL",
       decimals: 6,
@@ -144,6 +150,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aAaveUSDT",
     imgURL: "/bnb_logo.png",
     depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
     inputToken: {
       symbol: "USDT.BNB",
       decimals: 18,
@@ -453,6 +461,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aCurveETH",
     imgURL: "/ETH.png",
     depositFeePaidFromGasTank: false,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
     inputToken: {
       symbol: "ETH.ETH",
       decimals: 18,
@@ -537,6 +547,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aConvexUsdcArb",
     imgURL: "/arbitrum-arb-logo.png",
     depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
     inputToken: {
       symbol: "USDC.ARB",
       decimals: 6,
@@ -593,6 +605,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aYieldFiUsdc",
     imgURL: "/ETH.png",
     depositFeePaidFromGasTank: false,
+    minDeposit: 10, // YieldFi vault specific minimum deposit $10
+    maxWithdraw: 100, // YieldFi vault specific maximum instant withdrawal $100
     inputToken: {
       symbol: "USDC.ETH",
       decimals: 6,
@@ -625,6 +639,8 @@ const TESTNET_VAULT_DATA: VaultData[] = [
     symbol: "aAaveETH",
     imgURL: "/base.png",
     depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
 
     inputToken: {
       symbol: "ETH",

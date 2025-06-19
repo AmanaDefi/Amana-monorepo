@@ -232,9 +232,12 @@ export default function VaultInputs({
       if (isDeposit) {
         setErrorMessage(
           getVaultErrorMessage(
-            inputBalance.value.toString(),
-            tokenBalance.value.toString(),
-            steps
+            inputBalance.formatted,
+            tokenBalance.formatted,
+            steps,
+            vaultData,
+            inputTokenPrice,
+            isDeposit
           )
         );
       } else {
@@ -242,7 +245,10 @@ export default function VaultInputs({
           getVaultErrorMessage(
             inputBalance.formatted,
             vaultTotalAssetinToken.toString(),
-            steps
+            steps,
+            vaultData,
+            vaultTokenPrice,
+            isDeposit
           )
         );
       }
@@ -255,6 +261,8 @@ export default function VaultInputs({
     action,
     vaultTotalAssetinToken,
     steps,
+    inputTokenPrice,
+    vaultTokenPrice,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -897,6 +905,15 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Deposit" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
+      
+      {/* Persistent instant withdrawal limit message */}
+      {!isDeposit && vaultData.maxWithdraw && vaultData.maxWithdraw < 1000000 && (
+        <div className="bg-orange-900/30 border border-orange-500 py-2 px-4 rounded-lg mb-4">
+          <p className="text-orange-400 text-sm">
+            <span className="font-medium">Instant withdraw limit of ${vaultData.maxWithdraw.toLocaleString()}</span>
+          </p>
+        </div>
+      )}
       
       <InputTokenWithError
         captionText={isDeposit ? "Deposit Amount" : "Withdraw Amount"}

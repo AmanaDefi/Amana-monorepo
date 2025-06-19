@@ -81,15 +81,31 @@ export const NumberFormatter = Intl.NumberFormat("en", {
 export function getVaultErrorMessage(
   value: string,
   inputValue: string | undefined,
-  steps: Action[]
+  steps: Action[],
+  vaultData?: any,
+  inputTokenPrice?: number,
+  isDeposit?: boolean
 ): string {
 
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
     return "Insufficient balance"
-  } else {
-    return ""
   }
+
+  // Check deposit/withdrawal limits if vaultData is provided
+  if (vaultData && inputTokenPrice) {
+    const amountInUSD = Number(value) * inputTokenPrice;
+    
+    if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(value) > 0) {
+      return `You must deposit at least $${vaultData.minDeposit}`;
+    }
+    
+    if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(value) > 0) {
+      return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+    }
+  }
+
+  return "";
 }
 
 export function isEthereumAddress(address: string): boolean {
