@@ -1,58 +1,115 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { usePathname, useRouter } from "next/navigation";
+import VaultsMobileMenuIcon from "../svg/mobileMenu/VaultsMobileMenu";
+import LeaderboardIcon from "../svg/mobileMenu/LeaderBoard";
+import RoadmapIcon from "../svg/mobileMenu/Roadmap";
+import Link from "next/link";
+import AboutIcon from "../svg/mobileMenu/AboutIcon";
+import classNames from "classnames";
+import AmanaLogo from "@public/logo/amanadefi/logo.svg";
+import CloseModalIcon from "../svg/CloseModalIcon";
+import DiscordLogo from "@public/logo/discord.svg";
+import XLogo from "@public/logo/x.svg";
+import LinkedInLogo from "@public/logo/linkedIn.svg";
+import GlowIcon from "../svg/GlowIcon";
 
-export default function MobileMenuModal() {
-    const [openedMobileMenu, setOpenedMobileMenu] = useState(false);
-    const path = usePathname();
-    const router = useRouter();
+const MENU_ITEMS = [
+  {
+    path: "/",
+    icon: <VaultsMobileMenuIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Vaults",
+  },
+  {
+    path: "/leaderboard",
+    icon: <LeaderboardIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Leaderboard",
+  },
+  {
+    path: "/about",
+    icon: <AboutIcon height={19} width={19} fill="#1B46E0" />,
+    title: "About",
+  },
+  {
+    path: "/roadmap",
+    icon: <RoadmapIcon height={19} width={19} stroke="#1B46E0" />,
+    title: "Roadmap",
+  },
+];
 
-    useEffect(() => {
-        setOpenedMobileMenu(false);
-    }, [path]);
-    return (
-        <>
-            <button className={`group relative w-7 h-4 flex justify-end lg:hidden ${openedMobileMenu && 'opened'}`}
-                onClick={() => setOpenedMobileMenu(!openedMobileMenu)}>
-                <div
-                    className='absolute w-full h-px bg-white top-0 transition-all group-[.opened]:top-1/2 group-[.opened]:-translate-y-1/2 group-[.opened]:-rotate-45 group-[.opened]:w-6'></div>
-                <div
-                    className='absolute top-1/2 -translate-y-1/2 w-full h-px bg-white transition-all group-[.opened]:rotate-45 group-[.opened]:w-6'></div>
-                <div className='absolute bottom-0 w-2/3 h-px bg-white transition-all group-[.opened]:opacity-0'></div>
+export default function MobileMenuModal({
+  toggleMenu,
+  isOpen,
+}: {
+  toggleMenu: () => void;
+  isOpen: boolean;
+}) {
+  const path = usePathname();
+
+  return (
+    <div
+      className={`z-10 py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-black h-screen transform transition-all duration-500 ease-in-out ${
+        isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+      }`}
+    >
+      <GlowIcon position="top-mobile" />
+      <GlowIcon position="bottom-mobile" />
+      <nav className="flex flex-col h-full w-full items-center justify-between">
+        <div className="flex flex-col w-full items-center">
+          <div className="flex flex-row items-center w-full justify-between mb-[90px]">
+            <div className="w-[50px] h-10" />
+            <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
+            <button
+              onClick={toggleMenu}
+              className="z-10 flex items-center justify-center w-10 h-10"
+              aria-label="Close"
+            >
+              <CloseModalIcon width={16} height={16} />
             </button>
-            <div
-                className={`z-[1] lg:!hidden fixed top-[var(--header-height)] bottom-0 left-0 right-0 bg-black ${openedMobileMenu ? 'flex' : 'hidden'}`}>
-                <nav
-                    className="flex flex-col h-fit divide-y divide-tuatara-900 border-b border-tuatara-900 w-full text-center">
-                    <span
-                        className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
-                            }`}
-                        onClick={() => router.push("/")}
-                    >
-                        Vaults
-                    </span>
-                    <span
-                        className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-themeColor" : ""
-                            }`}
-                        onClick={() => router.push("/about")}
-                    >
-                        About
-                    </span>
-                    <span
-                        className={`cursor-pointer py-6 ${path === "/leaderboard" ? "font-bold text-themeColor" : ""
-                            }`}
-                        onClick={() => router.push("/leaderboard")}
-                    >
-                        Leaderboard
-                    </span>
-                    <span
-                        className={`cursor-pointer py-6 ${path === "/raodmap" ? "font-bold text-themeColor" : ""
-                            }`}
-                        onClick={() => router.push("/roadmap")}
-                    >
-                        Roadmap
-                    </span>
-                </nav>
-            </div>
-        </>
-    )
+          </div>
+          <div className="flex flex-col gap-6 items-center w-full">
+            {MENU_ITEMS.map((link) => {
+              return (
+                <Link
+                  onClick={toggleMenu}
+                  href={link.path}
+                  className={classNames(
+                    "flex cursor-pointer flex-row items-center gap-[6px] text-white",
+                    { "text-blue-button": path === link.path },
+                  )}
+                >
+                  {link.icon}
+                  <p className="font-gotham font-normal text-base leading-4 text-center">
+                    {link.title}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <Link
+            href="https://www.linkedin.com/company/amana-defi"
+            target="_blank"
+            className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+          >
+            <LinkedInLogo height={20} className="w-[20px] h-[20px]" />
+          </Link>
+          <Link
+            href="https://x.com/Amana_DeFi"
+            target="_blank"
+            className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+          >
+            <XLogo height={24} className="w-[24px] h-[24px]" />
+          </Link>
+          <Link
+            href="https://discord.gg/kG3Gfn3B9V"
+            target="_blank"
+            className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+          >
+            <DiscordLogo height={18} className="w-[22px] h-[26px]" />
+          </Link>
+        </div>
+      </nav>
+    </div>
+  );
 }
