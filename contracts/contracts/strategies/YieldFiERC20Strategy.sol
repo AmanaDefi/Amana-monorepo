@@ -129,6 +129,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
             address(this),
             vyusdToWithdraw
         );
+        uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
 
         uint256 amountOut = I4626Vault(receiptToken).redeem(
             vyusdToWithdraw,
@@ -137,8 +138,6 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         );
 
         // IERC20(receiptToken).approve(manager, type(uint256).max);
-
-        // uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
 
         // IManager(manager).redeem(
         //     address(this),
@@ -149,9 +148,10 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         //     address(0),
         //     ""
         // );
-
-        // uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
-        // uint256 amountOut = inputTokenBalanceAfter - inputTokenBalanceBefore;
+        console.log("Amount out after redeem: %s", amountOut);
+        uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
+        amountOut = inputTokenBalanceAfter - inputTokenBalanceBefore;
+        console.log("Amount out from calculation: %s", amountOut);
         console.log(
             "Withdrew %s of input token %s from vyUSD",
             amountOut,
@@ -246,7 +246,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
                 yusdToWithdraw
             );
         }
-        if (totalinvyUsd > 0 && totalinvyUsd - yusdToWithdraw <= 1e3) {
+        if (totalinvyUsd > 0 && totalinvyUsd - yusdToWithdraw <= 1e9) {
             yusdToWithdraw = totalinvyUsd;
             console.log(
                 "Rounding up to withdraw full staked balance: %s",
