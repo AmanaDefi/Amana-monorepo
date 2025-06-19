@@ -107,7 +107,7 @@ export const VaultFilters: FC<Props> = ({
     <div ref={filterRef}>
       <div className="flex flex-col-reverse lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
         <div className="flex flex-col-reverse md:flex-row gap-4 items-center">
-          <div className="md:flex flex-row gap-4 items-center hidden">
+          <div className="lg:flex flex-row gap-4 items-center hidden">
             <button
               onClick={() => setIsShownMyVaults(true)}
               className={classNames(
@@ -152,16 +152,16 @@ export const VaultFilters: FC<Props> = ({
           <button
             type="button"
             onClick={clearAllFilters}
-            className="underline hidden md:block font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-blue-button active:scale-90"
+            className="underline hidden lg:block font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-blue-button active:scale-90"
           >
             Clear Filters
           </button>
         </div>
 
-        <div className="flex flex-row-reverse md:flex-row  md:gap-6 items-center w-full md:w-auto justify-between md:justify-normal">
+        <div className="flex flex-row-reverse lg:flex-row  lg:gap-6 items-center w-full lg:w-auto justify-between lg:justify-normal">
           <div className="flex flex-row gap-2 items-center">
             <button
-              className="hidden md:block"
+              className="hidden lg:block"
               type="button"
               onClick={() => handleChangeVaultsDisplay("list")}
             >
@@ -170,7 +170,7 @@ export const VaultFilters: FC<Props> = ({
               />
             </button>
             <button
-              className="hidden md:block"
+              className="hidden lg:block"
               type="button"
               onClick={() => handleChangeVaultsDisplay("cards")}
             >
@@ -180,7 +180,7 @@ export const VaultFilters: FC<Props> = ({
             </button>
             <div
               className={classNames({
-                "md:block hidden": isHiddenFilterButton,
+                "lg:block hidden": isHiddenFilterButton,
               })}
             >
               <Dropdown
@@ -194,7 +194,7 @@ export const VaultFilters: FC<Props> = ({
           </div>
           <div
             onClick={() => inputRef?.current?.focus()}
-            className="focus-within:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] md:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            className="focus-within:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
           >
             <input
               ref={inputRef}
