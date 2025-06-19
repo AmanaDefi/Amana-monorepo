@@ -59,9 +59,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
           handleVaultClick(vault.id);
         }}
         ref={ref}
-        className="w-full min-w-[380px] h-full bg-[#14171F] p-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
+        className="w-full min-w-[330px] h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
       >
-        <div className="flex md:flex-row flex-col gap-1 justify-between">
+        <div className="flex flex-row gap-1 justify-between">
           <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
             <Image
               src={vault.inputToken.imgURL}
@@ -73,7 +73,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             />
             <div className="flex flex-col gap-1">
               <div className="flex flex-row gap-2 items-baseline">
-                <p className="text-white font-bold text-xl leading-5 -tracking-1">
+                <p className="text-white font-bold md:text-xl leading-5 -tracking-1">
                   {vault.name.replace("Pool", "").replace("Lend", "")}
                 </p>
                 <p className="text-white text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis">
@@ -129,7 +129,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
           <div className="flex flex-row gap-4">
             <VaultCardInfoBlock>
-              <div className="flex flex-col gap-2 w-full relative pr-6">
+              <div className="flex flex-col gap-2 w-full relative md:pr-6">
                 <p className="font-normal text-sm leading-4 text-white">
                   30d avg APY
                 </p>
@@ -179,7 +179,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </VaultCardInfoBlock>
 
             <VaultCardInfoBlock>
-              <div className="flex flex-col gap-2 w-full relative pr-6">
+              <div className="flex flex-col gap-2 w-full relative md:pr-6">
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>

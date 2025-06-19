@@ -50,6 +50,7 @@ export const VaultFilters: FC<Props> = ({
 }) => {
   const filterRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isHiddenFilterButton, setIsHiddenFilterButton] = useState(false);
 
   const chains = useMemo(() => {
     const uniqueNetworksMap = new Map();
@@ -106,7 +107,7 @@ export const VaultFilters: FC<Props> = ({
     <div ref={filterRef}>
       <div className="flex flex-col-reverse lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
         <div className="flex flex-col-reverse md:flex-row gap-4 items-center">
-          <div className="flex flex-row gap-4 items-center w-full md:w-fit">
+          <div className="md:flex flex-row gap-4 items-center hidden">
             <button
               onClick={() => setIsShownMyVaults(true)}
               className={classNames(
@@ -157,7 +158,7 @@ export const VaultFilters: FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex flex-row-reverse md:flex-row gap-6 items-center w-full md:w-auto justify-between md:justify-normal">
+        <div className="flex flex-row-reverse md:flex-row  md:gap-6 items-center w-full md:w-auto justify-between md:justify-normal">
           <div className="flex flex-row gap-2 items-center">
             <button
               className="hidden md:block"
@@ -177,24 +178,36 @@ export const VaultFilters: FC<Props> = ({
                 color={displayType !== "cards" ? "#535E73" : "#1B46E0"}
               />
             </button>
-            <Dropdown
-              options={SORT_BY_LIST}
-              selectedOption={sortBy}
-              setSelectedOption={handleFilterClick}
-              IconButton={FiltersIcon}
-              listType="simple"
-            />
+            <div
+              className={classNames({
+                "md:block hidden": isHiddenFilterButton,
+              })}
+            >
+              <Dropdown
+                options={SORT_BY_LIST}
+                selectedOption={sortBy}
+                setSelectedOption={handleFilterClick}
+                IconButton={FiltersIcon}
+                listType="simple"
+              />
+            </div>
           </div>
           <div
             onClick={() => inputRef?.current?.focus()}
-            className="focus-within:border-blue-button bg-[#14171F] w-[50%] focus-within::w-[100%] md:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            className="focus-within:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] md:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
           >
             <input
               ref={inputRef}
               type="text"
-              placeholder="Search name or paste address"
+              placeholder={
+                !isHiddenFilterButton
+                  ? "Search name..."
+                  : "Search name or paste address"
+              }
               className="text-white focus:outline-none bg-transparent w-full"
               value={searchTerm}
+              onFocus={() => setIsHiddenFilterButton(true)}
+              onBlur={() => setIsHiddenFilterButton(false)}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <div className="absolute left-4 top-3">

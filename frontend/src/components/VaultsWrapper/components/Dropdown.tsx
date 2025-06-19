@@ -65,14 +65,10 @@ export const Dropdown: React.FC<Props> = ({
     setIsShownList(false);
   };
 
-  const handleOnBlur = () => {
-    setTimeout(() => setIsShownList(false), 150);
-  };
-
   return (
     <div
       ref={dropdownRef}
-      className="flex relative md:w-auto font-medium text-lg leading-[18px] tracking-1 text-white font-gotham "
+      className="flex relative font-medium text-lg leading-[18px] tracking-1 text-white font-gotham "
     >
       {IconButton ? (
         <button type="button" onClick={handleToggleDropdown}>
@@ -80,17 +76,11 @@ export const Dropdown: React.FC<Props> = ({
         </button>
       ) : (
         <div
-          style={{ width: width }}
-          className="flex hover:cursor-pointer border-[#535E73] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1 hover:border-blue-button h-fit"
+          style={{ maxWidth: width }}
+          className="flex w-fit md:w-auto hover:cursor-pointer border-[#535E73] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-2 hover:border-blue-button h-fit"
           onClick={handleToggleDropdown}
         >
-          <input
-            type="dropdown"
-            className="w-4/5 hover:cursor-pointer bg-transparent outline-none"
-            value={selectedOption ? selectedOption : emptyLabel}
-            onBlur={handleOnBlur}
-            readOnly
-          />
+          <span>{selectedOption ? selectedOption : emptyLabel}</span>
           <button
             aria-label="dropdown-arrow"
             type="button"
@@ -123,6 +113,7 @@ export const Dropdown: React.FC<Props> = ({
           width={!width ? 200 : width + 20}
           isShownList={isShownList}
           minWidth={526}
+          alignment={emptyLabel === "All Protocols" ? "right" : "left"}
         />
       )}
     </div>
