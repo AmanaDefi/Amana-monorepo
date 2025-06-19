@@ -476,7 +476,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } catch (error) {
-        console.error("Error in switchToChain:", error);
+        console.log("Error in switchToChain:", error);
         throw error;
       }
     },

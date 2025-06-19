@@ -48,7 +48,6 @@ export const VaultFilters: FC<Props> = ({
   isShownMyVaults,
   setIsShownMyVaults,
 }) => {
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -86,22 +85,6 @@ export const VaultFilters: FC<Props> = ({
     });
   }, [vaults]);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        filterRef.current &&
-        !filterRef.current.contains(event.target as Node)
-      ) {
-        setShowMobileFilters(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   const toggleSortOrder = () => {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
@@ -120,62 +103,64 @@ export const VaultFilters: FC<Props> = ({
   };
 
   return (
-    <div
-      ref={filterRef}
-      className={` ${showMobileFilters ? "block" : "hidden md:block"}`}
-    >
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <button
-            onClick={() => setIsShownMyVaults(true)}
-            className={classNames(
-              "flex hover:cursor-pointer font-gotham font-medium !text-lg leading-[22px]  border-[#535E73] hover:!border-[#1B46E0] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1 h-fit",
-              {
-                "!border-[#1B46E0]": isShownMyVaults,
-              },
-            )}
-          >
-            My Vaults
-          </button>
-          <button
-            onClick={() => setIsShownMyVaults(false)}
-            className={classNames(
-              "flex font-medium text-lg font-gotham leading-[22px] hover:cursor-pointer border-[#535E73] hover:!border-[#1B46E0] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1  h-fit",
-              {
-                "!border-[#1B46E0]": !isShownMyVaults,
-              },
-            )}
-          >
-            All Vaults
-          </button>
+    <div ref={filterRef}>
+      <div className="flex flex-col-reverse lg:flex-row lg:items-center lg:justify-between flex-wrap gap-4 mb-4">
+        <div className="flex flex-col-reverse md:flex-row gap-4 items-center">
+          <div className="flex flex-row gap-4 items-center w-full md:w-fit">
+            <button
+              onClick={() => setIsShownMyVaults(true)}
+              className={classNames(
+                "flex hover:cursor-pointer font-gotham font-medium !text-lg leading-[22px]  border-[#535E73] hover:!border-[#1B46E0] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1 h-fit",
+                {
+                  "!border-[#1B46E0]": isShownMyVaults,
+                },
+              )}
+            >
+              My Vaults
+            </button>
+            <button
+              onClick={() => setIsShownMyVaults(false)}
+              className={classNames(
+                "flex font-medium text-lg font-gotham leading-[22px] hover:cursor-pointer border-[#535E73] hover:!border-[#1B46E0] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-1  h-fit",
+                {
+                  "!border-[#1B46E0]": !isShownMyVaults,
+                },
+              )}
+            >
+              All Vaults
+            </button>
+          </div>
 
-          <Dropdown
-            emptyLabel="All Chains"
-            options={chains}
-            selectedOption={chainFilter}
-            setSelectedOption={setChainFilter}
-            width={210}
-          />
-          <Dropdown
-            emptyLabel="All Protocols"
-            options={protocols}
-            selectedOption={protocolFilter}
-            setSelectedOption={setProtocolFilter}
-            width={210}
-          />
+          <div className="flex flex-row gap-4 items-center w-full md:w-fit">
+            <Dropdown
+              emptyLabel="All Chains"
+              options={chains}
+              selectedOption={chainFilter}
+              setSelectedOption={setChainFilter}
+              width={180}
+            />
+            <Dropdown
+              emptyLabel="All Protocols"
+              options={protocols}
+              selectedOption={protocolFilter}
+              setSelectedOption={setProtocolFilter}
+              width={210}
+            />
+          </div>
 
           <button
             type="button"
             onClick={clearAllFilters}
-            className="underline font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-blue-button active:scale-90"
+            className="underline hidden md:block font-bold text-lg lg:text-sm xl:text-lg leading-5 text-[#535E73] hover:text-blue-button active:scale-90"
           >
             Clear Filters
           </button>
         </div>
 
-        <div className="flex flex-row gap-6 items-center">
+        <div className="flex flex-row-reverse md:flex-row gap-6 items-center w-full md:w-auto justify-between md:justify-normal">
           <div className="flex flex-row gap-2 items-center">
             <button
+              className="hidden md:block"
               type="button"
               onClick={() => handleChangeVaultsDisplay("list")}
             >
@@ -184,6 +169,7 @@ export const VaultFilters: FC<Props> = ({
               />
             </button>
             <button
+              className="hidden md:block"
               type="button"
               onClick={() => handleChangeVaultsDisplay("cards")}
             >
@@ -201,7 +187,7 @@ export const VaultFilters: FC<Props> = ({
           </div>
           <div
             onClick={() => inputRef?.current?.focus()}
-            className="focus-within:border-blue-button  bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            className="focus-within:border-blue-button bg-[#14171F] w-[50%] focus-within::w-[100%] md:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
           >
             <input
               ref={inputRef}

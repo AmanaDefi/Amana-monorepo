@@ -72,7 +72,7 @@ export const Dropdown: React.FC<Props> = ({
   return (
     <div
       ref={dropdownRef}
-      className="flex relative font-medium text-lg leading-[18px] tracking-1 text-white font-gotham "
+      className="flex relative md:w-auto font-medium text-lg leading-[18px] tracking-1 text-white font-gotham "
     >
       {IconButton ? (
         <button type="button" onClick={handleToggleDropdown}>

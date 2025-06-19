@@ -166,7 +166,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   return (
     <div
       ref={containerRef}
-      className="font-gotham flex flex-col w-full h-full border border-[#302E44] rounded-3xl p-6 justify-between"
+      className="font-gotham flex flex-col w-full h-full md:border md:border-[#302E44] rounded-3xl md:p-6 justify-between"
     >
       <div>
         <VaultFilters
@@ -235,7 +235,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
         {filteredVaults.length === 0 && (
           <>
-            {!MyVaults?.length ? (
+            {isShownMyVaults && !MyVaults?.length ? (
               <EmptyState
                 title="No positions"
                 description="This account has not yet added any assets"
