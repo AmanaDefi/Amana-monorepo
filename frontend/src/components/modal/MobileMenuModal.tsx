@@ -70,6 +70,7 @@ export default function MobileMenuModal({
             {MENU_ITEMS.map((link) => {
               return (
                 <Link
+                  key={link.path}
                   onClick={toggleMenu}
                   href={link.path}
                   className={classNames(

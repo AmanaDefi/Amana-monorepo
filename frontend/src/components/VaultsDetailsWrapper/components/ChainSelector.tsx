@@ -7,6 +7,7 @@ import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { DropdownChainsList } from "@/components/DropdownChainsList";
 import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
+import { useUser } from "@account-kit/react";
 
 interface ChainSelectorProps {
   selectedChain?: Chain;
@@ -26,6 +27,7 @@ export default function ChainSelector({
   const [isOpen, setIsOpen] = useState(false);
   const { activeChain, switchToChain, walletAddress } = useMultiChain();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const activeAccount = useUser();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -113,13 +115,19 @@ export default function ChainSelector({
         <button
           onClick={(e) => {
             e.stopPropagation();
+            if (walletAddress && activeAccount?.type !== "eoa") return;
+
             if (vaultId) {
               const isTxInProgress = CheckTheTxIsInProgress(vaultId);
               if (isTxInProgress) return;
             }
             setIsOpen(!isOpen);
           }}
-          className={`flex items-center justify-between gap-4 py-[6px] ${className}`}
+          className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
+            walletAddress && activeAccount?.type !== "eoa"
+              ? ""
+              : "cursor-pointer"
+          }`}
         >
           <div className="flex items-center -space-x-2">
             {CHAINS_ICONS_BUTTON.map((icon, index) => (
@@ -136,23 +144,26 @@ export default function ChainSelector({
               </div>
             ))}
           </div>
-          <ChevronDownIcon
-            className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
+          {(!walletAddress || activeAccount?.type === "eoa") && (
+            <ChevronDownIcon
+              className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          )}
         </button>
-
-        <DropdownChainsList
-          width={263}
-          isIconButton={false}
-          options={chainOptions}
-          selectedOption={displayedChain?.name || ""}
-          handleSelectedOption={handleChainSelect}
-          isShownList={isOpen}
-          needReset={false}
-          alignment="right"
-        />
+        {(!walletAddress || activeAccount?.type === "eoa") && (
+          <DropdownChainsList
+            width={263}
+            isIconButton={false}
+            options={chainOptions}
+            selectedOption={displayedChain?.name || ""}
+            handleSelectedOption={handleChainSelect}
+            isShownList={isOpen}
+            needReset={false}
+            alignment="right"
+          />
+        )}
       </div>
     </div>
   );
