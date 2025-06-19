@@ -39,7 +39,7 @@ export const SignatureCheck = () => {
       onClose={closeAll}
       paddingClass="px-4 pt-5 pb-6"
       roundedClass="rounded-[16px]"
-      maxWidth="max-w-[425px]"
+      maxWidth="max-w-[358px] md:max-w-[425px]"
     >
       <div className="flex justify-start">
         <button

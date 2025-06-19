@@ -2,7 +2,7 @@
 
 import Footer from "@/components/Footer";
 import Loader from "@/components/Loader";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/sidebar/Sidebar";
 import Header from "@/components/header";
 import { AppModals } from "@/components/modal/AppModals";
 import GlowIcon from "@/components/svg/GlowIcon";

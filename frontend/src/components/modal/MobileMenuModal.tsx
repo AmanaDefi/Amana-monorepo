@@ -12,6 +12,11 @@ import DiscordLogo from "@public/logo/discord.svg";
 import XLogo from "@public/logo/x.svg";
 import LinkedInLogo from "@public/logo/linkedIn.svg";
 import GlowIcon from "../svg/GlowIcon";
+import MenuNavigation from "../sidebar/MenuNavigation";
+import { DashboardIcon } from "../svg/sidebar/DashboardIcon";
+import { EarnIcon } from "../svg/sidebar/EarnIcon";
+import { ActivityIcon } from "../svg/sidebar/ActivityIcon";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const MENU_ITEMS = [
   {
@@ -36,6 +41,24 @@ const MENU_ITEMS = [
   },
 ];
 
+export const USER_NAVIGATION_ITEMS = [
+  {
+    path: "/dashboard",
+    icon: <DashboardIcon height={19} width={19} color="#1B46E0" />,
+    title: "Dashboard",
+  },
+  {
+    path: "/",
+    icon: <EarnIcon height={19} width={19} color="#1B46E0" />,
+    title: "Earn",
+  },
+  {
+    path: "/activity",
+    icon: <ActivityIcon height={19} width={19} color="#1B46E0" />,
+    title: "Activity",
+  },
+];
+
 export default function MobileMenuModal({
   toggleMenu,
   isOpen,
@@ -44,6 +67,7 @@ export default function MobileMenuModal({
   isOpen: boolean;
 }) {
   const path = usePathname();
+  const { walletAddress } = useMultiChain();
 
   return (
     <div
@@ -66,6 +90,32 @@ export default function MobileMenuModal({
               <CloseModalIcon width={16} height={16} />
             </button>
           </div>
+          {walletAddress && (
+            <>
+              <div className="flex flex-col gap-6 items-center w-full mb-8">
+                {USER_NAVIGATION_ITEMS.map((link) => {
+                  return (
+                    <Link
+                      key={link.path}
+                      onClick={toggleMenu}
+                      href={link.path}
+                      className={classNames(
+                        "flex cursor-pointer flex-row items-center gap-[6px] text-white",
+                        { "text-blue-button": path === link.path },
+                      )}
+                    >
+                      {link.icon}
+                      <p className="font-gotham font-normal text-base leading-4 text-center">
+                        {link.title}
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="border-t border-[#535E73] w-[224px] mb-8"></div>
+            </>
+          )}
+
           <div className="flex flex-col gap-6 items-center w-full">
             {MENU_ITEMS.map((link) => {
               return (
@@ -87,28 +137,38 @@ export default function MobileMenuModal({
             })}
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="https://www.linkedin.com/company/amana-defi"
-            target="_blank"
-            className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
-          >
-            <LinkedInLogo height={20} className="w-[20px] h-[20px]" />
-          </Link>
-          <Link
-            href="https://x.com/Amana_DeFi"
-            target="_blank"
-            className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
-          >
-            <XLogo height={24} className="w-[24px] h-[24px]" />
-          </Link>
-          <Link
-            href="https://discord.gg/kG3Gfn3B9V"
-            target="_blank"
-            className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
-          >
-            <DiscordLogo height={18} className="w-[22px] h-[26px]" />
-          </Link>
+        <div className="flex flex-col justify-center items-center">
+          <div className="flex flex-col justify-center items-center mb-[62px]">
+            <div className="border-t border-[#535E73] w-[224px] mb-8"></div>
+            <MenuNavigation
+              isCollapsed={false}
+              isMobile={true}
+              onItemClick={toggleMenu}
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="https://www.linkedin.com/company/amana-defi"
+              target="_blank"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+            >
+              <LinkedInLogo height={20} className="w-[20px] h-[20px]" />
+            </Link>
+            <Link
+              href="https://x.com/Amana_DeFi"
+              target="_blank"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+            >
+              <XLogo height={24} className="w-[24px] h-[24px]" />
+            </Link>
+            <Link
+              href="https://discord.gg/kG3Gfn3B9V"
+              target="_blank"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+            >
+              <DiscordLogo height={18} className="w-[22px] h-[26px]" />
+            </Link>
+          </div>
         </div>
       </nav>
     </div>
