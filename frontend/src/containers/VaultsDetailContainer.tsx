@@ -403,10 +403,10 @@ const VaultsDetailContainer: React.FC<{
         </div>
 
         <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
-          <Dropdown title={informationDropdownTitle} defaultOpen={true}>
-            {isWithdraw ? (
-              <YourInvestment />
-            ) : (
+          {isWithdraw && walletAddress ? (
+            <YourInvestment />
+          ) : (
+            <Dropdown title={informationDropdownTitle} defaultOpen={true}>
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}
@@ -415,8 +415,9 @@ const VaultsDetailContainer: React.FC<{
                 selectedToken={selectedToken}
                 selectedChain={activeChain}
               />
-            )}
-          </Dropdown>
+            </Dropdown>
+          )}
+
           {walletAddress && (
             <Dropdown
               title={
