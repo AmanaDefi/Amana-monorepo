@@ -35,7 +35,7 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = 'amana-wallet-state';
-const DEBUG_WALLET = true; // Set to false in production
+const DEBUG_WALLET = false; // Set to false in production
 
 // Helper function for debug logging
 const debugLog = (message: string, data?: any) => {
@@ -49,7 +49,6 @@ const saveWalletState = (selectedChain: ChainType | null, walletAddress: string 
   if (typeof window !== 'undefined') {
     const state = { selectedChain, walletAddress, timestamp: Date.now() };
     localStorage.setItem(WALLET_STATE_KEY, JSON.stringify(state));
-    debugLog('Saved wallet state:', state);
   }
 };
 
@@ -59,21 +58,21 @@ const loadWalletState = (): { selectedChain: ChainType | null; walletAddress: st
       const saved = localStorage.getItem(WALLET_STATE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        debugLog('Loaded wallet state:', parsed);
+        
         return { selectedChain: parsed.selectedChain, walletAddress: parsed.walletAddress };
       }
     } catch (error) {
-      debugLog('Error loading wallet state:', error);
+     
     }
   }
-  debugLog('No saved wallet state found or SSR');
+
   return { selectedChain: null, walletAddress: null };
 };
 
 const clearWalletState = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(WALLET_STATE_KEY);
-    debugLog('Cleared wallet state');
+ 
   }
 };
 
@@ -121,7 +120,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  debugLog('Provider initialized with hydration-safe state:', { selectedChain, walletAddress, isHydrated });
+
 
   const { connect, isConnecting } = useConnectModal();
   const activeAccount = useActiveWallet();
@@ -144,11 +143,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       const savedState = loadWalletState();
       
       if (savedState.selectedChain || savedState.walletAddress) {
-        debugLog('Hydration complete - loading saved state:', savedState);
+      
         setSelectedChain(savedState.selectedChain);
         setWalletAddress(savedState.walletAddress);
       } else {
-        debugLog('Hydration complete - no saved state found');
+       
       }
     }
   }, []);
@@ -163,14 +162,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   // Log wallet provider states
   useEffect(() => {
     if (isHydrated) {
-      debugLog('Wallet provider states changed:', {
-        account: account?.address,
-        publicKey: publicKey?.toBase58(),
-        selectedChain,
-        walletAddress,
-        isInitialized,
-        isHydrated
-      });
+     
     }
   }, [account, publicKey, selectedChain, walletAddress, isInitialized, isHydrated]);
 
@@ -190,25 +182,25 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   // Connect Solana Wallet
   const connectSolana = async () => {
-    debugLog('Connecting Solana wallet...');
+   
     setIsModalOpen(false);
     try {
       if (selectedChain == "evm") {
-        debugLog('Disconnecting EVM wallet before Solana connection');
+       
         if (activeAccount) evmDisconnect(activeAccount);
       }
       setVisible(true);
       setSelectedChain("solana");
-      debugLog('Solana connection initiated');
+     
     } catch (error) {
-      debugLog('Solana connection error:', error);
+     
       console.error("Solana connection error:", error);
     }
   };
 
   // Connect Ethereum Wallet
   const connectEthereum = useCallback(async () => {
-    debugLog('Connecting Ethereum wallet...');
+   
     setIsModalOpen(false);
     try {
       const wallet = await connect({
@@ -221,26 +213,24 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
         setWalletAddress(walletAccount.address);
         setSelectedChain("evm");
-        debugLog('Ethereum wallet connected:', walletAccount.address);
+       
         //Disconnect Solana
         await disconnect();
       }
     } catch (error) {
-      debugLog('Ethereum connection error:', error);
+     
       console.error("Ethereum connection error:", error);
     }
   }, [chain]);
 
   //  Disconnect Wallet
   const disconnectWallet = async () => {
-    debugLog('Disconnecting all wallets...');
     setWalletAddress(null);
     setSelectedChain(null);
     disconnect();
     if (activeAccount) evmDisconnect(activeAccount);
     setIsModalOpen(false);
     clearWalletState();
-    debugLog('All wallets disconnected');
   };
 
   const EOAaccount = useActiveAccount();
@@ -271,32 +261,27 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     // Add initialization delay to allow wallets to load
     const initTimer = setTimeout(() => {
       setIsInitialized(true);
-      debugLog('Provider initialization complete after hydration');
+     
       
       // Now check wallet connections
       const checkTimer = setTimeout(() => {
-        debugLog('Checking wallet connections after initialization:', {
-          account: !!account,
-          publicKey: !!publicKey,
-          savedChain: selectedChain,
-          hasAnyConnection: !!(account || publicKey)
-        });
+       
 
         if (!account && !publicKey) {
           // No active connections detected
           if (selectedChain) {
-            debugLog('No active connections but saved state exists - showing modal');
+           
             setIsModalOpen(true);
           } else {
-            debugLog('No active connections and no saved state - clean slate');
+           
           }
         } else if (publicKey) {
-          debugLog('Solana wallet connected:', publicKey.toBase58());
+         
           setWalletAddress(publicKey.toBase58());
           setSelectedChain("solana");
           setIsModalOpen(false);
         } else if (account) {
-          debugLog('EVM wallet connected:', account.address);
+         
           setWalletAddress(account.address);
           setSelectedChain("evm");
           setIsModalOpen(false);
@@ -315,12 +300,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (!isHydrated) return;
     
     const handleStorageChange = (e: StorageEvent) => {
-      debugLog('Storage event detected:', { key: e.key, newValue: e.newValue, oldValue: e.oldValue });
+     
       
       if (e.key === WALLET_STATE_KEY) {
         if (e.newValue === null) {
           // Wallet was disconnected in another tab
-          debugLog('Wallet disconnected in another tab');
+         
           setSelectedChain(null);
           setWalletAddress(null);
           setIsModalOpen(true);
@@ -328,7 +313,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           // Wallet state changed in another tab
           try {
             const newState = JSON.parse(e.newValue);
-            debugLog('Wallet state changed in another tab:', newState);
+           
             setSelectedChain(newState.selectedChain);
             setWalletAddress(newState.walletAddress);
             if (newState.selectedChain && newState.walletAddress) {
@@ -362,7 +347,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     // Recovery logic for saved state without active connections
     const recoveryTimer = setTimeout(() => {
       if (selectedChain && !account && !publicKey) {
-        debugLog('Attempting wallet recovery for:', selectedChain);
         
         if (selectedChain === "solana") {
           // Solana should auto-connect due to autoConnect={true}
@@ -378,8 +362,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [isInitialized, selectedChain, account, publicKey, isHydrated]);
 
   const switchToChain = async (chain: Chain) => {
-    console.log(`Switching to chain: ${chain.id} (${chain.name})`);
-    console.log(`Current chain: ${activeChain?.id} (${activeChain?.name})`);
 
     try {
       if (chain.id === CHAIN_ID.solana) {

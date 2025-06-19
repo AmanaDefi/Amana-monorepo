@@ -118,33 +118,6 @@ contract SwapHelperBnb is SwapHelperParent {
         amountOut = ICurvePoolDynamic(curvePool).get_dy(i, j, amount);
     }
 
-    function approveOrIncreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
-        bytes memory approveCalldata = abi.encodeWithSelector(
-            IERC20.approve.selector,
-            spender,
-            amount
-        );
-
-        (bool success, ) = address(token).call(approveCalldata);
-        if (success) return;
-
-        // If initial approve failed, try resetting to zero first
-        bytes memory resetCalldata = abi.encodeWithSelector(
-            IERC20.approve.selector,
-            spender,
-            0
-        );
-        (bool resetSuccess, ) = address(token).call(resetCalldata);
-        require(resetSuccess, "Reset to 0 failed");
-
-        (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
-        require(secondApproveSuccess, "Second approve failed");
-    }
-
     function swap(
         address inputToken,
         uint256 amount,

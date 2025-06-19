@@ -35,26 +35,14 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
   walletAddress: string | null,
-  setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
-  setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
-  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
+  setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>,
+  setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>,
+  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>,
 ) => {
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      // let address = isSolanaAddress(walletAddress) ? "0x5a55337a553557574C6E43506b48463373737669" : walletAddress
       let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
 
-      // 🧪 DEBUG: Log address conversion process
-      console.log("=== ADDRESS CONVERSION DEBUG ===");
-      console.log(`Original walletAddress: ${walletAddress}`);
-      console.log(`Is Solana address? ${isSolanaAddress(walletAddress)}`);
-      if (isSolanaAddress(walletAddress)) {
-        console.log(`Converted EVM address: ${getSolanaEVMAddress(walletAddress!)}`);
-      }
-      console.log(`Final address used: ${address}`);
-      console.log("================================");
-
-      console.log("Updating vault balances and total assets for address:", address);
       try {
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
@@ -87,7 +75,6 @@ export const useUpdateVaultBalanceAndTotal = (
                 totalAssetsinToken: totalAssetsinTokenStr,
               };
             } catch (error) {
-              console.error(`Error fetching user balance or total assets for vault ${vault?.id || "unknown"}:`, error);
               return {
                 vaultId: vault?.id || "unknown",
                 balance: "Error",
@@ -110,11 +97,11 @@ export const useUpdateVaultBalanceAndTotal = (
           vaultId,
           totalAssetsinToken,
         }));
-        setUserVaultBalances(balances); // Update user balances
-        setVaultTotalAssets(totalAssets); // Update total assets
-        setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
+        setUserVaultBalances(balances);
+        setVaultTotalAssets(totalAssets);
+        setVaultTotalAssetsinToken(totalAssetsinToken);
       } catch (error) {
-        console.error("Error updating vault balances and total assets:", error);
+        // Error handling
       }
     };
 
@@ -127,14 +114,13 @@ export const useUpdateVaultBalanceAndTotal = (
 export const useUpdateVaultBalanceAndTotalPerVault = (
   vault: any,
   userAddress: string | null,
-  setUserVaultBalance: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
-  setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
-  setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
+  setUserVaultBalance: React.Dispatch<React.SetStateAction<any>>,
+  setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>,
+  setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>,
   transactionCompleted: boolean,
 ) => {
   const { selectedChain } = useMultiChain();
 
-  // Add a ref to track the last known balance
   const lastKnownBalanceRef = useRef<string>('0');
   const backgroundRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const refreshAttemptsRef = useRef<number>(0);
@@ -143,89 +129,14 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   const updateVaultBalanceAndTotal = useCallback(async () => {
     const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
 
-    console.log('💰 [VAULT-BALANCE-HOOK] Starting balance update...', {
-      vault: vault?.symbol,
-      vaultId: vault?.id,
-      userAddress,
-      convertedAddress: address,
-      transactionCompleted,
-      timestamp: new Date().toISOString()
-    });
-
-    // 🧪 DEBUG: Address mapping in second hook
-    console.log("=== SECOND HOOK DEBUG ===");
-    console.log(`Original userAddress: ${userAddress}`);
-    console.log(`Is Solana address? ${isSolanaAddress(userAddress)}`);
-    console.log(`Final address: ${address}`);
-    console.log("========================");
-
-    console.log("Updating vault balances and total assets for address:", address);
     try {
       if (vault && vault.id) {
-        console.log('📊 [VAULT-BALANCE-HOOK] Fetching user vault balance...', {
-          address,
-          vaultId: vault.id,
-          timestamp: new Date().toISOString()
-        });
-
         const balance = await fetchUserVaultBalance(
           address as Address,
           vault.id as Address
         );
 
-        console.log('🔢 [VAULT-BALANCE-HOOK] Balance fetched:', {
-          balance,
-          typeof: typeof balance,
-          lastKnownBalance: lastKnownBalanceRef.current,
-          hasChanged: balance !== lastKnownBalanceRef.current,
-          timestamp: new Date().toISOString()
-        });
-
-        const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
-          vault.inputToken.decimals,
-          address as Address,
-          vault?.id as Address
-        );
-
-        console.log('💸 [VAULT-BALANCE-HOOK] Max withdraw fetched:', {
-          newTotalAssetsinToken,
-          typeof: typeof newTotalAssetsinToken,
-          timestamp: new Date().toISOString()
-        });
-
-        // 🧪 TESTING: Compare old vs new approach
-        console.log("=== MAXWITHDRAW TESTING ===");
-        try {
-          const oldMaxRedeem = await fetchUserVaultMaxRedeem(
-            vault.inputToken.decimals,
-            address as Address,
-            vault?.id as Address
-          );
-          console.log(`📊 Vault: ${vault.symbol}`);
-          console.log(`👤 User: ${address}`);
-          console.log(`🔄 OLD maxRedeem (shares): ${oldMaxRedeem}`);
-          console.log(`🆕 NEW maxWithdraw (assets): ${newTotalAssetsinToken}`);
-          console.log(`💰 Underlying token: ${vault.inputToken.symbol}`);
-          console.log(`🏦 Vault token: ${vault.symbol}`);
-          console.log("============================");
-        } catch (e) {
-          console.log("Error comparing old vs new:", e);
-        }
-
-        console.log('🔄 [VAULT-BALANCE-HOOK] Setting user vault balance state...', {
-          balance,
-          timestamp: new Date().toISOString()
-        });
-
-        // Check if balance has changed
         if (balance !== lastKnownBalanceRef.current) {
-          console.log('🎉 [VAULT-BALANCE-HOOK] Balance has changed! Stopping background refresh...', {
-            oldBalance: lastKnownBalanceRef.current,
-            newBalance: balance,
-            timestamp: new Date().toISOString()
-          });
-
-          // Clear background refresh since balance has updated
           if (backgroundRefreshIntervalRef.current) {
             clearInterval(backgroundRefreshIntervalRef.current);
             backgroundRefreshIntervalRef.current = null;
@@ -233,111 +144,54 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           }
         }
 
-        // Update the last known balance
         lastKnownBalanceRef.current = balance;
         setUserVaultBalance(balance);
 
+        const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+          vault.inputToken.decimals,
+          address as Address,
+          vault?.id as Address
+        );
+
         const newTotalAssets = await fetchTotalAssets(vault.id as Address);
-        console.log('📈 [VAULT-BALANCE-HOOK] Total assets fetched:', {
-          newTotalAssets,
-          timestamp: new Date().toISOString()
-        });
 
         setVaultTotalAsset(newTotalAssets);
         setVaultTotalAssetinToken(newTotalAssetsinToken);
 
-        console.log('✅ [VAULT-BALANCE-HOOK] All balances updated successfully!', {
-          vault: vault.symbol,
-          balance,
-          newTotalAssets,
-          newTotalAssetsinToken,
-          timestamp: new Date().toISOString()
-        });
-
-        return balance; // Return balance for comparison
+        return balance;
       } else {
-        console.log('⚠️ [VAULT-BALANCE-HOOK] Vault or vault ID is missing', {
-          vault: vault ? 'exists' : 'null',
-          vaultId: vault?.id,
-          timestamp: new Date().toISOString()
-        });
         return null;
       }
     } catch (error) {
-      console.error('❌ [VAULT-BALANCE-HOOK] Error updating vault balances and total assets:', {
-        error,
-        vault: vault?.symbol,
-        address,
-        timestamp: new Date().toISOString()
-      });
       return null;
     }
   }, [vault, userAddress]);
 
   useEffect(() => {
-    console.log('🔄 [VAULT-BALANCE-HOOK] Effect triggered with dependencies:', {
-      vault: vault?.id,
-      userAddress,
-      transactionCompleted,
-      timestamp: new Date().toISOString()
-    });
-
     if (userAddress && vault) {
-      console.log('✅ [VAULT-BALANCE-HOOK] Prerequisites met, calling updateVaultBalanceAndTotal', {
-        userAddress: !!userAddress,
-        vault: !!vault,
-        timestamp: new Date().toISOString()
-      });
       updateVaultBalanceAndTotal();
 
-      // 🔄 NEW: Start background refresh when transaction completes
       if (transactionCompleted && !backgroundRefreshIntervalRef.current) {
-        console.log('🔄 [BACKGROUND-REFRESH] Starting background balance refresh...', {
-          vault: vault.symbol,
-          maxAttempts: MAX_REFRESH_ATTEMPTS,
-          timestamp: new Date().toISOString()
-        });
-
         refreshAttemptsRef.current = 0;
         backgroundRefreshIntervalRef.current = setInterval(async () => {
           refreshAttemptsRef.current++;
-          console.log(`🔄 [BACKGROUND-REFRESH] Attempt ${refreshAttemptsRef.current}/${MAX_REFRESH_ATTEMPTS}`, {
-            vault: vault.symbol,
-            timestamp: new Date().toISOString()
-          });
 
           await updateVaultBalanceAndTotal();
 
           // Stop after max attempts
           if (refreshAttemptsRef.current >= MAX_REFRESH_ATTEMPTS) {
-            console.log('⏹️ [BACKGROUND-REFRESH] Max attempts reached, stopping background refresh', {
-              vault: vault.symbol,
-              attempts: refreshAttemptsRef.current,
-              timestamp: new Date().toISOString()
-            });
-
             if (backgroundRefreshIntervalRef.current) {
               clearInterval(backgroundRefreshIntervalRef.current);
               backgroundRefreshIntervalRef.current = null;
               refreshAttemptsRef.current = 0;
             }
           }
-        }, 10000); // Check every 10 seconds
+        }, 10000);
       }
-    } else {
-      console.log('❌ [VAULT-BALANCE-HOOK] Prerequisites not met', {
-        userAddress: !!userAddress,
-        vault: !!vault,
-        timestamp: new Date().toISOString()
-      });
     }
 
-    // Cleanup interval on unmount or dependency change
     return () => {
       if (backgroundRefreshIntervalRef.current) {
-        console.log('🧹 [BACKGROUND-REFRESH] Cleaning up background refresh interval', {
-          timestamp: new Date().toISOString()
-        });
         clearInterval(backgroundRefreshIntervalRef.current);
         backgroundRefreshIntervalRef.current = null;
         refreshAttemptsRef.current = 0;
@@ -385,10 +239,7 @@ export const useUpdateAPYs = (
                 RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
-                // TO DO This only works for Base right now - it's hardcoded
-
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
-
               } else if (vault.protocol.name === "Venus") {
                 APY7d = await calculateVenusAPY(receiptTokenAddress as Address, strategyChain);
                 RewardsAPY = await calculateVenusRewardsAPY(receiptTokenAddress as Address, strategyChain);
@@ -408,22 +259,18 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Curve-Convex") {
-                // APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
                 if (crvTokenPrice > 0 && ethTokenPrice > 0) {
                   if (strategyChain.id === 1) {
                     RewardsAPY = await calculateConvexEthereumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
                   } else if (strategyChain.id === 42161) {
                     RewardsAPY = await calculateConvexArbitrumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
                   }
-                } else {
-                  console.warn("Skipping Curve rewards APY due to missing token prices", { crvTokenPrice, ethTokenPrice });
                 }
                 APY7d = RewardsAPY;
               }
 
               return { vaultId: vault.id, APY7d };
             } catch (error) {
-              console.error(`Error fetching APY for vault ${vault.id}:`, error);
               return { vaultId: vault.id, APY7d: 0 };
             }
           })
@@ -431,11 +278,10 @@ export const useUpdateAPYs = (
 
         setVaultAPYs(updatedVaultAPYs);
       } finally {
-        setLoading(false);  // Stop the loading state after updating APYs
+        setLoading(false);
       }
     };
 
-    // Trigger the function if vaults and prices are available
     if (
       vaults.length > 0
       &&
@@ -453,7 +299,6 @@ export const useUpdateAPYs = (
 };
 
 export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }: { vaultData: VaultData, activeChainId: number, strategyChainID: number, strategyAddress: string, contractWithdrawalReceiverAddress: string, isTransactionStarted: boolean }) => {
-  // events
   const events = useMemo(() => ({
     vault: [
       prepareEvent({ signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
@@ -479,7 +324,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     ]
   }), []);
 
-  // contracts
   const contracts = useMemo(() => ({
     vault: getContract({
       client,
@@ -498,7 +342,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     })
   }), [vaultData.id, strategyChainID, strategyAddress, activeChainId, contractWithdrawalReceiverAddress]);
 
-  // event listeners
   const { data: vaultEvents } = useContractEvents({
     contract: contracts.vault,
     events: events.vault,
@@ -529,19 +372,14 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    // Normalize the symbol format:
-    // Convert "USDC (ETH)" to "USDC.ETH" format for price lookup
     const normalizedSymbol = symbol.includes('(') ?
       symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
 
-    // Try to find price using normalized symbol first
     const fullSymbolPrice = priceContext.prices?.[normalizedSymbol.toUpperCase()];
     if (fullSymbolPrice !== undefined) {
       return fullSymbolPrice;
     }
 
-    // If full symbol price not found, check if it's a stablecoin by checking the base symbol
-    // For both formats: "USDC (ETH)" -> "USDC" and "USDC.ETH" -> "USDC"
     const baseSymbol = symbol.includes('(') ?
       symbol.split(' (')[0].toUpperCase() :
       getOnlyTokenSymbol(symbol).toUpperCase();
@@ -550,7 +388,6 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 1;
     }
 
-    // Fallback to base symbol if full symbol price not found
     return priceContext.prices?.[baseSymbol] ?? 0;
   }, [priceContext, symbol]);
 }

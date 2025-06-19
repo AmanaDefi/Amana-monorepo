@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import { strategyConfigs, StrategyTestConfig } from "../config/strategy.config";
 import { deployStrategyFixture, StrategyTestContext, deployStrategyFromConfig } from "./setupStrategyTest";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { simulateRevertCallToStrategy, isBalancerStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy, isAegisStrategy } from "../utils";
+import { simulateRevertCallToStrategy, isBalancerStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy, isAegisStrategy, simulateConfirmDeposit } from "../utils";
 import { AMANA_VAULT_ADDRESS } from "../config/constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
@@ -134,6 +134,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalanceBefore = await rewardsContract.balanceOf(strategy.address);
       } else {
+        console.log("receiptTokenContract", receiptTokenContract.address);
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
       }
       console.log("Strategy balance before deposit:", strategyBalanceBefore.toString());
@@ -189,12 +190,14 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         1,
         config.isNative
       )
+
       let shares;
       if (rewardsContract.address != ethers.constants.AddressZero) {
         shares = await rewardsContract.balanceOf(strategy.address);
       } else {
         shares = await receiptTokenContract.balanceOf(strategy.address);
       }
+      console.log("shares", shares.toString());
       expect(shares).to.be.gt(0); // Ensure shares were received
       const totalAssetsBefore = await strategy.totalUnderlyingAssets();
       console.log("Total assets before withdrawal:", totalAssetsBefore.toString());
@@ -411,7 +414,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
     it("should emit the TotalUnderlyingAssetsSent event", async function () {
       const {
         gatewaySigner,
-        owner,
         inputToken,
         strategy,
         receiptTokenContract,
@@ -426,7 +428,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       }
 
       const minSharesOut = config.minSharesOut;
-      const slippage = config.slippage;
 
       await simulateDepositCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,
@@ -437,7 +438,9 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         1,
         config.isNative
       );
+
       // Call the function
+      console.log("This contract balance of receiptToken", await receiptTokenContract.balanceOf(strategy.address));
       const tx = await strategy.sendTotalUnderlyingAssetsToVault();
       await expect(tx)
         .to.emit(strategy, "TotalUnderlyingAssetsSent")
