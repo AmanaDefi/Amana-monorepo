@@ -16,6 +16,7 @@ import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
+import MobileMenuModal from "./modal/MobileMenuModal";
 
 const BurgerIcon = ({ isOpen }: { isOpen: boolean }) => (
   <div className="flex flex-col w-6 h-6 justify-center items-center">
@@ -67,8 +68,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   };
 
   const toggleMenu = () => {
-    setIsMenuOpened(prev => !prev)
-  }
+    setIsMenuOpened((prev) => !prev);
+  };
 
   return (
     <>
@@ -112,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-6">
-          {isConnected && activeAccount?.type === "eoa" && <ChainSwitcher />}
+          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && <ChainSwitcher />}
           <div className="hidden md:block">
             {!isConnected ? (
               <Button variant="signIn" onClick={() => openStep("optionsA")}>
@@ -137,40 +138,47 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             )}
           </div>
 
-          {path === "/" && (
-            <div className="md:hidden flex flex-row item-center gap-2">
-              {!isConnected ? (
-                <Button variant="signIn" onClick={() => openStep("optionsA")}>
-                  Sign in
-                </Button>
-              ) : (
-                <Button
-                  ref={profileButtonRef}
-                  variant="secondary"
-                  onClick={() =>
-                    setIsProfileDropdownOpen(!isProfileDropdownOpen)
-                  }
-                  className="!py-4 !px-[31px] !h-[56px]"
-                >
-                  <div className="flex flex-row gap-2 leading-[18px] items-center">
-                    <ProfileIcon width={18} height={18} />
-                    <div className="flex flex-col">
-                      <p className="text-[18px] text-white font-normal">
-                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                      </p>
+          <div className="md:hidden flex flex-row items-center gap-2">
+            {path === "/" && (
+              <div className="md:hidden flex">
+                {!isConnected ? (
+                  <Button
+                    variant="signIn"
+                    className="w-[96px] !h-10"
+                    onClick={() => openStep("optionsA")}
+                  >
+                    Sign in
+                  </Button>
+                ) : (
+                  <Button
+                    ref={profileButtonRef}
+                    variant="secondary"
+                    onClick={() =>
+                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                    }
+                    className="!py-4 !px-[31px] !h-[56px]"
+                  >
+                    <div className="flex flex-row gap-2 leading-[18px] items-center">
+                      <ProfileIcon width={18} height={18} />
+                      <div className="flex flex-col">
+                        <p className="text-[18px] text-white font-normal">
+                          {walletAddress.slice(0, 6)}...
+                          {walletAddress.slice(-4)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Button>
-              )}
-              <button
-                onClick={toggleMenu}
-                className="md:hidden text-white p-2"
-                aria-label="Toggle mobile menu"
-              >
-                <BurgerMenuIcon />
-              </button>
-            </div>
-          )}
+                  </Button>
+                )}
+              </div>
+            )}
+            <button
+              onClick={toggleMenu}
+              className="md:hidden h-10"
+              aria-label="Toggle mobile menu"
+            >
+              <BurgerMenuIcon />
+            </button>
+          </div>
         </div>
       </header>
       <ProfileDropdown
@@ -190,6 +198,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           onClose={() => setIsMobileSidebarOpen(false)}
         />
       )}
+      <MobileMenuModal isOpen={isMenuOpened} toggleMenu={toggleMenu} />
     </>
   );
 };
