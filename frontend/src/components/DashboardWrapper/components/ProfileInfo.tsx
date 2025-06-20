@@ -19,7 +19,7 @@ const ProfileInfo = () => {
   return (
     <>
       {isConnected && (
-        <div className="w-full min-w-[358px] mt-8 flex relative flex-col items-center bg-[rgba(20,23,31,0.15)] border border-[#3E3C59] shadow-custom md:flex-row md:items-start md:bg-transparent md:backdrop-blur-none md:shadow-none md:p-0 md:rounded-none md:border-none backdrop-blur-[20px] py-8 px-[23px] rounded-3xl">
+        <div className="w-full mt-8 flex relative flex-col items-center bg-[rgba(20,23,31,0.15)] border border-[#3E3C59] shadow-custom md:flex-row md:items-start md:bg-transparent md:backdrop-blur-none md:shadow-none md:p-0 md:rounded-none md:border-none backdrop-blur-[20px] py-8 px-[23px] rounded-3xl">
           <ProfileCircle
             width={100}
             height={100}

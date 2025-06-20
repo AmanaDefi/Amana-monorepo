@@ -56,15 +56,15 @@ const TopTokens = ({}) => {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-8">
+      <div className="flex flex-wrap gap-4 md:gap-8">
         {itemsToShow.map((crypto, index) => (
-          <div key={index} className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-blue-500 flex items-center justify-center text-xl">
+          <div key={index} className="flex items-center gap-2 md:gap-3">
+            <div className="md:w-11 md:h-11 rounded-full flex items-center justify-center text-xl">
               <Image
                 src={crypto.icon}
                 alt={crypto.symbol}
-                width={44}
-                height={44}
+                width={40}
+                height={40}
               />
             </div>
 
@@ -73,7 +73,7 @@ const TopTokens = ({}) => {
                 <span className="text-[16px] font-normal">{crypto.name}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[18px] font-bold">{crypto.price}</span>
+                <span className="text-[16px] md:text-[18px] font-bold">{crypto.price}</span>
                 <span className="text-[#05D47F] text-sm font-normal">
                   {crypto.change}
                 </span>

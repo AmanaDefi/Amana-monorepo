@@ -10,7 +10,6 @@ import { useAuthStore } from "@/store/authStore";
 import { getActiveSectionFromPathname } from "@/utils/getActiveSectionFromPathname";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import MobileBottomMenu from "@/components/modal/MobileFixedMenu";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
@@ -75,7 +74,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <Footer isConnected />
           <AppModals />
-          {isMobile && <MobileBottomMenu />}
         </div>
       ) : (
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-[40px] px-4 md:pr-[108px] md:px-0">

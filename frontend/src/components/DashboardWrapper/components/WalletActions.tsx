@@ -24,16 +24,13 @@ const WalletActions = () => {
   };
 
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className="grid grid-flow-col auto-cols-max gap-x-2 sm:gap-x-4">
       <Button variant="wallet" onClick={handleSend}>
         <SaveIcon width={12} height={10} className="mr-1" />
         Send
       </Button>
 
-      <Button
-        variant="wallet"
-        onClick={() => openStep("recieve")}
-      >
+      <Button variant="wallet" onClick={() => openStep("recieve")}>
         <ReceiveIcon width={12} height={12} className="mr-1" />
         Receive
       </Button>

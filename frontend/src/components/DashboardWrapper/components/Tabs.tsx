@@ -24,12 +24,12 @@ import {
   type Transaction,
 } from "@/constants/mockTransactions";
 import Image from "next/image";
-import ProfileCircle from "@/components/svg/ProfileCircle";
 import TransactionDetailsIcon from "@/components/svg/TransactionDetailsIcon";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/navigation";
 
 const ZetaChainIcon = "/ZetaChain.webp";
+const ProfileCircle = "/ProfileCircle.png"
 
 const Tabs: React.FC<TabsProps> = ({
   children,
@@ -120,7 +120,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Button
           variant="custom"
           onClick={action.onClick}
-          className="!w-[322px] md:!w-[423px] !h-10 !text-[16px] !font-normal !font-gotham"
+          className="!w-[300px] md:!w-[423px] !h-10 !text-[16px] !font-normal !font-gotham"
         >
           {action.label}
         </Button>
@@ -139,45 +139,58 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
   };
 
   return (
-    <div className="flex items-center justify-between text-white">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center">
-          <Image
-            src={ZetaChainIcon}
-            alt="ZetaChainIcon"
-            width={44}
-            height={44}
-          />
-        </div>
+    <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] md:grid-cols-[auto_1fr_auto_1fr_auto] gap-3 md:gap-4 items-center text-white py-4 px-4 md:px-6  rounded-[16px]">
+      {/* Transaction Icon */}
+      <div className="w-8 h-8 md:w-11 md:h-11 flex items-center justify-center">
+        <Image
+          src={ZetaChainIcon}
+          alt="ZetaChainIcon"
+          width={32}
+          height={32}
+          className="w-full h-full"
+        />
+      </div>
 
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center">
-            <span className="font-bold text-lg capitalize">
-              {transaction.type}
-            </span>
-          </div>
+      {/* Transaction Info */}
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className="font-bold text-sm md:text-lg capitalize truncate">
+          {transaction.type}
+        </span>
+        <span className="text-[12px] md:text-sm truncate">
+          {transaction.timestamp}
+        </span>
+      </div>
 
-          <div className="text-sm">
-            <span className="">{transaction.timestamp}</span>
-          </div>
-        </div>
+      {/* From Icon */}
+      <div className="w-8 h-8 md:w-11 md:h-11 flex items-center justify-center">
+        <Image
+          src={ProfileCircle}
+          alt="ProfileCircle"
+          width={32}
+          height={32}
+          className="w-full h-full"
+        />
       </div>
 
       {/* From Address */}
-      <div className="flex gap-3 text-sm text-white">
-        <ProfileCircle width={44} height={44} />
-        <div className="flex flex-col gap-1 justify-start">
-          <span className="font-bold text-lg">From</span>
-          <span>{transaction.from}</span>
-        </div>
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className="font-bold text-sm md:text-lg">From</span>
+        <span className="text-[12px] md:text-sm truncate">
+          {transaction.from}
+        </span>
       </div>
 
+      {/* Details Button */}
       <button
         onClick={handleDetailsClick}
         disabled={true}
-        className="p-2 text-[#9A9CB3] cursor-not-allowed"
+        className="p-2 text-[#9A9CB3] cursor-not-allowed hover:text-white transition-colors justify-self-end"
       >
-        <TransactionDetailsIcon width={20} height={20} />
+        <TransactionDetailsIcon
+          width={16}
+          height={16}
+          className="md:w-5 md:h-5"
+        />
       </button>
     </div>
   );
@@ -260,7 +273,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
           />
         ) : (
           <div>
-            <div className="flex justify-end mb-6">
+            <div className="hidden md:flex justify-end mb-6">
               <div className="relative max-w-[340px] w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
@@ -275,7 +288,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-3 md:space-y-4">
               {displayTransactions.map((transaction) => (
                 <TransactionItem
                   key={transaction.id}
