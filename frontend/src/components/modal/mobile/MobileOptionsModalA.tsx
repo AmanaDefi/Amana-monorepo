@@ -57,7 +57,7 @@ const MobileOptionsModalA = () => {
             <ModalButton
               label="All Wallets"
               icon={<AllWalletsIcon width={20} height={20} />}
-              onClick={() => openStep("allWallets")}
+              onClick={() => openStep("mobileAllWallets")}
             />
           </div>
         </div>

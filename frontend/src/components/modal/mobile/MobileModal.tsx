@@ -11,6 +11,7 @@ type MobileModalProps = {
   customCloseButton?: ReactNode;
   height?: string;
   noBlur?: boolean;
+  maxHeight?: string;
 };
 
 export const MobileModal = ({
@@ -20,7 +21,8 @@ export const MobileModal = ({
   paddingClass = "pt-[20px] px-[20px] pb-[20px]",
   roundedClass = "rounded-t-[24px]",
   customCloseButton,
-  height = "h-[426px]",
+  height = "full",
+  maxHeight,
   noBlur = false,
   
 }: MobileModalProps) => {
@@ -52,7 +54,7 @@ export const MobileModal = ({
                     stiffness: 300,
                     damping: 30,
                   }}
-                  className={`relative w-full ${height} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border overflow-hidden block md:hidden`}
+                  className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border overflow-hidden block md:hidden`}
                 >
                   {customCloseButton}
                   <div className={`${paddingClass} h-full overflow-y-auto`}>
