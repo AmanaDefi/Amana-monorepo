@@ -291,36 +291,36 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   minAmountOut: ethers.utils.parseUnits("900", 6),
   //   slippage: 10000,
   // },
-  {
-    name: "Aegis YUSD Strategy",
-    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Replace with actual gateway address
-    strategyContractName: "AegisERC20Strategy",
-    strategyChainId: 56, // BNB
-    receiptTokenContractName: "IERC20", // LP token is a plain ERC20
-    swapHelperContractName: "SwapHelperBnb",
-    rewardsContractName: "I4626Vault",
-    forkBlock: 51216128, // Set your fork block
+  // {
+  //   name: "Aegis YUSD Strategy",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Replace with actual gateway address
+  //   strategyContractName: "AegisERC20Strategy",
+  //   strategyChainId: 56, // BNB
+  //   receiptTokenContractName: "IERC20", // LP token is a plain ERC20
+  //   swapHelperContractName: "SwapHelperBnb",
+  //   rewardsContractName: "I4626Vault",
+  //   forkBlock: 51216128, // Set your fork block
 
-    inputTokenAddress: "0x55d398326f99059ff775485246999027b3197955", // USDT on BNB
-    inputTokenStorageSlot: 0, // Update if needed for forking balance injection
-    inputTokenIndexOrPlaceholder: 1,
+  //   inputTokenAddress: "0x55d398326f99059ff775485246999027b3197955", // USDT on BNB
+  //   inputTokenStorageSlot: 0, // Update if needed for forking balance injection
+  //   inputTokenIndexOrPlaceholder: 1,
 
-    receiptTokenAddress: "0xAB3dBcD9B096C3fF76275038bf58eAC10D22C61f", // YUSD
-    rewardsContractAddress: ethers.constants.AddressZero, //"0x24DB057b19241eeFB9B522e8627C293Ed8f93Af2", // stakingVault
-    rewardsTokenAddress: ethers.constants.AddressZero, // axlOP - not actually needed in strategy, but useful here in the test
+  //   receiptTokenAddress: "0xAB3dBcD9B096C3fF76275038bf58eAC10D22C61f", // YUSD
+  //   rewardsContractAddress: ethers.constants.AddressZero, //"0x24DB057b19241eeFB9B522e8627C293Ed8f93Af2", // stakingVault
+  //   rewardsTokenAddress: ethers.constants.AddressZero, // axlOP - not actually needed in strategy, but useful here in the test
 
-    originChainId: 8453, // Base
-    withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
-    otherErc20Address: BSC_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
-    otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
+  //   originChainId: 8453, // Base
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
+  //   otherErc20Address: BSC_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
+  //   otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
 
-    isNative: false,
-    depositAmount: ethers.utils.parseUnits("1000", 18),
-    minSharesOut: ethers.utils.parseUnits("900", 18),
-    withdrawAmount: ethers.utils.parseUnits("100", 18),
-    minAmountOut: ethers.utils.parseUnits("90", 18),
-    slippage: 10000,
-  },
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("1000", 18),
+  //   minSharesOut: ethers.utils.parseUnits("900", 18),
+  //   withdrawAmount: ethers.utils.parseUnits("100", 18),
+  //   minAmountOut: ethers.utils.parseUnits("90", 18),
+  //   slippage: 10000,
+  // },
   // {
   //   name: "Aave USDT Strategy",
   //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
@@ -381,51 +381,77 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   minAmountOut: ethers.utils.parseUnits("90", 6),
   //   slippage: 10000,
   // },
+  // {
+  //   name: "YieldFi yUSD Strategy - Ethereum",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Replace with actual gateway address
+  //   strategyContractName: "YieldFiERC20Strategy",
+  //   strategyChainId: 1, // BNB
+  //   receiptTokenContractName: "IERC20", // LP token is a plain ERC20
+  //   swapHelperContractName: "SwapHelperEthereum",
+  //   rewardsContractName: "I4626Vault",
+  //   forkBlock: 22736058, // Set your fork block
+
+  //   inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Base
+  //   inputTokenStorageSlot: 9, // Update if needed for forking balance injection
+  //   inputTokenIndexOrPlaceholder: 1,
+
+  //   receiptTokenAddress: "0x2e3c5e514eef46727de1fe44618027a9b70d92fc", // vyUSD
+  //   rewardsContractAddress: ethers.constants.AddressZero, // Staking contract
+  //   rewardsTokenAddress: ethers.constants.AddressZero, // axlOP - not actually needed in strategy, but useful here in the test
+
+  //   originChainId: 8453, // Base
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
+  //   otherErc20Address: ETH_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
+  //   otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
+
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("50", 6),
+  //   minSharesOut: ethers.utils.parseUnits("45", 6),
+  //   withdrawAmount: ethers.utils.parseUnits("45", 6),
+  //   minAmountOut: ethers.utils.parseUnits("40", 6),
+  //   slippage: 10000,
+  // },
+  // {
+  //   name: "Noon Capital sUSN Strategy - Ethereum",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "NoonERC20Strategy",
+  //   strategyChainId: 1,
+  //   receiptTokenContractName: "I4626Vault",
+  //   swapHelperContractName: "SwapHelperEthereum",
+  //   rewardsContractName: "I4626Vault",
+  //   forkBlock: 22315281,
+  //   inputTokenAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  //   inputTokenStorageSlot: 0,
+  //   inputTokenIndexOrPlaceholder: 0,
+  //   receiptTokenAddress: "0xE24a3DC889621612422A64E6388927901608B91D",
+  //   rewardsContractAddress: ethers.constants.AddressZero, // No rewards contract for Noon strategy
+  //   rewardsTokenAddress: ethers.constants.AddressZero, // crv 
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+  //   otherErc20Address: ETH_USDC_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 9,
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("100", 6),
+  //   minSharesOut: ethers.utils.parseUnits("90", 6),
+  //   withdrawAmount: ethers.utils.parseUnits("100", 6),
+  //   minAmountOut: ethers.utils.parseUnits("90", 6),
+  //   slippage: 10000,
+  // },
   {
-    name: "YieldFi yUSD Strategy - Ethereum",
-    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Replace with actual gateway address
-    strategyContractName: "YieldFiERC20Strategy",
-    strategyChainId: 1, // BNB
-    receiptTokenContractName: "IERC20", // LP token is a plain ERC20
-    swapHelperContractName: "SwapHelperEthereum",
-    rewardsContractName: "I4626Vault",
-    forkBlock: 22736058, // Set your fork block
-
-    inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Base
-    inputTokenStorageSlot: 9, // Update if needed for forking balance injection
-    inputTokenIndexOrPlaceholder: 1,
-
-    receiptTokenAddress: "0x2e3c5e514eef46727de1fe44618027a9b70d92fc", // vyUSD
-    rewardsContractAddress: ethers.constants.AddressZero, // Staking contract
-    rewardsTokenAddress: ethers.constants.AddressZero, // axlOP - not actually needed in strategy, but useful here in the test
-
-    originChainId: 8453, // Base
-    withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
-    otherErc20Address: ETH_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
-    otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
-
-    isNative: false,
-    depositAmount: ethers.utils.parseUnits("50", 6),
-    minSharesOut: ethers.utils.parseUnits("45", 6),
-    withdrawAmount: ethers.utils.parseUnits("45", 6),
-    minAmountOut: ethers.utils.parseUnits("40", 6),
-    slippage: 10000,
-  },
-  {
-    name: "Noon Capital sUSN Strategy - Ethereum",
+    name: "Convex sUSD+USDe Strategy - Ethereum",
     gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-    strategyContractName: "NoonERC20Strategy",
+    strategyContractName: "ConvexERC20StrategyWithSwap",
     strategyChainId: 1,
-    receiptTokenContractName: "I4626Vault",
+    receiptTokenContractName: "ICurvePoolFixed",
     swapHelperContractName: "SwapHelperEthereum",
-    rewardsContractName: "I4626Vault",
+    rewardsContractName: "IConvexRewardPool",
     forkBlock: 22315281,
     inputTokenAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
     inputTokenStorageSlot: 0,
-    inputTokenIndexOrPlaceholder: 0,
-    receiptTokenAddress: "0xE24a3DC889621612422A64E6388927901608B91D",
-    rewardsContractAddress: ethers.constants.AddressZero, // No rewards contract for Noon strategy
-    rewardsTokenAddress: ethers.constants.AddressZero, // crv 
+    inputTokenIndexOrPlaceholder: 1,
+    receiptTokenAddress: "0x59a06b97b2d566B9Dee2a368EaC8787Cfa57f95D",
+    rewardsContractAddress: "0x268ee43857694fe53FF8729b8171266ee2514c69",
+    rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52", // crv 
     originChainId: 8453,
     withdrawZRC20: ZC_USDC_BASE_ADDRESS,
     otherErc20Address: ETH_USDC_ADDRESS,
@@ -436,5 +462,8 @@ export const strategyConfigs: StrategyTestConfig[] = [
     withdrawAmount: ethers.utils.parseUnits("100", 6),
     minAmountOut: ethers.utils.parseUnits("90", 6),
     slippage: 10000,
+    convexBooster: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
+    cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
+    convexPoolId: 429 // find on convex website
   },
 ];

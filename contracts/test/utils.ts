@@ -555,6 +555,7 @@ export function isConvexStrategy(name: string): boolean {
   return [
     "ConvexEthStrategy",
     "ConvexERC20Strategy",
+    "ConvexERC20StrategyWithSwap",
     "ConvexERC20StrategyArbitrum",
     "ConvexEthStrategyArbitrum"
   ].includes(name);

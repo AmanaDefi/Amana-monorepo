@@ -42,6 +42,8 @@ contract SwapHelperEthereum is SwapHelperParent {
 
     address public constant sUSN_ADDRESS =
         0xE24a3DC889621612422A64E6388927901608B91D;
+    address public constant USDe_ADDRESS =
+        0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
 
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
@@ -82,7 +84,8 @@ contract SwapHelperEthereum is SwapHelperParent {
     function isStablecoin(address token) internal pure override returns (bool) {
         return (token == USDC_ADDRESS ||
             token == USDT_ADDRESS ||
-            token == sUSN_ADDRESS); // TODO - this is just interim - change when we can get sUSN price feed
+            token == sUSN_ADDRESS || // TODO - this is just interim - change when we can get sUSN price feed
+            token == USDe_ADDRESS);
     }
 
     function _swapCVXtoUSDC(
@@ -278,7 +281,11 @@ contract SwapHelperEthereum is SwapHelperParent {
                 "Encoded path: %s",
                 string(abi.encodePacked(encodedPath))
             );
-            IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
+            approveOrIncreaseAllowance(
+                IERC20(inputToken),
+                UNISWAP_V3_ROUTER,
+                amount
+            );
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
                     path: encodedPath,
