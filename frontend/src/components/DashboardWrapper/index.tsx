@@ -11,7 +11,6 @@ const DashboardWrapper = () => {
 
   return (
     <div className="font-gotham">
-      {/* Mobile: Full width stack, Desktop: Flex row */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-stretch md:gap-8">
         <div className="flex flex-col w-full md:w-auto md:min-h-[323px]">
           <div className="hidden md:block text-white text-[40px] font-bold mb-8">
@@ -32,7 +31,7 @@ const DashboardWrapper = () => {
         </div>
       </div>
 
-      <div className="mt-10 md:mt-[82px]">
+      <div className="mt-10 md:mt-[82px] mb-6 md:mb-0">
         <PortfolioTabs
           vaults={vaults}
           vaultAPYs={vaultAPYs}

@@ -4,12 +4,12 @@ import { CardStatProps } from "@/components/common/CardStat";
 export default function LargeCardStat({ id, label, value, secondaryValue, children, tooltip, tooltipChild }: CardStatProps): JSX.Element {
   return (
     <div className="w-full cursor-pointer" id={id}>
-      <p className="text-[#535E73] font-bold text-[16px] whitespace-nowrap w-1/2 md:w-full mb-4">
+      <p className="text-[#535E73] font-bold text-sm md:text-[16px] whitespace-nowrap w-1/2 md:w-full mb-2 md:mb-4">
         {label}
       </p>
       {value ? (
         <>
-          <p className="text-2xl lg:text-[32px] font-normal whitespace-nowrap text-white leading-0 ">
+          <p className="text-lg md:text-2xl lg:text-[32px] font-normal whitespace-nowrap text-white leading-0 ">
             {value}
           </p>
           {/* {secondaryValue && (
