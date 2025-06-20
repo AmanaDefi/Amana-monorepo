@@ -49,6 +49,8 @@ const VaultsDetailContainer: React.FC<{
     const backPath: string = pathname.includes("old-vaults") ? "/old-vaults" : "/";
     const { walletAddress } = useMultiChain();
 
+
+
     useEffect(() => {
       const foundVault = vaults.find((v) => v.id === vaultID.toString());
       
@@ -138,6 +140,9 @@ const VaultsDetailContainer: React.FC<{
                     </p>
                   </div>
                 )}
+
+
+
                 <div className="bg-customNeutral300 px-6 py-6 rounded-lg">
                   <VaultInputs
                     vaultData={vaultData}
