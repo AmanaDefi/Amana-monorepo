@@ -126,7 +126,7 @@ export const useMultiChain = () => {
 export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   // HYDRATION FIX: Start with consistent state for SSR
   const [isHydrated, setIsHydrated] = useState(false);
-  const path = usePathname();
+
   const [selectedChain, setSelectedChain] = useState<ChainType | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,8 +135,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const scaAccount = useAccount({ type: "ModularAccountV2" });
+  const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
 
   const router = useRouter();
+  const path = usePathname();
+  console.log(path);
 
   const { setChain, chain } = useChain();
   const [activeChain, setActiveChain] = useState<Chain | null>(chain);
@@ -270,7 +273,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       path !== "/" &&
       path !== "/leaderboard" &&
       path !== "/about" &&
-      path !== "/vaults"
+      !isVaultAddressPath.test(path)
     ) {
       router.push("/");
     }
