@@ -14,18 +14,6 @@ import Link from "next/link";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 
-// Helper function to get points message for specific protocols
-const getPointsMessage = (protocolName: string) => {
-  switch (protocolName) {
-    case 'Aegis':
-      return 'Earn 15 points daily per $1 deposited';
-    case 'YieldFi':
-      return 'Earn 5 YieldCrumbs daily per $1 deposited';
-    default:
-      return null;
-  }
-};
-
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
   setVaultSymbol?: (symbol: string) => void;    
@@ -123,21 +111,11 @@ const VaultsDetailContainer: React.FC<{
             selectedToken={selectedToken}
           />
 
+
+
           <section className="w-full flex flex-col lg:flex-row gap-4 my-4 ">
             <div className="w-full ">
               <div className="bg-customNeutral200 p-6 rounded-lg">
-                {/* Points Message Banner for Aegis and YieldFi */}
-                {getPointsMessage(vaultData.protocol.name) && (
-                  <div className="bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border border-cyan-500/50 py-3 px-4 rounded-lg mb-5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                      <span className="text-cyan-400 font-medium text-sm">EARN REWARDS</span>
-                    </div>
-                    <p className="text-white font-semibold mt-1">
-                      {getPointsMessage(vaultData.protocol.name)}
-                    </p>
-                  </div>
-                )}
                 <div className="bg-customNeutral300 px-6 py-6 rounded-lg">
                   <VaultInputs
                     vaultData={vaultData}

@@ -13,6 +13,24 @@ import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
+// Helper function to get points message for specific protocols
+const getPointsMessage = (protocolName: string) => {
+  switch (protocolName) {
+    case 'Aegis':
+      return {
+        message: 'Earn 15 points daily per $1 deposited',
+        logo: '/aegis.jpeg'
+      };
+    case 'YieldFi':
+      return {
+        message: 'Earn 5 YieldCrumbs daily per $1 deposited',
+        logo: '/yieldfi.png'
+      };
+    default:
+      return null;
+  }
+};
+
 export default function VaultHeader({
   vaultData,
   userVaultBalance,
@@ -234,8 +252,11 @@ export default function VaultHeader({
           </div>
         </div>
       </div>
+
+
+
       <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:pr-10 gap-4 md:gap-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:pr-10 gap-4 md:gap-8">
           <LargeCardStat
             id="deposits"
             label="Deposits"
@@ -278,6 +299,33 @@ export default function VaultHeader({
             }
             tooltip="APY for the last 7 days"
           />
+          
+          {/* Points Message Banner as 4th grid item */}
+          {(() => {
+            const pointsInfo = getPointsMessage(vaultData.protocol.name);
+            return pointsInfo ? (
+              <div className="w-full cursor-pointer">
+                <div className="bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border border-cyan-500/50 py-3 px-4 rounded-lg h-full">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Image
+                      src={pointsInfo.logo}
+                      alt={vaultData.protocol.name}
+                      width={20}
+                      height={20}
+                      className="rounded-full"
+                    />
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                      <span className="text-cyan-400 font-medium text-xs">EARN REWARDS</span>
+                    </div>
+                  </div>
+                  <p className="text-white font-semibold text-sm leading-tight">
+                    {pointsInfo.message}
+                  </p>
+                </div>
+              </div>
+            ) : null;
+          })()}
         </div>
       </div>
     </section>
