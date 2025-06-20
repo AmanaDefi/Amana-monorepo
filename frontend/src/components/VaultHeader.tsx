@@ -12,6 +12,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
+import { useAegisPoints } from "@/hooks/useAegisPoints";
 
 export default function VaultHeader({
   vaultData,
@@ -30,7 +31,7 @@ export default function VaultHeader({
   transactionCompleted: boolean;
   selectedToken?: Token;
 }): JSX.Element {
-  const { activeChain } = useMultiChain();
+  const { activeChain, walletAddress } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [depositAmount, setDepositAmount] = useState("0");
   const lastVaultIdRef = useRef<string | null>(null);
@@ -187,6 +188,57 @@ export default function VaultHeader({
   // Parse the deposit amount to a number for calculations
   const depositAmountNumber = parseFloat(depositAmount) || 0;
   
+  // Fetch Aegis points for Aegis vaults
+  const { 
+    points: aegisPoints, 
+    loading: pointsLoading, 
+    error: pointsError,
+    isNewUser,
+    isConfigError
+  } = useAegisPoints(
+    vaultData?.protocol.name === 'Aegis' ? (walletAddress || undefined) : undefined
+  );
+
+  // Determine what to show for Aegis points
+  const getAegisPointsDisplay = () => {
+    if (pointsLoading) {
+      return {
+        value: "...",
+        secondaryValue: "Loading..."
+      };
+    }
+    
+    if (pointsError && !isConfigError && !isNewUser) {
+      // Only show error for genuine API errors
+      return {
+        value: "Error",
+        secondaryValue: "Failed to load"
+      };
+    }
+    
+    if (isNewUser || aegisPoints === 0) {
+      // User not in system or has 0 points
+      return {
+        value: "0",
+        secondaryValue: "Deposit to earn points"
+      };
+    }
+    
+    if (isConfigError) {
+      // Config error - show 0 points with neutral message
+      return {
+        value: "0",
+        secondaryValue: "Aegis Points"
+      };
+    }
+    
+    // User has points
+    return {
+      value: aegisPoints.toLocaleString(),
+      secondaryValue: "Aegis Points"
+    };
+  };
+
   return (
     <section className="md:border-b border-customNeutral100 pt-10 pb-6 px-4 md:px-0 ">
       <div className="w-full mb-12 flex flex-row items-center">
@@ -235,7 +287,7 @@ export default function VaultHeader({
         </div>
       </div>
       <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:pr-10 gap-4 md:gap-20">
+        <div className={`grid grid-cols-1 sm:grid-cols-3 ${vaultData.protocol.name === 'Aegis' ? 'md:grid-cols-4' : 'md:grid-cols-3'} md:pr-10 gap-4 md:gap-20`}>
           <LargeCardStat
             id="deposits"
             label="Deposits"
@@ -260,12 +312,14 @@ export default function VaultHeader({
             id="APY"
             label="7d APY"
             value={
-              Number.isNaN(
-                Number(
-                  vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                    ?.APY7d
-                )
-              )
+              selectedVaultId === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8"
+                ? `${((Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
+                : Number.isNaN(
+                    Number(
+                      vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
+                        ?.APY7d
+                    )
+                  )
                 ? "0%"
                 : `${(
                     Number(
@@ -276,6 +330,16 @@ export default function VaultHeader({
             }
             tooltip="APY for the last 7 days"
           />
+          {/* Aegis Points Display */}
+          {vaultData.protocol.name === 'Aegis' && (
+            <LargeCardStat
+              id="aegis-points"
+              label="Earned Points"
+              value={getAegisPointsDisplay().value}
+              secondaryValue={getAegisPointsDisplay().secondaryValue}
+              tooltip="Total Aegis points earned from this vault"
+            />
+          )}
         </div>
       </div>
     </section>

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {YieldFiERC20Strategy} from "../contracts/strategies/YieldFiERC20Strategy.sol";
+import {SwapHelperEthereum} from "../contracts/SwapHelperEthereum.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        YieldFiERC20Strategy newImpl = new YieldFiERC20Strategy();
+        SwapHelperEthereum newImpl = new SwapHelperEthereum();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }

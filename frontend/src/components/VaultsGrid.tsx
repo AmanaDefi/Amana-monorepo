@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -11,6 +11,7 @@ import {
 import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
 import { useMultiChain } from '@/providers/MultiChainProvider';
+import { useTokenPriceBySymbol } from '@/hooks/hooks';
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -24,6 +25,31 @@ const RISK_LEVELS: Record<number, { level: string; color: string }> = {
 const calculateRiskLevel = (vault: VaultData): number => {
   // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
   return 1;
+};
+
+// Helper function to check if a token is a stablecoin
+const isStablecoin = (symbol: string): boolean => {
+  const baseSymbol = symbol.split('.')[0].toUpperCase();
+  return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(baseSymbol);
+};
+
+// Helper function to format TVL in USD terms with proper K/M/B suffix
+const formatTVLInUSD = (totalAssets: string | number, inputTokenSymbol: string, tokenPrice: number = 0): string => {
+  const totalAssetsNumber = Number(totalAssets || 0);
+  
+  if (totalAssetsNumber === 0) {
+    return "0";
+  }
+  
+  // Check if the token is a stablecoin
+  if (isStablecoin(inputTokenSymbol)) {
+    // For stablecoins, the value is already in USD terms
+    return formatNumberWithSuffix(totalAssetsNumber);
+  } else {
+    // For native tokens (like ETH), convert to USD using token price
+    const usdValue = totalAssetsNumber * tokenPrice;
+    return formatNumberWithSuffix(usdValue);
+  }
 };
 
 // Generate a deterministic capacity percentage based on vault ID
@@ -165,6 +191,35 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     setSortBy('apy');
     setSortOrder('desc');
   };
+
+  // Create a mapping of token prices
+  const tokenPrices = useMemo(() => {
+    const prices: Record<string, number> = {};
+    return prices;
+  }, []);
+
+  // Use hooks to get prices for each unique token
+  const ethPrice = useTokenPriceBySymbol("ETH");
+  const wethPrice = useTokenPriceBySymbol("WETH");
+  const msethPrice = useTokenPriceBySymbol("msETH");
+  
+  // Update tokenPrices object
+  useEffect(() => {
+    tokenPrices["ETH.ETH"] = ethPrice;
+    tokenPrices["WETH"] = wethPrice;
+    tokenPrices["msETH"] = msethPrice;
+  }, [ethPrice, wethPrice, msethPrice, tokenPrices]);
+
+  // Helper function to get token price
+  const getTokenPrice = useCallback((tokenSymbol: string): number => {
+    // For stablecoins, return 1 as they're pegged to USD
+    if (isStablecoin(tokenSymbol)) {
+      return 1;
+    }
+    
+    // For other tokens, try to get their price
+    return tokenPrices[tokenSymbol] || 0;
+  }, [tokenPrices]);
   
   if (loading) {
     return <LoadingLogo />;
@@ -294,11 +349,11 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       
       {/* Vaults Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {paginatedVaults.map((vault) => {
-          const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
-          const totalAssets = vaultTotalAssets.find((asset) => asset.vaultId === vault.id);
-          const riskLevel = calculateRiskLevel(vault);
-          const capacityPercentage = calculateCapacityPercentage(vault.id);
+                  {paginatedVaults.map((vault) => {
+            const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
+            const vaultTotalAssetsData = vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === vault.id);
+            const riskLevel = calculateRiskLevel(vault);
+            const capacityPercentage = calculateCapacityPercentage(vault.id);
           
           return (
             <div 
@@ -333,7 +388,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               <div className="p-4">
                 <div className='flex md:flex-row flex-col gap-2 justify-between'>
 
-                {/* Lending Pool with Logo (was Protocol) */}
+                {/* Vault Type with Logo (was Protocol) */}
                 <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
                   <Image
                     src={vault.inputToken.imgURL}
@@ -344,7 +399,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     sizes="36px"
                   />
                   <div>
-                    <span className="text-gray-400 text-xs">Lending Pool</span>
+                    <span className="text-gray-400 text-xs">{vault.type}</span>
                     <p className="text-white font-medium">{vault.name}</p>
                   </div>
                 </div>
@@ -371,14 +426,17 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
                     <p className="text-cyan-400 font-bold text-xl">
-                      {(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%
+                      {vault.id === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8" 
+                        ? `${((Number(vaultAPY?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
+                        : `${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`
+                      }
                     </p>
                   </div>
                   <div className="bg-customNeutral300 p-3 rounded-md">
-                    <p className="text-gray-400 text-xs mb-1">TVL</p>
-                    <p className="text-white font-bold text-xl">
-                      {formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
-                    </p>
+                                          <p className="text-gray-400 text-xs mb-1">TVL</p>
+                      <p className="text-white font-bold text-xl">
+                        {formatTVLInUSD(Number(vaultTotalAssetsData?.totalAssets || 0), vault.inputToken.symbol, getTokenPrice(vault.inputToken.symbol))}
+                      </p>
                   </div>
                 </div>
                 
