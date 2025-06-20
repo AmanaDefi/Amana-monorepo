@@ -13,7 +13,7 @@ export default function TabSelector({
 }: TabSelectorProps): JSX.Element {
   return (
     <div
-      className={`w-[384px] mx-auto flex flex-row justify-center bg-[#0C1015] rounded-lg p-1 gap-10 mb-10 ${className}`}
+      className={`max-w-[326px] md:max-w-[384px] mx-auto flex flex-row justify-center bg-[#0C1015] rounded-lg p-1 gap-1 md:gap-10 mb-6 md:mb-10 ${className}`}
     >
       {availableTabs.map((tab) => (
         <button

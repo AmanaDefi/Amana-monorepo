@@ -45,6 +45,7 @@ import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
 import { useChain } from "@account-kit/react";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
+import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -316,14 +317,14 @@ const VaultsDetailContainer: React.FC<{
       <div
         className={clsx(
           "flex flex-row justify-between",
-          !walletAddress && "mt-6",
+          !walletAddress && "mt-4 md:mt-6",
           walletAddress && "mt-0",
         )}
       >
         <Button
           variant="outlined"
           onClick={handleBack}
-          className="flex items-center justify-between max-h-[56px]"
+          className="flex items-center md:justify-between max-h-[42px] md:max-h-[56px] !px-[16px] !py-[10px] md:!py-[17px] !max-w-[181px] md:!max-w-[192px]"
         >
           <div className="w-5 h-5 relative z-2 flex items-center justify-center">
             <BackToVaultsIcon width={7} height={12} />
@@ -332,7 +333,7 @@ const VaultsDetailContainer: React.FC<{
             Back to vaults
           </p>
         </Button>
-        <div className={`flex items-center gap-4`}>
+        <div className={`hidden md:flex items-center gap-4`}>
           <p className="text-white text-[18px] font-bold">
             Invest from any chain
           </p>
@@ -368,7 +369,7 @@ const VaultsDetailContainer: React.FC<{
         isDeposit={isDeposit}
       />
 
-      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-[56px] font-gotham">
+      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-[56px] font-gotham">
         <div>
           {shouldShowDepositComplete ? (
             <DepositComplete
@@ -389,14 +390,28 @@ const VaultsDetailContainer: React.FC<{
             />
           ) : (
             <>
-              <VaultOverviewBlock
-                vault={vaultData}
-                vaultAPY={vaultAPYs.find(
-                  (a) => a.vaultId === vaultID.toString(),
-                )}
-                totalAssets={vaultTotalAsset}
-              />
-              <div className="bg-[#14171F] pb-8 pt-6 px-5 min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
+              <div className="block md:hidden">
+                <VaultOverviewBlock
+                  vault={vaultData}
+                  vaultAPY={vaultAPYs.find(
+                    (a) => a.vaultId === vaultID.toString(),
+                  )}
+                  totalAssets={vaultTotalAsset}
+                />
+              </div>
+              <div className="hidden md:block">
+                <VaultCardInfoBlock>
+                  <VaultOverviewBlock
+                    vault={vaultData}
+                    vaultAPY={vaultAPYs.find(
+                      (a) => a.vaultId === vaultID.toString(),
+                    )}
+                    totalAssets={vaultTotalAsset}
+                  />
+                </VaultCardInfoBlock>
+              </div>
+
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] md:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}

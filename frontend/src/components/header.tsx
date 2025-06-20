@@ -51,8 +51,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
       <header
         className={`w-full flex items-center justify-between font-gotham ${
           isConnected
-            ? "px-4 md:px-11 mb-7 h-[60px] md:h-[40px]"
-            : "px-4 md:pl-11 md:pr-0 h-[80px] mb-9"
+            ? "px-0 md:px-11 mb-7 h-[60px] md:h-[40px]"
+            : "px-0 md:pl-11 md:pr-0 h-[80px] mb-0 md:mb-9"
         }`}
       >
         <div className="flex items-center gap-[41px]">

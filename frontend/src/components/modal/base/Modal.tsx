@@ -54,7 +54,7 @@ export const Modal = ({
                     stiffness: 300,
                     damping: 24,
                   }}
-                  className={`relative flex max-h-[80%] w-full ${maxWidth} ${minHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
+                  className={`relative flex w-full ${maxWidth} ${minHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
                 >
                   {customCloseButton}
                   <div className={paddingClass}>{children}</div>

@@ -238,7 +238,7 @@ export default function VaultHeader({
   ]);
 
   return (
-    <section className="pt-10 px-4 md:px-0 ">
+    <section className="hidden md:flex pt-10 px-4 md:px-0 ">
       <div className="w-full mb-10 flex flex-row items-center">
         <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
           <div className="flex items-center gap-2">

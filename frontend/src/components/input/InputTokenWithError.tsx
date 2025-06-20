@@ -192,7 +192,7 @@ export default function InputTokenWithError({
 
       {captionText && (
         <div className="flex items-center justify-between">
-          <div className="text-white text-start flex text-[18px] font-bold items-center gap-2 mb-4">
+          <div className="text-white text-start flex text-[16px] md:text-[18px] font-bold items-center gap-2 mb-2 md:mb-4">
             {captionText}
             {isOutput && (
               <InfoBlock isMiddle>
@@ -211,7 +211,7 @@ export default function InputTokenWithError({
         <div
           style={{ boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.25)" }}
           className={clsx(
-            "w-full max-h-[75px] bg-[#161C27] pl-5 py-[11px] pr-[10px] rounded-lg border transition-all duration-200",
+            "w-full max-h-[77px] md:max-h-[75px] bg-[#161C27] pl-5 py-[11px] pr-[10px] rounded-lg border transition-all duration-200",
             errorMessage ? "border-red-500" : "border-[#535E73]",
             "hover:border-[#3E73C4]",
             isInputFocused && "border-[#3E73C4]",

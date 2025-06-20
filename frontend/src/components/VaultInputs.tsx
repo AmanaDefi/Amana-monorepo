@@ -1260,12 +1260,12 @@ export default function VaultInputs({
         isOutput={false}
         captionText={!isDeposit ? "Output Amount" : ""}
       />
-      <div className="w-full my-10 flex items-center justify-center">
+      <div className="w-full my-6 md:my-10 flex items-center justify-center">
         <button className="group flex-center p-2" onClick={switchTokens}>
           <DepositModalArrowsIcon width={24} height={24} />
         </button>
       </div>
-      <div className="mb-10">
+      <div className="mb-6 md:mb-10">
         <FeeDisplay
           isDeposit={isDeposit}
           vaultData={vaultData}

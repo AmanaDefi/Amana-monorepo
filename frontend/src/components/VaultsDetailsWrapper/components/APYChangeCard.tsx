@@ -1,23 +1,23 @@
 export default function APYChangeCard() {
   return (
-    <div className="bg-[#161C27] rounded-2xl px-12 py-6 font-normal text-sm text-white mt-[44px]">
+    <div className="bg-transparent md:bg-[#161C27] rounded-2xl px-0 py-0 md:px-12 md:py-6 font-normal text-[12px] md:text-sm text-white mt-8 md:mt-[44px]">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <span>Implemented APY Change</span>
-          <span className="font-bold">8,725%</span>
+          <span className="font-bold text-sm">8,725%</span>
         </div>
 
         <div className="flex justify-between items-center">
           <span>Effective Implied APY</span>
-          <span className="font-bold">9,088%</span>
+          <span className="font-bold text-sm">9,088%</span>
         </div>
 
         <div className="flex justify-between items-center">
           <span>Min. Received</span>
-          <span className="font-bold">2,029.9</span>
+          <span className="font-bold text-sm">2,029.9</span>
         </div>
       </div>
-      <div className="mt-6 bg-custom-gradient text-[#535E73] text-[12px] font-normal rounded-lg pl-[17px] py-[14px] pr-[69px] leading-tight">
+      <div className="mt-6 bg-custom-gradient text-[#535E73] text-[12px] font-normal rounded-lg p-3 md:pl-[17px] md:py-[14px] md:pr-[69px] leading-tight">
         Earn <span className="text-[#1B46E0] text-sm font-bold">-29,22%</span>{" "}
         profit if underlying APY remains constant at
         <span className="text-[#1B46E0] text-sm font-bold"> 6,427%</span>

@@ -4,7 +4,6 @@ import { formatNumberWithSuffix } from "@/utils/utils";
 
 import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
-import { VaultCardInfoBlock } from "./VaultsWrapper/components/VaultCardInfoBlock";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { RISK_LEVELS } from "./VaultsGrid";
 
@@ -24,7 +23,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
 
 
   return (
-    <VaultCardInfoBlock>
+    <>
       <div className="flex flex-row justify-between items-center w-full">
         <div className="flex flex-col gap-2">
           <div className="flex flex-row gap-1 items-center">
@@ -79,6 +78,6 @@ export const VaultOverviewBlock: React.FC<Props> = ({
           </p>
         </div>
       </div>
-    </VaultCardInfoBlock>
+    </>
   );
 };

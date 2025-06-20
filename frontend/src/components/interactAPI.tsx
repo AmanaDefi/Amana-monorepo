@@ -1943,7 +1943,7 @@ function Interaction({
       {finishedTransaction ? (
         <Button
           variant="special"
-          className="w-full mt-[47px]"
+          className="w-full mt-10 md:mt-[47px] !max-h-[48px] md:!max-h-[54px]"
           onClick={handleDone}
         >
           Done
@@ -1968,7 +1968,7 @@ function Interaction({
             <Button
               variant="special"
               disabled={isDisabled}
-              className="w-full mt-[47px] !text-[16px] !font-bold !font-gotham"
+              className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
               onClick={handleMainAction}
             >
               {label ?? (isDeposit ? "Invest" : "Withdraw")}

@@ -76,7 +76,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           <AppModals />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-[40px] px-4 md:pr-[108px] md:px-0">
+        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-4 md:py-[40px] px-4 md:pr-[108px] md:px-0">
           <Header activeSection={activeSection} />
           <div className="flex-1 md:ml-16 md:pl-[44px]">{children}</div>
           <div className="md:ml-16">
