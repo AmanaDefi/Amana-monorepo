@@ -61,6 +61,7 @@ import {
   getWalletClient,
 } from "@/utils/getPublicClient";
 import type { IConnection } from "codemelt-retro-api-sdk";
+import { Connector } from "wagmi";
 
 dotenv.config();
 
@@ -846,6 +847,7 @@ export const executeDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function,
   sendUserOperation: Function,
+  activeConnector?: Connector | null
 ) => {
   if (activeChain.id === CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
@@ -856,6 +858,7 @@ export const executeDeposit = async (
       activeChain,
       transactionAmount,
       sendUserOperation,
+      activeConnector
     );
   } else if (activeChain.id === CHAIN_ID.solana) {
     return executeSolanaDeposit(
@@ -874,6 +877,7 @@ export const executeDeposit = async (
       activeChain,
       transactionAmount,
       setcrossChainTxId,
+      activeConnector
     );
   }
 };
@@ -921,9 +925,10 @@ export const Approvedeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   sendUserOperation: any,
+  connector?: Connector | null
 ) => {
   //console.log("Executing DepositApprove");
-  const walletClient = getWalletClient(activeChain.id);
+  const walletClient = await getWalletClient(activeChain.id, connector);
   if ((!walletClient && !sendUserOperation) || !activeAccount?.address) {
     console.log("No wallet client or active account found");
     return false;
@@ -1073,6 +1078,7 @@ const executeDirectDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   sendUserOperation: Function,
+  activeConnector?: Connector | null
 ) => {
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
@@ -1083,7 +1089,7 @@ const executeDirectDeposit = async (
     transactionAmount,
     activeChain,
   );
-  const walletClient = getWalletClient(activeChain.id);
+  const walletClient = await getWalletClient(activeChain.id, activeConnector);
 
   let txHash;
   if (activeAccount.type === "sca" && sendUserOperation) {
@@ -1139,8 +1145,9 @@ const executeCrossChainDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   setcrossChainTxId: Function,
+  activeConnector?: Connector | null
 ) => {
-  const walletClient = getWalletClient(activeChain.id);
+  const walletClient = await getWalletClient(activeChain.id, activeConnector);
   if (!activeAccount || !walletClient) return { transactionHash: null };
   console.log("Executing Cross-Chain Deposit");
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
@@ -1501,6 +1508,7 @@ export const executeWithdrawal = async (
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
   sendUserOperation: Function,
+  activeConnector?: Connector | null
 ) => {
   console.log("Executing Withdrawal");
   console.log("To chain ID:", activeChain.id);
@@ -1512,6 +1520,7 @@ export const executeWithdrawal = async (
       activeChain,
       withdrawAssetAmount,
       sendUserOperation,
+      activeConnector
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
     console.log("Solana withdrawal detected");
@@ -1533,6 +1542,7 @@ export const executeWithdrawal = async (
       withdrawERC20,
       withdrawZRC20,
       setcrossChainTxId,
+      activeConnector
     );
   }
 };
@@ -1543,6 +1553,7 @@ const executeDirectWithdrawal = async (
   activeChain: Chain,
   withdrawAssetAmount: bigint,
   sendUserOperation: Function,
+  activeConnector?: Connector | null
 ) => {
   //vaultId: string
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
@@ -1550,7 +1561,7 @@ const executeDirectWithdrawal = async (
     vaultData.inputToken,
     withdrawAssetAmount,
   );
-  const walletClient = getWalletClient(activeChain.id);
+  const walletClient = await getWalletClient(activeChain.id, activeConnector);
 
   if (
     ((!walletClient || !walletClient.chain) && !sendUserOperation) ||
@@ -1633,8 +1644,9 @@ const executeCrossChainWithdrawal = async (
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
+  activeConnector?: Connector | null
 ) => {
-  const walletClient = getWalletClient(activeChain.id);
+  const walletClient = await getWalletClient(activeChain.id, activeConnector);
   if (!activeAccount || !walletClient) return { transactionHash: null };
   //console.log("Executing Cross-Chain Withdrawal");
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(

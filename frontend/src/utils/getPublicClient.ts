@@ -6,10 +6,12 @@ import {
   WalletClient,
   createWalletClient,
   custom,
+  EIP1193Provider,
 } from "viem";
 
 import type { Chain } from "viem/chains";
 import { alchemyApiKey } from "../../alchemyConfig";
+import { Connector } from "wagmi";
 
 const clientCache = new Map<number, PublicClient>();
 const walletClientCache = new Map<number, WalletClient>();
@@ -49,7 +51,7 @@ export const getPublicClient = (chainId: number): PublicClient | null => {
   return client;
 };
 
-export const getWalletClient = (chainId: number): WalletClient | null => {
+export const getWalletClient = async (chainId: number, connector?: Connector | null): Promise<WalletClient | null> => {
   if (walletClientCache.has(chainId)) {
     return walletClientCache.get(chainId)!;
   }
@@ -59,14 +61,15 @@ export const getWalletClient = (chainId: number): WalletClient | null => {
     console.log(`Chain with id:${chainId} doesn't supported`);
     return null;
   }
-  if (!window || !window?.ethereum || window.ethereum === undefined) {
+  if (!window || !window?.ethereum || window.ethereum === undefined || !connector) {
     console.log(`There is no wallet providers`);
     return null;
   }
+  const providerInstance = await connector.getProvider() as EIP1193Provider;
 
   const client = createWalletClient({
     chain: chain,
-    transport: custom(window.ethereum),
+    transport: custom(providerInstance),
   });
 
   walletClientCache.set(chainId, client);

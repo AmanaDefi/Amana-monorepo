@@ -37,6 +37,7 @@ import {
   useSmartAccountClient,
   useUser,
   UseUserResult,
+  useConnection,
 } from "@account-kit/react";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
@@ -51,6 +52,9 @@ import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import Button from "./Button";
 import { useTransactionStore } from "@/store/transactionStore";
+import { useFundWalletStore } from "@/store/fundWalletStore";
+import { Connector } from "wagmi";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -69,6 +73,7 @@ const handleDepositTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function,
   sendUserOperation: Function,
+  activeConnector?: Connector | null,
 ) => {
   console.log("deposit", activeAccount);
   if (!activeAccount) return;
@@ -76,7 +81,6 @@ const handleDepositTransaction = async (
   console.log("Active Chain ID:", activeChain.id);
   console.log("Vault Strategy Chain ID:", vaultData.protocol.chainId);
   console.log("Active Chain Name:", activeChain.name);
-
   setTransactionCompleted(false);
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
 
@@ -102,6 +106,7 @@ const handleDepositTransaction = async (
       depositAmount,
       setcrossChainTxId,
       sendUserOperation,
+      activeConnector,
     );
     if (!receipt || !receipt.transactionHash) {
       throw new Error("Failed Tx");
@@ -286,6 +291,7 @@ const handleWithdrawTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function,
   sendUserOperation: Function,
+  activeConnector?: Connector | null,
 ) => {
   if (!activeAccount) return;
   console.log("=== WITHDRAW TRANSACTION START ===");
@@ -349,6 +355,7 @@ const handleWithdrawTransaction = async (
       withdrawZRC20 as Token,
       setcrossChainTxId,
       sendUserOperation,
+      activeConnector,
     );
 
     if (!receipt.transactionHash) {
@@ -1325,6 +1332,7 @@ function Interaction({
   const { client: scaClient } = useSmartAccountClient({
     type: "MultiOwnerModularAccount",
   });
+  const { currentConnector } = useMultiChain();
   const { sendUserOperation } = useSendUserOperation({
     client: scaClient,
     waitForTxn: true,
@@ -1835,6 +1843,7 @@ function Interaction({
       setInputBalance,
       setLastEventTxHash,
       sendUserOperation,
+      currentConnector,
     )();
 
     console.log("✅ [MAIN-ACTION] === HANDLE INTERACTION COMPLETED ===");
@@ -2121,6 +2130,7 @@ function handleInteraction(
   setInputBalance: Function,
   setLastEventTxHash: Function,
   sendUserOperation: any,
+  activeConnector?: Connector | null,
 ) {
   console.log("inputToken in handleInteraction: ", inputToken.symbol, {
     action,
@@ -2137,6 +2147,7 @@ function handleInteraction(
           activeChain,
           depositAmount,
           sendUserOperation,
+          activeConnector,
         );
         return result;
       };
@@ -2155,6 +2166,7 @@ function handleInteraction(
           setInputBalance,
           setLastEventTxHash,
           sendUserOperation,
+          activeConnector,
         );
         return result;
       };
@@ -2173,6 +2185,7 @@ function handleInteraction(
           setInputBalance,
           setLastEventTxHash,
           sendUserOperation,
+          activeConnector,
         );
         return result;
       };

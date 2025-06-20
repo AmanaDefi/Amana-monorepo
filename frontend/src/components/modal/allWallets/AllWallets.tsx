@@ -13,7 +13,6 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
-import { useState } from "react";
 
 const AllWAllets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -27,7 +26,7 @@ const AllWAllets = () => {
   const fundWalletConnect = () => {
     setStep("confirm");
   };
-  
+
   const {
     connectors,
     connect,
@@ -36,6 +35,8 @@ const AllWAllets = () => {
     onSuccess: (result) => {
       if (fundWalletStep === "connectWallet") {
         setWalletAddress(result.accounts[0]);
+        console.log('connectorId removed fron success')
+        localStorage.removeItem('connectorId');
         return fundWalletConnect();
       }
       return successAuth();
@@ -45,6 +46,8 @@ const AllWAllets = () => {
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
     setActiveConnector(connector);
+    console.log('connectorId setted')
+    localStorage.setItem('connectorId', connector.id);
     connect(
       { connector },
       {
@@ -53,6 +56,8 @@ const AllWAllets = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
+            console.log('connectorId removed from error')
+            localStorage.removeItem('connectorId');
 
             setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");
