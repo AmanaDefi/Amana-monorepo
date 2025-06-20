@@ -49,8 +49,8 @@ const ReceiveModal = () => {
           )}
         </div>
 
-        <div className="mt-[57px] font-gotham w-full max-h-[56px] bg-[#161C27] py-4 px-6 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
-          <span className="truncate text-[#535E73] text-[18px] font-bold">
+        <div className="mt-[57px] font-gotham w-full max-h-[56px] bg-[#161C27] py-4 px-4 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
+          <span className="text-[#535E73] text-[16px] font-bold">
             {walletAddress}
           </span>
           <button onClick={handleCopy} title="Copy mr-[27px]">
