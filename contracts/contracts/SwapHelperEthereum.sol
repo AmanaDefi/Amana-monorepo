@@ -232,7 +232,6 @@ contract SwapHelperEthereum is SwapHelperParent {
             amount,
             slippageBps
         );
-        console.log("minimumOut: %s of %s", minimumOut, outputToken);
         if (inputToken == CVX_ADDRESS) {
             uint256 amountOutCurve = 0;
 
@@ -269,15 +268,6 @@ contract SwapHelperEthereum is SwapHelperParent {
 
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
-            console.log(
-                "Swapping via Uniswap V3: %s -> %s",
-                inputToken,
-                outputToken
-            );
-            console.log(
-                "Encoded path: %s",
-                string(abi.encodePacked(encodedPath))
-            );
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
@@ -339,7 +329,6 @@ contract SwapHelperEthereum is SwapHelperParent {
             amount,
             slippageBps
         );
-        console.log("minimumOut: %s of %s", minimumOut, outputToken);
 
         (
             address[] memory path,
@@ -351,28 +340,13 @@ contract SwapHelperEthereum is SwapHelperParent {
                 outputToken,
                 UNISWAP_V3_FACTORY
             );
-        console.log("path[0]: %s", path[0]);
-        console.log("path[1]: %s", path[1]);
-        console.log("path[2]: %s", path[2]);
-        console.log("feeTiers[0]: %s", feeTiers[0]);
-        console.log("feeTiers[1]: %s", feeTiers[1]);
-        // Uniswap V3 Swap
-        console.log(
-            "Swapping via Uniswap V3: %s -> %s",
-            inputToken,
-            outputToken
-        );
-        console.log("Encoded path length: %s", encodedPath.length);
+
         approveOrIncreaseAllowance(
             IERC20(inputToken),
             UNISWAP_V3_ROUTER,
             amount
         );
-        console.log(
-            "Approved %s of %s for Uniswap V3 Router",
-            amount,
-            inputToken
-        );
+
         ISwapRouter.ExactInputParams memory params = ISwapRouter
             .ExactInputParams({
                 path: encodedPath,
@@ -381,15 +355,11 @@ contract SwapHelperEthereum is SwapHelperParent {
                 amountIn: amount,
                 amountOutMinimum: minimumOut
             });
-        console.log("Executing swap");
         try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
             uint256 out
         ) {
-            console.log("Swap successful, amount out: %s", out);
             return out;
-        } catch (bytes memory reason) {
-            console.log("Swap failed with reason:");
-            console.logBytes(reason);
+        } catch {
             return 0;
         }
     }
@@ -407,20 +377,17 @@ contract SwapHelperEthereum is SwapHelperParent {
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-        console.log("Swapping %s of %s to %s", amount, inputToken, outputToken);
         uint256 minAmountOut = calculateMinAmountOut(
             inputToken,
             outputToken,
             amount,
             slippageBps
         );
-        console.log("Minimum amount out: %s of %s", minAmountOut, outputToken);
         approveTokenWithPermit2(
             inputToken,
             uint160(amount),
             uint48(block.timestamp + maxDeadline)
         );
-        console.log("Approved %s of %s for Permit2", amount, inputToken);
         // === STEP 1: Command byte ===
         bytes memory commands = abi.encodePacked(uint8(0x10)); // V4_SWAP
 
@@ -431,12 +398,6 @@ contract SwapHelperEthereum is SwapHelperParent {
             uint8(15) // TAKE_ALL
         );
         bool zeroForOne = inputToken < outputToken;
-        console.log(
-            "Zero for one: %s, inputToken: %s, outputToken: %s",
-            zeroForOne,
-            inputToken,
-            outputToken
-        );
 
         // === STEP 3: Setup PoolKey ===
         IV4SwapRouter.PoolKey memory key = IV4SwapRouter.PoolKey({
@@ -478,12 +439,8 @@ contract SwapHelperEthereum is SwapHelperParent {
                 block.timestamp + maxDeadline
             )
         {
-            console.log("Universal Router V4 swap executed");
             amountOut = IERC20(outputToken).balanceOf(receiver);
-            console.log("Amount out: %s of %s", amountOut, outputToken);
-        } catch (bytes memory errorData) {
-            console.log("Universal Router V4 swap failed");
-            console.logBytes(errorData);
+        } catch {
             amountOut = 0;
         }
     }
@@ -563,9 +520,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             )
         {
             amountOut = IERC20(outputToken).balanceOf(receiver);
-        } catch (bytes memory err) {
-            console.log("Universal Router MultiHop swap failed");
-            console.logBytes(err);
+        } catch {
             amountOut = 0;
         }
     }

@@ -20,7 +20,6 @@ import "./interfaces/ICurveRegistry.sol";
 
 import "./interfaces/ICurvePoolDynamic.sol";
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 abstract contract SwapHelperParent is
     Initializable,
@@ -548,9 +547,7 @@ abstract contract SwapHelperParent is
             returns (uint256 out) {
                 amountOut = out;
                 return amountOut;
-            } catch (bytes memory reason) {
-                console.log("Uniswap V3 swap failed with reason:");
-                console.logBytes(reason); // this logs the raw revert data
+            } catch {
                 return 0;
             }
         }
@@ -562,7 +559,6 @@ abstract contract SwapHelperParent is
             UNISWAP_V2_FACTORY
         );
         if (path.length < 2) {
-            console.log("No valid Uniswap V2 path found");
             // No valid path found
             return 0;
         }
@@ -580,7 +576,6 @@ abstract contract SwapHelperParent is
             amountOut = amounts[amounts.length - 1];
             return amountOut;
         } catch {
-            console.log("Uniswap V2 swap failed");
             return 0;
         }
     }

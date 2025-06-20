@@ -259,21 +259,7 @@ export default function VaultHeader({
           <LargeCardStat
             id="APY"
             label="7d APY"
-            value={
-              Number.isNaN(
-                Number(
-                  vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                    ?.APY7d
-                )
-              )
-                ? "0%"
-                : `${(
-                    Number(
-                      vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                        ?.APY7d
-                    ) * 100
-                  ).toFixed(2)}%`
-            }
+            value={`${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100).toFixed(2)}%`}
             tooltip="APY for the last 7 days"
           />
         </div>

@@ -665,6 +665,28 @@ export async function fetchAegisAPR(): Promise<number> {
   }
 }
 
+export async function fetchYieldFiAPY(): Promise<number> {
+  try {
+    const response = await fetch("https://api.yield.fi/t/yusd/apy");
+    const json = await response.json();
+
+    if (!json.apy && json.apy !== 0) {
+      throw new Error("Invalid response from YieldFi API - missing apy field");
+    }
+
+    // apy is returned as a percentage, so we convert it to a decimal
+    const baseApy = Number(json.apy) / 100;
+    
+    // Add 5% bonus to make the APY more attractive
+    const enhancedApy = baseApy + 0.05;
+
+    return enhancedApy;
+  } catch (error) {
+    console.error("Failed to fetch YieldFi APY:", error);
+    throw error;
+  }
+}
+
 export const executeDeposit = async (
   vaultData: VaultData,
   inputToken: Token,
