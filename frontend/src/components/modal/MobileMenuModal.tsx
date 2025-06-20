@@ -16,11 +16,10 @@ import LinkedInLogo from "@public/logo/linkedIn.svg";
 import GlowIcon from "../svg/GlowIcon";
 import MenuNavigation from "../sidebar/MenuNavigation";
 import { DashboardIcon } from "../svg/sidebar/DashboardIcon";
-import { EarnIcon } from "../svg/sidebar/EarnIcon";
 import { ActivityIcon } from "../svg/sidebar/ActivityIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 
-const MENU_ITEMS = [
+const GUEST_MENU_ITEMS = [
   {
     path: "/",
     icon: <VaultsMobileMenuIcon height={19} width={19} fill="#1B46E0" />,
@@ -43,7 +42,7 @@ const MENU_ITEMS = [
   },
 ];
 
-export const USER_NAVIGATION_ITEMS = [
+const USER_MENU_ITEMS = [
   {
     path: "/dashboard",
     icon: <DashboardIcon height={19} width={19} color="#1B46E0" />,
@@ -51,13 +50,28 @@ export const USER_NAVIGATION_ITEMS = [
   },
   {
     path: "/",
-    icon: <EarnIcon height={19} width={19} color="#1B46E0" />,
-    title: "Earn",
+    icon: <VaultsMobileMenuIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Vaults",
   },
   {
     path: "/activity",
     icon: <ActivityIcon height={19} width={19} color="#1B46E0" />,
     title: "Activity",
+  },
+  {
+    path: "/leaderboard",
+    icon: <LeaderboardIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Leaderboard",
+  },
+  {
+    path: "/about",
+    icon: <AboutIcon height={19} width={19} fill="#1B46E0" />,
+    title: "About",
+  },
+  {
+    path: "/roadmap",
+    icon: <RoadmapIcon height={19} width={19} stroke="#1B46E0" />,
+    title: "Roadmap",
   },
 ];
 
@@ -69,6 +83,8 @@ interface MobileMenuProps {
 const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
   const path = usePathname();
   const { walletAddress } = useMultiChain();
+
+  const menuItems = walletAddress ? USER_MENU_ITEMS : GUEST_MENU_ITEMS;
 
   return (
     <div
@@ -91,38 +107,9 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
               <CloseModalIcon width={16} height={16} />
             </button>
           </div>
-          {walletAddress && (
-            <>
-              <div className="flex flex-col gap-6 items-center w-full mb-8">
-                {USER_NAVIGATION_ITEMS.map((link) => {
-                  return (
-                    <Link
-                      key={link.path}
-                      onClick={toggleMenu}
-                      href={link.path}
-                      className={classNames(
-                        "flex cursor-pointer flex-row items-center gap-[6px] text-white",
-                        {
-                          "text-blue-button":
-                            path === link.path ||
-                            (link.path === "/" && path === "/earn"),
-                        },
-                      )}
-                    >
-                      {link.icon}
-                      <p className="font-gotham font-normal text-base leading-4 text-center">
-                        {link.title}
-                      </p>
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="border-t border-[#535E73] w-[224px] mb-8"></div>
-            </>
-          )}
 
           <div className="flex flex-col gap-6 items-center w-full">
-            {MENU_ITEMS.map((link) => {
+            {menuItems.map((link) => {
               return (
                 <Link
                   key={link.path}
@@ -130,7 +117,11 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
                   href={link.path}
                   className={classNames(
                     "flex cursor-pointer flex-row items-center gap-[6px] text-white",
-                    { "text-blue-button": path === link.path },
+                    {
+                      "text-blue-button":
+                        path === link.path ||
+                        (link.path === "/" && path === "/earn"),
+                    },
                   )}
                 >
                   {link.icon}
@@ -142,6 +133,7 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
             })}
           </div>
         </div>
+
         <div className="flex flex-col justify-center items-center">
           <div className="flex flex-col justify-center items-center mb-[62px]">
             <div className="border-t border-[#535E73] w-[224px] mb-8"></div>

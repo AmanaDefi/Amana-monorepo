@@ -27,7 +27,7 @@ const DashboardWrapper = () => {
           </div>
         </div>
 
-        <div className="hidden lg:flex w-full max-w-[443px] pt-6">
+        <div className="hidden xl:flex w-full max-w-[443px] pt-6">
           <ProfitChart className="w-full h-full" />
         </div>
       </div>
