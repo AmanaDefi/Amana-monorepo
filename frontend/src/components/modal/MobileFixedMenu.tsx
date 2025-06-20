@@ -1,37 +1,24 @@
-import { menuItems } from "@/constants/sidebarMenu";
+"use client";
+
 import React from "react";
+import Link from "next/link";
+import { MOBILE_MENU_ITEMS } from "@/constants/mobileNavigation";
+import { useMobileNavigation } from "@/hooks/useMobileNavigation";
 
-interface LinkProps {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-}
+const MobileFixedMenu: React.FC = () => {
+  const { handleNavigation, isActive, isConnected } = useMobileNavigation();
 
-const Link: React.FC<LinkProps> = ({ href, children, className, onClick }) => (
-  <a href={href} className={className} onClick={onClick}>
-    {children}
-  </a>
-);
+  const bottomNavItems = MOBILE_MENU_ITEMS.filter(
+    (item) => item.showInBottomNav && (!item.requiresAuth || isConnected),
+  );
 
-interface MenuItem {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  type: "button" | "link";
-  href: string;
-}
-
-const MobileBottomMenu: React.FC = () => {
-  const [activeItem, setActiveItem] = React.useState<string>("earn");
-
-  const handleItemClick = (itemId: string): void => {
-    setActiveItem(itemId);
-  };
+  if (!isConnected && bottomNavItems.length === 0) {
+    return null;
+  }
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border border-[#3E3C59] font-gotham"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#3E3C59] font-gotham md:hidden"
       style={{
         backgroundColor: "#14171F",
         borderRadius: "16px 16px 0 0",
@@ -39,23 +26,28 @@ const MobileBottomMenu: React.FC = () => {
       }}
     >
       <div className="flex items-center justify-around h-full px-4">
-        {menuItems.map((item: MenuItem) => {
+        {bottomNavItems.map((item) => {
           const IconComponent = item.icon;
-          const isActive = activeItem === item.id;
+          const active = isActive(item.path);
 
           return (
             <Link
               key={item.id}
-              href={item.href}
-              onClick={() => handleItemClick(item.id)}
-              className="flex flex-col items-center justify-center space-y-1 transition-colors duration-200 text-white"
+              href={item.path}
+              onClick={() => handleNavigation(item.path, item.id)}
+              className="flex flex-col items-center justify-center space-y-1 transition-all duration-200 text-white min-w-[60px]"
             >
               <IconComponent
-                className={`transition-transform duration-200 w-5 h-5 ${
-                  isActive ? "scale-110 text-[#1B46E0]" : "scale-100"
+                className={`transition-all duration-200 w-5 h-5 ${
+                  active
+                    ? "scale-110 text-[#1B46E0]"
+                    : "scale-100 text-white hover:text-white"
                 }`}
+                color={active ? "#1B46E0" : "#535E73"}
               />
-              <span className="text-xs font-normal">{item.label}</span>
+              <span className="text-xs font-normal transition-colors duration-200 text-white">
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -64,4 +56,4 @@ const MobileBottomMenu: React.FC = () => {
   );
 };
 
-export default MobileBottomMenu;
+export default MobileFixedMenu;

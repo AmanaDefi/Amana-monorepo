@@ -1,9 +1,11 @@
+"use client";
+
 import React from "react";
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import VaultsMobileMenuIcon from "../svg/mobileMenu/VaultsMobileMenu";
 import LeaderboardIcon from "../svg/mobileMenu/LeaderBoard";
 import RoadmapIcon from "../svg/mobileMenu/Roadmap";
-import Link from "next/link";
 import AboutIcon from "../svg/mobileMenu/AboutIcon";
 import classNames from "classnames";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
@@ -59,13 +61,12 @@ export const USER_NAVIGATION_ITEMS = [
   },
 ];
 
-export default function MobileMenuModal({
-  toggleMenu,
-  isOpen,
-}: {
+interface MobileMenuProps {
   toggleMenu: () => void;
   isOpen: boolean;
-}) {
+}
+
+const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
   const path = usePathname();
   const { walletAddress } = useMultiChain();
 
@@ -101,7 +102,11 @@ export default function MobileMenuModal({
                       href={link.path}
                       className={classNames(
                         "flex cursor-pointer flex-row items-center gap-[6px] text-white",
-                        { "text-blue-button": path === link.path },
+                        {
+                          "text-blue-button":
+                            path === link.path ||
+                            (link.path === "/" && path === "/earn"),
+                        },
                       )}
                     >
                       {link.icon}
@@ -173,4 +178,6 @@ export default function MobileMenuModal({
       </nav>
     </div>
   );
-}
+};
+
+export default MobileMenuModal;
