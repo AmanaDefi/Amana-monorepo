@@ -26,7 +26,8 @@ import { Balance } from "@/types/types";
 import { Chain, formatEther, WalletClient } from "viem";
 import { getPublicClient, getWalletClient } from "@/utils/getPublicClient";
 import { AlchemySmartAccountClient, disconnect } from "@account-kit/core";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { PREVIOUS_ADDRESS } from "@/hooks/hooks";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
@@ -125,6 +126,7 @@ export const useMultiChain = () => {
 export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   // HYDRATION FIX: Start with consistent state for SSR
   const [isHydrated, setIsHydrated] = useState(false);
+  const path = usePathname();
   const [selectedChain, setSelectedChain] = useState<ChainType | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -248,6 +250,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       }
     } else if (!activeAccount?.address && !connected) {
       setWalletAddress(null);
+      localStorage.setItem(PREVIOUS_ADDRESS, "");
     }
   }, [activeAccount?.address, connected, disconnect, scaAccount]);
 
@@ -255,6 +258,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const disconnectWallet = useCallback(async () => {
     debugLog("Disconnecting all wallets...");
     setWalletAddress(null);
+    localStorage.setItem(PREVIOUS_ADDRESS, "");
     setSelectedChain(null);
     disconnect();
     evmDisconnect();
@@ -262,8 +266,15 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     clearWalletState();
     debugLog("All wallets disconnected");
 
-    router.push("/");
-  }, [disconnect, evmDisconnect, router]);
+    if (
+      path !== "/" &&
+      path !== "/leaderboard" &&
+      path !== "/about" &&
+      path !== "/vaults"
+    ) {
+      router.push("/");
+    }
+  }, [disconnect, evmDisconnect, router, path]);
 
   const getEvmBalance = useCallback(
     async (walletAddress: string) => {
@@ -365,6 +376,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           debugLog("Wallet disconnected in another tab");
           setSelectedChain(null);
           setWalletAddress(null);
+          localStorage.setItem(PREVIOUS_ADDRESS, "");
           setIsModalOpen(true);
         } else if (e.newValue !== e.oldValue) {
           // Wallet state changed in another tab

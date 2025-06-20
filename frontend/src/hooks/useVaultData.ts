@@ -22,6 +22,7 @@ import { VAULT_DATA } from "@/constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useUser } from "@account-kit/react";
 
 export const useVaultData = () => {
   const [loading, setLoading] = useState<boolean>(true);
