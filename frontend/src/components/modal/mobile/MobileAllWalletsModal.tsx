@@ -1,11 +1,8 @@
 "use client";
 
 import { useAuthStore } from "@/store/authStore";
-import CloseModalIcon from "@/components/svg/CloseModalIcon";
-import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
 import { MobileModal } from "./MobileModal";
-import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
 import { useConnect } from "@account-kit/react";
 import { Connector } from "wagmi";
@@ -63,24 +60,11 @@ const MobileAllWallets = () => {
   return (
     <MobileModal
       isOpen={step === "mobileAllWallets" || fundWalletStep === "connectWallet"}
-          onClose={handleClose}
-          height="full"
+      onClose={handleClose}
+      height="full"
       maxHeight="max-h-[484px]"
       paddingClass="p-5 pb-0"
-      customCloseButton={
-        <>
-          <div className="absolute top-[16px] left-[16px] z-10 rounded-[8px] flex items-center justify-center w-10 h-10">
-            <ErrorInputIcon width={18} height={18} className="fill-[#1B46E0]" />
-          </div>
-          <button
-            onClick={handleClose}
-            className="absolute top-[16px] right-[16px] z-10 rounded-[8px] flex items-center justify-center w-10 h-10"
-            aria-label="Close"
-          >
-            <CloseModalIcon width={12} height={12} />
-          </button>
-        </>
-      }
+      showHeader={true}
     >
       <div className="flex flex-col h-full pt-14">
         <div

@@ -1,6 +1,7 @@
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Fragment, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { MobileModalHeader } from "./MobileModalHeader";
 
 type MobileModalProps = {
   isOpen: boolean;
@@ -12,6 +13,9 @@ type MobileModalProps = {
   height?: string;
   noBlur?: boolean;
   maxHeight?: string;
+  showHeader?: boolean;
+  headerInfoText?: string;
+  showInfoBlock?: boolean;
 };
 
 export const MobileModal = ({
@@ -24,7 +28,9 @@ export const MobileModal = ({
   height = "full",
   maxHeight,
   noBlur = false,
-  
+  showHeader = false,
+  headerInfoText,
+  showInfoBlock = true,
 }: MobileModalProps) => {
   return (
     <AnimatePresence>
@@ -54,9 +60,16 @@ export const MobileModal = ({
                     stiffness: 300,
                     damping: 30,
                   }}
-                  className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border overflow-hidden block md:hidden`}
+                  className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border overflow-visible block md:hidden`}
                 >
-                  {customCloseButton}
+                  {customCloseButton ||
+                    (showHeader && (
+                      <MobileModalHeader
+                        onClose={onClose}
+                        infoText={headerInfoText}
+                        showInfoBlock={showInfoBlock}
+                      />
+                    ))}
                   <div className={`${paddingClass} h-full overflow-y-auto`}>
                     {children}
                   </div>
