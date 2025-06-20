@@ -38,7 +38,7 @@ export const Modal = ({
               className={`fixed h-[100vh] inset-0 ${
                 noBlur
                   ? "bg-transparent"
-                  : "bg-[rgba(12,16,21,0.5)] backdrop-blur-[20px]"
+                  : "bg-[rgba(12,16,21,0.5)] backdrop-blur-[10px]"
               }`}
             />
 

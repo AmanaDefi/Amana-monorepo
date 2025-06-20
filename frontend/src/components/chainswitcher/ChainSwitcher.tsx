@@ -19,7 +19,6 @@ const [zetaChain] = SUPPORTED_CHAINS;
 // ChainSwitcher Component
 const ChainSwitcher: React.FC = () => {
   const wallet = useUser();
-  const { refetchBalance } = useMultiChain();
   const { chain: currentChain, setChain } = useChain(); // Get the current chain (updates automatically)
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
@@ -151,7 +150,7 @@ const ChainSwitcher: React.FC = () => {
         variant="secondary"
         disabled={!wallet}
         onClick={() => setIsOpen(!isOpen)}
-        className="cursor-pointer !p-2 !max-w-[56px] !max-h-[58px] "
+        className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
         data-tooltip-id="chain-switcher-tooltip"
         data-tooltip-content={
           wallet?.type === "eoa"
@@ -161,12 +160,11 @@ const ChainSwitcher: React.FC = () => {
               : "Connect wallet to switch networks"
         }
       >
-        <div className="bg-[#24262f] rounded-full flex items-center justify-center">
+        <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
           <Image
             src={CHAIN_ICONS[currentChain.id].url}
-            width={40}
-            height={40}
             alt={currentChain.name}
+            fill
           />
         </div>
       </Button>

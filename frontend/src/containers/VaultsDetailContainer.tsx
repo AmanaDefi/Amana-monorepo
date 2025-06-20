@@ -43,9 +43,11 @@ import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
-import { useChain } from "@account-kit/react";
+import { useChain, useUser } from "@account-kit/react";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
+import { useWallet } from "@solana/wallet-adapter-react";
+
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -57,6 +59,8 @@ const VaultsDetailContainer: React.FC<{
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
+  const user = useUser();
+  const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
@@ -164,8 +168,7 @@ const VaultsDetailContainer: React.FC<{
           if (savedChain.id !== activeChain.id) {
             switchToChain(savedChain);
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     }
   }, [vaultID, switchToChain, activeChain]);
@@ -173,6 +176,11 @@ const VaultsDetailContainer: React.FC<{
   useEffect(() => {
     const checkTransactionState = () => {
       if (!vaultID) return;
+
+      if (!user?.address && !wallet?.publicKey) {
+        localStorage.removeItem(vaultID.toString());
+        return;
+      }
 
       const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
       const vaultTxData = getLocalStorageObject(vaultID.toString());
@@ -195,7 +203,7 @@ const VaultsDetailContainer: React.FC<{
     };
 
     checkTransactionState();
-  }, [vaultID]);
+  }, [vaultID, user, wallet]);
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;

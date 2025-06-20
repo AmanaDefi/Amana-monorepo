@@ -12,6 +12,7 @@ import ZetaChainLogo from "@public/logo/zetachain.svg";
 import { AppButton } from "@/components/button/AppButton";
 import { showSuccessToast } from "@/toasts";
 import { useState } from "react";
+import CloseModalIcon from "@/components/svg/CloseModalIcon";
 
 export const Deposit = () => {
   const {
@@ -69,6 +70,14 @@ export const Deposit = () => {
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[526px]"
     >
+      <button
+        onClick={closeAll}
+        className="rounded-[8px] absolute top-5 right-4 flex items-center justify-center w-10 h-10"
+        aria-label="Close"
+      >
+        <CloseModalIcon width={16} height={16} />
+      </button>
+
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -102,15 +111,12 @@ export const Deposit = () => {
             </AppButton>
           </div>
 
-          <div className="flex items-center gap-3 opacity-40">
-            <span
-              className="uppercase text-white text-sm font-normal tracking-wide"
-              style={{ fontSize: "16px", lineHeight: "112%" }}
-            >
+          <div className="flex flex-row items-center gap-3 opacity-40">
+            <span className="uppercase text-white text-base leading-7 font-normal tracking-wide">
               Backed by
             </span>
             <Link href="https://www.zetachain.com/" target="_blank">
-              <ZetaChainLogo height={26} className="w-auto h-[26px]" />
+              <ZetaChainLogo height={26} className="w-auto h-[26px] mb-[1px]" />
             </Link>
           </div>
         </div>

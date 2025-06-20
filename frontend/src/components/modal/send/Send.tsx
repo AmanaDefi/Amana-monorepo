@@ -249,8 +249,8 @@ export const Send = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <p className="text-[18px] font-bold mb-4">Send from</p>
-              <div className="font-gotham w-full h-[48px] bg-[#161C27] px-6 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center">
-                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              <div className="font-gotham w-full h-[48px] bg-[#161C27] px-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center">
+                {walletAddress}
               </div>
             </div>
 
@@ -260,7 +260,7 @@ export const Send = () => {
                 type="text"
                 placeholder="Enter wallet address..."
                 {...register("recipientAddress")}
-                className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                className={`w-full rounded-[8px] px-3 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
                   errors.recipientAddress
                     ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
                     : "border-[#2C2F36]"

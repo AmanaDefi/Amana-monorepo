@@ -6,7 +6,6 @@ import {
 import { alchemy } from "@account-kit/infra";
 import { QueryClient } from "@tanstack/react-query";
 import { SUPPORTED_CHAINS, AlchemyZetachain } from "@/constants/chainConfig";
-import { injected } from "wagmi";
 import { walletConnect } from "wagmi/connectors";
 
 export const alchemyApiKey =
@@ -27,12 +26,12 @@ const uiConfig: AlchemyAccountsUIConfig = {
   //       { type: "passkey" },
   //       { type: "social", authProviderId: "google", mode: "popup" },
   //     ],
-  //     // [
-  //     //   {
-  //     //     type: "external_wallets",
-  //     //     walletConnect: { projectId: walletConnectProjectId },
-  //     //   },
-  //     // ],
+  //     [
+  //       {
+  //         type: "external_wallets",
+  //         walletConnect: { projectId: walletConnectProjectId },
+  //       },
+  //     ],
   //   ],
   //   addPasskeyOnSignup: true,
   // },

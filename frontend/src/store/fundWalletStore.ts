@@ -41,7 +41,7 @@ interface FundWalletState {
   setDepositAmount: (depositAmount: string) => void;
   setCurrency: (currency: Token | undefined) => void;
   closeAll: () => void;
-  setActiveConnector: (connector: Connector) => void;
+  setActiveConnector: (connector: Connector | null) => void;
   setWalletAddress: (walletAddress: string) => void;
 }
 export const useFundWalletStore = create<FundWalletState>((set) => ({
