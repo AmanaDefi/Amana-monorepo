@@ -17,7 +17,8 @@ import {
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
   calculateCombinedBalancerAPY,
-  fetchAegisAPR
+  fetchAegisAPR,
+  fetchYieldFiAPY
 
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
@@ -234,6 +235,8 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Aegis") {
                 APY7d = await fetchAegisAPR();
+              } else if (vault.protocol.name === "YieldFi") {
+                APY7d = await fetchYieldFiAPY();
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
                 RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
