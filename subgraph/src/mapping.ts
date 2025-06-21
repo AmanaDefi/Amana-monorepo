@@ -278,6 +278,24 @@ function updateUserBalance(vaultAddress: Address, userAddress: Bytes, userPositi
   }
 }
 
+// Helper function to calculate normalized TVL
+function calculateNormalizedTVL(tvl: BigInt, decimals: i32): BigDecimal {
+  if (tvl.equals(BigInt.zero())) {
+    return BigDecimal.zero();
+  }
+  
+  // Convert tvl to BigDecimal and divide by 10^decimals
+  let tvlDecimal = tvl.toBigDecimal();
+  let divisor = BigDecimal.fromString("1");
+  
+  // Calculate 10^decimals
+  for (let i = 0; i < decimals; i++) {
+    divisor = divisor.times(BigDecimal.fromString("10"));
+  }
+  
+  return tvlDecimal.div(divisor);
+}
+
 // Function to update vault totals from contract
 function updateVaultTotals(vaultAddress: Address, vault: Vault): void {
   let contract = AmanaVault.bind(vaultAddress);
@@ -292,6 +310,8 @@ function updateVaultTotals(vaultAddress: Address, vault: Vault): void {
   let totalAssetsCall = contract.try_totalAssets();
   if (!totalAssetsCall.reverted) {
     vault.tvl = totalAssetsCall.value;
+    // Calculate normalized TVL using asset decimals
+    vault.normalizedTVL = calculateNormalizedTVL(vault.tvl, vault.assetDecimals);
   }
   
   // Update price per share
@@ -362,6 +382,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   // Initialize default values
   entity.sharesSupply = BigInt.zero();
   entity.tvl = BigInt.zero();
+  entity.normalizedTVL = BigDecimal.zero();
   entity.totalDeposited = BigInt.zero();
   entity.totalWithdrawn = BigInt.zero();
   entity.pricePerShare = BigDecimal.zero();
@@ -455,8 +476,10 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     let totalAssetsCall = vaultContract.try_totalAssets();
     if (!totalAssetsCall.reverted) {
       entity.tvl = totalAssetsCall.value;
+      entity.normalizedTVL = calculateNormalizedTVL(entity.tvl, entity.assetDecimals);
     } else {
       entity.tvl = BigInt.zero();
+      entity.normalizedTVL = BigDecimal.zero();
     }
     
     // Initialize other default values
@@ -505,6 +528,7 @@ function getOrCreateVaultDayData(vaultId: string, timestamp: BigInt): VaultDayDa
     dayData.date = day;
     dayData.sharesSupply = BigInt.zero();
     dayData.tvl = BigInt.zero();
+    dayData.normalizedTVL = BigDecimal.zero();
     dayData.dailyDeposit = BigInt.zero();
     dayData.dailyWithdraw = BigInt.zero();
     dayData.pricePerShare = BigDecimal.zero();
@@ -599,6 +623,7 @@ export function handleDeposited(event: Deposited): void {
   dayData.dailyDeposit = dayData.dailyDeposit.plus(event.params.amount);
   dayData.sharesSupply = vault.sharesSupply;
   dayData.tvl = vault.tvl;
+  dayData.normalizedTVL = vault.normalizedTVL;
   dayData.pricePerShare = vault.pricePerShare;
   dayData.depositCount = dayData.depositCount + 1;
   dayData.save();
@@ -657,6 +682,7 @@ export function handleWithdrawn(event: Withdrawn): void {
   dayData.dailyWithdraw = dayData.dailyWithdraw.plus(event.params.amount);
   dayData.sharesSupply = vault.sharesSupply;
   dayData.tvl = vault.tvl;
+  dayData.normalizedTVL = vault.normalizedTVL;
   dayData.pricePerShare = vault.pricePerShare;
   dayData.withdrawalCount = dayData.withdrawalCount + 1;
   dayData.save();
@@ -721,6 +747,7 @@ export function handleDepositedLegacy(event: Deposited): void {
   dayData.dailyDeposit = dayData.dailyDeposit.plus(event.params.amount);
   dayData.sharesSupply = vault.sharesSupply;
   dayData.tvl = vault.tvl;
+  dayData.normalizedTVL = vault.normalizedTVL;
   dayData.pricePerShare = vault.pricePerShare;
   dayData.depositCount = dayData.depositCount + 1;
   dayData.save();
@@ -779,6 +806,7 @@ export function handleWithdrawnLegacy(event: Withdrawn): void {
   dayData.dailyWithdraw = dayData.dailyWithdraw.plus(event.params.amount);
   dayData.sharesSupply = vault.sharesSupply;
   dayData.tvl = vault.tvl;
+  dayData.normalizedTVL = vault.normalizedTVL;
   dayData.pricePerShare = vault.pricePerShare;
   dayData.withdrawalCount = dayData.withdrawalCount + 1;
   dayData.save();

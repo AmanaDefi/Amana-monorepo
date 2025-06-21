@@ -68,6 +68,7 @@ export const VaultRow: FC<Props> = React.memo(
           <div className="flex w-[40%] flex-row gap-14 items-center justify-center">
             <p className="text-white font-bold text-lg leading-5 -tracking-1 w-[50%] text-center">
               ${formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
+              ${totalAssets?.totalAssets ? formatNumberWithSuffix(Number(totalAssets.totalAssets)) : "0"}
             </p>
             <div className="w-[50%] flex items-center justify-center">
               <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">

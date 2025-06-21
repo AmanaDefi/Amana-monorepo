@@ -1,4 +1,4 @@
-import { Dispatch, FC, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, FC, useEffect, useRef, useState } from "react";
 import { SetStateAction } from "jotai";
 
 import { VaultData } from "@/types/types";
@@ -7,8 +7,8 @@ import FiltersIcon from "@/components/svg/Filters";
 import CardsMenuIcon from "@/components/svg/ListMenuCards";
 import ListMenuIcon from "@/components/svg/ListMenuIcon";
 import SearchIcon from "@/components/svg/Search";
-import Button from "@/components/Button";
 import classNames from "classnames";
+import { NETWORK_FILTER_OPTIONS, PROTOCOL_FILTER_OPTIONS } from "@/constants/chainConfig";
 
 const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "Risk" }];
 
@@ -52,39 +52,26 @@ export const VaultFilters: FC<Props> = ({
   const filterRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const chains = useMemo(() => {
-    const uniqueNetworksMap = new Map();
+  const [localSearch, setLocalSearch] = useState(searchTerm);
 
-    vaults.forEach((vault) => {
-      if (
-        vault &&
-        vault.protocol &&
-        typeof vault.protocol.network === "string"
-      ) {
-        const networkName = vault.protocol.network;
-        const iconUrl = vault.imgURL;
+  // Sync local state when external searchTerm changes from parent (e.g., clear)
+  useEffect(() => {
+    setLocalSearch(searchTerm);
+  }, [searchTerm]);
 
-        if (!uniqueNetworksMap.has(networkName)) {
-          uniqueNetworksMap.set(networkName, {
-            value: networkName,
-            icon: iconUrl,
-          });
-        }
+  // Debounce: update parent after delay
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      if (localSearch !== searchTerm) {
+        setSearchTerm(localSearch);
       }
-    });
+    }, 800);
 
-    return Array.from(uniqueNetworksMap.values());
-  }, [vaults]);
+    return () => clearTimeout(timerId);
+  }, [localSearch]);
 
-  const protocols = useMemo(() => {
-    const uniqueProtocols = Array.from(
-      new Set(vaults.map((vault) => vault.protocol.name)),
-    );
-
-    return uniqueProtocols.map((prot) => {
-      return { value: prot };
-    });
-  }, [vaults]);
+  const chains = NETWORK_FILTER_OPTIONS;
+  const protocols = PROTOCOL_FILTER_OPTIONS;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -199,21 +186,32 @@ export const VaultFilters: FC<Props> = ({
               listType="simple"
             />
           </div>
-          <div
-            onClick={() => inputRef?.current?.focus()}
-            className="focus-within:border-blue-button  bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search name or paste address"
-              className="text-white focus:outline-none bg-transparent w-full"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute left-4 top-3">
-              <SearchIcon />
+          <div className="relative">
+            <div
+              onClick={() => inputRef?.current?.focus()}
+              className="focus-within:border-blue-button  bg-[#14171F] w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search name or paste address"
+                className="text-white focus:outline-none bg-transparent w-full"
+                value={localSearch}
+                maxLength={100}
+                onChange={(e) => setLocalSearch(e.target.value)}
+              />
+              <div className="absolute left-4 top-3">
+                <SearchIcon />
+              </div>
             </div>
+            {localSearch.length > 80 && (
+              <div className="text-xs text-gray-400 mt-1 ml-2">
+                {localSearch.length}/100 characters
+                {localSearch.length >= 100 && (
+                  <span className="text-orange-400 ml-2">Maximum length reached</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

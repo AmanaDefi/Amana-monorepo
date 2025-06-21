@@ -38,9 +38,9 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   COMPOUND: "/compound.png",
   AAVE: "/aave.png",
   FLUID: "/fluid.png",
-  VENUS: "/venus.png",
+  VENUS: "/Venus.png",
   TON: "/ton_logo.png",
-  MOONWELL: "/Moonwell.png",
+  MOONWELL: "/Moonwell.jpg",
   CURVE: "/curve.png",
   EUER: "/euler.svg",
   ARB: "/arbitrum-arb-logo.png",
@@ -1116,3 +1116,65 @@ export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
   900: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Mainnet
   901: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Testnet
 };
+
+export const NETWORK_FILTER_OPTIONS = [
+  {
+    value: "Arbitrum",
+    icon: TOKEN_LOGO_URLS.ARB,
+  },
+  {
+    value: "Avalanche",
+    icon: TOKEN_LOGO_URLS.AVAX,
+  },
+  {
+    value: "Base",
+    icon: TOKEN_LOGO_URLS.BASE,
+  },
+  {
+    value: "BSC",
+    icon: TOKEN_LOGO_URLS.BNB,
+  },
+  {
+    value: "Ethereum",
+    icon: TOKEN_LOGO_URLS.ETH,
+  },
+  {
+    value: "Polygon",
+    icon: TOKEN_LOGO_URLS.POL,
+  },
+  {
+    value: "ZetaChain",
+    icon: TOKEN_LOGO_URLS.ZETA,
+  },
+];
+
+export const PROTOCOL_FILTER_OPTIONS = [
+  {
+    value: "Aave",
+    icon: TOKEN_LOGO_URLS.AAVE,
+  },
+  {
+    value: "Compound",
+    icon: TOKEN_LOGO_URLS.COMPOUND,
+  },
+  {
+    value: "Curve",
+    icon: TOKEN_LOGO_URLS.CURVE,
+  },
+  {
+    value: "Euler",
+    icon: TOKEN_LOGO_URLS.EUER,
+  },
+  {
+    value: "Fluid",
+    icon: TOKEN_LOGO_URLS.FLUID,
+  },
+  {
+    value: "Moonwell",
+    icon: TOKEN_LOGO_URLS.MOONWELL,
+  },
+  {
+    value: "Venus",
+    icon: TOKEN_LOGO_URLS.VENUS,
+  },
+];

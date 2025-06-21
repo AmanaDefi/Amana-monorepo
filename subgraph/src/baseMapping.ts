@@ -3,6 +3,24 @@ import { AmanaVault } from "../generated/EulerUSDC_Base/AmanaVault";
 import { Vault, VaultDayData, Deposit, Withdrawal } from "../generated/schema";
 import { BigInt, ethereum, dataSource, BigDecimal } from "@graphprotocol/graph-ts";
 
+// Helper function to calculate normalized TVL
+function calculateNormalizedTVL(tvl: BigInt, decimals: i32): BigDecimal {
+  if (tvl.equals(BigInt.zero())) {
+    return BigDecimal.zero();
+  }
+  
+  // Convert tvl to BigDecimal and divide by 10^decimals
+  let tvlDecimal = tvl.toBigDecimal();
+  let divisor = BigDecimal.fromString("1");
+  
+  // Calculate 10^decimals
+  for (let i = 0; i < decimals; i++) {
+    divisor = divisor.times(BigDecimal.fromString("10"));
+  }
+  
+  return tvlDecimal.div(divisor);
+}
+
 function getOrCreateVaultDayData(vaultId: string, timestamp: BigInt): VaultDayData {
   let day = timestamp.toI32() / 86400;
   let id = vaultId + "-" + day.toString();
@@ -13,6 +31,7 @@ function getOrCreateVaultDayData(vaultId: string, timestamp: BigInt): VaultDayDa
     dayData.date = day;
     dayData.sharesSupply = BigInt.zero();
     dayData.tvl = BigInt.zero();
+    dayData.normalizedTVL = BigDecimal.zero();
     dayData.dailyDeposit = BigInt.zero();
     dayData.dailyWithdraw = BigInt.zero();
     dayData.pricePerShare = BigDecimal.zero();
@@ -57,6 +76,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   v.createdAtTimestamp = event.block.timestamp;
   v.sharesSupply = BigInt.zero();
   v.tvl = BigInt.zero();
+  v.normalizedTVL = BigDecimal.zero();
   v.totalDeposited = BigInt.zero();
   v.totalWithdrawn = BigInt.zero();
   v.pricePerShare = BigDecimal.zero();
@@ -109,13 +129,17 @@ export function handleDeposited(event: Deposited): void {
   v.sharesSupply = v.sharesSupply.plus(event.params.shares);
   let contract = AmanaVault.bind(event.address);
   let tvl = contract.try_totalAssets();
-  if (!tvl.reverted) v.tvl = tvl.value;
+  if (!tvl.reverted) {
+    v.tvl = tvl.value;
+    v.normalizedTVL = calculateNormalizedTVL(v.tvl, v.assetDecimals);
+  }
   v.save();
 
   let d = getOrCreateVaultDayData(id, event.block.timestamp);
   d.dailyDeposit = d.dailyDeposit.plus(event.params.amount);
   d.sharesSupply = v.sharesSupply;
   d.tvl = v.tvl;
+  d.normalizedTVL = v.normalizedTVL;
   d.save();
   
   // Create deposit record
@@ -155,13 +179,17 @@ export function handleWithdrawn(event: Withdrawn): void {
   v.sharesSupply = v.sharesSupply.minus(event.params.shares);
   let contract = AmanaVault.bind(event.address);
   let tvl = contract.try_totalAssets();
-  if (!tvl.reverted) v.tvl = tvl.value;
+  if (!tvl.reverted) {
+    v.tvl = tvl.value;
+    v.normalizedTVL = calculateNormalizedTVL(v.tvl, v.assetDecimals);
+  }
   v.save();
 
   let d = getOrCreateVaultDayData(id, event.block.timestamp);
   d.dailyWithdraw = d.dailyWithdraw.plus(event.params.amount);
   d.sharesSupply = v.sharesSupply;
   d.tvl = v.tvl;
+  d.normalizedTVL = v.normalizedTVL;
   d.save();
   
   // Create withdrawal record

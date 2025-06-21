@@ -3,6 +3,24 @@ import { AmanaVault } from "../generated/VenusUSDT_BSC/AmanaVault";
 import { Vault, VaultDayData, Deposit, Withdrawal } from "../generated/schema";
 import { BigInt, ethereum, dataSource, BigDecimal } from "@graphprotocol/graph-ts";
 
+// Helper function to calculate normalized TVL
+function calculateNormalizedTVL(tvl: BigInt, decimals: i32): BigDecimal {
+  if (tvl.equals(BigInt.zero())) {
+    return BigDecimal.zero();
+  }
+  
+  // Convert tvl to BigDecimal and divide by 10^decimals
+  let tvlDecimal = tvl.toBigDecimal();
+  let divisor = BigDecimal.fromString("1");
+  
+  // Calculate 10^decimals
+  for (let i = 0; i < decimals; i++) {
+    divisor = divisor.times(BigDecimal.fromString("10"));
+  }
+  
+  return tvlDecimal.div(divisor);
+}
+
 function getOrCreateVaultDayData(vaultId: string, timestamp: BigInt): VaultDayData {
   let day = timestamp.toI32() / 86400;
   let id = vaultId + "-" + day.toString();

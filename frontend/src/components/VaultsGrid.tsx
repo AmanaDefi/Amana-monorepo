@@ -1,17 +1,17 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { 
-  VaultData, 
-  VaultAPY, 
-  VaultTotalAssets, 
-  VaultTotalAssetsinToken, 
-  UserVaultBalance 
+import {
+  VaultData,
+  VaultAPY,
+  VaultTotalAssets,
+  VaultTotalAssetsinToken,
+  UserVaultBalance
 } from '@/types/types';
-import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
+import { formatNumberWithSuffix, formatTokenBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
 import { useMultiChain } from '@/providers/MultiChainProvider';
-// import { formatTokenBalance } from '@/utils/utils';
+import { useLayoutStore } from '@/store/store';
 
 // Risk levels mapping
 export const RISK_LEVELS: Record<number, { level: string; color: string }> = {
@@ -43,7 +43,19 @@ interface VaultsGridProps {
   vaultAPYs: VaultAPY[];
   userVaultBalances: UserVaultBalance[];
   vaultTotalAssets: VaultTotalAssets[];
-  vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
+  vaultTotalAssetsinToken?: VaultTotalAssetsinToken[];
+  // Pagination
+  currentPage?: number;
+  totalPages?: number;
+  totalCount?: number;
+  pageSize?: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
+  onPageChange?: (page: number) => void;
+  // Sorting
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
 const VaultsGrid: React.FC<VaultsGridProps> = ({
@@ -52,51 +64,97 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   vaultAPYs,
   userVaultBalances,
   vaultTotalAssets,
-  vaultTotalAssetsinToken,
+  vaultTotalAssetsinToken = [],
+  // Pagination
+  currentPage = 1,
+  totalPages = 1,
+  totalCount = 0,
+  pageSize = 6,
+  onPageChange,
+  // Sorting
+  sortBy: externalSortBy = "apy",
+  sortOrder: externalSortOrder = "desc",
+  onSortChange,
 }) => {
   const router = useRouter();
   const { walletAddress } = useMultiChain();
   const filterRef = useRef<HTMLDivElement>(null);
-  
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // State for filters and sorting
   const [searchTerm, setSearchTerm] = useState('');
   const [chainFilter, setChainFilter] = useState<string>('');
   const [protocolFilter, setProtocolFilter] = useState<string>('');
-  const [sortBy, setSortBy] = useState<string>('apy');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>(externalSortBy);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(externalSortOrder);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const itemsPerPage = 6;
-  
+
+  // Use useLayoutStore for adaptive page size
+  const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
+  const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
+
+  // Adaptive logic for VaultsGrid
+  useEffect(() => {
+    const updatePageSize = () => {
+      const width = window.innerWidth;
+      const newSize = width >= 1805 ? 8 : 6;
+      if (newSize !== itemsPerPage) {
+        setItemsPerPage(newSize);
+      }
+    };
+
+    updatePageSize();
+    window.addEventListener('resize', updatePageSize);
+
+    return () => {
+      window.removeEventListener('resize', updatePageSize);
+    };
+  }, [setItemsPerPage, itemsPerPage]);
+
+  useEffect(() => {
+    setSortBy(externalSortBy);
+    setSortOrder(externalSortOrder);
+  }, [externalSortBy, externalSortOrder]);
+
+  const shouldUseLocalFiltering = !onPageChange || !onSortChange;
+
   // Extract unique chains and protocols for filters
   const chains = useMemo(() => {
     return Array.from(new Set(vaults.map(vault => vault.protocol.network)));
   }, [vaults]);
-  
+
   const protocols = useMemo(() => {
     return Array.from(new Set(vaults.map(vault => vault.protocol.name)));
   }, [vaults]);
-  
+
   // Filter vaults based on search, chain, and protocol
   const filteredVaults = useMemo(() => {
+    if (!shouldUseLocalFiltering) {
+      return vaults;
+    }
+
     return vaults.filter(vault => {
-      const matchesSearch = searchTerm === '' || 
+      const matchesSearch = searchTerm === '' ||
         vault.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vault.protocol.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vault.protocol.network.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesChain = chainFilter === '' || vault.protocol.network === chainFilter;
       const matchesProtocol = protocolFilter === '' || vault.protocol.name === protocolFilter;
-      
+
       return matchesSearch && matchesChain && matchesProtocol;
     });
-  }, [vaults, searchTerm, chainFilter, protocolFilter]);
-  
+  }, [vaults, searchTerm, chainFilter, protocolFilter, shouldUseLocalFiltering]);
+
   // Sort vaults based on selected criteria
   const sortedVaults = useMemo(() => {
+    if (!shouldUseLocalFiltering) {
+      return filteredVaults;
+    }
+
     return [...filteredVaults].sort((a, b) => {
       let aValue: any, bValue: any;
-      
+
       switch (sortBy) {
         case 'apy':
           aValue = Number(vaultAPYs.find((apy: VaultAPY) => apy.vaultId === a.id)?.APY7d || 0);
@@ -113,29 +171,58 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         default:
           return 0;
       }
-      
+
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1;
       } else {
         return aValue < bValue ? 1 : -1;
       }
     });
-  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
-  
+  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets, shouldUseLocalFiltering]);
+
   // Pagination logic
   const paginatedVaults = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+    if (!shouldUseLocalFiltering) {
+      return sortedVaults;
+    }
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
     return sortedVaults.slice(startIndex, endIndex);
-  }, [sortedVaults, currentPage, itemsPerPage]);
-  
-  const totalPages = Math.ceil(sortedVaults.length / itemsPerPage);
-  
+  }, [sortedVaults, currentPage, pageSize, shouldUseLocalFiltering]);
+
+  const localTotalPages = Math.ceil(sortedVaults.length / pageSize);
+  const displayTotalPages = shouldUseLocalFiltering ? localTotalPages : totalPages;
+  const displayTotalCount = shouldUseLocalFiltering ? filteredVaults.length : totalCount;
+
+  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    if (onSortChange) {
+      onSortChange(newSortBy, newSortOrder);
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder(newSortOrder);
+    }
+  };
+
+  const toggleSortOrder = () => {
+    const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+    handleSortChange(sortBy, newOrder);
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setChainFilter('');
+    setProtocolFilter('');
+    handleSortChange('apy', 'desc');
+  };
+
   // Reset pagination when filters change
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, chainFilter, protocolFilter, sortBy, sortOrder]);
-  
+    if (onPageChange) {
+      onPageChange(currentPage);
+    }
+  }, [currentPage, onPageChange]);
+
   // Handle clicks outside the filter dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -143,38 +230,26 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         setShowMobileFilters(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
+
   const handleVaultClick = (vaultId: string) => {
     router.push(`/vaults/${vaultId}`);
   };
-  
-  const toggleSortOrder = () => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
-  
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setChainFilter('');
-    setProtocolFilter('');
-    setSortBy('apy');
-    setSortOrder('desc');
-  };
-  
+
   if (loading) {
     return <LoadingLogo />;
   }
-  
+
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       {/* Mobile Filter Button */}
       <div className="md:hidden mb-4">
-        <button 
+        <button
           onClick={() => setShowMobileFilters(!showMobileFilters)}
           className="w-full p-3 bg-customNeutral200 text-white rounded-lg flex justify-between items-center"
         >
@@ -182,9 +257,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           <span>{showMobileFilters ? '↑' : '↓'}</span>
         </button>
       </div>
-      
+
       {/* Filters and Sort Section */}
-      <div 
+      <div
         ref={filterRef}
         className={`bg-customNeutral200 p-4 rounded-lg mb-6 ${showMobileFilters ? 'block' : 'hidden md:block'}`}
       >
@@ -225,7 +300,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             </select>
           </div>
         </div>
-        
+
         <div className="flex flex-wrap gap-2 mb-2">
           <div className="text-white mr-2 flex items-center">Sort by:</div>
           {['apy', 'tvl', 'risk'].map((option) => (
@@ -235,15 +310,13 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 if (sortBy === option) {
                   toggleSortOrder();
                 } else {
-                  setSortBy(option);
-                  setSortOrder('desc');
+                  handleSortChange(option, 'desc');
                 }
               }}
-              className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${
-                sortBy === option
-                  ? 'bg-gradient-to-r from-[#262830] to-[#06afbc] text-white'
-                  : 'bg-customNeutral300 text-white'
-              }`}
+              className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${sortBy === option
+                ? 'bg-gradient-to-r from-[#262830] to-[#06afbc] text-white'
+                : 'bg-customNeutral300 text-white'
+                }`}
             >
               {option.toUpperCase()}
               {sortBy === option && (
@@ -254,7 +327,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             </button>
           ))}
         </div>
-        
+
         {/* Active filters display and clear button */}
         {(searchTerm || chainFilter || protocolFilter) && (
           <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-customNeutral100">
@@ -286,22 +359,23 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Results count */}
       <div className="text-gray-400 mb-4 text-sm">
-        Showing {paginatedVaults.length} of {filteredVaults.length} vaults
+        Showing {paginatedVaults.length} of {displayTotalCount} vaults
       </div>
-      
+
       {/* Vaults Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {paginatedVaults.map((vault) => {
           const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
           const totalAssets = vaultTotalAssets.find((asset) => asset.vaultId === vault.id);
+          // const totalAssets = vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === vault.id);
           const riskLevel = calculateRiskLevel(vault);
           const capacityPercentage = calculateCapacityPercentage(vault.id);
-          
+
           return (
-            <div 
+            <div
               key={vault.id}
               className="bg-customNeutral200 rounded-lg overflow-hidden border border-customNeutral100 hover:border-cyan-400 transition-all cursor-pointer"
               onClick={() => handleVaultClick(vault.id)}
@@ -328,44 +402,44 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   <span className="text-white text-xs">{RISK_LEVELS[riskLevel].level}</span>
                 </div>
               </div>
-              
+
               {/* Card Content */}
               <div className="p-4">
                 <div className='flex md:flex-row flex-col gap-2 justify-between'>
 
-                {/* Lending Pool with Logo (was Protocol) */}
-                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
-                  <Image
-                    src={vault.inputToken.imgURL}
-                    alt={vault.inputToken.symbol}
-                    width={36}
-                    height={36}
-                    className="rounded-full"
-                    sizes="36px"
-                  />
-                  <div>
-                    <span className="text-gray-400 text-xs">Lending Pool</span>
-                    <p className="text-white font-medium">{vault.name}</p>
+                  {/* Lending Pool with Logo (was Protocol) */}
+                  <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
+                    <Image
+                      src={vault.inputToken.imgURL}
+                      alt={vault.inputToken.symbol}
+                      width={36}
+                      height={36}
+                      className="rounded-full"
+                      sizes="36px"
+                    />
+                    <div>
+                      <span className="text-gray-400 text-xs">Lending Pool</span>
+                      <p className="text-white font-medium">{vault.name}</p>
+                    </div>
+                  </div>
+
+                  {/* Chain with Logo (was Lending Pool) */}
+                  <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
+                    <Image
+                      src={vault.imgURL || ''}
+                      alt={vault.protocol.network}
+                      width={36}
+                      height={36}
+                      className="rounded-full"
+                      sizes="36px"
+                    />
+                    <div>
+                      <span className="text-gray-400 text-xs">Chain</span>
+                      <h3 className="text-white font-bold">{vault.protocol.network}</h3>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Chain with Logo (was Lending Pool) */}
-                <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
-                  <Image
-                    src={vault.imgURL || ''}
-                    alt={vault.protocol.network}
-                    width={36}
-                    height={36}
-                    className="rounded-full"
-                    sizes="36px"
-                  />
-                  <div>
-                    <span className="text-gray-400 text-xs">Chain</span>
-                    <h3 className="text-white font-bold">{vault.protocol.network}</h3>
-                  </div>
-                </div>
-                </div>
-                
+
                 {/* APY and TVL */}
                 <div className="grid grid-cols-2 gap-2 p-3">
                   <div className="bg-customNeutral300 p-3 rounded-md">
@@ -378,10 +452,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     <p className="text-gray-400 text-xs mb-1">TVL</p>
                     <p className="text-white font-bold text-xl">
                       {formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
+
+                      {/* {totalAssets?.totalAssets ? formatNumberWithSuffix(Number(totalAssets.totalAssets)) : "0"} */}
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Capacity Bar */}
                 <div className="mb-4">
                   {/* <div className="flex justify-between text-xs text-gray-400 mb-1">
@@ -396,7 +472,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   </div> */}
 
                   {/* User Deposits */}
-                  { walletAddress && (
+                  {walletAddress && (
                     <div className="mt-2 px-3">
                       <div className="flex justify-around text-[16px] mb-1">
                         <span className="text-gray-400">Your Deposits:</span>
@@ -410,10 +486,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     </div>
                   )}
                 </div>
-                
+
                 {/* Buttons */}
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     className="flex-1 fluid-hover-button text-white py-2 px-4 rounded-md transition-all"
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent card click
@@ -423,9 +499,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     <span className="relative z-2">Deposit</span>
                   </button>
                   {
-                    userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance && 
+                    userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance &&
                     Number(userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance) > 0 && (
-                      <button 
+                      <button
                         className="flex-1 border border-customNeutral100 hover:border-cyan-400 text-white py-2 px-4 rounded-md transition-all"
                         onClick={(e) => {
                           e.stopPropagation(); // Prevent card click
@@ -442,12 +518,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           );
         })}
       </div>
-      
+
       {/* Empty State */}
       {paginatedVaults.length === 0 && (
         <div className="text-center py-12 bg-customNeutral200 rounded-lg">
           <p className="text-white text-lg">No vaults found matching your filters</p>
-          <button 
+          <button
             onClick={clearAllFilters}
             className="mt-4 fluid-hover-button text-white py-2 px-4 rounded-md"
           >
@@ -455,45 +531,54 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </button>
         </div>
       )}
-      
+
       {/* Pagination */}
-      {totalPages > 1 && (
+      {displayTotalPages > 1 && (
         <div className="flex justify-center mt-6">
           <div className="flex gap-2">
             <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={() => {
+                if (onPageChange) {
+                  onPageChange(Math.max(currentPage - 1, 1));
+                }
+              }}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === 1
-                  ? 'bg-customNeutral300 text-gray-500 cursor-not-allowed'
-                  : 'bg-customNeutral300 text-white hover:bg-customNeutral100'
-              }`}
+              className={`px-3 py-1 rounded-md ${currentPage === 1
+                ? 'bg-customNeutral300 text-gray-500 cursor-not-allowed'
+                : 'bg-customNeutral300 text-white hover:bg-customNeutral100'
+                }`}
             >
               ←
             </button>
-            
-            {Array.from({ length: totalPages }).map((_, index) => (
+
+            {Array.from({ length: displayTotalPages }).map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentPage(index + 1)}
-                className={`px-3 py-1 rounded-md ${
-                  currentPage === index + 1
-                    ? 'bg-gradient-to-r from-[#262830] to-[#06afbc] text-white'
-                    : 'bg-customNeutral300 text-white hover:bg-customNeutral100'
-                }`}
+                onClick={() => {
+                  if (onPageChange) {
+                    onPageChange(index + 1);
+                  }
+                }}
+                className={`px-3 py-1 rounded-md ${currentPage === index + 1
+                  ? 'bg-gradient-to-r from-[#262830] to-[#06afbc] text-white'
+                  : 'bg-customNeutral300 text-white hover:bg-customNeutral100'
+                  }`}
               >
                 {index + 1}
               </button>
             ))}
-            
+
             <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === totalPages
-                  ? 'bg-customNeutral300 text-gray-500 cursor-not-allowed'
-                  : 'bg-customNeutral300 text-white hover:bg-customNeutral100'
-              }`}
+              onClick={() => {
+                if (onPageChange) {
+                  onPageChange(Math.min(currentPage + 1, displayTotalPages));
+                }
+              }}
+              disabled={currentPage === displayTotalPages}
+              className={`px-3 py-1 rounded-md ${currentPage === displayTotalPages
+                ? 'bg-customNeutral300 text-gray-500 cursor-not-allowed'
+                : 'bg-customNeutral300 text-white hover:bg-customNeutral100'
+                }`}
             >
               →
             </button>
@@ -504,4 +589,4 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   );
 };
 
-export default VaultsGrid; 
+export default VaultsGrid;

@@ -1,4 +1,4 @@
-import { Chain, PreparedTransaction, ThirdwebClient } from "thirdweb";
+import { PreparedTransaction, ThirdwebClient } from "thirdweb";
 import { ChainOptions } from "thirdweb/chains";
 import { Address } from "viem";
 
@@ -34,6 +34,7 @@ export interface VaultData {
   imgURL?: string;
   depositFeePaidFromGasTank: boolean;
   inputToken: Token;
+  strategyNetwork?: string;
   protocol: {
     name: string;
     strategyAddress: string;

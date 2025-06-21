@@ -11,12 +11,8 @@ import {
   Token,
   Balance,
   Tabs,
-  TransactionStepMessages,
-  TransactionStepStatus,
 } from "@/types/types";
-import { VAULT_DATA } from "@/constants";
 import {
-  useUpdateVaultBalanceAndTotalPerVault,
   useUpdateAPYs,
 } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -44,6 +40,8 @@ import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
 import { useChain } from "@account-kit/react";
+import { useVaultDetailsFromGraph } from "@/hooks/useVaultsGraph";
+import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 
 const VaultsDetailContainer: React.FC<{
@@ -200,16 +198,19 @@ const VaultsDetailContainer: React.FC<{
     return vaultData ? [vaultData] : null;
   }, [vaultData]);
 
-  const vaults: VaultData[] = VAULT_DATA;
+  const { data: vaultFromGraph } = useVaultDetailsFromGraph(vaultIdStr);
+
   const backPath: string = pathname.includes("old-vaults")
     ? "/old-vaults"
     : "/";
 
-  useEffect(() => {
-    const foundVault = vaults.find((v) => v.id === vaultID.toString());
 
-    if (foundVault) {
-      setVaultData(foundVault);
+  useEffect(() => {
+    if (vaultFromGraph?.vault) {
+      const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
+      setVaultData(vd);
+      setVaultAPYs([convertGraphVaultToAPY(vaultFromGraph.vault)]);
+      setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
 
     if (vaultID) {
@@ -227,7 +228,7 @@ const VaultsDetailContainer: React.FC<{
         });
       }
     }
-  }, [vaultID, initialIsDeposit, vaults]);
+  }, [vaultID, initialIsDeposit, vaultFromGraph]);
 
   const strategyExplorerBaseUrl = useMemo(() => {
     if (!vaultData?.protocol?.chainId) return "";
@@ -235,15 +236,6 @@ const VaultsDetailContainer: React.FC<{
   }, [vaultData?.protocol?.chainId]);
 
   const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000];
-
-  useUpdateVaultBalanceAndTotalPerVault(
-    vaultData || null,
-    walletAddress,
-    setUserVaultBalance,
-    setVaultTotalAsset,
-    setVaultTotalAssetinToken,
-    transactionCompleted,
-  );
 
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
 

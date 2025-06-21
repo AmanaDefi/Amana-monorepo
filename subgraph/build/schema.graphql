@@ -77,6 +77,9 @@ type Vault @entity(immutable: false) {
   "Current total underlying assets in the vault"
   tvl: BigInt!
 
+  "Normalized TVL for proper sorting (tvl / 10^decimals)"
+  normalizedTVL: BigDecimal!
+
   "Total deposited (lifetime)"
   totalDeposited: BigInt!
 
@@ -223,6 +226,7 @@ type VaultDayData @entity(immutable: false) {
   date: Int!
   sharesSupply: BigInt!
   tvl: BigInt!
+  normalizedTVL: BigDecimal!
   dailyDeposit: BigInt!
   dailyWithdraw: BigInt!
   pricePerShare: BigDecimal!

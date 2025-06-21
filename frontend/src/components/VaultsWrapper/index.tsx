@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, SetStateAction } from "react";
 import {
   VaultData,
   VaultAPY,
@@ -10,7 +10,6 @@ import { VaultFilters } from "./components/VaultFilters";
 import { VaultCard } from "./components/VaultCard";
 import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
-import classNames from "classnames";
 import { useLayoutStore } from "@/store/store";
 import { useUser } from "@account-kit/react";
 import { useMyVaults } from "@/hooks/useMyVaults";
@@ -26,6 +25,25 @@ interface VaultsGridProps {
   vaultAPYs: VaultAPY[];
   userVaultBalances: UserVaultBalance[];
   vaultTotalAssets: VaultTotalAssets[];
+  currentPage?: number;
+  totalPages?: number;
+  totalCount?: number;
+  pageSize?: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
+  onPageChange?: (page: number) => void;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
+  searchTerm?: string;
+  onSearchChange?: (searchTerm: string) => void;
+  hasSearchTerm?: boolean;
+  chainFilter?: string;
+  onChainFilterChange?: (chainFilter: string) => void;
+  hasNetworkFilter?: boolean;
+  protocolFilter?: string;
+  onProtocolFilterChange?: (protocolFilter: string) => void;
+  hasProtocolFilter?: boolean;
 }
 
 const VaultsGrid: React.FC<VaultsGridProps> = ({
@@ -34,14 +52,59 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   vaultAPYs,
   userVaultBalances,
   vaultTotalAssets,
+  currentPage = 1,
+  totalPages = 1,
+  totalCount = 0,
+  onPageChange,
+  sortBy: externalSortBy = "apy",
+  sortOrder: externalSortOrder = "desc",
+  onSortChange,
+  searchTerm: externalSearchTerm = "",
+  onSearchChange,
+  hasSearchTerm: externalHasSearchTerm = false,
+  chainFilter: externalChainFilter = "",
+  onChainFilterChange,
+  hasNetworkFilter = false,
+  protocolFilter: externalProtocolFilter = "",
+  onProtocolFilterChange,
+  hasProtocolFilter = false,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [chainFilter, setChainFilter] = useState<string>("");
-  const [protocolFilter, setProtocolFilter] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("apy");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [currentPage, setCurrentPage] = useState(1);
+
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const searchTerm = onSearchChange ? externalSearchTerm : localSearchTerm;
+  const setSearchTerm = onSearchChange
+    ? (value: SetStateAction<string>) => {
+      const newValue = typeof value === 'function' ? value(externalSearchTerm) : value;
+      onSearchChange(newValue);
+    }
+    : setLocalSearchTerm;
+  const hasSearchTerm = onSearchChange ? externalHasSearchTerm : searchTerm.length > 0;
+
+  const [localChainFilter, setLocalChainFilter] = useState<string>("");
+  const chainFilter = onChainFilterChange ? externalChainFilter : localChainFilter;
+  const setChainFilter = onChainFilterChange
+    ? (value: SetStateAction<string>) => {
+      const newValue = typeof value === 'function' ? value(externalChainFilter) : value;
+      onChainFilterChange(newValue);
+    }
+    : setLocalChainFilter;
+  const hasNetworkFilterActive = onChainFilterChange ? hasNetworkFilter : chainFilter.length > 0;
+
+  const [localProtocolFilter, setLocalProtocolFilter] = useState<string>("");
+  const protocolFilter = onProtocolFilterChange ? externalProtocolFilter : localProtocolFilter;
+  const setProtocolFilter = onProtocolFilterChange
+    ? (value: SetStateAction<string>) => {
+      const newValue = typeof value === 'function' ? value(externalProtocolFilter) : value;
+      onProtocolFilterChange(newValue);
+    }
+    : setLocalProtocolFilter;
+  const hasProtocolFilterActive = onProtocolFilterChange ? hasProtocolFilter : protocolFilter.length > 0;
+
   const [displayType, setDisplayType] = useState<"cards" | "list">("cards");
+
+  const [sortBy, setSortBy] = useState<string>(externalSortBy);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(externalSortOrder);
+
   const MyVaults = useMyVaults({ vaults, userVaultBalances });
 
   const [isShownMyVaults, setIsShownMyVaults] = useState(
@@ -54,26 +117,32 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     ),
   );
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
   const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
   const user = useUser();
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    setSortBy(externalSortBy);
+    setSortOrder(externalSortOrder);
+  }, [externalSortBy, externalSortOrder]);
 
-    const observer = new ResizeObserver(([entry]) => {
-      const width = entry.contentRect.width;
-      if (width >= 1805) {
-        setItemsPerPage(8);
-      } else {
-        setItemsPerPage(8);
+  useEffect(() => {
+    const updatePageSize = () => {
+      const width = window.innerWidth;
+      const newSize = width >= 1805 ? 8 : 6;
+
+      if (newSize !== itemsPerPage) {
+        setItemsPerPage(newSize);
       }
-    });
+    };
 
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, [setItemsPerPage]);
+    updatePageSize();
+    window.addEventListener('resize', updatePageSize);
+
+    return () => {
+      window.removeEventListener('resize', updatePageSize);
+    };
+  }, [setItemsPerPage, itemsPerPage]);
 
   const vaultsList = useMemo(() => {
     if (isShownMyVaults) {
@@ -83,24 +152,58 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     return vaults;
   }, [MyVaults, vaults, isShownMyVaults]);
 
+  const shouldUseSubgraphSearch = hasSearchTerm && onSearchChange;
+  const shouldUseSubgraphNetworkFilter = hasNetworkFilterActive && onChainFilterChange;
+  const shouldUseSubgraphProtocolFilter = hasProtocolFilterActive && onProtocolFilterChange;
+  const shouldUseSubgraphSort = sortBy.toLowerCase() === 'tvl' && onSortChange && onPageChange;
+  const shouldUseLocalFiltering = !shouldUseSubgraphSearch && !shouldUseSubgraphNetworkFilter && !shouldUseSubgraphProtocolFilter && !shouldUseSubgraphSort;
+
+  const mode = shouldUseSubgraphSearch ? 'Subgraph Search' :
+    shouldUseSubgraphNetworkFilter ? 'Subgraph Network Filter' :
+      shouldUseSubgraphProtocolFilter ? 'Subgraph Protocol Filter' :
+        shouldUseSubgraphSort ? 'Subgraph Sort' : 'Local';
+
   const filteredVaults = useMemo(() => {
+    if (!shouldUseLocalFiltering) {
+      if (isShownMyVaults) {
+        // Filter only vaults with deposits
+        return vaultsList.filter((vault) => {
+          const hasDeposited = userVaultBalances
+            ? !!Number(
+              userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)
+                ?.balance,
+            )
+            : false;
+          return hasDeposited;
+        });
+      }
+      return vaultsList;
+    }
+
+    // Local filtering for APY and Risk sorting
     return vaultsList.filter((vault) => {
       const matchesSearch =
         searchTerm === "" ||
         vault.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vault.protocol.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vault.protocol.network.toLowerCase().includes(searchTerm.toLowerCase());
+        (vault.strategyNetwork || vault.protocol.network).toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesChain =
-        chainFilter === "" || vault.protocol.network === chainFilter;
+      const matchesChain = chainFilter === "" ||
+        (vault.strategyNetwork || vault.protocol.network) === chainFilter;
       const matchesProtocol =
         protocolFilter === "" || vault.protocol.name === protocolFilter;
 
       return matchesSearch && matchesChain && matchesProtocol;
     });
-  }, [vaultsList, searchTerm, chainFilter, protocolFilter]);
+  }, [vaultsList, searchTerm, chainFilter, protocolFilter, shouldUseLocalFiltering, isShownMyVaults, userVaultBalances]);
 
   const sortedVaults = useMemo(() => {
+    if (!shouldUseLocalFiltering) {
+      // If using subgraph (TVL sorting), return data as is
+      return filteredVaults;
+    }
+
+    // Local sorting for APY, Risk and TVL (when My Vaults)
     return [...filteredVaults].sort((a, b) => {
       let aValue: any, bValue: any;
 
@@ -114,6 +217,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           );
           break;
         case "tvl":
+          // TVL sorting only for My Vaults or when there is no subgraph/search
           aValue = Number(
             vaultTotalAssets.find((asset) => asset.vaultId === a.id)
               ?.totalAssets || 0,
@@ -133,45 +237,93 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });
-  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
+  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets, shouldUseLocalFiltering]);
 
   const paginatedVaults = useMemo(() => {
+    if (!shouldUseLocalFiltering) {
+      return sortedVaults;
+    }
+
     const startIndex = (currentPage - 1) * itemsPerPage;
     return sortedVaults.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedVaults, currentPage, itemsPerPage]);
+  }, [sortedVaults, currentPage, itemsPerPage, shouldUseLocalFiltering]);
 
-  const totalPages = Math.ceil(sortedVaults.length / itemsPerPage);
+  const localTotalPages = Math.ceil(sortedVaults.length / itemsPerPage);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    searchTerm,
-    chainFilter,
-    protocolFilter,
-    sortBy,
-    sortOrder,
-    itemsPerPage,
-  ]);
+  const displayTotalPages = useMemo(() => {
+    if (isShownMyVaults && shouldUseLocalFiltering) {
+      const myVaultPages = Math.ceil(MyVaults.length / itemsPerPage);
+      return myVaultPages;
+    }
+
+    if (isShownMyVaults && !shouldUseLocalFiltering) {
+      const myVaultsFromSubgraph = Math.ceil(filteredVaults.length / itemsPerPage);
+      return myVaultsFromSubgraph;
+    }
+
+    const pages = shouldUseLocalFiltering ? localTotalPages : totalPages;
+    return pages;
+  }, [isShownMyVaults, MyVaults.length, itemsPerPage, shouldUseLocalFiltering, localTotalPages, totalPages, filteredVaults.length]);
+
+  const displayTotalCount = useMemo(() => {
+    if (isShownMyVaults && shouldUseLocalFiltering) {
+      return MyVaults.length;
+    }
+
+    if (isShownMyVaults && !shouldUseLocalFiltering) {
+      return filteredVaults.length;
+    }
+
+    const count = shouldUseLocalFiltering ? filteredVaults.length : totalCount;
+    return count;
+  }, [isShownMyVaults, MyVaults.length, shouldUseLocalFiltering, filteredVaults.length, totalCount]);
+
+  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
+
+    if (onSortChange) {
+      onSortChange(newSortBy, newSortOrder);
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder(newSortOrder);
+    }
+  };
+
+  const handleSortByChange = (sortByValue: SetStateAction<string>) => {
+    const newSortBy = typeof sortByValue === 'function' ? sortByValue(sortBy) : sortByValue;
+    handleSortChange(newSortBy, sortOrder);
+  };
+
+  const handleSortOrderChange = (sortOrderValue: SetStateAction<"asc" | "desc">) => {
+    const newSortOrder = typeof sortOrderValue === 'function' ? sortOrderValue(sortOrder) : sortOrderValue;
+    handleSortChange(sortBy, newSortOrder);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (onPageChange) {
+      onPageChange(page);
+    } else {
+      if (page >= 1 && page <= localTotalPages) {
+      }
+    }
+  };
 
   const clearAllFilters = () => {
     setSearchTerm("");
     setChainFilter("");
     setProtocolFilter("");
-    setSortBy("apy");
-    setSortOrder("desc");
+    handleSortChange("apy", "desc");
   };
 
   if (loading) return <LoadingLogo />;
 
   return (
     <div
-      ref={containerRef}
       className="font-gotham flex flex-col w-full h-full border border-[#302E44] rounded-3xl p-6 justify-between"
     >
       <div>
         <VaultFilters
           vaults={vaults}
-          setSortOrder={setSortOrder}
+          setSortOrder={handleSortOrderChange}
           sortOrder={sortOrder}
           chainFilter={chainFilter}
           setChainFilter={setChainFilter}
@@ -180,7 +332,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           protocolFilter={protocolFilter}
           setProtocolFilter={setProtocolFilter}
           sortBy={sortBy}
-          setSortBy={setSortBy}
+          setSortBy={handleSortByChange}
           clearAllFilters={clearAllFilters}
           setDisplayType={setDisplayType}
           displayType={displayType}
@@ -189,7 +341,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         />
 
         <div className="text-gray-400 mb-4 text-sm">
-          Showing {paginatedVaults.length} of {filteredVaults.length} vaults
+          Showing {paginatedVaults.length} of {displayTotalCount} vaults
         </div>
 
         {displayType === "cards" ? (
@@ -233,9 +385,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           </div>
         )}
 
-        {filteredVaults.length === 0 && (
+        {paginatedVaults.length === 0 && !loading && (
           <>
-            {!MyVaults?.length ? (
+            {isShownMyVaults && !MyVaults?.length ? (
               <EmptyState
                 title="No positions"
                 description="This account has not yet added any assets"
@@ -247,7 +399,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               />
             ) : (
               <div className="flex flex-col items-center py-12 gap-3">
-                <p className="text-white text-lg">No vaults found.</p>
+                <p className="text-white text-lg">
+                  {hasNetworkFilterActive && hasProtocolFilterActive
+                    ? `No vaults found for ${chainFilter} network and ${protocolFilter} protocol.`
+                    : hasNetworkFilterActive
+                      ? `No vaults found for ${chainFilter} network.`
+                      : hasProtocolFilterActive
+                        ? `No vaults found for ${protocolFilter} protocol.`
+                        : hasSearchTerm
+                          ? "No vaults found matching your search."
+                          : "No vaults found."
+                  }
+                </p>
                 <div className="w-[180px]">
                   <AppButton variant="reverse" onClick={clearAllFilters}>
                     <span className="relative z-2">Clear Filters</span>
@@ -259,24 +422,24 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         )}
       </div>
 
-      {totalPages > 1 && (
+      {displayTotalPages > 1 && (
         <div className="flex justify-center mt-6">
           <div className="flex gap-2 flex-row items-center">
             <div className={`${currentPage === 1 && "cursor-not-allowed"}`}>
               <AppButton
                 variant="gray"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                 disabled={currentPage === 1}
               >
                 ←
               </AppButton>
             </div>
 
-            {Array.from({ length: totalPages }).map((_, index) => (
+            {Array.from({ length: displayTotalPages }).map((_, index) => (
               <div key={index} className="w-12">
                 <AppButton
                   variant={index + 1 === currentPage ? "blue" : "gray"}
-                  onClick={() => setCurrentPage(index + 1)}
+                  onClick={() => handlePageChange(index + 1)}
                 >
                   {index + 1}
                 </AppButton>
@@ -284,14 +447,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             ))}
 
             <div
-              className={`${currentPage === totalPages && "cursor-not-allowed"}`}
+              className={`${currentPage === displayTotalPages && "cursor-not-allowed"}`}
             >
               <AppButton
                 variant="gray"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(Math.min(currentPage + 1, displayTotalPages))}
+                disabled={currentPage === displayTotalPages}
               >
                 →
               </AppButton>
