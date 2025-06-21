@@ -50,7 +50,7 @@ export const ChooseBuyWith = () => {
             <ModalButton
               text="Apple Pay, card or bank transfer"
               className="w-[484px]"
-              label="Byu crypto"
+              label="Buy crypto"
               withArrow
               icon={<CardIcon width={35} height={32} />}
               onClick={() => handleChoose(BuyWithEnum.FIAT)}

@@ -318,7 +318,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
   return (
     <div
-      className="font-gotham flex flex-col w-full h-full border border-[#302E44] rounded-3xl p-6 justify-between"
+      className="font-gotham flex flex-col w-full h-full md:border md:border-[#302E44] rounded-3xl md:p-6 justify-between"
     >
       <div>
         <VaultFilters
@@ -348,7 +348,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           <div
             className="grid gap-4"
             style={{
-              gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
             }}
           >
             {paginatedVaults.map((vault) => (

@@ -6,6 +6,8 @@ export type AuthStep =
   | "import"
   | "optionsA"
   | "optionsB"
+  | "mobileOptionsA" 
+  | "mobileOptionsB"
   | "allWallets"
   | "success"
   | "onboarding"

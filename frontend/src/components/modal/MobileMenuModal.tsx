@@ -1,5 +1,5 @@
 import React from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import VaultsMobileMenuIcon from "../svg/mobileMenu/VaultsMobileMenu";
 import LeaderboardIcon from "../svg/mobileMenu/LeaderBoard";
 import RoadmapIcon from "../svg/mobileMenu/Roadmap";

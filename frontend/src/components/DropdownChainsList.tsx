@@ -38,12 +38,11 @@ export const DropdownChainsList = ({
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
           style={{
-            width,
-            minWidth,
             maxWidth,
+            width,
             top: !needReset ? 65 : isIconButton ? 30 : 40,
           }}
-          className={`z-10 rounded-2xl absolute top-14 flex flex-col gap-2 bg-[#14171F] shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] p-6 ${alignment === "right" ? "right-0" : "left-0"}`}
+          className={`z-10 ${minWidth && "xl:min-w-[526px] md:!w-[220px] !w-[90vw]"} rounded-2xl absolute top-14 flex flex-col gap-2 bg-[#14171F] shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] p-6 ${alignment === "right" ? "md:right-0 -left-[160px] md:left-auto" : "left-0"}`}
           role="menu"
         >
           {isIconButton && (

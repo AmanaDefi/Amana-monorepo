@@ -2,29 +2,28 @@ import { Dialog, DialogPanel } from "@headlessui/react";
 import { Fragment, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-type ModalProps = {
+type MobileModalProps = {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
   paddingClass?: string;
   roundedClass?: string;
   customCloseButton?: ReactNode;
-  maxWidth?: string;
-  minHeight?: string;
+  height?: string;
   noBlur?: boolean;
 };
 
-export const Modal = ({
+export const MobileModal = ({
   isOpen,
   onClose,
   children,
-  paddingClass = "p-6",
-  roundedClass = "rounded-[16px]",
+  paddingClass = "pt-[20px] px-[20px] pb-[20px]",
+  roundedClass = "rounded-t-[24px]",
   customCloseButton,
-  maxWidth = "max-w-md",
-  minHeight,
+  height = "h-[426px]",
   noBlur = false,
-}: ModalProps) => {
+  
+}: MobileModalProps) => {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -35,29 +34,30 @@ export const Modal = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className={`fixed h-[100vh] inset-0 ${
+              className={`fixed inset-0 ${
                 noBlur
                   ? "bg-transparent"
-                  : "bg-[rgba(12,16,21,0.5)] backdrop-blur-[10px]"
+                  : "bg-[rgba(12,16,21,0.5)] backdrop-blur-[20px]"
               }`}
             />
-
-            <div className="fixed inset-0 flex h-[100vh] items-center justify-center p-4">
+            <div className="fixed inset-x-0 bottom-0 flex justify-center">
               <DialogPanel as={Fragment}>
                 <motion.div
-                  key="modal"
-                  initial={{ y: 100, opacity: 0, scale: 0.95 }}
-                  animate={{ y: 0, opacity: 1, scale: 1 }}
-                  exit={{ y: 100, opacity: 0, scale: 0.95 }}
+                  key="mobile-modal"
+                  initial={{ y: "100%", opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: "100%", opacity: 0 }}
                   transition={{
                     type: "spring",
                     stiffness: 300,
-                    damping: 24,
+                    damping: 30,
                   }}
-                  className={`relative flex max-h-[80%] w-full ${maxWidth} ${minHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
+                  className={`relative w-full ${height} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border overflow-hidden block md:hidden`}
                 >
                   {customCloseButton}
-                  <div className={paddingClass}>{children}</div>
+                  <div className={`${paddingClass} h-full overflow-y-auto`}>
+                    {children}
+                  </div>
                 </motion.div>
               </DialogPanel>
             </div>

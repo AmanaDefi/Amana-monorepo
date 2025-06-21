@@ -22,31 +22,44 @@ const AllWAllets = () => {
     setActiveConnector,
     setWalletAddress,
   } = useFundWalletStore();
-  const { connectors, connect, isPending: isConnectingWallet } = useConnect();
 
   const fundWalletConnect = () => {
     setStep("confirm");
   };
 
+  const {
+    connectors,
+    connect,
+    isPending: isConnectingWallet,
+  } = useConnect({
+    onSuccess: (result) => {
+      if (fundWalletStep === "connectWallet") {
+        setWalletAddress(result.accounts[0]);
+        console.log('connectorId removed fron success')
+        localStorage.removeItem('connectorId');
+        return fundWalletConnect();
+      }
+      return successAuth();
+    },
+  });
+
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
+    setActiveConnector(connector);
+    console.log('connectorId setted')
+    localStorage.setItem('connectorId', connector.id);
     connect(
       { connector },
       {
-        onSuccess: (result) => {
-          if (fundWalletStep === "connectWallet") {
-            setActiveConnector(connector);
-            setWalletAddress(result.accounts[0]);
-            return fundWalletConnect();
-          }
-          return successAuth();
-        },
         onError: (error) => {
           console.log(error);
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
+            console.log('connectorId removed from error')
+            localStorage.removeItem('connectorId');
 
+            setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");
           }
         },
