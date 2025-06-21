@@ -14,12 +14,18 @@ yarn install
 1. Go to [The Graph Studio](https://thegraph.com/studio/)
 2. Connect your wallet
 3. Click "Create a Subgraph"
-4. Name the subgraph: `amana-zetachain`
-5. Copy the Deploy Key from Studio
+4. Name the subgraph, as example: `amana-zetachain`
+5. Set zetachain as network
+6. Visit endpoints page at [The Graph Studio](https://thegraph.com/studio/), copy Bearer token and 
+Development Query URL (you could select version of subgraph here),
+Set Frontend env vars accordingly:
+NEXT_PUBLIC_GRAPH_URL
+NEXT_PUBLIC_GRAPH_API_KEY
+7. Copy the Authenticate Key from details page [The Graph Studio](https://thegraph.com/studio/) 
 
-### 3. Configure API Key
+### 3. Configure API
 
-Create a `.env` file in the project root
+Create a `.env` file in the project root by subgraph\.env.example and paste Authenticate Key
 
 ### 4. Generate Types (optional, deploy will do this)
 ```bash
@@ -41,10 +47,13 @@ yarn deploy
 ### Manual Deploy
 ```bash
 # Authentication
-graph auth YOUR_DEPLOY_KEY
+graph auth YOUR_AUTH_KEY
+
+#code generation
+graph codegen && graph build
 
 # Deploy
-graph deploy amana/amana-zetachain --access-token YOUR_DEPLOY_KEY
+graph deploy amana-zetachain
 ```
 
 ### Unix/Linux/Mac
@@ -200,8 +209,6 @@ query GetVaultAnalytics($vaultId: ID!) {
     totalWithdrawn
     sharesSupply
     pricePerShare
-    apy7d
-    apy30d
     
     # Daily data for charts
     vaultDayDatas(
@@ -257,29 +264,9 @@ query GetVaultDataForComponent($vaultIds: [ID!]!) {
     
     # Financial metrics
     tvl
-    apy7d
     pricePerShare
     totalDeposited
     totalWithdrawn
-    riskLevel
-  }
-}
-```
-
-### Performance Metrics
-```graphql
-query GetVaultPerformance {
-  vaults(orderBy: apy7d, orderDirection: desc) {
-    id
-    name
-    symbol
-    protocolName
-    strategyNetwork
-    tvl
-    apy7d
-    apy30d
-    pricePerShare
-    totalDeposited
     riskLevel
   }
 }
@@ -295,7 +282,6 @@ query GetCrossChainVaults {
     strategyNetwork
     strategyChainId
     tvl
-    apy7d
     
     # Group by network
     deposits(first: 1, orderBy: timestamp, orderDirection: desc) {
@@ -317,7 +303,6 @@ query GetVaults {
     tvl
     sharesSupply
     pricePerShare
-    apy7d
     totalDeposited
     totalWithdrawn
   }
@@ -359,74 +344,6 @@ query GetRecentDeposits {
     pricePerShare
   }
 }
-```
-
-## Current Vaults
-
-The subgraph tracks cross-chain vaults deployed on ZetaChain that interact with various DeFi protocols:
-
-| Vault Name | Strategy Network | Protocol | Asset |
-|------------|------------------|----------|-------|
-| Venus USDT | BSC | Venus | USDT |
-| Euler USDC | Base | Euler | USDC |
-| Mock USDC | ZetaChain | Mock (Testing) | USDC |
-
-*Note: Vault addresses and strategies are dynamically indexed from on-chain events*
-
-## Data Structure
-
-### Vault Entity
-- **Basic Info**: name, symbol, asset, decimals
-- **Financial Data**: TVL, shares supply, price per share
-- **Performance**: 7-day APY calculation
-- **Strategy Info**: current strategy address and network
-- **Lifecycle**: total deposited/withdrawn amounts
-
-### User Position Entity
-- **Balances**: current shares and assets balance
-- **History**: lifetime deposits, withdrawals, and share movements
-- **Timestamps**: first deposit and last interaction tracking
-- **Statistics**: deposit/withdrawal counts
-
-### Transaction Entities
-- **Deposits**: asset amounts, shares received, cross-chain tx IDs
-- **Withdrawals**: asset amounts, shares redeemed, cross-chain tx IDs
-- **Pricing**: price per share at transaction time
-
-### Daily Aggregates
-- **Vault Day Data**: daily TVL, volume, unique users
-- **User Position Day Data**: daily balance snapshots
-
-## Testing Queries
-
-You can test the subgraph using the provided test queries in `test-queries.md` or directly in The Graph Studio playground.
-
-## Troubleshooting
-
-### "Subgraph not found" Error
-- Ensure you created the subgraph in The Graph Studio
-- Verify the subgraph name matches: `amana-zetachain`
-- Use the correct Deploy Key from Studio
-
-### Authentication Issues
-- Check that the API key is correctly saved in `.env`
-- Ensure you're using the Deploy Key, not an API Key
-- Verify the key has proper permissions
-
-### Sync Issues
-- Check if the starting block number is correct
-- Verify contract addresses in `subgraph.yaml`
-- Monitor indexing status in The Graph Studio
-
-## Development
-
-### Local Testing
-```bash
-# Run tests
-yarn test
-
-# Check schema
-yarn codegen
 ```
 
 ### Updating Schema
