@@ -304,23 +304,21 @@ export default function VaultHeader({
           {(() => {
             const pointsInfo = getPointsMessage(vaultData.protocol.name);
             return pointsInfo ? (
-              <div className="w-full cursor-pointer">
-                <div className="bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border border-cyan-500/50 py-3 px-4 rounded-lg h-full">
-                  <div className="flex items-center gap-3 mb-2">
+              <div className="w-full">
+                <div className="flex flex-col justify-start h-full">
+                  <div className="flex items-center gap-2 mb-1">
                     <Image
                       src={pointsInfo.logo}
                       alt={vaultData.protocol.name}
-                      width={20}
-                      height={20}
+                      width={16}
+                      height={16}
                       className="rounded-full"
                     />
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                      <span className="text-cyan-400 font-medium text-xs">EARN REWARDS</span>
-                    </div>
+                    <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
+                    <span className="text-white font-normal">Earn Rewards</span>
                   </div>
-                  <p className="text-white font-semibold text-sm leading-tight">
-                    {pointsInfo.message}
+                  <p className="text-2xl font-bold text-white">
+                    {vaultData.protocol.name === 'Aegis' ? '15 Points/Dollar/Day' : '5 YieldCrumbs/Dollar/Day'}
                   </p>
                 </div>
               </div>
