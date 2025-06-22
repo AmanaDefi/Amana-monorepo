@@ -51,6 +51,7 @@ import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import { useAuthStore } from "@/store/authStore";
 import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
 import motion from "framer-motion";
+import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDepositInstruction";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -346,6 +347,7 @@ const VaultsDetailContainer: React.FC<{
             Back to vaults
           </p>
         </Button>
+
         <button
           onClick={() => {
             console.log("Button clicked!");
@@ -366,7 +368,6 @@ const VaultsDetailContainer: React.FC<{
           strategyExplorerBaseUrl={strategyExplorerBaseUrl}
           depositData={depositData}
         />
-
         <div className={`hidden md:flex items-center gap-4`}>
           <p className="text-white text-[18px] font-bold">
             Invest from any chain
@@ -402,6 +403,19 @@ const VaultsDetailContainer: React.FC<{
         onDepositDataUpdate={handleDepositDataUpdate}
         isDeposit={isDeposit}
       />
+      {walletAddress && (
+        <div className="block md:hidden mt-4">
+          <MobileDepositInstruction
+            transactionStepFeedback={transactionStepFeedback}
+            lastTransactionStepFeedback={lastTransactionStepFeedback}
+            finishedTransaction={finishedTransaction}
+            activeChainId={activeChain?.id}
+            vaultStrategyChainId={vaultData?.protocol?.chainId}
+            isDeposit={isDeposit}
+            isProcessing={isTransactionProcessing}
+          />
+        </div>
+      )}
 
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-[56px] font-gotham">
         <div>

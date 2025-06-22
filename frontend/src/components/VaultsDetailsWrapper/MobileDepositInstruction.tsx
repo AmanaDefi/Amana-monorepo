@@ -1,15 +1,14 @@
-import ConfirmDepositIcon from "@/components/svg/instruction/ConfirmDepositIcon";
-import CrossChainTransferIcon from "@/components/svg/instruction/CrossChainTransferIcon";
-import SelectTokenIcon from "@/components/svg/instruction/SelectTokenIcon";
-import FinalConfirmationIcon from "@/components/svg/instruction/FinalConfirmationIcon";
 import React from "react";
+import SelectTokenIcon from "../svg/instruction/SelectTokenIcon";
+import ConfirmDepositIcon from "../svg/instruction/ConfirmDepositIcon";
+import CrossChainTransferIcon from "../svg/instruction/CrossChainTransferIcon";
+import FinalConfirmationIcon from "../svg/instruction/FinalConfirmationIcon";
 import {
-  Action,
   TransactionStepMessages,
   TransactionStepStatus,
+  Action,
 } from "@/types/types";
 import { isZetachain } from "@/utils/utils";
-
 
 export enum DepositStep {
   SELECT_TOKEN = 0,
@@ -18,15 +17,13 @@ export enum DepositStep {
   FINAL_CONFIRMATION = 3,
 }
 
-interface DepositInstructionProps {
+interface MobileDepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
   lastTransactionStepFeedback?: TransactionStepMessages;
   finishedTransaction?: boolean;
-
   activeChainId?: number;
   vaultStrategyChainId?: number;
   isDeposit?: boolean;
-
   currentStep?: DepositStep;
   isProcessing?: boolean;
 }
@@ -158,7 +155,7 @@ const getStepDescription = (
 };
 
 const getStepIcon = (step: DepositStep): React.ReactNode => {
-  const iconProps = { width: 20, height: 20 };
+  const iconProps = { width: 14, height: 14 };
 
   switch (step) {
     case DepositStep.SELECT_TOKEN:
@@ -174,7 +171,7 @@ const getStepIcon = (step: DepositStep): React.ReactNode => {
   }
 };
 
-const DepositInstruction: React.FC<DepositInstructionProps> = ({
+const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
   transactionStepFeedback = {},
   lastTransactionStepFeedback = {},
   finishedTransaction = false,
@@ -204,11 +201,23 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
     DepositStep.CROSS_CHAIN_TRANSFER,
     DepositStep.FINAL_CONFIRMATION,
   ];
+
   const calculateProgress = () => {
-    if (isStaticMode) return { progressPercent: 0, elephantPosition: 0 };
+    if (isStaticMode)
+      return {
+        progressPercent: 0,
+        elephantPosition: 0,
+        completedSteps: 0,
+        currentStepIndex: 0,
+        currentStepDescription: getStepDescription(
+          DepositStep.SELECT_TOKEN,
+          isDeposit,
+        ),
+      };
 
     let completedSteps = 0;
     let processingStep = -1;
+    let currentStepDescription = "";
 
     steps.forEach((step, index) => {
       if (
@@ -231,9 +240,22 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           processingStep === -1
         ) {
           processingStep = index;
+          currentStepDescription = stepStatus.description;
         }
       }
     });
+
+    let currentStepIndex = completedSteps;
+    if (processingStep > -1) {
+      currentStepIndex = processingStep;
+    }
+
+    if (!currentStepDescription) {
+      currentStepDescription = getStepDescription(
+        steps[currentStepIndex] || DepositStep.SELECT_TOKEN,
+        isDeposit,
+      );
+    }
 
     let progressPercent = (completedSteps / steps.length) * 100;
     if (processingStep > -1 && completedSteps === processingStep) {
@@ -245,91 +267,50 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
     return {
       progressPercent: Math.min(progressPercent, 100),
       elephantPosition,
+      completedSteps,
+      currentStepIndex,
+      currentStepDescription,
     };
   };
 
-  const { progressPercent, elephantPosition } = calculateProgress();
+  const {
+    progressPercent,
+    elephantPosition,
+    completedSteps,
+    currentStepIndex,
+    currentStepDescription,
+  } = calculateProgress();
+
+  let currentStepStatus = TransactionStepStatus.pending;
+  let showLoader = false;
+
+  if (isDynamicMode && currentStepIndex < steps.length) {
+    const stepStatus = getUserStepStatus(
+      steps[currentStepIndex],
+      activeFeedback,
+      isType2Transaction,
+      isDeposit,
+    );
+
+    currentStepStatus = stepStatus.status;
+    showLoader = currentStepStatus === TransactionStepStatus.processing;
+  }
 
   return (
-    <div className="flex flex-col gap-[30px]">
-      {steps.map((step, index) => {
-        if (isStaticMode) {
-          return (
-            <div key={step} className="flex flex-row gap-4 items-center">
-              <div
-                className="rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: "#535E73" }}
-              >
-                {getStepIcon(step)}
-              </div>
-              <p className="text-[18px] font-bold tracking-[-0.06em] text-white">
-                {getStepDescription(step, isDeposit)}
-              </p>
-            </div>
-          );
-        }
-
-        if (isDynamicMode) {
-          let stepStatus;
-          let bgColor = "#535E73";
-          let showLoader = false;
-
-          if (
-            step === DepositStep.SELECT_TOKEN &&
-            Object.keys(activeFeedback).length > 0
-          ) {
-            bgColor = "#1B46E0";
-          } else if (step !== DepositStep.SELECT_TOKEN) {
-            stepStatus = getUserStepStatus(
-              step,
-              activeFeedback,
-              isType2Transaction,
-              isDeposit,
-            );
-
-            if (stepStatus.status === TransactionStepStatus.processing) {
-              bgColor = "#535E73";
-              showLoader = true;
-            } else if (stepStatus.status === TransactionStepStatus.completed) {
-              bgColor = "#1B46E0";
-            } else if (stepStatus.status === TransactionStepStatus.error) {
-              bgColor = "#DC2626";
-            }
-          }
-
-          return (
-            <div key={step} className="flex flex-row gap-4 items-center">
-              <div
-                className="rounded-full w-11 h-11 flex items-center justify-center relative flex-shrink-0"
-                style={{ backgroundColor: bgColor }}
-              >
-                {getStepIcon(step)}
-
-                {showLoader && (
-                  <div className="absolute inset-0 rounded-full">
-                    <div className="w-full h-full rounded-full border-2 border-transparent border-t-blue-400 animate-spin"></div>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-[18px] font-bold tracking-[-0.06em] text-white">
-                {step === DepositStep.SELECT_TOKEN
-                  ? getStepDescription(step, isDeposit)
-                  : stepStatus?.description ||
-                    getStepDescription(step, isDeposit)}
-              </p>
-            </div>
-          );
-        }
-
-        return null;
-      })}
-
+    <div className="flex flex-col gap-[20px] bg-[#14171F] py-4 px-[14px] rounded-lg">
+      <div>
+        <h3 className="text-base font-bold text-white mb-2">
+          {isDeposit ? "Deposit" : "Withdraw"} Instruction
+        </h3>
+        <p className="text-sm">
+          {completedSteps} out of {steps.length} steps completed
+        </p>
+      </div>
       <div className="relative w-full">
-        <div className="rounded-[4px] h-[2px] bg-[#535E73] relative overflow-hidden">
+        <div className="rounded-[2px] h-[1px] bg-[#535E73] relative overflow-hidden">
           {isDynamicMode && (
             <div
-              className="absolute left-0 top-0 h-full bg-[#1B46E0] transition-all duration-500 ease-out rounded-[4px]"
+              className="absolute left-0 top-0 h-full bg-[#1B46E0] transition-all duration-500 ease-out rounded-[2px]"
               style={{ width: `${progressPercent}%` }}
             />
           )}
@@ -339,7 +320,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           style={{
             left: isDynamicMode ? `${elephantPosition}%` : "0%",
             transform: "translateX(-50%)",
-            zIndex: 10,
+            zIndex: 1,
           }}
         >
           <img
@@ -360,8 +341,36 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           />
         </div>
       </div>
+
+
+      <div className="flex flex-row gap-2 items-center">
+        <div
+          className="rounded-full w-6 h-6 flex items-center justify-center relative flex-shrink-0"
+          style={{
+            backgroundColor:
+              currentStepStatus === TransactionStepStatus.completed
+                ? "#1B46E0"
+                : currentStepStatus === TransactionStepStatus.error
+                  ? "#DC2626"
+                  : "#535E73",
+          }}
+        >
+          {currentStepIndex < steps.length &&
+            getStepIcon(steps[currentStepIndex])}
+
+          {showLoader && (
+            <div className="absolute inset-0 rounded-full">
+              <div className="w-full h-full rounded-full border border-transparent border-t-blue-400 animate-spin"></div>
+            </div>
+          )}
+        </div>
+
+        <p className="text-sm font-normal tracking-[-0.06em] text-white">
+          {currentStepDescription}
+        </p>
+      </div>
     </div>
   );
 };
 
-export default DepositInstruction;
+export default MobileDepositInstruction;

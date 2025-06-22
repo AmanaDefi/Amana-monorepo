@@ -8,6 +8,7 @@ import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import { useAuthStore } from "@/store/authStore";
 import GlowIcon from "@/components/svg/GlowIcon";
+import Footer from "@/components/Footer";
 
 interface MobileInfoModalProps {
   vaultData: VaultData;
@@ -73,7 +74,7 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
 
   return (
     <div
-      className={`z-50 py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
+      className={`z-50 py-6 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
         isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       }`}
     >
@@ -116,6 +117,7 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
             </Dropdown>
           )}
         </div>
+              <Footer isConnected={false} />
       </div>
     </div>
   );
