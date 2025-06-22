@@ -50,8 +50,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import { useAuthStore } from "@/store/authStore";
 import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
-import motion from "framer-motion"
-
+import motion from "framer-motion";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -96,7 +95,7 @@ const VaultsDetailContainer: React.FC<{
   const { switchToChain, walletAddress } = useMultiChain();
   const { chain: activeChain } = useChain();
 
-   const { openStep } = useAuthStore();
+  const { openStep } = useAuthStore();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -467,7 +466,7 @@ const VaultsDetailContainer: React.FC<{
           )}
         </div>
 
-        <div className="w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="hidden md:flex flex-col w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress ? (
             <YourInvestment
               depositAmount={depositData.amount}

@@ -51,6 +51,23 @@
   }
 }
 
+::-webkit-scrollbar {
+  width: 6px; 
+  height: 66px; 
+}
+
+::-webkit-scrollbar-track {
+  background: #161C27; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1B46E0;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+
 /* Button fluid hover animation styles */
 .fluid-hover-button {
   position: relative;

@@ -73,7 +73,7 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
 
   return (
     <div
-      className={`z-50 py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-black h-screen transform transition-all duration-500 ease-in-out ${
+      className={`z-50 py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
         isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       }`}
     >
@@ -85,17 +85,17 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
           <Button
             variant="outlined"
             onClick={closeAll}
-            className="flex items-center max-h-[42px] !px-[16px] !py-[10px] !max-w-[120px]"
+            className="flex items-center max-h-[42px] !px-[16px] !py-[10px] !max-w-[96px]"
           >
             <div className="w-5 h-5 relative z-2 flex items-center justify-center">
               <BackToVaultsIcon width={7} height={12} />
             </div>
-            <p className="text-white leading-0 relative z-2 text-[16px] font-normal ml-2">
+            <p className="text-white leading-0 relative z-2 text-lg font-normal ml-2">
               Back
             </p>
           </Button>
-              </div>
-              
+        </div>
+
         <div className="flex-1 space-y-4">
           {isWithdraw && walletAddress ? (
             <YourInvestment

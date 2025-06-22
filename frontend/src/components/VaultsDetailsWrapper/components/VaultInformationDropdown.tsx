@@ -9,7 +9,7 @@ interface VaultInformationContentProps {
   strategyExplorerBaseUrl: string;
   walletAddress?: string;
   selectedToken?: Token;
-  selectedChain?: any; 
+  selectedChain?: any;
 }
 
 const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
@@ -20,7 +20,6 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
   selectedToken,
   selectedChain,
 }) => {
- 
   if (walletAddress) {
     const sourceToken =
       selectedToken && selectedChain
@@ -33,7 +32,7 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
 
     return (
       <div className="space-y-4">
-        <p className="text-white font-normal text-base leading-relaxed">
+        <p className="text-white font-normal text-sm md:text-base leading-relaxed">
           We take your deposit and swap it from {sourceToken} to {targetToken} -
           afterwards, we add it to the {vaultData.protocol.name} and earn yield
           for you. Verify the Pool{" "}
@@ -46,7 +45,7 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
             here
           </Link>
         </p>
-        <p className="text-white/80 font-normal text-base leading-relaxed">
+        <p className="text-white/80 font-normal text-sm md:text-base leading-relaxed">
           You can harvest your yield whenever you want.
         </p>
       </div>
@@ -56,31 +55,33 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-white font-semibold text-base mb-2">
+        <p className="text-white font-semibold text-sm md:text-base mb-2">
           {vaultData.name}
         </p>
-        <p className="text-white/80 font-normal text-base leading-relaxed">
+        <p className="text-white/80 font-normal  text-sm md:text-base leading-relaxed">
           {vaultData.des}
         </p>
       </div>
       <div>
-        <p className="text-white font-semibold text-base mb-2">
+        <p className="text-white font-semibold  text-sm md:text-basemb-2">
           {vaultData.protocol.name}
         </p>
-        <p className="text-white/80 font-normal text-base leading-relaxed">
+        <p className="text-white/80 font-normal text-sm md:text-base leading-relaxed">
           {vaultData.protocol.des}
         </p>
       </div>
       <div>
-        <p className="text-white font-semibold text-base mb-2">
+        <p className="text-white font-semibold text-sm md:text-base mb-2">
           {vaultData.protocol.network}
         </p>
-        <p className="text-white/80 font-normal text-base leading-relaxed">
+        <p className="text-white/80 font-normal text-sm md:text-base leading-relaxed">
           {vaultData.protocol.netdes}
         </p>
       </div>
       <div>
-        <p className="text-white font-semibold text-base mb-2">Vault Address</p>
+        <p className="text-white font-semibold  text-sm md:text-base mb-2">
+          Vault Address
+        </p>
         <Link
           href={`${vaultExplorerBaseUrl}/address/${vaultData.id}`}
           className="flex items-center gap-2 group text-white underline-offset-2 hover:underline hover:opacity-80 transition-opacity"
@@ -92,7 +93,7 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
         </Link>
       </div>
       <div>
-        <p className="text-white font-semibold text-base mb-2">
+        <p className="text-white font-semibold text-sm md:text-base mb-2">
           Strategy Address
         </p>
         <Link
@@ -101,15 +102,17 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
           target="_blank"
           rel="noopener noreferrer"
         >
-          <p className="font-normal text-base break-all">
+          <p className="font-normal  text-sm md:text-base break-all">
             {vaultData.protocol.strategyAddress}
           </p>
           <ArrowTopRightOnSquareIcon className="w-4 h-4 flex-shrink-0" />
         </Link>
       </div>
       <div>
-        <p className="text-white font-semibold text-base mb-2">Input Token</p>
-        <p className="text-white/80 font-normal text-base">
+        <p className="text-white font-semibold text-sm md:text-base mb-2">
+          Input Token
+        </p>
+        <p className="text-white/80 font-normal text-sm md:text-base">
           {vaultData.inputToken.symbol}
         </p>
       </div>
