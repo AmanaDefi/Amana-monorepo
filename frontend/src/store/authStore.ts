@@ -19,6 +19,7 @@ export type AuthStep =
   | "notVerify"
   | "recieve"
   | "send"
+  | "mobileInfo"
   | null;
 
 interface AuthState {

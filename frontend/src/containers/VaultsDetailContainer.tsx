@@ -47,6 +47,10 @@ import { useChain, useUser } from "@account-kit/react";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
+import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
+import { useAuthStore } from "@/store/authStore";
+import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
+import motion from "framer-motion"
 
 
 const VaultsDetailContainer: React.FC<{
@@ -91,6 +95,8 @@ const VaultsDetailContainer: React.FC<{
 
   const { switchToChain, walletAddress } = useMultiChain();
   const { chain: activeChain } = useChain();
+
+   const { openStep } = useAuthStore();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -324,7 +330,7 @@ const VaultsDetailContainer: React.FC<{
 
       <div
         className={clsx(
-          "flex flex-row justify-between",
+          "flex flex-row justify-between items-center",
           !walletAddress && "mt-4 md:mt-6",
           walletAddress && "mt-0",
         )}
@@ -341,6 +347,27 @@ const VaultsDetailContainer: React.FC<{
             Back to vaults
           </p>
         </Button>
+        <button
+          onClick={() => {
+            console.log("Button clicked!");
+            openStep("mobileInfo");
+          }}
+          className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
+          type="button"
+        >
+          <ErrorInputIcon className="w-5 h-5 text-white" />
+        </button>
+        <MobileInfoModal
+          vaultData={vaultData}
+          walletAddress={walletAddress || undefined}
+          isWithdraw={isWithdraw}
+          selectedToken={selectedToken}
+          selectedChain={activeChain}
+          vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+          strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+          depositData={depositData}
+        />
+
         <div className={`hidden md:flex items-center gap-4`}>
           <p className="text-white text-[18px] font-bold">
             Invest from any chain

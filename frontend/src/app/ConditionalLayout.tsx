@@ -42,7 +42,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       <GlowIcon position="bottom-left" />
 
       {isConnected ? (
-        <div className="flex flex-col mx-auto w-full min-h-screen pt-4 mb:pt-[60px] pb-[30px] px-4 md:px-0">
+        <div className="flex flex-col mx-auto w-full min-h-screen pt-4 md:pt-[60px] pb-[30px] px-4 md:px-0">
           <Header activeSection={activeSection} />
           <div className="flex flex-1">
             <div className="flex-shrink-0 md:min-h-[908px] max-h-[1001px]">
