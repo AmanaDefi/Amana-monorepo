@@ -348,26 +348,30 @@ const VaultsDetailContainer: React.FC<{
           </p>
         </Button>
 
-        <button
-          onClick={() => {
-            console.log("Button clicked!");
-            openStep("mobileInfo");
-          }}
-          className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
-          type="button"
-        >
-          <ErrorInputIcon className="w-5 h-5 text-white" />
-        </button>
-        <MobileInfoModal
-          vaultData={vaultData}
-          walletAddress={walletAddress || undefined}
-          isWithdraw={isWithdraw}
-          selectedToken={selectedToken}
-          selectedChain={activeChain}
-          vaultExplorerBaseUrl={vaultExplorerBaseUrl}
-          strategyExplorerBaseUrl={strategyExplorerBaseUrl}
-          depositData={depositData}
-        />
+        {(!walletAddress || (walletAddress && isDeposit)) && (
+          <>
+            <button
+              onClick={() => {
+                console.log("Button clicked!");
+                openStep("mobileInfo");
+              }}
+              className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
+              type="button"
+            >
+              <ErrorInputIcon className="w-5 h-5 text-white" />
+            </button>
+            <MobileInfoModal
+              vaultData={vaultData}
+              walletAddress={walletAddress || undefined}
+              isWithdraw={isWithdraw}
+              selectedToken={selectedToken}
+              selectedChain={activeChain}
+              vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+              strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+              depositData={depositData}
+            />
+          </>
+        )}
         <div className={`hidden md:flex items-center gap-4`}>
           <p className="text-white text-[18px] font-bold">
             Invest from any chain
