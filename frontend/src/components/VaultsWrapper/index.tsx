@@ -194,7 +194,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
         {displayType === "cards" ? (
           <div
-            className="grid gap-4"
+            className="grid grid-cols-2 gap-2 md:gap-4"
             style={{
               gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
             }}
