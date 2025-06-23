@@ -452,12 +452,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
                     <div className="flex items-center gap-1">
-                      <p className="text-cyan-400 font-bold text-xl">
-                        {vault.id === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8" 
-                          ? `${((Number(vaultAPY?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
-                          : `${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`
-                        }
-                      </p>
+                    <p className="text-cyan-400 font-bold text-xl">
+                      {vault.id === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8" 
+                        ? `${((Number(vaultAPY?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
+                        : `${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`
+                      }
+                    </p>
                       {getPointsInfo(vault.protocol.name).displayPoints && (
                         <div className="flex items-center">
                           <button
@@ -483,7 +483,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-gray-300 text-sm">
-                                    {vault.protocol.name === 'YieldFi' ? 'YieldCrumbs' : 'Points'}
+                                    {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Points'}
                                   </span>
                                   <span className="text-white font-medium">
                                     {getPointsInfo(vault.protocol.name).points}
