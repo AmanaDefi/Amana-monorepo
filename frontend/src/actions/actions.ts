@@ -1062,7 +1062,7 @@ const executeCrossChainDeposit = async (
   // Prepare revertOptions
   revertOptions = [
     activeAccount.address, // revertAddress
-    true, // callOnRevert
+    false, // callOnRevert
     activeAccount.address, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
@@ -1162,7 +1162,7 @@ const executeSolanaDeposit = async (
   const revertOptions = {
     revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
     abortAddress: ethers.getBytes(evmWalletAddress),           // abort_address (array [u8, 20])
-    callOnRevert: true,                                        // call_on_revert (bool)
+    callOnRevert: false,                                        // call_on_revert (bool)
     revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"), // revert_message (bytes)
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
   };
