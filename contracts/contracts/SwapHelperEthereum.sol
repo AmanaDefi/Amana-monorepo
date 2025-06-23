@@ -42,6 +42,8 @@ contract SwapHelperEthereum is SwapHelperParent {
 
     address public constant sUSN_ADDRESS =
         0xE24a3DC889621612422A64E6388927901608B91D;
+    bytes32 constant susnUsdPriceFeedId =
+        0x4fad14ab0b3793942fa6b796f40b263f0bb67815685625f9061f804cc4f7968f;
 
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
@@ -69,6 +71,8 @@ contract SwapHelperEthereum is SwapHelperParent {
             return crvUsdPriceFeedId;
         } else if (token == CVX_ADDRESS) {
             return cvxUsdPriceFeedId;
+        } else if (token == sUSN_ADDRESS) {
+            return susnUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -80,9 +84,7 @@ contract SwapHelperEthereum is SwapHelperParent {
      * @return True if the token is a stablecoin, false otherwise.
      */
     function isStablecoin(address token) internal pure override returns (bool) {
-        return (token == USDC_ADDRESS ||
-            token == USDT_ADDRESS ||
-            token == sUSN_ADDRESS); // TODO - this is just interim - change when we can get sUSN price feed
+        return (token == USDC_ADDRESS || token == USDT_ADDRESS); // TODO - this is just interim - change when we can get sUSN price feed
     }
 
     function _swapCVXtoUSDC(
