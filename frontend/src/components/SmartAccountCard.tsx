@@ -32,7 +32,7 @@ const SmartAccountCard = ({
         />
       </div>
       <div className="flex-1 flex flex-col">
-        <h3 className="font-medium text-[20px] sm:text-[24px] mb-4 text-white flex-shrink-0">
+        <h3 className="font-medium text-[20px] mb-4 text-white flex-shrink-0">
           {title}
         </h3>
         <ul className="text-white list-none flex flex-col gap-4 sm:gap-6 flex-1">

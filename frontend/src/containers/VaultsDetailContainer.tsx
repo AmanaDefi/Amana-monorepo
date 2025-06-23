@@ -352,48 +352,46 @@ const VaultsDetailContainer: React.FC<{
           </p>
         </Button>
 
-        {(!walletAddress || walletAddress) && (
-          <>
-            <button
-              ref={giftButtonRef}
-              onClick={() => {
-                if (isDeposit) {
-                  openStep("mobileInfo");
-                } else {
-                  setShowMobileInvestment((prev) => !prev);
-                }
-              }}
-              className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
-              type="button"
-            >
-              {!walletAddress ? (
-                <ErrorInputIcon className="w-5 h-5 text-white" />
-              ) : isDeposit ? (
-                <ErrorInputIcon className="w-5 h-5 text-white" />
-              ) : (
-                <GiftIcon size={20} className="text-white" />
-              )}
-            </button>
-            <MobileInfoModal
-              vaultData={vaultData}
-              walletAddress={walletAddress || undefined}
-              isWithdraw={isWithdraw}
-              selectedToken={selectedToken}
-              selectedChain={activeChain}
-              vaultExplorerBaseUrl={vaultExplorerBaseUrl}
-              strategyExplorerBaseUrl={strategyExplorerBaseUrl}
-              depositData={depositData}
-            />
-            <MobileInvestmentPopover
-              isVisible={showMobileInvestment && isWithdraw}
-              onClose={() => setShowMobileInvestment(false)}
-              triggerRef={giftButtonRef}
-              depositAmount={depositData.amount}
-              vaultTokenSymbol={depositData.symbol}
-              depositUSDValue={depositData.usdValue}
-            />
-          </>
-        )}
+        <>
+          <button
+            ref={giftButtonRef}
+            onClick={() => {
+              if (!walletAddress || isDeposit) {
+                openStep("mobileInfo");
+              } else {
+                setShowMobileInvestment((prev) => !prev);
+              }
+            }}
+            className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
+            type="button"
+          >
+            {!walletAddress || isDeposit ? (
+              <ErrorInputIcon className="w-5 h-5 text-white" />
+            ) : (
+              <GiftIcon size={20} className="text-white" />
+            )}
+          </button>
+
+          <MobileInfoModal
+            vaultData={vaultData}
+            walletAddress={walletAddress || undefined}
+            isWithdraw={isWithdraw}
+            selectedToken={selectedToken}
+            selectedChain={activeChain}
+            vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+            strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+            depositData={depositData}
+          />
+
+          <MobileInvestmentPopover
+            isVisible={showMobileInvestment && isWithdraw && !!walletAddress}
+            onClose={() => setShowMobileInvestment(false)}
+            triggerRef={giftButtonRef}
+            depositAmount={depositData.amount}
+            vaultTokenSymbol={depositData.symbol}
+            depositUSDValue={depositData.usdValue}
+          />
+        </>
         <div className={`hidden md:flex items-center gap-4`}>
           <p className="text-white text-[18px] font-bold">
             Invest from any chain
