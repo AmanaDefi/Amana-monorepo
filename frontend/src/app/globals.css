@@ -53,7 +53,7 @@
 
 ::-webkit-scrollbar {
   width: 6px; 
-  height: 66px; 
+  height: 6px; 
 }
 
 ::-webkit-scrollbar-track {
@@ -67,6 +67,13 @@
   transition: background 0.3s ease;
 }
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* Button fluid hover animation styles */
 .fluid-hover-button {
