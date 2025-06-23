@@ -29,8 +29,8 @@ export interface StrategyTestContext {
 function getRpcUrl(chainId: number): string {
   if (chainId === 56) {
     return "https://fittest-wandering-lambo.bsc.quiknode.pro/22464c646768adfa0ffa02000362d1f51049c7c9";
-  } else if (chainId === 1) {
-    return "https://eth-mainnet.g.alchemy.com/v2/oFfvEpXYjGo8Nj4QQIkU3kXd6Z0JvfJZ";
+    // } else if (chainId === 1) {
+    //   return "https://eth-mainnet.g.alchemy.com/v2/oFfvEpXYjGo8Nj4QQIkU3kXd6Z0JvfJZ";
   } else {
     return `https://${chainId}.rpc.thirdweb.com/4e74a8cc63319adbdf4ca0f672467a7c`;
 

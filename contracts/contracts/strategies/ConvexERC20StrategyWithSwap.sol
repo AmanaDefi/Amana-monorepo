@@ -208,7 +208,11 @@ contract ConvexERC20StrategyWithSwap is ERC20StrategyParent {
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
-
+        console.log(
+            "Shares to withdraw based on asset amount %s: %s",
+            assetAmount,
+            sharesToWithdraw
+        );
         rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
 
         uint256 usdeAmountWithdrawn = receiptToken.remove_liquidity_one_coin(
@@ -298,23 +302,31 @@ contract ConvexERC20StrategyWithSwap is ERC20StrategyParent {
     }
 
     function totalUnderlyingAssets() public view override returns (uint256) {
+        console.log("Getting total underlying assets for Convex strategy");
         uint256 lpTokensStaked = rewardPool.balanceOf(address(this));
         uint256 lpTokensHeld = receiptToken.balanceOf(address(this));
         uint256 totalLPTokens = lpTokensHeld + lpTokensStaked;
+        console.log(
+            "LP tokens staked: %s, LP tokens held: %s, Total LP tokens: %s",
+            lpTokensStaked,
+            lpTokensHeld,
+            totalLPTokens
+        );
         return totalLPTokens == 0 ? 0 : convertToAssets(totalLPTokens);
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = rewardPool.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        return
-            withdrawShareAmount > totalShares
-                ? totalShares
-                : withdrawShareAmount;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
+        }
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
     }
 
     function convertToShares(

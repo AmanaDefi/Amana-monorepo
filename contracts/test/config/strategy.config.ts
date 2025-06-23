@@ -445,7 +445,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "ICurvePoolFixed",
     swapHelperContractName: "SwapHelperEthereum",
     rewardsContractName: "IConvexRewardPool",
-    forkBlock: 22315281,
+    forkBlock: 22745077,
     inputTokenAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
     inputTokenStorageSlot: 0,
     inputTokenIndexOrPlaceholder: 1,

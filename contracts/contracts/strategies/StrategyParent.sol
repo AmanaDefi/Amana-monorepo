@@ -411,19 +411,34 @@ abstract contract StrategyParent is
     /// @notice Withdraws funds from the yield source.
     function _divest() internal virtual {
         BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
+        console.log(
+            "Divesting %s from yield source, minimum out %s",
+            txData.assetAmount,
+            txData.minimumOut
+        );
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
             txData.assetAmount,
             txData.minimumOut
         );
-
+        console.log(
+            "Divesting %s from yield source, minimum out %s",
+            amountWithdrawn,
+            txData.minimumOut
+        );
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
-
+        console.log(
+            "Total underlying assets after divestment: %s",
+            totalUnderlyingAssetsAfter
+        );
         _sendFundsAndDivestConfirmation(
             amountWithdrawn,
             totalUnderlyingAssetsAfter,
             lastProcessedNonce + 1
         );
-
+        console.log(
+            "Funds divested, total underlying assets after: %s",
+            totalUnderlyingAssetsAfter
+        );
         emit FundsDivested(
             lastProcessedNonce + 1,
             amountWithdrawn,
