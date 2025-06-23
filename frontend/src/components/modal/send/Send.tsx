@@ -248,8 +248,10 @@ export const Send = () => {
           // Original Send Form
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <p className="text-[18px] font-bold mb-4">Send from</p>
-              <div className="font-gotham w-full h-[48px] bg-[#161C27] px-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center">
+              <p className="text-[12px] md:text-[18px] font-bold mb-4">
+                Send from
+              </p>
+              <div className="w-full h-[48px] bg-[#161C27] px-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide text-[14px] sm:text-[16px]">
                 {walletAddress}
               </div>
             </div>

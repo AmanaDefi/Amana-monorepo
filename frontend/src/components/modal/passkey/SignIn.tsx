@@ -59,6 +59,7 @@ export const SignIn = () => {
       paddingClass="px-4 pt-5 pb-6"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[358px] md:max-w-[440px]"
+      minHeight="608px"
     >
       <div className="flex justify-start">
         <button

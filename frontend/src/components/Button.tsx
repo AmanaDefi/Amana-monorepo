@@ -12,10 +12,14 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     | "secondary"
     | "wallet";
   className?: string;
+  isMobile?: boolean;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ children, variant = "signIn", className, disabled, ...rest }, ref) => {
+  (
+    { children, variant = "signIn", className, disabled, isMobile, ...rest },
+    ref,
+  ) => {
     const getButtonClass = () => {
       if (disabled) {
         switch (variant) {
@@ -39,7 +43,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       switch (variant) {
         case "signIn":
           return cn(
-            "bg-[#0A0A0A] text-white border border-[#535E73] h-[56px]",
+            "bg-[#0A0A0A] text-white border border-[#535E73]",
+            "h-[56px] w-[192px] px-[16px] py-[17px] text-[18px]",
+            "lg:h-[56px] lg:w-[192px] lg:px-[16px] lg:py-[17px] lg:text-[18px]",
+            "max-lg:h-[40px] max-lg:w-[96px] max-lg:px-[12px] max-lg:py-[10px] max-lg:text-[14px]",
             "hover:[background:linear-gradient(139deg,#14171f_0%,#14171f_55%,rgba(27,70,224,0.25)_70%,rgba(27,70,224,0.5)_90%,#1b46e0_120%)!important]",
             "active:[background:linear-gradient(139deg,#14171f_0%,#14171f_55%,rgba(27,70,224,0.25)_70%,rgba(27,70,224,0.5)_90%,#1b46e0_120%)!important]",
           );
@@ -84,6 +91,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const getButtonStyles = () => {
+      if (variant === "signIn") {
+        return "rounded-lg font-normal font-sans text-center flex items-center justify-center select-none transition";
+      }
       if (variant === "special") {
         return "rounded-lg px-[39px] py-[14px] text-[16px] font-bold font-sans text-center flex items-center justify-center select-none transition";
       }

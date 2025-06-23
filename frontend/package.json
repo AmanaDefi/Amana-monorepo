@@ -38,7 +38,7 @@
     "codemelt-retro-api-sdk": "^0.9.7",
     "dotenv": "^16.4.5",
     "embla-carousel-autoplay": "^8.5.2",
-    "embla-carousel-react": "^8.5.2",
+    "embla-carousel-react": "^8.6.0",
     "ethers": "^6.13.2",
     "framer-motion": "^12.16.0",
     "jotai": "2.8.4",

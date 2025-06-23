@@ -412,11 +412,11 @@ export default function VaultInputs({
     if (isTxInProgress) return;
 
     localStorage.removeItem(vaultData?.id);
-    const newIsDeposit = tab.toLowerCase() === "deposit";
+    const newIsDeposit = tab.toLowerCase() === "invest";
     const newTab = newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW;
 
     // Update label
-    setLabel(newIsDeposit ? "Deposit" : "Withdraw");
+    setLabel(newIsDeposit ? "Invest" : "Withdraw");
 
     // Reset input balance
     setInputBalance(EMPTY_BALANCE);
@@ -457,9 +457,7 @@ export default function VaultInputs({
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
     if (isTxInProgress) return;
     // Get the opposite tab of what's currently in the URL
-    const currentTabFromURL =
-      label.toLowerCase() !== "withdraw" ? "deposit" : "withdraw";
-    const newTab = currentTabFromURL === "deposit" ? "withdraw" : "deposit";
+    const newTab = isDeposit ? "withdraw" : "invest";
 
     // Update URL - React will handle state update via the useEffect
     handleTabChange(newTab);
@@ -1212,8 +1210,8 @@ export default function VaultInputs({
         </div>
       )}
       <TabSelector
-        availableTabs={["Deposit", "Withdraw"]}
-        activeTab={isDeposit ? "Deposit" : "Withdraw"}
+        availableTabs={["Invest", "Withdraw"]}
+        activeTab={isDeposit ? "Invest" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
       {(!isConnected || !isDeposit) && (
@@ -1260,12 +1258,12 @@ export default function VaultInputs({
         isOutput={false}
         captionText={!isDeposit ? "Output Amount" : ""}
       />
-      <div className="w-full my-10 flex items-center justify-center">
+      <div className="w-full my-6 md:my-10 flex items-center justify-center">
         <button className="group flex-center p-2" onClick={switchTokens}>
           <DepositModalArrowsIcon width={24} height={24} />
         </button>
       </div>
-      <div className="mb-10">
+      <div className="mb-6 md:mb-10">
         <FeeDisplay
           isDeposit={isDeposit}
           vaultData={vaultData}

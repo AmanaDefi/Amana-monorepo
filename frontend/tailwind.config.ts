@@ -14,7 +14,7 @@ const beforeGradientBorder = plugin(({ addUtilities }) => {
       position: "absolute",
       inset: "0",
       padding: "1px",
-      borderRadius: "16px",
+      borderRadius: "inherit",
       background: "linear-gradient(180deg, #162559 0%, #1B46E0 100%)",
       pointerEvents: "none",
       zIndex: "-1",

@@ -37,7 +37,10 @@ export default function ProfileDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute top-full mt-2 bg-[#1D2A41] rounded-lg shadow-lg z-50"
+            className="absolute 
+              top-full right-1/2 transform -translate-x-1/2 mt-4
+              md:top-0 md:left-full md:transform-none md:ml-2 md:mt-0
+              bg-[#1D2A41] rounded-lg shadow-lg z-50"
             style={{
               minWidth: "160px",
               height: "84px",

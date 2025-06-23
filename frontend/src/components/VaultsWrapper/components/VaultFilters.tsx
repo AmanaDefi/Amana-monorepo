@@ -7,7 +7,6 @@ import FiltersIcon from "@/components/svg/Filters";
 import CardsMenuIcon from "@/components/svg/ListMenuCards";
 import ListMenuIcon from "@/components/svg/ListMenuIcon";
 import SearchIcon from "@/components/svg/Search";
-import Button from "@/components/Button";
 import classNames from "classnames";
 
 const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "Risk" }];

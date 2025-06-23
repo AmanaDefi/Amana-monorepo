@@ -11,26 +11,27 @@ const DashboardWrapper = () => {
 
   return (
     <div className="font-gotham">
-      <div className="flex flex-row justify-between items-stretch gap-8">
-        <div className="flex flex-col min-h-[323px]">
-          <div className="text-white text-[40px] font-bold mb-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-stretch md:gap-8">
+        <div className="flex flex-col w-full md:w-auto md:min-h-[323px]">
+          <div className="hidden md:block text-white text-[40px] font-bold mb-8">
             <h2>Dashboard</h2>
           </div>
 
-          <div className="mb-[45px]">
+          <div className="mb-8 md:mb-[45px]">
             <ProfileInfo />
           </div>
 
-          <div>
+          <div className="w-full md:w-auto">
             <TopTokens />
           </div>
         </div>
-        <div className="w-full max-w-[443px] flex pt-6">
+
+        <div className="hidden xl:flex w-full max-w-[443px] pt-6">
           <ProfitChart className="w-full h-full" />
         </div>
       </div>
 
-      <div className="mt-[82px]">
+      <div className="mt-10 md:mt-[82px] mb-6 md:mb-0">
         <PortfolioTabs
           vaults={vaults}
           vaultAPYs={vaultAPYs}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ElephantLoaderProps = {
@@ -8,30 +8,44 @@ type ElephantLoaderProps = {
   onComplete?: () => void;
 };
 
-const PROGRESS_WIDTH = 427;
-
 const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
- const [progress, setProgress] = useState(0);
- const [hasCompleted, setHasCompleted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [hasCompleted, setHasCompleted] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(427);
+  const containerRef = useRef<HTMLDivElement>(null);
 
- useEffect(() => {
-   if (!isLoading) return;
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerWidth(rect.width);
+      }
+    };
 
-   setProgress(0);
-   setHasCompleted(false); 
-   const interval = setInterval(() => {
-     setProgress((prev) => (prev >= 100 ? 100 : prev + 1));
-   }, 30);
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
 
-   return () => clearInterval(interval);
- }, [isLoading]);
+  useEffect(() => {
+    if (!isLoading) return;
 
- useEffect(() => {
-   if (progress >= 100 && !hasCompleted) {
-     setHasCompleted(true);
-     onComplete?.();
-   }
- }, [progress, hasCompleted, onComplete]);
+    setProgress(0);
+    setHasCompleted(false);
+
+    const interval = setInterval(() => {
+      setProgress((prev) => (prev >= 100 ? 100 : prev + 1));
+    }, 30);
+
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (progress >= 100 && !hasCompleted) {
+      setHasCompleted(true);
+      onComplete?.();
+    }
+  }, [progress, hasCompleted, onComplete]);
 
   return (
     <AnimatePresence>
@@ -41,28 +55,27 @@ const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="relative w-full max-w-[427px] h-1 mt-12 sm:mt-[59px] mx-auto px-4 sm:px-0"
+          className="relative w-full max-w-[427px] mt-12 sm:mt-[59px] mx-auto px-4 sm:px-0"
         >
+          <div
+            ref={containerRef}
+            className="relative w-full h-1 bg-[#535E73] rounded-[4px] overflow-hidden"
+          >
+            <motion.div
+              className="absolute top-0 left-0 h-full bg-[#1B46E0] rounded-[4px]"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{
+                duration: 0.3,
+                ease: "easeOut",
+              }}
+            />
+          </div>
+
           <motion.div
-            className="absolute top-0 left-0 w-full h-full bg-[#535E73] rounded-[4px]"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            style={{ transformOrigin: "left" }}
-          />
-          <motion.div
-            className="absolute top-0 left-0 h-full bg-[#1B46E0] rounded-[4px]"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{
-              duration: 0.3,
-              ease: "easeOut",
-            }}
-          />
-          <motion.div
-            className="absolute -top-[20px]"
+            className="absolute -top-[20px] left-0"
             animate={{
-              x: (progress / 100) * PROGRESS_WIDTH,
+              x: Math.max(0, (progress / 100) * containerWidth - 20),
             }}
             transition={{
               type: "spring",

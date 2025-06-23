@@ -7,12 +7,12 @@ const GlowIcon = ({
     "pointer-events-none blur-[200px] absolute z-[-1] rounded-full";
   const styles =
     position === "top-right"
-      ? "top-[100px] right-[-80px] w-[533px] h-[637px]"
+      ? "top-[100px] right-[-80px] w-[433px] h-[600px]"
       : position === "bottom-left"
-        ? "bottom-[-300px] left-[-220px] w-[533px] h-[637px]"
+        ? "bottom-[-300px] left-[-220px] w-[433px] h-[600px]"
         : position === "top-mobile"
-          ? "top-[-200px] right-[-120px] w-[533px] h-[637px]"
-          : "bottom-[-300px] left-[-220px] w-[533px] h-[637px]";
+          ? "top-[-200px] right-[-120px] w-[433px] h-[580px]"
+          : "bottom-[-300px] left-[-220px] w-[433px] h-[580px]";
 
   return (
     <svg
