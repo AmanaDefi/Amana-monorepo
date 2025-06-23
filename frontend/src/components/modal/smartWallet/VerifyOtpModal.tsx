@@ -24,7 +24,7 @@ const formatEmail = (email: string) => {
 export const VerifyOtpModal = () => {
   const { step, email, closeAll, authenticate, successAuth } = useAuthStore();
   const [error, setError] = useState<"sent" | "invalid" | "">();
-  const { authenticate: OTPAuth, isPending } = useAuthenticate({
+  const { authenticate: OTPAuth } = useAuthenticate({
     onSuccess: (result) => {
       console.log(result);
       console.log("Success email auth", result);
@@ -119,13 +119,16 @@ export const VerifyOtpModal = () => {
   };
 
   const resendEmail = () => {
-    if (isPending || isResentdedOtp) return;
+    if (isResentdedOtp) return;
     OTPAuth({
       type: "email",
       email: email,
     });
 
     setIsResendedOtp(true);
+    setTimeout(() => {
+      setIsResendedOtp(false);
+    }, 30000)
   };
 
   const handleSubmit = () => {
