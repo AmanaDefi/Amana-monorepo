@@ -54,6 +54,7 @@ import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDe
 import GiftIcon from "@/components/svg/GiftIcon";
 import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
 import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
+import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -331,7 +332,6 @@ const VaultsDetailContainer: React.FC<{
   return vaultData ? (
     <div className=" font-gotham">
       {!walletAddress && <InvestBlock />}
-
       <div
         className={clsx(
           "flex flex-row justify-between items-center",
@@ -415,9 +415,7 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
       </div>
-
       {walletAddress && isWithdraw && <WithdrawPendingBlock />}
-
       <VaultHeader
         vaultData={vaultData}
         userVaultBalance={userVaultBalance}
@@ -442,7 +440,6 @@ const VaultsDetailContainer: React.FC<{
           />
         </div>
       )}
-
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-[56px] font-gotham">
         <div>
           {shouldShowDepositComplete ? (
@@ -485,7 +482,9 @@ const VaultsDetailContainer: React.FC<{
                 </VaultCardInfoBlock>
               </div>
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] md:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-8">
+              {walletAddress && isWithdraw && <WithdrawalNotice />}
+
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] md:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}
