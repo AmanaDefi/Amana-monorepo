@@ -9,6 +9,7 @@ import "./interfaces/ICurveRouterNG.sol";
 import "./interfaces/IV4SwapRouter.sol";
 import "./interfaces/IUniversalRouter.sol";
 import "./interfaces/IPermit2.sol";
+import "hardhat/console.sol";
 
 contract SwapHelperEthereum is SwapHelperParent {
     address public constant ROUTER_NG =
@@ -72,6 +73,7 @@ contract SwapHelperEthereum is SwapHelperParent {
         } else if (token == CVX_ADDRESS) {
             return cvxUsdPriceFeedId;
         } else if (token == sUSN_ADDRESS) {
+            console.log("Getting sUSN price");
             return susnUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
