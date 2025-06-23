@@ -523,74 +523,172 @@ export const useVaultDataWithSearch = (
     }
   }, [sortBy]);
 
-  // Determine if search should be used
-  const trimmedSearchTerm = searchTerm.trim();
-  const hasNetworkFilter = networkFilter && networkFilter.length > 0;
-  const hasProtocolFilter = protocolFilter && protocolFilter.length > 0;
-  const hasSearchTerm = trimmedSearchTerm.length > 0 &&
-    trimmedSearchTerm.length <= 100 && // Maximum 100 characters
-    (
-      // Minimum 6 characters for addresses (0x + 4 characters)
-      !trimmedSearchTerm.startsWith('0x') || trimmedSearchTerm.length >= 6
-    );
+  // Determine if search should be used - memoized to prevent constant recalculation
+  const trimmedSearchTerm = useMemo(() => searchTerm.trim(), [searchTerm]);
+  const hasNetworkFilter = useMemo(() => networkFilter && networkFilter.length > 0, [networkFilter]);
+  const hasProtocolFilter = useMemo(() => protocolFilter && protocolFilter.length > 0, [protocolFilter]);
+  const hasSearchTerm = useMemo(() => {
+    return trimmedSearchTerm.length > 0 &&
+      trimmedSearchTerm.length <= 100 && // Maximum 100 characters
+      (
+        // Minimum 6 characters for addresses (0x + 4 characters)
+        !trimmedSearchTerm.startsWith('0x') || trimmedSearchTerm.length >= 6
+      );
+  }, [trimmedSearchTerm]);
 
-  // Data from subgraph (different variants depending on filters)
-  const { data: subgraphData, isLoading: subgraphLoading, error: subgraphError } = (() => {
-    if (hasSearchTerm && hasNetworkFilter && hasProtocolFilter) {
-      // Search + network filter + protocol filter
-      return useSearchVaultsPaginatedWithNetworkAndProtocolFromGraph(trimmedSearchTerm, networkFilter, protocolFilter, pageSize, skip, graphSortBy, sortOrder);
-    } else if (hasSearchTerm && hasNetworkFilter) {
-      // Search + network filter
-      return useSearchVaultsPaginatedWithNetworkFromGraph(trimmedSearchTerm, networkFilter, pageSize, skip, graphSortBy, sortOrder);
-    } else if (hasSearchTerm && hasProtocolFilter) {
-      // Search + protocol filter
-      return useSearchVaultsPaginatedWithProtocolFromGraph(trimmedSearchTerm, protocolFilter, pageSize, skip, graphSortBy, sortOrder);
-    } else if (hasNetworkFilter && hasProtocolFilter) {
-      // Network filter + protocol filter
-      return useVaultsByNetworkAndProtocolFromGraph(networkFilter, protocolFilter, pageSize, skip, graphSortBy, sortOrder);
-    } else if (hasSearchTerm) {
-      // Only search
-      return useSearchVaultsPaginatedFromGraph(trimmedSearchTerm, pageSize, skip, graphSortBy, sortOrder);
-    } else if (hasNetworkFilter) {
-      // Only network filter
-      return useVaultsByNetworkFromGraph(networkFilter, pageSize, skip, graphSortBy, sortOrder);
-    } else if (hasProtocolFilter) {
-      // Only protocol filter
-      return useVaultsByProtocolFromGraph(protocolFilter, pageSize, skip, graphSortBy, sortOrder);
-    } else {
-      // Default pagination
-      return useVaultsPaginatedFromGraph(pageSize, skip, graphSortBy, sortOrder);
-    }
-  })();
+  // All possible hook calls (always called at top level)
+  const searchWithNetworkAndProtocolData = useSearchVaultsPaginatedWithNetworkAndProtocolFromGraph(
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
 
-  // Total number of vaults (different variants depending on filters)
-  const { data: countData, isLoading: countLoading } = (() => {
+  const searchWithNetworkData = useSearchVaultsPaginatedWithNetworkFromGraph(
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : '',
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
+
+  const searchWithProtocolData = useSearchVaultsPaginatedWithProtocolFromGraph(
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
+
+  const networkAndProtocolData = useVaultsByNetworkAndProtocolFromGraph(
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
+
+  const searchOnlyData = useSearchVaultsPaginatedFromGraph(
+    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
+    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
+
+  const networkOnlyData = useVaultsByNetworkFromGraph(
+    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : '',
+    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
+    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
+
+  const protocolOnlyData = useVaultsByProtocolFromGraph(
+    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
+    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
+    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
+
+  const defaultData = useVaultsPaginatedFromGraph(
+    !hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
+    !hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? skip : 0,
+    graphSortBy,
+    sortOrder
+  );
+
+  // Count hooks (always called at top level)
+  const searchWithNetworkAndProtocolCount = useSearchVaultsWithNetworkAndProtocolCountFromGraph(
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
+    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
+  );
+
+  const searchWithNetworkCount = useSearchVaultsWithNetworkCountFromGraph(
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : ''
+  );
+
+  const searchWithProtocolCount = useSearchVaultsWithProtocolCountFromGraph(
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
+  );
+
+  const networkAndProtocolCount = useVaultsByNetworkAndProtocolCountFromGraph(
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
+  );
+
+  const searchOnlyCount = useSearchVaultsCountFromGraph(
+    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : ''
+  );
+
+  const networkOnlyCount = useVaultsByNetworkCountFromGraph(
+    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : ''
+  );
+
+  const protocolOnlyCount = useVaultsByProtocolCountFromGraph(
+    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
+  );
+
+  const defaultCount = useVaultsCountFromGraph();
+
+  // Select the appropriate data and counts based on filters
+  const { data: subgraphData, isLoading: subgraphLoading, error: subgraphError } = useMemo(() => {
     if (hasSearchTerm && hasNetworkFilter && hasProtocolFilter) {
-      // Search + network filter + protocol filter
-      return useSearchVaultsWithNetworkAndProtocolCountFromGraph(trimmedSearchTerm, networkFilter, protocolFilter);
+      return searchWithNetworkAndProtocolData;
     } else if (hasSearchTerm && hasNetworkFilter) {
-      // Search + network filter
-      return useSearchVaultsWithNetworkCountFromGraph(trimmedSearchTerm, networkFilter);
+      return searchWithNetworkData;
     } else if (hasSearchTerm && hasProtocolFilter) {
-      // Search + protocol filter
-      return useSearchVaultsWithProtocolCountFromGraph(trimmedSearchTerm, protocolFilter);
+      return searchWithProtocolData;
     } else if (hasNetworkFilter && hasProtocolFilter) {
-      // Network filter + protocol filter
-      return useVaultsByNetworkAndProtocolCountFromGraph(networkFilter, protocolFilter);
+      return networkAndProtocolData;
     } else if (hasSearchTerm) {
-      // Only search
-      return useSearchVaultsCountFromGraph(trimmedSearchTerm);
+      return searchOnlyData;
     } else if (hasNetworkFilter) {
-      // Only network filter
-      return useVaultsByNetworkCountFromGraph(networkFilter);
+      return networkOnlyData;
     } else if (hasProtocolFilter) {
-      // Only protocol filter
-      return useVaultsByProtocolCountFromGraph(protocolFilter);
+      return protocolOnlyData;
     } else {
-      // Default count
-      return useVaultsCountFromGraph();
+      return defaultData;
     }
-  })();
+  }, [
+    hasSearchTerm, hasNetworkFilter, hasProtocolFilter,
+    searchWithNetworkAndProtocolData, searchWithNetworkData, searchWithProtocolData,
+    networkAndProtocolData, searchOnlyData, networkOnlyData, protocolOnlyData, defaultData
+  ]);
+
+  const { data: countData, isLoading: countLoading } = useMemo(() => {
+    if (hasSearchTerm && hasNetworkFilter && hasProtocolFilter) {
+      return searchWithNetworkAndProtocolCount;
+    } else if (hasSearchTerm && hasNetworkFilter) {
+      return searchWithNetworkCount;
+    } else if (hasSearchTerm && hasProtocolFilter) {
+      return searchWithProtocolCount;
+    } else if (hasNetworkFilter && hasProtocolFilter) {
+      return networkAndProtocolCount;
+    } else if (hasSearchTerm) {
+      return searchOnlyCount;
+    } else if (hasNetworkFilter) {
+      return networkOnlyCount;
+    } else if (hasProtocolFilter) {
+      return protocolOnlyCount;
+    } else {
+      return defaultCount;
+    }
+  }, [
+    hasSearchTerm, hasNetworkFilter, hasProtocolFilter,
+    searchWithNetworkAndProtocolCount, searchWithNetworkCount, searchWithProtocolCount,
+    networkAndProtocolCount, searchOnlyCount, networkOnlyCount, protocolOnlyCount, defaultCount
+  ]);
 
   // Apply EXCLUDED_VAULTS filter to total count
   const totalCount = useMemo(() => {
@@ -720,7 +818,7 @@ export const useVaultDataWithSearch = (
       setLoading(false);
     }, TIMEOUT_MS);
     return () => clearTimeout(timerId);
-  }, [hasSearchTerm, hasNetworkFilter, hasProtocolFilter, trimmedSearchTerm, networkFilter, protocolFilter]);
+  }, [hasSearchTerm, hasNetworkFilter, hasProtocolFilter]);
 
   // Overall loading state
   const finalLoading = useMemo(() => {
