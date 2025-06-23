@@ -29,10 +29,10 @@ const InvestBlock = () => {
           <InvestIcon width={25} height={25} />
         </div>
         <div className="flex flex-col">
-          <p className="text-white font-medium text-[24px]">
+          <p className="text-white font-medium text-lg lg:text-[24px]">
             Invest Without Limits
           </p>
-          <p className="text-[#4874db] font-normal text-[16px] leading-[175%] mt-1">
+          <p className="text-[#4874db] font-normal text-sm lg:text-[16px] leading-[175%] mt-1">
             Any Asset, Any Chain, Only Performance Fees
           </p>
         </div>

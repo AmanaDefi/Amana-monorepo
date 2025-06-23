@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useAuthStore } from "@/store/authStore";
@@ -15,8 +15,6 @@ import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
-
-
 
 interface HeaderProps {
   activeSection?: string;
@@ -32,11 +30,32 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
     useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
-
+  const [isMobile, setIsMobile] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   const { openStep } = useAuthStore();
+
+  const checkScreenSize = () => {
+    setIsMobile(window.innerWidth <= 768);
+  };
+
+  useEffect(() => {
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => {
+      window.removeEventListener("resize", checkScreenSize);
+    };
+  }, []);
+
+  const handleSignInClick = () => {
+    const currentWidth = window.innerWidth;
+    if (currentWidth <= 768) {
+      openStep("mobileOptionsA");
+    } else {
+      openStep("optionsA");
+    }
+  };
 
   const navLinks = isConnected
     ? [{ label: "Home", href: "/" }, ...NAV_LINKS.slice(1)]
@@ -51,19 +70,19 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
       <header
         className={`w-full flex items-center justify-between font-gotham ${
           isConnected
-            ? "px-0 md:px-11 mb-7 md:mb-10 h-[60px] md:h-[40px]"
-            : "px-0 md:pl-11 md:pr-0 h-[80px] mb-0 md:mb-9"
+            ? "px-0 lg:px-11 mb-7 lg:mb-10 h-[60px] lg:h-[40px]"
+            : "px-0 lg:pl-11 lg:pr-0 h-[80px] mb-0 lg:mb-9"
         }`}
       >
         <div className="flex items-center gap-[41px]">
           <Link
             href="/"
-            className={`flex items-center ${!isConnected ? "block" : "md:hidden"}`}
+            className={`flex items-center ${!isConnected ? "block" : "lg:hidden"}`}
           >
             <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
           </Link>
 
-          <nav className="hidden md:flex items-center min-w-[427px]">
+          <nav className="hidden lg:flex items-center min-w-[427px]">
             {navLinks.map(({ label, href }) => (
               <span
                 key={href}
@@ -78,11 +97,14 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-6">
-          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && <ChainSwitcher />}
-          <div className="hidden md:block">
+        <div className="flex items-center gap-2 lg:gap-6">
+          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && (
+            <ChainSwitcher />
+          )}
+
+          <div className="hidden lg:block">
             {!isConnected ? (
-              <Button variant="signIn" onClick={() => openStep("optionsA")}>
+              <Button variant="signIn" onClick={handleSignInClick}>
                 Sign in
               </Button>
             ) : (
@@ -104,15 +126,11 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             )}
           </div>
 
-          <div className="md:hidden flex flex-row items-center gap-2">
+          <div className="lg:hidden flex flex-row items-center gap-2">
             {path === "/" && (
-              <div className="md:hidden flex">
+              <div className="lg:hidden flex">
                 {!isConnected ? (
-                  <Button
-                    variant="signIn"
-                    className="w-[96px] !h-10"
-                    onClick={() => openStep("mobileOptionsA")}
-                  >
+                  <Button variant="signIn" onClick={handleSignInClick}>
                     Sign in
                   </Button>
                 ) : (
@@ -139,7 +157,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             )}
             <button
               onClick={toggleMenu}
-              className="md:hidden h-10"
+              className="lg:hidden h-10"
               aria-label="Toggle mobile menu"
             >
               <BurgerMenuIcon />
