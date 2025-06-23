@@ -352,7 +352,7 @@ export default function VaultHeader({
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-300 text-sm">
-                            {vaultData.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Points'}
+                            {vaultData.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
                           </span>
                           <span className="text-white font-medium">
                             {getPointsInfo(vaultData.protocol.name).points

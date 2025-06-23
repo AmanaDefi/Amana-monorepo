@@ -483,7 +483,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-gray-300 text-sm">
-                                    {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Points'}
+                                    {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
                                   </span>
                                   <span className="text-white font-medium">
                                     {getPointsInfo(vault.protocol.name).points}
