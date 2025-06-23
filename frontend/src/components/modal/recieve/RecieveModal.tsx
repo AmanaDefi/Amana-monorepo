@@ -21,6 +21,12 @@ const ReceiveModal = () => {
     setTimeout(() => setCopied(false), 1500);
   };
 
+
+  const shortenAddress = (address: string | null | undefined): string => {
+    if (!address || address.length < 13) return address || "";
+    return `${address.slice(0, 4)}...${address.slice(-9)}`;
+  };
+
   return (
     <Modal
       maxWidth="max-w-[526px]"
@@ -49,9 +55,9 @@ const ReceiveModal = () => {
           )}
         </div>
 
-        <div className="mt-[57px] font-gotham w-full max-h-[56px] bg-[#161C27] py-4 px-4 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
-          <span className="text-[#535E73] text-[16px] font-bold">
-            {walletAddress}
+        <div className="mt-[57px] font-gotham w-full max-h-[56px] bg-[#161C27] py-4 px-4 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-center gap-2 items-center">
+          <span className="text-[#535E73] text-[16px] font-bold text-center">
+            {shortenAddress(walletAddress)}
           </span>
           <button onClick={handleCopy} title="Copy mr-[27px]">
             <CopyIcon width={24} height={24} color="#fff" />

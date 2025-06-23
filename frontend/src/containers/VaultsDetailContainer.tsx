@@ -123,7 +123,7 @@ const VaultsDetailContainer: React.FC<{
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
     if (isTxInProgress) return;
 
-    const newIsDeposit = tab.toLowerCase() === "deposit";
+    const newIsDeposit = tab.toLowerCase() === "invest";
     setIsDeposit(newIsDeposit);
 
     updateLocalStorageObject(vaultID.toString(), {
