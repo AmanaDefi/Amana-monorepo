@@ -40,7 +40,7 @@ import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
 import { useChain, useUser } from "@account-kit/react";
-import { useVaultDetailsFromGraph } from "@/hooks/useVaultsGraph";
+import { useVaultDetailsFromGraph, useUserVaultBalancesFromGraph } from "@/hooks/useVaultsGraph";
 import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -206,6 +206,7 @@ const VaultsDetailContainer: React.FC<{
   }, [vaultData]);
 
   const { data: vaultFromGraph } = useVaultDetailsFromGraph(vaultIdStr);
+  const { userVaultBalances } = useUserVaultBalancesFromGraph(walletAddress || undefined);
 
   const backPath: string = pathname.includes("old-vaults")
     ? "/old-vaults"
@@ -236,6 +237,24 @@ const VaultsDetailContainer: React.FC<{
       }
     }
   }, [vaultID, initialIsDeposit, vaultFromGraph]);
+
+  // Set user vault balance from graph data
+  useEffect(() => {
+    if (userVaultBalances && vaultIdStr) {
+      const userBalance = userVaultBalances.find(balance => balance.vaultId === vaultIdStr);
+      if (userBalance) {
+        // Convert formatted balance string to Balance object
+        const balance: Balance = {
+          value: BigInt(0), // We don't have raw value from graph, using 0
+          formatted: userBalance.balance.toString(),
+          formattedUSD: "$0.00" // Will be calculated in VaultHeader
+        };
+        setUserVaultBalance(balance);
+      } else {
+        setUserVaultBalance(undefined);
+      }
+    }
+  }, [userVaultBalances, vaultIdStr]);
 
   const strategyExplorerBaseUrl = useMemo(() => {
     if (!vaultData?.protocol?.chainId) return "";
