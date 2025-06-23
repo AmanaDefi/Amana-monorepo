@@ -53,6 +53,7 @@ import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
 import motion from "framer-motion";
 import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDepositInstruction";
 import GiftIcon from "@/components/svg/GiftIcon";
+import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -402,6 +403,8 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
       </div>
+
+      {walletAddress && isWithdraw && <WithdrawPendingBlock />}
 
       <VaultHeader
         vaultData={vaultData}

@@ -6,7 +6,6 @@ import Header from "@/components/header";
 import { AppModals } from "@/components/modal/AppModals";
 import GlowIcon from "@/components/svg/GlowIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useAuthStore } from "@/store/authStore";
 import { getActiveSectionFromPathname } from "@/utils/getActiveSectionFromPathname";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
@@ -15,7 +14,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { step } = useAuthStore();
 
   const pathname = usePathname();
   const activeSection = getActiveSectionFromPathname(pathname);
@@ -38,8 +36,8 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="relative overflow-hidden min-h-screen z-0">
-      <GlowIcon position="top-right" />
-      <GlowIcon position="bottom-left" />
+      <GlowIcon position={isMobile ? "top-mobile" : "top-right"} />
+      <GlowIcon position={isMobile ? "bottom-mobile" : "bottom-left"} />
 
       {isConnected ? (
         <div className="flex flex-col mx-auto w-full min-h-screen pt-4 md:pt-[60px] pb-[30px] px-4 md:px-0">
