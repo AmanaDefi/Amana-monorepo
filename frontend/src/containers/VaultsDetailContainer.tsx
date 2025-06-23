@@ -52,6 +52,7 @@ import { useAuthStore } from "@/store/authStore";
 import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
 import motion from "framer-motion";
 import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDepositInstruction";
+import GiftIcon from "@/components/svg/GiftIcon";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -348,7 +349,7 @@ const VaultsDetailContainer: React.FC<{
           </p>
         </Button>
 
-        {(!walletAddress || (walletAddress && isDeposit)) && (
+        {(!walletAddress || walletAddress) && (
           <>
             <button
               onClick={() => {
@@ -358,7 +359,13 @@ const VaultsDetailContainer: React.FC<{
               className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
               type="button"
             >
-              <ErrorInputIcon className="w-5 h-5 text-white" />
+              {!walletAddress ? (
+                <ErrorInputIcon className="w-5 h-5 text-white" />
+              ) : isDeposit ? (
+                <ErrorInputIcon className="w-5 h-5 text-white" />
+              ) : (
+                <GiftIcon size={20} className="text-white" />
+              )}
             </button>
             <MobileInfoModal
               vaultData={vaultData}
