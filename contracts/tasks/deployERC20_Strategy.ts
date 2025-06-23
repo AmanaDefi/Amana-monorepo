@@ -24,14 +24,47 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     rewardsContract,
     rewardsToken
   } = args;
-
+  console.log("WithdrawwHelper:", withdrawHelper);
+  console.log("SwapHelper:", swapHelper);
+  console.log("RewardsContract:", rewardsContract);
+  console.log("RewardsToken:", rewardsToken);
+  console.log("zero address:", hre.ethers.constants.AddressZero);
   if (!name || !vault || !inputToken || !receiptToken || !contractName || !gateway || !withdrawHelper) {
     throw new Error("🚨 Missing required parameters.");
   }
 
   console.log(`🔑 Deploying ${contractName} with signer: ${signer.address}`);
 
+  for (const [name, address] of Object.entries({
+    // name,
+    gateway,
+    vault,
+    withdrawHelper,
+    swapHelper,
+    receiptToken,
+    inputToken
+    // rewardsContract,
+    // rewardsToken,
+  })) {
+    console.log(`${name}: ${address}`);
+    const code = await hre.ethers.provider.getCode(address);
+    console.log(`  -> isContract: ${code !== "0x"}`);
+  }
+
+
   const StrategyFactory = await hre.ethers.getContractFactory(contractName, signer);
+  console.log("DEPLOY ARGS:", [
+    name,
+    gateway,
+    vault,
+    withdrawHelper,
+    swapHelper ?? hre.ethers.constants.AddressZero,
+    receiptToken,
+    inputToken,
+    rewardsContract ?? "0xdAC17F958D2ee523a2206206994597C13D831ec7", //hre.ethers.constants.AddressZero,
+    rewardsToken ?? "0xdAC17F958D2ee523a2206206994597C13D831ec7", // hre.ethers.constants.AddressZero,
+    0
+  ]);
 
   const proxy = await hre.upgrades.deployProxy(
     StrategyFactory,
@@ -40,12 +73,12 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       gateway,
       vault,
       withdrawHelper,
-      swapHelper ?? hre.ethers.constants.AddressZero,
+      "0x74fCAd57C966cAB6fa02a0A5425b1c76DcaFe9A0", //swapHelper ?? hre.ethers.constants.AddressZero,
       receiptToken,
       inputToken,
-      rewardsContract ?? hre.ethers.constants.AddressZero,
-      rewardsToken ?? hre.ethers.constants.AddressZero,
-      hre.ethers.constants.AddressZero  // tokenIndex — unused
+      "0xdAC17F958D2ee523a2206206994597C13D831ec7", // hre.ethers.constants.AddressZero,
+      "0xdAC17F958D2ee523a2206206994597C13D831ec7", //hre.ethers.constants.AddressZero,
+      0  // tokenIndex — unused
     ],
     {
       initializer: "initialize",
