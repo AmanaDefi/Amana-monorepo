@@ -71,7 +71,6 @@ const provider_ethereum = new JsonRpcProvider(
 const abiCoder = new AbiCoder();
 
 const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === 'testnet';
-const contractWithdrawalReceiverAddress = (isTestnet ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS) as `0x${string}`
 
 const BLOCK_TIME: { [chainId: number]: number } = {
   1: 12,     // Ethereum
@@ -676,7 +675,7 @@ export async function fetchYieldFiAPY(): Promise<number> {
 
     // apy is returned as a percentage, so we convert it to a decimal
     const baseApy = Number(json.apy) / 100;
-    
+
     // Add 5% bonus to make the APY more attractive
     const enhancedApy = baseApy + 0.05;
 
@@ -1062,7 +1061,7 @@ const executeCrossChainDeposit = async (
 
   // Prepare revertOptions
   revertOptions = [
-    contractWithdrawalReceiverAddress, // revertAddress
+    activeAccount.address, // revertAddress
     true, // callOnRevert
     activeAccount.address, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
@@ -1406,7 +1405,7 @@ const executeCrossChainWithdrawal = async (
     ["_crossChainWithdrawFailed", transactionId, activeAccount.address]
   );
   const revertOptions = [
-    contractWithdrawalReceiverAddress, // revertAddress
+    activeAccount.address, // revertAddress
     false, // callOnRevert
     activeAccount.address, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
