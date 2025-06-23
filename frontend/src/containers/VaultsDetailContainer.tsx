@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import {
@@ -50,10 +50,10 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import { useAuthStore } from "@/store/authStore";
 import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
-import motion from "framer-motion";
 import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDepositInstruction";
 import GiftIcon from "@/components/svg/GiftIcon";
 import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
+import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -77,6 +77,8 @@ const VaultsDetailContainer: React.FC<{
   const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
+  const [showMobileInvestment, setShowMobileInvestment] = useState(false);
+  const giftButtonRef = useRef<HTMLButtonElement>(null);
 
   const [depositData, setDepositData] = useState({
     amount: "0",
@@ -353,9 +355,13 @@ const VaultsDetailContainer: React.FC<{
         {(!walletAddress || walletAddress) && (
           <>
             <button
+              ref={giftButtonRef}
               onClick={() => {
-                console.log("Button clicked!");
-                openStep("mobileInfo");
+                if (isDeposit) {
+                  openStep("mobileInfo");
+                } else {
+                  setShowMobileInvestment((prev) => !prev);
+                }
               }}
               className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
               type="button"
@@ -377,6 +383,14 @@ const VaultsDetailContainer: React.FC<{
               vaultExplorerBaseUrl={vaultExplorerBaseUrl}
               strategyExplorerBaseUrl={strategyExplorerBaseUrl}
               depositData={depositData}
+            />
+            <MobileInvestmentPopover
+              isVisible={showMobileInvestment && isWithdraw}
+              onClose={() => setShowMobileInvestment(false)}
+              triggerRef={giftButtonRef}
+              depositAmount={depositData.amount}
+              vaultTokenSymbol={depositData.symbol}
+              depositUSDValue={depositData.usdValue}
             />
           </>
         )}
