@@ -309,7 +309,7 @@ export default function VaultInputs({
         setErrorMessage(
           getVaultErrorMessage(
             inputBalance.formatted,
-            vaultTotalAssetinToken.toString(),
+            vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0",
             steps,
           ),
         );
@@ -578,8 +578,14 @@ export default function VaultInputs({
         displayValue: tokenBalance.formatted,
       });
     } else {
+      const maxValue = vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
+      console.log("VaultInputs - MAX click for withdraw:", {
+        vaultTotalAssetinToken,
+        maxValue,
+        isDeposit
+      });
       handleChangeInput({
-        currentTarget: { value: vaultTotalAssetinToken?.toString() },
+        currentTarget: { value: maxValue },
       } as React.ChangeEvent<HTMLInputElement>);
     }
   }, [
@@ -1182,7 +1188,7 @@ export default function VaultInputs({
         `🪙 Output token: ${vaultData.inputToken.symbol} (underlying asset)`,
       );
       console.log(
-        `💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : vaultTotalAssetinToken.toString()}`,
+        `💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0"}`,
       );
       console.log(
         `📊 Balance type: ${isDeposit ? "wallet balance" : "maxWithdraw amount"}`,
@@ -1247,7 +1253,7 @@ export default function VaultInputs({
         inputTokenbalance={
           isDeposit
             ? tokenBalance.formatted
-            : (vaultTotalAssetinToken?.toString() ?? "0")
+            : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0")
         }
         errorMessage={errorMessage}
         tokenList={isDeposit ? tokenList : []}
@@ -1297,7 +1303,7 @@ export default function VaultInputs({
         selectedToken={isDeposit ? vaultData.inputToken : inputToken}
         inputTokenbalance={
           isDeposit
-            ? (vaultTotalAssetinToken?.toString() ?? "0")
+            ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0")
             : tokenBalance.formatted
         }
         errorMessage={!errorMessage ? outputBoxErrorMessage : ""}

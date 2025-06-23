@@ -128,25 +128,10 @@ const VaultsContainer: React.FC<VaultsContainerProps> = () => {
     );
   }
 
-  if (timedOut && vaults.length === 0 && debouncedSearchTerm.length > 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <h2 className="text-xl font-semibold mb-4">No Results Found</h2>
-        <p className="text-gray-600 mb-4">We could not find any vaults matching your search query.</p>
-        <button
-          onClick={() => setSearchTerm('')}
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Clear Search
-        </button>
-      </div>
-    );
-  }
-
   return (
     <VaultsGrid
       loading={shouldShowLoading}
-      vaults={vaults}
+      vaults={timedOut && vaults.length === 0 && debouncedSearchTerm.length > 0 ? [] : vaults}
       vaultAPYs={vaultAPYs}
       userVaultBalances={userVaultBalances}
       vaultTotalAssets={vaultTotalAssets}

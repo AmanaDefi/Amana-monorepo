@@ -1124,15 +1124,11 @@ export const NETWORK_FILTER_OPTIONS = [
     icon: TOKEN_LOGO_URLS.ARB,
   },
   {
-    value: "Avalanche",
-    icon: TOKEN_LOGO_URLS.AVAX,
-  },
-  {
     value: "Base",
     icon: TOKEN_LOGO_URLS.BASE,
   },
   {
-    value: "BSC",
+    value: "BNB",
     icon: TOKEN_LOGO_URLS.BNB,
   },
   {
@@ -1142,10 +1138,6 @@ export const NETWORK_FILTER_OPTIONS = [
   {
     value: "Polygon",
     icon: TOKEN_LOGO_URLS.POL,
-  },
-  {
-    value: "ZetaChain",
-    icon: TOKEN_LOGO_URLS.ZETA,
   },
 ];
 
@@ -1159,7 +1151,7 @@ export const PROTOCOL_FILTER_OPTIONS = [
     icon: TOKEN_LOGO_URLS.COMPOUND,
   },
   {
-    value: "Curve",
+    value: "Curve-Convex",
     icon: TOKEN_LOGO_URLS.CURVE,
   },
   {
@@ -1169,13 +1161,5 @@ export const PROTOCOL_FILTER_OPTIONS = [
   {
     value: "Fluid",
     icon: TOKEN_LOGO_URLS.FLUID,
-  },
-  {
-    value: "Moonwell",
-    icon: TOKEN_LOGO_URLS.MOONWELL,
-  },
-  {
-    value: "Venus",
-    icon: TOKEN_LOGO_URLS.VENUS,
   },
 ];

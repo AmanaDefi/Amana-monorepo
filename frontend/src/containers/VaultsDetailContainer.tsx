@@ -164,7 +164,7 @@ const VaultsDetailContainer: React.FC<{
           if (savedChain.id !== activeChain.id) {
             switchToChain(savedChain);
           }
-        } catch (error) {}
+        } catch (error) { }
       }
     }
   }, [vaultID, switchToChain, activeChain]);
@@ -203,11 +203,12 @@ const VaultsDetailContainer: React.FC<{
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;
-  }, [vaultData]);
+  }, [vaultData?.id]);
 
   const { data: vaultFromGraph } = useVaultDetailsFromGraph(vaultIdStr);
-  const { userVaultBalances } = useUserVaultBalancesFromGraph(walletAddress || undefined);
-
+  const memoizedWalletAddress = useMemo(() => walletAddress || undefined, [walletAddress]);
+  const { userVaultBalances } = useUserVaultBalancesFromGraph(memoizedWalletAddress);
+  
   const backPath: string = pathname.includes("old-vaults")
     ? "/old-vaults"
     : "/";
@@ -240,21 +241,33 @@ const VaultsDetailContainer: React.FC<{
 
   // Set user vault balance from graph data
   useEffect(() => {
-    if (userVaultBalances && vaultIdStr) {
-      const userBalance = userVaultBalances.find(balance => balance.vaultId === vaultIdStr);
+    const userBalance = userVaultBalances?.find(balance => balance.vaultId === vaultIdStr);
+    
+    if (userVaultBalances?.length && vaultIdStr) {
       if (userBalance) {
         // Convert formatted balance string to Balance object
-        const balance: Balance = {
-          value: BigInt(0), // We don't have raw value from graph, using 0
-          formatted: userBalance.balance.toString(),
-          formattedUSD: "$0.00" // Will be calculated in VaultHeader
-        };
-        setUserVaultBalance(balance);
-      } else {
+        const balanceValue = String(userBalance.balance);
+        
+        if (userVaultBalance?.formatted !== balanceValue) {
+          const balance: Balance = {
+            value: BigInt(0), // We don't have raw value from graph, using 0
+            formatted: balanceValue,
+            formattedUSD: "$0.00" // Will be calculated in VaultHeader
+          };
+          
+          setUserVaultBalance(balance);
+          
+          setVaultTotalAssetinToken({
+            vaultId: vaultIdStr,
+            totalAssetsinToken: balanceValue
+          });
+        }
+      } else if (userVaultBalance !== undefined || vaultTotalAssetinToken !== undefined) {
         setUserVaultBalance(undefined);
+        setVaultTotalAssetinToken(undefined);
       }
     }
-  }, [userVaultBalances, vaultIdStr]);
+  }, [userVaultBalances, vaultIdStr, userVaultBalance, vaultTotalAssetinToken]);
 
   const strategyExplorerBaseUrl = useMemo(() => {
     if (!vaultData?.protocol?.chainId) return "";
@@ -265,30 +278,35 @@ const VaultsDetailContainer: React.FC<{
 
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
 
-  useEffect(() => {
-    if (userVaultBalance && vaultData) {
-      const rawBalance =
-        typeof userVaultBalance === "string"
-          ? userVaultBalance
-          : userVaultBalance.formatted;
-      const usdValue = Number(rawBalance) * (vaultTokenPrice || 0);
-    }
-  }, [userVaultBalance, vaultData, vaultTokenPrice]);
-
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
   const cvxTokenPrice = useTokenPriceBySymbol("CVX");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
+  
+  const memoizedPrices = useMemo(() => ({
+    crv: crvTokenPrice,
+    cvx: cvxTokenPrice,
+    eth: ethTokenPrice,
+    comp: compTokenPrice,
+    op: opTokenPrice
+  }), [
+    Math.floor((crvTokenPrice || 0) * 100),
+    Math.floor((cvxTokenPrice || 0) * 100),
+    Math.floor((ethTokenPrice || 0) * 100),
+    Math.floor((compTokenPrice || 0) * 100),
+    Math.floor((opTokenPrice || 0) * 100)
+  ]);
+  
   useUpdateAPYs(
     currentVault,
     setVaultAPYs,
     setLoading,
-    crvTokenPrice,
-    cvxTokenPrice,
-    ethTokenPrice,
-    compTokenPrice,
-    opTokenPrice,
+    memoizedPrices.crv,
+    memoizedPrices.cvx,
+    memoizedPrices.eth,
+    memoizedPrices.comp,
+    memoizedPrices.op
   );
 
   const handleTokenSelect = useCallback(
