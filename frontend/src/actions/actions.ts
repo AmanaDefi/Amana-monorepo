@@ -1161,7 +1161,7 @@ const executeSolanaDeposit = async (
   // Anchor handles camelCase to snake_case conversion automatically
   const revertOptions = {
     revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
-    abortAddress: ethers.getBytes(evmWalletAddress),           // abort_address (array [u8, 20])
+    abortAddress: ethers.getBytes(vaultData.id),           // abort_address (array [u8, 20])
     callOnRevert: false,                                        // call_on_revert (bool)
     revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"), // revert_message (bytes)
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
@@ -1254,7 +1254,7 @@ export const executeSolanaWithdrawal = async (
   // IDL expects: revert_address, abort_address, call_on_revert, revert_message, on_revert_gas_limit
   const revertOptions = {
     revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
-    abortAddress: ethers.getBytes(evmWalletAddress),           // abort_address (array [u8, 20])
+    abortAddress: ethers.getBytes(vaultData.id),           // abort_address (array [u8, 20])
     callOnRevert: false,                                       // call_on_revert (bool) - false for withdrawals
     revertMessage: Buffer.from("_crossChainWithdrawFailed", "utf8"), // revert_message (bytes)
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
