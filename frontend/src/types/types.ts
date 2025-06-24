@@ -28,14 +28,18 @@ export interface Rate {
 export interface VaultData {
   id: string;
   name: string;
+  type: string;
   symbol: string;
   des?: string;
   imgURL?: string;
+  depositFeePaidFromGasTank: boolean;
+  minDeposit?: number; // Minimum deposit amount in USD
+  maxWithdraw?: number; // Maximum instant withdrawal amount in USD
   inputToken: Token;
   protocol: {
     name: string;
     strategyAddress: string;
-    gaugeAddress?: string;
+    rewardsContractAddress?: string;
     network: string;
     chainId: number;
     netdes?: string;
@@ -92,7 +96,7 @@ export interface Token {
   price: number;
   balance: Balance;
   isNative: boolean;
-  ZRC20equivalent?: Address;
+  ZRC20equivalent?: Token;
 }
 
 export interface TokenByAddress {
@@ -159,7 +163,12 @@ export type TransactionStepFeedback = {
   label: string
   description: string
   status: TransactionStepStatus,
-  txHash?: string
+  txHash?: string,
+  isWaitingTooLong?: boolean,
+  waitTime?: number,
+  isRecovery?: boolean,
+  recoveryAttempted?: boolean,
+  outboundHash?: string
 }
 
 export type TransactionStepMessages = {

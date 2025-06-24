@@ -11,4 +11,9 @@ export const client = createThirdwebClient({
   clientId: clientId,
 });
 
+// Debug function to check client configuration
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('[ThirdWeb Client Debug] Client initialized');
+}
+
 

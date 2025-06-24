@@ -59,4 +59,8 @@ interface ICurveLiquidityGauge {
     /// @notice Gets the total supply of LP tokens staked in the gauge.
     /// @return The total supply of LP tokens staked.
     function totalSupply() external view returns (uint256);
+
+    function claimable_tokens(address _user) external returns (uint256);
+
+    function user_checkpoint(address addr) external returns (bool);
 }

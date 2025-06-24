@@ -20,8 +20,8 @@ export default function MainActionButton({
 }: ButtonProps): JSX.Element {
   return (
     <button
-      className={`w-full px-2 py-2.5 rounded bg-white border border-white font-semibold text-base text-black
-                  transition-all ease-in-out duration-500 hover:bg-cyan-500 hover:border-cyan-500 hover:text-white
+      className={`w-full px-2 py-2.5 rounded bg-gradient-to-r from-[#262830] to-[#06afbc] fluid-hover-button font-semibold text-base text-white
+                  transition-all ease-in-out duration-500 
                   disabled:bg-customGray100 disabled:border-customGray100 disabled:text-white disabled:cursor-not-allowed 
                   disabled:hover:border-customGray100 disabled:hover:bg-customGray100 disabled:hover:text-white
                   ${hidden ? "hidden" : ""} ${className}`}
@@ -33,7 +33,7 @@ export default function MainActionButton({
         <span className="font-bold">{label}</span>
         {icon && <Image src={icon} width={1200}
           height={800}
-          alt={label} className="w-5 h-5" />}
+          alt={label} className="w-5 h-5" sizes="20px" />}
       </span>
     </button>
   );

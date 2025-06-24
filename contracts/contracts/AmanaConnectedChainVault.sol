@@ -10,34 +10,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    uint256 latestTotalAssetsUpdateFromStrategy;
-    uint256 public lastProcessedNonce;
-
-    struct Confirmation {
-        address user;
-        address receiver;
-        address withdrawZRC20;
-        address withdrawERC20;
-        uint256 amount;
-        uint256 vaultSharesToBeBurnt;
-        uint32 withdrawChainId;
-        bool isDeposit;
-        uint256 totalAssetsAfter;
-        bytes32 crossChainTxId;
-        uint16 slippage;
-    }
-
-    mapping(uint256 => Confirmation) pendingConfirmations; // Buffer for out-of-order confirmations
-    mapping(address => uint256) pendingWithdrawals;
-    bool public depositFeePaidFromGasTank;
-
-    event CrossChainInvestSent(bytes32 indexed crossChainTxId);
-    event CrossChainInvestFailed(bytes32 indexed crossChainTxId);
-    event DivestSent(bytes32 indexed crossChainTxId);
-    event DivestFailed(bytes32 indexed crossChainTxId);
-    event TotalAssetsUpdated(uint256 totalAssets);
-    event SwitchStrategyFailed(bytes32 indexed crossChainTxId);
-
     /// @dev Initializer instead of constructor for upgradeability
     function initialize(
         string memory name,
@@ -57,9 +29,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             registry_,
             perfFee_,
             gasLimitWithdrawAndCall_,
-            gasLimitCall_
+            gasLimitCall_,
+            depositFeePaidFromGasTank_
         );
-        depositFeePaidFromGasTank = depositFeePaidFromGasTank_;
     }
 
     /**
@@ -77,250 +49,188 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) external override onlyGateway {
         if (context.sender == strategyAddress) {
             (
-                address user,
-                address receiver,
+                uint256 withdrawnAmount,
+                uint256 totalAssetsAfter,
+                uint256 confirmationNonce,
+                bytes32 txStatus
+            ) = abi.decode(message, (uint256, uint256, uint256, bytes32));
+
+            if (
+                confirmationNonce == lastProcessedNonce &&
+                txStatus == TX_TOTAL_ASSETS_UPDATE
+            ) {
+                latestTotalAssetsUpdateFromStrategy = totalAssetsAfter;
+                emit TotalAssetsUpdated(totalAssetsAfter, confirmationNonce);
+            } else {
+                pendingTransactions[confirmationNonce]
+                    .totalAssetsAfter = totalAssetsAfter;
+                pendingTransactions[confirmationNonce].txStatus = txStatus;
+                if (
+                    txStatus == TX_WITHDRAW_REVERTED ||
+                    txStatus == TX_WITHDRAW_CONFIRMED
+                ) {
+                    address user = pendingTransactions[confirmationNonce].user;
+                    if (
+                        pendingTransactions[confirmationNonce].amount >=
+                        pendingWithdrawals[user]
+                    ) {
+                        pendingWithdrawals[user] = 0;
+                    } else {
+                        pendingWithdrawals[user] -= pendingTransactions[
+                            confirmationNonce
+                        ].amount;
+                    }
+                }
+                pendingTransactions[confirmationNonce].amount = withdrawnAmount;
+            }
+            if (confirmationNonce == lastProcessedNonce + 1) {
+                // Process the confirmation immediately if it's the next one in line
+                _processBufferedpendingTransactions(true);
+            }
+        } else {
+            Transaction storage txn = pendingTransactions[vaultNonce];
+            if (context.sender == address(0)) revert InvalidAddress();
+            (
                 address withdrawZRC20,
                 address withdrawERC20,
-                uint256 withdrawAmount,
-                uint256 vaultSharesToBeBurnt,
-                uint32 withdrawChainId,
-                bool isDeposit,
-                uint256 totalAssetsAfter,
-                uint256 executionNonce,
-                bytes32 _crossChainTxId,
-                uint16 slippage
+                uint256 withdrawAssetAmount,
+                uint256 minimumOut,
+                uint16 slippage,
+                bytes memory nonEvmAddress,
+                bytes memory swapData,
+                bytes32 txStatus
             ) = abi.decode(
                     message,
                     (
                         address,
                         address,
-                        address,
-                        address,
                         uint256,
                         uint256,
-                        uint32,
-                        bool,
-                        uint256,
-                        uint256,
-                        bytes32,
-                        uint16
+                        uint16,
+                        bytes,
+                        bytes,
+                        bytes32
                     )
                 );
-            _processConfirmationFromStrategy(
-                user,
-                receiver,
-                withdrawZRC20,
-                withdrawERC20,
-                withdrawAmount,
-                vaultSharesToBeBurnt,
-                withdrawChainId,
-                isDeposit,
-                totalAssetsAfter,
-                executionNonce,
-                _crossChainTxId,
-                slippage
-            );
-        } else {
-            if (context.sender == address(0)) revert InvalidAddress();
-            if (message.length == 128) {
-                (
-                    address erc20source,
-                    uint256 minimumOut,
-                    uint16 slippage,
-                    bytes32 crossChainTxId
-                ) = abi.decode(message, (address, uint256, uint16, bytes32));
-                _depositComingFromConnectedChain(
-                    context.sender,
-                    context.chainID,
-                    amount,
-                    minimumOut,
-                    zrc20,
-                    erc20source,
-                    slippage,
-                    crossChainTxId
-                );
-            } else if (message.length == 192) {
-                (
-                    address withdrawZRC20,
-                    address withdrawERC20,
-                    uint256 vaultSharesToBeBurnt,
-                    uint256 minimumOut,
-                    uint16 slippage,
-                    bytes32 crossChainTxId
-                ) = abi.decode(
-                        message,
-                        (address, address, uint256, uint256, uint16, bytes32)
-                    );
-                _withdrawComingFromConnectedChain(
-                    context.sender,
-                    withdrawZRC20,
-                    withdrawERC20,
-                    vaultSharesToBeBurnt,
-                    minimumOut,
-                    uint32(context.chainID),
-                    slippage,
-                    crossChainTxId
-                );
+            txn.user = context.sender; // common to both paths
+            txn.receiver = context.sender; // could take in a different receiver?
+            txn.minOut = minimumOut;
+            txn.withdrawChainId = uint32(context.chainID);
+            txn.txStatus = txStatus;
+            txn.withdrawERC20 = withdrawERC20;
+            txn.slippage = slippage;
+            nonEvmAddressByNonce[vaultNonce] = nonEvmAddress;
+            swapDataByNonce[vaultNonce] = swapData;
+            // if (context.senderEVM != address(0)) {
+            //     // Handle EVM-style sender logic
+            //     txn.user = context.senderEVM;
+            //     txn.receiver = context.senderEVM; // could take in a different receiver?
+            //     nonEvmAddressByNonce[vaultNonce] = context.sender;
+            // } else {
+            //     // Handle non-EVM sender (context.sender is now bytes)
+            //     txn.user = context.sender; // common to both paths
+            //     txn.receiver = context.sender; // could take in a different receiver?
+            // }
+
+            if (txStatus == TX_DEPOSIT_INITIATED) {
+                txn.amount = amount;
+                txn.withdrawZRC20 = zrc20;
+                txn.isDeposit = true;
+                _depositComingFromConnectedChain();
+            } else if (txStatus == TX_WITHDRAW_INITIATED) {
+                txn.withdrawZRC20 = withdrawZRC20; // TODO why not just use zrc20 here, as with deposit?
+                txn.amount = withdrawAssetAmount;
+                txn.isDeposit = false;
+                _withdrawComingFromConnectedChain();
             } else {
                 revert InvalidMessage();
             }
+            vaultNonce++;
         }
     }
 
-    /**
-     * @dev Processes a confirmation message from the strategy.
-     *      This function validates and stores the confirmation details for deposit, withdrawal or totalAsset update actions
-     *      and then attempts to process all pending confirmations in order.
-     * @param user The address of the user associated with the confirmation.
-     * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
-     * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
-     * @param withdrawChainId The chain ID of the withdrawal, if applicable.
-     * @param isDeposit A boolean indicating if the confirmation is for a deposit (true) or withdrawal (false).
-     * @param totalAssetsAfter The total assets in the vault after the operation.
-     * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
-     */
-    function _processConfirmationFromStrategy(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 withdrawAmount,
-        uint256 vaultSharesToBeBurnt,
-        uint32 withdrawChainId,
-        bool isDeposit,
-        uint256 totalAssetsAfter,
-        uint256 executionNonce,
-        bytes32 _crossChainTxId,
-        uint16 _slippage
-    ) internal {
-        // Ensure no duplicate processing
-        if (
-            pendingConfirmations[executionNonce].amount != 0 &&
-            pendingConfirmations[executionNonce].totalAssetsAfter != 0
-        ) revert ConfirmationAlreadyProcessed();
-        // Store the confirmation in the buffer
-        pendingConfirmations[executionNonce] = Confirmation({
-            user: user,
-            receiver: receiver,
-            withdrawZRC20: withdrawZRC20,
-            withdrawERC20: withdrawERC20,
-            amount: withdrawAmount,
-            vaultSharesToBeBurnt: vaultSharesToBeBurnt,
-            withdrawChainId: withdrawChainId,
-            isDeposit: isDeposit,
-            totalAssetsAfter: totalAssetsAfter,
-            crossChainTxId: _crossChainTxId,
-            slippage: _slippage
-        });
+    function clearPendingWithdrawals(address user) external onlyOwner {
+        pendingWithdrawals[user] = 0;
+    }
 
-        // Attempt to process confirmations
-        _processBufferedConfirmations();
+    function decreasePendingWithdrawals(
+        address user,
+        uint256 amount
+    ) external onlyOwnerOrWithdrawHelper {
+        pendingWithdrawals[user] -= amount;
     }
 
     /**
-     * @dev Allows for manual input of a confirmation message, mimicking _processConfirmationFromStrategy.
-     * @param user The address of the user associated with the confirmation.
-     * @param withdrawZRC20 The ZRC20 token address involved in the withdrawal, if applicable.
-     * @param withdrawAmount The amount of the ZRC20 token to be withdrawn, if applicable.
-     * @param withdrawChainId The chain ID of the withdrawal, if applicable.
-     * @param isDeposit A boolean indicating if the confirmation is for a deposit (true) or withdrawal (false).
+     * @dev Allows for manual input of a transaction message, mimicking _processConfirmationFromStrategy.
+     * @param amount The amount of the ZRC20 token to be withdrawn, if applicable.
      * @param totalAssetsAfter The total assets in the vault after the operation.
-     * @param executionNonce A unique identifier for the confirmation to ensure it is processed only once.
+     * @param confirmationNonce A unique identifier for the transaction to ensure it is processed only once.
+     * @param _txStatus A bytes32 value indicating whether the transaction succeeded or failed.
      */
     function manuallyAddConfirmation(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 withdrawAmount,
-        uint256 vaultSharesToBeBurnt,
-        uint32 withdrawChainId,
-        bool isDeposit,
+        uint256 amount,
         uint256 totalAssetsAfter,
-        uint256 executionNonce,
-        bytes32 _crossChainTxId,
-        uint16 _slippage
+        uint256 confirmationNonce,
+        bytes32 _txStatus
     ) external onlyOwner {
-        // Ensure no duplicate processing
+        // Store the transaction in the buffer
+        Transaction storage txn = pendingTransactions[confirmationNonce];
+        txn.amount = amount;
+        txn.totalAssetsAfter = totalAssetsAfter;
+        txn.txStatus = _txStatus;
+    }
+
+    function processExistingConfirmations(
+        uint256 confirmationNonce,
+        bool processEntireBuffer
+    ) external onlyOwner {
+        // Ensure the transaction exists
         if (
-            pendingConfirmations[executionNonce].amount != 0 &&
-            pendingConfirmations[executionNonce].totalAssetsAfter != 0
-        ) revert ConfirmationAlreadyProcessed();
-        // Store the confirmation in the buffer
-        pendingConfirmations[executionNonce] = Confirmation({
-            user: user,
-            receiver: receiver,
-            withdrawZRC20: withdrawZRC20,
-            withdrawERC20: withdrawERC20,
-            amount: withdrawAmount,
-            vaultSharesToBeBurnt: vaultSharesToBeBurnt,
-            withdrawChainId: withdrawChainId,
-            isDeposit: isDeposit,
-            totalAssetsAfter: totalAssetsAfter,
-            crossChainTxId: _crossChainTxId,
-            slippage: _slippage
-        });
+            pendingTransactions[confirmationNonce].totalAssetsAfter == 0 &&
+            pendingTransactions[confirmationNonce].amount == 0
+        ) {
+            revert ConfirmationAlreadyProcessed();
+        }
 
         // Attempt to process confirmations
-        _processBufferedConfirmations();
+        _processBufferedpendingTransactions(processEntireBuffer);
     }
 
     /**
      * @dev Processes all buffered confirmations sequentially based on their execution nonce.
      *      This function ensures confirmations are handled in order, either for deposits or withdrawals.
-     *      Once a confirmation is processed, it is removed from the buffer.
+     *      Once a transaction is processed, it is removed from the buffer.
      */
-    function _processBufferedConfirmations() internal {
+    function _processBufferedpendingTransactions(
+        bool processEntireBuffer
+    ) internal {
         while (true) {
             uint256 nextNonce = lastProcessedNonce + 1;
-            Confirmation memory confirmation = pendingConfirmations[nextNonce];
-            // If there's no confirmation for the next nonce, stop processing
-            if (
-                confirmation.totalAssetsAfter == 0 && confirmation.amount == 0
-            ) {
-                break;
-            }
-            // Process the confirmation
-            if (confirmation.crossChainTxId == 0) {
-                if (confirmation.vaultSharesToBeBurnt > 0) {
-                    pendingWithdrawals[confirmation.user] -= confirmation
-                        .vaultSharesToBeBurnt;
-                }
-                // update total assets
-                latestTotalAssetsUpdateFromStrategy = confirmation
-                    .totalAssetsAfter;
-                emit TotalAssetsUpdated(confirmation.totalAssetsAfter);
-            } else if (
-                confirmation.user == address(0) &&
-                confirmation.receiver == address(0)
-            ) {
-                strategyAddress = confirmation.withdrawZRC20;
-                emit StrategyUpdated(strategyAddress);
-            } else if (confirmation.isDeposit) {
-                _confirmDepositAndMint(
-                    confirmation.receiver,
-                    confirmation.amount,
-                    confirmation.totalAssetsAfter,
-                    confirmation.crossChainTxId
-                );
-            } else {
-                _confirmWithdrawAndBurn(
-                    confirmation.user,
-                    confirmation.receiver,
-                    confirmation.withdrawZRC20,
-                    confirmation.withdrawERC20,
-                    confirmation.amount,
-                    confirmation.vaultSharesToBeBurnt,
-                    confirmation.withdrawChainId,
-                    confirmation.totalAssetsAfter,
-                    confirmation.crossChainTxId,
-                    confirmation.slippage
-                );
-            }
+            Transaction memory transaction = pendingTransactions[nextNonce];
 
-            // Mark this nonce as processed
+            if (
+                transaction.txStatus == TX_WITHDRAW_REVERTED ||
+                transaction.txStatus == TX_TOTAL_ASSETS_UPDATE ||
+                transaction.txStatus == TX_DEPOSIT_REVERTED
+            ) {
+                latestTotalAssetsUpdateFromStrategy = transaction
+                    .totalAssetsAfter;
+                emit TotalAssetsUpdated(
+                    transaction.totalAssetsAfter,
+                    nextNonce
+                );
+            } else if (transaction.txStatus == TX_DEPOSIT_CONFIRMED) {
+                _confirmDepositAndMint();
+            } else if (transaction.txStatus == TX_SWITCH_CONFIRMED) {
+                emit StrategyUpdated(strategyAddress);
+            } else if (transaction.txStatus == TX_WITHDRAW_CONFIRMED) {
+                _confirmWithdrawAndBurn();
+            } else {
+                break; // No valid transaction to process
+            }
             lastProcessedNonce = nextNonce;
-            delete pendingConfirmations[nextNonce];
+            delete pendingTransactions[nextNonce];
+            if (!processEntireBuffer) break;
         }
     }
 
@@ -344,65 +254,28 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             emit StrategyUpdated(newStrategyAddress);
             return;
         }
-        _handleGasFee(gasLimitForCall + gasLimitForWithdrawAndCall); // we combine these two limits as this tx involves a divest and an invest
-
-        bytes memory recipient = abi.encodePacked(strategyAddress);
-
-        // Generate a unique crossChainTxId
-        bytes32 crossChainTxId = keccak256(
-            abi.encodePacked(
+        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+            .handleSwitchCallToStrategy(
                 strategyAddress,
                 newStrategyAddress,
-                block.timestamp, // Current timestamp
-                block.number // Current block number
-            )
-        );
-        bytes memory outgoingMessage = abi.encode(
-            address(0),
-            address(0),
-            newStrategyAddress,
-            address(0),
-            0,
-            minAmountOut,
-            minSharesOut,
-            0, // chain ID
-            false,
-            crossChainTxId,
-            0 // slippage
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                "_switchStrategyFailed",
-                crossChainTxId,
-                0,
-                strategyAddress,
-                newStrategyAddress,
-                address(0),
-                0
-            ),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
-        );
+                gasLimitForCall,
+                gasLimitForWithdrawAndCall,
+                address(asset()),
+                registry,
+                minAmountOut,
+                minSharesOut,
+                vaultNonce
+            );
+        vaultNonce++;
         strategyAddress = newStrategyAddress;
-
-        CallOptions memory callOptions = CallOptions(
-            gasLimitForCall + gasLimitForWithdrawAndCall,
-            false
-        );
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(asset()),
-            outgoingMessage,
-            callOptions,
-            revertOptions
-        );
     }
 
     function toggleDepositFeePaidFromGasTank() external onlyOwner {
         depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
+    }
+
+    function incrementLastProcessedNonce() external onlyOwner {
+        lastProcessedNonce++;
     }
 
     /**
@@ -428,7 +301,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address receiver,
         uint256 assets,
         uint256,
-        uint256 minimumOut
+        uint256 minSharesOut
     ) internal override whenNotPaused {
         // If _asset is ERC777, `transferFrom` can trigger a reentrancy BEFORE the transfer happens through the
         // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, triggered after the transfer,
@@ -438,128 +311,107 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         if (assets == 0) {
             revert AmountCantBeZero();
         }
-        // Generate a unique crossChainTxId
-        bytes32 crossChainTxId = keccak256(
-            abi.encodePacked(
-                caller,
-                receiver,
-                assets,
-                block.timestamp, // Current timestamp
-                block.number // Current block number
-            )
-        );
+        Transaction storage txn = pendingTransactions[vaultNonce];
+
+        txn.withdrawERC20 = asset(); // we store this in case of a revert, to return funds to user
+        txn.withdrawZRC20 = asset();
+
+        txn.isDeposit = true;
+        txn.amount = assets;
+        txn.minOut = minSharesOut;
+        txn.receiver = receiver;
+
         SafeERC20.safeTransferFrom(
             IERC20(asset()),
             caller,
             address(this),
             assets
         );
-        _investAssets(
-            assets,
-            minimumOut,
-            receiver,
-            asset(),
-            asset(),
-            uint32(block.chainid),
-            crossChainTxId
-        );
+        _investAssets();
+        vaultNonce++;
     }
 
     /**
      * @dev Initiates cross-chain investment by interacting with the gateway and strategy.
-     * @param amount The amount of assets to invest.
-     * @param receiver The address of the receiver initiating the investment.
-     * @param userZRC20 The ZRC20 token address representing the receiver's assets.
-     * @param userChainId The chain ID of the receiver's connected chain.
      * @notice Approves and sends assets through the gateway to the strategy's chain.
      */
-    function _investAssets(
-        uint256 amount,
-        uint256 minimumOut,
-        address receiver,
-        address userZRC20,
-        address userERC20,
-        uint32 userChainId,
-        bytes32 crossChainTxId
-    ) internal override {
+    function _investAssets() internal override {
         if (IAmanaRegistry(registry).withdrawHelper() == address(0))
             revert InvalidAddress();
+        Transaction storage txn = pendingTransactions[vaultNonce];
         SafeERC20.safeTransfer(
             IERC20(address(asset())),
             IAmanaRegistry(registry).withdrawHelper(),
-            amount
+            txn.amount
         );
+
         if (depositFeePaidFromGasTank) {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleGasFeeAndWithdrawAndCallToStrategy(
                     strategyAddress,
-                    receiver,
-                    userZRC20,
-                    userERC20,
+                    txn.receiver,
+                    nonEvmAddressByNonce[vaultNonce],
+                    txn.withdrawZRC20,
+                    txn.withdrawERC20,
                     address(asset()),
-                    amount,
-                    minimumOut,
-                    userChainId,
-                    crossChainTxId,
+                    txn.amount,
+                    txn.minOut,
                     gasLimitForWithdrawAndCall,
-                    registry
+                    registry,
+                    vaultNonce
                 );
         } else {
             IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
                 .handleWithdrawAndCallToStrategy(
                     strategyAddress,
-                    receiver,
-                    userZRC20,
-                    userERC20,
+                    txn.receiver,
+                    nonEvmAddressByNonce[vaultNonce],
+                    txn.withdrawZRC20,
+                    txn.withdrawERC20,
                     address(asset()),
-                    amount,
-                    minimumOut,
-                    userChainId,
-                    crossChainTxId,
+                    txn.amount,
+                    txn.minOut,
                     gasLimitForWithdrawAndCall,
-                    registry
+                    registry,
+                    vaultNonce
                 );
         }
-        emit CrossChainInvestSent(crossChainTxId);
     }
 
     /**
      * @dev Confirms a deposit and mints shares for the receiver.
      *      Updates the total assets and receiver's principal accordingly.
-     * @param receiver The address of the receiver making the deposit.
-     * @param depositAmount The amount of assets deposited by the receiver.
-     * @param totalAssetsAfterDeposit The total assets in the vault after the deposit.
      */
-    function _confirmDepositAndMint(
-        address receiver,
-        uint256 depositAmount,
-        uint256 totalAssetsAfterDeposit,
-        bytes32 _crossChainTxId
-    ) internal {
-        userPrincipal[receiver] += depositAmount;
-        totalPrincipal += depositAmount;
+    function _confirmDepositAndMint() internal {
+        Transaction storage txn = pendingTransactions[lastProcessedNonce + 1];
+        userPrincipal[txn.receiver] += txn.amount;
+        totalPrincipal += txn.amount;
 
-        if (totalAssetsAfterDeposit >= depositAmount) {
-            latestTotalAssetsUpdateFromStrategy =
-                totalAssetsAfterDeposit -
-                depositAmount;
-        } else {
-            latestTotalAssetsUpdateFromStrategy = 0;
-        }
+        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter - txn.amount;
 
-        uint256 shares = previewDeposit(depositAmount);
-        _mint(receiver, shares);
+        uint256 shares = previewDeposit(txn.amount);
 
-        latestTotalAssetsUpdateFromStrategy = totalAssetsAfterDeposit;
+        _mint(txn.receiver, shares);
 
-        emit Deposited(receiver, depositAmount, shares, _crossChainTxId);
+        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
+
+        emit Deposited(
+            txn.receiver,
+            txn.amount,
+            shares,
+            lastProcessedNonce + 1
+        );
     }
 
     /**
      * @dev Withdrawn/redeem common workflow. Handles user withdrawal requests and initiates divestment from the strategy.
      * @param caller The address of the entity initiating the withdrawal.
      * @param user The address of the user receiving the withdrawn assets.
-     * @param shares The number of shares being redeemed for the withdrawal.
+     * @param receiver The address of the receiver of the withdrawn assets.
+     * @param withdrawZRC20 The ZRC20 token to be withdrawn.
+     * @param minAmountOut The minimum amount of assets expected to be received after withdrawal.
+     * @param assets The amount of assets to withdraw.
+     * @param slippage The allowed slippage percentage for the withdrawal.
      * @notice Ensures proper allowance checks and calculates fees before initiating strategy divestment.
      */
     function _withdraw(
@@ -567,349 +419,135 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         address receiver, // receiver
         address user, // owner
         address withdrawZRC20,
-        uint256 minimumOut,
-        uint256 shares,
+        uint256 minAmountOut,
+        uint256 assets,
         uint16 slippage
     ) internal override {
-        uint256 maxShares = maxRedeem(user);
+        Transaction storage txn = pendingTransactions[vaultNonce];
 
-        if (shares > maxShares - pendingWithdrawals[user]) {
-            revert ERC4626ExceededMaxRedeem(user, shares, maxShares);
+        uint256 maxAmount = maxWithdraw(txn.user);
+        if (txn.amount > maxAmount - pendingWithdrawals[txn.user]) {
+            revert ERC4626ExceededMaxWithdraw(txn.user, txn.amount, maxAmount);
         }
-        pendingWithdrawals[user] += shares;
 
+        txn.user = caller;
+        txn.receiver = receiver;
+        txn.withdrawZRC20 = withdrawZRC20;
+
+        txn.withdrawERC20 = asset();
+        txn.amount = assets;
+        txn.slippage = slippage;
+        txn.isDeposit = false;
+        txn.minOut = minAmountOut;
+        txn.withdrawChainId = uint32(block.chainid);
+
+        pendingWithdrawals[user] += assets;
+        uint256 shares = previewWithdraw(assets);
         if (caller != user) {
             _spendAllowance(user, caller, shares);
         }
 
-        // Generate a unique crossChainTxId
-        bytes32 crossChainTxId = keccak256(
-            abi.encodePacked(
-                caller,
-                receiver,
-                shares,
-                block.timestamp, // Current timestamp
-                block.number // Current block number
-            )
-        );
+        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+            .handleDivestCallToStrategy(
+                strategyAddress,
+                gasLimitForCall,
+                address(asset()),
+                registry,
+                user,
+                withdrawZRC20,
+                assets,
+                minAmountOut,
+                vaultNonce
+            );
 
-        _divestFromStrategy(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawZRC20,
-            shares,
-            minimumOut,
-            uint32(block.chainid),
-            slippage,
-            crossChainTxId
-        );
+        vaultNonce++;
     }
 
     /**
      * @dev Withdrawn/redeem common workflow for withdrawals initiated from a connected chain.
-     * @param user The address of the user receiving the withdrawn assets.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param vaultSharesToBeBurnt The amount of shares being withdrawn.
-     * @param userChainId The chain ID of the user's connected chain.
      * @notice Validates maximum withdrawal limits and calculates fees before initiating divestment.
      */
-    function _withdrawComingFromConnectedChain(
-        address user,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 vaultSharesToBeBurnt,
-        uint256 minimumOut,
-        uint32 userChainId,
-        uint16 slippage,
-        bytes32 crossChainTxId
-    ) internal override {
-        if (vaultSharesToBeBurnt == 0) {
+    function _withdrawComingFromConnectedChain() internal override {
+        Transaction storage txn = pendingTransactions[vaultNonce];
+
+        if (txn.amount == 0) {
             revert AmountCantBeZero();
         }
-        uint256 maxShares = maxRedeem(user);
-        if (vaultSharesToBeBurnt > maxShares - pendingWithdrawals[user]) {
-            revert ERC4626ExceededMaxRedeem(
-                user,
-                vaultSharesToBeBurnt,
-                maxShares
-            );
+        uint256 maxAmount = maxWithdraw(txn.user);
+        if (txn.amount > maxAmount - pendingWithdrawals[txn.user]) {
+            revert ERC4626ExceededMaxWithdraw(txn.user, txn.amount, maxAmount);
         }
+        pendingWithdrawals[txn.user] += txn.amount;
 
-        pendingWithdrawals[user] += vaultSharesToBeBurnt;
-
-        _divestFromStrategy(
-            user,
-            user,
-            withdrawZRC20,
-            withdrawERC20,
-            vaultSharesToBeBurnt,
-            minimumOut,
-            userChainId,
-            slippage,
-            crossChainTxId
-        );
-    }
-
-    /**
-     * @dev Initiates the process to divest assets from the strategy on a connected chain.
-     * @param user The address of the user requesting the withdrawal.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param vaultSharesToBeBurnt The amount of assets to be withdrawn.
-     * @param withdrawChainId The chain ID of the chain where the withdrawal is taking place.
-     * @notice Sends a cross-chain call to the strategy to initiate divestment, ensuring gas fees are handled appropriately.
-     */
-    function _divestFromStrategy(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 vaultSharesToBeBurnt,
-        uint256 minimumOut,
-        uint32 withdrawChainId,
-        uint16 slippage,
-        bytes32 crossChainTxId
-    ) internal {
-        _handleGasFee(gasLimitForCall);
-
-        bytes memory recipient = abi.encodePacked(strategyAddress);
-
-        uint256 fractionOfTotalShares = (vaultSharesToBeBurnt *
-            1e18 +
-            totalSupply() /
-            2) / totalSupply(); // // we add totalSupply() / 2 to prevent truncation errors
-
-        bytes memory outgoingMessage = abi.encode(
-            user,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
-            vaultSharesToBeBurnt,
-            fractionOfTotalShares,
-            minimumOut,
-            withdrawChainId,
-            false,
-            crossChainTxId,
-            slippage
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                "_divestConnectedChainStrategyFailed",
-                crossChainTxId,
-                vaultSharesToBeBurnt,
-                user,
-                withdrawZRC20,
-                withdrawERC20,
-                withdrawChainId
-            ),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
-        );
-
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(asset()),
-            outgoingMessage,
-            callOptions,
-            revertOptions
-        );
-        emit DivestSent(crossChainTxId);
+        IWithdrawHelper(IAmanaRegistry(registry).withdrawHelper())
+            .handleDivestCallToStrategy(
+                strategyAddress,
+                gasLimitForCall,
+                address(asset()),
+                registry,
+                txn.user,
+                txn.withdrawZRC20,
+                txn.amount,
+                txn.minOut,
+                vaultNonce
+            );
     }
 
     /**
      * @dev Confirms the withdrawal process by burning shares, applying fees, and returning assets to the user.
-     * @param user The address of the user requesting the withdrawal.
-     * @param withdrawZRC20 The ZRC20 token address representing the withdrawal asset.
-     * @param vaultSharesToBeBurnt The amount of assets to be withdrawn.
-     * @param userChainId The chain ID of the user's connected chain.
-     * @param totalAssetsAfterWithdraw The total assets held by the vault after the withdrawal.
+
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
      */
-    function _confirmWithdrawAndBurn(
-        address user,
-        address receiver,
-        address withdrawZRC20,
-        address withdrawERC20,
-        uint256 amountWithdrawn,
-        uint256 vaultSharesToBeBurnt,
-        uint32 userChainId,
-        uint256 totalAssetsAfterWithdraw,
-        bytes32 _crossChainTxId,
-        uint16 slippage
-    ) internal {
+    function _confirmWithdrawAndBurn() internal {
+        Transaction storage txn = pendingTransactions[lastProcessedNonce + 1];
+        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter + txn.amount;
+
+        uint256 userShares = balanceOf(txn.user);
+        uint256 vaultSharesToBeBurnt = previewWithdraw(txn.amount);
+        // (a) Cap burn amount to avoid over-burn
+        if (vaultSharesToBeBurnt > userShares) {
+            vaultSharesToBeBurnt = userShares;
+        }
+
+        // (b) If burning leaves tiny residual shares, burn all instead
+        uint256 remainingShares = userShares - vaultSharesToBeBurnt;
+        uint256 minResidual = 1e3;
+
+        if (remainingShares > 0 && remainingShares < minResidual) {
+            vaultSharesToBeBurnt = userShares;
+        }
+
         uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
-            balanceOf(user);
+            balanceOf(txn.user);
         uint256 principalWithdrawn = (fractionOfUserShares *
-            userPrincipal[user]) / 1e18;
+            userPrincipal[txn.user]) / 1e18;
         uint256 feeToWithdraw;
-        if (amountWithdrawn > principalWithdrawn) {
+        if (txn.amount > principalWithdrawn) {
             feeToWithdraw =
-                ((amountWithdrawn - principalWithdrawn) * perfFee) /
+                ((txn.amount - principalWithdrawn) * perfFee) /
                 10000;
-            emit PerformanceFeePaid(user, feeToWithdraw);
+            emit PerformanceFeePaid(txn.user, feeToWithdraw);
             SafeERC20.safeTransfer(
                 IERC20(asset()),
                 IAmanaRegistry(registry).treasury(),
                 feeToWithdraw
             );
         }
-        userPrincipal[user] -= principalWithdrawn;
-        totalPrincipal -= principalWithdrawn;
-        pendingWithdrawals[user] -= vaultSharesToBeBurnt;
+        txn.amount -= feeToWithdraw;
 
-        latestTotalAssetsUpdateFromStrategy = totalAssetsAfterWithdraw;
-        _burn(user, vaultSharesToBeBurnt);
-        _returnFundsToUser(
-            amountWithdrawn - feeToWithdraw,
-            userChainId,
-            receiver,
-            withdrawZRC20,
-            withdrawERC20,
-            _crossChainTxId,
-            slippage
-        );
+        userPrincipal[txn.user] -= principalWithdrawn;
+        totalPrincipal -= principalWithdrawn;
+
+        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
+        _burn(txn.user, vaultSharesToBeBurnt);
+
+        _returnFundsToUser(lastProcessedNonce + 1);
 
         emit Withdrawn(
-            user,
-            amountWithdrawn,
+            txn.user,
+            txn.amount,
             vaultSharesToBeBurnt,
-            _crossChainTxId
+            lastProcessedNonce + 1
         );
-    }
-
-    /**
-     * @dev Handles gas fee calculation and approval for cross-chain operations.
-     *      This function retrieves the gas fee for the given gas limit, ensures the required amount is available,
-     *      and approves the gateway to use the gas fee.
-     * @param gasLimit The maximum amount of gas to be used for the transaction.
-     * @return gasZRC20 The address of the ZRC20 token representing the gas fee.
-     * @return gasFee The amount of gas fee required for the transaction.
-     **/
-    function _handleGasFee(
-        uint256 gasLimit
-    ) private returns (address gasZRC20, uint256 gasFee) {
-        (gasZRC20, gasFee) = IZRC20(address(asset()))
-            .withdrawGasFeeWithGasLimit(gasLimit);
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
-        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
-    }
-
-    // This function makes a manual call to the withdrawal receiver.
-    // It is used to handle cases where the cross-chain transaction fails or needs to be retried.
-    // It allows the owner to specify the receiver, asset, target chain ZRC20, amount, and cross-chain transaction ID.
-    // The function retrieves the gas fee for the specified target chain ZRC20 and approves it for the gateway.
-    // It then constructs the outgoing message with the provided parameters and calls the gateway to send the message.
-    // The function also includes revert options to handle any potential failures during the call.
-    // The revert options specify the address to revert to, whether to call on revert, the abort address,
-    // the revert message, and the gas limit for the revert.
-    // The function emits an event indicating the manual call to the withdrawal receiver.
-    // @param receiver The address of the receiver to send the funds to.
-    // @param asset The address of the asset to be sent.
-    // @param targetChainZRC20 The address of the target chain ZRC20 token.
-    // @param amount The amount of the asset to be sent.
-    // @param crossChainTxId The ID of the cross-chain transaction.
-    // @notice This function is only callable by the owner of the contract.
-    function manualCallWithdrawalReceiver(
-        address receiver,
-        address asset,
-        address targetChainZRC20,
-        uint256 amount,
-        bytes32 crossChainTxId
-    ) external onlyOwner {
-        (address gasZRC20, uint256 gasFee) = IZRC20(targetChainZRC20)
-            .withdrawGasFeeWithGasLimit(gasLimitForCall);
-
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
-        approveOrIncreaseAllowance(IERC20(gasZRC20), _GATEWAY_ADDRESS, gasFee);
-
-        bytes memory recipient = abi.encodePacked(
-            IAmanaRegistry(registry).withdrawalReceiver()
-        );
-
-        bytes memory outgoingMessage = abi.encode(
-            receiver,
-            asset,
-            amount,
-            crossChainTxId
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode("_manualCallFailed", crossChainTxId),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
-        );
-
-        CallOptions memory callOptions = CallOptions(gasLimitForCall, false);
-        IGatewayZEVM(_GATEWAY_ADDRESS).call(
-            recipient,
-            address(targetChainZRC20),
-            outgoingMessage,
-            callOptions,
-            revertOptions
-        );
-    }
-
-    /**
-     * @dev Handles revert scenarios during cross-chain operations.
-     * @param context The revert context containing details about the revert scenario.
-     * @notice Executes appropriate recovery steps based on the revert message.
-     */
-    function onRevert(
-        RevertContext calldata context
-    ) external override onlyGateway {
-        (
-            string memory revertMessage,
-            bytes32 _crossChainTxId,
-            uint256 amount,
-            address receiverOrOldStrategy,
-            address userZRC20,
-            address userERC20,
-            uint32 userChainId
-        ) = abi.decode(
-                context.revertMessage,
-                (string, bytes32, uint256, address, address, address, uint32)
-            );
-
-        if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_crossChainInvestFailed"))
-        ) {
-            uint16 slippage = 1000;
-            _returnFundsToUser(
-                context.amount,
-                userChainId,
-                receiverOrOldStrategy,
-                userZRC20,
-                userERC20,
-                _crossChainTxId,
-                slippage
-            );
-            emit CrossChainInvestFailed(_crossChainTxId);
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_divestConnectedChainStrategyFailed"))
-        ) {
-            pendingWithdrawals[receiverOrOldStrategy] -= amount;
-            emit DivestFailed(_crossChainTxId);
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_returnFundsToUserFailed"))
-        ) {
-            emit ReturnFundsToUserFailed(_crossChainTxId);
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_switchStrategyFailed"))
-        ) {
-            strategyAddress = receiverOrOldStrategy;
-            emit SwitchStrategyFailed(_crossChainTxId);
-        } else {
-            revert("Revert not handled");
-        }
     }
 }

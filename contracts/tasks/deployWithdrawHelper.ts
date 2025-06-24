@@ -2,7 +2,10 @@ import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
+  const { ethers, upgrades } = hre;
   const [signer] = await hre.ethers.getSigners();
+  const network = hre.network.name;
+
   const gateway = args.gateway;
   const gasTank = args.gasTank;
 
@@ -12,31 +15,43 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   if (!gasTank) {
     throw new Error("🚨 GasTank address is required.");
   }
-  console.log(`🔑 Deploying WithdrawHelper with signer: ${signer.address}`);
+  console.log(`🔑 Deploying UUPS Upgradeable WithdrawHelper with signer: ${signer.address}`);
 
-  const WithdrawHelper = await hre.ethers.getContractFactory("WithdrawHelper", signer);
-  const withdrawHelper = await WithdrawHelper.deploy(gateway);
-  await withdrawHelper.deployed();
+  const ContractFactory = await ethers.getContractFactory("WithdrawHelper", signer);
 
-  console.log(`✅ WithdrawHelper deployed at: ${withdrawHelper.address}`);
+  const proxy = await upgrades.deployProxy(ContractFactory, [gateway], {
+    kind: "uups",
+    initializer: "initialize",
+  });
+
+  await proxy.deployed();
+  console.log(`✅ WithdrawHelper proxy deployed at: ${proxy.address}`);
+
+  const implementationAddress = await upgrades.erc1967.getImplementationAddress(proxy.address);
+  console.log(`📦 Implementation address: ${implementationAddress}`);
 
   console.log(`⚙️ Authorizing WithdrawHelper with GasTank at ${gasTank}...`);
 
   const gasTankContract = await hre.ethers.getContractAt("GasTank", gasTank);
-  const tx = await gasTankContract.authorizeVault(withdrawHelper.address);
+  const tx = await gasTankContract.authorizeVault(proxy.address);
   await tx.wait();
   console.log(`✅ WithdrawHelper authorized with GasTank.`);
 
   // ✅ Verification
-  console.log(`🔍 Verifying WithdrawHelper...`);
-  try {
-    await hre.run("verify:verify", {
-      address: withdrawHelper.address,
-      constructorArguments: [gateway],
-    });
-    console.log(`✅ Contract verified on Etherscan.`);
-  } catch (err: any) {
-    console.error(`❌ Verification failed:`, err.message || err);
+  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
+  if (etherscanApiKey) {
+    console.log(`🛠 Verifying implementation contract on ${network} explorer...`);
+    try {
+      await hre.run("verify:verify", {
+        address: implementationAddress,
+        constructorArguments: [],
+      });
+      console.log(`✅ Contract verified on ${network} explorer`);
+    } catch (err) {
+      console.error("❌ Contract verification failed:", err);
+    }
+  } else {
+    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
   }
 };
 

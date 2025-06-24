@@ -15,25 +15,36 @@ import "./ERC20StrategyParent.sol";
 contract FluidErc20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    I4626Vault public immutable receiptToken;
+    I4626Vault public receiptToken;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
+    /// @param _gatewayAddress Address of the ZetaChain Gateway.
     /// @param _amanaVault Address of the Amana vault.
-    /// @param _inputTokenAddress Address of the input token.
+    /// @param _withdrawHelper Address of the withdraw helper contract.
     /// @param _receiptTokenAddress Address of the Aave receipt token.
-    /// @param _gateway Address of the ZetaChain Gateway.
-    constructor(
+    /// @param _inputTokenAddress Address of the input token for the strategy.
+    function initialize(
         string memory _name,
+        address _gatewayAddress,
         address _amanaVault,
-        address _inputTokenAddress,
-        address _receiptTokenAddress,
-        address _gateway,
-        address _withdrawHelper
-    )
-        StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
-        ERC20StrategyParent(_inputTokenAddress)
-    {
+        address _withdrawHelper,
+        address, // _swapHelper — not needed
+        address _receiptTokenAddress, // receiptTokenAddress
+        address _inputTokenAddress, // inputToken
+        address /* rewardsContractAddress — not needed */,
+        address /* _rewardsTokenAddress — not needed */,
+        uint256 /* _inputTokenIndex — not needed */
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper,
+            _inputTokenAddress,
+            _receiptTokenAddress
+        );
+
         receiptToken = I4626Vault(_receiptTokenAddress);
     }
 
@@ -53,17 +64,15 @@ contract FluidErc20Strategy is ERC20StrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
-     * @param minAmountOut The minimum amount of USDC to withdraw.
+     * @param assetAmount The amount of assets to withdraw from the yield source.
+     * @param minAmountOut The maximum number of strategy shares that can be burnt.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
-            fractionToWithdraw
-        );
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         amountWithdrawn = receiptToken.redeem(
             sharesToWithdraw,
             address(this), // receiver
@@ -75,54 +84,17 @@ contract FluidErc20Strategy is ERC20StrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = receiptToken.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        if (withdrawShareAmount > totalShares) {
-            withdrawShareAmount = totalShares;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
         }
-        return withdrawShareAmount;
-    }
-
-    /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
-     */
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
         }
-        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            1e18,
-            minAmountOut
-        );
-
-        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
-
-        IStrategy(newStrategy).depositFromOldStrategy(
-            amountWithdrawn,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            amountWithdrawn,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+        return sharesToWithdraw;
     }
 
     /// @notice Gets the total assets held in the strategy.

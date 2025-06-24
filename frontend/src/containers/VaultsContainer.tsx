@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
-import VaultsView from "../components/VaultsView";
+import VaultsGrid from "../components/VaultsGrid";
 import { VaultData, VaultAPY, UserVaultBalance, VaultTotalAssets, VaultTotalAssetsinToken } from "../types/types";
-import { DEPRECATED_VAULT_DATA, VAULT_DATA } from "../constants/index";
+import { VAULT_DATA } from "../constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { Chain } from "thirdweb";
 import { Account } from "thirdweb/wallets";
@@ -37,20 +37,22 @@ const VaultsContainer: React.FC<VaultsContainerProps> = ({ activeChain, defaultA
   const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<VaultTotalAssetsinToken[]>([]);
   const pathname = usePathname();
 
-  const vaults: VaultData[] = pathname.includes("old-vaults") ? DEPRECATED_VAULT_DATA : VAULT_DATA;
+  const vaults: VaultData[] = VAULT_DATA;
   const EOAaccount = useActiveAccount() || defaultAccount;
   const { walletAddress } = useMultiChain();
 
   useUpdateVaultBalanceAndTotal(vaults, walletAddress, setUserVaultBalances, setVaultTotalAssets, setVaultTotalAssetsinToken);
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
+  const cvxTokenPrice = useTokenPriceBySymbol("CVX");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
-  console.log("compTokenPrice: ", compTokenPrice)
+const opTokenPrice = useTokenPriceBySymbol("OP");
 
-  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, ethTokenPrice, compTokenPrice);
+
+  useUpdateAPYs(vaults, setVaultAPYs, setLoading, crvTokenPrice, cvxTokenPrice, ethTokenPrice, compTokenPrice, opTokenPrice);
 
   return (
-    <VaultsView
+    <VaultsGrid
       loading={loading}
       vaults={vaults}
       vaultAPYs={vaultAPYs}

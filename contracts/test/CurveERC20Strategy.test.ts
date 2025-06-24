@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
-import { CurveERC20Strategy, IERC20, ICurvePool, IERC20Custody } from "../typechain";
+import { CurveERC20Strategy, IERC20, ICurvePoolDynamic, IERC20Custody } from "../typechain";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { ZC_TEST_ETH_SEPOLIA_ADDRESS } from "../../constants";
 import { simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, setTokenBalance } from "./utils";
@@ -47,7 +47,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
   let owner: Signer;
   let inputToken: IERC20;
   let gatewaySigner: Signer;
-  let curvePool: ICurvePool;
+  let curvePool: ICurvePoolDynamic;
   let gaugePool: IERC20;
   let stakingEnabled: boolean;
 
@@ -71,7 +71,7 @@ describe("CurveERC20Strategy - Full Coverage", function () {
     [owner] = await ethers.getSigners();
 
     inputToken = await ethers.getContractAt("IERC20", INPUT_TOKEN_ADDRESS, gatewaySigner);
-    curvePool = await ethers.getContractAt("ICurvePool", RECEIPT_TOKEN_ADDRESS, gatewaySigner);
+    curvePool = await ethers.getContractAt("ICurvePoolDynamic", RECEIPT_TOKEN_ADDRESS, gatewaySigner);
     gaugePool = await ethers.getContractAt("IERC20", GAUGE_ADDRESS, gatewaySigner);
 
     const StrategyFactory = await ethers.getContractFactory("CurveERC20Strategy");

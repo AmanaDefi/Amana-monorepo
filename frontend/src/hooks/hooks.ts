@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   calculateAaveAPY,
   calculateAaveFlashAPY,
@@ -12,11 +12,17 @@ import {
   fetchTotalAssets,
   fetchUserVaultBalance,
   fetchUserVaultMaxRedeem,
-  calculateCurveRewardsAPY,
-  calculateCompoundRewardsAPY
+  fetchUserVaultMaxWithdraw,
+  calculateConvexEthereumRewardsAPY,
+  calculateCompoundRewardsAPY,
+  calculateConvexArbitrumRewardsAPY,
+  calculateCombinedBalancerAPY,
+  fetchAegisAPR,
+  fetchYieldFiAPY
+
 } from "@/actions/actions";
 import { Address, defineChain, getContract, prepareEvent, readContract } from "thirdweb";
-import { DEFAULT_SETTINGS, UserSettings, VaultData } from "@/types/types";
+import { DEFAULT_SETTINGS, UserSettings, VaultData, Token } from "@/types/types";
 import { Account } from "thirdweb/wallets";
 import { client } from "@/utils/client";
 import { CHAIN_ID, SUPPORTED_CHAINS } from "@/constants/chainConfig";
@@ -25,57 +31,53 @@ import { getOnlyTokenSymbol, getSolanaEVMAddress, isSolanaAddress, isZetachain }
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { EMPTY_BALANCE } from "@/utils/helpers";
 
 export const useUpdateVaultBalanceAndTotal = (
   vaults: VaultData[],
   walletAddress: string | null,
-  setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
-  setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
-  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>, // Accepts state setter
+  setUserVaultBalances: React.Dispatch<React.SetStateAction<any[]>>,
+  setVaultTotalAssets: React.Dispatch<React.SetStateAction<any[]>>,
+  setVaultTotalAssetsinToken: React.Dispatch<React.SetStateAction<any[]>>,
 ) => {
   useEffect(() => {
     const updateVaultBalanceAndTotal = async () => {
-      let address = isSolanaAddress(walletAddress) ? "0x77706672467938396e78347A4B734c5066653142" : walletAddress
+      let address = isSolanaAddress(walletAddress) ? getSolanaEVMAddress(walletAddress!) : walletAddress
+
       try {
         const balancesAndAssets = await Promise.all(
           vaults.map(async (vault) => {
             try {
               let balance: any;
               let newTotalAssetsinToken: any;
-              if (address) {
+              if (address && vault && vault.id) {
                 balance = await fetchUserVaultBalance(
                   address as Address,
                   vault.id as Address
                 )
-                newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
+                newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
                   vault.inputToken.decimals,
                   address as Address,
                   vault.id as Address
                 );
               } else {
-                balance = "Error"
+                balance = EMPTY_BALANCE
                 newTotalAssetsinToken = "Error"
               }
-              const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+              const newTotalAssets = vault && vault.id ? await fetchTotalAssets(vault.id as Address) : "Error";
 
-              // const newTotalAssetsinToken = Number(newTotalAssets) === 0 ? 0 : Number(newTotalAssets) / vault.inputToken.price;
+              const totalAssetsStr = typeof newTotalAssets === 'string' ? newTotalAssets : String(newTotalAssets);
+              const totalAssetsinTokenStr = typeof newTotalAssetsinToken === 'string' ? newTotalAssetsinToken : String(newTotalAssetsinToken);
 
-              console.log({
-                vaultId: vault.id,
-                balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
-              })
               return {
-                vaultId: vault.id,
+                vaultId: vault?.id || "unknown",
                 balance,
-                totalAssets: newTotalAssets.toString(),
-                totalAssetsinToken: newTotalAssetsinToken.toString(),
+                totalAssets: totalAssetsStr,
+                totalAssetsinToken: totalAssetsinTokenStr,
               };
             } catch (error) {
-              console.error(`Error fetching user balance or total assets for vault ${vault.id}:`, error);
               return {
-                vaultId: vault.id,
+                vaultId: vault?.id || "unknown",
                 balance: "Error",
                 totalAssets: "Error",
                 totalAssetsinToken: "Error"
@@ -96,11 +98,11 @@ export const useUpdateVaultBalanceAndTotal = (
           vaultId,
           totalAssetsinToken,
         }));
-        setUserVaultBalances(balances); // Update user balances
-        setVaultTotalAssets(totalAssets); // Update total assets
-        setVaultTotalAssetsinToken(totalAssetsinToken); // Update total assetsinToken
+        setUserVaultBalances(balances);
+        setVaultTotalAssets(totalAssets);
+        setVaultTotalAssetsinToken(totalAssetsinToken);
       } catch (error) {
-        console.error("Error updating vault balances and total assets:", error);
+        // Error handling
       }
     };
 
@@ -113,43 +115,90 @@ export const useUpdateVaultBalanceAndTotal = (
 export const useUpdateVaultBalanceAndTotalPerVault = (
   vault: any,
   userAddress: string | null,
-  setUserVaultBalance: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
-  setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
-  setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
+  setUserVaultBalance: React.Dispatch<React.SetStateAction<any>>,
+  setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>,
+  setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>,
   transactionCompleted: boolean,
 ) => {
   const { selectedChain } = useMultiChain();
-  useEffect(() => {
-    const updateVaultBalanceAndTotal = async () => {
-      const address = isSolanaAddress(userAddress) ? "0x77706672467938396e78347A4B734c5066653142" : userAddress;
-      try {
-        if (vault.id) {
-          const balance = await fetchUserVaultBalance(
-            address as Address,
-            vault.id as Address
-          );
 
-          const newTotalAssetsinToken = await fetchUserVaultMaxRedeem(
-            vault.inputToken.decimals,
-            address as Address,
-            vault?.id as Address
-          );
+  const lastKnownBalanceRef = useRef<string>('0');
+  const backgroundRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshAttemptsRef = useRef<number>(0);
+  const MAX_REFRESH_ATTEMPTS = 12; // 12 attempts * 10 seconds = 2 minutes of background checking
 
-          setUserVaultBalance(balance);
+  const updateVaultBalanceAndTotal = useCallback(async () => {
+    const address = isSolanaAddress(userAddress) ? getSolanaEVMAddress(userAddress!) : userAddress;
 
-          const newTotalAssets = await fetchTotalAssets(vault.id as Address);
-          setVaultTotalAsset(newTotalAssets);
+    try {
+      if (vault && vault.id) {
+        const balance = await fetchUserVaultBalance(
+          address as Address,
+          vault.id as Address
+        );
 
-          setVaultTotalAssetinToken(newTotalAssetsinToken);
+        if (balance !== lastKnownBalanceRef.current) {
+          if (backgroundRefreshIntervalRef.current) {
+            clearInterval(backgroundRefreshIntervalRef.current);
+            backgroundRefreshIntervalRef.current = null;
+            refreshAttemptsRef.current = 0;
+          }
         }
-      } catch (error) {
-        console.error("Error updating vault balances and total assets:", error);
+
+        lastKnownBalanceRef.current = balance;
+        setUserVaultBalance(balance);
+
+        const newTotalAssetsinToken = await fetchUserVaultMaxWithdraw(
+          vault.inputToken.decimals,
+          address as Address,
+          vault?.id as Address
+        );
+
+        const newTotalAssets = await fetchTotalAssets(vault.id as Address);
+
+        setVaultTotalAsset(newTotalAssets);
+        setVaultTotalAssetinToken(newTotalAssetsinToken);
+
+        return balance;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      return null;
+    }
+  }, [vault, userAddress]);
+
+  useEffect(() => {
+    if (userAddress && vault) {
+      updateVaultBalanceAndTotal();
+
+      if (transactionCompleted && !backgroundRefreshIntervalRef.current) {
+        refreshAttemptsRef.current = 0;
+        backgroundRefreshIntervalRef.current = setInterval(async () => {
+          refreshAttemptsRef.current++;
+
+          await updateVaultBalanceAndTotal();
+
+          // Stop after max attempts
+          if (refreshAttemptsRef.current >= MAX_REFRESH_ATTEMPTS) {
+            if (backgroundRefreshIntervalRef.current) {
+              clearInterval(backgroundRefreshIntervalRef.current);
+              backgroundRefreshIntervalRef.current = null;
+              refreshAttemptsRef.current = 0;
+            }
+          }
+        }, 10000);
+      }
+    }
+
+    return () => {
+      if (backgroundRefreshIntervalRef.current) {
+        clearInterval(backgroundRefreshIntervalRef.current);
+        backgroundRefreshIntervalRef.current = null;
+        refreshAttemptsRef.current = 0;
       }
     };
-    if (userAddress) {
-      updateVaultBalanceAndTotal();
-    }
-  }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken]);
+  }, [vault, userAddress, setUserVaultBalance, setVaultTotalAsset, transactionCompleted, setVaultTotalAssetinToken, updateVaultBalanceAndTotal]);
 };
 
 export const useUpdateAPYs = (
@@ -157,8 +206,10 @@ export const useUpdateAPYs = (
   setVaultAPYs: (vaultAPYs: { vaultId: string, APY7d: number }[]) => void,
   setLoading: (loading: boolean) => void,
   crvTokenPrice: number,
+  cvxTokenPrice: number,
   ethTokenPrice: number,
-  compTokenPrice: number
+  compTokenPrice: number,
+  opTokenPrice: number
 ) => {
   useEffect(() => {
     const updateAPYs = async () => {
@@ -182,33 +233,47 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "ZeroLend") {
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
+              } else if (vault.protocol.name === "Aegis") {
+                APY7d = await fetchAegisAPR();
+              } else if (vault.protocol.name === "YieldFi") {
+                APY7d = await fetchYieldFiAPY();
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(receiptTokenAddress as Address, strategyChain);
-                console.log("Fetching Compound Rewards APY")
-                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.gaugeAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
-                console.log("RewardsAPY", RewardsAPY)
+                RewardsAPY = await calculateCompoundRewardsAPY(vault.protocol.rewardsContractAddress as Address, receiptTokenAddress as Address, strategyChain, 51);
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
-                // TO DO This only works for Base right now - it's hardcoded
-
                 APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
-
               } else if (vault.protocol.name === "Venus") {
                 APY7d = await calculateVenusAPY(receiptTokenAddress as Address, strategyChain);
                 RewardsAPY = await calculateVenusRewardsAPY(receiptTokenAddress as Address, strategyChain);
                 APY7d = APY7d + RewardsAPY;
               } else if (vault.protocol.name === "Eddy") {
                 APY7d = await calculateEddyAPY(receiptTokenAddress as Address, strategyChain)
+              } else if (vault.protocol.name === "Balancer") {
+                const { totalAPY } = await calculateCombinedBalancerAPY({
+                  receiptTokenAddress: receiptTokenAddress as Address,
+                  liquidityGaugeAddress: vault.protocol.rewardsContractAddress as Address,
+                  rewardTokenAddress: "0x994ac01750047B9d35431a7Ae4Ed312ee955E030",
+                  inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  opTokenPrice,
+                  strategyChain
+                });
+                APY7d = totalAPY;
               } else if (vault.protocol.name === "Beefy") {
                 APY7d = await calculateBeefyAPY(receiptTokenAddress as Address, strategyChain);
-              } else if (vault.protocol.name === "Curve") {
-                APY7d = await calculateCurveAPY(receiptTokenAddress as Address, strategyChain);
-                RewardsAPY = await calculateCurveRewardsAPY(vault.protocol.gaugeAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+              } else if (vault.protocol.name === "Curve-Convex") {
+                if (crvTokenPrice > 0 && ethTokenPrice > 0) {
+                  if (strategyChain.id === 1) {
+                    RewardsAPY = await calculateConvexEthereumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, cvxTokenPrice, ethTokenPrice);
+                  } else if (strategyChain.id === 42161) {
+                    RewardsAPY = await calculateConvexArbitrumRewardsAPY(receiptTokenAddress as Address, vault.inputToken as Token, vault.protocol.rewardsContractAddress as Address, strategyChain, crvTokenPrice, ethTokenPrice);
+                  }
+                }
+                APY7d = RewardsAPY;
               }
 
               return { vaultId: vault.id, APY7d };
             } catch (error) {
-              console.error(`Error fetching APY for vault ${vault.id}:`, error);
               return { vaultId: vault.id, APY7d: 0 };
             }
           })
@@ -216,31 +281,38 @@ export const useUpdateAPYs = (
 
         setVaultAPYs(updatedVaultAPYs);
       } finally {
-        setLoading(false);  // Stop the loading state after updating APYs
+        setLoading(false);
       }
     };
 
-    // Trigger the function if vaults are available
-    if (vaults.length > 0) {
-      setLoading(true);  // Set loading state before fetching APYs
+    if (
+      vaults.length > 0
+      &&
+      crvTokenPrice > 0 &&
+      cvxTokenPrice > 0
+      &&
+      ethTokenPrice > 0
+      &&
+      compTokenPrice > 0
+    ) {
+      setLoading(true);
       updateAPYs();
     }
-  }, []);
+  }, [vaults, crvTokenPrice, ethTokenPrice, compTokenPrice]);
 };
 
 export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }: { vaultData: VaultData, activeChainId: number, strategyChainID: number, strategyAddress: string, contractWithdrawalReceiverAddress: string, isTransactionStarted: boolean }) => {
-  // events
   const events = useMemo(() => ({
     vault: [
-      prepareEvent({ signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event CrossChainInvestSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
       prepareEvent({ signature: "event Deposited(address indexed user,uint256 amount,uint256 shares,bytes32 indexed crossChainTxId)" }),
       prepareEvent({ signature: "event Deposit(address indexed sender,address indexed owner,uint256 assets,uint256 shares)" }),
-      prepareEvent({ signature: "event DivestSent(bytes32 indexed crossChainTxId)" }),
+      prepareEvent({ signature: "event DivestSent(bytes32 indexed crossChainTxId, address user, uint256 shares)" }),
       prepareEvent({ signature: "event Withdraw(address indexed sender,address indexed receiver,address indexed owner,uint256 assets,uint256 shares)" }),
-      prepareEvent({ signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event DivestFailed(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId)" }),
-      prepareEvent({ signature: "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId)" })
+      prepareEvent({ signature: "event CrossChainInvestFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
+      prepareEvent({ signature: "event DivestFailed(bytes32 indexed crossChainTxId, address user, uint256 shares)" }),
+      prepareEvent({ signature: "event ReturnFundsToUserSent(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" }),
+      prepareEvent({ signature: "event ReturnFundsToUserFailed(bytes32 indexed crossChainTxId, address receiver, uint256 amount)" })
     ],
     strategy: [
       prepareEvent({ signature: "event FundsInvested(bytes32 indexed crossChainTxId,address user,uint256 amount)" }),
@@ -255,7 +327,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     ]
   }), []);
 
-  // contracts
   const contracts = useMemo(() => ({
     vault: getContract({
       client,
@@ -274,7 +345,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     })
   }), [vaultData.id, strategyChainID, strategyAddress, activeChainId, contractWithdrawalReceiverAddress]);
 
-  // event listeners
   const { data: vaultEvents } = useContractEvents({
     contract: contracts.vault,
     events: events.vault,
@@ -291,8 +361,6 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
     enabled: isTransactionStarted && !(isZetachain(strategyChainID) && isZetachain(activeChainId)),
   });
 
-  // console.log({ vaultEvents, strategyEvents, withdrawalReceiverEvents }, { vaultData, activeChainId, strategyChainID, strategyAddress, contractWithdrawalReceiverAddress, isTransactionStarted }, "HHHHHHHHHHHHHHHH");
-
   return {
     vaultEvents,
     strategyEvents,
@@ -302,14 +370,28 @@ export const useInteractionEvents = ({ vaultData, activeChainId, strategyChainID
 
 export function useTokenPriceBySymbol(symbol: string | undefined) {
   const priceContext = useTokenPrices();
-
   return useMemo(() => {
     if (!priceContext || !symbol) {
       return 0;
     }
 
-    const tokenSymbol = getOnlyTokenSymbol(symbol).toUpperCase()
-    return priceContext.prices?.[tokenSymbol] ?? 0;
+    const normalizedSymbol = symbol.includes('(') ?
+      symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
+
+    const fullSymbolPrice = priceContext.prices?.[normalizedSymbol.toUpperCase()];
+    if (fullSymbolPrice !== undefined) {
+      return fullSymbolPrice;
+    }
+
+    const baseSymbol = symbol.includes('(') ?
+      symbol.split(' (')[0].toUpperCase() :
+      getOnlyTokenSymbol(symbol).toUpperCase();
+
+    if (baseSymbol === "USDC" || baseSymbol === "USDT") {
+      return 1;
+    }
+
+    return priceContext.prices?.[baseSymbol] ?? 0;
   }, [priceContext, symbol]);
 }
 
@@ -323,7 +405,6 @@ export function useUserSettings() {
     if (saved) {
       setUserSettings(JSON.parse(saved));
     }
-    window.addEventListener('storage', () => console.log("EXECUTED UPDATE STORAGEEEEE!!!"));
   }, []);
 
   const updateSettings = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
@@ -359,3 +440,4 @@ export function useSlippage() {
     toggleAuto
   };
 }
+

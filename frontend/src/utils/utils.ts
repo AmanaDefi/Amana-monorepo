@@ -1,4 +1,4 @@
-import { ParseEventLogsResult, Address, getContract, toTokens } from "thirdweb";
+import { ParseEventLogsResult, Address, getContract, readContract, toTokens } from "thirdweb";
 import {
   TransactionResult,
   SmartVaultActionType,
@@ -20,7 +20,8 @@ import { client } from "./client";
 import { Chain } from "viem";
 import { ChainOptions } from "thirdweb/chains";
 import { getBalance } from "thirdweb/extensions/erc20";
-import { keccak_256 } from 'js-sha3';
+import { keccak_256 } from '@noble/hashes/sha3';
+import { bytesToHex } from '@noble/hashes/utils';
 
 export const formatTotalAssets = (totalAssets: string, decimals: number): string => {
   const value = Number(totalAssets) / Math.pow(10, decimals);
@@ -80,15 +81,31 @@ export const NumberFormatter = Intl.NumberFormat("en", {
 export function getVaultErrorMessage(
   value: string,
   inputValue: string | undefined,
-  steps: Action[]
+  steps: Action[],
+  vaultData?: any,
+  inputTokenPrice?: number,
+  isDeposit?: boolean
 ): string {
 
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
     return "Insufficient balance"
-  } else {
-    return ""
   }
+
+  // Check deposit/withdrawal limits if vaultData is provided
+  if (vaultData && inputTokenPrice) {
+    const amountInUSD = Number(value) * inputTokenPrice;
+    
+    if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(value) > 0) {
+      return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
+    }
+    
+    if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(value) > 0) {
+      return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+    }
+  }
+
+  return "";
 }
 
 export function isEthereumAddress(address: string): boolean {
@@ -144,7 +161,6 @@ export const selectActions = async (
     spender: vaultData.id as Address,
     amount: value
   });
-  console.log("allowanceResult", allowanceResult)
   switch (action) {
     case SmartVaultActionType.Deposit:
       if (chainID != 7001 && chainID != 7000) {
@@ -332,11 +348,141 @@ export const selectActions = async (
 export function determineVaultTokenFromApprovedTokens(chainId: number, vaultToken: Token): Token | undefined {
   const approvedTokens = APPROVED_TOKENS[chainId];
   if (!approvedTokens?.length) return undefined;
-  const vaultTokenSymbol = vaultToken.symbol.split('.')[0];
-  return approvedTokens.find(el => {
-    const approvedTokenSymbol = el.symbol.split('.')[0];
-    return approvedTokenSymbol.toLowerCase() === vaultTokenSymbol.toLowerCase()
-  }) ?? approvedTokens[0];
+
+  // Extract base symbol from vault token (e.g., "USDT" from "USDT.POL")
+  const vaultTokenSymbol = vaultToken.symbol.split('.')[0].split(' ')[0];
+
+  // Check if vault token is a native token (ETH, BNB, etc.)
+  const isNativeVaultToken = ['ETH', 'BNB', 'MATIC', 'AVAX', 'FTM', 'ONE', 'CRO', 'SOL', 'GLMR'].includes(vaultTokenSymbol.toUpperCase());
+
+  // Check if vault token is a stablecoin
+  const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(vaultTokenSymbol.toUpperCase());
+
+
+  // Map of chain IDs to their symbol suffixes
+  const chainIdToSuffix: Record<number, string> = {
+    1: "ETH",   // Ethereum
+    8453: "BASE", // Base
+    137: "POL",   // Polygon
+    42161: "ARB",  // Arbitrum
+    43114: "AVAX", // Avalanche
+    56: "BSC"     // BNB Chain
+  };
+
+  // Get current chain suffix
+  const currentChainSuffix = chainIdToSuffix[chainId] || "";
+
+  // If on ZetaChain and dealing with a stablecoin, look for chain-specific tokens first
+  if ((chainId === 7000 || chainId === 7001) && isStablecoin) {
+    // Look for tokens with this base symbol that have chain suffixes
+    const chainSpecificTokens = approvedTokens.filter(token => {
+      const tokenParts = token.symbol.split('.');
+      if (tokenParts.length === 2) {
+        const tokenBaseSymbol = tokenParts[0];
+        return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
+      }
+      return false;
+    });
+
+    if (chainSpecificTokens.length > 0) {
+      // Extract the vault token's chain suffix if it has one
+      const vaultTokenParts = vaultToken.symbol.split('.');
+      const vaultTokenSuffix = vaultTokenParts.length === 2 ? vaultTokenParts[1] : "";
+
+      // PRIORITY:
+      // 1. Connected chain's tokens (if on a specific chain)
+      // 2. The vault's original token suffix (if it has one)
+      // 3. For other tokens, use alphabetical order
+
+      const sortedTokens = [...chainSpecificTokens].sort((a, b) => {
+        const aSuffix = a.symbol.split('.')[1] || '';
+        const bSuffix = b.symbol.split('.')[1] || '';
+
+        // If one token matches the current chain, it wins
+        if (aSuffix === currentChainSuffix && bSuffix !== currentChainSuffix) return -1;
+        if (bSuffix === currentChainSuffix && aSuffix !== currentChainSuffix) return 1;
+
+        // If one token matches the vault token's original suffix, it comes next
+        if (vaultTokenSuffix) {
+          if (aSuffix === vaultTokenSuffix && bSuffix !== vaultTokenSuffix) return -1;
+          if (bSuffix === vaultTokenSuffix && aSuffix !== vaultTokenSuffix) return 1;
+        }
+
+        // Otherwise, alphabetical order
+        return aSuffix.localeCompare(bSuffix);
+      });
+
+      return sortedTokens[0];
+    }
+  }
+
+  // For non-ZetaChain and non-stablecoin cases, proceed with original logic
+  // PRIORITY 1: First try to find token with matching chain suffix
+  if (currentChainSuffix && isStablecoin) {
+    const chainSuffixMatch = approvedTokens.find(token => {
+      const tokenParts = token.symbol.split('.');
+      if (tokenParts.length === 2) {
+        const tokenBaseSymbol = tokenParts[0];
+        const tokenSuffix = tokenParts[1];
+        return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase() &&
+          tokenSuffix === currentChainSuffix;
+      }
+      return false;
+    });
+
+    if (chainSuffixMatch) {
+      return chainSuffixMatch;
+    }
+  }
+
+  // PRIORITY 2: Look for exact symbol match (non-native tokens prioritized for stablecoins)
+  const exactMatches = approvedTokens.filter(token => {
+    const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+    return tokenBaseSymbol.toUpperCase() === vaultTokenSymbol.toUpperCase();
+  });
+
+  if (exactMatches.length > 0) {
+    // For stablecoin vaults, prioritize non-native tokens
+    if (isStablecoin) {
+      const nonNativeMatch = exactMatches.find(token =>
+        token.address !== "0x0000000000000000000000000000000000000000" &&
+        token.address !== "11111111111111111111111111111111" // Solana native
+      );
+
+      if (nonNativeMatch) {
+        return nonNativeMatch;
+      }
+    }
+
+    return exactMatches[0];
+  }
+
+  // PRIORITY 3: For stablecoin vaults, try to find any stablecoin
+  if (isStablecoin) {
+    const stablecoinMatch = approvedTokens.find(token => {
+      const tokenBaseSymbol = token.symbol.split(' ')[0].split('.')[0];
+      return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(tokenBaseSymbol.toUpperCase());
+    });
+
+    if (stablecoinMatch) {
+      return stablecoinMatch;
+    }
+  }
+
+  // PRIORITY 4: For native token vaults, prioritize native token
+  if (isNativeVaultToken) {
+    const nativeToken = approvedTokens.find(token =>
+      token.address === "0x0000000000000000000000000000000000000000" ||
+      token.address === "11111111111111111111111111111111" // Solana native
+    );
+
+    if (nativeToken) {
+      return nativeToken;
+    }
+  }
+
+  // PRIORITY 5: Default to first approved token if nothing else matched
+  return approvedTokens[0];
 }
 
 export const isZetachain = (chainId: number) => chainId === 7000 || chainId === 7001;
@@ -389,7 +535,14 @@ export function getStoredSettings(): UserSettings {
 
 
 export function getCurrentSlippage(): number {
-  return getStoredSettings().slippage.value;
+  const settings = getStoredSettings();
+  return settings.slippage.value;
+}
+
+// Converts a USD amount to ETH based on current ETH price
+export function convertUsdToEth(usdAmount: number, ethPrice: number): number {
+  if (!ethPrice || ethPrice <= 0) return 0;
+  return usdAmount / ethPrice;
 }
 
 /**
@@ -406,20 +559,98 @@ export function isSolanaAddress(address: any): boolean {
   }
 }
 
+// Updated the getERC20TokenBalance function
 export const getERC20TokenBalance = async (walletAddress: string, tokenAddress: string, chain: any) => {
-  const contract = getContract({
-    client,
-    chain: chain,
-    address: tokenAddress
-  });
-  const { value, decimals } = await getBalance({
-    contract,
-    address: walletAddress as Address,
-  });
+  try {
+    // Skip call for invalid inputs
+    if (!walletAddress || !tokenAddress || !chain) {
+      console.warn("Missing parameters for getERC20TokenBalance:", { walletAddress, tokenAddress, chain });
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
 
-  return {
-    balance: value,
-    decimals
+    // Don't try to get balance for the zero address (represents native token)
+    if (tokenAddress === "0x0000000000000000000000000000000000000000") {
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+
+    // Validate chain before proceeding
+    if (!chain.id) {
+      console.warn("Invalid chain object:", chain);
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+
+    // Verify if the token exists in APPROVED_TOKENS for this chain
+    if (!APPROVED_TOKENS[chain.id]?.some(token => token.address.toLowerCase() === tokenAddress.toLowerCase())) {
+      console.warn(`Token ${tokenAddress} is not in the approved list for chain ${chain.id}`);
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+
+    // Create the contract instance
+    const contract = getContract({
+      client,
+      chain: chain,
+      address: tokenAddress as Address
+    });
+
+    try {
+      // Get token decimals first to avoid potential read issues
+      let decimals;
+      try {
+        decimals = await readContract({
+          contract,
+          method: "function decimals() view returns (uint8)",
+        });
+      } catch (error) {
+        console.warn("Failed to read token decimals, using default of 18:", error);
+        decimals = 18;
+      }
+
+      // Now get the balance
+      const { value } = await getBalance({
+        contract,
+        address: walletAddress as Address,
+      });
+
+      return {
+        balance: value,
+        decimals
+      };
+    } catch (error) {
+      console.error("Error fetching token balance:", error);
+
+      // Special handling for "AbiDecodingZeroDataError"
+      if (error instanceof Error) {
+        if (error.name === "AbiDecodingZeroDataError") {
+          console.warn(`Zero data returned from contract ${tokenAddress} on chain ${chain.id}. Contract may not exist at this address on this chain.`);
+        } else if (error.message.includes("execution reverted") || error.message.includes("call revert exception")) {
+          console.warn(`Contract call reverted for token ${tokenAddress} on chain ${chain.id}`);
+        }
+      }
+
+      // Return a default value when balance fetching fails
+      return {
+        balance: 0n,
+        decimals: 18
+      };
+    }
+  } catch (error) {
+    console.error("Error initializing contract:", error);
+    return {
+      balance: 0n,
+      decimals: 18
+    };
   }
 };
 
@@ -453,19 +684,27 @@ export function shortAddressForm(address: Address) {
 }
 
 export function getSolanaEVMAddress(solanaPublicKey: string) {
-  // Ensure we're working with a proper Solana public key
-  const pubKey = new PublicKey(solanaPublicKey);
+  // Log the input
+  console.log('Solana Public Key:', solanaPublicKey);
 
-  // Get the public key as a Buffer
-  const pubKeyBuffer = pubKey.toBuffer();
+  // Convert the base58 string into ASCII bytes
+  const asciiBytes = Buffer.from(solanaPublicKey, 'ascii');
 
-  // Hash the public key using keccak256
-  const hash = keccak_256(pubKeyBuffer);
-
-  // Take the last 20 bytes (40 characters in hex) and add 0x prefix
-  const evmAddress = '0x' + hash.substring(hash.length - 40);
+  // Take the LAST 20 bytes (last 40 hex characters)
+  const evmAddress = '0x' + asciiBytes.slice(-20).toString('hex');
 
   return evmAddress;
+}
+
+
+export function getSolanaAddressFromEVM(evmAddress: string): string {
+  // Strip the 0x prefix if present
+  const hex = evmAddress.startsWith('0x') ? evmAddress.slice(2) : evmAddress;
+
+  // Convert hex to ASCII string
+  const solanaAddress = Buffer.from(hex, 'hex').toString('ascii');
+
+  return solanaAddress;
 }
 
 export function format(value: bigint, decimals: number) {
@@ -474,3 +713,42 @@ export function format(value: bigint, decimals: number) {
   const str = Number(toTokens(value, decimals)).toFixed(6);
   return Number(str).toString();
 }
+
+// Format number with suffix M = Million, K = Thousand, B = Billion, T = Trillion, etc.
+export function formatNumberWithSuffix(num: number): string {
+  if (num === null || num === undefined || isNaN(num)) {
+    return "0";
+  }
+
+  if (num < 1000) {
+    return num.toFixed(2);
+  }
+
+  const absNum = Math.abs(num);
+
+  if (absNum >= 1000000000) {
+    return (num / 1000000000).toFixed(2) + 'B';
+  }
+
+  if (absNum >= 1000000) {
+    return (num / 1000000).toFixed(2) + 'M';
+  }
+
+  if (absNum >= 1000) {
+    return (num / 1000).toFixed(2) + 'K';
+  }
+
+  return num.toFixed(2);
+}
+
+// Add the formatTokenBalance function 
+export const formatTokenBalance = (balance: string | number, symbol: string): string => {
+  const num = Number(balance);
+  // Check if token is a stablecoin
+  const isStablecoin = symbol?.includes('USD') || symbol?.includes('DAI') ||
+    symbol?.includes('USDT') || symbol?.includes('USDC') ||
+    symbol?.includes('BUSD');
+  // Format with 2 decimal places for stablecoins, 4 for others
+  const decimals = isStablecoin ? 2 : 4;
+  return num.toFixed(decimals);
+};

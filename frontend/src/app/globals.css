@@ -30,6 +30,11 @@
   /* Blue progress bar */
 
   --header-height: 71px;
+  
+  /* Fluid button animation variables */
+  --fluid-button-bg-from: #262830;
+  --fluid-button-bg-to: #06afbc;
+  --fluid-transition-time: 0.6s;
 
   @media only screen and (min-width: 1024px) {
     --header-height: 112px;
@@ -44,6 +49,43 @@
   .flex-center {
     @apply flex items-center justify-center;
   }
+}
+
+/* Button fluid hover animation styles */
+.fluid-hover-button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(to right, var(--fluid-button-bg-from), var(--fluid-button-bg-to));
+  transition: all 0.3s ease;
+}
+
+/* The flowing overlay element */
+.fluid-hover-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 100%; /* Start from right (hidden) */
+  background: var(--fluid-button-bg-from); /* The color that will flow in */
+  z-index: 0;
+  transition: left var(--fluid-transition-time) cubic-bezier(0.4, 0, 0.2, 1); /* Water-like easing */
+}
+
+/* On hover, make the color flow in from right to left */
+.fluid-hover-button:hover::before {
+  left: 0;
+}
+
+/* Keep content visible above the flowing background */
+.fluid-hover-button > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Add a subtle pulsing shadow on hover for more water-like effect */
+.fluid-hover-button:hover {
+  box-shadow: 0 0 10px rgba(6, 175, 188, 0.5);
 }
 
 input::-webkit-outer-spin-button,

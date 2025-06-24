@@ -12,7 +12,7 @@ import "./ERC20StrategyParent.sol";
 contract ERC20_4626_Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    I4626Vault public immutable receiptToken;
+    I4626Vault public receiptToken;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -20,17 +20,23 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @param _inputTokenAddress Address of the input token.
     /// @param _receiptTokenAddress Address of the Aave receipt token.
     /// @param _gateway Address of the ZetaChain Gateway.
-    constructor(
+    function initialize(
         string memory _name,
         address _amanaVault,
         address _inputTokenAddress,
         address _receiptTokenAddress,
         address _gateway,
-        address withdrawHelper
-    )
-        StrategyParent(_name, _amanaVault, _gateway, withdrawHelper)
-        ERC20StrategyParent(_inputTokenAddress)
-    {
+        address _withdrawHelper
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gateway,
+            _withdrawHelper,
+            _inputTokenAddress,
+            _receiptTokenAddress
+        );
+
         receiptToken = I4626Vault(_receiptTokenAddress);
     }
 
@@ -82,44 +88,6 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
             withdrawShareAmount = totalShares;
         }
         return withdrawShareAmount;
-    }
-
-    /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
-     */
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
-        }
-        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            1e18,
-            minAmountOut
-        );
-
-        approveOrIncreaseAllowance(inputToken, newStrategy, amountWithdrawn);
-
-        IStrategy(newStrategy).depositFromOldStrategy(
-            amountWithdrawn,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            amountWithdrawn,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
     }
 
     /// @notice Gets the total assets held in the strategy.

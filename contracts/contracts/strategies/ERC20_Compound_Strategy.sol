@@ -9,7 +9,7 @@ import "../interfaces/ISwapHelper.sol";
 import "../interfaces/ICometRewards.sol";
 
 // Polygon USDT receiptToken: 0xaeB318360f27748Acb200CE616E389A6C9409a07
-// Polygon COMP token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
+// Polygon rewardsTokenAddress token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
 // Polygon Rewards contract: 0x45939657d1CA34A8FA39A924B71D28Fe8431e581
 // Polygon USDT input token:
 
@@ -19,101 +19,88 @@ import "../interfaces/ICometRewards.sol";
 contract ERC20_Compound_Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    ICompoundVault public immutable receiptToken;
-    ICometRewards public immutable cometRewardsContract;
+    ICompoundVault public receiptToken;
+    ICometRewards public cometRewardsContract;
 
-    address public swapHelperPolygon;
-    uint16 harvestSwapSlippage = 500; // 1% slippage
-    address public constant COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c; // COMP on Polygon
-    address public constant COMET_REWARDS =
-        0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
-
-    event RewardsHarvested(
-        uint256 rewardsClaimed,
-        uint256 rewardsSwapped,
-        uint256 usdcReinvested
-    );
+    address public rewardsTokenAddress;
 
     /// @notice Initializes the strategy contract.
-    constructor(
+    function initialize(
         string memory _name,
+        address _gatewayAddress,
         address _amanaVault,
-        address _inputTokenAddress,
-        address _receiptTokenAddress,
-        address _gateway,
         address _withdrawHelper,
-        address _swapHelperPolygon
-    )
-        StrategyParent(_name, _amanaVault, _gateway, _withdrawHelper)
-        ERC20StrategyParent(_inputTokenAddress)
-    {
-        receiptToken = ICompoundVault(_receiptTokenAddress);
-        cometRewardsContract = ICometRewards(COMET_REWARDS);
-        swapHelperPolygon = _swapHelperPolygon;
-    }
-
-    function updateSwapHelperPolygon(
-        address _swapHelperPolygon
-    ) external onlyOwner {
-        swapHelperPolygon = _swapHelperPolygon;
-    }
-
-    function setHarvestSwapSlippage(
-        uint16 _harvestSwapSlippage
-    ) external onlyOwner {
-        require(_harvestSwapSlippage <= 10000, "Slippage too high");
-        harvestSwapSlippage = _harvestSwapSlippage;
-    }
-
-    /// @notice Claims COMP rewards from Compound
-    function claimRewards() public returns (uint256) {
-        cometRewardsContract.claim(address(receiptToken), address(this), true);
-
-        uint256 compBalance = IERC20(COMP).balanceOf(address(this));
-        require(compBalance > 0, "No COMP rewards to claim");
-
-        return compBalance;
-    }
-
-    /**
-     * @notice Swaps COMP for USDC on Uniswap V3 (Polygon)
-     * @param amountIn Amount of COMP to swap
-     * @param slippageBps slippage
-     * @return amountOut The amount of USDC received
-     */
-    function swapCompForUsdc(
-        uint256 amountIn,
-        uint16 slippageBps
-    ) internal returns (uint256 amountOut) {
-        require(amountIn > 0, "Amount must be greater than zero");
-
-        SafeERC20.safeTransfer(IERC20(COMP), swapHelperPolygon, amountIn);
-        uint16 maxDeadline = uint16(block.timestamp + 1 hours); // Set a deadline for the swap
-
-        amountOut = ISwapHelper(swapHelperPolygon).swap(
-            COMP,
-            amountIn,
-            address(inputToken),
-            slippageBps,
-            address(this),
-            maxDeadline,
-            "" // empty bytes param for future-proofing
+        address _swapHelper,
+        address _receiptTokenAddress,
+        address _inputTokenAddress,
+        address _rewardsContractAddress,
+        address _rewardsTokenAddress,
+        uint256 /* unused */
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gatewayAddress,
+            _withdrawHelper,
+            _inputTokenAddress,
+            _receiptTokenAddress
         );
 
-        return amountOut;
+        swapHelper = _swapHelper;
+        receiptToken = ICompoundVault(_receiptTokenAddress);
+        cometRewardsContract = ICometRewards(_rewardsContractAddress);
+        rewardsTokenAddress = _rewardsTokenAddress;
     }
 
-    /// @notice Harvests COMP rewards and reinvests them into Compound
-    function harvest() public {
-        uint256 compBalance = checkRewards();
-        if (compBalance > 0) {
-            compBalance = claimRewards();
-            uint256 usdcReceived = swapCompForUsdc(
+    /// @notice Claims rewards from Compound
+    function claimRewards() public override returns (uint256) {
+        uint256 compBalanceBefore = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
+        try
+            cometRewardsContract.claim(
+                address(receiptToken),
+                address(this),
+                true
+            )
+        {
+            uint256 compBalanceAfter = IERC20(rewardsTokenAddress).balanceOf(
+                address(this)
+            );
+            uint256 claimed = compBalanceAfter - compBalanceBefore;
+            emit RewardsClaimed(address(this), rewardsTokenAddress, claimed);
+            return claimed;
+        } catch {
+            return 0;
+        }
+    }
+
+    function _reinvestRewards() internal override {
+        uint256 compBalance = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
+        if (
+            compBalance >
+            minClaimableReward *
+                10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
+        ) {
+            uint256 usdcReceived = swapToInputToken(
+                rewardsTokenAddress,
                 compBalance,
                 harvestSwapSlippage
             );
-            _depositFundsIntoYieldSource(usdcReceived, 0);
-            emit RewardsHarvested(compBalance, compBalance, usdcReceived);
+            if (
+                usdcReceived >
+                minClaimableReward *
+                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+            ) {
+                _depositFundsIntoYieldSource(usdcReceived, 0);
+                emit RewardsHarvested(
+                    rewardsTokenAddress,
+                    compBalance,
+                    usdcReceived
+                );
+            }
         }
     }
 
@@ -125,9 +112,10 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
         uint256 initialBalance = receiptToken.balanceOf(address(this));
-        receiptToken.supply(address(inputToken), amount);
+        if (amount > 0) {
+            receiptToken.supply(address(inputToken), amount);
+        }
         uint256 finalBalance = receiptToken.balanceOf(address(this));
-
         if (finalBalance - initialBalance < minAmountOut) {
             revert InsufficientOut();
         }
@@ -136,19 +124,17 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param fractionToWithdraw The amount of funds to withdraw from the yield source.
+     * @param assetAmount The amount of funds to withdraw from the yield source.
      * @param minAmountOut The minimum amount of funds to withdraw.
      * @return amountWithdrawn The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest(); // Harvest rewards before withdrawing
         uint256 initialBalance = inputToken.balanceOf(address(this)); // take initial balance after harvest
-        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
-            fractionToWithdraw
-        );
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         receiptToken.withdraw(address(inputToken), sharesToWithdraw);
         uint256 finalBalance = inputToken.balanceOf(address(this));
         amountWithdrawn = finalBalance - initialBalance;
@@ -158,44 +144,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         return sharesToWithdraw;
     }
 
-    /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
-     */
-    function _transferAssetsToNewStrategy(
-        uint256 minAmountOut,
-        uint256 minimumSharesOut,
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        if (IStrategy(newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
-        }
-        uint256 withdrawnAmount = _withdrawFundsFromYieldSource(
-            1e18, // Withdraw all
-            minAmountOut
-        );
-
-        approveOrIncreaseAllowance(inputToken, newStrategy, withdrawnAmount);
-
-        IStrategy(newStrategy).depositFromOldStrategy(
-            withdrawnAmount,
-            minimumSharesOut,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            withdrawnAmount,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
-    }
-
     /// @notice Gets the total assets held in the strategy.
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
@@ -203,16 +151,17 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = receiptToken.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        if (withdrawShareAmount > totalShares) {
-            withdrawShareAmount = totalShares;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
         }
-        return withdrawShareAmount;
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
     }
 
     function checkRewards() public returns (uint256) {

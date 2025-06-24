@@ -24,4 +24,10 @@ interface IAmanaVault {
     function convertToShares(uint256 assets) external view returns (uint256);
 
     function maxWithdraw(address account) external view returns (uint256);
+
+    function decreasePendingWithdrawals(address user, uint256 shares) external;
+
+    function setStrategy(address strategy) external;
+
+    function previewDeposit(uint256 assets) external view returns (uint256);
 }

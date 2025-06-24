@@ -22,18 +22,22 @@ export default function TokenIcon({
     return <Image
     src={icon}
     alt="token icon"
-    width={1200}
-    height={800}
+    width={32}
+    height={32}
+    style={{ width: 'auto', height: 'auto' }}
     className="mr-2 rounded-full"
+    sizes="32px"
     />;
   }
   return (
     <Image
       src={"/amana-token-logo.svg"}
       alt="token icon"
-      width={1200} // Adjust to your desired width
-      height={800} // Adjust to your desired height
+      width={32}
+      height={32}
+      style={{ width: 'auto', height: 'auto' }}
       className={className}
+      sizes="(max-width: 768px) 24px, 40px"
     />
   );
 }
