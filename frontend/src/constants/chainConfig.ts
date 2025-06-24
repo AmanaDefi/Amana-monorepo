@@ -46,7 +46,9 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   ARB: "/arbitrum-arb-logo.png",
   AMANAZ: "/amana-token-logo.svg",
   BASE: "/base.png",
-  USDT_TOKEN: '/tether.png'
+  USDT_TOKEN: '/tether.png',
+  BALANCER: "/balancer.png",
+  ZEROLEND: "/ZeroLend.png",
 };
 
 // Chain icons mapping (optional fallback if modal icons fail) {It's a long one, should we move it to utils || any other data center}
@@ -1147,6 +1149,10 @@ export const PROTOCOL_FILTER_OPTIONS = [
     icon: TOKEN_LOGO_URLS.AAVE,
   },
   {
+    value: "Balancer",
+    icon: TOKEN_LOGO_URLS.BALANCER,
+  },
+  {
     value: "Compound",
     icon: TOKEN_LOGO_URLS.COMPOUND,
   },
@@ -1162,4 +1168,8 @@ export const PROTOCOL_FILTER_OPTIONS = [
     value: "Fluid",
     icon: TOKEN_LOGO_URLS.FLUID,
   },
+  {
+    value: "ZeroLend",
+    icon: TOKEN_LOGO_URLS.ZEROLEND,
+  }
 ];
