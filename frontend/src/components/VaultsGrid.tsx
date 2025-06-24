@@ -12,6 +12,8 @@ import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenB
 import LoadingLogo from './LoadingLogo';
 import { useMultiChain } from '@/providers/MultiChainProvider';
 import { useTokenPriceBySymbol } from '@/hooks/hooks';
+import PointsIcon from "@/components/svg/PointsIcon";
+import ResponsiveTooltip from "@/components/common/Tooltip";
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -71,6 +73,30 @@ interface VaultsGridProps {
   vaultTotalAssets: VaultTotalAssets[];
   vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
 }
+
+// Helper function to get points information
+const getPointsInfo = (protocolName: string) => {
+  switch (protocolName) {
+    case 'Aegis':
+      return {
+        points: '15 pts/$/day',
+        nativeYield: 'Aegis native yield',
+        displayPoints: true
+      };
+    case 'YieldFi':
+      return {
+        points: '5 pts/$/day',
+        nativeYield: 'YieldFi native yield',
+        displayPoints: true
+      };
+    default:
+      return {
+        points: '',
+        nativeYield: '',
+        displayPoints: false
+      };
+  }
+};
 
 const VaultsGrid: React.FC<VaultsGridProps> = ({
   loading,
@@ -425,9 +451,47 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 <div className="grid grid-cols-2 gap-2 p-3">
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
+                    <div className="flex items-center gap-1">
                     <p className="text-cyan-400 font-bold text-xl">
                       {`${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`}
                     </p>
+                      {getPointsInfo(vault.protocol.name).displayPoints && (
+                        <div className="flex items-center">
+                          <button
+                            id={`points-tooltip-${vault.id}`}
+                            className="ml-1"
+                          >
+                            <PointsIcon className="w-4 h-4" color="#06afbc" />
+                          </button>
+                          <ResponsiveTooltip
+                            id={`points-tooltip-${vault.id}`}
+                            content={
+                              <div className="w-48">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-gray-300 text-sm">
+                                    {getPointsInfo(vault.protocol.name).nativeYield}
+                                  </span>
+                                  <span className="text-cyan-400 font-medium">
+                                    {vault.id === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8" 
+                                      ? `${((Number(vaultAPY?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
+                                      : `${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`
+                                    }
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-300 text-sm">
+                                    {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
+                                  </span>
+                                  <span className="text-white font-medium">
+                                    {getPointsInfo(vault.protocol.name).points}
+                                  </span>
+                                </div>
+                              </div>
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-customNeutral300 p-3 rounded-md">
                                           <p className="text-gray-400 text-xs mb-1">TVL</p>

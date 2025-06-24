@@ -111,6 +111,8 @@ const VaultsDetailContainer: React.FC<{
             selectedToken={selectedToken}
           />
 
+
+
           <section className="w-full flex flex-col lg:flex-row gap-4 my-4 ">
             <div className="w-full ">
               <div className="bg-customNeutral200 p-6 rounded-lg">
