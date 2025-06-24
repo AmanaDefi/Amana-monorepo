@@ -310,21 +310,9 @@ export default function VaultHeader({
           >
             <div className="flex items-center gap-1">
               <p className="text-2xl lg:text-3xl font-bold whitespace-nowrap text-white leading-0">
-                {selectedVaultId === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8"
-                  ? `${((Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
-                  : Number.isNaN(
-                      Number(
-                        vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                          ?.APY7d
-                      )
-                    )
+                { Number.isNaN(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d))
                   ? "0%"
-                  : `${(
-                      Number(
-                        vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)
-                          ?.APY7d
-                      ) * 100
-                    ).toFixed(2)}%`
+                  : `${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2)}%`
                 }
               </p>
               {getPointsInfo(vaultData.protocol.name).displayPoints && (
