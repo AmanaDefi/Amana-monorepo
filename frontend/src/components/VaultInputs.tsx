@@ -1305,7 +1305,7 @@ export default function VaultInputs({
         conversionOutput={conversionOutput}
         setInputBalance={setInputBalance}
       />
-      {!!isDeposit && <APYChangeCard isDeposit={isDeposit} />}
+       <APYChangeCard isDeposit={isDeposit} />
 
       {inputToken &&
         !loadingOutputToken &&
