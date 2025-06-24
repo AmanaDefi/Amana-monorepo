@@ -54,7 +54,7 @@ export const calculateGasFeeInVaultAsset = async (
     };
   }
 
-  console.log("⛽ GAS CALC - Gas fee will be deducted from deposit amount");
+
 
   // Get gas limit from vault contract
   const vaultContract = getContract({
@@ -68,7 +68,7 @@ export const calculateGasFeeInVaultAsset = async (
     method: "function gasLimitForWithdrawAndCall() view returns (uint256)",
   });
 
-  console.log("⛽ GAS CALC - Gas limit:", gasLimitForWithdrawAndCall.toString());
+ 
 
   // Get gas fee from vault input token contract
   const tokenContract = getContract({
@@ -86,18 +86,13 @@ export const calculateGasFeeInVaultAsset = async (
   const gasZRC20 = result[0] as string;
   const gasFee = result[1] as bigint;
 
-  console.log("⛽ GAS CALC - Gas fee details:", {
-    gasZRC20,
-    gasFeeRaw: gasFee.toString(),
-    vaultInputToken: vaultData.inputToken.address,
-    gasTokenMatchesVaultToken: gasZRC20 === vaultData.inputToken.address,
-  });
+
 
   let gasFeeInVaultAsset = gasFee;
 
   // Convert gas fee to vault asset if tokens differ
   if (gasZRC20 !== vaultData.inputToken.address) {
-    console.log("🔄 GAS CALC - Converting gas fee from gas token to vault asset");
+   
     const { amountOut } = await getPathDataAndAmountOut(
       gasFee,
       ZRC20_TOKENS_BY_ADDRESS[gasZRC20] || {
@@ -114,10 +109,7 @@ export const calculateGasFeeInVaultAsset = async (
       500
     );
     gasFeeInVaultAsset = amountOut;
-    console.log("🔄 GAS CALC - Gas fee conversion:", {
-      originalGasFee: gasFee.toString(),
-      convertedGasFee: gasFeeInVaultAsset.toString(),
-    });
+  
   }
 
   // Format gas fee in USD and ETH
@@ -127,12 +119,7 @@ export const calculateGasFeeInVaultAsset = async (
   const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
   const gasFeeInETH = ethAmount.toFixed(5);
 
-  console.log("⛽ GAS CALC - Gas fee formatting:", {
-    gasFeeInTokenUnits: gasFeeInTokenUnits.toString(),
-    gasFeeInUSDAmount: gasFeeInUSDAmount.toString(),
-    gasFeeInUSD,
-    gasFeeInETH,
-  });
+ 
 
   return {
     gasFeeInVaultAsset,
@@ -160,20 +147,13 @@ export const convertGasFeeToInputToken = async (
   const inputTokenZeta = isZetachain(activeChain.id) ? inputToken : inputToken?.ZRC20equivalent;
 
   if (!inputTokenZeta) {
-    console.log("❌ GAS CALC - No ZRC20 equivalent found for input token");
+   
     return gasFeeInVaultAsset;
   }
 
   // If input token differs from vault token, convert gas fee back to input token terms
   if (inputTokenZeta.address !== vaultData.inputToken.address) {
-    console.log("🔄 GAS CALC - Converting gas fee from vault asset back to input token equivalent");
-    console.log("🔄 GAS CALC - Conversion details:", {
-      fromToken: vaultData.inputToken.address,
-      fromSymbol: vaultData.inputToken.symbol,
-      toToken: inputTokenZeta.address,
-      toSymbol: inputTokenZeta.symbol,
-      gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-    });
+    
 
     const { amountOut } = await getPathDataAndAmountOut(
       gasFeeInVaultAsset,
@@ -183,9 +163,7 @@ export const convertGasFeeToInputToken = async (
       500
     );
 
-    console.log("🔄 GAS CALC - Final gas fee in input token terms:", {
-      gasFeeInInputToken: amountOut.toString(),
-    });
+    
 
     return amountOut;
   }

@@ -71,7 +71,6 @@ const provider_ethereum = new JsonRpcProvider(
 const abiCoder = new AbiCoder();
 
 const isTestnet = process.env.NEXT_PUBLIC_DEPLOY_ENV === 'testnet';
-const contractWithdrawalReceiverAddress = (isTestnet ? process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS_TESTNET : process.env.NEXT_PUBLIC_WITHDRAWAL_RECEIVER_ADDRESS) as `0x${string}`
 
 const BLOCK_TIME: { [chainId: number]: number } = {
   1: 12,     // Ethereum
@@ -642,6 +641,51 @@ export async function calculateVenusRewardsAPY(
   return Number(0.067);
 }
 
+export async function fetchAegisAPR(): Promise<number> {
+  try {
+    const response = await fetch("/api/aegis-apr");
+    const json = await response.json();
+
+    if (json.error) {
+      throw new Error(json.error);
+    }
+
+    if (json.status !== "success" || !json.data?.efficient_apr) {
+      throw new Error("Invalid response from Aegis API");
+    }
+
+    // efficient_apr is returned as a percentage, so we convert it to a decimal
+    const apr = Number(json.data.efficient_apr) / 100;
+
+    return apr;
+  } catch (error) {
+    console.error("Failed to fetch Aegis APR:", error);
+    throw error;
+  }
+}
+
+export async function fetchYieldFiAPY(): Promise<number> {
+  try {
+    const response = await fetch("https://api.yield.fi/t/yusd/apy");
+    const json = await response.json();
+
+    if (!json.apy && json.apy !== 0) {
+      throw new Error("Invalid response from YieldFi API - missing apy field");
+    }
+
+    // apy is returned as a percentage, so we convert it to a decimal
+    const baseApy = Number(json.apy) / 100;
+
+    // Add 5% bonus to make the APY more attractive
+    const enhancedApy = baseApy + 0.05;
+
+    return enhancedApy;
+  } catch (error) {
+    console.error("Failed to fetch YieldFi APY:", error);
+    throw error;
+  }
+}
+
 export const executeDeposit = async (
   vaultData: VaultData,
   inputToken: Token,
@@ -1017,8 +1061,8 @@ const executeCrossChainDeposit = async (
 
   // Prepare revertOptions
   revertOptions = [
-    contractWithdrawalReceiverAddress, // revertAddress
-    true, // callOnRevert
+    activeAccount.address, // revertAddress
+    false, // callOnRevert
     activeAccount.address, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
@@ -1117,8 +1161,8 @@ const executeSolanaDeposit = async (
   // Anchor handles camelCase to snake_case conversion automatically
   const revertOptions = {
     revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
-    abortAddress: ethers.getBytes(evmWalletAddress),           // abort_address (array [u8, 20])
-    callOnRevert: true,                                        // call_on_revert (bool)
+    abortAddress: ethers.getBytes(vaultData.id),           // abort_address (array [u8, 20])
+    callOnRevert: false,                                        // call_on_revert (bool)
     revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"), // revert_message (bytes)
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
   };
@@ -1210,7 +1254,7 @@ export const executeSolanaWithdrawal = async (
   // IDL expects: revert_address, abort_address, call_on_revert, revert_message, on_revert_gas_limit
   const revertOptions = {
     revertAddress: walletContext.publicKey!,                    // revert_address (pubkey)
-    abortAddress: ethers.getBytes(evmWalletAddress),           // abort_address (array [u8, 20])
+    abortAddress: ethers.getBytes(vaultData.id),           // abort_address (array [u8, 20])
     callOnRevert: false,                                       // call_on_revert (bool) - false for withdrawals
     revertMessage: Buffer.from("_crossChainWithdrawFailed", "utf8"), // revert_message (bytes)
     onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(1000000), // on_revert_gas_limit (u64)
@@ -1361,7 +1405,7 @@ const executeCrossChainWithdrawal = async (
     ["_crossChainWithdrawFailed", transactionId, activeAccount.address]
   );
   const revertOptions = [
-    contractWithdrawalReceiverAddress, // revertAddress
+    activeAccount.address, // revertAddress
     false, // callOnRevert
     activeAccount.address, // abortAddress
     revertMessage as `0x${string}`, // revertMessage

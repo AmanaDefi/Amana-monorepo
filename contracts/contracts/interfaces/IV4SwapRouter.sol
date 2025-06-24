@@ -28,4 +28,19 @@ interface IV4SwapRouter {
         uint128 amountOutMinimum;
         bytes hookData;
     }
+
+    struct ExactInputParams {
+        Currency currencyIn;
+        PathKey[] path;
+        uint128 amountIn;
+        uint128 amountOutMinimum;
+    }
+
+    struct PathKey {
+        address intermediateCurrency;
+        uint24 fee;
+        int24 tickSpacing;
+        address hooks;
+        bytes hookData;
+    }
 }

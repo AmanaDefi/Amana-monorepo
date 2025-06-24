@@ -4098,6 +4098,13 @@
   resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.19.0.tgz#37a8983b2725af9b14ff8c4a475fa0e98d773c3f"
   integrity sha512-RV16k/qIxW/wWc+mLzV3ARyKUaMUTBy9tOLMzFhtNSKYeTAanQ3a5MudJKf/8arIFnA2L27SNjarQKmFg0w/jA==
 
+"@storknetwork/stork_pyth_adapter@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@storknetwork/stork_pyth_adapter/-/stork_pyth_adapter-1.0.0.tgz#da7d6bc7654434360d05cc38859eda4f15341c38"
+  integrity sha512-dTI8GmtRoKB9BUTE60UPndHnmzV6lK2bTylCXCTsENNuR0O/Ph4qxwEWLHlF5/mKAz2mdHWkv26HrymemtsbwQ==
+  dependencies:
+    "@pythnetwork/pyth-sdk-solidity" "^4.0.0"
+
 "@swc/helpers@^0.5.11":
   version "0.5.15"
   resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.5.15.tgz#79efab344c5819ecf83a43f3f9f811fc84b516d7"

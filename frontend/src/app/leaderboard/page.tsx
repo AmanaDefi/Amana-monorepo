@@ -162,7 +162,7 @@ export default function Page() {
                                                 <td className="px-4 py-4 whitespace-nowrap">
                                                     <div className='flex items-center gap-2'>
                                                         <span className='line-clamp-1'>
-                                                            {shortAddressForm(item.user_address)}
+                                                            {shortAddressForm(item.user_address as `0x${string}`)}
                                                         </span>
                                                         <CopyTextButton text={item.user_address} />
                                                     </div>
