@@ -531,8 +531,8 @@ const VaultsDetailContainer: React.FC<{
                 isProcessingTx
                   ? "Transaction Progress"
                   : isWithdraw
-                    ? "Withdraw instruction"
-                    : "Deposit instruction"
+                    ? "Withdraw flow"
+                    : "Deposit flow"
               }
               defaultOpen={true}
             >
