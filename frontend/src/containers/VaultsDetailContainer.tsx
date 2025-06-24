@@ -484,7 +484,7 @@ const VaultsDetailContainer: React.FC<{
 
               {walletAddress && isWithdraw && <WithdrawalNotice />}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] md:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[526px] 2xl:min-w-[707px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}
@@ -505,7 +505,7 @@ const VaultsDetailContainer: React.FC<{
           )}
         </div>
 
-        <div className="hidden md:flex flex-col w-full xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="hidden md:flex flex-col w-full xl:max-w-[576px] 2xl:min-w-[674px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress ? (
             <YourInvestment
               depositAmount={depositData.amount}
