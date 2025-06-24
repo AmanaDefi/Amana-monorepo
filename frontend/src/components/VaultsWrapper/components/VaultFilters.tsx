@@ -160,21 +160,23 @@ export const VaultFilters: FC<Props> = ({
         <div className="flex flex-row-reverse lg:flex-row  lg:gap-6 items-center w-full lg:w-auto justify-between lg:justify-normal">
           <div className="flex flex-row gap-2 items-center">
             <button
-              className="hidden lg:block"
+              className="hidden lg:block transition-all duration-200 hover:scale-105"
               type="button"
               onClick={() => handleChangeVaultsDisplay("list")}
             >
               <ListMenuIcon
                 color={displayType !== "list" ? "#535E73" : "#1B46E0"}
+                className="hover:fill-[#1B46E0] transition-colors duration-200"
               />
             </button>
             <button
-              className="hidden lg:block"
+              className="hidden lg:block transition-all duration-200 hover:scale-105"
               type="button"
               onClick={() => handleChangeVaultsDisplay("cards")}
             >
               <CardsMenuIcon
                 color={displayType !== "cards" ? "#535E73" : "#1B46E0"}
+                className="hover:fill-[#1B46E0] transition-colors duration-200"
               />
             </button>
             <div
@@ -193,35 +195,31 @@ export const VaultFilters: FC<Props> = ({
           </div>
           <div
             onClick={() => inputRef?.current?.focus()}
-            className="focus-within:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
           >
             <>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={
-                "Search name or paste address"
-              }
-              className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
-              value={searchTerm}
-              onFocus={() => setIsHiddenFilterButton(true)}
-              onBlur={() => setIsHiddenFilterButton(false)}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={
-                !isHiddenFilterButton
-                  ? "Search name..."
-                  : "Search name or paste address"
-              }
-              className="text-white lg:hidden focus:outline-none bg-transparent w-full"
-              value={searchTerm}
-              onFocus={() => setIsHiddenFilterButton(true)}
-              onBlur={() => setIsHiddenFilterButton(false)}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={"Search vaults..."}
+                className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
+                value={searchTerm}
+                onFocus={() => setIsHiddenFilterButton(true)}
+                onBlur={() => setIsHiddenFilterButton(false)}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={
+                  !isHiddenFilterButton ? "Search name..." : "Search vaults..."
+                }
+                className="text-white lg:hidden focus:outline-none bg-transparent w-full"
+                value={searchTerm}
+                onFocus={() => setIsHiddenFilterButton(true)}
+                onBlur={() => setIsHiddenFilterButton(false)}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </>
             <div className="absolute left-4 top-3">
               <SearchIcon />
