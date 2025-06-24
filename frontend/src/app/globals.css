@@ -13,21 +13,6 @@
   font-optical-sizing: auto;
   font-style: normal;
   font-variation-settings: "slnt" 0;
-  /* Customize the background and text colors */
-  --toastify-color-light: #ffffff;
-  /* White background */
-  --toastify-text-color-light: #2262d1;
-  /* Dark grey text (like your modal headers) */
-
-  /* Customize the success toast colors */
-  --toastify-color-success: #4a5568;
-  /* Dark grey background for success toast */
-  --toastify-icon-color-success: #3182ce;
-  /* Dark grey tick icon */
-
-  /* Customize the progress bar */
-  --toastify-color-progress-success: #3182ce;
-  /* Blue progress bar */
 
   --header-height: 71px;
 
@@ -35,6 +20,30 @@
   --fluid-button-bg-from: #262830;
   --fluid-button-bg-to: #06afbc;
   --fluid-transition-time: 0.6s;
+
+  /* Toast colors with your palette */
+  --toastify-color-light: #1D2A41;
+  --toastify-text-color-light: #ECECED;
+  
+  /* Success toast */
+  --toastify-color-success: #1D2A41;
+  --toastify-icon-color-success: #3E73C4;
+  --toastify-color-progress-success: #1B46E0;
+  
+  /* Error toast */
+  --toastify-color-error: #1D2A41;
+  --toastify-icon-color-error: #535E73;
+  --toastify-color-progress-error: #1B46E0;
+  
+  /* Warning toast */
+  --toastify-color-warning: #1D2A41;
+  --toastify-icon-color-warning: #9A9CB3;
+  --toastify-color-progress-warning: #1B46E0;
+  
+  /* Info toast */
+  --toastify-color-info: #1D2A41;
+  --toastify-icon-color-info: #1B46E0;
+  --toastify-color-progress-info: #1B46E0;
 
   @media only screen and (min-width: 1024px) {
     --header-height: 112px;
@@ -86,15 +95,62 @@
   scrollbar-width: thin;
   scrollbar-color: #1B46E0 #161C27;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-/* Button fluid hover animation styles */
+.Toastify__toast-container--bottom-left {
+  bottom: 20px;
+  left: 20px;
+  width: 400px;
+}
+
+.Toastify__toast {
+  border: 1px solid #535E73 !important;
+  border-radius: 8px !important;
+  margin-bottom: 12px !important;
+  font-family: var(--font-inter), sans-serif !important;
+}
+
+.Toastify__toast--success {
+  border-left: 3px solid #3E73C4 !important;
+}
+
+.Toastify__toast--error {
+  border-left: 3px solid #535E73 !important;
+}
+
+.Toastify__toast--warning {
+  border-left: 3px solid #9A9CB3 !important;
+}
+
+.Toastify__toast--info {
+  border-left: 3px solid #1B46E0 !important;
+  color: #9A9CB3 !important;
+}
+
+.Toastify__toast:hover {
+  transform: translateY(-2px);
+}
+
+.Toastify__progress-bar {
+  height: 3px !important;
+}
+
+@media (max-width: 480px) {
+  .Toastify__toast-container--bottom-left {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
 .fluid-hover-button {
   position: relative;
   overflow: hidden;
@@ -106,31 +162,27 @@
   transition: all 0.3s ease;
 }
 
-/* The flowing overlay element */
 .fluid-hover-button::before {
   content: "";
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  left: 100%; /* Start from right (hidden) */
-  background: var(--fluid-button-bg-from); /* The color that will flow in */
+  left: 100%;
+  background: var(--fluid-button-bg-from);
   z-index: 0;
-  transition: left var(--fluid-transition-time) cubic-bezier(0.4, 0, 0.2, 1); /* Water-like easing */
+  transition: left var(--fluid-transition-time) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* On hover, make the color flow in from right to left */
 .fluid-hover-button:hover::before {
   left: 0;
 }
 
-/* Keep content visible above the flowing background */
 .fluid-hover-button > * {
   position: relative;
   z-index: 2;
 }
 
-/* Add a subtle pulsing shadow on hover for more water-like effect */
 .fluid-hover-button:hover {
   box-shadow: 0 0 10px rgba(6, 175, 188, 0.5);
 }
@@ -160,7 +212,6 @@ body .page-container {
   }
 
   @media only screen and (min-width: 1920px) {
-    /*zoom: unset;*/
   }
 }
 
@@ -213,7 +264,6 @@ body .page-container {
     rgba(40, 116, 105, 0.6) 78%,
     rgba(31, 79, 255, 1) 110%
   );
-  /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */
 }
 
 .milestone-gradient {
@@ -224,22 +274,6 @@ body .page-container {
     rgba(0, 0, 0, 0.2) 55%,
     rgba(31, 79, 255, 1) 130%
   );
-  /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */
-}
-
-.custom-toast .Toastify__close-button {
-  color: #8a8f98;
-  opacity: 1;
-  margin-top: -5px;
-  margin-right: -5px;
-}
-
-.custom-toast .Toastify__close-button:hover {
-  color: #ffffff;
-}
-
-.custom-toast .Toastify__progress-bar {
-  height: 4px;
 }
 
 .modal-open {
