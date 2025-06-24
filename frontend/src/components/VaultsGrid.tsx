@@ -1,16 +1,21 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { 
-  VaultData, 
-  VaultAPY, 
-  VaultTotalAssets, 
-  VaultTotalAssetsinToken, 
-  UserVaultBalance 
-} from '@/types/types';
-import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
-import LoadingLogo from './LoadingLogo';
-import { useMultiChain } from '@/providers/MultiChainProvider';
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import {
+  VaultData,
+  VaultAPY,
+  VaultTotalAssets,
+  VaultTotalAssetsinToken,
+  UserVaultBalance,
+} from "@/types/types";
+import {
+  formatNumberWithSuffix,
+  getOnlyTokenSymbol,
+  formatBalance,
+  formatTokenBalance,
+} from "@/utils/utils";
+import LoadingLogo from "./LoadingLogo";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -57,119 +62,137 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const router = useRouter();
   const { walletAddress } = useMultiChain();
   const filterRef = useRef<HTMLDivElement>(null);
-  
+
   // State for filters and sorting
-  const [searchTerm, setSearchTerm] = useState('');
-  const [chainFilter, setChainFilter] = useState<string>('');
-  const [protocolFilter, setProtocolFilter] = useState<string>('');
-  const [sortBy, setSortBy] = useState<string>('apy');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [chainFilter, setChainFilter] = useState<string>("");
+  const [protocolFilter, setProtocolFilter] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("apy");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const itemsPerPage = 6;
-  
+
   // Extract unique chains and protocols for filters
   const chains = useMemo(() => {
-    return Array.from(new Set(vaults.map(vault => vault.protocol.network)));
+    return Array.from(new Set(vaults.map((vault) => vault.protocol.network)));
   }, [vaults]);
-  
+
   const protocols = useMemo(() => {
-    return Array.from(new Set(vaults.map(vault => vault.protocol.name)));
+    return Array.from(new Set(vaults.map((vault) => vault.protocol.name)));
   }, [vaults]);
-  
+
   // Filter vaults based on search, chain, and protocol
   const filteredVaults = useMemo(() => {
-    return vaults.filter(vault => {
-      const matchesSearch = searchTerm === '' || 
+    return vaults.filter((vault) => {
+      const matchesSearch =
+        searchTerm === "" ||
         vault.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vault.protocol.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vault.protocol.network.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesChain = chainFilter === '' || vault.protocol.network === chainFilter;
-      const matchesProtocol = protocolFilter === '' || vault.protocol.name === protocolFilter;
-      
+
+      const matchesChain =
+        chainFilter === "" || vault.protocol.network === chainFilter;
+      const matchesProtocol =
+        protocolFilter === "" || vault.protocol.name === protocolFilter;
+
       return matchesSearch && matchesChain && matchesProtocol;
     });
   }, [vaults, searchTerm, chainFilter, protocolFilter]);
-  
+
   // Sort vaults based on selected criteria
   const sortedVaults = useMemo(() => {
     return [...filteredVaults].sort((a, b) => {
       let aValue: any, bValue: any;
-      
+
       switch (sortBy) {
-        case 'apy':
-          aValue = Number(vaultAPYs.find((apy: VaultAPY) => apy.vaultId === a.id)?.APY7d || 0);
-          bValue = Number(vaultAPYs.find((apy: VaultAPY) => apy.vaultId === b.id)?.APY7d || 0);
+        case "apy":
+          aValue = Number(
+            vaultAPYs.find((apy: VaultAPY) => apy.vaultId === a.id)?.APY7d || 0,
+          );
+          bValue = Number(
+            vaultAPYs.find((apy: VaultAPY) => apy.vaultId === b.id)?.APY7d || 0,
+          );
           break;
-        case 'tvl':
-          aValue = Number(vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === a.id)?.totalAssets || 0);
-          bValue = Number(vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === b.id)?.totalAssets || 0);
+        case "tvl":
+          aValue = Number(
+            vaultTotalAssets.find(
+              (asset: VaultTotalAssets) => asset.vaultId === a.id,
+            )?.totalAssets || 0,
+          );
+          bValue = Number(
+            vaultTotalAssets.find(
+              (asset: VaultTotalAssets) => asset.vaultId === b.id,
+            )?.totalAssets || 0,
+          );
           break;
-        case 'risk':
+        case "risk":
           aValue = calculateRiskLevel(a);
           bValue = calculateRiskLevel(b);
           break;
         default:
           return 0;
       }
-      
-      if (sortOrder === 'asc') {
+
+      if (sortOrder === "asc") {
         return aValue > bValue ? 1 : -1;
       } else {
         return aValue < bValue ? 1 : -1;
       }
     });
   }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
-  
+
   // Pagination logic
   const paginatedVaults = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return sortedVaults.slice(startIndex, endIndex);
   }, [sortedVaults, currentPage, itemsPerPage]);
-  
+
   const totalPages = Math.ceil(sortedVaults.length / itemsPerPage);
-  
+
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, chainFilter, protocolFilter, sortBy, sortOrder]);
-  
+
   // Handle clicks outside the filter dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+      if (
+        filterRef.current &&
+        !filterRef.current.contains(event.target as Node)
+      ) {
         setShowMobileFilters(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
+
   const handleVaultClick = (vaultId: string) => {
     router.push(`/vaults/${vaultId}`);
   };
-  
+
   const toggleSortOrder = () => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
-  
+
   const clearAllFilters = () => {
-    setSearchTerm('');
-    setChainFilter('');
-    setProtocolFilter('');
-    setSortBy('apy');
-    setSortOrder('desc');
+    setSearchTerm("");
+    setChainFilter("");
+    setProtocolFilter("");
+    setSortBy("apy");
+    setSortOrder("desc");
   };
-  
+
   if (loading) {
     return <LoadingLogo />;
   }
-  
+
   return (
     <div className="w-full">
       {/* Mobile Filter Button */}
@@ -547,4 +570,4 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   );
 };
 
-export default VaultsGrid; 
+export default VaultsGrid;
