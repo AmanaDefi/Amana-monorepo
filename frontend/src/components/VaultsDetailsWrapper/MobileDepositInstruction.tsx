@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import SelectTokenIcon from "../svg/instruction/SelectTokenIcon";
 import ConfirmDepositIcon from "../svg/instruction/ConfirmDepositIcon";
 import CrossChainTransferIcon from "../svg/instruction/CrossChainTransferIcon";
@@ -9,6 +9,7 @@ import {
   Action,
 } from "@/types/types";
 import { isZetachain } from "@/utils/utils";
+import { useTransactionStore } from "@/store/transactionStore";
 
 export enum DepositStep {
   SELECT_TOKEN = 0,
@@ -178,9 +179,10 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
   activeChainId,
   vaultStrategyChainId,
   isDeposit = true,
-  currentStep,
-  isProcessing = false,
 }) => {
+  const { currentInputBalance, currentErrorMessage, isTransactionProcessing } =
+    useTransactionStore();
+
   const isUserOnZetachain = activeChainId ? isZetachain(activeChainId) : false;
   const isVaultOnZetachain = vaultStrategyChainId
     ? isZetachain(vaultStrategyChainId)
@@ -191,9 +193,42 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
     ? lastTransactionStepFeedback
     : transactionStepFeedback;
 
+  const isFirstStepActive = () => {
+    const hasValidInput =
+      currentInputBalance?.formatted &&
+      Number(currentInputBalance.formatted) > 0 &&
+      !currentErrorMessage;
+    return hasValidInput;
+  };
+
+  const isSecondStepActive = () => {
+    const hasApproveSuccess =
+      activeFeedback[Action.depositApprove]?.status ===
+        TransactionStepStatus.completed ||
+      activeFeedback[Action.depositApproveConfirmed]?.status ===
+        TransactionStepStatus.completed;
+
+    const hasDepositWithdrawSuccess =
+      activeFeedback[Action.deposit]?.status ===
+        TransactionStepStatus.completed ||
+      activeFeedback[Action.withdraw]?.status ===
+        TransactionStepStatus.completed;
+
+    if (hasApproveSuccess) {
+      return hasDepositWithdrawSuccess;
+    }
+
+    return hasDepositWithdrawSuccess;
+  };
+
   const isStaticMode =
-    !isProcessing && Object.keys(activeFeedback).length === 0;
-  const isDynamicMode = isProcessing || Object.keys(activeFeedback).length > 0;
+    !isTransactionProcessing &&
+    Object.keys(activeFeedback).length === 0 &&
+    !isFirstStepActive();
+  const isDynamicMode =
+    isTransactionProcessing ||
+    Object.keys(activeFeedback).length > 0 ||
+    isFirstStepActive();
 
   const steps = [
     DepositStep.SELECT_TOKEN,
@@ -208,7 +243,7 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
         progressPercent: 0,
         elephantPosition: 0,
         completedSteps: 0,
-        currentStepIndex: 0,
+        currentStepIndex: DepositStep.SELECT_TOKEN,
         currentStepDescription: getStepDescription(
           DepositStep.SELECT_TOKEN,
           isDeposit,
@@ -220,12 +255,28 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
     let currentStepDescription = "";
 
     steps.forEach((step, index) => {
-      if (
-        step === DepositStep.SELECT_TOKEN &&
-        Object.keys(activeFeedback).length > 0
-      ) {
-        completedSteps = Math.max(completedSteps, 1);
-      } else if (step !== DepositStep.SELECT_TOKEN) {
+      if (step === DepositStep.SELECT_TOKEN) {
+        if (isFirstStepActive()) {
+          completedSteps = Math.max(completedSteps, 1);
+        }
+      } else if (step === DepositStep.CONFIRM_DEPOSIT) {
+        if (isSecondStepActive()) {
+          completedSteps = Math.max(completedSteps, 2);
+        } else {
+          const stepStatus = getUserStepStatus(
+            step,
+            activeFeedback,
+            isType2Transaction,
+            isDeposit,
+          );
+          if (
+            stepStatus.status === TransactionStepStatus.processing &&
+            processingStep === -1
+          ) {
+            processingStep = index;
+          }
+        }
+      } else {
         const stepStatus = getUserStepStatus(
           step,
           activeFeedback,
@@ -240,7 +291,6 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
           processingStep === -1
         ) {
           processingStep = index;
-          currentStepDescription = stepStatus.description;
         }
       }
     });
@@ -248,6 +298,8 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
     let currentStepIndex = completedSteps;
     if (processingStep > -1) {
       currentStepIndex = processingStep;
+    } else if (isFirstStepActive() && completedSteps === 0) {
+      currentStepIndex = DepositStep.SELECT_TOKEN;
     }
 
     if (!currentStepDescription) {
@@ -285,15 +337,23 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
   let showLoader = false;
 
   if (isDynamicMode && currentStepIndex < steps.length) {
-    const stepStatus = getUserStepStatus(
-      steps[currentStepIndex],
-      activeFeedback,
-      isType2Transaction,
-      isDeposit,
-    );
-
-    currentStepStatus = stepStatus.status;
-    showLoader = currentStepStatus === TransactionStepStatus.processing;
+    if (
+      currentStepIndex === DepositStep.SELECT_TOKEN &&
+      isFirstStepActive() &&
+      Object.keys(activeFeedback).length === 0
+    ) {
+      currentStepStatus = TransactionStepStatus.processing;
+      showLoader = false;
+    } else {
+      const stepStatus = getUserStepStatus(
+        steps[currentStepIndex],
+        activeFeedback,
+        isType2Transaction,
+        isDeposit,
+      );
+      currentStepStatus = stepStatus.status;
+      showLoader = currentStepStatus === TransactionStepStatus.processing;
+    }
   }
 
   return (
@@ -302,7 +362,7 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
         <h3 className="text-base font-bold text-white mb-2">
           {isDeposit ? "Deposit" : "Withdraw"} flow
         </h3>
-        <p className="text-sm">
+        <p className="text-sm text-gray-400">
           {completedSteps} out of {steps.length} steps completed
         </p>
       </div>
@@ -351,7 +411,11 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
                 ? "#1B46E0"
                 : currentStepStatus === TransactionStepStatus.error
                   ? "#DC2626"
-                  : "#535E73",
+                  : isFirstStepActive() &&
+                      currentStepIndex === DepositStep.SELECT_TOKEN &&
+                      Object.keys(activeFeedback).length === 0
+                    ? "#1B46E0"
+                    : "#535E73",
           }}
         >
           {currentStepIndex < steps.length &&

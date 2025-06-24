@@ -2,14 +2,14 @@ import ConfirmDepositIcon from "@/components/svg/instruction/ConfirmDepositIcon"
 import CrossChainTransferIcon from "@/components/svg/instruction/CrossChainTransferIcon";
 import SelectTokenIcon from "@/components/svg/instruction/SelectTokenIcon";
 import FinalConfirmationIcon from "@/components/svg/instruction/FinalConfirmationIcon";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   Action,
   TransactionStepMessages,
   TransactionStepStatus,
 } from "@/types/types";
 import { isZetachain } from "@/utils/utils";
-
+import { useTransactionStore } from "@/store/transactionStore";
 
 export enum DepositStep {
   SELECT_TOKEN = 0,
@@ -22,11 +22,9 @@ interface DepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
   lastTransactionStepFeedback?: TransactionStepMessages;
   finishedTransaction?: boolean;
-
   activeChainId?: number;
   vaultStrategyChainId?: number;
   isDeposit?: boolean;
-
   currentStep?: DepositStep;
   isProcessing?: boolean;
 }
@@ -184,6 +182,35 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
   currentStep,
   isProcessing = false,
 }) => {
+  const {
+    isTransactionProcessing,
+    currentInputBalance,
+    currentErrorMessage,
+    crosschainInvestHash,
+  } = useTransactionStore();
+
+  const isInvestWithdrawButtonActive = useMemo(() => {
+    if (finishedTransaction) return false;
+
+    const isDisabledByProcessing = isTransactionProcessing;
+    const isDisabledByHash =
+      crosschainInvestHash?.length > 0 && !finishedTransaction;
+    const isDisabledByValidation =
+      !currentInputBalance?.formatted ||
+      Number(currentInputBalance.formatted) <= 0 ||
+      !!currentErrorMessage;
+
+    const isDisabled =
+      isDisabledByProcessing || isDisabledByHash || isDisabledByValidation;
+
+    return !isDisabled;
+  }, [
+    finishedTransaction,
+    isTransactionProcessing,
+    crosschainInvestHash,
+    currentInputBalance,
+    currentErrorMessage,
+  ]);
   const isUserOnZetachain = activeChainId ? isZetachain(activeChainId) : false;
   const isVaultOnZetachain = vaultStrategyChainId
     ? isZetachain(vaultStrategyChainId)
@@ -194,9 +221,43 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
     ? lastTransactionStepFeedback
     : transactionStepFeedback;
 
+  const isFirstStepActive = () => {
+    const hasValidInput =
+      currentInputBalance?.formatted &&
+      Number(currentInputBalance.formatted) > 0 &&
+      !currentErrorMessage;
+
+    return hasValidInput;
+  };
+
   const isStaticMode =
-    !isProcessing && Object.keys(activeFeedback).length === 0;
-  const isDynamicMode = isProcessing || Object.keys(activeFeedback).length > 0;
+    !isProcessing &&
+    Object.keys(activeFeedback).length === 0 &&
+    !isFirstStepActive();
+  const isDynamicMode =
+    isProcessing ||
+    Object.keys(activeFeedback).length > 0 ||
+    isFirstStepActive();
+
+  const isSecondStepActive = () => {
+    const hasApproveSuccess =
+      activeFeedback[Action.depositApprove]?.status ===
+        TransactionStepStatus.completed ||
+      activeFeedback[Action.depositApproveConfirmed]?.status ===
+        TransactionStepStatus.completed;
+
+    const hasDepositWithdrawSuccess =
+      activeFeedback[Action.deposit]?.status ===
+        TransactionStepStatus.completed ||
+      activeFeedback[Action.withdraw]?.status ===
+        TransactionStepStatus.completed;
+
+    if (hasApproveSuccess) {
+      return hasDepositWithdrawSuccess;
+    }
+
+    return hasDepositWithdrawSuccess;
+  };
 
   const steps = [
     DepositStep.SELECT_TOKEN,
@@ -204,6 +265,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
     DepositStep.CROSS_CHAIN_TRANSFER,
     DepositStep.FINAL_CONFIRMATION,
   ];
+
   const calculateProgress = () => {
     if (isStaticMode) return { progressPercent: 0, elephantPosition: 0 };
 
@@ -211,12 +273,28 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
     let processingStep = -1;
 
     steps.forEach((step, index) => {
-      if (
-        step === DepositStep.SELECT_TOKEN &&
-        Object.keys(activeFeedback).length > 0
-      ) {
-        completedSteps = Math.max(completedSteps, 1);
-      } else if (step !== DepositStep.SELECT_TOKEN) {
+      if (step === DepositStep.SELECT_TOKEN) {
+        if (isFirstStepActive()) {
+          completedSteps = Math.max(completedSteps, 1);
+        }
+      } else if (step === DepositStep.CONFIRM_DEPOSIT) {
+        if (isSecondStepActive()) {
+          completedSteps = Math.max(completedSteps, 2);
+        } else {
+          const stepStatus = getUserStepStatus(
+            step,
+            activeFeedback,
+            isType2Transaction,
+            isDeposit,
+          );
+          if (
+            stepStatus.status === TransactionStepStatus.processing &&
+            processingStep === -1
+          ) {
+            processingStep = index;
+          }
+        }
+      } else {
         const stepStatus = getUserStepStatus(
           step,
           activeFeedback,
@@ -274,12 +352,29 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           let bgColor = "#535E73";
           let showLoader = false;
 
-          if (
-            step === DepositStep.SELECT_TOKEN &&
-            Object.keys(activeFeedback).length > 0
-          ) {
-            bgColor = "#1B46E0";
-          } else if (step !== DepositStep.SELECT_TOKEN) {
+          if (step === DepositStep.SELECT_TOKEN) {
+            if (isFirstStepActive()) {
+              bgColor = "#1B46E0";
+            }
+          } else if (step === DepositStep.CONFIRM_DEPOSIT) {
+            if (isSecondStepActive()) {
+              bgColor = "#1B46E0";
+            } else {
+              stepStatus = getUserStepStatus(
+                step,
+                activeFeedback,
+                isType2Transaction,
+                isDeposit,
+              );
+
+              if (stepStatus.status === TransactionStepStatus.processing) {
+                bgColor = "#535E73";
+                showLoader = true;
+              } else if (stepStatus.status === TransactionStepStatus.error) {
+                bgColor = "#DC2626";
+              }
+            }
+          } else {
             stepStatus = getUserStepStatus(
               step,
               activeFeedback,
@@ -313,7 +408,8 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
               </div>
 
               <p className="text-[18px] font-bold tracking-[-0.06em] text-white">
-                {step === DepositStep.SELECT_TOKEN
+                {step === DepositStep.SELECT_TOKEN ||
+                step === DepositStep.CONFIRM_DEPOSIT
                   ? getStepDescription(step, isDeposit)
                   : stepStatus?.description ||
                     getStepDescription(step, isDeposit)}
