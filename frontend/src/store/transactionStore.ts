@@ -23,6 +23,9 @@ interface TransactionState {
   setCurrentInputBalance: (balance?: Balance) => void;
   setCurrentErrorMessage: (error: string) => void;
   setCrosschainInvestHash: (hash: string) => void;
+
+  isButtonDisabled: boolean;
+  setIsButtonDisabled: (disabled: boolean) => void;
 }
 
 export const useTransactionStore = create<TransactionState>((set) => ({
@@ -47,4 +50,7 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   setCurrentErrorMessage: (currentErrorMessage) => set({ currentErrorMessage }),
   setCrosschainInvestHash: (crosschainInvestHash) =>
     set({ crosschainInvestHash }),
+
+  isButtonDisabled: true,
+  setIsButtonDisabled: (disabled) => set({ isButtonDisabled: disabled }),
 }));

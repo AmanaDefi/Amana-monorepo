@@ -160,8 +160,12 @@ export const useInstructionStepLogic = ({
   isDeposit = true,
   isProcessing: propIsProcessing = false,
 }: UseInstructionStepLogicProps) => {
-  const { currentInputBalance, currentErrorMessage, isTransactionProcessing } =
-    useTransactionStore();
+  const {
+    currentInputBalance,
+    currentErrorMessage,
+    isTransactionProcessing,
+    isButtonDisabled,
+  } = useTransactionStore();
 
   const isUserOnZetachain = activeChainId ? isZetachain(activeChainId) : false;
   const isVaultOnZetachain = vaultStrategyChainId
@@ -178,8 +182,9 @@ export const useInstructionStepLogic = ({
       currentInputBalance?.formatted &&
       Number(currentInputBalance.formatted) > 0 &&
       !currentErrorMessage;
-    return hasValidInput;
-  }, [currentInputBalance, currentErrorMessage]);
+
+    return hasValidInput && !isButtonDisabled;
+  }, [currentInputBalance, currentErrorMessage, isButtonDisabled]);
 
   const isSecondStepActive = useMemo(() => {
     const hasApproveSuccess =
