@@ -10,6 +10,7 @@ interface VaultInformationContentProps {
   walletAddress?: string;
   selectedToken?: Token;
   selectedChain?: any;
+  type: "information" | "deposit-flow";
 }
 
 const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
@@ -19,12 +20,13 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
   walletAddress,
   selectedToken,
   selectedChain,
+  type,
 }) => {
-  if (walletAddress) {
+  if (type === "deposit-flow") {
     const sourceToken =
-      selectedToken && selectedChain
+      walletAddress && selectedToken && selectedChain
         ? `${selectedToken.symbol}.${selectedChain.name || "Unknown"}`
-        : selectedToken
+        : walletAddress && selectedToken
           ? selectedToken.symbol
           : "your selected token";
 

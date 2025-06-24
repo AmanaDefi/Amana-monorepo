@@ -145,7 +145,7 @@ const getStepDescription = (
 
   switch (step) {
     case DepositStep.SELECT_TOKEN:
-      return `Select the token ${operationType === "deposit" ? "you want to deposit" : "and amount to withdraw "}`;
+      return `Select the token ${operationType === "deposit" ? "and amount you want to deposit" : "and amount to withdraw "}`;
     case DepositStep.CONFIRM_DEPOSIT:
       return `Confirm ${operationType}`;
     case DepositStep.CROSS_CHAIN_TRANSFER:

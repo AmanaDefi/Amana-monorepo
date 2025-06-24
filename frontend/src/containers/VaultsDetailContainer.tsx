@@ -11,8 +11,6 @@ import {
   Token,
   Balance,
   Tabs,
-  TransactionStepMessages,
-  TransactionStepStatus,
 } from "@/types/types";
 import { VAULT_DATA } from "@/constants";
 import {
@@ -317,12 +315,6 @@ const VaultsDetailContainer: React.FC<{
 
   const isWithdraw = !isDeposit;
 
-  const informationDropdownTitle = walletAddress
-    ? isWithdraw
-      ? "Your Investment"
-      : "What happened with my Deposit?"
-    : "Information";
-
   const shouldShowDepositComplete =
     finishedTransaction &&
     isDeposit &&
@@ -427,19 +419,19 @@ const VaultsDetailContainer: React.FC<{
         onDepositDataUpdate={handleDepositDataUpdate}
         isDeposit={isDeposit}
       />
-      {walletAddress && (
-        <div className="block md:hidden mt-4">
-          <MobileDepositInstruction
-            transactionStepFeedback={transactionStepFeedback}
-            lastTransactionStepFeedback={lastTransactionStepFeedback}
-            finishedTransaction={finishedTransaction}
-            activeChainId={activeChain?.id}
-            vaultStrategyChainId={vaultData?.protocol?.chainId}
-            isDeposit={isDeposit}
-            isProcessing={isTransactionProcessing}
-          />
-        </div>
-      )}
+
+      <div className="block md:hidden mt-4">
+        <MobileDepositInstruction
+          transactionStepFeedback={transactionStepFeedback}
+          lastTransactionStepFeedback={lastTransactionStepFeedback}
+          finishedTransaction={finishedTransaction}
+          activeChainId={activeChain?.id}
+          vaultStrategyChainId={vaultData?.protocol?.chainId}
+          isDeposit={isDeposit}
+          isProcessing={isTransactionProcessing}
+        />
+      </div>
+
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-[56px] font-gotham">
         <div>
           {shouldShowDepositComplete ? (
@@ -484,7 +476,7 @@ const VaultsDetailContainer: React.FC<{
 
               {walletAddress && isWithdraw && <WithdrawalNotice />}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[526px] 2xl:min-w-[707px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[426px] 2xl:min-w-[707px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}
@@ -505,15 +497,28 @@ const VaultsDetailContainer: React.FC<{
           )}
         </div>
 
-        <div className="hidden md:flex flex-col w-full xl:max-w-[576px] 2xl:min-w-[674px] mt-8 md:mt-0 space-y-4 font-gotham">
-          {isWithdraw && walletAddress ? (
+        <div className="hidden md:flex flex-col w-full xl:max-w-[576px] 2xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
+          {isWithdraw && walletAddress && (
             <YourInvestment
               depositAmount={depositData.amount}
               vaultTokenSymbol={depositData.symbol}
               depositUSDValue={depositData.usdValue}
             />
-          ) : (
-            <Dropdown title={informationDropdownTitle} defaultOpen={true}>
+          )}
+          <Dropdown title="Information" defaultOpen={true}>
+            <VaultInformationContent
+              vaultData={vaultData}
+              vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+              strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+              walletAddress={walletAddress || undefined}
+              selectedToken={selectedToken}
+              selectedChain={activeChain}
+              type="information"
+            />
+          </Dropdown>
+
+          {isDeposit && (
+            <Dropdown title="What happens to my deposit?" defaultOpen={true}>
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}
@@ -521,32 +526,30 @@ const VaultsDetailContainer: React.FC<{
                 walletAddress={walletAddress || undefined}
                 selectedToken={selectedToken}
                 selectedChain={activeChain}
+                type="deposit-flow"
               />
             </Dropdown>
           )}
-
-          {walletAddress && (
-            <Dropdown
-              title={
-                isProcessingTx
-                  ? "Transaction Progress"
-                  : isWithdraw
-                    ? "Withdraw instruction"
-                    : "Deposit instruction"
-              }
-              defaultOpen={true}
-            >
-              <DepositInstruction
-                transactionStepFeedback={transactionStepFeedback}
-                lastTransactionStepFeedback={lastTransactionStepFeedback}
-                finishedTransaction={finishedTransaction}
-                activeChainId={activeChain?.id}
-                vaultStrategyChainId={vaultData?.protocol?.chainId}
-                isDeposit={isDeposit}
-                isProcessing={isTransactionProcessing}
-              />
-            </Dropdown>
-          )}
+          <Dropdown
+            title={
+              isProcessingTx
+                ? "Transaction Progress"
+                : isWithdraw
+                  ? "Withdraw flow"
+                  : "Deposit flow"
+            }
+            defaultOpen={true}
+          >
+            <DepositInstruction
+              transactionStepFeedback={transactionStepFeedback}
+              lastTransactionStepFeedback={lastTransactionStepFeedback}
+              finishedTransaction={finishedTransaction}
+              activeChainId={activeChain?.id}
+              vaultStrategyChainId={vaultData?.protocol?.chainId}
+              isDeposit={isDeposit}
+              isProcessing={isTransactionProcessing}
+            />
+          </Dropdown>
         </div>
       </section>
     </div>
