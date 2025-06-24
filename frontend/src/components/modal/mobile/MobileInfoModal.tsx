@@ -3,7 +3,6 @@ import { VaultData, Token } from "@/types/types";
 import { Chain } from "viem";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
-import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import { useAuthStore } from "@/store/authStore";
@@ -66,12 +65,6 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
     };
   }, [isOpen, closeAll]);
 
-  const informationDropdownTitle = walletAddress
-    ? isWithdraw
-      ? "Your Investment"
-      : "What happened with my Deposit?"
-    : "Information";
-
   return (
     <div
       className={`z-50 py-6 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
@@ -98,14 +91,19 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
         </div>
 
         <div className="flex-1 space-y-4">
-          {isWithdraw && walletAddress ? (
-            <YourInvestment
-              depositAmount={depositData.amount}
-              vaultTokenSymbol={depositData.symbol}
-              depositUSDValue={depositData.usdValue}
+          <Dropdown title="Information" defaultOpen={true}>
+            <VaultInformationContent
+              vaultData={vaultData}
+              vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+              strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+              walletAddress={walletAddress}
+              selectedToken={selectedToken}
+              selectedChain={selectedChain}
+              type="information"
             />
-          ) : (
-            <Dropdown title={informationDropdownTitle} defaultOpen={true}>
+          </Dropdown>
+          {!isWithdraw && (
+            <Dropdown title="What happens to my deposit?" defaultOpen={true}>
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}
@@ -113,11 +111,12 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
                 walletAddress={walletAddress}
                 selectedToken={selectedToken}
                 selectedChain={selectedChain}
+                type="deposit-flow"
               />
             </Dropdown>
           )}
         </div>
-              <Footer isConnected={false} />
+        <Footer isConnected={false} />
       </div>
     </div>
   );

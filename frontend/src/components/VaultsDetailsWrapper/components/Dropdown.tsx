@@ -40,10 +40,10 @@ const Dropdown: FC<Props> = ({ title, defaultOpen = false, children }) => {
         className={`
           md:hidden
           overflow-hidden transition-all duration-300 ease-in-out 
-          ${isOpen ? "max-h-screen opacity-100 mt-4" : "max-h-0 opacity-0"}
+          ${isOpen ? "max-h-[300px] opacity-100 mt-4" : "max-h-0 opacity-0"}
         `}
       >
-        <div className="bg-transparent min-h-[180px] rounded-none p-0 md:p-4 max-h-[60vh] overflow-y-auto">
+        <div className="bg-transparent min-h-[180px] rounded-none p-0 md:p-4 max-h-[300px] overflow-y-auto">
           {children}
         </div>
       </div>

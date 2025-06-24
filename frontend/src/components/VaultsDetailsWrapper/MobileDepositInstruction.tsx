@@ -142,7 +142,7 @@ const getStepDescription = (
 
   switch (step) {
     case DepositStep.SELECT_TOKEN:
-      return `Select the token ${operationType === "deposit" ? "you want to deposit" : "and amount to withdraw "}`;
+      return `Select the token ${operationType === "deposit" ? "and amount you want to deposit" : "and amount to withdraw "}`;
     case DepositStep.CONFIRM_DEPOSIT:
       return `Confirm ${operationType}`;
     case DepositStep.CROSS_CHAIN_TRANSFER:
@@ -300,7 +300,7 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
     <div className="flex flex-col gap-[20px] bg-[#14171F] py-4 px-[14px] rounded-lg">
       <div>
         <h3 className="text-base font-bold text-white mb-2">
-          {isDeposit ? "Deposit" : "Withdraw"} Instruction
+          {isDeposit ? "Deposit" : "Withdraw"} flow
         </h3>
         <p className="text-sm">
           {completedSteps} out of {steps.length} steps completed
@@ -341,7 +341,6 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = ({
           />
         </div>
       </div>
-
 
       <div className="flex flex-row gap-2 items-center">
         <div
