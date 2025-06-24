@@ -177,7 +177,7 @@ export const executeBitcoinDeposit = async ({
   try {
     console.log("🟠 Executing Bitcoin Deposit to Amana Vault");
     
-    // 1. Calculate minimum shares out (same logic as your existing deposits)
+    // 1. Calculate minimum shares out (same logic as our existing deposits)
     const { minSharesOut } = await getPathDataAndMinSharesOut(
       vaultData,
       inputToken,
