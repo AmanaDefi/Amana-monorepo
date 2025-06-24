@@ -3,10 +3,11 @@ pragma solidity ^0.8.0;
 
 contract DistributionManagerV2 {
     struct Distribution {
-        uint32 chainId;
+        uint32 chainId; // maybe use a token here rather? like USDC.ETH or USDC.BSC
         string protocolName;
         address inputTokenAddress;
         uint256 totalAmount;
+        uint16 allocation; // in basis points, 10000 = 100%
     }
 
     Distribution[] private distributionList;
