@@ -1148,10 +1148,10 @@ export const PROTOCOL_FILTER_OPTIONS = [
     value: "Aave",
     icon: TOKEN_LOGO_URLS.AAVE,
   },
-  {
-    value: "Balancer",
-    icon: TOKEN_LOGO_URLS.BALANCER,
-  },
+  // {
+  //   value: "Balancer",
+  //   icon: TOKEN_LOGO_URLS.BALANCER,
+  // },
   {
     value: "Compound",
     icon: TOKEN_LOGO_URLS.COMPOUND,
