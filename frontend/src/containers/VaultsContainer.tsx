@@ -14,6 +14,8 @@ interface VaultsContainerProps {
 
 const VaultsContainer: React.FC<VaultsContainerProps> = () => {
 
+  let isSearchError: boolean | undefined = false;
+
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('tvl');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -72,31 +74,7 @@ const VaultsContainer: React.FC<VaultsContainerProps> = () => {
     }
   };
 
-  if (hasError) {
-    const isSearchError = error?.message?.includes('Search') || error?.message?.includes('timeout');
 
-    return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <h2 className="text-xl font-semibold mb-4">
-          {isSearchError ? 'Search Error' : 'Unable to load vaults'}
-        </h2>
-        <p className="text-gray-600 mb-4">
-          {isSearchError
-            ? 'The search request timed out or failed. Please try a different search term or try again later.'
-            : 'There was an error loading vault data. Please try again later.'
-          }
-        </p>
-        {isSearchError && (
-          <button
-            onClick={() => setSearchTerm('')}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Clear Search
-          </button>
-        )}
-      </div>
-    );
-  }
 
   const isSearching = searchTerm !== debouncedSearchTerm && searchTerm.length > 0;
 
@@ -108,58 +86,77 @@ const VaultsContainer: React.FC<VaultsContainerProps> = () => {
     (vaults.length === 0 && !hasError) ||
     isSearching));
 
-  if (isSearchTermTooLong) {
+  if (hasError) {
+    isSearchError = error?.message?.includes('Search') || error?.message?.includes('timeout');
+  }
+
+  const ErrorBlock = () => {
     return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <h2 className="text-xl font-semibold mb-4 text-orange-600">Search Term Too Long</h2>
-        <p className="text-gray-600 mb-4">
-          Search term cannot exceed 100 characters. Please shorten your search query.
-        </p>
-        <p className="text-sm text-gray-500 mb-4">
-          Current length: {searchTerm.length} characters
-        </p>
-        <button
-          onClick={() => setSearchTerm('')}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Clear Search
-        </button>
-      </div>
-    );
+      <>
+        {isSearchTermTooLong &&
+          <div className="flex flex-col items-center justify-center p-8">
+            <h2 className="text-xl font-semibold mb-4 text-orange-600">Search Term Too Long</h2>
+            <p className="text-gray-600 mb-4">
+              Search term cannot exceed 100 characters. Please shorten your search query.
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Current length: {searchTerm.length} characters
+            </p>
+          </div>
+        }
+
+        {
+          hasError &&
+          <div className="flex flex-col items-center justify-center p-8">
+            <h2 className="text-xl font-semibold mb-4">
+              {isSearchError ? 'Search Error' : 'Unable to load vaults'}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {isSearchError
+                ? 'The search request timed out or failed. Please try a different search term or try again later.'
+                : 'There was an error loading vault data. Please try again later.'
+              }
+            </p>
+          </div>
+        }
+      </>
+    )
   }
 
   return (
-    <VaultsGrid
-      loading={shouldShowLoading}
-      vaults={timedOut && vaults.length === 0 && debouncedSearchTerm.length > 0 ? [] : vaults}
-      vaultAPYs={vaultAPYs}
-      userVaultBalances={userVaultBalances}
-      vaultTotalAssets={vaultTotalAssets}
-      // Pagination
-      currentPage={currentPage}
-      totalPages={totalPages}
-      totalCount={totalCount}
-      pageSize={itemsPerPage}
-      hasNextPage={hasNextPage}
-      hasPrevPage={hasPrevPage}
-      onPageChange={handlePageChange}
-      // Sorting
-      sortBy={sortBy}
-      sortOrder={sortOrder}
-      onSortChange={handleSortChange}
-      // Search
-      searchTerm={searchTerm}
-      onSearchChange={handleSearchChange}
-      hasSearchTerm={!!hasSearchTerm}
-      // Network filter
-      chainFilter={chainFilter}
-      onChainFilterChange={setChainFilter}
-      hasNetworkFilter={!!hasNetworkFilter}
-      // Protocol filter
-      protocolFilter={protocolFilter}
-      onProtocolFilterChange={setProtocolFilter}
-      hasProtocolFilter={!!protocolFilter}
-    />
+    <>
+      <VaultsGrid
+        loading={shouldShowLoading}
+        vaults={timedOut && vaults.length === 0 && debouncedSearchTerm.length > 0 ? [] : vaults}
+        vaultAPYs={vaultAPYs}
+        userVaultBalances={userVaultBalances}
+        vaultTotalAssets={vaultTotalAssets}
+        // Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={itemsPerPage}
+        hasNextPage={hasNextPage}
+        hasPrevPage={hasPrevPage}
+        onPageChange={handlePageChange}
+        // Sorting
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
+        // Search
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        hasSearchTerm={!!hasSearchTerm}
+        // Network filter
+        chainFilter={chainFilter}
+        onChainFilterChange={setChainFilter}
+        hasNetworkFilter={!!hasNetworkFilter}
+        // Protocol filter
+        protocolFilter={protocolFilter}
+        onProtocolFilterChange={setProtocolFilter}
+        hasProtocolFilter={!!protocolFilter}
+      />
+    </>
   );
 };
 
