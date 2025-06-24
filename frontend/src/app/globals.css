@@ -118,20 +118,7 @@
   font-family: var(--font-inter), sans-serif !important;
 }
 
-.Toastify__toast--success {
-  border-left: 3px solid #3E73C4 !important;
-}
-
-.Toastify__toast--error {
-  border-left: 3px solid #535E73 !important;
-}
-
-.Toastify__toast--warning {
-  border-left: 3px solid #9A9CB3 !important;
-}
-
 .Toastify__toast--info {
-  border-left: 3px solid #1B46E0 !important;
   color: #9A9CB3 !important;
 }
 
