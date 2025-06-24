@@ -1,22 +1,21 @@
-import ConfirmDepositIcon from "@/components/svg/instruction/ConfirmDepositIcon";
-import CrossChainTransferIcon from "@/components/svg/instruction/CrossChainTransferIcon";
-import SelectTokenIcon from "@/components/svg/instruction/SelectTokenIcon";
-import FinalConfirmationIcon from "@/components/svg/instruction/FinalConfirmationIcon";
-import React, { useMemo, useState } from "react";
+import React from "react";
 import {
-  Action,
   TransactionStepMessages,
   TransactionStepStatus,
+  Action,
 } from "@/types/types";
-import { isZetachain } from "@/utils/utils";
-import { useTransactionStore } from "@/store/transactionStore";
 
-export enum DepositStep {
-  SELECT_TOKEN = 0,
-  CONFIRM_DEPOSIT = 1,
-  CROSS_CHAIN_TRANSFER = 2,
-  FINAL_CONFIRMATION = 3,
-}
+import SelectTokenIcon from "@/components/svg/instruction/SelectTokenIcon";
+import ConfirmDepositIcon from "@/components/svg/instruction/ConfirmDepositIcon";
+import CrossChainTransferIcon from "@/components/svg/instruction/CrossChainTransferIcon";
+import FinalConfirmationIcon from "@/components/svg/instruction/FinalConfirmationIcon";
+import {
+  DepositStep,
+  useInstructionStepLogic,
+} from "@/hooks/useInstructionStepLogic";
+import { MoonLoader } from "react-spinners";
+import Link from "next/link";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 
 interface DepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -28,132 +27,6 @@ interface DepositInstructionProps {
   currentStep?: DepositStep;
   isProcessing?: boolean;
 }
-
-const mapActionToUserStep = (
-  action: Action,
-  isType2Transaction: boolean,
-  isDeposit: boolean,
-): DepositStep | null => {
-  if (isDeposit) {
-    if (isType2Transaction) {
-      switch (action) {
-        case Action.deposit:
-          return DepositStep.CONFIRM_DEPOSIT;
-        case Action.crosschainInvest:
-          return DepositStep.CROSS_CHAIN_TRANSFER;
-        case Action.deposited:
-          return DepositStep.FINAL_CONFIRMATION;
-        default:
-          return null;
-      }
-    } else {
-      switch (action) {
-        case Action.deposit:
-        case Action.depositConfirmed:
-          return DepositStep.CONFIRM_DEPOSIT;
-        case Action.crosschainInvest:
-        case Action.FundsInvest:
-          return DepositStep.CROSS_CHAIN_TRANSFER;
-        case Action.deposited:
-          return DepositStep.FINAL_CONFIRMATION;
-        default:
-          return null;
-      }
-    }
-  } else {
-    if (isType2Transaction) {
-      switch (action) {
-        case Action.withdraw:
-          return DepositStep.CONFIRM_DEPOSIT;
-        case Action.DivestSent:
-          return DepositStep.CROSS_CHAIN_TRANSFER;
-        case Action.withdrew:
-          return DepositStep.FINAL_CONFIRMATION;
-        default:
-          return null;
-      }
-    } else {
-      switch (action) {
-        case Action.withdraw:
-        case Action.withdrawconfirmed:
-          return DepositStep.CONFIRM_DEPOSIT;
-        case Action.DivestSent:
-        case Action.FundsDivested:
-        case Action.ReturnFundsToUserSent:
-          return DepositStep.CROSS_CHAIN_TRANSFER;
-        case Action.withdrew:
-          return DepositStep.FINAL_CONFIRMATION;
-        default:
-          return null;
-      }
-    }
-  }
-};
-
-const getUserStepStatus = (
-  step: DepositStep,
-  feedback: TransactionStepMessages,
-  isType2Transaction: boolean,
-  isDeposit: boolean = true,
-): {
-  status: TransactionStepStatus;
-  description: string;
-  txHash?: string;
-  isWaitingTooLong?: boolean;
-} => {
-  const relevantActions: Action[] = [];
-
-  for (const actionKey in Action) {
-    const action = Action[actionKey as keyof typeof Action];
-    if (mapActionToUserStep(action, isType2Transaction, isDeposit) === step) {
-      relevantActions.push(action);
-    }
-  }
-
-  let latestStatus = TransactionStepStatus.pending;
-  let description = getStepDescription(step, isDeposit);
-  let txHash: string | undefined;
-  let isWaitingTooLong = false;
-
-  for (const action of relevantActions) {
-    const actionFeedback = feedback[action];
-    if (actionFeedback) {
-      latestStatus = actionFeedback.status;
-      description = actionFeedback.description || description;
-      txHash = actionFeedback.txHash || txHash;
-      isWaitingTooLong = actionFeedback.isWaitingTooLong || isWaitingTooLong;
-
-      if (
-        latestStatus === TransactionStepStatus.processing ||
-        latestStatus === TransactionStepStatus.completed
-      ) {
-        break;
-      }
-    }
-  }
-
-  return { status: latestStatus, description, txHash, isWaitingTooLong };
-};
-
-const getStepDescription = (
-  step: DepositStep,
-  isDeposit: boolean = true,
-): string => {
-  const operationType = isDeposit ? "deposit" : "withdrawal";
-
-  switch (step) {
-    case DepositStep.SELECT_TOKEN:
-      return `Select the token ${operationType === "deposit" ? "and amount you want to deposit" : "and amount to withdraw "}`;
-    case DepositStep.CONFIRM_DEPOSIT:
-      return `Confirm ${operationType}`;
-    case DepositStep.CROSS_CHAIN_TRANSFER:
-      return `Cross-chain transfer ${operationType === "deposit" ? " and investment of funds" : "(if needed)"}`;
-    case DepositStep.FINAL_CONFIRMATION:
-      return `${operationType === "deposit" ? "Final confirmation and issue of shares" : "Funds arrive in your wallet"}`;
-    default:
-      return `${operationType} step`;
-  }
-};
 
 const getStepIcon = (step: DepositStep): React.ReactNode => {
   const iconProps = { width: 20, height: 20 };
@@ -172,161 +45,22 @@ const getStepIcon = (step: DepositStep): React.ReactNode => {
   }
 };
 
-const DepositInstruction: React.FC<DepositInstructionProps> = ({
-  transactionStepFeedback = {},
-  lastTransactionStepFeedback = {},
-  finishedTransaction = false,
-  activeChainId,
-  vaultStrategyChainId,
-  isDeposit = true,
-  currentStep,
-  isProcessing = false,
-}) => {
+const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
+  const { isDeposit = true } = props;
+
   const {
-    isTransactionProcessing,
-    currentInputBalance,
-    currentErrorMessage,
-    crosschainInvestHash,
-  } = useTransactionStore();
-
-  const isInvestWithdrawButtonActive = useMemo(() => {
-    if (finishedTransaction) return false;
-
-    const isDisabledByProcessing = isTransactionProcessing;
-    const isDisabledByHash =
-      crosschainInvestHash?.length > 0 && !finishedTransaction;
-    const isDisabledByValidation =
-      !currentInputBalance?.formatted ||
-      Number(currentInputBalance.formatted) <= 0 ||
-      !!currentErrorMessage;
-
-    const isDisabled =
-      isDisabledByProcessing || isDisabledByHash || isDisabledByValidation;
-
-    return !isDisabled;
-  }, [
-    finishedTransaction,
-    isTransactionProcessing,
-    crosschainInvestHash,
-    currentInputBalance,
-    currentErrorMessage,
-  ]);
-  const isUserOnZetachain = activeChainId ? isZetachain(activeChainId) : false;
-  const isVaultOnZetachain = vaultStrategyChainId
-    ? isZetachain(vaultStrategyChainId)
-    : false;
-  const isType2Transaction = isUserOnZetachain && !isVaultOnZetachain;
-
-  const activeFeedback = finishedTransaction
-    ? lastTransactionStepFeedback
-    : transactionStepFeedback;
-
-  const isFirstStepActive = () => {
-    const hasValidInput =
-      currentInputBalance?.formatted &&
-      Number(currentInputBalance.formatted) > 0 &&
-      !currentErrorMessage;
-
-    return hasValidInput;
-  };
-
-  const isStaticMode =
-    !isProcessing &&
-    Object.keys(activeFeedback).length === 0 &&
-    !isFirstStepActive();
-  const isDynamicMode =
-    isProcessing ||
-    Object.keys(activeFeedback).length > 0 ||
-    isFirstStepActive();
-
-  const isSecondStepActive = () => {
-    const hasApproveSuccess =
-      activeFeedback[Action.depositApprove]?.status ===
-        TransactionStepStatus.completed ||
-      activeFeedback[Action.depositApproveConfirmed]?.status ===
-        TransactionStepStatus.completed;
-
-    const hasDepositWithdrawSuccess =
-      activeFeedback[Action.deposit]?.status ===
-        TransactionStepStatus.completed ||
-      activeFeedback[Action.withdraw]?.status ===
-        TransactionStepStatus.completed;
-
-    if (hasApproveSuccess) {
-      return hasDepositWithdrawSuccess;
-    }
-
-    return hasDepositWithdrawSuccess;
-  };
-
-  const steps = [
-    DepositStep.SELECT_TOKEN,
-    DepositStep.CONFIRM_DEPOSIT,
-    DepositStep.CROSS_CHAIN_TRANSFER,
-    DepositStep.FINAL_CONFIRMATION,
-  ];
-
-  const calculateProgress = () => {
-    if (isStaticMode) return { progressPercent: 0, elephantPosition: 0 };
-
-    let completedSteps = 0;
-    let processingStep = -1;
-
-    steps.forEach((step, index) => {
-      if (step === DepositStep.SELECT_TOKEN) {
-        if (isFirstStepActive()) {
-          completedSteps = Math.max(completedSteps, 1);
-        }
-      } else if (step === DepositStep.CONFIRM_DEPOSIT) {
-        if (isSecondStepActive()) {
-          completedSteps = Math.max(completedSteps, 2);
-        } else {
-          const stepStatus = getUserStepStatus(
-            step,
-            activeFeedback,
-            isType2Transaction,
-            isDeposit,
-          );
-          if (
-            stepStatus.status === TransactionStepStatus.processing &&
-            processingStep === -1
-          ) {
-            processingStep = index;
-          }
-        }
-      } else {
-        const stepStatus = getUserStepStatus(
-          step,
-          activeFeedback,
-          isType2Transaction,
-          isDeposit,
-        );
-
-        if (stepStatus.status === TransactionStepStatus.completed) {
-          completedSteps = Math.max(completedSteps, index + 1);
-        } else if (
-          stepStatus.status === TransactionStepStatus.processing &&
-          processingStep === -1
-        ) {
-          processingStep = index;
-        }
-      }
-    });
-
-    let progressPercent = (completedSteps / steps.length) * 100;
-    if (processingStep > -1 && completedSteps === processingStep) {
-      progressPercent += (1 / steps.length) * 50;
-    }
-
-    const elephantPosition = Math.min(progressPercent + 2, 100);
-
-    return {
-      progressPercent: Math.min(progressPercent, 100),
-      elephantPosition,
-    };
-  };
-
-  const { progressPercent, elephantPosition } = calculateProgress();
+    isFirstStepActive,
+    isSecondStepActive,
+    isStaticMode,
+    isDynamicMode,
+    isType2Transaction,
+    activeFeedback,
+    progressPercent,
+    elephantPosition,
+    getUserStepStatus,
+    getStepDescription,
+    steps,
+  } = useInstructionStepLogic(props);
 
   return (
     <div className="flex flex-col gap-[30px]">
@@ -353,11 +87,11 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           let showLoader = false;
 
           if (step === DepositStep.SELECT_TOKEN) {
-            if (isFirstStepActive()) {
+            if (isFirstStepActive) {
               bgColor = "#1B46E0";
             }
           } else if (step === DepositStep.CONFIRM_DEPOSIT) {
-            if (isSecondStepActive()) {
+            if (isSecondStepActive) {
               bgColor = "#1B46E0";
             } else {
               stepStatus = getUserStepStatus(
@@ -366,7 +100,6 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
                 isType2Transaction,
                 isDeposit,
               );
-
               if (stepStatus.status === TransactionStepStatus.processing) {
                 bgColor = "#535E73";
                 showLoader = true;
@@ -395,7 +128,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
           return (
             <div key={step} className="flex flex-row gap-4 items-center">
               <div
-                className="rounded-full w-11 h-11 flex items-center justify-center relative flex-shrink-0"
+                className="rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: bgColor }}
               >
                 {getStepIcon(step)}
@@ -414,6 +147,21 @@ const DepositInstruction: React.FC<DepositInstructionProps> = ({
                   : stepStatus?.description ||
                     getStepDescription(step, isDeposit)}
               </p>
+              {stepStatus?.txHash &&
+                stepStatus.status === TransactionStepStatus.completed && (
+                  <Link
+                    href={stepStatus.txHash}
+                    className="flex items-center gap-1 group text-white hover:text-blue-600"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ArrowTopRightOnSquareIcon
+                      width="20"
+                      height="20"
+                      className="size-5"
+                    />
+                  </Link>
+                )}
             </div>
           );
         }
