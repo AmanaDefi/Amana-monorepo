@@ -196,10 +196,6 @@ contract ConvexEthStrategyArbitrum is EthStrategyParent {
 
         approveOrIncreaseAllowance(receiptToken, address(booster), shares);
         booster.deposit(convexPid, shares);
-        console.log(
-            "ConvexEthStrategyArbitrum: Deposited %s shares into booster",
-            shares
-        );
     }
 
     function _withdrawFundsFromYieldSource(
@@ -208,30 +204,15 @@ contract ConvexEthStrategyArbitrum is EthStrategyParent {
     ) internal override returns (uint256 amountWithdrawn) {
         // harvest();
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
-        console.log(
-            "ConvexEthStrategyArbitrum: Withdrawing %s shares from rewardPool",
-            sharesToWithdraw
-        );
         // harvest(); // TO DO remove this from the withdraw flow, rather do it manually - but it might still get called in the Convex contract?
         rewardPool.withdraw(sharesToWithdraw, false);
-        console.log(
-            "ConvexEthStrategyArbitrum: Withdrew %s shares from rewardPool",
-            sharesToWithdraw
-        );
         amountWithdrawn = receiptToken.remove_liquidity_one_coin(
             sharesToWithdraw,
             inputTokenIndex,
             minAmountOut
         );
-        console.log(
-            "ConvexEthStrategyArbitrum: Withdrew %s amount from receiptToken",
-            amountWithdrawn
-        );
+
         weth.withdraw(amountWithdrawn);
-        console.log(
-            "ConvexEthStrategyArbitrum: Withdrew %s amount from WETH",
-            amountWithdrawn
-        );
     }
 
     function _transferAssetsToNewStrategy() internal override {

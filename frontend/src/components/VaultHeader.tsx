@@ -344,10 +344,7 @@ export default function VaultHeader({
                             {getPointsInfo(vaultData.protocol.name).nativeYield}
                           </span>
                           <span className="text-cyan-400 font-medium">
-                            {selectedVaultId === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8" 
-                              ? `${((Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
-                              : `${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100).toFixed(2)}%`
-                            }
+                            {`${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100).toFixed(2)}%`}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">

@@ -453,10 +453,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
                     <div className="flex items-center gap-1">
                     <p className="text-cyan-400 font-bold text-xl">
-                      {vault.id === "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8" 
-                        ? `${((Number(vaultAPY?.APY7d || 0) * 100) + 16.37).toFixed(2)}%`
-                        : `${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`
-                      }
+                      {`${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`}
                     </p>
                       {getPointsInfo(vault.protocol.name).displayPoints && (
                         <div className="flex items-center">

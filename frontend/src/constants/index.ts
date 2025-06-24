@@ -28,16 +28,41 @@ export const tokens: Token[] = [
 ]
 
 const MAINNET_VAULT_DATA: VaultData[] = [
+  {
+    id: "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e", // Base ZeroLend USDC Vault
+    name: "USDC Lend Pool",
+    type: "Lending Pool",
+    des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters.",
+    symbol: "aZeroLendUSDC",
+    imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "ZeroLend",
+      strategyAddress: "0x70f92e46824b2FeaC3EE5f5877dDe3a3F6b17e7a",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/ZeroLend.png",
+      des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements."
+    },
+  },
   // {
-  //   id: "0x0F6514E3e4760eFc8f34fc67a05c4987367aF14e", // Base ZeroLend USDC Vault
-  //   name: "USDC Lend Pool",
-  //   type: "Lending Pool",
-  //   des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters.",
+  //   id: "0x8960997eaBF32c3bE224Ca91d429b57825e1EA24", // Base ZeroLend USDC Vault
+  //   name: "Leveraged USDC Lend Pool",
+  //   des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters..",
   //   symbol: "aZeroLendUSDC",
   //   imgURL: "/base.png",
-  //   depositFeePaidFromGasTank: true,
-  //   minDeposit: 1, // Default minimum deposit $1
-  //   maxWithdraw: 1000000, // Default maximum withdrawal $1M
   //   inputToken: {
   //     symbol: "USDC.BASE",
   //     decimals: 6,
@@ -49,7 +74,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   //   protocol: {
   //     name: "ZeroLend",
-  //     strategyAddress: "0x70f92e46824b2FeaC3EE5f5877dDe3a3F6b17e7a",
+  //     strategyAddress: "0x674AE9280E4406B3cCd7345660815Ec356c87AF9",
   //     network: "Base",
   //     chainId: 8453,
   //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
@@ -57,120 +82,95 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements."
   //   },
   // },
-  // // {
-  // //   id: "0x8960997eaBF32c3bE224Ca91d429b57825e1EA24", // Base ZeroLend USDC Vault
-  // //   name: "Leveraged USDC Lend Pool",
-  // //   des: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters..",
-  // //   symbol: "aZeroLendUSDC",
-  // //   imgURL: "/base.png",
-  // //   inputToken: {
-  // //     symbol: "USDC.BASE",
-  // //     decimals: 6,
-  // //     address: ZC_USDC_BASE_ADDRESS,
-  // //     imgURL: "/USDC.png",
-  // //     price: 1,
-  // //     balance: EMPTY_BALANCE,
-  // //     isNative: false
-  // //   },
-  // //   protocol: {
-  // //     name: "ZeroLend",
-  // //     strategyAddress: "0x674AE9280E4406B3cCd7345660815Ec356c87AF9",
-  // //     network: "Base",
-  // //     chainId: 8453,
-  // //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-  // //     imgURL: "/ZeroLend.png",
-  // //     des: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements."
-  // //   },
-  // // },
-  // {
-  //   id: "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69",
-  //   name: "USDC Lend Pool",
-  //   type: "Lending Pool",
-  //   des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
-  //   symbol: "aFluidUSDC",
-  //   imgURL: "/base.png",
-  //   depositFeePaidFromGasTank: true,
-  //   minDeposit: 1, // Default minimum deposit $1
-  //   maxWithdraw: 1000000, // Default maximum withdrawal $1M
-  //   inputToken: {
-  //     symbol: "USDC.BASE",
-  //     decimals: 6,
-  //     address: ZC_USDC_BASE_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Fluid",
-  //     strategyAddress: "0x916e59336fD9EBd752630a80BeD39A0c9637471D",
-  //     network: "Base",
-  //     chainId: 8453,
-  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-  //     imgURL: "/fluid.png",
-  //     des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
-  //   },
-  // },
-  // {
-  //   id: "0x622E956626Cc6aBa655E3d92a3629b04cB038E80",
-  //   name: "USDT Lend Pool",
-  //   type: "Lending Pool",
-  //   des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
-  //   symbol: "aPolUSDT",
-  //   imgURL: "/polygon_logo.png",
-  //   depositFeePaidFromGasTank: true,
-  //   minDeposit: 1, // Default minimum deposit $1
-  //   maxWithdraw: 1000000, // Default maximum withdrawal $1M
-  //   inputToken: {
-  //     symbol: "USDT.POL",
-  //     decimals: 6,
-  //     address: ZC_USDT_POL_ADDRESS,
-  //     imgURL: "/usdt.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Compound",
-  //     strategyAddress: "0x8A5B82e85eab876438e14264817d20669b2e3671",
-  //     rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
-  //     network: "Polygon",
-  //     chainId: 137,
-  //     netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
-  //     imgURL: "/compound.png",
-  //     des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
-  //   },
-  // },
+  {
+    id: "0x5cD6e196CA1D85B8edFDf162d3A0C77268F42C69",
+    name: "USDC Lend Pool",
+    type: "Lending Pool",
+    des: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
+    symbol: "aFluidUSDC",
+    imgURL: "/base.png",
+    depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
+    inputToken: {
+      symbol: "USDC.BASE",
+      decimals: 6,
+      address: ZC_USDC_BASE_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Fluid",
+      strategyAddress: "0x916e59336fD9EBd752630a80BeD39A0c9637471D",
+      network: "Base",
+      chainId: 8453,
+      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      imgURL: "/fluid.png",
+      des: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters."
+    },
+  },
+  {
+    id: "0x622E956626Cc6aBa655E3d92a3629b04cB038E80",
+    name: "USDT Lend Pool",
+    type: "Lending Pool",
+    des: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+    symbol: "aPolUSDT",
+    imgURL: "/polygon_logo.png",
+    depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
+    inputToken: {
+      symbol: "USDT.POL",
+      decimals: 6,
+      address: ZC_USDT_POL_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Compound",
+      strategyAddress: "0x8A5B82e85eab876438e14264817d20669b2e3671",
+      rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+      network: "Polygon",
+      chainId: 137,
+      netdes: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum’s decentralized security and liquidity.",
+      imgURL: "/compound.png",
+      des: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters."
+    },
+  },
 
-  // {
-  //   id: "0xe5fa0E4BA13D516908c5313b3375b7Ede24BFe7a", // Aave USDT on BNB
-  //   name: "USDT Lend Pool",
-  //   type: "Lending Pool",
-  //   des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
-  //   symbol: "aAaveUSDT",
-  //   imgURL: "/bnb_logo.png",
-  //   depositFeePaidFromGasTank: true,
-  //   minDeposit: 1, // Default minimum deposit $1
-  //   maxWithdraw: 1000000, // Default maximum withdrawal $1M
-  //   inputToken: {
-  //     symbol: "USDT.BNB",
-  //     decimals: 18,
-  //     address: ZC_USDT_BSC_ADDRESS,
-  //     imgURL: "/usdt.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Aave",
-  //     strategyAddress: "0x1aea20C27c3b0f34172aC416419994d39512887A",
-  //     network: "BNB",
-  //     chainId: 56,
-  //     netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-  //     imgURL: "/aave.png",
-  //     des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
-  //   },
-  // },
+  {
+    id: "0xe5fa0E4BA13D516908c5313b3375b7Ede24BFe7a", // Aave USDT on BNB
+    name: "USDT Lend Pool",
+    type: "Lending Pool",
+    des: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
+    symbol: "aAaveUSDT",
+    imgURL: "/bnb_logo.png",
+    depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
+    inputToken: {
+      symbol: "USDT.BNB",
+      decimals: 18,
+      address: ZC_USDT_BSC_ADDRESS,
+      imgURL: "/usdt.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Aave",
+      strategyAddress: "0x1aea20C27c3b0f34172aC416419994d39512887A",
+      network: "BNB",
+      chainId: 56,
+      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      imgURL: "/aave.png",
+      des: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements."
+    },
+  },
 
   // // {
   // //   id: "0x5Eb39f7c17643Ae6d41c96EFA995E46CdF362f5e", // Base ETH Vault
@@ -399,33 +399,33 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   // //     des: "Venus is a lending protocol on BSC where users supply assets to earn interest and borrow against collateral. It features VAI, a stablecoin minted via overcollateralized loans. Risks include liquidity fluctuations, governance centralization, and smart contract vulnerabilities."
   // //   },
   // // },
-  // // {
-  // //   id: "0xEEE1F48cB753B8507f7Bfd14850f2EA79A5c9128",
-  // //   name: "yUSD/USDC Pool",
-  // //   des: "This strategy deposits USDC into the Curve yUSD/USDC pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
-  // //   symbol: "aCurveUSDC",
-  // //   imgURL: "/ETH.png",
-  // //   depositFeePaidFromGasTank: true,
-  // //   inputToken: {
-  // //     symbol: "USDC.ETH",
-  // //     decimals: 6,
-  // //     address: ZC_USDC_ETH_ADDRESS,
-  // //     imgURL: "/USDC.png",
-  // //     price: 1,
-  // //     balance: EMPTY_BALANCE,
-  // //     isNative: false
-  // //   },
-  // //   protocol: {
-  // //     name: "Curve",
-  // //     strategyAddress: "0xf6CDBA75c81E1aF9a04fCA0f57A0e49b9B277Ba3",
-  // //     rewardsContractAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
-  // //     network: "Ethereum",
-  // //     chainId: 1,
-  // //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-  // //     imgURL: "/curve.png",
-  // //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
-  // //   },
-  // // },
+  // {
+  //   id: "0xEEE1F48cB753B8507f7Bfd14850f2EA79A5c9128",
+  //   name: "yUSD/USDC Pool",
+  //   des: "This strategy deposits USDC into the Curve yUSD/USDC pool on Ethereum to earn trading fees and yield. It benefits from Curve’s efficient stablecoin swaps and deep liquidity but carries risks such as interest rate fluctuations, potential impermanent loss, and protocol security vulnerabilities.",
+  //   symbol: "aCurveUSDC",
+  //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: true,
+  //   inputToken: {
+  //     symbol: "USDC.ETH",
+  //     decimals: 6,
+  //     address: ZC_USDC_ETH_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Curve",
+  //     strategyAddress: "0xf6CDBA75c81E1aF9a04fCA0f57A0e49b9B277Ba3",
+  //     rewardsContractAddress: "0x4F80f85FF3bf92643d8C0Afd5bC107051A661185",
+  //     network: "Ethereum",
+  //     chainId: 1,
+  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+  //     imgURL: "/curve.png",
+  //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
+  //   },
+  // },
   // // {
   // //   id: "0x0190090f1C151655D340edb18953E92d8cA6E472",
   // //   name: "rswEth/ETH Pool",
@@ -453,36 +453,36 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   // //     des: "Curve is a decentralized exchange and liquidity protocol on Ethereum optimized for stablecoin and pegged asset swaps. Users provide liquidity to earn fees and rewards, benefiting from low slippage and efficient trading. Risks include smart contract vulnerabilities, impermanent loss, and potential governance changes affecting liquidity incentives."
   // //   },
   // // },
-  // {
-  //   id: "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE",
-  //   name: "msETH/WETH Pool",
-  //   type: "Liquidity Pool",
-  //   des: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since msETH and WETH are pegged to the same underlying asset (ETH), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
-  //   symbol: "aCurveETH",
-  //   imgURL: "/ETH.png",
-  //   depositFeePaidFromGasTank: false,
-  //   minDeposit: 1, // Default minimum deposit $1
-  //   maxWithdraw: 1000000, // Default maximum withdrawal $1M
-  //   inputToken: {
-  //     symbol: "ETH.ETH",
-  //     decimals: 18,
-  //     address: ZC_ETH_ETH_ADDRESS,
-  //     imgURL: "/ETH.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Curve-Convex",
-  //     strategyAddress: "0x43a2332ac629D11DAAf2B6E94d5A808950a3df75",
-  //     rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
-  //     network: "Ethereum",
-  //     chainId: 1,
-  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-  //     imgURL: "/convex.png",
-  //     des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
-  //   },
-  // },
+  {
+    id: "0xF4FA4D8115e78ACf52308FDBad10A5f9042991DE",
+    name: "msETH/WETH Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since msETH and WETH are pegged to the same underlying asset (ETH), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+    symbol: "aCurveETH",
+    imgURL: "/ETH.png",
+    depositFeePaidFromGasTank: false,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
+    inputToken: {
+      symbol: "ETH.ETH",
+      decimals: 18,
+      address: ZC_ETH_ETH_ADDRESS,
+      imgURL: "/ETH.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve-Convex",
+      strategyAddress: "0x43a2332ac629D11DAAf2B6E94d5A808950a3df75",
+      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
+      network: "Ethereum",
+      chainId: 1,
+      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+    },
+  },
   // {
   //   id: "0x0552D4C51491D9bFeD97eb795E101E90a5F16d44",
   //   name: "USDT/USDe Pool",
@@ -539,36 +539,36 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   // //     des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
   // //   },
   // // },
-  // {
-  //   id: "0x32fECdEf376E2aD74C53663BDE933116C09408f3", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
-  //   name: "eUSD/USDC Pool",
-  //   type: "Liquidity Pool",
-  //   des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
-  //   symbol: "aConvexUsdcArb",
-  //   imgURL: "/arbitrum-arb-logo.png",
-  //   depositFeePaidFromGasTank: true,
-  //   minDeposit: 1, // Default minimum deposit $1
-  //   maxWithdraw: 1000000, // Default maximum withdrawal $1M
-  //   inputToken: {
-  //     symbol: "USDC.ARB",
-  //     decimals: 6,
-  //     address: ZC_USDC_ARB_ADDRESS,
-  //     imgURL: "/USDC.png",
-  //     price: 1,
-  //     balance: EMPTY_BALANCE,
-  //     isNative: false
-  //   },
-  //   protocol: {
-  //     name: "Curve-Convex",
-  //     strategyAddress: "0xEF2D1463de249b1b74Ea60B73D05D25A0C8516A3", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
-  //     rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
-  //     network: "Arbitrum",
-  //     chainId: 42161,
-  //     netdes: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
-  //     imgURL: "/convex.png",
-  //     des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
-  //   },
-  // },
+  {
+    id: "0x32fECdEf376E2aD74C53663BDE933116C09408f3", //"0x32fECdEf376E2aD74C53663BDE933116C09408f3",
+    name: "eUSD/USDC Pool",
+    type: "Liquidity Pool",
+    des: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+    symbol: "aConvexUsdcArb",
+    imgURL: "/arbitrum-arb-logo.png",
+    depositFeePaidFromGasTank: true,
+    minDeposit: 1, // Default minimum deposit $1
+    maxWithdraw: 1000000, // Default maximum withdrawal $1M
+    inputToken: {
+      symbol: "USDC.ARB",
+      decimals: 6,
+      address: ZC_USDC_ARB_ADDRESS,
+      imgURL: "/USDC.png",
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false
+    },
+    protocol: {
+      name: "Curve-Convex",
+      strategyAddress: "0xEF2D1463de249b1b74Ea60B73D05D25A0C8516A3", //"0x5b2102E9a61dFFcB47EF0D15d6c1D01ccA2A9695",
+      rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
+      network: "Arbitrum",
+      chainId: 42161,
+      netdes: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum’s security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
+      imgURL: "/convex.png",
+      des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy."
+    },
+  },
   // {
   //   id: "0xe488d52601772bc327048E61F86Ee40df75b7a4F",
   //   name: "yUSD/USDC Pool",
@@ -597,63 +597,90 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //     des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
   //   },
   // },
-  {
-    id: "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8",
-    name: "YieldFi vyUSD",
-    type: "Yield-Bearing Stablecoin",
-    des: "This strategy deposits USDC into the vyUSD vault on Ethereum, a yield-optimized vault built on top of yUSD. vyUSD amplifies returns through automated DeFi strategies such as stablecoin LP positions and leverage looping. Yield is generated from protocol-driven strategies and auto-compounded within the vault. Because the underlying assets are stablecoins, risk from impermanent loss is minimal. APY is variable and influenced by vault utilization, market conditions, and strategy performance within the YieldFi protocol.",
-    symbol: "aYieldFiUsdc",
-    imgURL: "/ETH.png",
-    depositFeePaidFromGasTank: false,
-    minDeposit: 10, // YieldFi vault specific minimum deposit $10
-    maxWithdraw: 100, // YieldFi vault specific maximum instant withdrawal $100
-    inputToken: {
-      symbol: "USDC.ETH",
-      decimals: 6,
-      address: ZC_USDC_ETH_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "YieldFi",
-      strategyAddress: "0xC058E93347162563f53893e1dF20e3cC017C85b3",
-      rewardsContractAddress: "",
-      network: "Ethereum",
-      chainId: 1,
-      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
-      imgURL: "/yieldfi.png",
-      des: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi."
-    },
-  },
-  {
-    id: "0x4cb4dfC521a5C44817a1fda79FB7eafAf6F1952e", // BSC Venus USDT Vault
-    name: "Aegis YUSD",
-    type: "Yield Bearing Stablecoin",
-    des: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
-    symbol: "aAegisYUSD",
-    imgURL: "/bnb_logo.png",
-    depositFeePaidFromGasTank: true,
-    inputToken: {
-      symbol: "USDT.BSC",
-      decimals: 18,
-      address: ZC_USDT_BSC_ADDRESS,
-      imgURL: "/usdt.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Aegis",
-      strategyAddress: "0x3bbB4509B4ffbc7fF48E33D74Ce9e2f7fFb041B8",
-      network: "BSC",
-      chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
-      imgURL: "/aegis.jpeg",
-      des: "Aegis is a yield protocol that issues YUSD, a Bitcoin-backed stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into YUSD to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities."
-    },
-  },
+  // {
+  //   id: "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8",
+  //   name: "YieldFi vyUSD",
+  //   type: "Yield-Bearing Stablecoin",
+  //   des: "This strategy deposits USDC into the vyUSD vault on Ethereum, a yield-optimized vault built on top of yUSD. vyUSD amplifies returns through automated DeFi strategies such as stablecoin LP positions and leverage looping. Yield is generated from protocol-driven strategies and auto-compounded within the vault. Because the underlying assets are stablecoins, risk from impermanent loss is minimal. APY is variable and influenced by vault utilization, market conditions, and strategy performance within the YieldFi protocol.",
+  //   symbol: "aYieldFiUsdc",
+  //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: false,
+  //   minDeposit: 10, // YieldFi vault specific minimum deposit $10
+  //   maxWithdraw: 100, // YieldFi vault specific maximum instant withdrawal $100
+  //   inputToken: {
+  //     symbol: "USDC.ETH",
+  //     decimals: 6,
+  //     address: ZC_USDC_ETH_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "YieldFi",
+  //     strategyAddress: "0xC058E93347162563f53893e1dF20e3cC017C85b3",
+  //     rewardsContractAddress: "",
+  //     network: "Ethereum",
+  //     chainId: 1,
+  //     netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+  //     imgURL: "/yieldfi.png",
+  //     des: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi."
+  //   },
+  // },
+  // {
+  //   id: "0x4cb4dfC521a5C44817a1fda79FB7eafAf6F1952e", // BSC Venus USDT Vault
+  //   name: "Aegis YUSD",
+  //   type: "Yield Bearing Stablecoin",
+  //   des: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
+  //   symbol: "aAegisYUSD",
+  //   imgURL: "/bnb_logo.png",
+  //   depositFeePaidFromGasTank: true,
+  //   inputToken: {
+  //     symbol: "USDT.BSC",
+  //     decimals: 18,
+  //     address: ZC_USDT_BSC_ADDRESS,
+  //     imgURL: "/usdt.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Aegis",
+  //     strategyAddress: "0x3bbB4509B4ffbc7fF48E33D74Ce9e2f7fFb041B8",
+  //     network: "BSC",
+  //     chainId: 56,
+  //     netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+  //     imgURL: "/aegis.jpeg",
+  //     des: "Aegis is a yield protocol that issues YUSD, a Bitcoin-backed stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into YUSD to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities."
+  //   },
+  // },
+  // {
+  //   id: "0xeAe2C350d25ce93326Bf709ac007CA002ccDA56c", // BSC Venus USDT Vault
+  //   name: "Noon Capital sUSN",
+  //   type: "Yield Bearing Stablecoin",
+  //   des: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
+  //   symbol: "aNoonSusn",
+  //   imgURL: "/ETH.png",
+  //   depositFeePaidFromGasTank: false,
+  //   inputToken: {
+  //     symbol: "USDT.ETH",
+  //     decimals: 6,
+  //     address: ZC_USDT_ETH_ADDRESS,
+  //     imgURL: "/usdt.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Noon Capital",
+  //     strategyAddress: "0x0B04a5C20CC2dC2701771944b1581586E661e416",
+  //     network: "Ethereum",
+  //     chainId: 1,
+  //     netdes: "Ethereum is a decentralized, open-source blockchain system that features smart contract functionality. It is the largest and most established blockchain platform for dApps, with a vibrant ecosystem and strong developer community.",
+  //     imgURL: "/sUSN.png",
+  //     des: "Noon Capital is a yield protocol that issues sUSN, a stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into sUSN to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities."
+  //   },
+  // },
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [

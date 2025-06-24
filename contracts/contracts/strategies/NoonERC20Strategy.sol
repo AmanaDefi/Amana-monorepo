@@ -9,13 +9,9 @@ import "./ERC20StrategyParent.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/I4626Vault.sol";
 
-import "hardhat/console.sol";
-
 contract NoonERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    address public receiptToken;
-    uint256 public inputTokenIndex;
     address public USN_ADDRESS;
 
     function initialize(
@@ -26,7 +22,7 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         address _swapHelper,
         address _receiptTokenAddress, // this is YUSD
         address _inputTokenAddress, // inputToken
-        address, // _liquidityGaugeAddress, // this is the YUSD staking gauge
+        address, // _liquidityGaugeAddress - not needed
         address /* _rewardsTokenAddress — not needed */,
         uint256 // _inputTokenIndex - not needed
     ) external initializer {
@@ -40,8 +36,6 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         );
 
         swapHelper = _swapHelper;
-
-        receiptToken = _receiptTokenAddress;
         USN_ADDRESS = 0xdA67B4284609d2d48e5d10cfAc411572727dc1eD; // USN address on Ethereum
     }
 
@@ -49,43 +43,28 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         uint256 amount,
         uint256 minAmountOut
     ) internal override {
-        // need to check if we swap USDC into YUSD first, or if we can directly deposit USDC into the sYUSD 4626 vault
-        // swap USDC into YUSD - either uniswap or curve on BNB
-        // need to create a BNB swapHelper for this
-        // stake YUSD into sYUSD
-        // check min out
         require(amount > 0, "Deposit amount must be greater than zero");
 
-        // approveOrIncreaseAllowance(inputToken, receiptToken, amount);
+        // approveOrIncreaseAllowance(inputToken, receiptTokenAddress, amount);
 
-        // uint256 amountOut = I4626Vault(receiptToken).deposit(
+        // uint256 amountOut = I4626Vault(receiptTokenAddress).deposit(
         //     amount,
         //     address(this)
         // );
-        console.log(
-            "Balance of input token before deposit",
-            IERC20(inputToken).balanceOf(address(this))
-        );
         SafeERC20.safeTransfer(IERC20(inputToken), address(swapHelper), amount);
-        console.log(
-            "Depositing %s of input token %s into swapHelper",
-            amount,
-            address(inputToken)
-        );
-        console.log("swapHelper address", address(swapHelper));
+
         // Swap input token to receipt token (sUSN) via Uni v4
         uint256 amountOut = ISwapHelper(swapHelper)
             .swapViaUniV3SpecificIntermediateToken(
                 address(inputToken),
                 USN_ADDRESS, // USN as intermediate token
                 amount,
-                receiptToken,
+                receiptTokenAddress,
                 10000,
                 address(this),
                 9999,
                 "0x"
             );
-        console.log("Amount out after deposit", amountOut);
         require(amountOut >= minAmountOut, "Insufficient output amount");
     }
 
@@ -94,17 +73,15 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         uint256 susnToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
-        console.log(
-            "Shares to withdraw based on asset amount %s: %s",
-            assetAmount,
+
+        IERC20(receiptTokenAddress).transfer(
+            address(swapHelper),
             susnToWithdraw
         );
 
-        IERC20(receiptToken).transfer(address(swapHelper), susnToWithdraw);
-
         uint256 amountOut = ISwapHelper(swapHelper)
             .swapViaUniV3SpecificIntermediateToken(
-                receiptToken,
+                receiptTokenAddress,
                 USN_ADDRESS, // USN as intermediate token
                 susnToWithdraw,
                 address(inputToken),
@@ -127,10 +104,12 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         harvest();
 
         // Withdraw all BPT from the liquidity gauge
-        uint256 totalinYusd = IERC20(receiptToken).balanceOf(address(this));
+        uint256 totalinYusd = IERC20(receiptTokenAddress).balanceOf(
+            address(this)
+        );
 
         // Transfer the LP tokens to the new strategy
-        IERC20(receiptToken).transfer(txn.newStrategy, totalinYusd);
+        IERC20(receiptTokenAddress).transfer(txn.newStrategy, totalinYusd);
 
         IStrategy(txn.newStrategy).depositFromOldStrategy(
             totalinYusd,
@@ -170,21 +149,23 @@ contract NoonERC20Strategy is ERC20StrategyParent {
     }
 
     function totalUnderlyingAssets() public view override returns (uint256) {
-        uint256 total = IERC20(receiptToken).balanceOf(address(this));
+        uint256 total = IERC20(receiptTokenAddress).balanceOf(address(this));
         return total > 0 ? convertToAssets(total) : 0;
     }
 
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256 assets) {
-        if (address(inputToken) == receiptToken || shares == 0) {
+        if (address(inputToken) == receiptTokenAddress || shares == 0) {
             return shares;
         }
-        uint256 totalInUsn = I4626Vault(receiptToken).convertToAssets(shares);
+        uint256 totalInUsn = I4626Vault(receiptTokenAddress).convertToAssets(
+            shares
+        );
         uint256 totalInUsdt = totalInUsn / 10 ** 12; // assuming USN:USDT is 1:1
         return totalInUsdt;
         // try
-        //     ISwapHelper(swapHelper).getPathV3(receiptToken, address(inputToken))
+        //     ISwapHelper(swapHelper).getPathV3(receiptTokenAddress, address(inputToken))
         // returns (
         //     address[] memory path,
         //     uint24[] memory feeTiers,
@@ -209,16 +190,16 @@ contract NoonERC20Strategy is ERC20StrategyParent {
     function convertToShares(
         uint256 assets
     ) public view override returns (uint256 shares) {
-        if (address(inputToken) == receiptToken || assets == 0) {
+        if (address(inputToken) == receiptTokenAddress || assets == 0) {
             return assets;
         }
         uint256 totalinUsn = assets * 10 ** 12; // assuming USN:USDT is 1:1
-        uint256 totalinSusn = I4626Vault(receiptToken).convertToShares(
+        uint256 totalinSusn = I4626Vault(receiptTokenAddress).convertToShares(
             totalinUsn
         );
         return totalinSusn;
         // try
-        //     ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptToken)
+        //     ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptTokenAddress)
         // returns (
         //     address[] memory path,
         //     uint24[] memory feeTiers,
@@ -243,7 +224,9 @@ contract NoonERC20Strategy is ERC20StrategyParent {
     function getStrategyWithdrawShareAmount(
         uint256 assetAmount
     ) public view override returns (uint256 withdrawShareAmount) {
-        uint256 totalShares = IERC20(receiptToken).balanceOf(address(this));
+        uint256 totalShares = IERC20(receiptTokenAddress).balanceOf(
+            address(this)
+        );
         uint256 sharesToWithdraw = convertToShares(assetAmount);
         if (sharesToWithdraw > totalShares) {
             sharesToWithdraw = totalShares;
