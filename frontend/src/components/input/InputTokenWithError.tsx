@@ -153,7 +153,6 @@ export default function InputTokenWithError({
         Number(conversionOutput.outputAmountFormatted) !== 0
         ? conversionOutput.outputAmountFormatted
         : " ";
-
     }
 
     return (
@@ -195,10 +194,12 @@ export default function InputTokenWithError({
           <div className="text-white text-start flex text-[16px] md:text-[18px] font-bold items-center gap-2 mb-2 md:mb-4">
             {captionText}
             {isOutput && (
-              <InfoBlock isMiddle>
-                💡 This is an estimated output amount. Actual amount may vary
-                during transaction execution.
-              </InfoBlock>
+              <div className="font-normal">
+                <InfoBlock isMiddle>
+                  💡 This is an estimated output amount. Actual amount may vary
+                  during transaction execution.
+                </InfoBlock>
+              </div>
             )}
             {inputMoreThanBalance && (
               <span className="text-red-500 ml-2">Input More than Balance</span>

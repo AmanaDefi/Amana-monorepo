@@ -45,8 +45,6 @@ import {
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
 import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
-import ErrorInputIcon from "./svg/ErrorInputIcon";
-import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useChain } from "@account-kit/react";
@@ -1307,7 +1305,7 @@ export default function VaultInputs({
         conversionOutput={conversionOutput}
         setInputBalance={setInputBalance}
       />
-      {!!isDeposit && <APYChangeCard />}
+       <APYChangeCard isDeposit={isDeposit} />
 
       {inputToken &&
         !loadingOutputToken &&

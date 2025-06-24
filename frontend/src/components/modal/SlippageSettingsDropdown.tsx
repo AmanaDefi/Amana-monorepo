@@ -48,6 +48,9 @@ export default function SlippageSettingsDropdown({
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target as Node)
       ) {
+        if (customInputValue === "" && !isAuto) {
+          toggleAuto(vaultId);
+        }
         setIsOpen(false);
       }
     };
@@ -87,28 +90,40 @@ export default function SlippageSettingsDropdown({
     if (CheckTheTxIsInProgress(vaultId)) return;
     if (/[^0-9.]/.test(value) || (value.match(/\./g) || []).length > 1) return;
 
+    if (value === "" || value.endsWith(".")) {
+      setCustomInputValue(value);
+      return;
+    }
+
     const numValue = parseFloat(value);
 
-    if (value.endsWith(".") || numValue === 0 || isNaN(numValue)) {
+    if (isNaN(numValue)) {
       setCustomInputValue(value);
       return;
     }
 
     if (numValue <= 100) {
-      const fixed = numValue < 0.1 ? "0.1" : numValue.toFixed(2);
-      setCustomInputValue(fixed);
+      setCustomInputValue(value);
 
-      if (isAuto) toggleAuto(vaultId);
-      setSlippage(vaultId, parseFloat(fixed));
+      if (numValue >= 0.1) {
+        if (isAuto) toggleAuto(vaultId);
+        setSlippage(vaultId, numValue);
+      }
     }
   };
-
   const handleCustomInputBlur = () => {
     if (customInputValue === "" || parseFloat(customInputValue) === 0) {
-      setCustomInputValue(slippageValue.toFixed(2));
+      if (!isAuto) {
+        toggleAuto(vaultId);
+      }
+      setCustomInputValue("");
+      return;
+    }
+    const numValue = parseFloat(customInputValue);
+    if (!isNaN(numValue) && numValue >= 0.1) {
+      setCustomInputValue(numValue.toFixed(2));
     }
   };
-
   const isPresetActive = (v: number) =>
     !isAuto && !showCustomInput && slippageValue === v;
 
