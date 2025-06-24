@@ -102,7 +102,7 @@ export default function ChainTokenSelector({
           if (vaultData?.id && CheckTheTxIsInProgress(vaultData.id)) return;
           setIsOpen(!isOpen);
         }}
-        className="flex items-center gap-2 rounded-lg text-white"
+        className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
         {selectedToken ? (
           <>
@@ -113,7 +113,7 @@ export default function ChainTokenSelector({
               height={24}
               className="rounded-full"
             />
-            <p >{selectedToken.symbol}</p>
+            <p className="max-w-[82px] md:max-w-[200px] truncate">{selectedToken.symbol}</p>
           </>
         ) : (
           <span>Select Token</span>

@@ -24,7 +24,7 @@ const ModalButton = ({
                rounded-[8px] pl-4 pr-[25px] py-4 text-white text-[16px] 
                font-bold hover:bg-[#3E73C4]/10 transition w-[240px] h-[64px] md:h-[80px] ${className}`}
   >
-    <div className="flex w-full flex-row items-center justify-start gap-4">
+    <div className="flex w-full flex-row items-center justify-start gap-2 md:gap-4">
       <div className="flex justify-center items-center rounded-[8px] bg-[#14171F] border border-[#3E73C4] shrink-0 p-1 h-[40px] w-[40px] md:h-[48px] md:w-[48px]">
         {icon}
       </div>

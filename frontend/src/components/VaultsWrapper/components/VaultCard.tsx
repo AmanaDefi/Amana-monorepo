@@ -120,12 +120,13 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
               </div>
             </VaultCardInfoBlock>
           )}
-
-          <VaultOverviewBlock
-            vault={vault}
-            vaultAPY={vaultAPY}
-            totalAssets={totalAssets}
-          />
+          <VaultCardInfoBlock>
+            <VaultOverviewBlock
+              vault={vault}
+              vaultAPY={vaultAPY}
+              totalAssets={totalAssets}
+            />
+          </VaultCardInfoBlock>
 
           <div className="flex flex-row gap-4">
             <VaultCardInfoBlock>
@@ -207,26 +208,26 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </VaultCardInfoBlock>
           </div>
         </div>
-      
-          <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
-            <div className="flex flex-row gap-1">
-              <p className="font-normal text-sm leading-4 text-white pl-[11px]">
-                Historical APY
-              </p>
-              {/* <InfoBlock isRight>💡</InfoBlock> */}
-            </div>
 
-            <TableChart
-              points={MOCK_HISTORICAL_APY[vault.id] || []}
-              percentageChange={(() => {
-                const points = MOCK_HISTORICAL_APY[vault.id];
-                if (!points || points.length < 2) return 0;
-                const first = points[0];
-                const last = points.at(-1)!;
-                return ((last - first) / first) * 100;
-              })()}
-            />
+        <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
+          <div className="flex flex-row gap-1">
+            <p className="font-normal text-sm leading-4 text-white pl-[11px]">
+              Historical APY
+            </p>
+            {/* <InfoBlock isRight>💡</InfoBlock> */}
           </div>
+
+          <TableChart
+            points={MOCK_HISTORICAL_APY[vault.id] || []}
+            percentageChange={(() => {
+              const points = MOCK_HISTORICAL_APY[vault.id];
+              if (!points || points.length < 2) return 0;
+              const first = points[0];
+              const last = points.at(-1)!;
+              return ((last - first) / first) * 100;
+            })()}
+          />
+        </div>
 
         <p className="font-normal text-xs leading-4 text-white mb-6 mt-2">
           This vault auto-compounds Lenders Tokens on{" "}
@@ -246,7 +247,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 userVaultBalances.find((b) => b.vaultId === vault.id)?.balance,
               ) > 0 && (
                 <AppButton
-                variant="reverse"
+                  variant="reverse"
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/vaults/${vault.id}?tab=withdraw`);

@@ -238,8 +238,8 @@ export default function VaultHeader({
   ]);
 
   return (
-    <section className="pt-10 px-4 md:px-0 ">
-      <div className="w-full mb-10 flex flex-row items-center">
+    <section className="flex flex-col mt-6 md:mt-10">
+      <div className="hidden md:flex w-full mb-10 flex-row items-center">
         <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -285,8 +285,8 @@ export default function VaultHeader({
         </div>
       </div>
       {walletAddress && isDeposit && (
-        <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:pr-10 gap-4 md:gap-[56px]">
+        <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0 block">
+          <div className="grid grid-cols-2 sm:grid-cols-2 px-[26px] py-4 md:py-0 md:pr-10 md:px-0 gap-4 md:gap-[56px] before-gradient-border md:before:hidden rounded-lg">
             <LargeCardStat
               id="deposits"
               label="Deposits"

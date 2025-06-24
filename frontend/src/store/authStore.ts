@@ -6,9 +6,10 @@ export type AuthStep =
   | "import"
   | "optionsA"
   | "optionsB"
-  | "mobileOptionsA" 
+  | "mobileOptionsA"
   | "mobileOptionsB"
   | "allWallets"
+  | "mobileAllWallets"
   | "success"
   | "onboarding"
   | "logout"
@@ -18,6 +19,7 @@ export type AuthStep =
   | "notVerify"
   | "recieve"
   | "send"
+  | "mobileInfo"
   | null;
 
 interface AuthState {

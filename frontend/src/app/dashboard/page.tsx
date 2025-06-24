@@ -1,11 +1,7 @@
 import DashboardContainer from "@/containers/DashboardContainer";
 
-const Dashboard = ({ }) => {
-  return (
-    <div>
-     <DashboardContainer />
-    </div>
-  );
+const Dashboard = ({}) => {
+  return <DashboardContainer />;
 };
 
 export default Dashboard;

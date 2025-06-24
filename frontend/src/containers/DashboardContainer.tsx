@@ -1,11 +1,7 @@
-import DashboardWrapper from '@/components/DashboardWrapper';
+import DashboardWrapper from "@/components/DashboardWrapper";
 
 const DashboardContainer = ({}) => {
-  return (
-    <div>
-      <DashboardWrapper />
-    </div>
-  );
+  return <DashboardWrapper />;
 };
 
 export default DashboardContainer;

@@ -25,7 +25,7 @@ export const ChooseBuyWith = () => {
       onClose={closeAll}
       paddingClass="px-[21px] pt-5 pb-6"
       roundedClass="rounded-[16px]"
-      maxWidth="max-w-[526px]"
+      maxWidth="max-w-[358px] md:max-w-[526px]"
     >
       <div className="flex justify-end">
         <button
@@ -49,15 +49,15 @@ export const ChooseBuyWith = () => {
           <div className="flex flex-col gap-4">
             <ModalButton
               text="Apple Pay, card or bank transfer"
-              className="w-[484px]"
+              className="w-[316px] md:w-[484px]"
               label="Buy crypto"
               withArrow
               icon={<CardIcon width={35} height={32} />}
               onClick={() => handleChoose(BuyWithEnum.FIAT)}
-              />
+            />
             <ModalButton
               text="From another wallet, exchange or chain"
-              className="w-[484px]"
+              className="w-[316px] md:w-[484px]"
               label="Transfer in"
               withArrow
               onClick={() => handleChoose(BuyWithEnum.CRYPTO)}

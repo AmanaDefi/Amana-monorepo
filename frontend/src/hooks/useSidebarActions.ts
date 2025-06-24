@@ -16,7 +16,6 @@ export const useSidebarActions = () => {
         disconnectWallet();
         router.push("/");
       } catch (error) {
-        console.log("Error during logout:", error);
         router.push("/");
       }
     },

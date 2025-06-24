@@ -51,6 +51,49 @@
   }
 }
 
+::-webkit-scrollbar {
+  width: 6px; 
+  height: 6px; 
+}
+
+::-webkit-scrollbar-track {
+  background: #161C27; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1B46E0;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar {
+  width: 2px; 
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-track {
+  background: #161C27;
+  border-radius: 2px;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-thumb {
+  background: #1B46E0;
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.dropdown-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #1B46E0 #161C27;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Button fluid hover animation styles */
 .fluid-hover-button {
   position: relative;
