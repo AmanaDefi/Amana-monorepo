@@ -1144,7 +1144,6 @@ const isButtonDisabled = useMemo(() => {
     Number(inputBalance.formatted) <= 0 ||
     !!errorMessage ||
     !!outputBoxErrorMessage ||
-    loadingOutputToken ||
     (isDeposit &&
       !vaultData.depositFeePaidFromGasTank &&
       debouncedInputBalance.value > 0n &&
@@ -1162,7 +1161,6 @@ const isButtonDisabled = useMemo(() => {
   inputBalance.formatted,
   errorMessage,
   outputBoxErrorMessage,
-  loadingOutputToken,
   isDeposit,
   vaultData.depositFeePaidFromGasTank,
   debouncedInputBalance.value,
@@ -1314,7 +1312,7 @@ const isButtonDisabled = useMemo(() => {
        <APYChangeCard isDeposit={isDeposit} />
 
       {inputToken &&
-        !loadingOutputToken &&
+        // !loadingOutputToken &&
         !(
           isDeposit &&
           !vaultData.depositFeePaidFromGasTank &&
