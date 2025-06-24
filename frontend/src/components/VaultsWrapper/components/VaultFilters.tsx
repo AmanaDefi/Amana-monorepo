@@ -201,7 +201,7 @@ export const VaultFilters: FC<Props> = ({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={"Search vaults..."}
+                placeholder={"Search"}
                 className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
                 value={searchTerm}
                 onFocus={() => setIsHiddenFilterButton(true)}
@@ -211,9 +211,7 @@ export const VaultFilters: FC<Props> = ({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={
-                  !isHiddenFilterButton ? "Search name..." : "Search vaults..."
-                }
+                placeholder={"Search"}
                 className="text-white lg:hidden focus:outline-none bg-transparent w-full"
                 value={searchTerm}
                 onFocus={() => setIsHiddenFilterButton(true)}
