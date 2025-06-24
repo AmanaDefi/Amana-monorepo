@@ -137,7 +137,7 @@ const VaultsDetailContainer: React.FC<{
     } else {
       newUrl.searchParams.set("tab", "withdraw");
     }
-    window.history.pushState({}, "", newUrl.toString());
+    window.history.replaceState({}, "", newUrl.toString());
   };
 
   const handleDepositDataUpdate = useCallback(
