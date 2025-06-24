@@ -17,15 +17,15 @@ const ConnectWallet = () => {
           Connect your wallet
         </span>
         <p className="text-white text-[16px] w-[320px]">
-          Connecting your wallet is like "logging in" to Web3. Select your
-          wallet from the options to get started
+          Connecting your wallet is like &ldquo;logging in&rdquo; to Web3.
+          Select your wallet from the options to get started
         </p>
       </div>
       <button
         onClick={handleWalletInfoClick}
         className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1"
       >
-        I DON'T HAVE A WALLET
+        I DON&apos;T HAVE A WALLET
         <ErrorInputIcon width={16} height={17} className="fill-[#3E73C4]" />
       </button>
     </div>
