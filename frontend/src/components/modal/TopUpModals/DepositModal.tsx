@@ -5,20 +5,21 @@ import { motion } from "framer-motion";
 import { Chain } from "viem";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
+import { useAuthStore } from "@/store/authStore";
 import ChainSelector from "@/components/VaultsDetailsWrapper/components/ChainSelector";
 import { Modal } from "../base/Modal";
 import { DepositInput } from "./components/DepositInput";
 import ZetaChainLogo from "@public/logo/zetachain.svg";
 import { AppButton } from "@/components/button/AppButton";
 import { showSuccessToast } from "@/toasts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 
 export const Deposit = () => {
   const {
     step,
     setStep,
-    closeAll,
+    closeAll: closeFundWalletModals,
     setChain,
     chain,
     currency,
@@ -28,7 +29,24 @@ export const Deposit = () => {
     setDepositAmount,
   } = useFundWalletStore();
 
+  const { openStep: openAuthStep } = useAuthStore();
+
   const [error, setError] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIsMobile();
+
+    window.addEventListener("resize", checkIsMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkIsMobile);
+    };
+  }, []);
 
   const handleSelectChain = (chain: Chain) => {
     setChain(chain);
@@ -37,12 +55,18 @@ export const Deposit = () => {
   };
 
   const handleConnectWallet = () => {
-    setStep("connectWallet");
+    closeFundWalletModals();
+
+    if (isMobile) {
+      openAuthStep("mobileAllWallets");
+    } else {
+      openAuthStep("allWallets");
+    }
   };
 
   const handleClose = () => {
     activeConnector?.disconnect();
-    closeAll();
+    closeFundWalletModals();
   };
 
   const handleConfirm = () => {
@@ -71,7 +95,7 @@ export const Deposit = () => {
       maxWidth="max-w-[526px]"
     >
       <button
-        onClick={closeAll}
+        onClick={closeFundWalletModals}
         className="rounded-[8px] absolute top-5 right-4 flex items-center justify-center w-10 h-10"
         aria-label="Close"
       >
