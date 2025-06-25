@@ -1,84 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
-import {
-  VaultData,
-  VaultAPY,
-  UserVaultBalance,
-  VaultTotalAssets,
-  VaultTotalAssetsinToken,
-} from "../types/types";
-import { VAULT_DATA } from "../constants/index";
-import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
-import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import { useMultiChain } from "@/providers/MultiChainProvider";
-import VaultsGrid from "../components/VaultsWrapper";
-import { useWallets } from "@privy-io/react-auth";
-
-// Zero account for default value
-export const ZERO_ACCOUNT = {
-  address: "0x0000000000000000000000000000000000000000",
-  sendTransaction: async () => {
-    throw new Error("sendTransaction not implemented for ZERO_ACCOUNT");
-  },
-  signMessage: async () => {
-    throw new Error("signMessage not implemented for ZERO_ACCOUNT");
-  },
-  signTypedData: async () => {
-    throw new Error("signTypedData not implemented for ZERO_ACCOUNT");
-  },
-};
-
-
+import { useVaultDataPaginated } from "@/hooks/useVaultData";
+import VaultsGrid from "../components/VaultsGrid";
+import { useLayoutStore } from "@/store/store";
 
 const VaultsGridContainer = () => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
-  const [userVaultBalances, setUserVaultBalances] = useState<
-    UserVaultBalance[]
-  >([]);
-  const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>(
-    [],
-  );
-  const {wallets} = useWallets();
-  const wallet = wallets[0];
-  const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<
-    VaultTotalAssetsinToken[]
-  >([]);
-  const pathname = usePathname();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState('tvl');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const vaults: VaultData[] = VAULT_DATA;
+  const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
 
-  const { walletAddress } = useMultiChain();
-
-  // Fetch vault balances and total values
-  useUpdateVaultBalanceAndTotal(
+  const {
+    loading,
     vaults,
-    walletAddress,
-    setUserVaultBalances,
-    setVaultTotalAssets,
-    setVaultTotalAssetsinToken,
-  );
-  // Fetch token prices for APY calculations
-  const crvTokenPrice = useTokenPriceBySymbol("CRV");
-  const cvxTokenPrice = useTokenPriceBySymbol("CVX");
-  const ethTokenPrice = useTokenPriceBySymbol("ETH");
-  const compTokenPrice = useTokenPriceBySymbol("COMP");
-  const opTokenPrice = useTokenPriceBySymbol("OP");
-  // Calculate APYs
-  useUpdateAPYs(
-    vaults,
-    setVaultAPYs,
-    setLoading,
-    crvTokenPrice,
-    cvxTokenPrice,
-    ethTokenPrice,
-    compTokenPrice,
-    opTokenPrice,
-    wallet,
-    true,
-  );
+    vaultAPYs,
+    userVaultBalances,
+    vaultTotalAssets,
+    totalCount,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    hasError,
+    error
+  } = useVaultDataPaginated(currentPage, itemsPerPage, sortBy, sortOrder);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    if (newSortBy !== sortBy || newSortOrder !== sortOrder) {
+      setSortBy(newSortBy);
+      setSortOrder(newSortOrder);
+      setCurrentPage(1);
+    }
+  };
+
+  if (hasError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <h2 className="text-xl font-semibold mb-4">Unable to load vaults</h2>
+        <p className="text-gray-600 mb-4">
+          There was an error loading vault data. Please try again later.
+        </p>
+        <p className="text-sm text-gray-500">
+          Error: {error?.message}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto">
@@ -88,6 +62,18 @@ const VaultsGridContainer = () => {
         vaultAPYs={vaultAPYs}
         userVaultBalances={userVaultBalances}
         vaultTotalAssets={vaultTotalAssets}
+        // Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={itemsPerPage}
+        hasNextPage={hasNextPage}
+        hasPrevPage={hasPrevPage}
+        onPageChange={handlePageChange}
+        // Sorting
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
       />
     </div>
   );

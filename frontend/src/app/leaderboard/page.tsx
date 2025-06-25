@@ -6,6 +6,7 @@ import { formatCurrency, shortAddressForm } from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
 import { TrophyIcon } from "@heroicons/react/24/outline";
 import { ZERO_ACCOUNT } from "@/containers/VaultsContainer";
+
 import { useLeaderboardData } from "@/hooks/useLeaderboardData";
 import { useWallets } from "@privy-io/react-auth";
 

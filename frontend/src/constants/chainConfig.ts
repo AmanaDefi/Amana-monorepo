@@ -35,15 +35,17 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   COMPOUND: "/compound.png",
   AAVE: "/aave.png",
   FLUID: "/fluid.png",
-  VENUS: "/venus.png",
+  VENUS: "/Venus.png",
   TON: "/ton_logo.png",
-  MOONWELL: "/Moonwell.png",
+  MOONWELL: "/Moonwell.jpg",
   CURVE: "/curve.png",
   EUER: "/euler.svg",
   ARB: "/arbitrum-arb-logo.png",
   AMANAZ: "/amana-token-logo.svg",
   BASE: "/base.png",
-  USDT_TOKEN: "/tether.png",
+  USDT_TOKEN: '/tether.png',
+  BALANCER: "/balancer.png",
+  ZEROLEND: "/ZeroLend.png",
 };
 
 // Chain icons mapping (optional fallback if modal icons fail) {It's a long one, should we move it to utils || any other data center}
@@ -1047,3 +1049,57 @@ export const EVM_GATEWAY_ADDRESSES: Record<number, string> = {
   900: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Mainnet
   901: "ZETAjseVjuFsxdRxo6MmTCvqFwb3ZHUx56Co3vCmGis", // Solana Testnet
 };
+
+export const NETWORK_FILTER_OPTIONS = [
+  {
+    value: "Arbitrum",
+    icon: TOKEN_LOGO_URLS.ARB,
+  },
+  {
+    value: "Base",
+    icon: TOKEN_LOGO_URLS.BASE,
+  },
+  {
+    value: "BNB",
+    icon: TOKEN_LOGO_URLS.BNB,
+  },
+  {
+    value: "Ethereum",
+    icon: TOKEN_LOGO_URLS.ETH,
+  },
+  {
+    value: "Polygon",
+    icon: TOKEN_LOGO_URLS.POL,
+  },
+];
+
+export const PROTOCOL_FILTER_OPTIONS = [
+  {
+    value: "Aave",
+    icon: TOKEN_LOGO_URLS.AAVE,
+  },
+  // {
+  //   value: "Balancer",
+  //   icon: TOKEN_LOGO_URLS.BALANCER,
+  // },
+  {
+    value: "Compound",
+    icon: TOKEN_LOGO_URLS.COMPOUND,
+  },
+  {
+    value: "Curve-Convex",
+    icon: TOKEN_LOGO_URLS.CURVE,
+  },
+  {
+    value: "Euler",
+    icon: TOKEN_LOGO_URLS.EUER,
+  },
+  {
+    value: "Fluid",
+    icon: TOKEN_LOGO_URLS.FLUID,
+  },
+  {
+    value: "ZeroLend",
+    icon: TOKEN_LOGO_URLS.ZEROLEND,
+  }
+];

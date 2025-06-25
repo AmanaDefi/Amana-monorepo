@@ -19,7 +19,6 @@ export const VaultRow: FC<Props> = React.memo(
   ({ vault, vaultAPYs, vaultTotalAssets }) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
-
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
       (asset) => asset.vaultId === vault.id,

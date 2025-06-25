@@ -1,4 +1,4 @@
-import { Dispatch, FC, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, FC, useEffect, useRef, useState } from "react";
 import { SetStateAction } from "jotai";
 
 import { VaultData } from "@/types/types";
@@ -8,6 +8,7 @@ import CardsMenuIcon from "@/components/svg/ListMenuCards";
 import ListMenuIcon from "@/components/svg/ListMenuIcon";
 import SearchIcon from "@/components/svg/Search";
 import classNames from "classnames";
+import { NETWORK_FILTER_OPTIONS, PROTOCOL_FILTER_OPTIONS } from "@/constants/chainConfig";
 
 const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "Risk" }];
 
@@ -47,43 +48,47 @@ export const VaultFilters: FC<Props> = ({
   isShownMyVaults,
   setIsShownMyVaults,
 }) => {
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isHiddenFilterButton, setIsHiddenFilterButton] = useState(false);
 
-  const chains = useMemo(() => {
-    const uniqueNetworksMap = new Map();
+  const [localSearch, setLocalSearch] = useState(searchTerm);
 
-    vaults.forEach((vault) => {
-      if (
-        vault &&
-        vault.protocol &&
-        typeof vault.protocol.network === "string"
-      ) {
-        const networkName = vault.protocol.network;
-        const iconUrl = vault.imgURL;
+  // Sync local state when external searchTerm changes from parent (e.g., clear)
+  useEffect(() => {
+    setLocalSearch(searchTerm);
+  }, [searchTerm]);
 
-        if (!uniqueNetworksMap.has(networkName)) {
-          uniqueNetworksMap.set(networkName, {
-            value: networkName,
-            icon: iconUrl,
-          });
-        }
+  // Debounce: update parent after delay
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      if (localSearch !== searchTerm) {
+        setSearchTerm(localSearch);
       }
-    });
+    }, 800);
 
-    return Array.from(uniqueNetworksMap.values());
-  }, [vaults]);
+    return () => clearTimeout(timerId);
+  }, [localSearch]);
 
-  const protocols = useMemo(() => {
-    const uniqueProtocols = Array.from(
-      new Set(vaults.map((vault) => vault.protocol.name)),
-    );
+  const chains = NETWORK_FILTER_OPTIONS;
+  const protocols = PROTOCOL_FILTER_OPTIONS;
 
-    return uniqueProtocols.map((prot) => {
-      return { value: prot };
-    });
-  }, [vaults]);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        filterRef.current &&
+        !filterRef.current.contains(event.target as Node)
+      ) {
+        setShowMobileFilters(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const toggleSortOrder = () => {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -201,22 +206,30 @@ export const VaultFilters: FC<Props> = ({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={"Search"}
+                placeholder={
+                  "Search"
+                }
+                maxLength={100}
                 className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
-                value={searchTerm}
+                value={localSearch}
                 onFocus={() => setIsHiddenFilterButton(true)}
                 onBlur={() => setIsHiddenFilterButton(false)}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => setLocalSearch(e.target.value)}
               />
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={"Search"}
+                placeholder={
+                  !isHiddenFilterButton
+                    ? "Search"
+                    : "Search"
+                }
+                maxLength={100}
                 className="text-white lg:hidden focus:outline-none bg-transparent w-full"
-                value={searchTerm}
+                value={localSearch}
                 onFocus={() => setIsHiddenFilterButton(true)}
                 onBlur={() => setIsHiddenFilterButton(false)}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => setLocalSearch(e.target.value)}
               />
             </>
             <div className="absolute left-4 top-3">
