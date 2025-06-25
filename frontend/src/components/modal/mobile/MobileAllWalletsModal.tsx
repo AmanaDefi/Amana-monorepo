@@ -11,7 +11,7 @@ import { showInfoToast } from "@/toasts";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const MobileAllWallets = () => {
-  const { step, successAuth, closeAll: closeAuthModals } = useAuthStore();
+  const { step, successAuth, closeAll } = useAuthStore();
   const {
     step: fundWalletStep,
     setStep,
@@ -30,7 +30,6 @@ const MobileAllWallets = () => {
     onSuccess: (result) => {
       if (fundWalletStep === "connectWallet") {
         setWalletAddress(result.accounts[0]);
-        closeAuthModals();
         return fundWalletConnect();
       }
       return successAuth(walletAddress, activeAccount || undefined, true);
@@ -66,13 +65,14 @@ const MobileAllWallets = () => {
   const handleClose = () => {
     if (fundWalletStep === "connectWallet") {
       setStep("setValues");
+    } else {
+      closeAll();
     }
-    closeAuthModals();
   };
 
   return (
     <MobileModal
-      isOpen={step === "mobileAllWallets"}
+      isOpen={step === "mobileAllWallets" || fundWalletStep === "connectWallet"}
       onClose={handleClose}
       height="full"
       maxHeight="max-h-[484px]"
