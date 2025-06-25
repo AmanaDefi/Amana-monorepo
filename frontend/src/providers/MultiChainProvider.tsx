@@ -224,8 +224,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         debugLog("Disconnecting EVM wallet before Solana connection");
         if (privyWallet) {
           privyWallet.disconnect();
-          evmDisconnect();
         }
+        evmDisconnect();
       }
       setVisible(true);
       setSelectedChain("solana");
@@ -262,6 +262,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setSelectedChain(null);
     disconnect();
     evmDisconnect();
+    if (privyWallet) {
+      privyWallet.disconnect();
+    }
     setIsModalOpen(false);
     clearWalletState();
     debugLog("All wallets disconnected");
@@ -275,7 +278,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     ) {
       router.push("/");
     }
-  }, [disconnect, evmDisconnect, router, path]);
+  }, [disconnect, evmDisconnect, router, path, privyWallet]);
 
   const getEvmBalance = useCallback(
     async (walletAddress: string) => {
