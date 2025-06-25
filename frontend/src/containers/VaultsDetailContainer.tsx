@@ -536,31 +536,6 @@ const VaultsDetailContainer: React.FC<{
               depositUSDValue={depositData.usdValue}
             />
           )}
-          <Dropdown title="Information" defaultOpen={true}>
-            <VaultInformationContent
-              vaultData={vaultData}
-              vaultExplorerBaseUrl={vaultExplorerBaseUrl}
-              strategyExplorerBaseUrl={strategyExplorerBaseUrl}
-              walletAddress={walletAddress || undefined}
-              selectedToken={selectedToken}
-              selectedChain={activeChain}
-              type="information"
-            />
-          </Dropdown>
-
-          {isDeposit && (
-            <Dropdown title="What happens to my deposit?" defaultOpen={true}>
-              <VaultInformationContent
-                vaultData={vaultData}
-                vaultExplorerBaseUrl={vaultExplorerBaseUrl}
-                strategyExplorerBaseUrl={strategyExplorerBaseUrl}
-                walletAddress={walletAddress || undefined}
-                selectedToken={selectedToken}
-                selectedChain={activeChain}
-                type="deposit-flow"
-              />
-            </Dropdown>
-          )}
           <Dropdown
             title={
               isProcessingTx
@@ -579,6 +554,30 @@ const VaultsDetailContainer: React.FC<{
               vaultStrategyChainId={vaultData?.protocol?.chainId}
               isDeposit={isDeposit}
               isProcessing={isTransactionProcessing}
+            />
+          </Dropdown>
+          {isDeposit && (
+            <Dropdown title="What happens to my deposit?" defaultOpen={true}>
+              <VaultInformationContent
+                vaultData={vaultData}
+                vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+                strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+                walletAddress={walletAddress || undefined}
+                selectedToken={selectedToken}
+                selectedChain={activeChain}
+                type="deposit-flow"
+              />
+            </Dropdown>
+          )}
+          <Dropdown title="Information" defaultOpen={false}>
+            <VaultInformationContent
+              vaultData={vaultData}
+              vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+              strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+              walletAddress={walletAddress || undefined}
+              selectedToken={selectedToken}
+              selectedChain={activeChain}
+              type="information"
             />
           </Dropdown>
         </div>

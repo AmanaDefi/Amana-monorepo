@@ -128,14 +128,14 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
           return (
             <div key={step} className="flex flex-row gap-4 items-center">
               <div
-                className="rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0"
+                className="relative rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: bgColor }}
               >
                 {getStepIcon(step)}
 
                 {showLoader && (
-                  <div className="absolute inset-0 rounded-full">
-                    <div className="w-full h-full rounded-full border-2 border-transparent border-t-blue-400 animate-spin"></div>
+                  <div className="absolute inset-0 rounded-full flex items-center justify-center">
+                    <div className="w-11 h-11 rounded-full border-2 border-transparent border-t-blue-400 animate-spin"></div>
                   </div>
                 )}
               </div>

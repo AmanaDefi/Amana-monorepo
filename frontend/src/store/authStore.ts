@@ -34,13 +34,18 @@ interface AuthState {
 
   openStep: (step: AuthStep) => void;
   closeAll: () => void;
-  successAuth: () => void;
+  successAuth: (
+    walletAddress?: string | null,
+    activeAccount?: { type: string },
+    fromAllWallets?: boolean,
+  ) => void;
   updateField: (name: "username" | "email" | "otp", value: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   authenticate: (address: string) => void;
   logout: () => void;
 }
+
 export const useAuthStore = create<AuthState>((set) => ({
   step: null,
   username: "",
@@ -61,14 +66,35 @@ export const useAuthStore = create<AuthState>((set) => ({
       username: "",
       otp: "",
     }),
-  successAuth: () =>
-    set({
-      step: "success",
-      isLoading: false,
-      error: null,
-      username: "",
-      otp: "",
-    }),
+  successAuth: (walletAddress, activeAccount, fromAllWallets = false) => {
+    if (fromAllWallets) {
+      set({
+        step: null,
+        isLoading: false,
+        error: null,
+        username: "",
+        otp: "",
+      });
+    } else {
+      if (activeAccount?.type !== "eoa") {
+        set({
+          step: "success",
+          isLoading: false,
+          error: null,
+          username: "",
+          otp: "",
+        });
+      } else {
+        set({
+          step: null,
+          isLoading: false,
+          error: null,
+          username: "",
+          otp: "",
+        });
+      }
+    }
+  },
   updateField: (name, value) => set((state) => ({ ...state, [name]: value })),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
@@ -90,5 +116,3 @@ export const useAuthStore = create<AuthState>((set) => ({
       otp: "",
     }),
 }));
-
-

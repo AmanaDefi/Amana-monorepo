@@ -91,7 +91,7 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
         </div>
 
         <div className="flex-1 space-y-4">
-          <Dropdown title="Information" defaultOpen={true}>
+          <Dropdown title="Information" defaultOpen={false}>
             <VaultInformationContent
               vaultData={vaultData}
               vaultExplorerBaseUrl={vaultExplorerBaseUrl}
