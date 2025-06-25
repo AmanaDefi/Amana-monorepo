@@ -30,8 +30,6 @@ export default function ChainSelector({
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
 
-  console.log('walletClientType',activeAccount?.walletClientType)
-
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -118,7 +116,7 @@ export default function ChainSelector({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (walletAddress && activeAccount?.walletClientType === "privy") return;
+            if (walletAddress && activeAccount?.walletClientType === "privy" && !isFromTopUp) return;
 
             if (vaultId) {
               const isTxInProgress = CheckTheTxIsInProgress(vaultId);
@@ -127,7 +125,7 @@ export default function ChainSelector({
             setIsOpen(!isOpen);
           }}
           className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
-            walletAddress && activeAccount?.walletClientType === "privy"
+            walletAddress && activeAccount?.walletClientType === "privy" && !isFromTopUp
               ? ""
               : "cursor-pointer"
           }`}

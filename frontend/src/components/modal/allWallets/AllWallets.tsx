@@ -12,14 +12,17 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
+import { chainConfigs } from "@/constants/chainConfig";
 
 const AllWAllets = () => {
+  const isMobile = window.innerWidth < 1024;
   const { step, successAuth, closeAll } = useAuthStore();
   const {
     step: fundWalletStep,
     setStep,
     setActiveConnector,
     setWalletAddress,
+    setChain
   } = useFundWalletStore();
 
   const fundWalletConnect = () => {
@@ -35,10 +38,11 @@ const AllWAllets = () => {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
-          console.log("connectorId removed fron success");
+          setChain(chainConfigs[result.chainId]);
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
+        console.log('successAuth from all wallets')
         return successAuth();
       },
     },
@@ -78,7 +82,7 @@ const AllWAllets = () => {
 
   return (
     <Modal
-      isOpen={step === "allWallets" || fundWalletStep === "connectWallet"}
+      isOpen={!isMobile && (step === "allWallets" || fundWalletStep === "connectWallet")}
       onClose={handleClose}
       paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px] flex"
       roundedClass="rounded-[16px]"

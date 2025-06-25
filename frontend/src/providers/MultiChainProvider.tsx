@@ -128,6 +128,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const path = usePathname();
 
   const { wallets } = useWallets();
+  const { user } = usePrivy();
   const privyWallet = wallets[0];
   const [activeChain, setActiveChain] = useState<Chain>(
     chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 7000)],
@@ -201,7 +202,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       latestChainRef.current = CHAIN_ID.solana.toString();
       return;
     } else if (privyWallet?.chainId) {
-      setActiveChain(chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 7000)]);
+      setActiveChain(
+        chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 7000)],
+      );
       latestChainRef.current = privyWallet?.chainId?.split(":")[1];
     } else {
       setActiveChain(zetachain);
@@ -232,10 +235,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (privyWallet?.address) {
-      // if (!(wallet.walletClientType === 'privy')) {
-      setWalletAddress(privyWallet?.address);
-      setSelectedChain("evm");
-      // }
+      if (!(privyWallet.walletClientType !== "privy" && !!user?.wallet)) {
+        setWalletAddress(privyWallet?.address);
+        setSelectedChain("evm");
+      }
 
       if (connected) {
         disconnect().catch((err) => {
@@ -245,7 +248,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } else if (!privyWallet?.address && !connected) {
       setWalletAddress(null);
     }
-  }, [privyWallet?.address, connected, disconnect]);
+  }, [privyWallet?.address, connected, disconnect, user]);
 
   //  Disconnect Wallet
   const disconnectWallet = useCallback(async () => {
@@ -329,13 +332,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           setSelectedChain("solana");
           setIsModalOpen(false);
         } else if (privyWallet?.address) {
-          // if (!(activeAccount.type === "eoa" && !!scaAccount?.address)) {
-          debugLog("EVM wallet connected:", privyWallet?.address);
-          setWalletAddress(privyWallet?.address);
-          // getEvmBalance(activeAccount.address);
-          setSelectedChain("evm");
-          setIsModalOpen(false);
-          // }
+          if (!(privyWallet.walletClientType !== "privy" && !!user?.wallet)) {
+            debugLog("EVM wallet connected:", privyWallet?.address);
+            setWalletAddress(privyWallet?.address);
+            // getEvmBalance(activeAccount.address);
+            setSelectedChain("evm");
+            setIsModalOpen(false);
+          }
         }
       }, 500); // Additional delay for wallet connection detection
 
@@ -350,6 +353,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     getEvmBalance,
     isHydrated,
     selectedChain,
+    user,
   ]);
 
   // Enhanced storage event handling for cross-tab synchronization
@@ -424,7 +428,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }, 2000); // Wait 2 seconds after initialization for auto-connect
 
     return () => clearTimeout(recoveryTimer);
-  }, [isInitialized, selectedChain, privyWallet?.chainId, publicKey, isHydrated]);
+  }, [
+    isInitialized,
+    selectedChain,
+    privyWallet?.chainId,
+    publicKey,
+    isHydrated,
+  ]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {

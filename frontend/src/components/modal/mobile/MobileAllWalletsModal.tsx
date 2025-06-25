@@ -4,12 +4,13 @@ import { useAuthStore } from "@/store/authStore";
 import ModalButton from "../shared/ModalButton";
 import { MobileModal } from "./MobileModal";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
-import { Connector } from "wagmi";
+import { Connector, useConnect } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
+  const isMobile = window.innerWidth < 1024;
   const {
     step: fundWalletStep,
     setStep,
@@ -17,36 +18,51 @@ const MobileAllWallets = () => {
     setWalletAddress,
   } = useFundWalletStore();
 
-  // const { connectors, connect, isPending: isConnectingWallet } = useConnect();
+  const {
+    connectors,
+    connect,
+    isPending: isConnectingWallet,
+  } = useConnect({
+    mutation: {
+      onSuccess: (result) => {
+        if (fundWalletStep === "connectWallet") {
+          setWalletAddress(result.accounts[0]);
+          localStorage.removeItem("connectorId");
+          return fundWalletConnect();
+        }
+        console.log('successAuth from all mobile wallets')
+        return successAuth();
+      },
+    },
+  });
 
-  // const fundWalletConnect = () => {
-  //   setStep("confirm");
-  // };
+  const fundWalletConnect = () => {
+    setStep("confirm");
+  };
 
-  // const handleExternalWalletConnect = (connector: Connector) => {
-  //   if (isConnectingWallet) return;
-  //   connect(
-  //     { connector },
-  //     {
-  //       onSuccess: (result) => {
-  //         if (fundWalletStep === "connectWallet") {
-  //           setActiveConnector(connector);
-  //           setWalletAddress(result.accounts[0]);
-  //           return fundWalletConnect();
-  //         }
-  //         return successAuth();
-  //       },
-  //       onError: (error) => {
-  //         console.log(error);
+  const handleExternalWalletConnect = (connector: Connector) => {
+    if (isConnectingWallet) return;
+    setActiveConnector(connector);
 
-  //         if (error.name === "ConnectorAlreadyConnectedError") {
-  //           connector.disconnect();
-  //           showInfoToast("Please try to connect wallet again");
-  //         }
-  //       },
-  //     },
-  //   );
-  // };
+    localStorage.setItem("connectorId", connector.id);
+    connect(
+      { connector },
+      {
+        onError: (error) => {
+          console.log(error);
+
+          if (error.name === "ConnectorAlreadyConnectedError") {
+            connector.disconnect();
+            console.log("connectorId removed from error");
+            localStorage.removeItem("connectorId");
+
+            setActiveConnector(null);
+            showInfoToast("Please try to connect wallet again");
+          }
+        },
+      },
+    );
+  };
 
   const handleClose = () => {
     if (fundWalletStep === "connectWallet") {
@@ -58,7 +74,7 @@ const MobileAllWallets = () => {
 
   return (
     <MobileModal
-      isOpen={step === "mobileAllWallets" || fundWalletStep === "connectWallet"}
+      isOpen={isMobile && (step === "mobileAllWallets" || fundWalletStep === "connectWallet")}
       onClose={handleClose}
       height="full"
       maxHeight="max-h-[484px]"
@@ -71,7 +87,7 @@ const MobileAllWallets = () => {
           className="overflow-auto flex-1 scrollbar-thin"
         >
           <div className="flex flex-col gap-4 items-center justify-center">
-            {/* {connectors.map((connector) => (
+            {connectors.map((connector) => (
               <ModalButton
                 key={connector.id}
                 label={connector.name}
@@ -86,7 +102,7 @@ const MobileAllWallets = () => {
                   handleExternalWalletConnect(connector);
                 }}
               />
-            ))} */}
+            ))}
           </div>
         </div>
       </div>

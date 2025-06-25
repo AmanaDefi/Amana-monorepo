@@ -214,27 +214,22 @@ export async function calculateAaveAPY(
         ),
       },
     ];
-    console.log(1);
 
     const multicallData = await provider.call({
       to: mcAddress,
       data: mcIface.encodeFunctionData("aggregate3", [calls]),
     });
-    console.log(2);
     const [results] = mcIface.decodeFunctionResult(
       "aggregate3",
       multicallData,
     ) as any;
-    console.log(3, results[0]);
     if (!results[0].success || !results[1].success) {
       throw new Error("Failed to fetch POOL or UNDERLYING_ASSET_ADDRESS");
     }
     const poolAddress = getAddress(hexDataSlice(results[0].returnData, 12));
-    console.log(4);
     const underlyingAssetAddress = getAddress(
       hexDataSlice(results[1].returnData, 12),
     );
-    console.log(5);
     const aaveLendingPoolAbi = [
       {
         inputs: [{ name: "asset", type: "address" }],
@@ -260,14 +255,12 @@ export async function calculateAaveAPY(
         type: "function",
       },
     ] as const;
-    console.log(6);
     const publicClient = await getPublicClient(wallet, strategyChain.id);
 
     if (!publicClient) {
       console.log(`Failed to fetch public client for id: ${strategyChain.id}`);
       return 0;
     }
-    console.log(7);
 
     const reserveData = await publicClient.readContract({
       address: poolAddress,
@@ -275,7 +268,6 @@ export async function calculateAaveAPY(
       functionName: "getReserveData",
       args: [underlyingAssetAddress],
     });
-    console.log(8);
 
     const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
 
@@ -286,7 +278,6 @@ export async function calculateAaveAPY(
     const depositAPY =
       Math.pow(1 + depositAPR / SECONDS_IN_YEAR, SECONDS_IN_YEAR) - 1;
 
-    console.log(9);
     return depositAPY;
   } catch (e) {
     console.log("calculate aave error: ", e);
@@ -348,7 +339,6 @@ export async function calculateConvexEthereumRewardsAPY(
       "aggregate3",
       multicallData,
     ) as any;
-    console.log({results})
   
     // Decode batched results
     const crvRewardRate = BigInt(results[0].returnData);
@@ -936,7 +926,6 @@ export const Approvedeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
 ) => {
-  //console.log("Executing DepositApprove");
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient || !activeAccount?.address) {
     console.log("No wallet client or active account found");
@@ -944,7 +933,6 @@ export const Approvedeposit = async (
   }
 
   console.log("Executing DepositApprove");
-  console.log("inputToken", inputToken);
   try {
     let spender = EVM_GATEWAY_ADDRESSES[activeChain.id];
     if (activeChain.id === 7000 || activeChain.id === 7001) {
@@ -975,10 +963,8 @@ export const Approvedeposit = async (
       hash: txHash,
     });
     if (receipt.status === "success") {
-      console.log("success approve");
       return receipt;
     } else {
-      console.log("error approve");
       return false;
     }
   } catch (error: any) {
@@ -1013,8 +999,6 @@ const getPathDataAndMinSharesOut = async (
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
   }
-
-  console.log({activeWallet}, vaultData.protocol.strategyAddress, activeChain)
   const publicClient = await getPublicClient(activeWallet, vaultData.protocol.chainId);
   if (!publicClient) throw new Error("Error get public client");
 
@@ -1586,7 +1570,6 @@ const executeCrossChainWithdrawal = async (
 ) => {
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
-  //console.log("Executing Cross-Chain Withdrawal");
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
     withdrawZRC20,
@@ -1941,7 +1924,6 @@ export const getSharesFromDeposit = async (
 
   if (!publicClient) {
     const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].id}`;
-    console.log(errorMsg);
     throw new Error(errorMsg);
   }
 
@@ -1957,9 +1939,6 @@ export const getSharesFromDeposit = async (
       sharesAsBigInt,
       vaultData.inputToken.decimals,
     );
-
-    console.log("'shares' (bigint):", sharesAsBigInt);
-    console.log("formatted 'shares':", formattedShares);
 
     return formattedShares;
   } catch (e) {
@@ -1998,10 +1977,8 @@ export const getAssetsFromShares = async (
       args: [amount],
     });
 
-    //console.log("result", result);
     return result;
   } catch (e) {
-    //console.log("Error reading contract:", e);
     return BigInt("0");
   }
 };
