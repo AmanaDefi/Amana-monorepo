@@ -36,7 +36,7 @@ const WalletActions = () => {
         Receive
       </Button>
 
-      {user?.walletClientType !== "privy" && (
+      {user?.walletClientType === "privy" && (
         <Button variant="wallet" onClick={handleTopUp}>
           <TopUpIcon width={12} height={12} className="mr-1" />
           Top Up

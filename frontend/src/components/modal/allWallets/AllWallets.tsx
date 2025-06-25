@@ -12,7 +12,6 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
-import { useEffect } from "react";
 
 const AllWAllets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -88,7 +87,7 @@ const AllWAllets = () => {
       customCloseButton={
         <button
           onClick={handleClose}
-          className="absolute top-[20px] right-[16px] z-10 rounded-[8px] flex items-center justify-center w-10 h-10"
+          className="absolute top-[20px] right-[16px] z-20 rounded-[8px] flex items-center justify-center w-10 h-10"
           aria-label="Close"
         >
           <CloseModalIcon width={16} height={16} />

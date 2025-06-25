@@ -7,7 +7,6 @@ import {
   createWalletClient,
   custom,
   http,
-  Chain,
 } from "viem";
 import { zetachain } from "viem/chains";
 
@@ -18,17 +17,16 @@ export const getPublicClient = async (
   wallet?: ConnectedWallet,
   activeChainId?: number,
 ): Promise<PublicClient | null> => {
-  // if (clientCache.has(wallet?.chainId?.split(":")[1] ?? "7000")) {
-  //   return clientCache.get(wallet?.chainId?.split(":")[1] ?? "7000")!;
-  // }
-  console.log(activeChainId);
+  const chainId = activeChainId
+    ? activeChainId.toString()
+    : (wallet?.chainId?.split(":")[1] ?? "7000");
+    
+  if (clientCache.has(chainId)) {
+    return clientCache.get(chainId)!;
+  }
 
   const chain =
-    SUPPORTED_CHAINS.find(
-      (chain) =>
-        chain.id ===
-        Number(activeChainId ?? wallet?.chainId?.split(":")[1] ?? 7000),
-    ) ?? zetachain;
+    SUPPORTED_CHAINS.find((chain) => chain.id === Number(chainId)) ?? zetachain;
 
   if (!wallet || !!activeChainId) {
     return createPublicClient({

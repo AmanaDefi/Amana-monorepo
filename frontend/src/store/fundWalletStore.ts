@@ -19,7 +19,7 @@ export enum BuyWithEnum {
 const initialState = {
   step: null,
   buyWith: null,
-  chain: SUPPORTED_CHAINS[1].chain,
+  chain: SUPPORTED_CHAINS[1],
   depositAmount: "",
   currency: undefined,
   activeConnector: null,
