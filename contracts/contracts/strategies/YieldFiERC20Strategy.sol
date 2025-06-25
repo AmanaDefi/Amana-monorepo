@@ -75,12 +75,6 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
     ) internal override {
         require(amount > 0, "Deposit amount must be greater than zero");
 
-        console.log(
-            "Depositing %s of input token %s into vyUSD",
-            amount,
-            address(inputToken)
-        );
-
         approveOrIncreaseAllowance(inputToken, receiptToken, amount);
 
         uint256 amountOut = I4626Vault(receiptToken).deposit(
@@ -101,11 +95,6 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
 
         // uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
         // uint256 amountOut = inputTokenBalanceBefore - inputTokenBalanceAfter;
-        // console.log(
-        //     "Deposited %s of input token %s into vyUSD",
-        //     amountOut,
-        //     address(inputToken)
-        // );
         require(amountOut >= minAmountOut, "Insufficient output amount");
     }
 
@@ -113,17 +102,8 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        console.log(
-            "This contracts balance of receipt token %s: %s",
-            receiptToken,
-            IERC20(receiptToken).balanceOf(address(this))
-        );
         uint256 vyusdToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
-        console.log(
-            "Withdrawing %s of receipt token %s from vyUSD",
-            vyusdToWithdraw,
-            receiptToken
-        );
+
         approveOrIncreaseAllowance(
             IERC20(receiptToken),
             address(this),
@@ -148,15 +128,9 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         //     address(0),
         //     ""
         // );
-        console.log("Amount out after redeem: %s", amountOut);
         uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
         amountOut = inputTokenBalanceAfter - inputTokenBalanceBefore;
-        console.log("Amount out from calculation: %s", amountOut);
-        console.log(
-            "Withdrew %s of input token %s from vyUSD",
-            amountOut,
-            address(inputToken)
-        );
+
         require(amountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = amountOut;
     }
@@ -166,8 +140,6 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
 
         if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
-
-        harvest();
 
         // Withdraw all BPT from the liquidity gauge
         uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
@@ -234,24 +206,12 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
     ) public view override returns (uint256 yusdToWithdraw) {
         uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
         yusdToWithdraw = convertToShares(assetAmount);
-        console.log(
-            "Shares to withdraw based on asset amount %s: %s",
-            assetAmount,
-            yusdToWithdraw
-        );
+
         if (yusdToWithdraw > totalinvyUsd) {
             yusdToWithdraw = totalinvyUsd;
-            console.log(
-                "Rounding down to withdraw full staked balance: %s",
-                yusdToWithdraw
-            );
         }
         if (totalinvyUsd > 0 && totalinvyUsd - yusdToWithdraw <= 1e9) {
             yusdToWithdraw = totalinvyUsd;
-            console.log(
-                "Rounding up to withdraw full staked balance: %s",
-                yusdToWithdraw
-            );
         }
     }
 }
