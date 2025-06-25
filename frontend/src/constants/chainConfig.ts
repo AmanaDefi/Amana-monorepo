@@ -313,17 +313,6 @@ export const MULTICALL_ADDRS: Record<
   },
 };
 
-// export const SUPPORTED_CHAINS = [
-//   deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
-//   deployEnv === "testnet" ? sepolia : mainnet,
-//   deployEnv === "testnet" ? baseSepolia : base,
-//   deployEnv === "testnet" ? polygonAmoy : polygon,
-//   deployEnv === "testnet" ? bscTestnet : bsc,
-//   deployEnv === "testnet" ? avalancheFuji : avalanche,
-//   deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
-//   solanaChain,
-// ];
-
 export const chainConfigs = {
   [CHAIN_ID.zetachain]:
     deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,

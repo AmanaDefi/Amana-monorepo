@@ -20,7 +20,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      setIsMobile(window?.innerWidth < 1024);
     };
 
     checkIsMobile();

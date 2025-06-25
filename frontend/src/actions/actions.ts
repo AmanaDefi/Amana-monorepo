@@ -2053,7 +2053,7 @@ export async function fetchReceiptTokens(
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
     const rpcUrl = chainConfigs[chainId].rpcUrls.default.http[0];
-    console.log({rpcUrl})
+    
     if (!rpcUrl) continue;
     const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);
     const mcAddr = MULTICALL_ADDRS[chainId]?.address;

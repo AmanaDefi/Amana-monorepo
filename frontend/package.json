@@ -9,9 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@account-kit/core": "4.35.1",
-    "@account-kit/infra": "4.35.1",
-    "@account-kit/react": "^4.40.0",
     "@coral-xyz/anchor": "0.30.1",
     "@headlessui/react": "2.1.1",
     "@heroicons/react": "2.1.4",

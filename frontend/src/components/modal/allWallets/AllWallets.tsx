@@ -15,7 +15,7 @@ import { ConnectorIcon } from "./components/ConnectorIcon";
 import { chainConfigs } from "@/constants/chainConfig";
 
 const AllWAllets = () => {
-  const isMobile = window.innerWidth < 1024;
+  const isMobile = window?.innerWidth < 1024;
   const { step, successAuth, closeAll } = useAuthStore();
   const {
     step: fundWalletStep,

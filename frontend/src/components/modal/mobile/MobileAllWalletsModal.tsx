@@ -10,7 +10,7 @@ import { showInfoToast } from "@/toasts";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
-  const isMobile = window.innerWidth < 1024;
+  const isMobile = window?.innerWidth < 1024;
   const {
     step: fundWalletStep,
     setStep,
