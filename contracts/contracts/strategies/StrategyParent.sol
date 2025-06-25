@@ -58,7 +58,7 @@ abstract contract StrategyParent is
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
 
-    IERC20 internal inputToken;
+    IERC20 public inputToken;
     address internal receiptTokenAddress;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
