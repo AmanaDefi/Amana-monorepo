@@ -8,6 +8,7 @@ import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
 import BackedBy from "../shared/BackedBy";
 import { Connector, useConnect } from "wagmi";
+
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
@@ -36,6 +37,8 @@ const AllWAllets = () => {
     setChain
   } = useFundWalletStore();
 
+  const activeAccount = useUser();
+
   const fundWalletConnect = () => {
     setStep("confirm");
   };
@@ -53,7 +56,7 @@ const AllWAllets = () => {
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
-        return successAuth();
+        return successAuth(null, activeAccount || undefined, true);
       },
     },
   });
@@ -61,7 +64,6 @@ const AllWAllets = () => {
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
     setActiveConnector(connector);
-
     localStorage.setItem("connectorId", connector.id);
     connect(
       { connector },

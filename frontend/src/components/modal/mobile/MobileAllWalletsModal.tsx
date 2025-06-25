@@ -4,10 +4,12 @@ import { useAuthStore } from "@/store/authStore";
 import ModalButton from "../shared/ModalButton";
 import { MobileModal } from "./MobileModal";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
+
 import { Connector, useConnect } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 import { useEffect, useState } from "react";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -30,6 +32,8 @@ const MobileAllWallets = () => {
     return () => window?.removeEventListener("resize", checkIsMobile);
   }, []);
 
+  const { walletAddress } = useMultiChain();
+
   const {
     connectors,
     connect,
@@ -42,7 +46,7 @@ const MobileAllWallets = () => {
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
-        return successAuth();
+        return successAuth(walletAddress, activeAccount || undefined, true);
       },
     },
   });
@@ -54,7 +58,6 @@ const MobileAllWallets = () => {
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
     setActiveConnector(connector);
-
     localStorage.setItem("connectorId", connector.id);
     connect(
       { connector },
@@ -63,11 +66,14 @@ const MobileAllWallets = () => {
           console.log(error);
 
           if (error.name === "ConnectorAlreadyConnectedError") {
-            connector.disconnect();
-            console.log("connectorId removed from error");
-            localStorage.removeItem("connectorId");
-
-            setActiveConnector(null);
+            const connectedConnector = connectors.find(
+              (c) => c.id === localStorage.getItem("connectorId"),
+            );
+            if (connectedConnector) {
+              connectedConnector.disconnect();
+              localStorage.removeItem("connectorId");
+              setActiveConnector(null);
+            }
             showInfoToast("Please try to connect wallet again");
           }
         },
