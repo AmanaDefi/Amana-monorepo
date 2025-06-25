@@ -22,7 +22,7 @@ import { VAULT_DATA } from "@/constants/index";
 import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useUser } from "@account-kit/react";
+import { useWallets } from "@privy-io/react-auth";
 
 export const useVaultData = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -39,6 +39,8 @@ export const useVaultData = () => {
 
   const vaults: VaultData[] = VAULT_DATA;
   const { walletAddress } = useMultiChain();
+  const {wallets} = useWallets();
+  const wallet = wallets[0];
 
   useUpdateVaultBalanceAndTotal(
     vaults,
@@ -63,6 +65,7 @@ export const useVaultData = () => {
     ethTokenPrice,
     compTokenPrice,
     opTokenPrice,
+    wallet,
     true,
   );
 

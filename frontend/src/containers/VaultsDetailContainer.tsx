@@ -43,7 +43,6 @@ import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
-import { useChain, useUser } from "@account-kit/react";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -55,6 +54,8 @@ import GiftIcon from "@/components/svg/GiftIcon";
 import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
 import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
 import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
+import { useWallets } from "@privy-io/react-auth";
+import { zetachain } from "viem/chains";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -66,7 +67,8 @@ const VaultsDetailContainer: React.FC<{
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
-  const user = useUser();
+  const { wallets } = useWallets();
+  const user = wallets[0];
   const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -98,8 +100,7 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress } = useMultiChain();
-  const { chain: activeChain } = useChain();
+  const { switchToChain, walletAddress, activeChain } = useMultiChain();
 
   const { openStep } = useAuthStore();
 
@@ -263,6 +264,7 @@ const VaultsDetailContainer: React.FC<{
     setVaultTotalAsset,
     setVaultTotalAssetinToken,
     transactionCompleted,
+    user
   );
 
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
@@ -291,6 +293,7 @@ const VaultsDetailContainer: React.FC<{
     ethTokenPrice,
     compTokenPrice,
     opTokenPrice,
+    user
   );
 
   const handleTokenSelect = useCallback(
@@ -377,7 +380,7 @@ const VaultsDetailContainer: React.FC<{
             walletAddress={walletAddress || undefined}
             isWithdraw={isWithdraw}
             selectedToken={selectedToken}
-            selectedChain={activeChain}
+            selectedChain={activeChain ?? zetachain}
             vaultExplorerBaseUrl={vaultExplorerBaseUrl}
             strategyExplorerBaseUrl={strategyExplorerBaseUrl}
             depositData={depositData}

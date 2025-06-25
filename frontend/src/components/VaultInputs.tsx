@@ -13,7 +13,7 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Address, parseAbiItem, parseUnits } from "viem";
 import { Chain } from "viem";
-import { APPROVED_TOKENS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { APPROVED_TOKENS, chainConfigs, SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
   formatCurrency,
@@ -37,23 +37,19 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { useRouter, usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
-import { InformationCircleIcon } from "@heroicons/react/24/solid";
-import ResponsiveTooltip from "@/components/common/Tooltip";
 import {
   CheckTheTxIsInProgress,
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
 import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
-import ErrorInputIcon from "./svg/ErrorInputIcon";
-import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
-import { useChain } from "@account-kit/react";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
+import { useWallets } from "@privy-io/react-auth";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -135,6 +131,8 @@ export default function VaultInputs({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
+  const {wallets} = useWallets()
+  const activeWallet = wallets[0];
 
   // Update label when isDeposit prop changes
   useEffect(() => {
@@ -150,7 +148,8 @@ export default function VaultInputs({
     async function handlePerformanceFee() {
       const perfFee = await getPerformanceFee(
         vaultData.id,
-        SUPPORTED_CHAINS[0].chain.id,
+        SUPPORTED_CHAINS[0].id,
+        activeWallet
       );
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
       setPerformanceFee(percentagePerformanceFee);
@@ -158,7 +157,7 @@ export default function VaultInputs({
     if (vaultData) {
       handlePerformanceFee();
     }
-  }, [vaultData]);
+  }, [vaultData, activeWallet]);
 
   useEffect(() => {
     if (vaultData?.id) {
@@ -201,7 +200,7 @@ export default function VaultInputs({
 
   const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
-  const { chain: activeChain } = useChain();
+  const activeChain = chainConfigs[Number(activeWallet?.chainId?.split(":")[1] ?? 7000)]
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
@@ -363,6 +362,7 @@ export default function VaultInputs({
           walletAddress as any,
           inputBalance,
           inputToken,
+          activeWallet
         );
 
         setSteps(newStepsConfig);
@@ -442,6 +442,7 @@ export default function VaultInputs({
           walletAddress as any,
           inputBalance,
           inputToken,
+          activeWallet
         );
         setSteps(steps);
         updateLocalStorageObject(vaultData.id, {
@@ -695,13 +696,10 @@ export default function VaultInputs({
     [
       activeChain?.id,
       debouncedInputBalance.value,
-      inputToken?.ZRC20equivalent,
-      inputToken?.address,
-      inputToken?.decimals,
-      inputToken?.symbol,
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
+      inputToken
     ],
   );
 
@@ -750,7 +748,7 @@ export default function VaultInputs({
         let netDepositToVaultUSD = "0";
         if (!selectedChain?.id) return;
 
-        const publicClient = getPublicClient(selectedChain?.id);
+        const publicClient = await getPublicClient(activeWallet, selectedChain.id);
         if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
           const gasLimitForWithdrawAndCall = await publicClient.readContract({
             address: vaultData.id as Address,
@@ -813,6 +811,7 @@ export default function VaultInputs({
         const sharesAmountRaw = await getSharesFromDeposit(
           finalConvertedAmount,
           vaultData,
+          activeWallet
         );
 
         // Use formatTokenBalance for the output amount formatting

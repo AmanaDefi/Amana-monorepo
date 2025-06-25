@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {useUser} from "@account-kit/react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import clsx from "clsx";
+import { usePrivy } from "@privy-io/react-auth";
 
 function Index({}) {
-  const account = useUser();
+  const { user: account } = usePrivy();
   const { id } = useParams();
   const wallet = useWallet();
   const [vaultSymbol, setVaultSymbol] = useState<string | null>(null);
@@ -22,7 +22,6 @@ function Index({}) {
       });
     }
   }, [id, vaultSymbol]);
-  
 
   return (
     <>

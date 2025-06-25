@@ -31,14 +31,6 @@ import {
 } from "@/constants/chainConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
-import {
-  SendUserOperationWithEOA,
-  useSendUserOperation,
-  useSmartAccountClient,
-  useUser,
-  UseUserResult,
-  useConnection,
-} from "@account-kit/react";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import Blockpi from "@/service/blockpi";
@@ -55,6 +47,7 @@ import { useTransactionStore } from "@/store/transactionStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { Connector } from "wagmi";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -65,15 +58,13 @@ const handleDepositTransaction = async (
   inputBalance: Balance,
   inputToken: Token,
   walletContext: WalletContextState,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   setTransactionCompleted: (value: boolean) => void,
   activeChain: any,
   setCrosschainInvestHash: Function,
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
-  sendUserOperation: Function,
-  activeConnector?: Connector | null,
 ) => {
   console.log("deposit", activeAccount);
   if (!activeAccount) return;
@@ -105,8 +96,6 @@ const handleDepositTransaction = async (
       activeChain,
       depositAmount,
       setcrossChainTxId,
-      sendUserOperation,
-      activeConnector,
     );
     if (!receipt || !receipt.transactionHash) {
       throw new Error("Failed Tx");
@@ -166,7 +155,7 @@ const handleDepositTransaction = async (
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
 
-      const publicClient = getPublicClient(activeChain.id);
+      const publicClient = await getPublicClient(activeAccount);
       if (
         publicClient &&
         receipt.transactionHash &&
@@ -283,15 +272,13 @@ const handleWithdrawTransaction = async (
   inputBalance: Balance,
   withdrawToken: Token,
   walletContext: WalletContextState,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   setTransactionCompleted: (value: boolean) => void,
   activeChain: any,
   setCrosschainInvestHash: Function,
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
-  sendUserOperation: Function,
-  activeConnector?: Connector | null,
 ) => {
   if (!activeAccount) return;
   console.log("=== WITHDRAW TRANSACTION START ===");
@@ -354,8 +341,6 @@ const handleWithdrawTransaction = async (
       withdrawToken.address as Address,
       withdrawZRC20 as Token,
       setcrossChainTxId,
-      sendUserOperation,
-      activeConnector,
     );
 
     if (!receipt.transactionHash) {
@@ -372,7 +357,7 @@ const handleWithdrawTransaction = async (
     if (activeChain.id === CHAIN_ID.solana) {
       // Solana handling
     } else {
-      const publicClient = getPublicClient(activeChain.id);
+      const publicClient = await getPublicClient(activeAccount);
       if (
         publicClient &&
         receipt?.transactionHash &&
@@ -480,7 +465,6 @@ export default function InteractionContainer({
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
 }): JSX.Element {
-  const activeAccount = useUser();
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
   const [crossChainTxId, setcrossChainTxId] = useState<string>("");
@@ -519,7 +503,14 @@ export default function InteractionContainer({
         );
       }
     }
-  }, [vaultData.id]);
+  }, [
+    vaultData.id,
+    setIsTransactionProcessing,
+    setFinishedTransaction,
+    setLastEventTxHash,
+    setTransactionStepFeedback,
+    setLastTransactionStepFeedback,
+  ]);
 
   const blockpi = useMemo(() => new Blockpi(), []);
 
@@ -1326,25 +1317,11 @@ function Interaction({
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
 }): JSX.Element {
-  const activeAccount = useUser();
+  const {wallets} = useWallets()
+  const activeAccount = wallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
-  const { client: scaClient } = useSmartAccountClient({
-    type: "MultiOwnerModularAccount",
-  });
-  const { currentConnector } = useMultiChain();
-  const { sendUserOperation } = useSendUserOperation({
-    client: scaClient,
-    waitForTxn: true,
-    onError: (error) => {
-      let errorMessage = error.message;
 
-      const detailsIndex = errorMessage.indexOf("Details:");
-      if (detailsIndex !== -1) {
-        errorMessage = errorMessage.slice(detailsIndex);
-      }
-    },
-  });
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
     actionKey: Action,
@@ -1842,8 +1819,6 @@ function Interaction({
       setcrossChainTxId,
       setInputBalance,
       setLastEventTxHash,
-      sendUserOperation,
-      currentConnector,
     )();
 
     console.log("✅ [MAIN-ACTION] === HANDLE INTERACTION COMPLETED ===");
@@ -1897,7 +1872,7 @@ function Interaction({
     setCrosschainInvestHash("");
     setcrossChainTxId("");
 
-    updateLocalStorageObject(vaultData.id, {
+    updateLocalStorageObject(vaultData?.id, {
       lastTransactionStepFeedback: {},
       transactionStepFeedback: {},
       finishedTransaction: false,
@@ -1928,7 +1903,7 @@ function Interaction({
     );
     refreshBalance();
     console.log("[UI] All transaction state cleared, component reactivated");
-  }, [refreshBalance]);
+  }, [refreshBalance, vaultData?.id]);
 
   useEffect(() => {
     if (prevLebel.current !== "" && prevLebel.current !== label) {
@@ -2120,7 +2095,7 @@ function handleInteraction(
   vaultData: VaultData,
   inputBalance: Balance,
   inputToken: Token,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   walletContext: WalletContextState | any,
   setTransactionCompleted: (value: boolean) => void,
   activeChain: Chain,
@@ -2129,8 +2104,6 @@ function handleInteraction(
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
-  sendUserOperation: any,
-  activeConnector?: Connector | null,
 ) {
   console.log("inputToken in handleInteraction: ", inputToken.symbol, {
     action,
@@ -2146,8 +2119,6 @@ function handleInteraction(
           activeAccount,
           activeChain,
           depositAmount,
-          sendUserOperation,
-          activeConnector,
         );
         return result;
       };
@@ -2165,8 +2136,6 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
-          sendUserOperation,
-          activeConnector,
         );
         return result;
       };
@@ -2184,8 +2153,6 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
-          sendUserOperation,
-          activeConnector,
         );
         return result;
       };

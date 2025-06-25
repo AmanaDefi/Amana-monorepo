@@ -6,12 +6,7 @@ import {
   chainConfigs,
   MULTICALL_ADDRS,
 } from "../constants/chainConfig";
-import {
-  ethers,
-  getAddress,
-  Interface,
-  solidityPacked,
-} from "ethers";
+import { ethers, getAddress, Interface, solidityPacked } from "ethers";
 
 import moonwellVaultABI from "../../abis/moonwellVaultABI.json";
 import fourPoolABI from "../../abis/fourPoolABI.json";
@@ -53,15 +48,11 @@ import multicall3Abi from "../../abis/multicall3ABI.json";
 import { hexDataSlice } from "@ethersproject/bytes";
 import { RECEIPT_LOCAL_STORAGE_KEY } from "@/constants";
 import { updateLocalStorageObject } from "@/utils/localStorageUtils";
-import { GetUserResult } from "@account-kit/core";
-import { UseUserResult } from "@account-kit/react";
-import {
-  getPublicClient,
-  getRpcUrl,
-  getWalletClient,
-} from "@/utils/getPublicClient";
+import { getPublicClient, getWalletClient } from "@/utils/getPublicClient";
 import type { IConnection } from "codemelt-retro-api-sdk";
 import { Connector } from "wagmi";
+import { ConnectedWallet } from "@privy-io/react-auth";
+import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 
 dotenv.config();
 
@@ -85,6 +76,7 @@ const BLOCK_TIME: { [chainId: number]: number } = {
 export async function calculateEddyAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain,
+  wallet: ConnectedWallet
 ) {
   const minterAbi = [
     {
@@ -96,7 +88,7 @@ export async function calculateEddyAPY(
     },
   ] as const;
 
-  const publicClient = getPublicClient(strategyChain.id);
+  const publicClient = await getPublicClient(wallet, strategyChain.id);
 
   if (!publicClient) {
     console.log(`Failed to get public client ID ${strategyChain.id}`);
@@ -196,92 +188,110 @@ export async function calculateBeefyAPY(
 export async function calculateAaveAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain,
+  wallet: ConnectedWallet,
 ) {
-  const rpcUrl = getRpcUrl(strategyChain);
-  const provider = new ethers.JsonRpcProvider(rpcUrl, strategyChain.id);
-  const mcAddress = MULTICALL_ADDRS[strategyChain.id].address;
-  const mcIface = new Interface(multicall3Abi);
-  const receiptIface = new Interface([
-    "function POOL() view returns (address)",
-    "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
-  ]);
-  const calls = [
-    {
-      target: receiptTokenAddress,
-      allowFailure: false,
-      callData: receiptIface.encodeFunctionData("POOL", []),
-    },
-    {
-      target: receiptTokenAddress,
-      allowFailure: false,
-      callData: receiptIface.encodeFunctionData("UNDERLYING_ASSET_ADDRESS", []),
-    },
-  ];
+  try {
+    const rpcUrl = chainConfigs[strategyChain.id].rpcUrls.default.http[0];
+    const provider = new ethers.JsonRpcProvider(rpcUrl, strategyChain.id);
+    const mcAddress = MULTICALL_ADDRS[strategyChain.id].address;
+    const mcIface = new Interface(multicall3Abi);
+    const receiptIface = new Interface([
+      "function POOL() view returns (address)",
+      "function UNDERLYING_ASSET_ADDRESS() view returns (address)",
+    ]);
+    const calls = [
+      {
+        target: receiptTokenAddress,
+        allowFailure: false,
+        callData: receiptIface.encodeFunctionData("POOL", []),
+      },
+      {
+        target: receiptTokenAddress,
+        allowFailure: false,
+        callData: receiptIface.encodeFunctionData(
+          "UNDERLYING_ASSET_ADDRESS",
+          [],
+        ),
+      },
+    ];
+    console.log(1);
 
-  const multicallData = await provider.call({
-    to: mcAddress,
-    data: mcIface.encodeFunctionData("aggregate3", [calls]),
-  });
-  const [results] = mcIface.decodeFunctionResult(
-    "aggregate3",
-    multicallData,
-  ) as any;
-  if (!results[0].success || !results[1].success) {
-    throw new Error("Failed to fetch POOL or UNDERLYING_ASSET_ADDRESS");
-  }
-  const poolAddress = getAddress(hexDataSlice(results[0].returnData, 12));
-  const underlyingAssetAddress = getAddress(
-    hexDataSlice(results[1].returnData, 12),
-  );
-  const aaveLendingPoolAbi = [
-    {
-      inputs: [{ name: "asset", type: "address" }],
-      name: "getReserveData",
-      outputs: [
-        { name: "totalAToken", type: "uint256" },
-        { name: "totalStableDebt", type: "uint128" },
-        { name: "totalVariableDebt", type: "uint128" },
-        { name: "liquidityRate", type: "uint128" },
-        { name: "variableBorrowRate", type: "uint128" },
-        { name: "stableBorrowRate", type: "uint128" },
-        { name: "lastUpdateTimestamp", type: "uint40" },
-        { name: "id", type: "uint16" },
-        { name: "aTokenAddress", type: "address" },
-        { name: "stableDebtTokenAddress", type: "address" },
-        { name: "variableDebtTokenAddress", type: "address" },
-        { name: "interestRateStrategyAddress", type: "address" },
-        { name: "accruedToTreasury", type: "uint128" },
-        { name: "unbacked", type: "uint128" },
-        { name: "isolationModeTotalDebt", type: "uint128" },
-      ],
-      stateMutability: "view",
-      type: "function",
-    },
-  ] as const;
-  const publicClient = getPublicClient(strategyChain.id);
+    const multicallData = await provider.call({
+      to: mcAddress,
+      data: mcIface.encodeFunctionData("aggregate3", [calls]),
+    });
+    console.log(2);
+    const [results] = mcIface.decodeFunctionResult(
+      "aggregate3",
+      multicallData,
+    ) as any;
+    console.log(3, results[0]);
+    if (!results[0].success || !results[1].success) {
+      throw new Error("Failed to fetch POOL or UNDERLYING_ASSET_ADDRESS");
+    }
+    const poolAddress = getAddress(hexDataSlice(results[0].returnData, 12));
+    console.log(4);
+    const underlyingAssetAddress = getAddress(
+      hexDataSlice(results[1].returnData, 12),
+    );
+    console.log(5);
+    const aaveLendingPoolAbi = [
+      {
+        inputs: [{ name: "asset", type: "address" }],
+        name: "getReserveData",
+        outputs: [
+          { name: "totalAToken", type: "uint256" },
+          { name: "totalStableDebt", type: "uint128" },
+          { name: "totalVariableDebt", type: "uint128" },
+          { name: "liquidityRate", type: "uint128" },
+          { name: "variableBorrowRate", type: "uint128" },
+          { name: "stableBorrowRate", type: "uint128" },
+          { name: "lastUpdateTimestamp", type: "uint40" },
+          { name: "id", type: "uint16" },
+          { name: "aTokenAddress", type: "address" },
+          { name: "stableDebtTokenAddress", type: "address" },
+          { name: "variableDebtTokenAddress", type: "address" },
+          { name: "interestRateStrategyAddress", type: "address" },
+          { name: "accruedToTreasury", type: "uint128" },
+          { name: "unbacked", type: "uint128" },
+          { name: "isolationModeTotalDebt", type: "uint128" },
+        ],
+        stateMutability: "view",
+        type: "function",
+      },
+    ] as const;
+    console.log(6);
+    const publicClient = await getPublicClient(wallet, strategyChain.id);
 
-  if (!publicClient) {
-    console.log(`Failed to fetch public client for id: ${strategyChain.id}`);
+    if (!publicClient) {
+      console.log(`Failed to fetch public client for id: ${strategyChain.id}`);
+      return 0;
+    }
+    console.log(7);
+
+    const reserveData = await publicClient.readContract({
+      address: poolAddress,
+      abi: aaveLendingPoolAbi,
+      functionName: "getReserveData",
+      args: [underlyingAssetAddress],
+    });
+    console.log(8);
+
+    const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
+
+    // Get the liquidity rate (in Ray) and normalize it
+    const liquidityRate = reserveData[4]; // Assuming this is the correct index for liquidity rate in reserveData
+    const depositAPR = Number(liquidityRate) / 1e27;
+    // Calculate APY using compounding
+    const depositAPY =
+      Math.pow(1 + depositAPR / SECONDS_IN_YEAR, SECONDS_IN_YEAR) - 1;
+
+    console.log(9);
+    return depositAPY;
+  } catch (e) {
+    console.log("calculate aave error: ", e);
     return 0;
   }
-
-  const reserveData = await publicClient.readContract({
-    address: poolAddress,
-    abi: aaveLendingPoolAbi,
-    functionName: "getReserveData",
-    args: [underlyingAssetAddress],
-  });
-
-  const SECONDS_IN_YEAR = 60 * 60 * 24 * 365;
-
-  // Get the liquidity rate (in Ray) and normalize it
-  const liquidityRate = reserveData[4]; // Assuming this is the correct index for liquidity rate in reserveData
-  const depositAPR = Number(liquidityRate) / 1e27;
-  // Calculate APY using compounding
-  const depositAPY =
-    Math.pow(1 + depositAPR / SECONDS_IN_YEAR, SECONDS_IN_YEAR) - 1;
-
-  return depositAPY;
 }
 export async function calculateConvexEthereumRewardsAPY(
   poolAddress: Address,
@@ -291,8 +301,9 @@ export async function calculateConvexEthereumRewardsAPY(
   crvTokenPrice: number,
   cvxTokenPrice: number,
   ethTokenPrice: number,
+  wallet: ConnectedWallet,
 ): Promise<number> {
-  const rpcUrl = getRpcUrl(strategyChain);
+  const rpcUrl = chainConfigs[strategyChain.id].rpcUrls.default.http[0];
   const provider = new ethers.JsonRpcProvider(rpcUrl, strategyChain.id);
   const mcAddr = MULTICALL_ADDRS[strategyChain.id].address;
   const mcIface = new Interface(multicall3Abi);
@@ -329,22 +340,23 @@ export async function calculateConvexEthereumRewardsAPY(
     },
   ];
 
-  const multicallData = await provider.call({
-    to: mcAddr,
-    data: mcIface.encodeFunctionData("aggregate3", [calls]),
-  });
-  const [results] = mcIface.decodeFunctionResult(
-    "aggregate3",
-    multicallData,
-  ) as any;
-
-  // Decode batched results
-  const crvRewardRate = BigInt(results[0].returnData);
-  const totalSupply = BigInt(results[1].returnData);
-  const extraAddrRaw = results[2].success
-    ? hexDataSlice(results[2].returnData, 12)
-    : null;
-  const virtualPrice = BigInt(results[3].returnData);
+    const multicallData = await provider.call({
+      to: mcAddr,
+      data: mcIface.encodeFunctionData("aggregate3", [calls]),
+    });
+    const [results] = mcIface.decodeFunctionResult(
+      "aggregate3",
+      multicallData,
+    ) as any;
+    console.log({results})
+  
+    // Decode batched results
+    const crvRewardRate = BigInt(results[0].returnData);
+    const totalSupply = BigInt(results[1].returnData);
+    const extraAddrRaw = results[2].success
+      ? hexDataSlice(results[2].returnData, 12)
+      : null;
+    const virtualPrice = BigInt(results[3].returnData);
 
   const secondsPerYear = 365 * 24 * 60 * 60;
   const crvPerLpPerYear =
@@ -370,7 +382,7 @@ export async function calculateConvexEthereumRewardsAPY(
     },
   ] as const;
 
-  const publicClient = getPublicClient(strategyChain.id);
+  const publicClient = await getPublicClient(wallet, strategyChain.id);
   if (!publicClient) {
     console.log(
       `Failed to get public client for chain id: ${strategyChain.id}`,
@@ -424,6 +436,7 @@ export async function calculateConvexArbitrumRewardsAPY(
   strategyChain: Chain,
   crvTokenPrice: number,
   ethTokenPrice: number,
+  wallet: ConnectedWallet,
 ): Promise<number> {
   const provider = arbitrumProvider;
 
@@ -464,7 +477,7 @@ export async function calculateConvexArbitrumRewardsAPY(
       },
     ] as const;
 
-    const publicClient = getPublicClient(strategyChain.id);
+    const publicClient = await getPublicClient(wallet, strategyChain.id);
     if (!publicClient) {
       return 0;
     }
@@ -682,8 +695,9 @@ export async function calculateMoonwellAPY(
 export async function calculateCompoundAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain,
+  wallet: ConnectedWallet,
 ) {
-  const publicClient = getPublicClient(strategyChain.id);
+  const publicClient = await getPublicClient(wallet, strategyChain.id);
   if (!publicClient) {
     console.log(`Failed to get public client with id ${strategyChain.id}`);
     return 0;
@@ -791,6 +805,7 @@ export async function calculateCompoundRewardsAPY(
 export async function calculateVenusAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain,
+  wallet: ConnectedWallet,
 ) {
   const vTokenAbi = [
     {
@@ -802,7 +817,7 @@ export async function calculateVenusAPY(
     },
   ] as const;
 
-  const publicClient = getPublicClient(strategyChain.id);
+  const publicClient = await getPublicClient(wallet, strategyChain.id);
   if (!publicClient) {
     console.log(`Failed to get client for chain: ID ${strategyChain.id}`);
     return 0;
@@ -842,12 +857,10 @@ export const executeDeposit = async (
   vaultData: VaultData,
   inputToken: Token,
   walletContext: WalletContextState | undefined,
-  activeAccount: GetUserResult,
+  activeAccount: ConnectedWallet,
   activeChain: Chain,
   transactionAmount: bigint,
   setcrossChainTxId: Function,
-  sendUserOperation: Function,
-  activeConnector?: Connector | null
 ) => {
   if (activeChain.id === CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
@@ -857,8 +870,6 @@ export const executeDeposit = async (
       activeAccount,
       activeChain,
       transactionAmount,
-      sendUserOperation,
-      activeConnector
     );
   } else if (activeChain.id === CHAIN_ID.solana) {
     return executeSolanaDeposit(
@@ -868,6 +879,7 @@ export const executeDeposit = async (
       activeChain,
       transactionAmount,
       setcrossChainTxId,
+      activeAccount,
     );
   } else {
     return executeCrossChainDeposit(
@@ -877,7 +889,6 @@ export const executeDeposit = async (
       activeChain,
       transactionAmount,
       setcrossChainTxId,
-      activeConnector
     );
   }
 };
@@ -921,18 +932,16 @@ export const waitForReceiptSol = async (txHash: string) => {
 export const Approvedeposit = async (
   vaultId: Address,
   inputToken: Address,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   activeChain: Chain,
   transactionAmount: bigint,
-  sendUserOperation: any,
-  connector?: Connector | null
 ) => {
   //console.log("Executing DepositApprove");
-  const walletClient = await getWalletClient(activeChain.id, connector);
-  if ((!walletClient && !sendUserOperation) || !activeAccount?.address) {
+  const walletClient = await getWalletClient(activeAccount);
+  if (!walletClient || !activeAccount?.address) {
     console.log("No wallet client or active account found");
     return false;
-}
+  }
 
   console.log("Executing DepositApprove");
   console.log("inputToken", inputToken);
@@ -948,36 +957,16 @@ export const Approvedeposit = async (
       parseAbiItem("function approve(address to, uint256 value)"),
     ] as const;
 
-    let txHash;
+    const txHash = await walletClient.writeContract({
+      address: inputToken,
+      abi: erc20ApproveAbi,
+      functionName: "approve",
+      args: [spender, transactionAmount],
+      account: activeAccount?.address,
+      chain: activeChain,
+    });
 
-    if (activeAccount.type === "sca" && sendUserOperation) {
-      const { hash } = await sendUserOperation({
-        uo: [
-          {
-            target: inputToken,
-            data: encodeFunctionData({
-              abi: erc20ApproveAbi,
-              functionName: "approve",
-              args: [spender, transactionAmount],
-            }),
-          },
-        ],
-      });
-      txHash = hash;
-    } else if (!!walletClient) {
-      const eoaClient = walletClient;
-
-      txHash = await eoaClient.writeContract({
-        address: inputToken,
-        abi: erc20ApproveAbi,
-        functionName: "approve",
-        args: [spender, transactionAmount],
-        account: activeAccount?.address,
-        chain: eoaClient.chain!,
-      });
-    }
-
-    const publicClient = getPublicClient(activeChain.id);
+    const publicClient = await getPublicClient(activeAccount);
     if (!publicClient) {
       return false;
     }
@@ -1002,6 +991,7 @@ const getPathDataAndMinSharesOut = async (
   inputToken: Token,
   transactionAmount: bigint,
   activeChain: Chain,
+  activeWallet: ConnectedWallet,
 ): Promise<{ swapPath: `0x${string}`; minSharesOut: bigint }> => {
   const inputTokenZeta = isZetachain(activeChain.id)
     ? inputToken
@@ -1024,7 +1014,8 @@ const getPathDataAndMinSharesOut = async (
     assetsConversionAmount = amountOut;
   }
 
-  const publicClient = getPublicClient(vaultData.protocol.chainId);
+  console.log({activeWallet}, vaultData.protocol.strategyAddress, activeChain)
+  const publicClient = await getPublicClient(activeWallet, vaultData.protocol.chainId);
   if (!publicClient) throw new Error("Error get public client");
 
   const sharesOutForUnderlying = await publicClient.readContract({
@@ -1074,11 +1065,9 @@ const getPathDataAndMinAmountOut = async (
 const executeDirectDeposit = async (
   vaultData: VaultData,
   inputToken: Token,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   activeChain: Chain,
   transactionAmount: bigint,
-  sendUserOperation: Function,
-  activeConnector?: Connector | null
 ) => {
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
@@ -1088,30 +1077,14 @@ const executeDirectDeposit = async (
     inputToken,
     transactionAmount,
     activeChain,
+    activeAccount,
   );
-  const walletClient = await getWalletClient(activeChain.id, activeConnector);
+  const walletClient = await getWalletClient(activeAccount);
+  if (!walletClient) {
+    return { transactionHash: null };
+  }
 
-  let txHash;
-  if (activeAccount.type === "sca" && sendUserOperation) {
-    const { hash } = await sendUserOperation({
-      uo: [
-        {
-          target: inputToken,
-          data: encodeFunctionData({
-            abi: [
-              parseAbiItem(
-                "function deposit(uint256 assets, uint256 minSharesOut, address receiver)",
-              ),
-            ],
-            functionName: "deposit",
-            args: [transactionAmount, minSharesOut, activeAccount.address],
-          }),
-        },
-      ],
-    });
-    txHash = hash;
-  } else if (!!walletClient) {
-  txHash = await walletClient.writeContract({
+  const txHash = await walletClient.writeContract({
     address: vaultData.id as Address,
     abi: [
       parseAbiItem(
@@ -1123,7 +1096,7 @@ const executeDirectDeposit = async (
     account: activeAccount.address,
     chain: walletClient.chain,
   });
-}
+
   return { transactionHash: txHash };
 };
 
@@ -1141,13 +1114,12 @@ const generateTransactionId = (
 const executeCrossChainDeposit = async (
   vaultData: VaultData,
   inputToken: Token,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   activeChain: Chain,
   transactionAmount: bigint,
   setcrossChainTxId: Function,
-  activeConnector?: Connector | null
 ) => {
-  const walletClient = await getWalletClient(activeChain.id, activeConnector);
+  const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
   console.log("Executing Cross-Chain Deposit");
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
@@ -1155,6 +1127,7 @@ const executeCrossChainDeposit = async (
     inputToken,
     transactionAmount,
     activeChain,
+    activeAccount,
   );
 
   // Generate a unique transaction ID
@@ -1233,7 +1206,7 @@ const executeCrossChainDeposit = async (
 
     console.log("txHash:", txHash);
 
-    const publicClient = getPublicClient(activeChain.id);
+    const publicClient = await getPublicClient(activeAccount);
     if (publicClient) {
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
@@ -1301,7 +1274,7 @@ const executeCrossChainDeposit = async (
 
       console.log("depositAndCall txHash:", txHash);
 
-      const publicClient = getPublicClient(activeChain.id);
+      const publicClient = await getPublicClient(activeAccount);
       if (!publicClient) {
         console.warn(`Failed to get ${activeChain.id}.`);
         setcrossChainTxId(transactionId);
@@ -1333,6 +1306,7 @@ const executeSolanaDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   setcrossChainTxId: Function,
+  activeWallet: ConnectedWallet,
 ) => {
   console.log("Executing Cross-Chain Deposit");
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
@@ -1340,6 +1314,7 @@ const executeSolanaDeposit = async (
     inputToken,
     transactionAmount,
     activeChain,
+    activeWallet,
   );
   console.log("swapPath", swapPath);
   console.log("minSharesOut", minSharesOut);
@@ -1501,14 +1476,12 @@ export const executeSolanaWithdrawal = async (
 export const executeWithdrawal = async (
   vaultData: VaultData,
   walletContext: WalletContextState,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   activeChain: Chain,
   withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
-  sendUserOperation: Function,
-  activeConnector?: Connector | null
 ) => {
   console.log("Executing Withdrawal");
   console.log("To chain ID:", activeChain.id);
@@ -1519,8 +1492,6 @@ export const executeWithdrawal = async (
       activeAccount,
       activeChain,
       withdrawAssetAmount,
-      sendUserOperation,
-      activeConnector
     );
   } else if (activeChain.id == CHAIN_ID.solana) {
     console.log("Solana withdrawal detected");
@@ -1542,18 +1513,15 @@ export const executeWithdrawal = async (
       withdrawERC20,
       withdrawZRC20,
       setcrossChainTxId,
-      activeConnector
     );
   }
 };
 
 const executeDirectWithdrawal = async (
   vaultData: VaultData,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   activeChain: Chain,
   withdrawAssetAmount: bigint,
-  sendUserOperation: Function,
-  activeConnector?: Connector | null
 ) => {
   //vaultId: string
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
@@ -1561,63 +1529,34 @@ const executeDirectWithdrawal = async (
     vaultData.inputToken,
     withdrawAssetAmount,
   );
-  const walletClient = await getWalletClient(activeChain.id, activeConnector);
+  const walletClient = await getWalletClient(activeAccount);
 
-  if (
-    ((!walletClient || !walletClient.chain) && !sendUserOperation) ||
-    !activeAccount?.address
-  ) {
+  if (!walletClient || !walletClient.chain || !activeAccount?.address) {
     console.log("Failet go get WalletClient.");
     return { transactionHash: null };
   }
   console.log(walletClient?.chain, "walletClient.chain");
-  let txHash;
-  if (activeAccount?.type === "sca" && sendUserOperation) {
-    const { hash } = await sendUserOperation({
-      uo: [
-        {
-          target: vaultData.id,
-          data: encodeFunctionData({
-            abi: [
-              parseAbiItem(
-                "function withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner)",
-              ),
-            ],
-            functionName: "withdraw",
-            args: [
-              withdrawAssetAmount,
-              minAmountOut,
-              activeAccount?.address,
-              activeAccount?.address,
-            ],
-          }),
-        },
-      ],
-    });
-    txHash = hash;
-  } else if (walletClient) {
-    txHash = await walletClient.writeContract({
-      address: vaultData.id,
-      abi: [
-        parseAbiItem(
-          "function withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner)",
-        ),
-      ],
-      functionName: "withdraw",
-      args: [
-        withdrawAssetAmount,
-        minAmountOut,
-        activeAccount?.address,
-        activeAccount?.address,
-      ],
-      chain: walletClient.chain,
-      account: activeAccount?.address,
-    });
-  }
+  const txHash = await walletClient.writeContract({
+    address: vaultData.id,
+    abi: [
+      parseAbiItem(
+        "function withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner)",
+      ),
+    ],
+    functionName: "withdraw",
+    args: [
+      withdrawAssetAmount,
+      minAmountOut,
+      activeAccount?.address,
+      activeAccount?.address,
+    ],
+    chain: walletClient.chain,
+    account: activeAccount?.address,
+  });
 
   console.log("executeDirectWithdrawal txHash:", txHash);
 
-  const publicClient = getPublicClient(activeChain.id);
+  const publicClient = await getPublicClient(activeAccount);
   if (!publicClient) {
     console.warn(`failed to get publicClient for chain id: ${activeChain.id}.`);
     return { transactionHash: null };
@@ -1638,15 +1577,14 @@ const executeDirectWithdrawal = async (
 
 const executeCrossChainWithdrawal = async (
   vaultData: VaultData,
-  activeAccount: UseUserResult,
+  activeAccount: ConnectedWallet,
   activeChain: Chain,
   withdrawAssetAmount: bigint,
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
-  activeConnector?: Connector | null
 ) => {
-  const walletClient = await getWalletClient(activeChain.id, activeConnector);
+  const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
   //console.log("Executing Cross-Chain Withdrawal");
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
@@ -1719,7 +1657,7 @@ const executeCrossChainWithdrawal = async (
       account: activeAccount.address,
     });
 
-    const publicClient = getPublicClient(activeChain.id);
+    const publicClient = await getPublicClient(activeAccount);
     if (!publicClient) {
       console.warn(`failed to get public client ${activeChain.id}.`);
       return { transactionHash: null };
@@ -1746,6 +1684,7 @@ export const fetchUserVaultBalance = async (
   userAddress: string,
   vaultAddress: string,
   decimals: number,
+  activeAccount: ConnectedWallet,
 ) => {
   const vaultAbi = [
     {
@@ -1764,10 +1703,10 @@ export const fetchUserVaultBalance = async (
     },
   ] as const;
 
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
+  const publicClient = await getPublicClient(activeAccount, SUPPORTED_CHAINS[0].id);
   if (!publicClient) {
     console.log(
-      `Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].chain.id}`,
+      `Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].id}`,
     );
     return null;
   }
@@ -1797,6 +1736,7 @@ export const fetchUserVaultMaxRedeem = async (
   decimals: number,
   userAddress: Address,
   vaultAddress: Address,
+  activeWallet: ConnectedWallet,
 ) => {
   const maxRedeemAbi = [
     {
@@ -1808,9 +1748,9 @@ export const fetchUserVaultMaxRedeem = async (
     },
   ] as const;
 
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
+  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
   if (!publicClient) {
-    console.log(`Error get public client ${SUPPORTED_CHAINS[0].chain.id}`);
+    console.log(`Error get public client ${SUPPORTED_CHAINS[0].id}`);
     return null;
   }
 
@@ -1833,6 +1773,7 @@ export const fetchUserVaultMaxWithdraw = async (
   decimals: number,
   userAddress: Address,
   vaultAddress: Address,
+  activeWallet: ConnectedWallet,
 ) => {
   console.log("🔍 Calling fetchUserVaultMaxWithdraw:", {
     userAddress,
@@ -1840,7 +1781,7 @@ export const fetchUserVaultMaxWithdraw = async (
     decimals,
   });
 
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
+  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
   if (!publicClient) throw new Error("failed to get publicClient");
   const maxWithdraw = await publicClient.readContract({
     address: vaultAddress,
@@ -1984,6 +1925,7 @@ export const getPathDataAndAmountOut = async (
 export const getSharesFromDeposit = async (
   amount: bigint,
   vaultData: VaultData,
+  activeWallet: ConnectedWallet,
 ) => {
   const previewDepositAbi = [
     {
@@ -1995,10 +1937,10 @@ export const getSharesFromDeposit = async (
     },
   ] as const;
 
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].chain.id);
+  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
 
   if (!publicClient) {
-    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].chain.id}`;
+    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].id}`;
     console.log(errorMsg);
     throw new Error(errorMsg);
   }
@@ -2029,6 +1971,7 @@ export const getAssetsFromShares = async (
   amount: bigint,
   vaultData: VaultData,
   chainId: number,
+  activeWallet: ConnectedWallet,
 ) => {
   const previewRedeemAbi = [
     {
@@ -2040,7 +1983,7 @@ export const getAssetsFromShares = async (
     },
   ] as const;
 
-  const publicClient = getPublicClient(chainId);
+  const publicClient = await getPublicClient(activeWallet, chainId);
 
   if (!publicClient) {
     console.log(`error get publicClient  for chain with ID ${chainId}`);
@@ -2063,8 +2006,12 @@ export const getAssetsFromShares = async (
   }
 };
 
-export const getPerformanceFee = async (vaultId: Address, chainId: number) => {
-  const publicClient = getPublicClient(chainId);
+export const getPerformanceFee = async (
+  vaultId: Address,
+  chainId: number,
+  activeWallet: ConnectedWallet,
+) => {
+  const publicClient = await getPublicClient(activeWallet, chainId);
   if (!publicClient) return 1;
   const abi = [
     {
@@ -2095,6 +2042,7 @@ export const updatePythPrices = async () => {};
 
 export async function fetchReceiptTokens(
   vaults: VaultData[],
+  activeAccount: ConnectedWallet,
 ): Promise<Record<string, string>> {
   const CACHE_KEY = RECEIPT_LOCAL_STORAGE_KEY;
   let cache: Record<string, string> = {};
@@ -2127,7 +2075,8 @@ export async function fetchReceiptTokens(
 
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
-    const rpcUrl = getRpcUrl(chainConfigs[chainId]);
+    const rpcUrl = chainConfigs[chainId].rpcUrls.default.http[0];
+    console.log({rpcUrl})
     if (!rpcUrl) continue;
     const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);
     const mcAddr = MULTICALL_ADDRS[chainId]?.address;
@@ -2162,11 +2111,9 @@ export async function fetchReceiptTokens(
     } else {
       for (const v of group) {
         try {
-          const publicClient = getPublicClient(chainId);
+          const publicClient = await getPublicClient(activeAccount, chainId);
           if (!publicClient) {
-            console.log(
-              `Failed to get public client for chain id: ${chainId}`,
-            );
+            console.log(`Failed to get public client for chain id: ${chainId}`);
             result[v.id] = ethers.ZeroAddress;
             continue;
           }
@@ -2176,7 +2123,8 @@ export async function fetchReceiptTokens(
             functionName: "receiptToken",
           });
           result[v.id] = receiptTokenAddress;
-        } catch {
+        } catch (e) {
+          console.log('get address error', e)
           result[v.id] = ethers.ZeroAddress;
         }
       }

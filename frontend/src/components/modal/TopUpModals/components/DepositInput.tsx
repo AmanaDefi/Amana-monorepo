@@ -10,6 +10,7 @@ import { Balance, Token } from "@/types/types";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { EMPTY_BALANCE } from "@/utils/helpers";
 import { format, getERC20TokenBalance } from "@/utils/utils";
+import { useWallets } from "@privy-io/react-auth";
 import clsx from "clsx";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { formatEther } from "viem";
@@ -32,12 +33,14 @@ export const DepositInput = ({
   } = useFundWalletStore();
   const selectedTokenPrice = useTokenPriceBySymbol(currency?.symbol);
   const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
+  const {wallets} = useWallets();
+  const activeWallet = wallets[0];
 
   const fetchTokenBalance = async (token: Token) => {
     if (walletAddress && token && chain) {
       let balance = EMPTY_BALANCE;
       if (token.isNative) {
-        const publicClient = getPublicClient(chain.id);
+        const publicClient = await getPublicClient(activeWallet, chain.id);
         if (!publicClient) return;
 
         const balanceInEth = await publicClient.getBalance({
@@ -51,6 +54,7 @@ export const DepositInput = ({
           walletAddress,
           token.address,
           chain,
+          activeWallet
         );
 
         balance = {

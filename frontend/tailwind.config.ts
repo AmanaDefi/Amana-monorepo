@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 import { colors } from "./src/utils/colors";
-import { withAccountKitUi, createColorSet } from "@account-kit/react/tailwind";
 
 const beforeGradientBorder = plugin(({ addUtilities }) => {
   addUtilities({
@@ -41,7 +40,7 @@ const sidebarShadow = plugin(({ addUtilities }) => {
   });
 });
 
-const config: Config = withAccountKitUi({
+const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -120,5 +119,5 @@ const config: Config = withAccountKitUi({
     },
   },
   plugins: [beforeGradientBorder, menuItemHover, sidebarShadow],
-});
+};
 export default config;

@@ -7,30 +7,24 @@ import Button from "@/components/Button";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
 import OnboardingIcon from "@/components/svg/OnboardingIcon";
-import { useAuthenticate } from "@account-kit/react";
+import { useLoginWithPasskey } from "@privy-io/react-auth";
 
 export const SignatureCheck = () => {
-  const { step, closeAll, successAuth } = useAuthStore();
-  const { authenticate, isPending, error } = useAuthenticate({
-    onSuccess: (result) => {
+  const { step, closeAll, successAuth, openStep } = useAuthStore();
+  const { loginWithPasskey } = useLoginWithPasskey({
+    onComplete: (result) => {
       console.log(result);
       console.log("Success passkey auth", result);
       successAuth();
     },
     onError: (err) => {
+      openStep("notVerify");
       console.log("Error passkey auth:", err);
     },
-  },);
+  });
 
   const handleLogin = () => {
-    if (isPending) return;
-
-    authenticate(
-      {
-        type: "passkey",
-        createNew: false,
-      },
-    );
+    loginWithPasskey();
   };
 
   return (

@@ -3,6 +3,12 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 import { PublicKey } from "@solana/web3.js";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import {
+  bsc,
+  bscTestnet,
+  avalanche,
+  avalancheFuji,
+  zetachain,
+  zetachainAthensTestnet,
   mainnet,
   sepolia,
   base,
@@ -11,15 +17,6 @@ import {
   polygonAmoy,
   arbitrum,
   arbitrumSepolia,
-  defineAlchemyChain,
-} from "@account-kit/infra";
-import {
-  bsc,
-  bscTestnet,
-  avalanche,
-  avalancheFuji,
-  zetachain,
-  zetachainAthensTestnet,
 } from "viem/chains";
 
 export const zeroSolAddress = PublicKey.default.toBase58();
@@ -46,7 +43,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   ARB: "/arbitrum-arb-logo.png",
   AMANAZ: "/amana-token-logo.svg",
   BASE: "/base.png",
-  USDT_TOKEN: '/tether.png'
+  USDT_TOKEN: "/tether.png",
 };
 
 // Chain icons mapping (optional fallback if modal icons fail) {It's a long one, should we move it to utils || any other data center}
@@ -232,79 +229,23 @@ const solanaChain = {
   slug: "solana",
 };
 
-const bscChain = defineAlchemyChain({
-  chain: bsc,
-  rpcBaseUrl: bscMainnetRpcUrl,
-});
-const bscTestnetChain = defineAlchemyChain({
-  chain: bscTestnet,
-  rpcBaseUrl: bscTestnetRpcUrl,
-});
-const avalancheChain = defineAlchemyChain({
-  chain: avalanche,
-  rpcBaseUrl: avalancheMainnetRpcUrl,
-});
-const avalancheFujiChain = defineAlchemyChain({
-  chain: avalancheFuji,
-  rpcBaseUrl: avalancheFujiRpcUrl,
-});
-const zetachainChain = defineAlchemyChain({
-  chain: zetachain,
-  rpcBaseUrl: zetaRpcUrl,
-});
-const zetachainAthensTestnetChain = defineAlchemyChain({
-  chain: zetachainAthensTestnet,
-  rpcBaseUrl: zetaRpcUrl,
-});
-
-export const AlchemyZetachain =
-  deployEnv === "testnet" ? zetachainAthensTestnetChain : zetachainChain;
-
-const chainsMainnet = [
-  {
-    chain: zetachainChain,
-  },
-  {
-    chain: mainnet,
-  },
-  {
-    chain: base,
-  },
-  {
-    chain: polygon,
-  },
-  {
-    chain: bscChain,
-  },
-  {
-    chain: avalancheChain,
-  },
-  {
-    chain: arbitrum,
-  },
+export const chainsMainnet = [
+  zetachain,
+  mainnet,
+  base,
+  polygon,
+  bsc,
+  avalanche,
+  arbitrum,
 ];
 const chainsTestnet = [
-  {
-    chain: zetachainAthensTestnetChain,
-  },
-  {
-    chain: sepolia,
-  },
-  {
-    chain: baseSepolia,
-  },
-  {
-    chain: polygonAmoy,
-  },
-  {
-    chain: bscTestnetChain,
-  },
-  {
-    chain: avalancheFujiChain,
-  },
-  {
-    chain: arbitrumSepolia,
-  },
+  zetachainAthensTestnet,
+  sepolia,
+  baseSepolia,
+  polygonAmoy,
+  bscTestnet,
+  avalancheFuji,
+  arbitrumSepolia,
 ];
 
 export const SUPPORTED_CHAINS =

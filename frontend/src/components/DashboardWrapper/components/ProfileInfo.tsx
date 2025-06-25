@@ -8,11 +8,9 @@ import WalletActions from "./WalletActions";
 import ProfileDropdown from "./ProfileDropdown";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppModals } from "@/components/modal/AppModals";
-import { useChain } from "@account-kit/react";
 
 const ProfileInfo = () => {
-  const { walletAddress, balance } = useMultiChain();
-  const { chain } = useChain();
+  const { walletAddress, balance, activeChain } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -55,7 +53,7 @@ const ProfileInfo = () => {
             </p>
             <div className="text-[32px] font-normal md:font-medium md:text-[24px]">
               {Number(balance.formatted).toFixed(4)}{" "}
-              {chain.nativeCurrency.symbol}
+              {activeChain?.nativeCurrency.symbol ?? 'Zeta'}
             </div>
             <p
               className={`md:hidden ${205.6 > 0 ? "text-[#05D47F]" : "text-white"}`}

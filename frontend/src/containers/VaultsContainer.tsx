@@ -1,8 +1,6 @@
 "use client";
 
 import VaultsGrid from "../components/VaultsWrapper";
-import { Chain } from "viem";
-import { UseUserResult } from "@account-kit/react";
 import { useVaultData } from "@/hooks/useVaultData";
 
 export const ZERO_ACCOUNT = {
@@ -18,12 +16,7 @@ export const ZERO_ACCOUNT = {
   },
 };
 
-interface VaultsContainerProps {
-  activeChain?: Chain; // Make activeChain optional
-  defaultAccount?: UseUserResult; // Optional default account
-}
-
-const VaultsContainer: React.FC<VaultsContainerProps> = () => {
+const VaultsContainer = () => {
   const { loading, vaults, vaultAPYs, userVaultBalances, vaultTotalAssets } =
     useVaultData();
 

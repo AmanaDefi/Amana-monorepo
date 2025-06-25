@@ -9,8 +9,7 @@ import { fustat, gotham } from "@/styles/fonts";
 import { MultiChainProvider } from "@/providers/MultiChainProvider";
 import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
 import ConditionalLayout from "./ConditionalLayout";
-import { AlchemyClientState } from "@account-kit/core";
-import { Providers } from "@/providers/AlchemyProviders";
+import CustomPrivyProvider from "@/providers/PrivyProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,7 +22,7 @@ const spaceMono = Space_Mono({
   variable: "--font-space-mono",
 });
 
-const ClientLayout = (props: PropsWithChildren<{ initialState?: AlchemyClientState }>) => {
+const ClientLayout = (props: PropsWithChildren) => {
   return (
     <html
       lang="en"
@@ -31,7 +30,7 @@ const ClientLayout = (props: PropsWithChildren<{ initialState?: AlchemyClientSta
     >
       <body className="font-sans font-light">
         <SolanaWalletProvider>
-          <Providers initialState={props.initialState}>
+          <CustomPrivyProvider>
             <AccountProvider>
               <MultiChainProvider>
                 <TokenPriceProvider>
@@ -42,7 +41,7 @@ const ClientLayout = (props: PropsWithChildren<{ initialState?: AlchemyClientSta
               </MultiChainProvider>
             </AccountProvider>
             <ToastContainer />
-          </Providers>
+          </CustomPrivyProvider>
         </SolanaWalletProvider>
       </body>
     </html>

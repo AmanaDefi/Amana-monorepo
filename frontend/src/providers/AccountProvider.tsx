@@ -4,14 +4,10 @@ import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import mixpanel from "mixpanel-browser";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
-import {
-  useUser,
-  useSignerStatus,
-} from "@account-kit/react";
+import { usePrivy } from "@privy-io/react-auth";
 
 export default function AccountProvider({ children }: PropsWithChildren) {
-  const { isConnected, isInitializing } = useSignerStatus();
-  const user = useUser();
+  const {user, ready, authenticated} = usePrivy();
 
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
   const [hasIdentified, setHasIdentified] = useState(false);
@@ -31,14 +27,14 @@ export default function AccountProvider({ children }: PropsWithChildren) {
       (mixpanel as any).__initialized = true;
     }
 
-    if (user?.address && !isInitializing) {
+    if (user?.wallet?.address && ready) {
       if (!hasIdentified) {
-        mixpanel.identify(user.address);
-        mixpanel.people.set({ wallet_address: user.address });
-        trackEvent("Wallet Connected", { walletAddress: user.address });
+        mixpanel.identify(user?.wallet?.address);
+        mixpanel.people.set({ wallet_address: user?.wallet?.address });
+        trackEvent("Wallet Connected", { walletAddress: user?.wallet?.address });
         setHasIdentified(true);
       }
-    } else if (!isInitializing) {
+    } else if (ready) {
       if (hasIdentified) {
         mixpanel.reset();
         setHasIdentified(false);
@@ -62,18 +58,18 @@ export default function AccountProvider({ children }: PropsWithChildren) {
       trackEvent("Page Viewed", {
         page,
         route,
-        isWalletConnected: isConnected,
-        walletAddress: user?.address || null,
+        isWalletConnected: authenticated,
+        walletAddress: user?.wallet?.address || null,
       });
       setHasTrackedPage(true);
     }
   }, [
     route,
-    user?.address,
-    isConnected,
+    user?.wallet?.address,
+    authenticated,
     hasTrackedPage,
     hasIdentified,
-    isInitializing,
+    ready,
   ]);
 
   return <>{children}</>;

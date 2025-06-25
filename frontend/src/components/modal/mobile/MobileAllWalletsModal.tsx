@@ -4,7 +4,6 @@ import { useAuthStore } from "@/store/authStore";
 import ModalButton from "../shared/ModalButton";
 import { MobileModal } from "./MobileModal";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
-import { useConnect } from "@account-kit/react";
 import { Connector } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
@@ -18,36 +17,36 @@ const MobileAllWallets = () => {
     setWalletAddress,
   } = useFundWalletStore();
 
-  const { connectors, connect, isPending: isConnectingWallet } = useConnect();
+  // const { connectors, connect, isPending: isConnectingWallet } = useConnect();
 
-  const fundWalletConnect = () => {
-    setStep("confirm");
-  };
+  // const fundWalletConnect = () => {
+  //   setStep("confirm");
+  // };
 
-  const handleExternalWalletConnect = (connector: Connector) => {
-    if (isConnectingWallet) return;
-    connect(
-      { connector },
-      {
-        onSuccess: (result) => {
-          if (fundWalletStep === "connectWallet") {
-            setActiveConnector(connector);
-            setWalletAddress(result.accounts[0]);
-            return fundWalletConnect();
-          }
-          return successAuth();
-        },
-        onError: (error) => {
-          console.log(error);
+  // const handleExternalWalletConnect = (connector: Connector) => {
+  //   if (isConnectingWallet) return;
+  //   connect(
+  //     { connector },
+  //     {
+  //       onSuccess: (result) => {
+  //         if (fundWalletStep === "connectWallet") {
+  //           setActiveConnector(connector);
+  //           setWalletAddress(result.accounts[0]);
+  //           return fundWalletConnect();
+  //         }
+  //         return successAuth();
+  //       },
+  //       onError: (error) => {
+  //         console.log(error);
 
-          if (error.name === "ConnectorAlreadyConnectedError") {
-            connector.disconnect();
-            showInfoToast("Please try to connect wallet again");
-          }
-        },
-      },
-    );
-  };
+  //         if (error.name === "ConnectorAlreadyConnectedError") {
+  //           connector.disconnect();
+  //           showInfoToast("Please try to connect wallet again");
+  //         }
+  //       },
+  //     },
+  //   );
+  // };
 
   const handleClose = () => {
     if (fundWalletStep === "connectWallet") {
@@ -72,7 +71,7 @@ const MobileAllWallets = () => {
           className="overflow-auto flex-1 scrollbar-thin"
         >
           <div className="flex flex-col gap-4 items-center justify-center">
-            {connectors.map((connector) => (
+            {/* {connectors.map((connector) => (
               <ModalButton
                 key={connector.id}
                 label={connector.name}
@@ -87,7 +86,7 @@ const MobileAllWallets = () => {
                   handleExternalWalletConnect(connector);
                 }}
               />
-            ))}
+            ))} */}
           </div>
         </div>
       </div>

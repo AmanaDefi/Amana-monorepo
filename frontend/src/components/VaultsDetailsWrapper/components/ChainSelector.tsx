@@ -7,7 +7,7 @@ import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { DropdownChainsList } from "@/components/DropdownChainsList";
 import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
-import { useUser } from "@account-kit/react";
+import { useWallets } from "@privy-io/react-auth";
 
 interface ChainSelectorProps {
   selectedChain?: Chain;
@@ -27,7 +27,10 @@ export default function ChainSelector({
   const [isOpen, setIsOpen] = useState(false);
   const { activeChain, switchToChain, walletAddress } = useMultiChain();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const activeAccount = useUser();
+  const {wallets} = useWallets();
+  const activeAccount = wallets[0];
+
+  console.log('walletClientType',activeAccount?.walletClientType)
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -63,11 +66,11 @@ export default function ChainSelector({
     }
 
     const chainConfig = SUPPORTED_CHAINS.find(
-      (config) => config.chain.name === chainName,
+      (config) => config.name === chainName,
     );
     if (!chainConfig) return;
 
-    const chain = chainConfig.chain;
+    const chain = chainConfig;
 
     if (selectedChain?.id === chain.id) {
       setIsOpen(false);
@@ -92,8 +95,8 @@ export default function ChainSelector({
   const chainList = isFromTopUp ? SUPPORTED_CHAINS.slice(1) : SUPPORTED_CHAINS;
 
   const chainOptions = chainList.map((chainConfig) => ({
-    value: chainConfig.chain.name,
-    icon: CHAIN_ICONS[chainConfig.chain.id]?.url,
+    value: chainConfig.name,
+    icon: CHAIN_ICONS[chainConfig.id]?.url,
   }));
 
   return (
@@ -115,7 +118,7 @@ export default function ChainSelector({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (walletAddress && activeAccount?.type !== "eoa") return;
+            if (walletAddress && activeAccount?.walletClientType === "privy") return;
 
             if (vaultId) {
               const isTxInProgress = CheckTheTxIsInProgress(vaultId);
@@ -124,7 +127,7 @@ export default function ChainSelector({
             setIsOpen(!isOpen);
           }}
           className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
-            walletAddress && activeAccount?.type !== "eoa"
+            walletAddress && activeAccount?.walletClientType === "privy"
               ? ""
               : "cursor-pointer"
           }`}
@@ -144,7 +147,7 @@ export default function ChainSelector({
               </div>
             ))}
           </div>
-          {(!walletAddress || activeAccount?.type === "eoa") && (
+          {(!walletAddress || activeAccount?.walletClientType !== "privy") && (
             <ChevronDownIcon
               className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
                 isOpen ? "rotate-180" : ""
@@ -152,7 +155,7 @@ export default function ChainSelector({
             />
           )}
         </button>
-        {(!walletAddress || activeAccount?.type === "eoa") && (
+        {(!walletAddress || activeAccount?.walletClientType !== "privy") && (
           <DropdownChainsList
             width={263}
             isIconButton={false}

@@ -33,7 +33,6 @@ import {
   getOnlyTokenSymbol,
   getSolanaEVMAddress,
   isSolanaAddress,
-  isZetachain,
 } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
@@ -44,8 +43,8 @@ import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { apiService } from "@/service";
 import { zetaProvider } from "@/utils/providers";
 import { Address, zeroAddress } from "viem";
-import { useChain } from "@account-kit/react";
 import { useUserSettingsStore } from "@/store/userSettingsStore";
+import { ConnectedWallet } from "@privy-io/react-auth";
 
 type CashedVaultData = {
   vaultId: string;
@@ -248,6 +247,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
   setVaultTotalAsset: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   setVaultTotalAssetinToken: React.Dispatch<React.SetStateAction<any>>, // Accepts state setter
   transactionCompleted: boolean,
+  activeAccount: ConnectedWallet
 ) => {
   const { selectedChain } = useMultiChain();
 
@@ -294,6 +294,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           address!,
           vault.id,
           vault.inputToken.decimals,
+          activeAccount
         );
 
         console.log("🔢 [VAULT-BALANCE-HOOK] Balance fetched:", {
@@ -308,6 +309,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
           vault.inputToken.decimals,
           address as Address,
           vault?.id as Address,
+          activeAccount
         );
 
         console.log("💸 [VAULT-BALANCE-HOOK] Max withdraw fetched:", {
@@ -323,6 +325,7 @@ export const useUpdateVaultBalanceAndTotalPerVault = (
             vault.inputToken.decimals,
             address as Address,
             vault?.id as Address,
+            activeAccount
           );
           console.log(`📊 Vault: ${vault.symbol}`);
           console.log(`👤 User: ${address}`);
@@ -513,6 +516,7 @@ export const useUpdateAPYs = (
   ethTokenPrice: number,
   compTokenPrice: number,
   opTokenPrice: number,
+  activeAccount: ConnectedWallet,
   isFromVaultGrid?: boolean,
 ) => {
   useEffect(() => {
@@ -521,33 +525,37 @@ export const useUpdateAPYs = (
 
       const now = Date.now();
       try {
-        const receiptTokenAddresses = await fetchReceiptTokens(vaults);
+        const receiptTokenAddresses = await fetchReceiptTokens(vaults, activeAccount);
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
               const strategyChain = SUPPORTED_CHAINS.find(
-                (c) => c.chain.id === vault.protocol.chainId,
-              )?.chain;
+                (c) => c.id === vault.protocol.chainId,
+              );
               if (!strategyChain) {
                 return { vaultId: vault.id, APY7d: 0 };
               }
               const receiptTokenAddress = receiptTokenAddresses[vault.id];
+              console.log({receiptTokenAddress})
               let APY7d = 0;
               let RewardsAPY = 0;
               if (vault.protocol.name === "Aave") {
                 APY7d = await calculateAaveAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
+                  activeAccount
                 );
               } else if (vault.protocol.name === "ZeroLend") {
                 APY7d = await calculateAaveAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
+                  activeAccount
                 );
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
+                  activeAccount
                 );
                 RewardsAPY = await calculateCompoundRewardsAPY(
                   vault.protocol.rewardsContractAddress as Address,
@@ -571,6 +579,7 @@ export const useUpdateAPYs = (
                 APY7d = await calculateVenusAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
+                  activeAccount
                 );
                 RewardsAPY = await calculateVenusRewardsAPY(
                   receiptTokenAddress as Address,
@@ -581,10 +590,12 @@ export const useUpdateAPYs = (
                 APY7d = await calculateEddyAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
+                  activeAccount
                 );
                 APY7d = await calculateEddyAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
+                  activeAccount
                 );
               } else if (vault.protocol.name === "Balancer") {
                 const { totalAPY } = await calculateCombinedBalancerAPY({
@@ -615,6 +626,7 @@ export const useUpdateAPYs = (
                       crvTokenPrice,
                       cvxTokenPrice,
                       ethTokenPrice,
+                      activeAccount
                     );
                   } else if (strategyChain.id === 42161) {
                     RewardsAPY = await calculateConvexArbitrumRewardsAPY(
@@ -624,6 +636,7 @@ export const useUpdateAPYs = (
                       strategyChain,
                       crvTokenPrice,
                       ethTokenPrice,
+                      activeAccount
                     );
                   }
                 } else {

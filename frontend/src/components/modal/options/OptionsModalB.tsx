@@ -1,5 +1,7 @@
 "use client";
 
+import { useCreateWallet, useLoginWithOAuth } from "@privy-io/react-auth";
+
 import { Modal } from "../base/Modal";
 import { useAuthStore } from "@/store/authStore";
 import ConnectWallet from "../shared/ConnectWallet";
@@ -10,32 +12,26 @@ import BackedBy from "../shared/BackedBy";
 import EmailOptionsIcon from "@/components/svg/EmailOptionsIcon";
 import PasskeyOptionsIcon from "@/components/svg/PasskeyOptionsIcon";
 import GoogleOptionsIcon from "@/components/svg/GoogleOptionsButton";
-import { useAuthenticate } from "@account-kit/react";
 
 const OptionsModalB = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
-
-  const { authenticate, isPending, error } = useAuthenticate({
-    onSuccess: (result) => {
-      console.log("Success google auth", result);
-      successAuth();
+  const { createWallet } = useCreateWallet();
+  const { initOAuth } = useLoginWithOAuth({
+    onError: (e) => {
+      setError(e);
     },
-    onError: (err) => {
-      console.log("Error google auth:", err);
-      setError(err.message);
+    onComplete: async (result) => {
+      if (!result?.user?.wallet) {
+        await createWallet();
+      }
+      successAuth();
     },
   });
 
   const handleLogin = () => {
-    if (isPending) return;
-    authenticate(
-      {
-        type: "oauth",
-        authProviderId: "google",
-        isCustomProvider: false,
-        mode: "popup",
-      },
-    );
+    initOAuth({
+      provider: "google",
+    });
   };
 
   return (

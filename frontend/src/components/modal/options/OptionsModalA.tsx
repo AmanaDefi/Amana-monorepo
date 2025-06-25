@@ -9,8 +9,6 @@ import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
 import BackedBy from "../shared/BackedBy";
-import { useRouter } from "next/navigation";
-
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
 

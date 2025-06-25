@@ -20,6 +20,7 @@ import { client } from "./client";
 import { Chain } from "viem";
 import { keccak_256 } from "@noble/hashes/sha3";
 import { bytesToHex } from "@noble/hashes/utils";
+import { ConnectedWallet } from "@privy-io/react-auth";
 
 export const formatTotalAssets = (
   totalAssets: string,
@@ -120,6 +121,7 @@ export const selectActions = async (
   walletAddress: string,
   inputBalance: Balance,
   inputToken: Token,
+  activeWallet: ConnectedWallet
 ) => {
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value);
@@ -133,6 +135,7 @@ export const selectActions = async (
           activeAccount: walletAddress,
           spender: vaultData.id,
           amount: value,
+          activeWallet
         });
   switch (action) {
     case SmartVaultActionType.Deposit:
@@ -554,6 +557,7 @@ export const getERC20TokenBalance = async (
   walletAddress: string,
   tokenAddress: string,
   chain: any,
+  activeWallet: ConnectedWallet
 ) => {
   try {
     // Skip call for invalid inputs
@@ -601,7 +605,7 @@ export const getERC20TokenBalance = async (
       };
     }
 
-    const publicClient = getPublicClient(chain.id);
+    const publicClient = await getPublicClient(activeWallet);
     if (!publicClient) {
       console.log("NO publicClient for chainId", chain.id);
       return {
