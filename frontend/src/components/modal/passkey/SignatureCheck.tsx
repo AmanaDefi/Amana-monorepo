@@ -13,9 +13,9 @@ export const SignatureCheck = () => {
   const { step, closeAll, successAuth, openStep } = useAuthStore();
   const { loginWithPasskey } = useLoginWithPasskey({
     onComplete: (result) => {
-      console.log(result);
-      console.log("Success passkey auth", result);
-      successAuth();
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
+      }
     },
     onError: (err) => {
       openStep("notVerify");

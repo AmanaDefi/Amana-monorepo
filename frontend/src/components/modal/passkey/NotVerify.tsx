@@ -12,9 +12,9 @@ export const NotVerify = () => {
   const { step, closeAll, successAuth } = useAuthStore();
   const { loginWithPasskey } = useLoginWithPasskey({
     onComplete: (result) => {
-          console.log(result);
-          console.log("Success passkey auth", result);
-          successAuth();
+          if (!result.wasAlreadyAuthenticated) {
+            successAuth();
+          }
         },
     onError: (err) => {
       console.log("Error passkey auth:", err);

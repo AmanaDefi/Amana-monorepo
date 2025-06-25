@@ -14,10 +14,10 @@ export const SignIn = () => {
 
   const { signupWithPasskey } = useSignupWithPasskey({
     onComplete: async (result) => {
-      console.log(result);
-      console.log("Success passkey auth", result);
       await createWallet();
-      successAuth();
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
+      }
     },
     onError: (err) => {
       console.log("Error passkey auth:", err);

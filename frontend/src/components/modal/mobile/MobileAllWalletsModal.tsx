@@ -42,7 +42,6 @@ const MobileAllWallets = () => {
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
-        console.log('successAuth from all mobile wallets')
         return successAuth();
       },
     },

@@ -38,7 +38,9 @@ export const VerifyOtpModal = () => {
       if (!result?.user?.wallet) {
         await createWallet();
       }
-      successAuth();
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
+      }
     },
     onError: (err) => {
       console.log("Error email auth:", err);

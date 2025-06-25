@@ -24,7 +24,9 @@ const OptionsModalB = () => {
       if (!result?.user?.wallet) {
         await createWallet();
       }
-      successAuth();
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
+      }
     },
   });
 

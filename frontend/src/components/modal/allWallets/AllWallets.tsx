@@ -53,7 +53,6 @@ const AllWAllets = () => {
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
-        console.log('successAuth from all wallets')
         return successAuth();
       },
     },

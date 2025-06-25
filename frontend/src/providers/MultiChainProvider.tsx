@@ -24,6 +24,7 @@ import { PREVIOUS_ADDRESS } from "@/hooks/hooks";
 import { Connector } from "wagmi";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
+import { useAuthStore } from "@/store/authStore";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
@@ -123,6 +124,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { logout: evmDisconnect } = usePrivy();
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
+  const {step} = useAuthStore();
+  console.log('authStep',step)
 
   const router = useRouter();
   const path = usePathname();
