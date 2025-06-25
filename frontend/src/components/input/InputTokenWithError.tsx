@@ -97,7 +97,7 @@ export default function InputTokenWithError({
         leftText: "You send (min 0.0015)",
         leftTextMobile: "(min 0.0015)",
         showMaxButton: true,
-        maxButtonPosition: "center",
+        maxButtonPosition: "left",
       };
     }
 
@@ -298,15 +298,6 @@ export default function InputTokenWithError({
             style={{ gridArea: "top-center" }}
             className="flex items-center justify-center"
           >
-            {topSectionData.showMaxButton &&
-              topSectionData.maxButtonPosition === "center" && (
-                <button
-                  onClick={onMaxClick}
-                  className="text-[#3E73C4] hover:underline font-normal text-sm"
-                >
-                  MAX
-                </button>
-              )}
           </div>
 
           <div
