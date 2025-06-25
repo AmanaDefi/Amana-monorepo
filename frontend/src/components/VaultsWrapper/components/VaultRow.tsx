@@ -38,27 +38,27 @@ export const VaultRow: FC<Props> = React.memo(
         onClick={handleNavigate}
         className="flex flex-row justify-between items-center w-full rounded-lg p-4 bg-[#3E73C40D] border border-[#3E3C59] hover:cursor-pointer hover:border-[#3E73C4]"
       >
-        <div className="flex flex-row gap-6 items-center w-[30%]">
+        <div className="flex flex-row gap-6 items-center w-[40%] min-w-0">
           <Image
             src={vault.imgURL || ""}
             alt={vault.protocol.network}
             width={24}
             height={24}
-            className="rounded-full"
+            className="rounded-full flex-shrink-0"
             sizes="24px"
           />
-          <div className="flex flex-row gap-3 items-center">
+          <div className="flex flex-row gap-3 items-center min-w-0 flex-1">
             <Image
               src={vault.inputToken.imgURL}
               alt={vault.inputToken.symbol}
               width={40}
               height={40}
-              className="rounded-full"
+              className="rounded-full flex-shrink-0"
               sizes="36px"
             />
-            <div className="flex flex-col gap-1">
-              <p className="text-white font-bold text-lg leading-5 -tracking-1">
-                {vault.name}
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              <p className="text-white font-bold text-lg leading-5 -tracking-1 truncate">
+                {vault.protocol.name} {vault.name}
               </p>
             </div>
           </div>
