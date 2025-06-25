@@ -39,6 +39,8 @@ import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { useRouter, usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 
+import { motion, AnimatePresence } from "framer-motion";
+
 import {
   CheckTheTxIsInProgress,
   getLocalStorageObject,
@@ -1262,100 +1264,220 @@ export default function VaultInputs({
         activeTab={isDeposit ? "Invest" : "Withdraw"}
         setActiveTab={handleTabChange}
       />
-      {(!isConnected || !isDeposit) && ( 
-        <div className="mb-4">
-          <SlippageSettingsBlock
-            setInputBalance={setInputBalance}
-            vaultId={vaultData.id}
-            showTransactionSettings={isSlippageExceedingLimit}
-          />
-        </div>
-      )}
-      <div className="mb-4">
-        {selectedChain && onSelectChain && vaultId && isDeposit && (
-          <ChainSelector
-            selectedChain={selectedChain}
-            onSelectChain={onSelectChain}
-            vaultId={vaultId}
-          />
+      <AnimatePresence mode="wait" initial={false}>
+        {" "}
+        {/* <-- Додано AnimatePresence */}
+        {isDeposit ? (
+          <motion.div
+            key="deposit-tab-content"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {(!isConnected || !isDeposit) && (
+              <div className="mb-4">
+                <SlippageSettingsBlock
+                  setInputBalance={setInputBalance}
+                  vaultId={vaultData.id}
+                  showTransactionSettings={isSlippageExceedingLimit}
+                />
+              </div>
+            )}
+            <div className="mb-4">
+              {selectedChain && onSelectChain && vaultId && isDeposit && (
+                <ChainSelector
+                  selectedChain={selectedChain}
+                  onSelectChain={onSelectChain}
+                  vaultId={vaultId}
+                />
+              )}
+            </div>
+
+            <InputTokenWithError
+              onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
+              allowInput={allowInput}
+              vaultData={vaultData}
+              onMaxClick={handleMaxClick}
+              value={displayValue}
+              onChange={handleChangeInput}
+              selectedChain={selectedChain}
+              selectedToken={isDeposit ? inputToken : vaultData.inputToken}
+              inputTokenbalance={
+                isDeposit
+                  ? tokenBalance.formatted
+                  : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
+                    "0.00")
+              }
+              errorMessage={errorMessage}
+              tokenList={isDeposit ? tokenList : []}
+              disabled={false}
+              isDeposit={isDeposit}
+              loadingOutputToken={loadingOutputToken}
+              conversionOutput={conversionOutput}
+              isSlippageExceedingLimit={isSlippageExceedingLimit}
+              setInputBalance={setInputBalance}
+              isOutput={false}
+              captionText={!isDeposit ? "Output Amount" : ""}
+            />
+            <div className="w-full my-6 md:my-10 flex items-center justify-center">
+              <button className="group flex-center p-2" onClick={switchTokens}>
+                <DepositModalArrowsIcon width={24} height={24} />
+              </button>
+            </div>
+            <div className="mb-6 md:mb-10">
+              <FeeDisplay
+                isDeposit={isDeposit}
+                vaultData={vaultData}
+                conversionOutput={conversionOutput}
+                debouncedInputBalance={debouncedInputBalance}
+                performanceFee={performanceFee}
+              />
+            </div>
+
+            <div className="mb-4">
+              {selectedChain && onSelectChain && vaultId && !isDeposit && (
+                <ChainSelector
+                  selectedChain={selectedChain}
+                  onSelectChain={onSelectChain}
+                  vaultId={vaultId}
+                />
+              )}
+            </div>
+
+            <InputTokenWithError
+              captionText={isDeposit ? "Output Amount" : ""}
+              onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
+              allowInput={allowInput}
+              vaultData={vaultData}
+              onMaxClick={() => {}}
+              value={conversionOutput.outputAmountFormatted}
+              onChange={() => {}}
+              selectedChain={selectedChain}
+              selectedToken={isDeposit ? vaultData.inputToken : inputToken}
+              inputTokenbalance={
+                isDeposit
+                  ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
+                    "0.00")
+                  : tokenBalance.formatted
+              }
+              errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
+              tokenList={isDeposit ? [] : tokenList}
+              disabled={false}
+              isDeposit={isDeposit}
+              isOutput={true}
+              loadingOutputToken={loadingOutputToken}
+              conversionOutput={conversionOutput}
+              setInputBalance={setInputBalance}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="withdraw-tab-content"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {(!isConnected || !isDeposit) && (
+              <div className="mb-4">
+                <SlippageSettingsBlock
+                  setInputBalance={setInputBalance}
+                  vaultId={vaultData.id}
+                  showTransactionSettings={isSlippageExceedingLimit}
+                />
+              </div>
+            )}
+            <div className="mb-4">
+              {selectedChain && onSelectChain && vaultId && isDeposit && (
+                <ChainSelector
+                  selectedChain={selectedChain}
+                  onSelectChain={onSelectChain}
+                  vaultId={vaultId}
+                />
+              )}
+            </div>
+
+            <InputTokenWithError
+              onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
+              allowInput={allowInput}
+              vaultData={vaultData}
+              onMaxClick={handleMaxClick}
+              value={displayValue}
+              onChange={handleChangeInput}
+              selectedChain={selectedChain}
+              selectedToken={isDeposit ? inputToken : vaultData.inputToken}
+              inputTokenbalance={
+                isDeposit
+                  ? tokenBalance.formatted
+                  : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
+                    "0.00")
+              }
+              errorMessage={errorMessage}
+              tokenList={isDeposit ? tokenList : []}
+              disabled={false}
+              isDeposit={isDeposit}
+              loadingOutputToken={loadingOutputToken}
+              conversionOutput={conversionOutput}
+              isSlippageExceedingLimit={isSlippageExceedingLimit}
+              setInputBalance={setInputBalance}
+              isOutput={false}
+              captionText={!isDeposit ? "Output Amount" : ""}
+            />
+            <div className="w-full my-6 md:my-10 flex items-center justify-center">
+              <button className="group flex-center p-2" onClick={switchTokens}>
+                <DepositModalArrowsIcon width={24} height={24} />
+              </button>
+            </div>
+            <div className="mb-6 md:mb-10">
+              <FeeDisplay
+                isDeposit={isDeposit}
+                vaultData={vaultData}
+                conversionOutput={conversionOutput}
+                debouncedInputBalance={debouncedInputBalance}
+                performanceFee={performanceFee}
+              />
+            </div>
+
+            <div className="mb-4">
+              {selectedChain && onSelectChain && vaultId && !isDeposit && (
+                <ChainSelector
+                  selectedChain={selectedChain}
+                  onSelectChain={onSelectChain}
+                  vaultId={vaultId}
+                />
+              )}
+            </div>
+
+            <InputTokenWithError
+              captionText={isDeposit ? "Output Amount" : ""}
+              onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
+              allowInput={allowInput}
+              vaultData={vaultData}
+              onMaxClick={() => {}}
+              value={conversionOutput.outputAmountFormatted}
+              onChange={() => {}}
+              selectedChain={selectedChain}
+              selectedToken={isDeposit ? vaultData.inputToken : inputToken}
+              inputTokenbalance={
+                isDeposit
+                  ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
+                    "0.00")
+                  : tokenBalance.formatted
+              }
+              errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
+              tokenList={isDeposit ? [] : tokenList}
+              disabled={false}
+              isDeposit={isDeposit}
+              isOutput={true}
+              loadingOutputToken={loadingOutputToken}
+              conversionOutput={conversionOutput}
+              setInputBalance={setInputBalance}
+            />
+          </motion.div>
         )}
-      </div>
-
-      <InputTokenWithError
-        onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
-        allowInput={allowInput}
-        vaultData={vaultData}
-        onMaxClick={handleMaxClick}
-        value={displayValue}
-        onChange={handleChangeInput}
-        selectedChain={selectedChain}
-        selectedToken={isDeposit ? inputToken : vaultData.inputToken}
-        inputTokenbalance={
-          isDeposit
-            ? tokenBalance.formatted
-            : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00")
-        }
-        errorMessage={errorMessage}
-        tokenList={isDeposit ? tokenList : []}
-        disabled={false}
-        isDeposit={isDeposit}
-        loadingOutputToken={loadingOutputToken}
-        conversionOutput={conversionOutput}
-        isSlippageExceedingLimit={isSlippageExceedingLimit}
-        setInputBalance={setInputBalance}
-        isOutput={false}
-        captionText={!isDeposit ? "Output Amount" : ""}
-      />
-      <div className="w-full my-6 md:my-10 flex items-center justify-center">
-        <button className="group flex-center p-2" onClick={switchTokens}>
-          <DepositModalArrowsIcon width={24} height={24} />
-        </button>
-      </div>
-      <div className="mb-6 md:mb-10">
-        <FeeDisplay
-          isDeposit={isDeposit}
-          vaultData={vaultData}
-          conversionOutput={conversionOutput}
-          debouncedInputBalance={debouncedInputBalance}
-          performanceFee={performanceFee}
-        />
-      </div>
-
-      <div className="mb-4">
-        {selectedChain && onSelectChain && vaultId && !isDeposit && (
-          <ChainSelector
-            selectedChain={selectedChain}
-            onSelectChain={onSelectChain}
-            vaultId={vaultId}
-          />
-        )}
-      </div>
-
-      <InputTokenWithError
-        captionText={isDeposit ? "Output Amount" : ""}
-        onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
-        allowInput={allowInput}
-        vaultData={vaultData}
-        onMaxClick={() => {}}
-        value={conversionOutput.outputAmountFormatted}
-        onChange={() => {}}
-        selectedChain={selectedChain}
-        selectedToken={isDeposit ? vaultData.inputToken : inputToken}
-        inputTokenbalance={
-          isDeposit
-            ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00")
-            : tokenBalance.formatted
-        }
-        errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
-        tokenList={isDeposit ? [] : tokenList}
-        disabled={false}
-        isDeposit={isDeposit}
-        isOutput={true}
-        loadingOutputToken={loadingOutputToken}
-        conversionOutput={conversionOutput}
-        setInputBalance={setInputBalance}
-      />
-      <APYChangeCard isDeposit={isDeposit} />
+        <APYChangeCard isDeposit={isDeposit} />
+      </AnimatePresence>
 
       {inputToken &&
         // !loadingOutputToken &&
