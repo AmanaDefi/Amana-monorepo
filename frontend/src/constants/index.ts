@@ -707,34 +707,34 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       des: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
     },
   },
-  {
-    id: "0xe488d52601772bc327048E61F86Ee40df75b7a4F",
-    name: "yUSD/USDC Pool",
-    type: "Liquidity Pool",
-    des: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer’s LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
-    symbol: "aBalancerUsdcBase",
-    imgURL: "/base.png",
-    depositFeePaidFromGasTank: true,
-    inputToken: {
-      symbol: "USDC.BASE",
-      decimals: 6,
-      address: ZC_USDC_BASE_ADDRESS,
-      imgURL: "/USDC.png",
-      price: 1,
-      balance: EMPTY_BALANCE,
-      isNative: false
-    },
-    protocol: {
-      name: "Balancer",
-      strategyAddress: "0xE588Ed2AC6A3D0A1A4a5833fBb4b4A026834Da57",
-      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
-      network: "Base",
-      chainId: 8453,
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
-      imgURL: "/balancer.png",
-      des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
-    },
-  },
+  // {
+  //   id: "0xe488d52601772bc327048E61F86Ee40df75b7a4F",
+  //   name: "yUSD/USDC Pool",
+  //   type: "Liquidity Pool",
+  //   des: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer’s LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
+  //   symbol: "aBalancerUsdcBase",
+  //   imgURL: "/base.png",
+  //   depositFeePaidFromGasTank: true,
+  //   inputToken: {
+  //     symbol: "USDC.BASE",
+  //     decimals: 6,
+  //     address: ZC_USDC_BASE_ADDRESS,
+  //     imgURL: "/USDC.png",
+  //     price: 1,
+  //     balance: EMPTY_BALANCE,
+  //     isNative: false
+  //   },
+  //   protocol: {
+  //     name: "Balancer",
+  //     strategyAddress: "0xE588Ed2AC6A3D0A1A4a5833fBb4b4A026834Da57",
+  //     rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
+  //     network: "Base",
+  //     chainId: 8453,
+  //     netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+  //     imgURL: "/balancer.png",
+  //     des: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer’s design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies."
+  //   },
+  // },
 ];
 
 const TESTNET_VAULT_DATA: VaultData[] = [

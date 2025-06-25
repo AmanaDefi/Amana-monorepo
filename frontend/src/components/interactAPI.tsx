@@ -495,6 +495,10 @@ export default function InteractionContainer({
     finishedTransaction,
     isTransactionProcessing,
     setIsTransactionProcessing,
+
+    setCurrentInputBalance,
+    setCurrentErrorMessage,
+    setCrosschainInvestHash: setStoreCrosschainInvestHash,
   } = useTransactionStore();
 
   // BlockPI-only feedback system
@@ -1208,6 +1212,18 @@ export default function InteractionContainer({
       isComponentActiveRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    setCurrentInputBalance(_inputBalance);
+  }, [_inputBalance, setCurrentInputBalance]);
+
+  useEffect(() => {
+    setCurrentErrorMessage(errorMessage);
+  }, [errorMessage, setCurrentErrorMessage]);
+
+  useEffect(() => {
+    setStoreCrosschainInvestHash(crosschainInvestHash);
+  }, [crosschainInvestHash, setStoreCrosschainInvestHash]);
 
   return (
     <div className="w-full flex flex-col">
