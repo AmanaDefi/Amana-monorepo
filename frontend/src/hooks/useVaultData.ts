@@ -154,11 +154,11 @@ export const useVaultData = () => {
     // Set all data at once to avoid flickering
     const filteredVaults = subgraphData.vaults.filter(vault => !EXCLUDED_VAULTS.includes(vault.id));
 
-    // Set APY from subgraph
+    /*// Set APY from subgraph
     if (shouldUseGraphAPY) {
       const graphAPYs = filteredVaults.map(convertGraphVaultToAPY);
       setVaultAPYs(graphAPYs);
-    }
+    }*/
 
     // Set TVL from subgraph
     if (shouldUseGraphTVL) {
@@ -712,7 +712,7 @@ export const useVaultDataWithSearch = (
       .map(convertGraphVaultToVaultData);
   }, [useGraphData, subgraphData]);
 
-  // APY: from subgraph or calculated  
+  // APY: from subgraph or calculated
   const shouldUseGraphAPY = useMemo(() => {
     if (!useGraphData) return false;
 
