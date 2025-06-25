@@ -71,8 +71,15 @@ export const Dropdown: React.FC<Props> = ({
       className="flex relative font-medium text-lg leading-[18px] tracking-1 text-white font-gotham "
     >
       {IconButton ? (
-        <button type="button" onClick={handleToggleDropdown}>
-          <IconButton color={!isShownList ? "#535E73" : "#1B46E0"} />
+        <button
+          type="button"
+          onClick={handleToggleDropdown}
+          className="transition-all duration-200 hover:scale-105"
+        >
+          <IconButton
+            color={!isShownList ? "#535E73" : "#1B46E0"}
+            className="hover:fill-[#1B46E0] transition-colors duration-200"
+          />
         </button>
       ) : (
         <div

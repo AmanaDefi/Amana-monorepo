@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Token, VaultData } from "@/types/types";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import { Chain } from "viem";
@@ -14,7 +15,6 @@ import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import { warningToast } from "@/toasts/toastStyles";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -113,11 +113,18 @@ export default function ChainTokenSelector({
               height={24}
               className="rounded-full"
             />
-            <p className="max-w-[82px] md:max-w-[200px] truncate">{selectedToken.symbol}</p>
+            <p className="max-w-[82px] md:max-w-[200px] truncate">
+              {selectedToken.symbol}
+            </p>
           </>
         ) : (
           <span>Select Token</span>
         )}
+        <ChevronDownIcon
+          className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
       <DropdownList
@@ -130,7 +137,6 @@ export default function ChainTokenSelector({
         isShownList={isOpen}
         needReset={false}
       />
-
     </div>
   );
 }

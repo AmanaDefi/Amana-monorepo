@@ -50,6 +50,7 @@ import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSet
 import FeeDisplay from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
+import { useTransactionStore } from "@/store/transactionStore";
 
 // Helper function for formatting token balances based on token type
 const formatTokenBalance = (
@@ -133,6 +134,8 @@ export default function VaultInputs({
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
   const {wallets} = useWallets()
   const activeWallet = wallets[0];
+
+  const { setIsButtonDisabled } = useTransactionStore(); 
 
   // Update label when isDeposit prop changes
   useEffect(() => {
@@ -1135,36 +1138,37 @@ export default function VaultInputs({
     vaultData,
   ]);
 
-  const isButtonDisabled = useMemo(() => {
-    return (
-      !walletAddress ||
-      !inputBalance.formatted ||
-      Number(inputBalance.formatted) <= 0 ||
-      !!errorMessage ||
-      !!outputBoxErrorMessage ||
-      loadingOutputToken ||
-      (isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))) ||
-      (Number(inputBalance.formatted || 0) > 0 &&
-        Number(tokenBalance.formatted || 0) === 0)
-    );
-  }, [
-    walletAddress,
-    inputBalance.formatted,
-    errorMessage,
-    outputBoxErrorMessage,
-    loadingOutputToken,
-    isDeposit,
-    vaultData.depositFeePaidFromGasTank,
-    debouncedInputBalance.value,
-    conversionOutput.inputAmountInUSDFormatted,
-    conversionOutput.gasFeeInUSD,
-    tokenBalance.formatted,
-  ]);
+const isButtonDisabled = useMemo(() => {
+  const disabled =
+    !walletAddress ||
+    !inputBalance.formatted ||
+    Number(inputBalance.formatted) <= 0 ||
+    !!errorMessage ||
+    !!outputBoxErrorMessage ||
+    (isDeposit &&
+      !vaultData.depositFeePaidFromGasTank &&
+      debouncedInputBalance.value > 0n &&
+      Number(
+        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
+      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))) ||
+    (Number(inputBalance.formatted || 0) > 0 &&
+      Number(tokenBalance.formatted || 0) === 0);
+  
+  setIsButtonDisabled(disabled);
+
+  return disabled;
+}, [
+  walletAddress,
+  inputBalance.formatted,
+  errorMessage,
+  outputBoxErrorMessage,
+  isDeposit,
+  vaultData.depositFeePaidFromGasTank,
+  debouncedInputBalance.value,
+  conversionOutput.inputAmountInUSDFormatted,
+  conversionOutput.gasFeeInUSD,
+  tokenBalance.formatted,
+]);
 
   console.log(conversionOutput);
   // 🧪 TESTING: Log final values being displayed
@@ -1306,10 +1310,10 @@ export default function VaultInputs({
         conversionOutput={conversionOutput}
         setInputBalance={setInputBalance}
       />
-      {!!isDeposit && <APYChangeCard />}
+       <APYChangeCard isDeposit={isDeposit} />
 
       {inputToken &&
-        !loadingOutputToken &&
+        // !loadingOutputToken &&
         !(
           isDeposit &&
           !vaultData.depositFeePaidFromGasTank &&

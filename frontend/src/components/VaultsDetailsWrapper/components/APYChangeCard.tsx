@@ -1,4 +1,12 @@
-export default function APYChangeCard() {
+import { InfoBlock } from "@/components/VaultsWrapper/components/InfoBlock.tsx";
+
+export type APYChangeCardProps = {
+  isDeposit: boolean;
+};
+
+export default function APYChangeCard({
+  isDeposit,
+}: APYChangeCardProps): JSX.Element {
   return (
     <div className="bg-transparent md:bg-[#161C27] rounded-2xl px-0 py-0 md:px-12 md:py-6 font-normal text-[12px] md:text-sm text-white mt-8 md:mt-[44px]">
       <div className="space-y-4">
@@ -13,7 +21,16 @@ export default function APYChangeCard() {
         </div>
 
         <div className="flex justify-between items-center">
-          <span>Min. Received</span>
+          <div className="flex items-center gap-1">
+            <span>Min. Received</span>
+            <InfoBlock isMiddle>
+              💡
+              {isDeposit
+                ? "The minimum value your investment will be worth after deposit, accounting for maximum possible slippage during execution."
+                : "The lowest amount you’re guaranteed to receive after withdrawal, based on worst-case slippage during execution."}
+            </InfoBlock>
+          </div>
+
           <span className="font-bold text-sm">2,029.9</span>
         </div>
       </div>
