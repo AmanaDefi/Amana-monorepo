@@ -86,7 +86,7 @@ export default function InputTokenWithError({
         <>
           <span>You send (min 0.0015)</span>
           <button
-            onClick={allowInput ? onMaxClick : undefined}
+            onClick={onMaxClick}
             className="text-[#3E73C4] hover:underline font-normal"
           >
             MAX
@@ -99,7 +99,7 @@ export default function InputTokenWithError({
       return (
         <>
           <button
-            onClick={allowInput ? onMaxClick : undefined}
+            onClick={onMaxClick}
             className="text-[#3E73C4] hover:underline font-normal"
           >
             MAX

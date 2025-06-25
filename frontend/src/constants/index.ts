@@ -894,4 +894,7 @@ export const ZERO_ACCOUNT = {
   },
 };
 
-export const EXCLUDED_VAULTS = ['0x0552d4c51491d9bfed97eb795e101e90a5f16d44'];
+export const EXCLUDED_VAULTS = [
+  "0x0552d4c51491d9bfed97eb795e101e90a5f16d44",
+  "0x8b934de59fde50a91daa7e788389f8fcad35a14f",
+];
