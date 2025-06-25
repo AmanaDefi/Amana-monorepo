@@ -11,7 +11,6 @@ import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
-import { useMultiChain } from "@/providers/MultiChainProvider";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;

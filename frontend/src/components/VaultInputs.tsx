@@ -135,7 +135,7 @@ export default function VaultInputs({
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
 
-  const { setIsButtonDisabled } = useTransactionStore(); 
+  const { setIsButtonDisabled } = useTransactionStore();
 
   // Update label when isDeposit prop changes
   useEffect(() => {
@@ -228,6 +228,9 @@ export default function VaultInputs({
         vaultData?.inputToken
       ) {
         setInputToken(vaultData.inputToken);
+        if (onTokenSelect) {
+          onTokenSelect(vaultData.inputToken);
+        }
       } else if (vaultData?.inputToken && selectedChain) {
         const tokens = APPROVED_TOKENS[selectedChain.id] || [];
         const defaultToken =
@@ -577,11 +580,12 @@ export default function VaultInputs({
         displayValue: tokenBalance.formatted,
       });
     } else {
-      const maxValue = vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
+      const maxValue =
+        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
       console.log("VaultInputs - MAX click for withdraw:", {
         vaultTotalAssetinToken,
         maxValue,
-        isDeposit
+        isDeposit,
       });
       handleChangeInput({
         currentTarget: { value: maxValue },
@@ -1143,37 +1147,37 @@ export default function VaultInputs({
     vaultData,
   ]);
 
-const isButtonDisabled = useMemo(() => {
-  const disabled =
-    !walletAddress ||
-    !inputBalance.formatted ||
-    Number(inputBalance.formatted) <= 0 ||
-    !!errorMessage ||
-    !!outputBoxErrorMessage ||
-    (isDeposit &&
-      !vaultData.depositFeePaidFromGasTank &&
-      debouncedInputBalance.value > 0n &&
-      Number(
-        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))) ||
-    (Number(inputBalance.formatted || 0) > 0 &&
-      Number(tokenBalance.formatted || 0) === 0);
-  
-  setIsButtonDisabled(disabled);
+  const isButtonDisabled = useMemo(() => {
+    const disabled =
+      !walletAddress ||
+      !inputBalance.formatted ||
+      Number(inputBalance.formatted) <= 0 ||
+      !!errorMessage ||
+      !!outputBoxErrorMessage ||
+      (isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))) ||
+      (Number(inputBalance.formatted || 0) > 0 &&
+        Number(tokenBalance.formatted || 0) === 0);
 
-  return disabled;
-}, [
-  walletAddress,
-  inputBalance.formatted,
-  errorMessage,
-  outputBoxErrorMessage,
-  isDeposit,
-  vaultData.depositFeePaidFromGasTank,
-  debouncedInputBalance.value,
-  conversionOutput.inputAmountInUSDFormatted,
-  conversionOutput.gasFeeInUSD,
-  tokenBalance.formatted,
-]);
+    setIsButtonDisabled(disabled);
+
+    return disabled;
+  }, [
+    walletAddress,
+    inputBalance.formatted,
+    errorMessage,
+    outputBoxErrorMessage,
+    isDeposit,
+    vaultData.depositFeePaidFromGasTank,
+    debouncedInputBalance.value,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+    tokenBalance.formatted,
+  ]);
 
   console.log(conversionOutput);
   // 🧪 TESTING: Log final values being displayed
@@ -1188,7 +1192,7 @@ const isButtonDisabled = useMemo(() => {
         `🪙 Output token: ${vaultData.inputToken.symbol} (underlying asset)`,
       );
       console.log(
-        `💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0"}`,
+        `💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0")}`,
       );
       console.log(
         `📊 Balance type: ${isDeposit ? "wallet balance" : "maxWithdraw amount"}`,
@@ -1315,7 +1319,7 @@ const isButtonDisabled = useMemo(() => {
         conversionOutput={conversionOutput}
         setInputBalance={setInputBalance}
       />
-       <APYChangeCard isDeposit={isDeposit} />
+      <APYChangeCard isDeposit={isDeposit} />
 
       {inputToken &&
         // !loadingOutputToken &&

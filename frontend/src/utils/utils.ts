@@ -16,10 +16,6 @@ import { PublicKey } from "@solana/web3.js";
 import SolanaConnectionSingleton from "./solanaSingleton";
 import { erc20Abi, getContract, formatUnits } from "viem";
 import { getPublicClient } from "./getPublicClient";
-import { client } from "./client";
-import { Chain } from "viem";
-import { keccak_256 } from "@noble/hashes/sha3";
-import { bytesToHex } from "@noble/hashes/utils";
 
 export const formatTotalAssets = (
   totalAssets: string,
