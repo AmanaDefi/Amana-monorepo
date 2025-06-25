@@ -14,7 +14,7 @@ import {
   ChevronLeftIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
-import { CHAIN_ICONS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { CHAIN_ICONS, chainsWithCustomRpcs } from "@/constants/chainConfig";
 
 const sendSchema = z.object({
   recipientAddress: z
@@ -82,14 +82,14 @@ export const Send = () => {
   const selectedNetworkValue = watch("network") || "";
 
   // Filter networks based on search query
-  const filteredNetworks = SUPPORTED_CHAINS.filter((chainConfig) =>
+  const filteredNetworks = chainsWithCustomRpcs().filter((chainConfig) =>
     chainConfig.name
       .toLowerCase()
       .includes(networkSearchQuery.toLowerCase()),
   );
 
   const handleNetworkSelect = async (chainName: string) => {
-    const chainConfig = SUPPORTED_CHAINS.find(
+    const chainConfig = chainsWithCustomRpcs().find(
       (config) => config.name === chainName,
     );
 
@@ -300,7 +300,7 @@ export const Send = () => {
                       (() => {
                         const networkName =
                           selectedNetworkValue || activeChain?.name;
-                        const chainConfig = SUPPORTED_CHAINS.find(
+                        const chainConfig = chainsWithCustomRpcs().find(
                           (config) => config.name === networkName,
                         );
                         return chainConfig ? (

@@ -43,7 +43,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   ARB: "/arbitrum-arb-logo.png",
   AMANAZ: "/amana-token-logo.svg",
   BASE: "/base.png",
-  USDT_TOKEN: '/tether.png',
+  USDT_TOKEN: "/tether.png",
   BALANCER: "/balancer.png",
   ZEROLEND: "/ZeroLend.png",
 };
@@ -196,6 +196,24 @@ export enum CHAIN_ID {
   avalanche = deployEnv === "testnet" ? 43113 : 43114,
 }
 
+export const customRpcsMap: Record<number, string> = {
+  1: ethMainnetRpcUrl,
+  8453: baseMainnetRpcUrl,
+  137: polygonMainnetRpcUrl,
+  56: bscMainnetRpcUrl,
+  43114: avalancheMainnetRpcUrl,
+  42161: arbitrumMainnetRpcUrl,
+  7000: zetaRpcUrl,
+
+  11155111: sepoliaRpcUrl,
+  84532: baseSepoliaRpcUrl,
+  80001: polygonAmoyRpcUrl,
+  97: bscTestnetRpcUrl,
+  43113: avalancheFujiRpcUrl,
+  421613: arbitrumSepoliaRpcUrl,
+  7001: zetaRpcUrl,
+};
+
 export enum MulticallVersion {
   V1 = 1,
   V2 = 2,
@@ -252,6 +270,44 @@ const chainsTestnet = [
 
 export const SUPPORTED_CHAINS =
   deployEnv === "testnet" ? chainsTestnet : chainsMainnet;
+
+const zetaChain = deployEnv === "testnet" ? zetachainAthensTestnet : zetachain;
+export const customZetachain = zetaRpcUrl
+  ? {
+      ...zetaChain,
+      rpcUrls: {
+        ...zetaChain.rpcUrls,
+        public: {
+          http: [zetaRpcUrl],
+        },
+        default: {
+          http: [zetaRpcUrl],
+        },
+      },
+    }
+  : zetaChain;
+
+export const chainsWithCustomRpcs = () => {
+  return SUPPORTED_CHAINS.map((chain) => {
+    const customUrl = customRpcsMap[chain.id];
+
+    if (customUrl) {
+      return {
+        ...chain,
+        rpcUrls: {
+          ...chain.rpcUrls,
+          public: {
+            http: [customUrl],
+          },
+          default: {
+            http: [customUrl],
+          },
+        },
+      };
+    }
+    return chain;
+  });
+};
 
 export const MULTICALL_ADDRS: Record<
   number,
@@ -1101,5 +1157,5 @@ export const PROTOCOL_FILTER_OPTIONS = [
   {
     value: "ZeroLend",
     icon: TOKEN_LOGO_URLS.ZEROLEND,
-  }
+  },
 ];

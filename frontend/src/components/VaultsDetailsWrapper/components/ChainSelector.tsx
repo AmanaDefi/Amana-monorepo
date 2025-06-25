@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Chain } from "viem";
-import { SUPPORTED_CHAINS, CHAIN_ICONS } from "@/constants/chainConfig";
+import { chainsWithCustomRpcs, CHAIN_ICONS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
@@ -63,7 +63,7 @@ export default function ChainSelector({
       return;
     }
 
-    const chainConfig = SUPPORTED_CHAINS.find(
+    const chainConfig = chainsWithCustomRpcs().find(
       (config) => config.name === chainName,
     );
     if (!chainConfig) return;
@@ -90,7 +90,7 @@ export default function ChainSelector({
 
   const displayedChain = selectedChain || activeChain;
 
-  const chainList = isFromTopUp ? SUPPORTED_CHAINS.slice(1) : SUPPORTED_CHAINS;
+  const chainList = isFromTopUp ? chainsWithCustomRpcs().slice(1) : chainsWithCustomRpcs();
 
   const chainOptions = chainList.map((chainConfig) => ({
     value: chainConfig.name,

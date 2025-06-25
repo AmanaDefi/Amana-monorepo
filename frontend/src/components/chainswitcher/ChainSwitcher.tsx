@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Chain } from "viem";
-import { CHAIN_ICONS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { CHAIN_ICONS, chainsWithCustomRpcs } from "@/constants/chainConfig";
 import "react-toastify/dist/ReactToastify.css";
 import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
@@ -12,8 +12,8 @@ import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
 import { useWallets } from "@privy-io/react-auth";
 
-// Destructure SUPPORTED_CHAINS to get zetaChain for default
-const [zetachain] = SUPPORTED_CHAINS;
+// Destructure chainsWithCustomRpcs() to get zetaChain for default
+const [zetachain] = chainsWithCustomRpcs();
 
 // ChainSwitcher Component
 const ChainSwitcher: React.FC = () => {
@@ -50,7 +50,7 @@ const ChainSwitcher: React.FC = () => {
       wallet?.chainId?.split(":")[1] !== previousChainRef.current
     ) {
       // Find the chain name
-      const chain = SUPPORTED_CHAINS.find(
+      const chain = chainsWithCustomRpcs().find(
         (c) => c.id.toString() === wallet?.chainId?.split(":")[1],
       );
       // Use a try-catch to handle potential toast errors
@@ -69,7 +69,7 @@ const ChainSwitcher: React.FC = () => {
 
   // Handle chain switch
   const handleChainSwitch = async (
-    chain: (typeof SUPPORTED_CHAINS)[number],
+    chain: Chain,
   ) => {
     if (!wallet?.address) {
       try {
@@ -115,12 +115,12 @@ const ChainSwitcher: React.FC = () => {
 
   // Determine the chain to display (use currentChain if available, otherwise fallback to zetaChain)
   const displayChain = wallet?.chainId
-    ? SUPPORTED_CHAINS.find(
+    ? chainsWithCustomRpcs().find(
         (c: Chain) => c.id.toString() === wallet?.chainId?.split(":")[1],
       ) || zetachain
     : zetachain;
 
-  const options = SUPPORTED_CHAINS.map((chain) => {
+  const options = chainsWithCustomRpcs().map((chain) => {
     return { value: chain.name, icon: CHAIN_ICONS[chain.id].url };
   });
 
@@ -131,7 +131,7 @@ const ChainSwitcher: React.FC = () => {
     option: string,
   ) => {
     event.stopPropagation();
-    const selected = SUPPORTED_CHAINS.find((c: Chain) => c.name === option);
+    const selected = chainsWithCustomRpcs().find((c: Chain) => c.name === option);
 
     if (selected) {
       handleChainSwitch(selected);

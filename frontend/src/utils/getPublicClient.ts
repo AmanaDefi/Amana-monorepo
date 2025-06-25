@@ -1,4 +1,4 @@
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { chainsWithCustomRpcs, customZetachain } from "@/constants/chainConfig";
 import { ConnectedWallet } from "@privy-io/react-auth";
 import {
   createPublicClient,
@@ -8,7 +8,6 @@ import {
   custom,
   http,
 } from "viem";
-import { zetachain } from "viem/chains";
 
 const clientCache = new Map<string, PublicClient>();
 const walletClientCache = new Map<string, WalletClient>();
@@ -26,7 +25,8 @@ export const getPublicClient = async (
   }
 
   const chain =
-    SUPPORTED_CHAINS.find((chain) => chain.id === Number(chainId)) ?? zetachain;
+    chainsWithCustomRpcs().find((chain) => chain.id === Number(chainId)) ?? customZetachain;
+    console.log('chain.rpcUrls.default.http[0]',chain.rpcUrls.default.http[0])
 
   if (!wallet || !!activeChainId) {
     return createPublicClient({
@@ -61,7 +61,7 @@ export const getWalletClient = async (
     return walletClientCache.get(wallet?.chainId?.split(":")[1])!;
   }
 
-  const chain = SUPPORTED_CHAINS.find(
+  const chain = chainsWithCustomRpcs().find(
     (c) => c.id.toString() === wallet?.chainId?.split(":")[1],
   );
   if (!chain) {

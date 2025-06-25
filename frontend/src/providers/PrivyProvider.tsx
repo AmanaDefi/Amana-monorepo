@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PropsWithChildren } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { chainsWithCustomRpcs, customZetachain, } from "@/constants/chainConfig";
 import {
   bsc,
   bscTestnet,
@@ -89,8 +89,8 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
         embeddedWallets: {
           createOnLogin: "users-without-wallets",
         },
-        defaultChain: zetachain,
-        supportedChains: SUPPORTED_CHAINS,
+        defaultChain: customZetachain,
+        supportedChains: chainsWithCustomRpcs(),
       }}
     >
       <QueryClientProvider client={queryClient}>

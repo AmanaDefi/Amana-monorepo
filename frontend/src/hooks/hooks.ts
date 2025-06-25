@@ -27,7 +27,7 @@ import {
 import {
   CHAIN_ID,
   MULTICALL_ADDRS,
-  SUPPORTED_CHAINS,
+  chainsWithCustomRpcs,
 } from "@/constants/chainConfig";
 import {
   getOnlyTokenSymbol,
@@ -529,7 +529,7 @@ export const useUpdateAPYs = (
         const updatedVaultAPYs = await Promise.all(
           vaults.map(async (vault) => {
             try {
-              const strategyChain = SUPPORTED_CHAINS.find(
+              const strategyChain = chainsWithCustomRpcs().find(
                 (c) => c.id === vault.protocol.chainId,
               );
               if (!strategyChain) {

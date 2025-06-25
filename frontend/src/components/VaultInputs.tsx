@@ -13,7 +13,7 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Address, parseAbiItem, parseUnits } from "viem";
 import { Chain } from "viem";
-import { APPROVED_TOKENS, chainConfigs, SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { APPROVED_TOKENS, chainConfigs, chainsWithCustomRpcs} from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
   formatCurrency,
@@ -151,7 +151,7 @@ export default function VaultInputs({
     async function handlePerformanceFee() {
       const perfFee = await getPerformanceFee(
         vaultData.id,
-        SUPPORTED_CHAINS[0].id,
+        chainsWithCustomRpcs()[0].id,
         activeWallet
       );
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));

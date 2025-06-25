@@ -1,7 +1,7 @@
 import {
   CHAIN_ID,
   crossChainTxUrl,
-  SUPPORTED_CHAINS,
+  chainsWithCustomRpcs,
   EVM_GATEWAY_ADDRESSES,
   chainConfigs,
   MULTICALL_ADDRS,
@@ -1686,10 +1686,10 @@ export const fetchUserVaultBalance = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeAccount, SUPPORTED_CHAINS[0].id);
+  const publicClient = await getPublicClient(activeAccount, chainsWithCustomRpcs()[0].id);
   if (!publicClient) {
     console.log(
-      `Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].id}`,
+      `Failed to fetch public client for chai id ID ${chainsWithCustomRpcs()[0].id}`,
     );
     return null;
   }
@@ -1731,9 +1731,9 @@ export const fetchUserVaultMaxRedeem = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
+  const publicClient = await getPublicClient(activeWallet, chainsWithCustomRpcs()[0].id);
   if (!publicClient) {
-    console.log(`Error get public client ${SUPPORTED_CHAINS[0].id}`);
+    console.log(`Error get public client ${chainsWithCustomRpcs()[0].id}`);
     return null;
   }
 
@@ -1764,7 +1764,7 @@ export const fetchUserVaultMaxWithdraw = async (
     decimals,
   });
 
-  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
+  const publicClient = await getPublicClient(activeWallet, chainsWithCustomRpcs()[0].id);
   if (!publicClient) throw new Error("failed to get publicClient");
   const maxWithdraw = await publicClient.readContract({
     address: vaultAddress,
@@ -1787,7 +1787,7 @@ export const fetchTotalAssets = async (vaultAddress: Address) => {
   return vaultData.total_assets;
   // const contract = getContract({
   //   client,
-  //   chain: SUPPORTED_CHAINS[0], // This will always be Zetachain, as it's a balance on the vault
+  //   chain: chainsWithCustomRpcs()[0], // This will always be Zetachain, as it's a balance on the vault
   //   address: vaultAddress,
   // });
   // const balance = await readContract({
@@ -1920,10 +1920,10 @@ export const getSharesFromDeposit = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
+  const publicClient = await getPublicClient(activeWallet, chainsWithCustomRpcs()[0].id);
 
   if (!publicClient) {
-    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].id}`;
+    const errorMsg = `can't get publicClient for chain with id: ${chainsWithCustomRpcs()[0].id}`;
     throw new Error(errorMsg);
   }
 
