@@ -37,7 +37,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             </InfoBlock>
           </div>
           <p className="text-blue-digits font-bold text-xl leading-6">
-            ${formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
+            ${totalAssets?.totalAssets ? formatNumberWithSuffix(Number(totalAssets.totalAssets)) : "0"}
           </p>
         </div>
 

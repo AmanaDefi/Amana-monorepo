@@ -12,9 +12,7 @@ import {
   Balance,
   Tabs,
 } from "@/types/types";
-import { VAULT_DATA } from "@/constants";
 import {
-  useUpdateVaultBalanceAndTotalPerVault,
   useUpdateAPYs,
 } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -42,6 +40,8 @@ import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
 import { useChain, useUser } from "@account-kit/react";
+import { useVaultDetailsFromGraph, useUserVaultBalancesFromGraph } from "@/hooks/useVaultsGraph";
+import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -177,7 +177,7 @@ const VaultsDetailContainer: React.FC<{
           if (savedChain.id !== activeChain.id) {
             switchToChain(savedChain);
           }
-        } catch (error) {}
+        } catch (error) { }
       }
     }
   }, [vaultID, switchToChain, activeChain]);
@@ -216,18 +216,23 @@ const VaultsDetailContainer: React.FC<{
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;
-  }, [vaultData]);
+  }, [vaultData?.id]);
 
-  const vaults: VaultData[] = VAULT_DATA;
+  const { data: vaultFromGraph } = useVaultDetailsFromGraph(vaultIdStr);
+  const memoizedWalletAddress = useMemo(() => walletAddress || undefined, [walletAddress]);
+  const { userVaultBalances } = useUserVaultBalancesFromGraph(memoizedWalletAddress);
+  
   const backPath: string = pathname.includes("old-vaults")
     ? "/old-vaults"
     : "/";
 
-  useEffect(() => {
-    const foundVault = vaults.find((v) => v.id === vaultID.toString());
 
-    if (foundVault) {
-      setVaultData(foundVault);
+  useEffect(() => {
+    if (vaultFromGraph?.vault) {
+      const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
+      setVaultData(vd);
+      setVaultAPYs([convertGraphVaultToAPY(vaultFromGraph.vault)]);
+      setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
 
     if (vaultID) {
@@ -245,7 +250,37 @@ const VaultsDetailContainer: React.FC<{
         });
       }
     }
-  }, [vaultID, initialIsDeposit, vaults]);
+  }, [vaultID, initialIsDeposit, vaultFromGraph]);
+
+  // Set user vault balance from graph data
+  useEffect(() => {
+    const userBalance = userVaultBalances?.find(balance => balance.vaultId === vaultIdStr);
+    
+    if (userVaultBalances?.length && vaultIdStr) {
+      if (userBalance) {
+        // Convert formatted balance string to Balance object
+        const balanceValue = String(userBalance.balance);
+        
+        if (userVaultBalance?.formatted !== balanceValue) {
+          const balance: Balance = {
+            value: BigInt(0), // We don't have raw value from graph, using 0
+            formatted: balanceValue,
+            formattedUSD: "$0.00" // Will be calculated in VaultHeader
+          };
+          
+          setUserVaultBalance(balance);
+          
+          setVaultTotalAssetinToken({
+            vaultId: vaultIdStr,
+            totalAssetsinToken: balanceValue
+          });
+        }
+      } else if (userVaultBalance !== undefined || vaultTotalAssetinToken !== undefined) {
+        setUserVaultBalance(undefined);
+        setVaultTotalAssetinToken(undefined);
+      }
+    }
+  }, [userVaultBalances, vaultIdStr, userVaultBalance, vaultTotalAssetinToken]);
 
   const strategyExplorerBaseUrl = useMemo(() => {
     if (!vaultData?.protocol?.chainId) return "";
@@ -254,41 +289,37 @@ const VaultsDetailContainer: React.FC<{
 
   const vaultExplorerBaseUrl = CHAINS_EXPLORER_BASE_URL_MAINNET[7000];
 
-  useUpdateVaultBalanceAndTotalPerVault(
-    vaultData || null,
-    walletAddress,
-    setUserVaultBalance,
-    setVaultTotalAsset,
-    setVaultTotalAssetinToken,
-    transactionCompleted,
-  );
-
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData?.inputToken.symbol);
-
-  useEffect(() => {
-    if (userVaultBalance && vaultData) {
-      const rawBalance =
-        typeof userVaultBalance === "string"
-          ? userVaultBalance
-          : userVaultBalance.formatted;
-      const usdValue = Number(rawBalance) * (vaultTokenPrice || 0);
-    }
-  }, [userVaultBalance, vaultData, vaultTokenPrice]);
 
   const crvTokenPrice = useTokenPriceBySymbol("CRV");
   const cvxTokenPrice = useTokenPriceBySymbol("CVX");
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
+  
+  const memoizedPrices = useMemo(() => ({
+    crv: crvTokenPrice,
+    cvx: cvxTokenPrice,
+    eth: ethTokenPrice,
+    comp: compTokenPrice,
+    op: opTokenPrice
+  }), [
+    Math.floor((crvTokenPrice || 0) * 100),
+    Math.floor((cvxTokenPrice || 0) * 100),
+    Math.floor((ethTokenPrice || 0) * 100),
+    Math.floor((compTokenPrice || 0) * 100),
+    Math.floor((opTokenPrice || 0) * 100)
+  ]);
+  
   useUpdateAPYs(
     currentVault,
     setVaultAPYs,
     setLoading,
-    crvTokenPrice,
-    cvxTokenPrice,
-    ethTokenPrice,
-    compTokenPrice,
-    opTokenPrice,
+    memoizedPrices.crv,
+    memoizedPrices.cvx,
+    memoizedPrices.eth,
+    memoizedPrices.comp,
+    memoizedPrices.op
   );
 
   const handleTokenSelect = useCallback(

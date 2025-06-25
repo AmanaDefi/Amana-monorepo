@@ -7,15 +7,15 @@ import {
   calculateVenusRewardsAPY,
   calculateEddyAPY,
   calculateBeefyAPY,
-  fetchTotalAssets,
-  fetchUserVaultBalance,
-  fetchUserVaultMaxRedeem,
-  fetchUserVaultMaxWithdraw,
   calculateConvexEthereumRewardsAPY,
   calculateCompoundRewardsAPY,
   calculateConvexArbitrumRewardsAPY,
   calculateCombinedBalancerAPY,
   fetchReceiptTokens,
+  fetchTotalAssets,
+  fetchUserVaultMaxRedeem,
+  fetchUserVaultMaxWithdraw,
+  fetchUserVaultBalance,
 } from "@/actions/actions";
 
 import {
@@ -32,20 +32,18 @@ import {
 import {
   getOnlyTokenSymbol,
   getSolanaEVMAddress,
-  isSolanaAddress,
-  isZetachain,
+  isSolanaAddress
 } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
-import { useMultiChain } from "@/providers/MultiChainProvider";
-import { ethers, Interface } from "ethers";
-import multicall3Abi from "../../abis/multicall3ABI.json";
+import { Address, multicall3Abi, zeroAddress } from "viem";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
-import { apiService } from "@/service";
-import { zetaProvider } from "@/utils/providers";
-import { Address, zeroAddress } from "viem";
-import { useChain } from "@account-kit/react";
 import { useUserSettingsStore } from "@/store/userSettingsStore";
+import { useUserPositionsFromGraph, useUserTransactionsFromGraph } from "./useVaultsGraph";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { zetaProvider } from "@/utils/providers";
+import { ethers, Interface } from "ethers";
+import { apiService } from "@/service";
 
 type CashedVaultData = {
   vaultId: string;
@@ -773,5 +771,53 @@ export const useSlippage = () => {
     isAuto: slippage.isAuto,
     setSlippage,
     toggleAuto,
+  };
+};
+
+// Hooks for working with subgraph
+export const useUserTransactionsHistory = (userAddress?: string) => {
+  const { data, isLoading, error } = useUserTransactionsFromGraph(userAddress);
+
+  if (!userAddress) {
+    return {
+      deposits: [],
+      withdrawals: [],
+      isLoading: false,
+      error: null,
+      hasData: false
+    };
+  }
+
+  return {
+    deposits: data?.deposits || [],
+    withdrawals: data?.withdrawals || [],
+    isLoading,
+    error,
+    hasData: Boolean(data?.deposits?.length || data?.withdrawals?.length)
+  };
+};
+
+export const useUserPortfolioFromGraph = (userAddress?: string) => {
+  const { data, isLoading, error } = useUserPositionsFromGraph(userAddress);
+
+  if (!userAddress) {
+    return {
+      positions: [],
+      totalValue: 0,
+      isLoading: false,
+      error: null
+    };
+  }
+
+  const positions = data?.userPositions || [];
+  const totalValue = positions.reduce((sum: number, pos: any) => {
+    return sum + parseFloat(pos.balanceUSD || '0');
+  }, 0);
+
+  return {
+    positions,
+    totalValue,
+    isLoading,
+    error
   };
 };
