@@ -10,6 +10,7 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 import { useEffect, useState } from "react";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useWallets } from "@privy-io/react-auth";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -33,6 +34,8 @@ const MobileAllWallets = () => {
   }, []);
 
   const { walletAddress } = useMultiChain();
+  const {wallets} = useWallets();
+  const activeAccount = wallets[0];
 
   const {
     connectors,

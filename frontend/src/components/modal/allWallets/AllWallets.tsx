@@ -15,6 +15,7 @@ import { showInfoToast } from "@/toasts";
 import { ConnectorIcon } from "./components/ConnectorIcon";
 import { chainConfigs } from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
+import { useWallets } from "@privy-io/react-auth";
 
 const AllWAllets = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -37,7 +38,8 @@ const AllWAllets = () => {
     setChain
   } = useFundWalletStore();
 
-  const activeAccount = useUser();
+  const {wallets} = useWallets();
+  const activeAccount = wallets[0];
 
   const fundWalletConnect = () => {
     setStep("confirm");
