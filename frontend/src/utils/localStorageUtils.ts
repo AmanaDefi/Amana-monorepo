@@ -4,7 +4,7 @@ export function updateLocalStorageObject(
   storageKey: string,
   partialData: Partial<ITxLocalStorage>,
 ): boolean {
-  if (typeof window === "undefined" || !window.localStorage) {
+  if (typeof window === "undefined" || !window?.localStorage) {
     return false;
   }
 
@@ -60,7 +60,7 @@ export function updateLocalStorageObject(
 export function getLocalStorageObject(
   storageKey: string,
 ): ITxLocalStorage | null {
-  if (typeof window === "undefined" || !window.localStorage) {
+  if (typeof window === "undefined" || !window?.localStorage) {
     return null;
   }
 

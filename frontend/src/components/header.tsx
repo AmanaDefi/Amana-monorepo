@@ -37,19 +37,19 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const { openStep } = useAuthStore();
 
   const checkScreenSize = () => {
-    setIsMobile(window.innerWidth <= 768);
+    setIsMobile(window?.innerWidth <= 768);
   };
 
   useEffect(() => {
     checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
+    window?.addEventListener("resize", checkScreenSize);
     return () => {
-      window.removeEventListener("resize", checkScreenSize);
+      window?.removeEventListener("resize", checkScreenSize);
     };
   }, []);
 
   const handleSignInClick = () => {
-    const currentWidth = window.innerWidth;
+    const currentWidth = window?.innerWidth;
     if (currentWidth <= 768) {
       openStep("mobileOptionsA");
     } else {

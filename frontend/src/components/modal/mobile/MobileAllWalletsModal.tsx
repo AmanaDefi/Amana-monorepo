@@ -7,16 +7,28 @@ import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
 import { Connector, useConnect } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
+import { useEffect, useState } from "react";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
-  const isMobile = window?.innerWidth < 1024;
   const {
     step: fundWalletStep,
     setStep,
     setActiveConnector,
     setWalletAddress,
   } = useFundWalletStore();
+  
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window?.innerWidth < 1024);
+    };
+
+    checkIsMobile();
+    window?.addEventListener("resize", checkIsMobile);
+
+    return () => window?.removeEventListener("resize", checkIsMobile);
+  }, []);
 
   const {
     connectors,

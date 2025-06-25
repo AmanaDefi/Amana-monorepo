@@ -130,13 +130,13 @@ const VaultsDetailContainer: React.FC<{
       tab: newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW,
     });
 
-    const newUrl = new URL(window.location.href);
+    const newUrl = new URL(window?.location.href);
     if (newIsDeposit) {
       newUrl.searchParams.delete("tab");
     } else {
       newUrl.searchParams.set("tab", "withdraw");
     }
-    window.history.replaceState({}, "", newUrl.toString());
+    window?.history.replaceState({}, "", newUrl.toString());
   };
 
   const handleDepositDataUpdate = useCallback(

@@ -25,14 +25,14 @@ const OnboardingContainer = () => {
 
   useEffect(() => {
     const checkScreenSize = () => {
-      const width = window.innerWidth;
+      const width = window?.innerWidth;
       setIsMobile(width <= 767);
       setIsCarouselView(width < 1024);
     };
 
     checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
+    window?.addEventListener("resize", checkScreenSize);
+    return () => window?.removeEventListener("resize", checkScreenSize);
   }, []);
 
   const onSelect = useCallback(() => {

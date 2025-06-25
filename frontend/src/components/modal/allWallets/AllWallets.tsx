@@ -13,9 +13,20 @@ import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
 import { chainConfigs } from "@/constants/chainConfig";
+import { useEffect, useState } from "react";
 
 const AllWAllets = () => {
-  const isMobile = window?.innerWidth < 1024;
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window?.innerWidth < 1024);
+    };
+
+    checkIsMobile();
+    window?.addEventListener("resize", checkIsMobile);
+
+    return () => window?.removeEventListener("resize", checkIsMobile);
+  }, []);
   const { step, successAuth, closeAll } = useAuthStore();
   const {
     step: fundWalletStep,

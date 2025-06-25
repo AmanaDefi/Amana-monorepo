@@ -3,7 +3,7 @@ import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 
 const ConnectWallet = () => {
   const handleWalletInfoClick = () => {
-    window.open("https://blog.thirdweb.com/web3-wallet/", "_blank");
+    window?.open("https://blog.thirdweb.com/web3-wallet/", "_blank");
   };
 
   return (

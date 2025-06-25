@@ -399,12 +399,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       // State is already saved by the useEffect above
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    window?.addEventListener("storage", handleStorageChange);
+    window?.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window?.removeEventListener("storage", handleStorageChange);
+      window?.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [isHydrated]);
 
