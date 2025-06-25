@@ -338,13 +338,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 if (sortBy === option) {
                   toggleSortOrder();
                 } else {
-                  handleSortChange(option, 'desc');
+                  handleSortChange(option, "desc");
                 }
               }}
-              className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${sortBy === option
-                ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
-                : "bg-customNeutral300 text-white"
-                }`}
+              className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${
+                sortBy === option
+                  ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
+                  : "bg-customNeutral300 text-white"
+              }`}
             >
               {option.toUpperCase()}
               {sortBy === option && (
@@ -409,11 +410,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       </div>
 
       {/* Vaults Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+      <div
+        className="grid gap-2 md:gap-4 
+  grid-cols-[repeat(auto-fit,minmax(350px,1fr))]
+  md:grid-cols-[repeat(auto-fit,minmax(380px,1fr))]
+  xl:grid-cols-[repeat(auto-fit,minmax(400px,1fr))]"
+      >
         {paginatedVaults.map((vault) => {
           const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
 
-          const totalAssets = vaultTotalAssets.find((asset) => asset.vaultId === vault.id);
+          const totalAssets = vaultTotalAssets.find(
+            (asset) => asset.vaultId === vault.id,
+          );
 
           const riskLevel = calculateRiskLevel(vault);
           const capacityPercentage = calculateCapacityPercentage(vault.id);
@@ -490,12 +498,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       <h3 className="text-white font-bold">
                         {vault.protocol.network}
                       </h3>
-                    </div >
-                  </div >
-                </div >
+                    </div>
+                  </div>
+                </div>
 
                 {/* APY and TVL */}
-                < div className="grid grid-cols-2 gap-2 p-3" >
+                <div className="grid grid-cols-2 gap-2 p-3">
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
                     <p className="text-cyan-400 font-bold text-xl">
@@ -508,12 +516,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       {formatNumberWithSuffix(
                         Number(totalAssets?.totalAssets || 0),
                       )}
-                    </p >
-                  </div >
-                </div >
+                    </p>
+                  </div>
+                </div>
 
                 {/* Capacity Bar */}
-                <div className="mb-4" >
+                <div className="mb-4">
                   {/* <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>Capacity</span>
                     <span>{capacityPercentage.toFixed(0)}%</span>
@@ -526,29 +534,27 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   </div> */}
 
                   {/* User Deposits */}
-                  {
-                    walletAddress && (
-                      <div className="mt-2 px-3">
-                        <div className="flex justify-around text-[16px] mb-1">
-                          <span className="text-gray-400">Your Deposits:</span>
-                          <span className="text-white font-medium">
-                            {formatTokenBalance(
-                              userVaultBalances.find(
-                                (balance: UserVaultBalance) =>
-                                  balance.vaultId === vault.id,
-                              )?.balance || 0,
-                              vault.inputToken.symbol,
-                            )}{" "}
-                            {vault.inputToken.symbol}
-                          </span>
-                        </div>
+                  {walletAddress && (
+                    <div className="mt-2 px-3">
+                      <div className="flex justify-around text-[16px] mb-1">
+                        <span className="text-gray-400">Your Deposits:</span>
+                        <span className="text-white font-medium">
+                          {formatTokenBalance(
+                            userVaultBalances.find(
+                              (balance: UserVaultBalance) =>
+                                balance.vaultId === vault.id,
+                            )?.balance || 0,
+                            vault.inputToken.symbol,
+                          )}{" "}
+                          {vault.inputToken.symbol}
+                        </span>
                       </div>
-                    )
-                  }
-                </div >
+                    </div>
+                  )}
+                </div>
 
                 {/* Buttons */}
-                < div className="flex gap-2" >
+                <div className="flex gap-2">
                   <button
                     className="flex-1 fluid-hover-button text-white py-2 px-4 rounded-md transition-all"
                     onClick={(e) => {
@@ -559,10 +565,15 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     <span className="relative z-2">Deposit</span>
                   </button>
 
-                  {
-                    userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance &&
-                    Number(userVaultBalances.find((balance: UserVaultBalance) => balance.vaultId === vault.id)?.balance) > 0 && (
-
+                  {userVaultBalances.find(
+                    (balance: UserVaultBalance) => balance.vaultId === vault.id,
+                  )?.balance &&
+                    Number(
+                      userVaultBalances.find(
+                        (balance: UserVaultBalance) =>
+                          balance.vaultId === vault.id,
+                      )?.balance,
+                    ) > 0 && (
                       <button
                         className="flex-1 border border-customNeutral100 hover:border-cyan-400 text-white py-2 px-4 rounded-md transition-all"
                         onClick={(e) => {
@@ -572,92 +583,85 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       >
                         Withdraw
                       </button>
-                    )
-                  }
-                </div >
-              </div >
-            </div >
+                    )}
+                </div>
+              </div>
+            </div>
           );
         })}
-      </div >
+      </div>
 
       {/* Empty State */}
-      {
-        paginatedVaults.length === 0 && (
-          <div className="text-center py-12 bg-customNeutral200 rounded-lg">
-            <p className="text-white text-lg">
-              No vaults found matching your filters
-            </p>
-            <button
-              onClick={clearAllFilters}
-              className="mt-4 fluid-hover-button text-white py-2 px-4 rounded-md"
-            >
-              <span className="relative z-2">Clear Filters</span>
-            </button>
-          </div >
-        )
-      }
+      {paginatedVaults.length === 0 && (
+        <div className="text-center py-12 bg-customNeutral200 rounded-lg">
+          <p className="text-white text-lg">
+            No vaults found matching your filters
+          </p>
+          <button
+            onClick={clearAllFilters}
+            className="mt-4 fluid-hover-button text-white py-2 px-4 rounded-md"
+          >
+            <span className="relative z-2">Clear Filters</span>
+          </button>
+        </div>
+      )}
 
       {/* Pagination */}
-      {
-        displayTotalPages > 1 && (
-          <div className="flex justify-center mt-6">
-            <div className="flex gap-2">
-              <button
-
-
-                onClick={() => {
-                  if (onPageChange) {
-                    onPageChange(Math.max(currentPage - 1, 1));
-                  }
-                }}
-                disabled={currentPage === 1}
-
-                className={`px-3 py-1 rounded-md ${currentPage === 1
+      {displayTotalPages > 1 && (
+        <div className="flex justify-center mt-6">
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (onPageChange) {
+                  onPageChange(Math.max(currentPage - 1, 1));
+                }
+              }}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded-md ${
+                currentPage === 1
                   ? "bg-customNeutral300 text-gray-500 cursor-not-allowed"
                   : "bg-customNeutral300 text-white hover:bg-customNeutral100"
-                  }`}
-              >
-                ←
-              </button>
-              {
-                Array.from({ length: displayTotalPages }).map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      if (onPageChange) {
-                        onPageChange(index + 1);
-                      }
-                    }}
-                    className={`px-3 py-1 rounded-md ${currentPage === index + 1
-                      ? 'bg-gradient-to-r from-[#262830] to-[#06afbc] text-white'
-                      : 'bg-customNeutral300 text-white hover:bg-customNeutral100'
-                      }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))
-              }
-
+              }`}
+            >
+              ←
+            </button>
+            {Array.from({ length: displayTotalPages }).map((_, index) => (
               <button
+                key={index}
                 onClick={() => {
                   if (onPageChange) {
-                    onPageChange(Math.min(currentPage + 1, displayTotalPages));
+                    onPageChange(index + 1);
                   }
                 }}
-                disabled={currentPage === displayTotalPages}
-                className={`px-3 py-1 rounded-md ${currentPage === displayTotalPages
+                className={`px-3 py-1 rounded-md ${
+                  currentPage === index + 1
+                    ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
+                    : "bg-customNeutral300 text-white hover:bg-customNeutral100"
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={() => {
+                if (onPageChange) {
+                  onPageChange(Math.min(currentPage + 1, displayTotalPages));
+                }
+              }}
+              disabled={currentPage === displayTotalPages}
+              className={`px-3 py-1 rounded-md ${
+                currentPage === displayTotalPages
                   ? "bg-customNeutral300 text-gray-500 cursor-not-allowed"
                   : "bg-customNeutral300 text-white hover:bg-customNeutral100"
-                  }`}
-              >
-                →
-              </button>
-            </div >
-          </div >
-        )
-      }
-    </div >
+              }`}
+            >
+              →
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

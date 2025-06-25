@@ -74,7 +74,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               >
                 {getStepIcon(step)}
               </div>
-              <p className="text-[18px] font-bold tracking-[-0.06em] text-white">
+              <p className="text-[18px] font-normal tracking-[-0.06em] text-white">
                 {getStepDescription(step, isDeposit)}
               </p>
             </div>

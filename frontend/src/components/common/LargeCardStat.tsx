@@ -33,7 +33,7 @@ export default function LargeCardStat({
               animate="animate"
               exit="exit"
               transition={{ duration: 0.3 }}
-              className="w-[150px] text-lg md:text-2xl lg:text-[32px] font-normal whitespace-nowrap text-white leading-0 mr-[56px]"
+              className="w-[300px] text-lg md:text-2xl lg:text-[32px] font-normal whitespace-nowrap text-white leading-0 "
             >
               {value}
             </motion.p>

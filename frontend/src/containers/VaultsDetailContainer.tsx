@@ -507,7 +507,7 @@ const VaultsDetailContainer: React.FC<{
 
               {walletAddress && isWithdraw && <WithdrawalNotice />}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[450px] 2xl:min-w-[707px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[450px] 2xl:min-w-[634px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}

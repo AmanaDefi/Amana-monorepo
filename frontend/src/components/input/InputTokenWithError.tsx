@@ -240,7 +240,7 @@ export default function InputTokenWithError({
 
       {captionText && (
         <div className="flex items-center justify-between">
-          <div className="text-white text-start flex text-[16px] md:text-[18px] font-bold items-center gap-2 mb-2 md:mb-4">
+          <div className="text-white text-start flex text-[16px] md:text-[18px] font-medium items-center gap-2 mb-2 md:mb-4">
             {captionText}
             {isOutput && (
               <div className="font-normal">
@@ -346,7 +346,7 @@ export default function InputTokenWithError({
                     imageSize="w-5 h-5"
                   />
                 </div>
-                <p className="font-medium text-lg leading-none text-white">
+                <p className="font-normal text-lg leading-none text-white">
                   {selectedToken?.symbol}
                 </p>
               </div>
