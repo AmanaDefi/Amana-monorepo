@@ -216,6 +216,74 @@ contract SwapHelperEthereum is SwapHelperParent {
         return (path, feeTiers, encodedPath);
     }
 
+    function getPathV3SpecificIntermediateTokens(
+        address inputToken,
+        address intToken1,
+        address intToken2,
+        address outputToken,
+        address factoryAddress
+    )
+        public
+        view
+        virtual
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        )
+    {
+        if (
+            inputToken == outputToken ||
+            inputToken == address(0) ||
+            intToken1 == address(0) ||
+            intToken2 == address(0) ||
+            outputToken == address(0)
+        ) {
+            revert IErrors.InvalidAddress();
+        }
+
+        bool exists;
+        uint24 fee1;
+        uint24 fee2;
+        uint24 fee3;
+
+        // Check path: input → intToken1
+        (exists, fee1) = _getBestV3Pool(inputToken, intToken1, factoryAddress);
+        if (!exists) return (path, feeTiers, encodedPath);
+
+        // Check path: intToken1 → intToken2
+        (exists, fee2) = _getBestV3Pool(intToken1, intToken2, factoryAddress);
+        if (!exists) return (path, feeTiers, encodedPath);
+
+        // Check path: intToken2 → output
+        (exists, fee3) = _getBestV3Pool(intToken2, outputToken, factoryAddress);
+        if (!exists) return (path, feeTiers, encodedPath);
+
+        // If all pools exist, build path
+        path = new address[](4);
+        feeTiers = new uint24[](3);
+
+        path[0] = inputToken;
+        path[1] = intToken1;
+        path[2] = intToken2;
+        path[3] = outputToken;
+
+        feeTiers[0] = fee1;
+        feeTiers[1] = fee2;
+        feeTiers[2] = fee3;
+
+        encodedPath = abi.encodePacked(path[0]);
+        for (uint256 k = 0; k < feeTiers.length; k++) {
+            encodedPath = abi.encodePacked(
+                encodedPath,
+                feeTiers[k],
+                path[k + 1]
+            );
+        }
+
+        return (path, feeTiers, encodedPath);
+    }
+
     function swap(
         address inputToken,
         uint256 amount,
@@ -341,6 +409,64 @@ contract SwapHelperEthereum is SwapHelperParent {
         ) = getPathV3SpecificIntermediateToken(
                 inputToken,
                 intToken,
+                outputToken,
+                UNISWAP_V3_FACTORY
+            );
+
+        approveOrIncreaseAllowance(
+            IERC20(inputToken),
+            UNISWAP_V3_ROUTER,
+            amount
+        );
+
+        ISwapRouter.ExactInputParams memory params = ISwapRouter
+            .ExactInputParams({
+                path: encodedPath,
+                recipient: strategy,
+                deadline: block.timestamp + maxDeadline,
+                amountIn: amount,
+                amountOutMinimum: minimumOut
+            });
+        try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
+            uint256 out
+        ) {
+            return out;
+        } catch {
+            return 0;
+        }
+    }
+
+    function swapViaUniV3SpecificIntermediateTokens(
+        address inputToken,
+        address intToken1,
+        address intToken2,
+        uint256 amount,
+        address outputToken,
+        uint16 slippageBps,
+        address strategy,
+        uint256 maxDeadline,
+        bytes calldata data
+    ) external returns (uint256 amountOut) {
+        require(
+            IERC20(inputToken).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+
+        uint256 minimumOut = calculateMinAmountOut(
+            inputToken,
+            outputToken,
+            amount,
+            slippageBps
+        );
+
+        (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        ) = getPathV3SpecificIntermediateTokens(
+                inputToken,
+                intToken1,
+                intToken2,
                 outputToken,
                 UNISWAP_V3_FACTORY
             );

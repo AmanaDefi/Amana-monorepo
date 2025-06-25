@@ -13,6 +13,7 @@ contract NoonERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
     address public USN_ADDRESS;
+    address public USDT_ADDRESS;
 
     function initialize(
         string memory _name,
@@ -37,6 +38,7 @@ contract NoonERC20Strategy is ERC20StrategyParent {
 
         swapHelper = _swapHelper;
         USN_ADDRESS = 0xdA67B4284609d2d48e5d10cfAc411572727dc1eD; // USN address on Ethereum
+        USDT_ADDRESS = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT address on Ethereum
     }
 
     function _depositFundsIntoYieldSource(
@@ -55,8 +57,9 @@ contract NoonERC20Strategy is ERC20StrategyParent {
 
         // Swap input token to receipt token (sUSN) via Uni v4
         uint256 amountOut = ISwapHelper(swapHelper)
-            .swapViaUniV3SpecificIntermediateToken(
+            .swapViaUniV3SpecificIntermediateTokens(
                 address(inputToken),
+                USDT_ADDRESS, // USDT as intermediate token
                 USN_ADDRESS, // USN as intermediate token
                 amount,
                 receiptTokenAddress,
@@ -80,9 +83,10 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         );
 
         uint256 amountOut = ISwapHelper(swapHelper)
-            .swapViaUniV3SpecificIntermediateToken(
+            .swapViaUniV3SpecificIntermediateTokens(
                 receiptTokenAddress,
                 USN_ADDRESS, // USN as intermediate token
+                USDT_ADDRESS, // USDT as intermediate token
                 susnToWithdraw,
                 address(inputToken),
                 10000, // 100% slippage allowed for this operation
