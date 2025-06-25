@@ -4,10 +4,12 @@ import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import mixpanel from "mixpanel-browser";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 export default function AccountProvider({ children }: PropsWithChildren) {
-  const {user, ready, authenticated} = usePrivy();
+  const { wallets } = useWallets();
+  const activePrivyWallet = wallets[0];
+  const { ready, authenticated} = usePrivy();
 
   const [hasTrackedPage, setHasTrackedPage] = useState(false);
   const [hasIdentified, setHasIdentified] = useState(false);
@@ -27,11 +29,11 @@ export default function AccountProvider({ children }: PropsWithChildren) {
       (mixpanel as any).__initialized = true;
     }
 
-    if (user?.wallet?.address && ready) {
+    if (activePrivyWallet?.address && ready) {
       if (!hasIdentified) {
-        mixpanel.identify(user?.wallet?.address);
-        mixpanel.people.set({ wallet_address: user?.wallet?.address });
-        trackEvent("Wallet Connected", { walletAddress: user?.wallet?.address });
+        mixpanel.identify(activePrivyWallet?.address);
+        mixpanel.people.set({ wallet_address: activePrivyWallet?.address });
+        trackEvent("Wallet Connected", { walletAddress: activePrivyWallet?.address });
         setHasIdentified(true);
       }
     } else if (ready) {
@@ -59,13 +61,13 @@ export default function AccountProvider({ children }: PropsWithChildren) {
         page,
         route,
         isWalletConnected: authenticated,
-        walletAddress: user?.wallet?.address || null,
+        walletAddress: activePrivyWallet?.address || null,
       });
       setHasTrackedPage(true);
     }
   }, [
     route,
-    user?.wallet?.address,
+    activePrivyWallet?.address,
     authenticated,
     hasTrackedPage,
     hasIdentified,

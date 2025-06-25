@@ -7,7 +7,7 @@ import CopyTextButton from "@/components/common/CopyTextButton";
 import { TrophyIcon } from "@heroicons/react/24/outline";
 import { ZERO_ACCOUNT } from "@/containers/VaultsContainer";
 import { useLeaderboardData } from "@/hooks/useLeaderboardData";
-import { useUser } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth";
 
 const initialSearchParams = {
   userAddress: "",
@@ -19,8 +19,9 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchParams, setSearchParams] =
     useState<SearchParams>(initialSearchParams);
+  const {wallets} = useWallets();
 
-  const {user: currentUserAccount} = useUser() || ZERO_ACCOUNT;
+  const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
   const {
     data: leaderboardData,
     isLoading,
@@ -163,7 +164,7 @@ export default function Page() {
                   (item: LeaderboardUserData, index: number) => {
                     const isCurrentUser =
                       item.user_address.toLowerCase() ===
-                        currentUserAccount?.wallet?.address.toLowerCase() ||
+                        currentUserAccount?.address.toLowerCase() ||
                       item.user_address.toLowerCase() ===
                         searchTerm.toLocaleLowerCase();
                     return (

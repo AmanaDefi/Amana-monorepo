@@ -45,10 +45,6 @@ const AllWAllets = () => {
     },
   });
 
-  useEffect(() => {
-    console.log("Available connectors:", connectors);
-  }, [connectors]);
-
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
     setActiveConnector(connector);

@@ -10,7 +10,7 @@ import { showErrorToast, showSuccessToast } from "@/toasts";
 import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
-import { useUser, useWallets } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetachain] = SUPPORTED_CHAINS;

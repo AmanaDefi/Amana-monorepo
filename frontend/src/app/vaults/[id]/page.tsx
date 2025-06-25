@@ -6,10 +6,11 @@ import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import clsx from "clsx";
-import { usePrivy } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth";
 
 function Index({}) {
-  const { user: account } = usePrivy();
+  const { wallets } = useWallets();
+  const account = wallets[0];
   const { id } = useParams();
   const wallet = useWallet();
   const [vaultSymbol, setVaultSymbol] = useState<string | null>(null);

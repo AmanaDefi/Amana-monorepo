@@ -12,6 +12,7 @@ import {
   useLoginWithEmail,
   usePrivy,
   useCreateWallet,
+  useWallets,
 } from "@privy-io/react-auth";
 
 const formatEmail = (email: string) => {

@@ -20,7 +20,7 @@ import {
   arbitrum,
   arbitrumSepolia,
 } from "viem/chains";
-import { createConfig, WagmiProvider } from "@privy-io/wagmi";
+import { createConfig, WagmiProvider } from "wagmi";
 import { http } from "wagmi";
 import { walletConnect } from "wagmi/connectors";
 
@@ -87,7 +87,7 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
       config={{
         embeddedWallets: {
-          createOnLogin: "all-users",
+          createOnLogin: "users-without-wallets",
         },
         defaultChain: zetachain,
         supportedChains: SUPPORTED_CHAINS,

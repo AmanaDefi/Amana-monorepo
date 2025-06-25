@@ -14,7 +14,7 @@ import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth";
 
 interface HeaderProps {
   activeSection?: string;
@@ -24,7 +24,6 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
-  const {user} = usePrivy()
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
   const { walletAddress} =
@@ -34,7 +33,6 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
-  console.log(user, activeAccount)
 
   const { openStep } = useAuthStore();
 

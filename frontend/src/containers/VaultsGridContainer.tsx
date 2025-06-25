@@ -14,6 +14,7 @@ import { useUpdateVaultBalanceAndTotal, useUpdateAPYs } from "@/hooks/hooks";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import VaultsGrid from "../components/VaultsWrapper";
+import { useWallets } from "@privy-io/react-auth";
 
 // Zero account for default value
 export const ZERO_ACCOUNT = {
@@ -40,6 +41,8 @@ const VaultsGridContainer = () => {
   const [vaultTotalAssets, setVaultTotalAssets] = useState<VaultTotalAssets[]>(
     [],
   );
+  const {wallets} = useWallets();
+  const wallet = wallets[0];
   const [vaultTotalAssetsinToken, setVaultTotalAssetsinToken] = useState<
     VaultTotalAssetsinToken[]
   >([]);
@@ -73,6 +76,7 @@ const VaultsGridContainer = () => {
     ethTokenPrice,
     compTokenPrice,
     opTokenPrice,
+    wallet,
     true,
   );
 
