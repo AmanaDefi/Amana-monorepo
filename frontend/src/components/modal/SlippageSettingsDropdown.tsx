@@ -160,7 +160,7 @@ export default function SlippageSettingsDropdown({
 
             <div className="flex items-center gap-2 mb-6 mt-10">
               <span className="text-white text-[16px]">Max slippage</span>
-              <InfoBlock isRight>
+              <InfoBlock isMiddle>
                 💡 Your transaction will revert if the price changes by more
                 than the slippage percentage.
               </InfoBlock>

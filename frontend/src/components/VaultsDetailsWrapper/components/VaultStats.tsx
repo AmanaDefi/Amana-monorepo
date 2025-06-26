@@ -248,7 +248,7 @@ export default function VaultStats({
         <LargeCardStat
           id="rewards"
           label="Your rewards"
-          value="$0"
+          value="0 Points"
           tooltip="Your rewards"
         />
       </div>

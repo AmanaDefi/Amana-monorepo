@@ -58,7 +58,7 @@ import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/W
 import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
 import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
 
-import { motion, AnimatePresence } from "framer-motion"; // <-- Додаємо імпорти Framer Motion
+import { motion, AnimatePresence } from "framer-motion";
 import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultHeaderInfo";
 import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
 
