@@ -17,6 +17,50 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
+import PointsIcon from "@/components/svg/PointsIcon";
+import ResponsiveTooltip from "@/components/common/Tooltip";
+
+// Helper function to get points message for specific protocols
+const getPointsMessage = (protocolName: string) => {
+  switch (protocolName) {
+    case 'Aegis':
+      return {
+        message: 'Earn 15 points daily per $1 deposited',
+        logo: '/aegis.jpeg'
+      };
+    case 'YieldFi':
+      return {
+        message: 'Earn 5 YieldCrumbs daily per $1 deposited',
+        logo: '/yieldfi.png'
+      };
+    default:
+      return null;
+  }
+};
+
+// Helper function to get points information for tooltip
+const getPointsInfo = (protocolName: string) => {
+  switch (protocolName) {
+    case 'Aegis':
+      return {
+        points: '15 pts/$/day',
+        nativeYield: 'Aegis native yield',
+        displayPoints: true
+      };
+    case 'YieldFi':
+      return {
+        points: '5 pts/$/day',
+        nativeYield: 'YieldFi native yield',
+        displayPoints: true
+      };
+    default:
+      return {
+        points: '',
+        nativeYield: '',
+        displayPoints: false
+      };
+  }
+};
 
 export default function VaultHeader({
   vaultData,
@@ -326,6 +370,79 @@ export default function VaultHeader({
             tooltip="APY for the last 7 days"
           /> */}
           </div>
+
+
+
+      {/* <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:pr-10 gap-4 md:gap-8">
+          <LargeCardStat
+            id="deposits"
+            label="Deposits"
+            value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
+              vaultData.inputToken.symbol
+            }`}
+            secondaryValue={`$ ${formatCurrency(
+              depositAmountNumber * vaultTokenPrice
+            )}`}
+            tooltip="Value of your vault deposits"
+          />
+          <LargeCardStat
+            id="wallet"
+            label="Your Wallet"
+            value={`${formattedWalletBalance} ${symbol}`}
+            secondaryValue={`$ ${formatCurrency(
+              Number(walletTokenBalance.formatted) * price
+            )}`}
+            tooltip="Value of deposit assets held in your wallet"
+          />
+          <LargeCardStat
+            id="APY"
+            label="7d APY"
+            // tooltip="APY for the last 7 days"
+          >
+            <div className="flex items-center gap-1">
+              <p className="text-2xl lg:text-3xl font-bold whitespace-nowrap text-white leading-0">
+                { Number.isNaN(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d))
+                  ? "0%"
+                  : `${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2)}%`
+                }
+              </p>
+              {getPointsInfo(vaultData.protocol.name).displayPoints && (
+                <div className="flex items-center">
+                  <button
+                    id={`apy-points-tooltip-${selectedVaultId}`}
+                    className="ml-1"
+                  >
+                    <PointsIcon className="w-8 h-8" color="#06afbc" />
+                  </button>
+                  <ResponsiveTooltip
+                    id={`apy-points-tooltip-${selectedVaultId}`}
+                    content={
+                      <div className="w-48">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-gray-300 text-sm">
+                            {getPointsInfo(vaultData.protocol.name).nativeYield}
+                          </span>
+                          <span className="text-cyan-400 font-medium">
+                            {`${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100).toFixed(2)}%`}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-300 text-sm">
+                            {vaultData.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
+                          </span>
+                          <span className="text-white font-medium">
+                            {getPointsInfo(vaultData.protocol.name).points
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </LargeCardStat> */}
         </div>
       )}
     </section>

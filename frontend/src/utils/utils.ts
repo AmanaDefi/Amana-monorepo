@@ -63,6 +63,9 @@ export function getVaultErrorMessage(
   value: string,
   inputValue: string | undefined,
   steps: Action[],
+  vaultData?: any,
+  inputTokenPrice?: number,
+  isDeposit?: boolean
 ): string {
   if (Number(value) > 0 && (!inputValue || Number(inputValue) === 0)) {
     return "Insufficient balance";
@@ -70,9 +73,22 @@ export function getVaultErrorMessage(
   // Input > Balance
   if (Number(value) > Number(inputValue)) {
     return "Insufficient balance";
-  } else {
-    return "";
   }
+
+  // Check deposit/withdrawal limits if vaultData is provided
+  if (vaultData && inputTokenPrice) {
+    const amountInUSD = Number(value) * inputTokenPrice;
+    
+    if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(value) > 0) {
+      return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
+    }
+    
+    if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(value) > 0) {
+      return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+    }
+  }
+
+  return "";
 }
 
 export function isEthereumAddress(address: string): boolean {

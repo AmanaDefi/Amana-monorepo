@@ -33,6 +33,8 @@ export interface VaultData {
   des?: string;
   imgURL?: string;
   depositFeePaidFromGasTank: boolean;
+  minDeposit?: number; // Minimum deposit amount in USD
+  maxWithdraw?: number; // Maximum instant withdrawal amount in USD
   inputToken: Token;
   protocol: {
     name: string;

@@ -15,7 +15,6 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IDistributor.sol";
 import "../interfaces/ISwapHelper.sol";
-import "hardhat/console.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -59,8 +58,8 @@ abstract contract StrategyParent is
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
 
-    IERC20 public inputToken;
-    address public receiptTokenAddress;
+    IERC20 internal inputToken;
+    address internal receiptTokenAddress;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");

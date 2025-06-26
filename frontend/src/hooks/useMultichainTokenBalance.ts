@@ -30,21 +30,9 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const MAX_RETRIES = 3;
 
   const internalFetchBalance = useCallback(async () => {
-    console.log("💰 [TOKEN-BALANCE] fetchBalance called", {
-      walletAddress,
-      token: token?.symbol,
-      tokenAddress: token?.address,
-      isNative: token?.isNative,
-      activeChain: activeChain?.id,
-      timestamp: new Date().toISOString(),
-    });
 
     if (!currentToken || !walletAddress || !activeChain?.id) {
-      console.log("⚠️ [TOKEN-BALANCE] Missing wallet address or token", {
-        walletAddress: !!walletAddress,
-        token: !!token,
-        timestamp: new Date().toISOString(),
-      });
+     
       setBalance(DEFAULT_BALANCE);
       setIsLoading(false);
       return;
@@ -56,10 +44,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
     setError(null);
 
     if (currentToken.isNative) {
-      console.log("🪙 [TOKEN-BALANCE] Using native balance", {
-        nativeBalance: balance?.formatted,
-        timestamp: new Date().toISOString(),
-      });
       setBalance(balance ?? { value: 0n, formatted: "0" });
       setIsLoading(false);
       retryCountRef.current = 0;
@@ -71,10 +55,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       isSolanaAddress(currentToken.address) &&
       isSolanaAddress(walletAddress)
     ) {
-      console.log("🌟 [TOKEN-BALANCE] Fetching Solana token balance...", {
-        tokenAddress: currentToken.address,
-        timestamp: new Date().toISOString(),
-      });
       try {
         const { balance, decimals } = await getSplTokenBalance(
           walletAddress,
@@ -85,7 +65,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
           formatted: format(balance, decimals),
         };
       } catch (error) {
-        console.error("Error fetching Solana token balance:", error);
+       
         setBalance({ value: 0n, formatted: "0" });
         setIsLoading(false);
       }

@@ -34,8 +34,8 @@ import { PREVIOUS_ADDRESS } from "@/hooks/hooks";
 import { Connector } from "wagmi";
 
 // Constants for localStorage
-const WALLET_STATE_KEY = "amana-wallet-state";
-const DEBUG_WALLET = true; // Set to false in production
+const WALLET_STATE_KEY = 'amana-wallet-state';
+const DEBUG_WALLET = false; // Set to false in production
 
 // Helper function for debug logging
 const debugLog = (message: string, data?: any) => {
@@ -65,24 +65,21 @@ const loadWalletState = (): {
       const saved = localStorage.getItem(WALLET_STATE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        debugLog("Loaded wallet state:", parsed);
-        return {
-          selectedChain: parsed.selectedChain,
-          walletAddress: parsed.walletAddress,
-        };
+        
+        return { selectedChain: parsed.selectedChain, walletAddress: parsed.walletAddress };
       }
     } catch (error) {
-      debugLog("Error loading wallet state:", error);
+     
     }
   }
-  debugLog("No saved wallet state found or SSR");
+
   return { selectedChain: null, walletAddress: null };
 };
 
 const clearWalletState = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(WALLET_STATE_KEY);
-    debugLog("Cleared wallet state");
+ 
   }
 };
 
@@ -228,18 +225,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   // Connect Solana Wallet
   const connectSolana = async () => {
-    debugLog("Connecting Solana wallet...");
     setIsModalOpen(false);
     try {
       if (selectedChain == "evm") {
-        debugLog("Disconnecting EVM wallet before Solana connection");
         if (activeAccount) evmDisconnect();
       }
       setVisible(true);
       setSelectedChain("solana");
-      debugLog("Solana connection initiated");
     } catch (error) {
-      debugLog("Solana connection error:", error);
       console.error("Solana connection error:", error);
     }
   };
@@ -318,35 +311,26 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     // Add initialization delay to allow wallets to load
     const initTimer = setTimeout(() => {
       setIsInitialized(true);
-      debugLog("Provider initialization complete after hydration");
-
+     
+      
       // Now check wallet connections
       const checkTimer = setTimeout(() => {
-        debugLog("Checking wallet connections after initialization:", {
-          account: !!activeAccount?.address,
-          publicKey: !!publicKey,
-          savedChain: selectedChain,
-          hasAnyConnection: !!(activeAccount?.address || publicKey),
-        });
+       
 
         if (!activeAccount?.address && !publicKey) {
           // No active connections detected
           if (selectedChain) {
-            debugLog(
-              "No active connections but saved state exists - showing modal",
-            );
+            
             setIsModalOpen(true);
-          } else {
-            debugLog("No active connections and no saved state - clean slate");
-          }
+          } 
         } else if (publicKey) {
-          debugLog("Solana wallet connected:", publicKey.toBase58());
+         
           setWalletAddress(publicKey.toBase58());
           setSelectedChain("solana");
           setIsModalOpen(false);
         } else if (activeAccount?.address) {
           if (!(activeAccount.type === "eoa" && !!scaAccount?.address)) {
-            debugLog("EVM wallet connected:", activeAccount?.address);
+           
             const connectorID = localStorage.getItem('connectorId')
             setCurrentConnector(connectors.find(con => con.id === connectorID))
             setWalletAddress(activeAccount?.address);
@@ -376,16 +360,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (!isHydrated) return;
 
     const handleStorageChange = (e: StorageEvent) => {
-      debugLog("Storage event detected:", {
-        key: e.key,
-        newValue: e.newValue,
-        oldValue: e.oldValue,
-      });
-
+     
+      
       if (e.key === WALLET_STATE_KEY) {
-        if (e.newValue === null) {
-          // Wallet was disconnected in another tab
-          debugLog("Wallet disconnected in another tab");
+        if (e.newValue === null) {  
           setSelectedChain(null);
           setWalletAddress(null);
           localStorage.setItem(PREVIOUS_ADDRESS, "");
@@ -394,9 +372,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           // Wallet state changed in another tab
           try {
             const newState = JSON.parse(e.newValue);
-            debugLog("Wallet state changed in another tab:", newState);
+           
             setSelectedChain(newState.selectedChain);
-            console.log("set wallet from newState");
+            
             setWalletAddress(newState.walletAddress);
             if (newState.selectedChain && newState.walletAddress) {
               setIsModalOpen(false);

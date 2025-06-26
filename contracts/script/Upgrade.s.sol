@@ -7,10 +7,10 @@ import {console} from "forge-std/console.sol";
 contract Upgrade is Script {
     function run() external {
         // 🛰️ Proxy address you want to upgrade
-        address proxyAddress = 0xd45347D2074591535DF3b23a077094A651858179;
+        address proxyAddress = 0xfdDe5218bbaBc60E6Ad879Af2eeE18aFFc8f48FB;
 
         // 🆕 New implementation contract address
-        address newImpl = 0x8eE9f19331ac651C73ebce2AD7500Ae473B435a0;
+        address newImpl = 0xEc8461Aa545CAa0e784b395a2569Ca46641ab151;
 
         // 🔐 Get private key from .env and prefix if needed
         string memory rawPrivateKey = vm.envString("PRIVATE_KEY");

@@ -40,6 +40,16 @@
       "address": "0xe488d52601772bc327048E61F86Ee40df75b7a4F",
       "txHash": "0x6ba752e90355a8c306c5b28deaa90339c5a46eaddf15be2285f2055c166dcd48",
       "kind": "uups"
+    },
+    {
+      "address": "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8",
+      "txHash": "0x048e4f8e5b45cda29bf27fc882a2a7d4f12a04df6dbe36b7343e8bc57797abfa",
+      "kind": "uups"
+    },
+    {
+      "address": "0xeAe2C350d25ce93326Bf709ac007CA002ccDA56c",
+      "txHash": "0x7dac4faf3822a3fd161f976595d02e845e0b63f0e46bfd26d837367631c400f8",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -2148,6 +2158,71 @@
               "label": "_symbol",
               "type": "t_string_storage",
               "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:40"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "9ac61f0753382d160e194a0470864003afba52f8ad7d28c045b62154d27c9194": {
+      "address": "0xf15153EEf1e94e11dD93A1A79f49920318cfb8C2",
+      "txHash": "0xcfcc22b20f6fc8e33f12070107c6be680382a534a0704086b788f301d5c128ca",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "GATEWAY_ADDRESS",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address",
+            "contract": "WithdrawHelper",
+            "src": "contracts/WithdrawHelper.sol:30"
+          },
+          {
+            "label": "gasLimitForRevertCall",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "WithdrawHelper",
+            "src": "contracts/WithdrawHelper.sol:31"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
             }
           ],
           "erc7201:openzeppelin.storage.Initializable": [
