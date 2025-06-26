@@ -47,7 +47,6 @@ export default function VaultHeader({
   const [depositAmount, setDepositAmount] = useState("0");
   const lastVaultIdRef = useRef<string | null>(null);
   const lastActiveChainRef = useRef<number | null>(null);
-  console.log(selectedToken);
 
   // Debug full userVaultBalance object
 
@@ -66,7 +65,6 @@ export default function VaultHeader({
 
     // First priority: If there's a user-selected token from parent component, use it
     if (selectedToken) {
-      console.log('setInputToken selectedToken')
       setInputToken(selectedToken);
     }
     // Only auto-select if there's no token already selected or if we have a new vault/chain
@@ -163,15 +161,12 @@ export default function VaultHeader({
               return aSuffix.localeCompare(bSuffix);
             });
 
-            console.log('setInputToken sortedTokens[0]')
             setInputToken(sortedTokens[0]);
           } else {
             // Fallback to vault input token
-            console.log('setInputToken vaultData.inputToken')
             setInputToken(vaultData.inputToken);
           }
         } else {
-          console.log('setInputToken vaultData.inputToken 2')
           // Non-stablecoin or no tokens available - use vault input token
           setInputToken(vaultData.inputToken);
         }

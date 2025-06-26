@@ -592,11 +592,7 @@ export default function VaultInputs({
       });
     } else {
       const maxValue =
-<<<<<<< fix-chain-bugs
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
-=======
         vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
->>>>>>> dev
       console.log("VaultInputs - MAX click for withdraw:", {
         vaultTotalAssetinToken,
         maxValue,
@@ -1161,38 +1157,6 @@ export default function VaultInputs({
   ]);
 
   const isButtonDisabled = useMemo(() => {
-<<<<<<< fix-chain-bugs
-    const disabled =
-      !walletAddress ||
-      !inputBalance.formatted ||
-      Number(inputBalance.formatted) <= 0 ||
-      !!errorMessage ||
-      !!outputBoxErrorMessage ||
-      (isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))) ||
-      (Number(inputBalance.formatted || 0) > 0 &&
-        Number(tokenBalance.formatted || 0) === 0);
-
-    setIsButtonDisabled(disabled);
-
-    return disabled;
-  }, [
-    walletAddress,
-    inputBalance.formatted,
-    errorMessage,
-    outputBoxErrorMessage,
-    isDeposit,
-    vaultData.depositFeePaidFromGasTank,
-    debouncedInputBalance.value,
-    conversionOutput.inputAmountInUSDFormatted,
-    conversionOutput.gasFeeInUSD,
-    tokenBalance.formatted,
-  ]);
-=======
     if (!walletAddress) {
       setIsButtonDisabled(true);
       return true;
@@ -1238,7 +1202,6 @@ export default function VaultInputs({
       setIsButtonDisabled(true);
       return true;
     }
->>>>>>> dev
 
     setIsButtonDisabled(false);
     return false;
@@ -1257,7 +1220,6 @@ export default function VaultInputs({
     conversionOutput.gasFeeInUSD,
     setIsButtonDisabled,
   ]);
-  console.log(conversionOutput);
   // 🧪 TESTING: Log final values being displayed
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {
@@ -1516,38 +1478,8 @@ export default function VaultInputs({
             />
           </motion.div>
         )}
-<<<<<<< fix-chain-bugs
-      </div>
-
-      <InputTokenWithError
-        captionText={isDeposit ? "Output Amount" : ""}
-        onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
-        allowInput={allowInput}
-        vaultData={vaultData}
-        onMaxClick={() => {}}
-        value={conversionOutput.outputAmountFormatted}
-        onChange={() => {}}
-        selectedChain={selectedChain}
-        selectedToken={isDeposit ? vaultData.inputToken : inputToken}
-        inputTokenbalance={
-          isDeposit
-            ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0")
-            : tokenBalance.formatted
-        }
-        errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
-        tokenList={isDeposit ? [] : tokenList}
-        disabled={false}
-        isDeposit={isDeposit}
-        isOutput={true}
-        loadingOutputToken={loadingOutputToken}
-        conversionOutput={conversionOutput}
-        setInputBalance={setInputBalance}
-      />
-      <APYChangeCard isDeposit={isDeposit} />
-=======
         <APYChangeCard isDeposit={isDeposit} />
       </AnimatePresence>
->>>>>>> dev
 
       {inputToken &&
         // !loadingOutputToken &&

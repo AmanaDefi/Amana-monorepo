@@ -73,7 +73,6 @@ const ChainSwitcher: React.FC = () => {
   const handleChainSwitch = async (
     chain: (typeof SUPPORTED_CHAINS)[number],
   ) => {
-    console.log('handleChainSwitch', chain.chain.id)
     if (!wallet?.address) {
       try {
         showErrorToast("Please connect your wallet to switch chains.");
