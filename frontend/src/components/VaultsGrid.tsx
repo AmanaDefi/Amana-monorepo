@@ -6,9 +6,9 @@ import {
   VaultAPY,
   VaultTotalAssets,
   VaultTotalAssetsinToken,
-  UserVaultBalance
+  UserVaultBalance,
 } from "@/types/types";
-import { useLayoutStore } from '@/store/store';
+import { useLayoutStore } from "@/store/store";
 import {
   formatNumberWithSuffix,
   getOnlyTokenSymbol,
@@ -60,8 +60,8 @@ interface VaultsGridProps {
   onPageChange?: (page: number) => void;
   // Sorting
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
+  sortOrder?: "asc" | "desc";
+  onSortChange?: (sortBy: string, sortOrder: "asc" | "desc") => void;
 }
 
 const VaultsGrid: React.FC<VaultsGridProps> = ({
@@ -92,7 +92,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [chainFilter, setChainFilter] = useState<string>("");
   const [protocolFilter, setProtocolFilter] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>(externalSortBy);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(externalSortOrder);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(externalSortOrder);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Use useLayoutStore for adaptive page size
@@ -110,10 +110,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     };
 
     updatePageSize();
-    window.addEventListener('resize', updatePageSize);
+    window.addEventListener("resize", updatePageSize);
 
     return () => {
-      window.removeEventListener('resize', updatePageSize);
+      window.removeEventListener("resize", updatePageSize);
     };
   }, [setItemsPerPage, itemsPerPage]);
 
@@ -139,7 +139,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       return vaults;
     }
 
-    return vaults.filter(vault => {
+    return vaults.filter((vault) => {
       const matchesSearch =
         searchTerm === "" ||
         vault.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,12 +152,15 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       const matchesProtocol =
         protocolFilter === "" || vault.protocol.name === protocolFilter;
 
-
       return matchesSearch && matchesChain && matchesProtocol;
     });
-  }, [vaults, searchTerm, chainFilter, protocolFilter, shouldUseLocalFiltering]);
-
-
+  }, [
+    vaults,
+    searchTerm,
+    chainFilter,
+    protocolFilter,
+    shouldUseLocalFiltering,
+  ]);
 
   // Sort vaults based on selected criteria
   const sortedVaults = useMemo(() => {
@@ -203,7 +206,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         return aValue < bValue ? 1 : -1;
       }
     });
-  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets, shouldUseLocalFiltering]);
+  }, [
+    filteredVaults,
+    sortBy,
+    sortOrder,
+    vaultAPYs,
+    vaultTotalAssets,
+    shouldUseLocalFiltering,
+  ]);
 
   // Pagination logic
   const paginatedVaults = useMemo(() => {
@@ -217,10 +227,17 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   }, [sortedVaults, currentPage, pageSize, shouldUseLocalFiltering]);
 
   const localTotalPages = Math.ceil(sortedVaults.length / pageSize);
-  const displayTotalPages = shouldUseLocalFiltering ? localTotalPages : totalPages;
-  const displayTotalCount = shouldUseLocalFiltering ? filteredVaults.length : totalCount;
+  const displayTotalPages = shouldUseLocalFiltering
+    ? localTotalPages
+    : totalPages;
+  const displayTotalCount = shouldUseLocalFiltering
+    ? filteredVaults.length
+    : totalCount;
 
-  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+  const handleSortChange = (
+    newSortBy: string,
+    newSortOrder: "asc" | "desc",
+  ) => {
     if (onSortChange) {
       onSortChange(newSortBy, newSortOrder);
     } else {
@@ -230,7 +247,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const toggleSortOrder = () => {
-    const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+    const newOrder = sortOrder === "asc" ? "desc" : "asc";
     handleSortChange(sortBy, newOrder);
   };
 

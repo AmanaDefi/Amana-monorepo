@@ -173,8 +173,7 @@ export default function InputTokenWithError({
 
       if (loadingOutputToken) {
         return (
-          <div className="flex items-center space-x-3">
-            <span className="text-white text-2xl">{outputAmount}</span>
+          <div className="flex items-center justify-center min-w-[60px] min-h-[32px]">
             <MiniSpinner size={18} color="#3E73C4" />
           </div>
         );
@@ -185,13 +184,7 @@ export default function InputTokenWithError({
 
     if (shouldShowInputLoader) {
       return (
-        <div className="flex items-center space-x-3">
-          <InputNumber
-            {...props}
-            disabled={disabled}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
-          />
+        <div className="flex items-center justify-center min-w-[60px] min-h-[32px]">
           <MiniSpinner size={18} color="#3E73C4" />
         </div>
       );
@@ -297,8 +290,7 @@ export default function InputTokenWithError({
           <div
             style={{ gridArea: "top-center" }}
             className="flex items-center justify-center"
-          >
-          </div>
+          ></div>
 
           <div
             style={{ gridArea: "top-right" }}
