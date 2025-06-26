@@ -805,30 +805,30 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
   },
   {
-    id: "0xeAe2C350d25ce93326Bf709ac007CA002ccDA56c", // BSC Venus USDT Vault
+    id: "0x98fEc66c0892B67760F60DB42757BA462086B67a", // Ethereum Noon Capital sUSN Vault
     name: "Noon Capital sUSN",
     type: "Yield Bearing Stablecoin",
-    des: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
+    des: "This strategy swaps USDC for sUSN, the staked version of USN — a crypto-native stablecoin issued by Noon Capital. sUSN is yield-bearing by design, with returns generated through delta-neutral strategies like funding rate arbitrage and collateralized lending. As sUSN appreciates in value over time, users earn passive, compounding yield without needing to claim or stake manually.",
     symbol: "aNoonSusn",
     imgURL: "/ETH.png",
     depositFeePaidFromGasTank: false,
     inputToken: {
-      symbol: "USDT.ETH",
+      symbol: "USDC.ETH",
       decimals: 6,
-      address: ZC_USDT_ETH_ADDRESS,
-      imgURL: "/usdt.png",
+      address: ZC_USDC_ETH_ADDRESS,
+      imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false
     },
     protocol: {
       name: "Noon Capital",
-      strategyAddress: "0x0B04a5C20CC2dC2701771944b1581586E661e416",
+      strategyAddress: "0x2757339D02A1caE99A671b1797e8dEe507d10b3F",
       network: "Ethereum",
       chainId: 1,
       netdes: "Ethereum is a decentralized, open-source blockchain system that features smart contract functionality. It is the largest and most established blockchain platform for dApps, with a vibrant ecosystem and strong developer community.",
       imgURL: "/sUSN.png",
-      des: "Noon Capital is a yield protocol that issues sUSN, a stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into sUSN to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities."
+      des: "Noon Capital is the protocol behind USN and sUSN — stablecoins designed to generate consistent, crypto-native returns. While USN offers a liquid, dollar-pegged asset, sUSN is its yield-bearing counterpart, earning passive income through delta-neutral strategies like funding rate arbitrage and overcollateralized lending. Users can mint or swap into sUSN to earn without staking or lockups. The protocol emphasizes transparency, capital efficiency, and seamless DeFi integration. Risks include funding rate shifts, collateral volatility, and smart contract exposure."
     },
   },
 ];
