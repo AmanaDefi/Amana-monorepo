@@ -598,7 +598,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
   //   },
   // },
   {
-    id: "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8",
+    id: "0x86351CA28FfADC520c940FA6b5DbE441289b55CB",
     name: "YieldFi vyUSD",
     type: "Yield-Bearing Stablecoin",
     des: "This strategy deposits USDC into the vyUSD vault on Ethereum, a yield-optimized vault built on top of yUSD. vyUSD amplifies returns through automated DeFi strategies such as stablecoin LP positions and leverage looping. Yield is generated from protocol-driven strategies and auto-compounded within the vault. Because the underlying assets are stablecoins, risk from impermanent loss is minimal. APY is variable and influenced by vault utilization, market conditions, and strategy performance within the YieldFi protocol.",
@@ -618,7 +618,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     },
     protocol: {
       name: "YieldFi",
-      strategyAddress: "0xC058E93347162563f53893e1dF20e3cC017C85b3",
+      strategyAddress: "0xc2b9E9a04E1DB3051D09AD7F9EeE29293397f0e4",
       rewardsContractAddress: "",
       network: "Ethereum",
       chainId: 1,

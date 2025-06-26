@@ -9,8 +9,6 @@ import "./ERC20StrategyParent.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/I4626Vault.sol";
 
-import "hardhat/console.sol";
-
 interface IManager {
     function deposit(
         address _yToken,
