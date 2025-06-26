@@ -11,12 +11,13 @@ import { UserVaultBalance } from '@/types/types';
 import { 
   convertGraphUserPositionToBalance
 } from '@/utils/graphUtils';
+import { EXCLUDED_VAULTS } from '@/constants';
 
 
 export function useVaultsFromGraph() {
   return useQuery<GetVaultsResponse, Error>({
-    queryKey: ['vaults-graph'],
-    queryFn: () => graphClient.getVaults(),
+    queryKey: ["vaults-graph"],
+    queryFn: () => graphClient.getVaults(EXCLUDED_VAULTS),
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 2,
@@ -30,10 +31,17 @@ export function useVaultsPaginatedFromGraph(
   orderDirection: 'asc' | 'desc' = 'desc'
 ) {
   return useQuery<GetVaultsResponse, Error>({
-    queryKey: ['vaults-paginated-graph', first, skip, orderBy, orderDirection],
-    queryFn: () => graphClient.getVaultsPaginated(first, skip, orderBy, orderDirection),
+    queryKey: ["vaults-paginated-graph", first, skip, orderBy, orderDirection],
+    queryFn: () =>
+      graphClient.getVaultsPaginated(
+        first,
+        skip,
+        orderBy,
+        orderDirection,
+        EXCLUDED_VAULTS,
+      ),
     staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000, 
+    gcTime: 5 * 60 * 1000,
     retry: 2,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -43,8 +51,8 @@ export function useVaultsPaginatedFromGraph(
 
 export function useVaultsCountFromGraph() {
   return useQuery<{ vaults: Array<{ id: string }> }, Error>({
-    queryKey: ['vaults-count-graph'],
-    queryFn: () => graphClient.getVaultsCount(),
+    queryKey: ["vaults-count-graph"],
+    queryFn: () => graphClient.getVaultsCount(EXCLUDED_VAULTS),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 2,
@@ -68,7 +76,14 @@ export function useSearchVaultsPaginatedFromGraph(
         setTimeout(() => reject(new Error('Search request timeout')), 3000)
       );
       
-      const searchPromise = graphClient.searchVaultsPaginated(searchTerm, first, skip, orderBy, orderDirection);
+      const searchPromise = graphClient.searchVaultsPaginated(
+        searchTerm,
+        first,
+        skip,
+        orderBy,
+        orderDirection,
+        EXCLUDED_VAULTS,
+      );
       
       return Promise.race([searchPromise, timeoutPromise]) as Promise<GetVaultsResponse>;
     },
@@ -94,7 +109,10 @@ export function useSearchVaultsCountFromGraph(searchTerm: string) {
         setTimeout(() => reject(new Error('Search count request timeout')), 3000)
       );
       
-      const countPromise = graphClient.getSearchVaultsCount(searchTerm);
+      const countPromise = graphClient.getSearchVaultsCount(
+        searchTerm,
+        EXCLUDED_VAULTS,
+      );
       
       return Promise.race([countPromise, timeoutPromise]) as Promise<{ vaults: Array<{ id: string }> }>;
     },

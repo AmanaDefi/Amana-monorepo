@@ -1349,6 +1349,7 @@ function Interaction({
     type: "MultiOwnerModularAccount",
   });
   const { currentConnector } = useMultiChain();
+  const { isButtonDisabled } = useTransactionStore();
   const { sendUserOperation } = useSendUserOperation({
     client: scaClient,
     waitForTxn: true,
@@ -1985,9 +1986,9 @@ function Interaction({
             !!errorMessage;
 
           const isDisabled =
+            isButtonDisabled || 
             isDisabledByProcessing ||
-            isDisabledByHash ||
-            isDisabledByValidation;
+            isDisabledByHash;
 
           return (
             <Button
