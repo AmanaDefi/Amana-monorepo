@@ -524,6 +524,15 @@ contract WithdrawHelper is
         approveOrIncreaseAllowance(IERC20(gasZRC20), GATEWAY_ADDRESS, gasFee);
     }
 
+    function sendRevertToStrategy(
+        address strategy,
+        address vaultAsset,
+        uint256 vaultNonce,
+        address registry
+    ) external onlyOwner {
+        _sendRevertToStrategy(strategy, vaultAsset, vaultNonce, registry);
+    }
+
     function _sendRevertToStrategy(
         address strategy,
         address vaultAsset,
