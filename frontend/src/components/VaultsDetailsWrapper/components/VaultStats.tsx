@@ -7,31 +7,16 @@ import {
   Balance,
 } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
-import Image from "next/image";
-import {
-  determineVaultTokenFromApprovedTokens,
-  formatCurrency,
-} from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
-export default function VaultHeader({
-  vaultData,
-  userVaultBalance,
-  selectedVaultId,
-  vaultAPYs,
-  transactionCompleted,
-  selectedToken,
-  onDepositDataUpdate,
-  isDeposit,
-}: {
+interface VaultStatsProps {
   vaultData: VaultData;
   userVaultBalance?: Balance | string;
   selectedVaultId: string;
-  vaultTotalAsset?: VaultTotalAssets;
   vaultAPYs: VaultAPY[];
   transactionCompleted: boolean;
   selectedToken?: Token;
@@ -41,27 +26,29 @@ export default function VaultHeader({
     symbol: string,
     usdValue: number,
   ) => void;
-}): JSX.Element {
+}
+
+export default function VaultStats({
+  vaultData,
+  userVaultBalance,
+  selectedVaultId,
+  vaultAPYs,
+  transactionCompleted,
+  selectedToken,
+  onDepositDataUpdate,
+  isDeposit,
+}: VaultStatsProps): JSX.Element {
   const { activeChain, walletAddress } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [depositAmount, setDepositAmount] = useState("0");
   const lastVaultIdRef = useRef<string | null>(null);
   const lastActiveChainRef = useRef<number | null>(null);
 
-  // Debug full userVaultBalance object
-
   // Determine input token based on user selection or active chain
   useEffect(() => {
     const vaultId = vaultData.id as string;
     const isNewVault = vaultId !== lastVaultIdRef.current;
     const isChainChanged = activeChain?.id !== lastActiveChainRef.current;
-
-    // Always log vault changes
-    if (isNewVault) {
-    }
-
-    if (isChainChanged) {
-    }
 
     // First priority: If there's a user-selected token from parent component, use it
     if (selectedToken) {
@@ -237,97 +224,34 @@ export default function VaultHeader({
     onDepositDataUpdate,
   ]);
 
+  if (!walletAddress || !isDeposit) {
+    return <></>;
+  }
+
   return (
-    <section className="flex flex-col mt-6 md:mt-10">
-      <div className="hidden md:flex w-full mb-10 flex-row items-center">
-        <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Image
-                src={vaultData.imgURL ?? ""}
-                alt={vaultData.protocol.network}
-                width={1200}
-                height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                sizes="(max-width: 768px) 24px, 40px"
-              />
-            </div>
-            <h2 className="font-bold text-white">
-              {vaultData.protocol.network}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Image
-                src={vaultData.protocol.imgURL}
-                alt={vaultData.protocol.name}
-                width={1200}
-                height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                sizes="(max-width: 768px) 24px, 40px"
-              />
-            </div>
-            <h2 className="font-bold text-white">{vaultData.protocol.name}</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Image
-                src={vaultData.inputToken.imgURL}
-                alt={vaultData.name}
-                width={1200}
-                height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                sizes="(max-width: 768px) 24px, 40px"
-              />
-            </div>
-            <h2 className="font-bold text-white">{vaultData.name}</h2>
-          </div>
-        </div>
+    <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0 block">
+      <div className="grid grid-cols-3 px-[26px] py-4 gap-4 md:gap-6 before-gradient-border rounded-lg max-h-[80px]">
+        <LargeCardStat
+          id="deposits"
+          label="Deposits"
+          value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
+            vaultData.inputToken.symbol
+          }`}
+          tooltip="Value of your vault deposits"
+        />
+        <LargeCardStat
+          id="wallet"
+          label="Your Wallet"
+          value={`${formattedWalletBalance} ${symbol}`}
+          tooltip="Value of deposit assets held in your wallet"
+        />
+        <LargeCardStat
+          id="rewards"
+          label="Your rewards"
+          value="$0"
+          tooltip="Your rewards"
+        />
       </div>
-      {walletAddress && isDeposit && (
-        <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0 block">
-          <div className="grid grid-cols-2 sm:grid-cols-2 px-[26px] py-4 md:py-0 md:pr-10 md:px-0 gap-4 md:gap-[56px] before-gradient-border md:before:hidden rounded-lg">
-            <LargeCardStat
-              id="deposits"
-              label="Deposits"
-              value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
-                vaultData.inputToken.symbol
-              }`}
-              secondaryValue={`$ ${formatCurrency(
-                depositAmountNumber * vaultTokenPrice,
-              )}`}
-              tooltip="Value of your vault deposits"
-            />
-            <LargeCardStat
-              id="wallet"
-              label="Your Wallet"
-              value={`${formattedWalletBalance} ${symbol}`}
-              secondaryValue={`$ ${formatCurrency(
-                Number(walletTokenBalance.formatted) * price,
-              )}`}
-              tooltip="Value of deposit assets held in your wallet"
-            />
-            {/* <LargeCardStat
-            id="APY"
-            label="7d APY"
-            value={
-              Number.isNaN(
-                Number(
-                  vaultAPYs[0]?.APY7d
-                )
-              )
-                ? "0%"
-                : `${(
-                    Number(
-                      vaultAPYs[0]?.APY7d
-                    ) * 100
-                  ).toFixed(2)}%`
-            }
-            tooltip="APY for the last 7 days"
-          /> */}
-          </div>
-        </div>
-      )}
-    </section>
+    </div>
   );
 }

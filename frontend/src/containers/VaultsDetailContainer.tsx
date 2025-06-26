@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import {
   VaultData,
@@ -60,6 +59,8 @@ import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/component
 import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
 
 import { motion, AnimatePresence } from "framer-motion"; // <-- Додаємо імпорти Framer Motion
+import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultHeaderInfo";
+import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -458,17 +459,8 @@ const VaultsDetailContainer: React.FC<{
         </div>
       </div>
       {walletAddress && isWithdraw && <WithdrawPendingBlock />}
-      <VaultHeader
-        vaultData={vaultData}
-        userVaultBalance={userVaultBalance}
-        selectedVaultId={vaultID.toString()}
-        vaultTotalAsset={vaultTotalAsset}
-        vaultAPYs={vaultAPYs}
-        transactionCompleted={transactionCompleted}
-        selectedToken={selectedToken}
-        onDepositDataUpdate={handleDepositDataUpdate}
-        isDeposit={isDeposit}
-      />
+
+      <VaultHeaderInfo vaultData={vaultData} />
 
       <div className="block md:hidden mt-4">
         <MobileDepositInstruction
@@ -482,7 +474,7 @@ const VaultsDetailContainer: React.FC<{
         />
       </div>
 
-      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-[56px] font-gotham">
+      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-10 font-gotham">
         <AnimatePresence mode="wait" initial={false}>
           {shouldShowDepositComplete ? (
             <motion.div
@@ -534,6 +526,7 @@ const VaultsDetailContainer: React.FC<{
                       (a) => a.vaultId === vaultID.toString(),
                     )}
                     totalAssets={vaultTotalAsset}
+                    titleColor="#535E73"
                   />
                 </VaultCardInfoBlock>
               </div>
@@ -569,6 +562,18 @@ const VaultsDetailContainer: React.FC<{
               depositUSDValue={depositData.usdValue}
             />
           )}
+          {isDeposit && (
+            <VaultStats
+              vaultData={vaultData}
+              userVaultBalance={userVaultBalance}
+              selectedVaultId={vaultID.toString()}
+              vaultAPYs={vaultAPYs}
+              transactionCompleted={transactionCompleted}
+              selectedToken={selectedToken}
+              onDepositDataUpdate={handleDepositDataUpdate}
+              isDeposit={isDeposit}
+            />
+          )}
           <Dropdown
             title={
               isProcessingTx
@@ -590,7 +595,7 @@ const VaultsDetailContainer: React.FC<{
             />
           </Dropdown>
           {isDeposit && (
-            <Dropdown title="What happens to my deposit?" defaultOpen={true}>
+            <Dropdown title="What happens to my deposit?" defaultOpen={false}>
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}
