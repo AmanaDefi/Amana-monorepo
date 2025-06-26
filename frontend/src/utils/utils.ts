@@ -56,19 +56,25 @@ export const NumberFormatter = Intl.NumberFormat("en", {
 });
 
 export function getVaultErrorMessage(
-  value: string,
-  inputValue: string | undefined,
+  inputValue: string,
+  availableBalance: string,
   steps: Action[],
 ): string {
-  if (Number(value) > 0 && (!inputValue || Number(inputValue) === 0)) {
+  const inputAmount = Number(inputValue);
+  const balanceAmount = Number(availableBalance);
+
+  // If there's input but no available balance
+  if (inputAmount > 0 && balanceAmount === 0) {
     return "Insufficient balance";
   }
-  // Input > Balance
-  if (Number(value) > Number(inputValue)) {
+
+  // If input exceeds available balance
+  if (inputAmount > balanceAmount) {
     return "Insufficient balance";
-  } else {
-    return "";
   }
+
+  // No error
+  return "";
 }
 
 export function isEthereumAddress(address: string): boolean {

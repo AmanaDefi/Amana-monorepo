@@ -1,11 +1,11 @@
-import { GraphQLClient } from 'graphql-request';
-import { GRAPH_URL, GRAPH_API_KEY } from '@/config.ts/apiConfig';
+import { GraphQLClient } from "graphql-request";
+import { GRAPH_URL, GRAPH_API_KEY } from "@/config.ts/apiConfig";
 import {
   GetVaultsResponse,
   GetVaultDetailsResponse,
   GetUserPositionsResponse,
   GetUserTransactionsResponse,
-} from '@/types/graphTypes';
+} from "@/types/graphTypes";
 
 class GraphClient {
   private client: GraphQLClient;
@@ -14,18 +14,22 @@ class GraphClient {
     const headers: Record<string, string> = {};
 
     if (GRAPH_API_KEY) {
-      headers['Authorization'] = `Bearer ${GRAPH_API_KEY}`;
+      headers["Authorization"] = `Bearer ${GRAPH_API_KEY}`;
     }
 
     this.client = new GraphQLClient(GRAPH_URL, {
-      headers
+      headers,
     });
   }
 
-  async getVaults(): Promise<GetVaultsResponse> {
+  async getVaults(excludedIds: string[] = []): Promise<GetVaultsResponse> {
     const query = `
-      query GetVaults {
-        vaults(orderBy: tvl, orderDirection: desc) {
+      query GetVaults($excludedIds: [ID!]) {
+        vaults(
+          orderBy: tvl, 
+          orderDirection: desc,
+          where: { id_not_in: $excludedIds }
+          ) {
           id
           name
           symbol
@@ -63,22 +67,26 @@ class GraphClient {
       }
     `;
 
-    return this.client.request(query) as Promise<GetVaultsResponse>;
+    return this.client.request(query, {
+      excludedIds,
+    }) as Promise<GetVaultsResponse>;
   }
 
   async getVaultsPaginated(
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
+    excludedIds: string[] = [],
   ): Promise<GetVaultsResponse> {
     const query = `
-      query GetVaultsPaginated($first: Int!, $skip: Int!, $orderBy: String!, $orderDirection: String!) {
+      query GetVaultsPaginated($first: Int!, $skip: Int!, $orderBy: String!, $orderDirection: String!, $excludedIds: [ID!]) {
         vaults(
           first: $first, 
           skip: $skip, 
           orderBy: $orderBy, 
-          orderDirection: $orderDirection
+          orderDirection: $orderDirection,
+          where: { id_not_in: $excludedIds }
         ) {
           id
           name
@@ -117,9 +125,12 @@ class GraphClient {
       }
     `;
 
-    const variables = { first, skip, orderBy, orderDirection };
+    const variables = { first, skip, orderBy, orderDirection, excludedIds };
 
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
 
     return result;
   }
@@ -128,23 +139,34 @@ class GraphClient {
     searchTerm: string,
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
+    excludedIds: string[] = [],
   ): Promise<GetVaultsResponse> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let whereClause = '';
+    let whereClauses = [];
     if (isFullAddressSearch) {
-      whereClause = `where: { id: "${searchTerm.toLowerCase()}" }`;
+      whereClauses.push(`id: "${searchTerm.toLowerCase()}"`);
     } else if (isPartialAddressSearch) {
-      whereClause = `where: { id_contains: "${searchTerm.toLowerCase()}" }`;
+      whereClauses.push(`id_contains: "${searchTerm.toLowerCase()}"`);
     } else {
-      whereClause = `where: { name_contains_nocase: "${searchTerm}" }`;
+      whereClauses.push(`name_contains_nocase: "${searchTerm}"`);
     }
 
+    if (excludedIds.length > 0) {
+      whereClauses.push(`id_not_in: $excludedIds`);
+    }
+
+    const whereClause = `where: { ${whereClauses.join(", ")} }`;
+
     const query = `
-      query SearchVaultsPaginated($first: Int!, $skip: Int!, $orderBy: String!, $orderDirection: String!) {
+      query SearchVaultsPaginated($first: Int!, $skip: Int!, $orderBy: String!, $orderDirection: String!, $excludedIds: [ID!]) {
         vaults(
           ${whereClause}
           first: $first, 
@@ -189,48 +211,70 @@ class GraphClient {
       }
     `;
 
-    const variables = { first, skip, orderBy, orderDirection };
+    const variables = { first, skip, orderBy, orderDirection, excludedIds };
 
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
     return result;
   }
 
-  async getSearchVaultsCount(searchTerm: string): Promise<{ vaults: Array<{ id: string }> }> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+  async getSearchVaultsCount(
+    searchTerm: string,
+    excludedIds: string[] = [],
+  ): Promise<{ vaults: Array<{ id: string }> }> {
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let whereClause = '';
+    let whereClauses = [];
     if (isFullAddressSearch) {
-      whereClause = `where: { id: "${searchTerm.toLowerCase()}" }`;
+      whereClauses.push(`id: "${searchTerm.toLowerCase()}"`);
     } else if (isPartialAddressSearch) {
-      whereClause = `where: { id_contains: "${searchTerm.toLowerCase()}" }`;
+      whereClauses.push(`id_contains: "${searchTerm.toLowerCase()}"`);
     } else {
-      whereClause = `where: { name_contains_nocase: "${searchTerm}" }`;
+      whereClauses.push(`name_contains_nocase: "${searchTerm}"`);
     }
 
+    if (excludedIds.length > 0) {
+      whereClauses.push(`id_not_in: $excludedIds`);
+    }
+
+    const whereClause = `where: { ${whereClauses.join(", ")} }`;
+
     const query = `
-      query GetSearchVaultsCount {
+      query GetSearchVaultsCount($excludedIds: [ID!]) {
         vaults(${whereClause}) {
           id
         }
       }
     `;
 
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query, { excludedIds }) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
 
-  async getVaultsCount(): Promise<{ vaults: Array<{ id: string }> }> {
+  async getVaultsCount(
+    excludedIds: string[] = [],
+  ): Promise<{ vaults: Array<{ id: string }> }> {
     const query = `
-      query GetVaultsCount {
-        vaults {
+      query GetVaultsCount($excludedIds: [ID!]) {
+        vaults(where: { id_not_in: $excludedIds }) {
           id
         }
       }
     `;
 
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query, { excludedIds }) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
@@ -276,10 +320,14 @@ class GraphClient {
       }
     `;
 
-    return this.client.request(query, { vaultId }) as Promise<GetVaultDetailsResponse>;
+    return this.client.request(query, {
+      vaultId,
+    }) as Promise<GetVaultDetailsResponse>;
   }
 
-  async getUserPositions(userAddress: string): Promise<GetUserPositionsResponse> {
+  async getUserPositions(
+    userAddress: string,
+  ): Promise<GetUserPositionsResponse> {
     const query = `
       query GetUserPositions($userAddress: Bytes!) {
         userPositions(where: { user: $userAddress, sharesBalance_gt: "0" }) {
@@ -307,10 +355,16 @@ class GraphClient {
       }
     `;
 
-    return this.client.request(query, { userAddress: userAddress.toLowerCase() }) as Promise<GetUserPositionsResponse>;
+    return this.client.request(query, {
+      userAddress: userAddress.toLowerCase(),
+    }) as Promise<GetUserPositionsResponse>;
   }
 
-  async getUserTransactions(userAddress: string, first: number = 20, skip: number = 0): Promise<GetUserTransactionsResponse> {
+  async getUserTransactions(
+    userAddress: string,
+    first: number = 20,
+    skip: number = 0,
+  ): Promise<GetUserTransactionsResponse> {
     const query = `
       query GetUserTransactions($userAddress: Bytes!, $first: Int!, $skip: Int!) {
         deposits(
@@ -367,7 +421,7 @@ class GraphClient {
     return this.client.request(query, {
       userAddress: userAddress.toLowerCase(),
       first,
-      skip
+      skip,
     }) as Promise<GetUserTransactionsResponse>;
   }
 
@@ -375,8 +429,8 @@ class GraphClient {
     network: string,
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
   ): Promise<GetVaultsResponse> {
     const query = `
       query GetVaultsByNetwork($first: Int!, $skip: Int!, $orderBy: String!, $orderDirection: String!) {
@@ -426,12 +480,17 @@ class GraphClient {
 
     const variables = { first, skip, orderBy, orderDirection };
 
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
 
     return result;
   }
 
-  async getVaultsByNetworkCount(network: string): Promise<{ vaults: Array<{ id: string }> }> {
+  async getVaultsByNetworkCount(
+    network: string,
+  ): Promise<{ vaults: Array<{ id: string }> }> {
     const query = `
       query GetVaultsByNetworkCount {
         vaults(where: { strategyNetwork: "${network}" }) {
@@ -440,7 +499,9 @@ class GraphClient {
       }
     `;
 
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
@@ -450,13 +511,17 @@ class GraphClient {
     network: string,
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
   ): Promise<GetVaultsResponse> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let searchClause = '';
+    let searchClause = "";
     if (isFullAddressSearch) {
       searchClause = `id: "${searchTerm.toLowerCase()}"`;
     } else if (isPartialAddressSearch) {
@@ -515,16 +580,26 @@ class GraphClient {
 
     const variables = { first, skip, orderBy, orderDirection };
 
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
 
     return result;
   }
 
-  async getSearchVaultsWithNetworkCount(searchTerm: string, network: string): Promise<{ vaults: Array<{ id: string }> }> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+  async getSearchVaultsWithNetworkCount(
+    searchTerm: string,
+    network: string,
+  ): Promise<{ vaults: Array<{ id: string }> }> {
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let searchClause = '';
+    let searchClause = "";
     if (isFullAddressSearch) {
       searchClause = `id: "${searchTerm.toLowerCase()}"`;
     } else if (isPartialAddressSearch) {
@@ -543,7 +618,9 @@ class GraphClient {
       }
     `;
 
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
@@ -552,8 +629,8 @@ class GraphClient {
     protocol: string,
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
   ): Promise<GetVaultsResponse> {
     const query = `
       query GetVaultsByProtocol($first: Int!, $skip: Int!, $orderBy: String!, $orderDirection: String!) {
@@ -603,12 +680,17 @@ class GraphClient {
 
     const variables = { first, skip, orderBy, orderDirection };
 
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
 
     return result;
   }
 
-  async getVaultsByProtocolCount(protocol: string): Promise<{ vaults: Array<{ id: string }> }> {
+  async getVaultsByProtocolCount(
+    protocol: string,
+  ): Promise<{ vaults: Array<{ id: string }> }> {
     const query = `
       query GetVaultsByProtocolCount {
         vaults(where: { protocolName: "${protocol}" }) {
@@ -617,7 +699,9 @@ class GraphClient {
       }
     `;
 
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
@@ -627,13 +711,17 @@ class GraphClient {
     protocol: string,
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
   ): Promise<GetVaultsResponse> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let searchClause = '';
+    let searchClause = "";
     if (isFullAddressSearch) {
       searchClause = `id: "${searchTerm.toLowerCase()}"`;
     } else if (isPartialAddressSearch) {
@@ -691,16 +779,26 @@ class GraphClient {
     `;
 
     const variables = { first, skip, orderBy, orderDirection };
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
 
     return result;
   }
 
-  async getSearchVaultsWithProtocolCount(searchTerm: string, protocol: string): Promise<{ vaults: Array<{ id: string }> }> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+  async getSearchVaultsWithProtocolCount(
+    searchTerm: string,
+    protocol: string,
+  ): Promise<{ vaults: Array<{ id: string }> }> {
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let searchClause = '';
+    let searchClause = "";
     if (isFullAddressSearch) {
       searchClause = `id: "${searchTerm.toLowerCase()}"`;
     } else if (isPartialAddressSearch) {
@@ -719,7 +817,9 @@ class GraphClient {
       }
     `;
 
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
@@ -729,8 +829,8 @@ class GraphClient {
     protocol: string,
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
   ): Promise<GetVaultsResponse> {
     const query = `
       query GetVaultsByNetworkAndProtocol($first: Int!, $skip: Int!, $orderBy: String!, $orderDirection: String!) {
@@ -780,12 +880,18 @@ class GraphClient {
 
     const variables = { first, skip, orderBy, orderDirection };
 
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
 
     return result;
   }
 
-  async getVaultsByNetworkAndProtocolCount(network: string, protocol: string): Promise<{ vaults: Array<{ id: string }> }> {
+  async getVaultsByNetworkAndProtocolCount(
+    network: string,
+    protocol: string,
+  ): Promise<{ vaults: Array<{ id: string }> }> {
     const query = `
       query GetVaultsByNetworkAndProtocolCount {
         vaults(where: { strategyNetwork: "${network}", protocolName: "${protocol}" }) {
@@ -793,7 +899,9 @@ class GraphClient {
         }
       }
     `;
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
@@ -804,13 +912,17 @@ class GraphClient {
     protocol: string,
     first: number = 10,
     skip: number = 0,
-    orderBy: string = 'tvl',
-    orderDirection: 'asc' | 'desc' = 'desc'
+    orderBy: string = "tvl",
+    orderDirection: "asc" | "desc" = "desc",
   ): Promise<GetVaultsResponse> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let searchClause = '';
+    let searchClause = "";
     if (isFullAddressSearch) {
       searchClause = `id: "${searchTerm.toLowerCase()}"`;
     } else if (isPartialAddressSearch) {
@@ -869,16 +981,27 @@ class GraphClient {
 
     const variables = { first, skip, orderBy, orderDirection };
 
-    const result = this.client.request(query, variables) as Promise<GetVaultsResponse>;
+    const result = this.client.request(
+      query,
+      variables,
+    ) as Promise<GetVaultsResponse>;
 
     return result;
   }
 
-  async getSearchVaultsWithNetworkAndProtocolCount(searchTerm: string, network: string, protocol: string): Promise<{ vaults: Array<{ id: string }> }> {
-    const isFullAddressSearch = searchTerm.startsWith('0x') && searchTerm.length === 42;
-    const isPartialAddressSearch = searchTerm.startsWith('0x') && searchTerm.length > 2 && searchTerm.length < 42;
+  async getSearchVaultsWithNetworkAndProtocolCount(
+    searchTerm: string,
+    network: string,
+    protocol: string,
+  ): Promise<{ vaults: Array<{ id: string }> }> {
+    const isFullAddressSearch =
+      searchTerm.startsWith("0x") && searchTerm.length === 42;
+    const isPartialAddressSearch =
+      searchTerm.startsWith("0x") &&
+      searchTerm.length > 2 &&
+      searchTerm.length < 42;
 
-    let searchClause = '';
+    let searchClause = "";
     if (isFullAddressSearch) {
       searchClause = `id: "${searchTerm.toLowerCase()}"`;
     } else if (isPartialAddressSearch) {
@@ -897,10 +1020,12 @@ class GraphClient {
       }
     `;
 
-    const result = this.client.request(query) as Promise<{ vaults: Array<{ id: string }> }>;
+    const result = this.client.request(query) as Promise<{
+      vaults: Array<{ id: string }>;
+    }>;
 
     return result;
   }
 }
 
-export const graphClient = new GraphClient(); 
+export const graphClient = new GraphClient();

@@ -110,6 +110,7 @@ export const Dropdown: React.FC<Props> = ({
           selectedOption={selectedOption}
           width={!width ? 200 : width + 20}
           isShownList={isShownList}
+          needReset={true}
         />
       ) : (
         <DropdownChainsList
@@ -121,6 +122,7 @@ export const Dropdown: React.FC<Props> = ({
           isShownList={isShownList}
           minWidth={526}
           alignment={emptyLabel === "All Protocols" ? "right" : "left"}
+          needReset={true}
         />
       )}
     </div>

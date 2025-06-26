@@ -12,9 +12,7 @@ import {
   Balance,
   Tabs,
 } from "@/types/types";
-import {
-  useUpdateAPYs,
-} from "@/hooks/hooks";
+import { useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -40,8 +38,15 @@ import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
 import { useChain, useUser } from "@account-kit/react";
-import { useVaultDetailsFromGraph, useUserVaultBalancesFromGraph } from "@/hooks/useVaultsGraph";
-import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
+import {
+  useVaultDetailsFromGraph,
+  useUserVaultBalancesFromGraph,
+} from "@/hooks/useVaultsGraph";
+import {
+  convertGraphVaultToVaultData,
+  convertGraphVaultToAPY,
+  convertGraphVaultToTotalAssets,
+} from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -53,6 +58,8 @@ import GiftIcon from "@/components/svg/GiftIcon";
 import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
 import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
 import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
+
+import { motion, AnimatePresence } from "framer-motion"; // <-- Додаємо імпорти Framer Motion
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -177,7 +184,7 @@ const VaultsDetailContainer: React.FC<{
           if (savedChain.id !== activeChain.id) {
             switchToChain(savedChain);
           }
-        } catch (error) { }
+        } catch (error) {}
       }
     }
   }, [vaultID, switchToChain]);
@@ -219,13 +226,17 @@ const VaultsDetailContainer: React.FC<{
   }, [vaultData?.id]);
 
   const { data: vaultFromGraph } = useVaultDetailsFromGraph(vaultIdStr);
-  const memoizedWalletAddress = useMemo(() => walletAddress || undefined, [walletAddress]);
-  const { userVaultBalances } = useUserVaultBalancesFromGraph(memoizedWalletAddress);
-  
+  const memoizedWalletAddress = useMemo(
+    () => walletAddress || undefined,
+    [walletAddress],
+  );
+  const { userVaultBalances } = useUserVaultBalancesFromGraph(
+    memoizedWalletAddress,
+  );
+
   const backPath: string = pathname.includes("old-vaults")
     ? "/old-vaults"
     : "/";
-
 
   useEffect(() => {
     if (vaultFromGraph?.vault) {
@@ -254,28 +265,33 @@ const VaultsDetailContainer: React.FC<{
 
   // Set user vault balance from graph data
   useEffect(() => {
-    const userBalance = userVaultBalances?.find(balance => balance.vaultId === vaultIdStr);
-    
+    const userBalance = userVaultBalances?.find(
+      (balance) => balance.vaultId === vaultIdStr,
+    );
+
     if (userVaultBalances?.length && vaultIdStr) {
       if (userBalance) {
         // Convert formatted balance string to Balance object
         const balanceValue = String(userBalance.balance);
-        
+
         if (userVaultBalance?.formatted !== balanceValue) {
           const balance: Balance = {
             value: BigInt(0), // We don't have raw value from graph, using 0
             formatted: balanceValue,
-            formattedUSD: "$0.00" // Will be calculated in VaultHeader
+            formattedUSD: "$0.00", // Will be calculated in VaultHeader
           };
-          
+
           setUserVaultBalance(balance);
-          
+
           setVaultTotalAssetinToken({
             vaultId: vaultIdStr,
-            totalAssetsinToken: balanceValue
+            totalAssetsinToken: balanceValue,
           });
         }
-      } else if (userVaultBalance !== undefined || vaultTotalAssetinToken !== undefined) {
+      } else if (
+        userVaultBalance !== undefined ||
+        vaultTotalAssetinToken !== undefined
+      ) {
         setUserVaultBalance(undefined);
         setVaultTotalAssetinToken(undefined);
       }
@@ -296,21 +312,24 @@ const VaultsDetailContainer: React.FC<{
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
-  
-  const memoizedPrices = useMemo(() => ({
-    crv: crvTokenPrice,
-    cvx: cvxTokenPrice,
-    eth: ethTokenPrice,
-    comp: compTokenPrice,
-    op: opTokenPrice
-  }), [
-    Math.floor((crvTokenPrice || 0) * 100),
-    Math.floor((cvxTokenPrice || 0) * 100),
-    Math.floor((ethTokenPrice || 0) * 100),
-    Math.floor((compTokenPrice || 0) * 100),
-    Math.floor((opTokenPrice || 0) * 100)
-  ]);
-  
+
+  const memoizedPrices = useMemo(
+    () => ({
+      crv: crvTokenPrice,
+      cvx: cvxTokenPrice,
+      eth: ethTokenPrice,
+      comp: compTokenPrice,
+      op: opTokenPrice,
+    }),
+    [
+      Math.floor((crvTokenPrice || 0) * 100),
+      Math.floor((cvxTokenPrice || 0) * 100),
+      Math.floor((ethTokenPrice || 0) * 100),
+      Math.floor((compTokenPrice || 0) * 100),
+      Math.floor((opTokenPrice || 0) * 100),
+    ],
+  );
+
   useUpdateAPYs(
     currentVault,
     setVaultAPYs,
@@ -319,7 +338,7 @@ const VaultsDetailContainer: React.FC<{
     memoizedPrices.cvx,
     memoizedPrices.eth,
     memoizedPrices.comp,
-    memoizedPrices.op
+    memoizedPrices.op,
   );
 
   const handleTokenSelect = useCallback(
@@ -464,26 +483,40 @@ const VaultsDetailContainer: React.FC<{
       </div>
 
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-[56px] font-gotham">
-        <div>
+        <AnimatePresence mode="wait" initial={false}>
           {shouldShowDepositComplete ? (
-            <DepositComplete
-              vaultData={vaultData}
-              selectedToken={selectedToken}
-              userVaultBalance={userVaultBalance}
-              onClose={() => {
-                setFinishedTransaction(false);
-                setLastTransactionStepFeedback({});
-                setTransactionStepFeedback({});
-                setIsTransactionProcessing(false);
+            <motion.div
+              key="deposit-complete-block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DepositComplete
+                vaultData={vaultData}
+                selectedToken={selectedToken}
+                userVaultBalance={userVaultBalance}
+                onClose={() => {
+                  setFinishedTransaction(false);
+                  setLastTransactionStepFeedback({});
+                  setTransactionStepFeedback({});
+                  setIsTransactionProcessing(false);
 
-                if (vaultID) {
-                  localStorage.removeItem(vaultID.toString());
-                }
-                setTransactionCompleted(true);
-              }}
-            />
+                  if (vaultID) {
+                    localStorage.removeItem(vaultID.toString());
+                  }
+                  setTransactionCompleted(true);
+                }}
+              />
+            </motion.div>
           ) : (
-            <>
+            <motion.div
+              key="vault-inputs-block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
               <div className="block md:hidden">
                 <VaultOverviewBlock
                   vault={vaultData}
@@ -507,7 +540,7 @@ const VaultsDetailContainer: React.FC<{
 
               {walletAddress && isWithdraw && <WithdrawalNotice />}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[426px] 2xl:min-w-[707px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[450px] 2xl:min-w-[634px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}
@@ -524,9 +557,9 @@ const VaultsDetailContainer: React.FC<{
                   vaultId={vaultID.toString()}
                 />
               </div>
-            </>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
         <div className="hidden md:flex flex-col w-full xl:max-w-[576px] 2xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress && (
