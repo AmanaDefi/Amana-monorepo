@@ -86,7 +86,10 @@ const VaultsDetailContainer: React.FC<{
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
-
+  const [openDropdown, setOpenDropdown] = useState<string | null>(
+    "transaction-progress",
+  );
+ 
   const [depositData, setDepositData] = useState({
     amount: "0",
     symbol: "",
@@ -108,6 +111,16 @@ const VaultsDetailContainer: React.FC<{
   const { chain: activeChain } = useChain();
 
   const { openStep } = useAuthStore();
+  
+  const handleDropdownToggle = (dropdownId: string, isOpen: boolean) => {
+     if (isOpen) {
+       setOpenDropdown(dropdownId);
+     } else {
+       setOpenDropdown(null);
+     }
+   };
+
+
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -600,6 +613,10 @@ const VaultsDetailContainer: React.FC<{
                   : "Deposit flow"
             }
             defaultOpen={true}
+            isOpen={openDropdown === "transaction-progress"}
+            onToggle={(isOpen) =>
+              handleDropdownToggle("transaction-progress", isOpen)
+            }
           >
             <DepositInstruction
               transactionStepFeedback={transactionStepFeedback}
@@ -612,7 +629,14 @@ const VaultsDetailContainer: React.FC<{
             />
           </Dropdown>
           {isDeposit && (
-            <Dropdown title="What happens to my deposit?" defaultOpen={false}>
+            <Dropdown
+              title="What happens to my deposit?"
+              defaultOpen={false}
+              isOpen={openDropdown === "deposit-info"}
+              onToggle={(isOpen) =>
+                handleDropdownToggle("deposit-info", isOpen)
+              }
+            >
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}
@@ -624,7 +648,12 @@ const VaultsDetailContainer: React.FC<{
               />
             </Dropdown>
           )}
-          <Dropdown title="Information" defaultOpen={false}>
+          <Dropdown
+            title="Information"
+            defaultOpen={false}
+            isOpen={openDropdown === "information"}
+            onToggle={(isOpen) => handleDropdownToggle("information", isOpen)}
+          >
             <VaultInformationContent
               vaultData={vaultData}
               vaultExplorerBaseUrl={vaultExplorerBaseUrl}
