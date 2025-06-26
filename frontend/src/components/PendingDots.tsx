@@ -18,13 +18,13 @@ export const BreathingValue = ({
     <motion.span
       className={className}
       animate={{
-        opacity: [0.3, 0.6, 0.9, 1, 0.9, 0.6, 0.3],
-        scale: [1, 1.002, 1.004, 1.006, 1.004, 1.002, 1],
+        opacity: [0.3, 0.6, 1, 0.6, 0.3],
+        scale: [0.98, 1.01, 1.04, 1.01, 0.98],
       }}
       transition={{
-        duration: 3.5,
+        duration: 2,
         repeat: Infinity,
-        ease: [0.25, 0.1, 0.25, 1],
+        ease: [0.25, 0.46, 0.45, 0.94],
         repeatType: "loop",
       }}
     >
@@ -32,7 +32,6 @@ export const BreathingValue = ({
     </motion.span>
   );
 };
-
 
 export const MiniSpinner = ({
   size = 16,

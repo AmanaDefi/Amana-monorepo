@@ -14,6 +14,7 @@ import { useLayoutStore } from "@/store/store";
 import { useUser } from "@account-kit/react";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { EmptyState } from "../DashboardWrapper/components/Tabs";
+import { BreathingValue } from "../PendingDots";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   return 1;
@@ -501,10 +502,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           setIsShownMyVaults={setIsShownMyVaults}
         />
 
-        <div className="text-gray-400 mb-4 text-sm">
-          Showing {loading ? "..." : paginatedVaults.length} of{" "}
-          {loading ? "..." : displayTotalCount} vaults
-        </div>
+        <BreathingValue
+          value={
+            <div className="text-gray-400 mb-4 text-sm">
+              Showing {paginatedVaults.length} of {displayTotalCount} vaults
+            </div>
+          }
+          isBreathing={loading}
+        />
       </div>
 
       <div className="flex-grow">
