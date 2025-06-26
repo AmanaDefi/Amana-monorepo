@@ -8,11 +8,8 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import TokenIcon from "@/components/common/TokenIcon";
 import { ConversionOutput } from "@/components/VaultInputs";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx";
 import { Chain } from "viem";
 import clsx from "clsx";
-import SlippageSettingsBlock from "../VaultsDetailsWrapper/components/SlippageSettingsBlock";
-import FeeDisplay from "../VaultsDetailsWrapper/components/FeeDisplay";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
 
 export type InputTokenWithErrorProps = {
@@ -39,7 +36,9 @@ export type InputTokenWithErrorProps = {
   showFeeDisplay?: boolean;
   debouncedInputBalance?: { value: bigint };
   performanceFee?: number;
-} & HTMLProps<HTMLInputElement>;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+} & Omit<HTMLProps<HTMLInputElement>, "value" | "onChange">;
 
 export default function InputTokenWithError({
   tokenList,
@@ -63,6 +62,8 @@ export default function InputTokenWithError({
   showFeeDisplay = false,
   debouncedInputBalance,
   performanceFee,
+  value,
+  onChange,
   ...props
 }: InputTokenWithErrorProps): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
@@ -141,7 +142,7 @@ export default function InputTokenWithError({
 
     if (!isOutput) {
       usdValue = selectedToken
-        ? formatCurrency(Number(inputTokenbalance || 0) * selectedTokenPrice)
+        ? formatCurrency(Number(value || 0) * selectedTokenPrice)
         : "0.00";
     } else {
       usdValue = isOutput
@@ -178,7 +179,6 @@ export default function InputTokenWithError({
           </div>
         );
       }
-
       return <span className="text-white text-2xl">{outputAmount}</span>;
     }
 
@@ -195,6 +195,8 @@ export default function InputTokenWithError({
         value={
           <InputNumber
             {...props}
+            value={value}
+            onChange={onChange}
             disabled={disabled}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
@@ -209,47 +211,6 @@ export default function InputTokenWithError({
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
-      {isOutput && isConnected && isDeposit && (
-        <div className="mb-10">
-          <SlippageSettingsBlock
-            setInputBalance={setInputBalance}
-            vaultId={vaultData.id}
-            showTransactionSettings={!isOutput && isSlippageExceedingLimit}
-          />
-        </div>
-      )}
-
-      {showFeeDisplay && debouncedInputBalance && (
-        <div className="mb-10">
-          <FeeDisplay
-            isDeposit={isDeposit}
-            vaultData={vaultData}
-            conversionOutput={conversionOutput}
-            debouncedInputBalance={debouncedInputBalance}
-            performanceFee={performanceFee}
-          />
-        </div>
-      )}
-
-      {captionText && (
-        <div className="flex items-center justify-between">
-          <div className="text-white text-start flex text-[16px] md:text-[18px] font-medium items-center gap-2 mb-2 md:mb-4">
-            {captionText}
-            {isOutput && (
-              <div className="font-normal">
-                <InfoBlock isMiddle>
-                  💡 This is an estimated output amount. Actual amount may vary
-                  during transaction execution.
-                </InfoBlock>
-              </div>
-            )}
-            {inputMoreThanBalance && (
-              <span className="text-red-500 ml-2">Input More than Balance</span>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="relative flex w-full flex-col">
         <div
           style={{

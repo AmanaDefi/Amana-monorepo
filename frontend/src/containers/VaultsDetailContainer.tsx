@@ -462,6 +462,21 @@ const VaultsDetailContainer: React.FC<{
 
       <VaultHeaderInfo vaultData={vaultData} />
 
+      {walletAddress && isDeposit && (
+        <div className="block lg:hidden mt-6 lg:mt-0">
+          <VaultStats
+            vaultData={vaultData}
+            userVaultBalance={userVaultBalance}
+            selectedVaultId={vaultID.toString()}
+            vaultAPYs={vaultAPYs}
+            transactionCompleted={transactionCompleted}
+            selectedToken={selectedToken}
+            onDepositDataUpdate={handleDepositDataUpdate}
+            isDeposit={isDeposit}
+          />
+        </div>
+      )}
+
       <div className="block md:hidden mt-4">
         <MobileDepositInstruction
           transactionStepFeedback={transactionStepFeedback}
@@ -533,7 +548,7 @@ const VaultsDetailContainer: React.FC<{
 
               {walletAddress && isWithdraw && <WithdrawalNotice />}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[450px] 2xl:min-w-[634px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[470px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}
@@ -554,7 +569,7 @@ const VaultsDetailContainer: React.FC<{
           )}
         </AnimatePresence>
 
-        <div className="hidden md:flex flex-col w-full xl:max-w-[576px] 2xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] 3xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress && (
             <YourInvestment
               depositAmount={depositData.amount}
@@ -562,17 +577,19 @@ const VaultsDetailContainer: React.FC<{
               depositUSDValue={depositData.usdValue}
             />
           )}
-          {isDeposit && (
-            <VaultStats
-              vaultData={vaultData}
-              userVaultBalance={userVaultBalance}
-              selectedVaultId={vaultID.toString()}
-              vaultAPYs={vaultAPYs}
-              transactionCompleted={transactionCompleted}
-              selectedToken={selectedToken}
-              onDepositDataUpdate={handleDepositDataUpdate}
-              isDeposit={isDeposit}
-            />
+          {walletAddress && isDeposit && (
+            <div className="hidden lg:block">
+              <VaultStats
+                vaultData={vaultData}
+                userVaultBalance={userVaultBalance}
+                selectedVaultId={vaultID.toString()}
+                vaultAPYs={vaultAPYs}
+                transactionCompleted={transactionCompleted}
+                selectedToken={selectedToken}
+                onDepositDataUpdate={handleDepositDataUpdate}
+                isDeposit={isDeposit}
+              />
+            </div>
           )}
           <Dropdown
             title={

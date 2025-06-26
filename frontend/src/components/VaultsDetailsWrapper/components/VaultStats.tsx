@@ -229,8 +229,8 @@ export default function VaultStats({
   }
 
   return (
-    <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0 block">
-      <div className="grid grid-cols-3 px-[26px] py-4 gap-4 md:gap-6 before-gradient-border rounded-lg max-h-[80px]">
+    <div className="w-full flex flex-col md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
+      <div className="grid grid-cols-3 px-[26px] py-4 gap-4 md:gap-6 before-gradient-border rounded-lg max-h-[80px] w-full ">
         <LargeCardStat
           id="deposits"
           label="Deposits"
