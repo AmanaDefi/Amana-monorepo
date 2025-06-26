@@ -24,6 +24,7 @@ import {
 } from "@/utils/localStorageUtils";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
+import ChartDropdown from "@/components/VaultsDetailsWrapper/components/ChartDropdown";
 
 import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
@@ -86,10 +87,19 @@ const VaultsDetailContainer: React.FC<{
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
+
   const [openDropdown, setOpenDropdown] = useState<string | null>(
     "transaction-progress",
   );
- 
+
+  const handleDropdownToggle = (dropdownId: string, isOpen: boolean) => {
+    if (isOpen) {
+      setOpenDropdown(dropdownId);
+    } else {
+      setOpenDropdown(null);
+    }
+  };
+
   const [depositData, setDepositData] = useState({
     amount: "0",
     symbol: "",
@@ -111,16 +121,6 @@ const VaultsDetailContainer: React.FC<{
   const { chain: activeChain } = useChain();
 
   const { openStep } = useAuthStore();
-  
-  const handleDropdownToggle = (dropdownId: string, isOpen: boolean) => {
-     if (isOpen) {
-       setOpenDropdown(dropdownId);
-     } else {
-       setOpenDropdown(null);
-     }
-   };
-
-
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -628,6 +628,17 @@ const VaultsDetailContainer: React.FC<{
               isProcessing={isTransactionProcessing}
             />
           </Dropdown>
+          <Dropdown
+            title="Historical Performance"
+            defaultOpen={false}
+            isOpen={openDropdown === "chart"}
+            onToggle={(isOpen) => handleDropdownToggle("chart", isOpen)}
+          >
+            <ChartDropdown
+              vaultId={vaultID.toString()}
+              vaultName={vaultData.name.replace("Pool", "").replace("Lend", "")}
+            />
+          </Dropdown>
           {isDeposit && (
             <Dropdown
               title="What happens to my deposit?"
@@ -648,6 +659,7 @@ const VaultsDetailContainer: React.FC<{
               />
             </Dropdown>
           )}
+
           <Dropdown
             title="Information"
             defaultOpen={false}

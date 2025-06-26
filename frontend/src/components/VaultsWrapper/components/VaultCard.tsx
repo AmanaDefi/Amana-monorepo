@@ -15,10 +15,9 @@ import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
-
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import TableChart from "@/components/TableChart";
-import { MOCK_HISTORICAL_APY } from "@/constants/mockHistoricalAPY";
+import { useChartStore } from "@/store/chartStore";
 
 const MOCK_DIGITS = 6.43;
 
@@ -34,11 +33,21 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const router = useRouter();
     const { walletAddress } = useMultiChain();
 
+    const { getHistoricalAPY, getPercentageChange, hasHistoricalData } =
+      useChartStore();
+
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
       (asset) => asset.vaultId === vault.id,
     );
+    const userBalance = userVaultBalances.find(
+      (balance) => balance.vaultId === vault.id,
+    );
     const riskLevel = calculateRiskLevel(vault);
+
+    const historicalData = getHistoricalAPY(vault.id);
+    const percentageChange = getPercentageChange(vault.id);
+    const hasChartData = hasHistoricalData(vault.id);
 
     const handleVaultClick = (vaultId: string) => {
       router.push(`/vaults/${vaultId}`);
@@ -53,6 +62,38 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       e.stopPropagation();
       handleVaultClick(vault.id);
     };
+
+    const renderAPYDisplay = () => {
+      const apyValue = vaultAPY?.apy30d;
+      const isDefined = typeof apyValue === "number";
+      const isNegative = isDefined && apyValue < 0;
+      const isLow = isDefined && apyValue >= 0 && apyValue <= 0.5;
+      const isHigh = isDefined && apyValue > 0.5;
+
+      const displayText = isDefined
+        ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
+        : "--";
+
+      const textClass = classNames("font-bold text-xl leading-5", {
+        "text-red-error": isNegative,
+        "text-white": isLow || !isDefined,
+        "text-green-accent": isHigh,
+      });
+
+      const arrowColor = isNegative ? "#FF1E1E" : isLow ? "#FFA500" : "#05D47F";
+
+      return (
+        <div className="flex flex-row justify-between">
+          <p className={textClass}>{displayText}</p>
+          {isDefined && (
+            <div className={classNames({ "rotate-180": isNegative })}>
+              <DynamicArrowIcon color={arrowColor} />
+            </div>
+          )}
+        </div>
+      );
+    };
+
     return (
       <div
         onClick={() => {
@@ -111,9 +152,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <span className="text-blue-digits font-bold text-xl leading-5">
                   $
                   {formatTokenBalance(
-                    userVaultBalances.find(
-                      (balance) => balance.vaultId === vault.id,
-                    )?.balance || 0,
+                    userBalance?.balance || 0,
                     vault.inputToken.symbol,
                   )}
                 </span>
@@ -134,45 +173,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d avg APY
                 </p>
-
-                {(() => {
-                  const apyValue = vaultAPY?.apy30d;
-
-                  const isDefined = typeof apyValue === "number";
-                  const isNegative = isDefined && apyValue < 0;
-                  const isLow = isDefined && apyValue >= 0 && apyValue <= 0.5;
-                  const isHigh = isDefined && apyValue > 0.5;
-
-                  const displayText = isDefined
-                    ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
-                    : "--";
-
-                  const textClass = classNames("font-bold text-xl leading-5", {
-                    "text-red-error": isNegative,
-                    "text-white": isLow || !isDefined,
-                    "text-green-accent": isHigh,
-                  });
-
-                  const arrowColor = isNegative
-                    ? "#FF1E1E"
-                    : isLow
-                      ? "#FFA500"
-                      : "#05D47F";
-
-                  return (
-                    <div className="flex flex-row justify-between">
-                      <p className={textClass}>{displayText}</p>
-                      {isDefined && (
-                        <div
-                          className={classNames({ "rotate-180": isNegative })}
-                        >
-                          <DynamicArrowIcon color={arrowColor} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
+                {renderAPYDisplay()}
                 <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
                   <InfoIcon />
                 </div>
@@ -209,25 +210,20 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
           </div>
         </div>
 
-        <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
-          <div className="flex flex-row gap-1">
-            <p className="font-normal text-sm leading-4 text-white pl-[11px]">
-              Historical APY
-            </p>
-            {/* <InfoBlock isRight>💡</InfoBlock> */}
-          </div>
+        {hasChartData && (
+          <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
+            <div className="flex flex-row gap-1">
+              <p className="font-normal text-sm leading-4 text-white pl-[11px]">
+                Historical APY
+              </p>
+            </div>
 
-          <TableChart
-            points={MOCK_HISTORICAL_APY[vault.id] || []}
-            percentageChange={(() => {
-              const points = MOCK_HISTORICAL_APY[vault.id];
-              if (!points || points.length < 2) return 0;
-              const first = points[0];
-              const last = points.at(-1)!;
-              return ((last - first) / first) * 100;
-            })()}
-          />
-        </div>
+            <TableChart
+              points={historicalData}
+              percentageChange={percentageChange}
+            />
+          </div>
+        )}
 
         <p className="font-normal text-xs leading-4 text-white mb-6 mt-2">
           This vault auto-compounds Lenders Tokens on{" "}
@@ -237,26 +233,21 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         </p>
 
         <div className="flex gap-4">
-          <>
-            <AppButton variant="blue" onClick={handlePressButton}>
-              {!!walletAddress ? "Deposit" : "Invest"}
-            </AppButton>
+          <AppButton variant="blue" onClick={handlePressButton}>
+            {!!walletAddress ? "Deposit" : "Invest"}
+          </AppButton>
 
-            {userVaultBalances.find((b) => b.vaultId === vault.id)?.balance &&
-              Number(
-                userVaultBalances.find((b) => b.vaultId === vault.id)?.balance,
-              ) > 0 && (
-                <AppButton
-                  variant="reverse"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/vaults/${vault.id}?tab=withdraw`);
-                  }}
-                >
-                  Withdraw
-                </AppButton>
-              )}
-          </>
+          {userBalance?.balance && Number(userBalance.balance) > 0 && (
+            <AppButton
+              variant="reverse"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/vaults/${vault.id}?tab=withdraw`);
+              }}
+            >
+              Withdraw
+            </AppButton>
+          )}
         </div>
       </div>
     );
