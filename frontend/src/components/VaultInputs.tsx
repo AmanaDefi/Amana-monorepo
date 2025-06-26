@@ -55,29 +55,7 @@ import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSet
 import FeeDisplay from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useTransactionStore } from "@/store/transactionStore";
-
-// Helper function for formatting token balances based on token type
-const formatTokenBalance = (
-  balance: string | number,
-  symbol: string,
-): string => {
-  const num = Math.max(0, Number(balance));
-  // Check if token is a stablecoin
-  const isStablecoin =
-    symbol?.includes("USD") ||
-    symbol?.includes("DAI") ||
-    symbol?.includes("USDT") ||
-    symbol?.includes("USDC") ||
-    symbol?.includes("BUSD");
-  // Format with 2 decimal places for stablecoins, 4 for others
-  const decimals = isStablecoin ? 2 : 4;
-  return parseFloat(num.toFixed(decimals)).toString();
-};
-
-// When displaying USD value for outputs or net deposits, ensure it's never negative
-const formatUSDValue = (value: number): string => {
-  return formatCurrency(Math.max(0, value));
-};
+import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
 
 export interface VaultInputsProps {
   vaultData: VaultData;

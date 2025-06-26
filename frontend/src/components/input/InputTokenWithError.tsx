@@ -11,6 +11,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
+import { shouldShowInputLoader, shouldShowUSDLoader } from "@/utils/tokenFormat";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -81,16 +82,16 @@ export default function InputTokenWithError({
     );
   }, [isDeposit, isOutput, tokenList, selectedChain]);
 
-  const shouldShowInputLoader = useMemo(() => {
-    return (
-      loadingOutputToken &&
-      ((!isDeposit && !isOutput) || (isDeposit && isOutput))
-    );
-  }, [loadingOutputToken, isDeposit, isOutput]);
-
-  const shouldShowUSDLoader = useMemo(() => {
-    return loadingOutputToken && ((!isDeposit && !isOutput) || isOutput);
-  }, [loadingOutputToken, isDeposit, isOutput]);
+  const inputLoaderVisible = shouldShowInputLoader(
+    loadingOutputToken,
+    isDeposit,
+    isOutput,
+  );
+  const usdLoaderVisible = shouldShowUSDLoader(
+    loadingOutputToken,
+    isDeposit,
+    isOutput,
+  );
 
   const renderTopSection = () => {
     if (!isOutput && isDeposit) {
@@ -150,14 +151,14 @@ export default function InputTokenWithError({
         : conversionOutput.finalConvertedAmountInUSDFormatted;
     }
 
-    if (shouldShowUSDLoader) {
-      return (
-        <div className="flex items-center space-x-1">
-          <span>$</span>
-          <MiniSpinner size={12} />
-        </div>
-      );
-    }
+if (usdLoaderVisible) {
+  return (
+    <div className="flex items-center space-x-1">
+      <span>$</span>
+      <MiniSpinner size={12} />
+    </div>
+  );
+}
 
     return (
       <BreathingValue
@@ -182,13 +183,13 @@ export default function InputTokenWithError({
       return <span className="text-white text-2xl">{outputAmount}</span>;
     }
 
-    if (shouldShowInputLoader) {
-      return (
-        <div className="flex items-center justify-center min-w-[60px] min-h-[32px]">
-          <MiniSpinner size={18} color="#3E73C4" />
-        </div>
-      );
-    }
+if (inputLoaderVisible) {
+  return (
+    <div className="flex items-center justify-center min-w-[60px] min-h-[32px]">
+      <MiniSpinner size={18} color="#3E73C4" />
+    </div>
+  );
+}
 
     return (
       <BreathingValue
