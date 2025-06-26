@@ -180,7 +180,7 @@ const VaultsDetailContainer: React.FC<{
         } catch (error) { }
       }
     }
-  }, [vaultID, switchToChain, activeChain]);
+  }, [vaultID, switchToChain]);
 
   useEffect(() => {
     const checkTransactionState = () => {

@@ -11,6 +11,7 @@ import { useChain, useUser } from "@account-kit/react";
 import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 // Destructure SUPPORTED_CHAINS to get zetaChain for default
 const [zetaChain] = SUPPORTED_CHAINS;
@@ -18,7 +19,7 @@ const [zetaChain] = SUPPORTED_CHAINS;
 // ChainSwitcher Component
 const ChainSwitcher: React.FC = () => {
   const wallet = useUser();
-  const { chain: currentChain, setChain } = useChain(); // Get the current chain (updates automatically)
+  const { activeChain: currentChain, switchToChain } = useMultiChain();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -61,6 +62,7 @@ const ChainSwitcher: React.FC = () => {
       } catch (error) {
         console.error("Toast error:", error);
       }
+      console.log('Successfully switched', chain?.chain?.id)
     }
 
     // Update the previous chain ref
@@ -71,6 +73,7 @@ const ChainSwitcher: React.FC = () => {
   const handleChainSwitch = async (
     chain: (typeof SUPPORTED_CHAINS)[number],
   ) => {
+    console.log('handleChainSwitch', chain.chain.id)
     if (!wallet?.address) {
       try {
         showErrorToast("Please connect your wallet to switch chains.");
@@ -99,7 +102,7 @@ const ChainSwitcher: React.FC = () => {
     setIsLoading(chain.chain.id);
     try {
       // Switch chain
-      setChain(chain);
+      switchToChain(chain.chain);
 
       // Close dropdown
       setIsOpen(false);
@@ -161,8 +164,8 @@ const ChainSwitcher: React.FC = () => {
       >
         <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
           <Image
-            src={CHAIN_ICONS[currentChain.id].url}
-            alt={currentChain.name}
+            src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
+            alt={currentChain?.name ?? 'Zetachain'}
             fill
           />
         </div>

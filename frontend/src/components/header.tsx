@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const router = useRouter();
   const activeAccount = useUser();
   const account = useAccount({ type: "ModularAccountV2" });
-  const { walletAddress, switchToChain, activeChain, balance } =
+  const { walletAddress} =
     useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
