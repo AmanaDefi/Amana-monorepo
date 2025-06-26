@@ -61,6 +61,10 @@ abstract contract StrategyParent is
     IERC20 internal inputToken;
     address internal receiptTokenAddress;
 
+    bool public processSingleTxMode;
+
+    uint256[50] private __gap;
+
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");
     bytes32 internal constant TX_WITHDRAW_CONFIRMED =
@@ -156,6 +160,10 @@ abstract contract StrategyParent is
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
+    function setProcessSingleTxMode(bool _mode) external onlyOwner {
+        processSingleTxMode = _mode;
+    }
+
     /// @notice Processes calls from the Gateway for deposits or withdrawals.
     /// @param context The message context from the Gateway.
     /// @param message Encoded data specifying the transaction details.
@@ -194,7 +202,11 @@ abstract contract StrategyParent is
         });
 
         if (vaultNonce == lastProcessedNonce + 1) {
-            _processBufferedTransactions();
+            if (processSingleTxMode) {
+                _processNextBufferedTransaction(); // one tx only
+            } else {
+                _processBufferedTransactions(); // process all
+            }
         }
 
         return abi.encode(true);
@@ -205,35 +217,40 @@ abstract contract StrategyParent is
     }
 
     function _processBufferedTransactions() internal {
-        while (true) {
-            uint256 nextNonce = lastProcessedNonce + 1;
-            BufferedTx storage txData = pendingByNonce[nextNonce];
+        while (_processNextBufferedTransaction()) {}
+    }
 
-            // Break if nothing is pending for this nonce
-            if (
-                txData.txType == TxType(0) &&
-                txData.assetAmount == 0 &&
-                txData.minimumOut == 0 &&
-                txData.newStrategy == address(0)
-            ) {
-                break;
-            }
+    function _processNextBufferedTransaction()
+        internal
+        returns (bool didProcess)
+    {
+        uint256 nextNonce = lastProcessedNonce + 1;
+        BufferedTx storage txData = pendingByNonce[nextNonce];
 
-            if (txData.txType == TxType.Deposit) {
-                _invest();
-            } else if (txData.txType == TxType.Withdraw) {
-                _divest();
-            } else if (txData.txType == TxType.Switch) {
-                _transferAssetsToNewStrategy();
-            } else if (txData.txType == TxType.Revert) {
-                _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
-            } else {
-                revert("Unknown TxType");
-            }
-
-            delete pendingByNonce[nextNonce];
-            lastProcessedNonce = nextNonce;
+        if (
+            txData.txType == TxType(0) &&
+            txData.assetAmount == 0 &&
+            txData.minimumOut == 0 &&
+            txData.newStrategy == address(0)
+        ) {
+            return false;
         }
+
+        if (txData.txType == TxType.Deposit) {
+            _invest();
+        } else if (txData.txType == TxType.Withdraw) {
+            _divest();
+        } else if (txData.txType == TxType.Switch) {
+            _transferAssetsToNewStrategy();
+        } else if (txData.txType == TxType.Revert) {
+            _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
+        } else {
+            revert("Unknown TxType");
+        }
+
+        delete pendingByNonce[nextNonce];
+        lastProcessedNonce = nextNonce;
+        return true;
     }
 
     function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {

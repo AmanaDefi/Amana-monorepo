@@ -208,7 +208,7 @@ export async function simulateRevertCallToStrategy(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity decode for Revert tx
     [TxType.Revert, 0, 0, ethers.constants.AddressZero, vaultNonce]
   );
-
+  console.log("Revert message:", revertMessage);
   const tx = await strategy.connect(gatewaySigner).onCall(
     {
       sender: vaultAddress,
