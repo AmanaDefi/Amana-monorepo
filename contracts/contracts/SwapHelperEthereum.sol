@@ -445,7 +445,7 @@ contract SwapHelperEthereum is SwapHelperParent {
         uint16 slippageBps,
         address strategy,
         uint256 maxDeadline,
-        bytes calldata data
+        bytes calldata /* data */
     ) external returns (uint256 amountOut) {
         require(
             IERC20(inputToken).balanceOf(address(this)) >= amount,
@@ -459,17 +459,13 @@ contract SwapHelperEthereum is SwapHelperParent {
             slippageBps
         );
 
-        (
-            address[] memory path,
-            uint24[] memory feeTiers,
-            bytes memory encodedPath
-        ) = getPathV3SpecificIntermediateTokens(
-                inputToken,
-                intToken1,
-                intToken2,
-                outputToken,
-                UNISWAP_V3_FACTORY
-            );
+        (, , bytes memory encodedPath) = getPathV3SpecificIntermediateTokens(
+            inputToken,
+            intToken1,
+            intToken2,
+            outputToken,
+            UNISWAP_V3_FACTORY
+        );
 
         approveOrIncreaseAllowance(
             IERC20(inputToken),
