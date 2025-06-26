@@ -8,6 +8,7 @@ type Props = {
   children: ReactNode;
   isOpen?: boolean;
   onToggle?: (isOpen: boolean) => void;
+  transparentDesktop?: boolean;
 };
 
 const Dropdown: FC<Props> = ({
@@ -16,6 +17,7 @@ const Dropdown: FC<Props> = ({
   children,
   isOpen: externalIsOpen,
   onToggle,
+  transparentDesktop = false,
 }) => {
   const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
 
@@ -38,18 +40,22 @@ const Dropdown: FC<Props> = ({
     }
   };
 
+  const containerClasses = `
+    bg-transparent md:bg-[#14171F] 
+    rounded-none md:rounded-2xl 
+    py-4 md:py-6 
+    px-0 md:px-[30px] 
+    font-gotham 
+    transition-all duration-300 ease-in-out 
+    ${isOpen ? "border-transparent md:border md:border-[#2A2D36]" : "border-transparent"}
+  `;
+
+  const contentClasses = transparentDesktop
+    ? "bg-transparent rounded-lg "
+    : "bg-[#161C27] rounded-lg p-6 lg:p-8";
+
   return (
-    <div
-      className={`
-        bg-transparent md:bg-[#14171F] 
-        rounded-none md:rounded-2xl 
-        py-4 md:py-6 
-        px-0 md:px-[30px] 
-        font-gotham 
-        transition-all duration-300 ease-in-out 
-        ${isOpen ? "border-transparent md:border md:border-[#2A2D36]" : "border-transparent"}
-      `}
-    >
+    <div className={containerClasses}>
       <div
         className="flex items-center justify-between cursor-pointer"
         onClick={handleToggle}
@@ -90,9 +96,7 @@ const Dropdown: FC<Props> = ({
             exit={{ height: 0, opacity: 0, marginTop: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="bg-[#161C27] min-h-[180px] rounded-lg p-6 lg:p-8">
-              {children}
-            </div>
+            <div className={contentClasses}>{children}</div>
           </motion.div>
         )}
       </AnimatePresence>

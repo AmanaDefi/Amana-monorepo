@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { useChartStore } from "@/store/chartStore";
 import TableChart from "@/components/TableChart";
-import InfoIcon from "@/components/svg/InfoIcon";
+import { InfoBlock } from "@/components/VaultsWrapper/components/InfoBlock.tsx";
 
 interface ChartDropdownProps {
   vaultId: string;
@@ -16,10 +16,7 @@ const ChartDropdown: FC<ChartDropdownProps> = ({ vaultId, vaultName }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <h3 className="text-white text-lg font-medium">Historical APY</h3>
-        <InfoIcon />
-      </div>
+      <InfoBlock isLeft>💡 Historical APY</InfoBlock>
       <TableChart points={historicalData} percentageChange={percentageChange} />
     </div>
   );

@@ -629,10 +629,11 @@ const VaultsDetailContainer: React.FC<{
             />
           </Dropdown>
           <Dropdown
-            title="Historical Performance"
+            title="Historical APY"
             defaultOpen={false}
             isOpen={openDropdown === "chart"}
             onToggle={(isOpen) => handleDropdownToggle("chart", isOpen)}
+            transparentDesktop={true}
           >
             <ChartDropdown
               vaultId={vaultID.toString()}
