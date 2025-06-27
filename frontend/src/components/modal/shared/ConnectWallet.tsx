@@ -26,9 +26,9 @@ const ConnectWallet = () => {
       </div>
       <button
         onClick={handleWalletInfoClick}
-        className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1"
+        className="text-[#3E73C4] text-base font-normal flex items-center gap-1 hover:text-[#535E73] transition-all ease-in "
       >
-        I DON&apos;T HAVE A WALLET
+        I don&apos;t have a wallet
         <ErrorInputIcon width={16} height={17} className="fill-[#3E73C4]" />
       </button>
     </div>

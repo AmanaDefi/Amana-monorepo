@@ -52,32 +52,12 @@ import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import { useChain } from "@account-kit/react";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
-import FeeDisplay from "./VaultsDetailsWrapper/components/FeeDisplay";
+import FeeDisplay, {
+  ExpectedSlippageBlock,
+} from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useTransactionStore } from "@/store/transactionStore";
-
-// Helper function for formatting token balances based on token type
-const formatTokenBalance = (
-  balance: string | number,
-  symbol: string,
-): string => {
-  const num = Math.max(0, Number(balance));
-  // Check if token is a stablecoin
-  const isStablecoin =
-    symbol?.includes("USD") ||
-    symbol?.includes("DAI") ||
-    symbol?.includes("USDT") ||
-    symbol?.includes("USDC") ||
-    symbol?.includes("BUSD");
-  // Format with 2 decimal places for stablecoins, 4 for others
-  const decimals = isStablecoin ? 2 : 4;
-  return parseFloat(num.toFixed(decimals)).toString();
-};
-
-// When displaying USD value for outputs or net deposits, ensure it's never negative
-const formatUSDValue = (value: number): string => {
-  return formatCurrency(Math.max(0, value));
-};
+import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -90,6 +70,7 @@ export interface VaultInputsProps {
   selectedToken?: Token;
   selectedChain?: Chain | null;
   onSelectChain?: (chain: Chain) => void;
+  onSelectChainAndToken?: (chain: Chain, token: Token) => void;
   vaultId: string;
   isDeposit: boolean;
   onTabChange: (tab: string) => void;
@@ -117,6 +98,7 @@ export default function VaultInputs({
   onTokenSelect,
   selectedToken,
   onSelectChain,
+  onSelectChainAndToken,
   vaultId,
   isDeposit,
   onTabChange,
@@ -216,6 +198,7 @@ export default function VaultInputs({
       decimals: vaultData.inputToken.decimals,
       address: vaultData.id,
       imgURL: "",
+      chainId: vaultData.protocol.chainId,
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
@@ -468,15 +451,15 @@ export default function VaultInputs({
     }
   };
 
-  const switchTokens = async () => {
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-    if (isTxInProgress) return;
-    // Get the opposite tab of what's currently in the URL
-    const newTab = isDeposit ? "withdraw" : "invest";
+  // const switchTokens = async () => {
+  //   const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+  //   if (isTxInProgress) return;
+  //   // Get the opposite tab of what's currently in the URL
+  //   const newTab = isDeposit ? "withdraw" : "invest";
 
-    // Update URL - React will handle state update via the useEffect
-    handleTabChange(newTab);
-  };
+  //   // Update URL - React will handle state update via the useEffect
+  //   handleTabChange(newTab);
+  // };
 
   const handleChangeInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1246,6 +1229,10 @@ export default function VaultInputs({
     vaultTotalAssetinToken,
   ]);
 
+  const minReceived = useMemo(() => {
+    return conversionOutput.outputAmountInUSDFormatted;
+  }, [conversionOutput.outputAmountInUSDFormatted]);
+
   return (
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}
@@ -1259,14 +1246,22 @@ export default function VaultInputs({
           </p>
         </div>
       )}
-      <TabSelector
-        availableTabs={["Invest", "Withdraw"]}
-        activeTab={isDeposit ? "Invest" : "Withdraw"}
-        setActiveTab={handleTabChange}
-      />
+      <div className="relative mb-6 ">
+        <TabSelector
+          availableTabs={["Invest", "Withdraw"]}
+          activeTab={isDeposit ? "Invest" : "Withdraw"}
+          setActiveTab={handleTabChange}
+        />
+        <div className="absolute top-0 right-0 z-30 mt-3">
+          <SlippageSettingsBlock
+            setInputBalance={setInputBalance}
+            vaultId={vaultData.id}
+            showTransactionSettings={isSlippageExceedingLimit}
+          />
+        </div>
+      </div>
+
       <AnimatePresence mode="wait" initial={false}>
-        {" "}
-        {/* <-- Додано AnimatePresence */}
         {isDeposit ? (
           <motion.div
             key="deposit-tab-content"
@@ -1275,21 +1270,14 @@ export default function VaultInputs({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {(!isConnected || !isDeposit) && (
-              <div className="mb-4">
-                <SlippageSettingsBlock
-                  setInputBalance={setInputBalance}
-                  vaultId={vaultData.id}
-                  showTransactionSettings={isSlippageExceedingLimit}
-                />
-              </div>
-            )}
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
@@ -1320,12 +1308,7 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="w-full my-6 md:my-10 flex items-center justify-center">
-              <button className="group flex-center p-2" onClick={switchTokens}>
-                <DepositModalArrowsIcon width={24} height={24} />
-              </button>
-            </div>
-            <div className="mb-6 md:mb-10">
+            <div className="mb-6 md:my-8">
               <FeeDisplay
                 isDeposit={isDeposit}
                 vaultData={vaultData}
@@ -1334,6 +1317,10 @@ export default function VaultInputs({
                 performanceFee={performanceFee}
               />
             </div>
+            <ExpectedSlippageBlock
+              conversionOutput={conversionOutput}
+              isVisible={!!conversionOutput.slippageActualValue}
+            />
 
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && !isDeposit && (
@@ -1341,6 +1328,8 @@ export default function VaultInputs({
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
@@ -1379,25 +1368,18 @@ export default function VaultInputs({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {(!isConnected || !isDeposit) && (
-              <div className="mb-4">
-                <SlippageSettingsBlock
-                  setInputBalance={setInputBalance}
-                  vaultId={vaultData.id}
-                  showTransactionSettings={isSlippageExceedingLimit}
-                />
-              </div>
-            )}
+            
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
-
             <InputTokenWithError
               onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
               allowInput={allowInput}
@@ -1424,11 +1406,6 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="w-full my-6 md:my-10 flex items-center justify-center">
-              <button className="group flex-center p-2" onClick={switchTokens}>
-                <DepositModalArrowsIcon width={24} height={24} />
-              </button>
-            </div>
             <div className="mb-6 md:mb-10">
               <FeeDisplay
                 isDeposit={isDeposit}
@@ -1438,17 +1415,17 @@ export default function VaultInputs({
                 performanceFee={performanceFee}
               />
             </div>
-
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && !isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
-
             <InputTokenWithError
               captionText={isDeposit ? "Output Amount" : ""}
               onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
@@ -1476,8 +1453,8 @@ export default function VaultInputs({
             />
           </motion.div>
         )}
-        <APYChangeCard isDeposit={isDeposit} />
       </AnimatePresence>
+      <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} />
 
       {inputToken &&
         // !loadingOutputToken &&
