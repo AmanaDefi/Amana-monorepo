@@ -1229,9 +1229,19 @@ export default function VaultInputs({
     vaultTotalAssetinToken,
   ]);
 
+  const userSlippage = getCurrentSlippage(); 
   const minReceived = useMemo(() => {
-    return conversionOutput.outputAmountInUSDFormatted;
-  }, [conversionOutput.outputAmountInUSDFormatted]);
+    if (!conversionOutput.outputAmountInUSDFormatted) return "0.0";
+
+    const expectedOutputUSD = parseFloat(
+      conversionOutput.outputAmountInUSDFormatted.replace(/[^0-9.]/g, ""),
+    );
+    const slippageDecimal = userSlippage / 100; 
+
+    const calculatedMinReceived = expectedOutputUSD * (1 - slippageDecimal);
+
+    return formatUSDValue(calculatedMinReceived); 
+  }, [conversionOutput.outputAmountInUSDFormatted, userSlippage]);
 
   return (
     <>

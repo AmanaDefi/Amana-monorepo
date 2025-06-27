@@ -177,7 +177,12 @@ const TokenBalanceItem = React.memo(
             whileHover={{ rotate: 5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <TokenIcon token={token} icon={token.imgURL} imageSize="w-8 h-8" />
+            <TokenIcon
+              token={token}
+              icon={token.imgURL}
+              imageSize="w-8 h-8"
+              
+            />
           </motion.div>
           <div className="flex-1 text-left">
             <motion.div
