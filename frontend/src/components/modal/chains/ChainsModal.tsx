@@ -13,7 +13,7 @@ import { Chain } from "viem";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import TokenIcon from "@/components/common/TokenIcon";
 import { useTokenBalanceForModal } from "@/hooks/useTokenBalanceForModal";
-import { formatTokenBalance } from "@/utils/utils";
+import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { MiniSpinner } from "@/components/PendingDots";
 
@@ -183,7 +183,7 @@ const TokenBalanceItem = React.memo(
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.02 }}
             >
-              {token.symbol}
+              {getOnlyTokenSymbol(token.symbol)}
             </motion.div>
             <motion.div
               className="text-[#535E73] text-[16px] font-normal"

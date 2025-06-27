@@ -5,6 +5,7 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { getOnlyTokenSymbol } from "@/utils/utils";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -44,7 +45,7 @@ export default function ChainTokenSelector({
         onClick={onClick}
         className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
-        {currentToken ? (
+        {currentToken && (
           <>
             <img
               src={currentToken.imgURL}
@@ -54,13 +55,10 @@ export default function ChainTokenSelector({
               className="rounded-full"
             />
             <p className="max-w-[82px] md:max-w-[200px] truncate">
-              {currentToken.symbol}
+              {getOnlyTokenSymbol(currentToken.symbol)}
             </p>
           </>
-        ) : (
-          <span>Select Token</span>
         )}
-        <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
       </button>
     </div>
   );

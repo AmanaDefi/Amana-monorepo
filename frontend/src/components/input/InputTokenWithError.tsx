@@ -3,7 +3,7 @@ import React, { HTMLProps, useMemo, useState } from "react";
 import { Token, VaultData } from "@/types/types";
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
-import { formatCurrency } from "@/utils/utils";
+import { formatCurrency, getOnlyTokenSymbol } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import TokenIcon from "@/components/common/TokenIcon";
 import { ConversionOutput } from "@/components/VaultInputs";
@@ -292,7 +292,9 @@ if (inputLoaderVisible) {
                   />
                 </div>
                 <p className="font-normal text-lg leading-none text-white">
-                  {selectedToken?.symbol}
+                  {selectedToken?.symbol
+                    ? getOnlyTokenSymbol(selectedToken.symbol)
+                    : ""}
                 </p>
               </div>
             )}

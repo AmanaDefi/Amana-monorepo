@@ -10,7 +10,7 @@ import LargeCardStat from "@/components/common/LargeCardStat";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { formatTokenBalance } from "@/utils/utils";
+import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 interface VaultStatsProps {
@@ -236,13 +236,17 @@ export default function VaultStats({
           label="Deposits"
           value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
             vaultData.inputToken.symbol
+              ? getOnlyTokenSymbol(vaultData.inputToken.symbol)
+              : ""
           }`}
           tooltip="Value of your vault deposits"
         />
         <LargeCardStat
           id="wallet"
           label="Your Wallet"
-          value={`${formattedWalletBalance} ${symbol}`}
+          value={`${formattedWalletBalance} ${
+            symbol ? getOnlyTokenSymbol(symbol) : ""
+          }`}
           tooltip="Value of deposit assets held in your wallet"
         />
         <LargeCardStat
