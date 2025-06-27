@@ -14,6 +14,8 @@ import { useMultiChain } from '@/providers/MultiChainProvider';
 import { useTokenPriceBySymbol } from '@/hooks/hooks';
 import PointsIcon from "@/components/svg/PointsIcon";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+
+import { useLayoutStore } from "@/store/store";
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -71,7 +73,19 @@ interface VaultsGridProps {
   vaultAPYs: VaultAPY[];
   userVaultBalances: UserVaultBalance[];
   vaultTotalAssets: VaultTotalAssets[];
-  vaultTotalAssetsinToken: VaultTotalAssetsinToken[];
+  vaultTotalAssetsinToken?: VaultTotalAssetsinToken[];
+  // Pagination
+  currentPage?: number;
+  totalPages?: number;
+  totalCount?: number;
+  pageSize?: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
+  onPageChange?: (page: number) => void;
+  // Sorting
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  onSortChange?: (sortBy: string, sortOrder: "asc" | "desc") => void;
 }
 
 // Helper function to get points information
@@ -104,21 +118,59 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   vaultAPYs,
   userVaultBalances,
   vaultTotalAssets,
-  vaultTotalAssetsinToken,
+  vaultTotalAssetsinToken = [],
+  // Pagination
+  currentPage = 1,
+  totalPages = 1,
+  totalCount = 0,
+  pageSize = 6,
+  onPageChange,
+  // Sorting
+  sortBy: externalSortBy = "apy",
+  sortOrder: externalSortOrder = "desc",
+  onSortChange,
 }) => {
   const router = useRouter();
   const { walletAddress } = useMultiChain();
   const filterRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // State for filters and sorting
+  // State for filters and sorting""
   const [searchTerm, setSearchTerm] = useState("");
   const [chainFilter, setChainFilter] = useState<string>("");
   const [protocolFilter, setProtocolFilter] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("apy");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>(externalSortBy);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(externalSortOrder);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const itemsPerPage = 6;
+
+  // Use useLayoutStore for adaptive page size
+  const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
+  const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
+
+  // Adaptive logic for VaultsGrid
+  useEffect(() => {
+    const updatePageSize = () => {
+      const width = window.innerWidth;
+      const newSize = width >= 1805 ? 8 : 6;
+      if (newSize !== itemsPerPage) {
+        setItemsPerPage(newSize);
+      }
+    };
+
+    updatePageSize();
+    window.addEventListener("resize", updatePageSize);
+
+    return () => {
+      window.removeEventListener("resize", updatePageSize);
+    };
+  }, [setItemsPerPage, itemsPerPage]);
+
+  useEffect(() => {
+    setSortBy(externalSortBy);
+    setSortOrder(externalSortOrder);
+  }, [externalSortBy, externalSortOrder]);
+
+  const shouldUseLocalFiltering = !onPageChange || !onSortChange;
 
   // Extract unique chains and protocols for filters
   const chains = useMemo(() => {
@@ -131,6 +183,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
   // Filter vaults based on search, chain, and protocol
   const filteredVaults = useMemo(() => {
+    if (!shouldUseLocalFiltering) {
+      return vaults;
+    }
+
     return vaults.filter((vault) => {
       const matchesSearch =
         searchTerm === "" ||
@@ -140,15 +196,26 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       const matchesChain =
         chainFilter === "" || vault.protocol.network === chainFilter;
+
       const matchesProtocol =
         protocolFilter === "" || vault.protocol.name === protocolFilter;
 
       return matchesSearch && matchesChain && matchesProtocol;
     });
-  }, [vaults, searchTerm, chainFilter, protocolFilter]);
+  }, [
+    vaults,
+    searchTerm,
+    chainFilter,
+    protocolFilter,
+    shouldUseLocalFiltering,
+  ]);
 
   // Sort vaults based on selected criteria
   const sortedVaults = useMemo(() => {
+    if (!shouldUseLocalFiltering) {
+      return filteredVaults;
+    }
+
     return [...filteredVaults].sort((a, b) => {
       let aValue: any, bValue: any;
 
@@ -187,21 +254,64 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         return aValue < bValue ? 1 : -1;
       }
     });
-  }, [filteredVaults, sortBy, sortOrder, vaultAPYs, vaultTotalAssets]);
+  }, [
+    filteredVaults,
+    sortBy,
+    sortOrder,
+    vaultAPYs,
+    vaultTotalAssets,
+    shouldUseLocalFiltering,
+  ]);
 
   // Pagination logic
   const paginatedVaults = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return sortedVaults.slice(startIndex, endIndex);
-  }, [sortedVaults, currentPage, itemsPerPage]);
+    if (!shouldUseLocalFiltering) {
+      return sortedVaults;
+    }
 
-  const totalPages = Math.ceil(sortedVaults.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return sortedVaults.slice(startIndex, endIndex);
+  }, [sortedVaults, currentPage, pageSize, shouldUseLocalFiltering]);
+
+  const localTotalPages = Math.ceil(sortedVaults.length / pageSize);
+  const displayTotalPages = shouldUseLocalFiltering
+    ? localTotalPages
+    : totalPages;
+  const displayTotalCount = shouldUseLocalFiltering
+    ? filteredVaults.length
+    : totalCount;
+
+  const handleSortChange = (
+    newSortBy: string,
+    newSortOrder: "asc" | "desc",
+  ) => {
+    if (onSortChange) {
+      onSortChange(newSortBy, newSortOrder);
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder(newSortOrder);
+    }
+  };
+
+  const toggleSortOrder = () => {
+    const newOrder = sortOrder === "asc" ? "desc" : "asc";
+    handleSortChange(sortBy, newOrder);
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setChainFilter("");
+    setProtocolFilter("");
+    handleSortChange("apy", "desc");
+  };
 
   // Reset pagination when filters change
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, chainFilter, protocolFilter, sortBy, sortOrder]);
+    if (onPageChange) {
+      onPageChange(currentPage);
+    }
+  }, [currentPage, onPageChange]);
 
   // Handle clicks outside the filter dropdown
   useEffect(() => {
@@ -222,18 +332,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
   const handleVaultClick = (vaultId: string) => {
     router.push(`/vaults/${vaultId}`);
-  };
-
-  const toggleSortOrder = () => {
-    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-  };
-
-  const clearAllFilters = () => {
-    setSearchTerm("");
-    setChainFilter("");
-    setProtocolFilter("");
-    setSortBy("apy");
-    setSortOrder("desc");
   };
 
   // Create a mapping of token prices
@@ -270,7 +368,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       {/* Mobile Filter Button */}
       <div className="md:hidden mb-4">
         <button
@@ -334,8 +432,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 if (sortBy === option) {
                   toggleSortOrder();
                 } else {
-                  setSortBy(option);
-                  setSortOrder("desc");
+                  handleSortChange(option, "desc");
                 }
               }}
               className={`px-3 py-1 rounded-md text-sm flex items-center gap-1 ${
@@ -403,17 +500,28 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
       {/* Results count */}
       <div className="text-gray-400 mb-4 text-sm">
-        Showing {paginatedVaults.length} of {filteredVaults.length} vaults
+        Showing {paginatedVaults.length} of {displayTotalCount} vaults
       </div>
 
       {/* Vaults Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-                  {paginatedVaults.map((vault) => {
-            const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
-            const vaultTotalAssetsData = vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === vault.id);
-            const riskLevel = calculateRiskLevel(vault);
-            const capacityPercentage = calculateCapacityPercentage(vault.id);
-          
+      <div
+        className="grid gap-2 md:gap-4 
+  grid-cols-[repeat(auto-fit,minmax(350px,1fr))]
+  md:grid-cols-[repeat(auto-fit,minmax(380px,1fr))]
+  xl:grid-cols-[repeat(auto-fit,minmax(400px,1fr))]"
+      >
+        {paginatedVaults.map((vault) => {
+          const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
+
+          // const totalAssets = vaultTotalAssets.find(
+          //   (asset) => asset.vaultId === vault.id,
+          // );
+
+          const vaultTotalAssetsData = vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === vault.id);
+
+          const riskLevel = calculateRiskLevel(vault);
+          const capacityPercentage = calculateCapacityPercentage(vault.id);
+
           return (
             <div
               key={vault.id}
@@ -471,7 +579,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       <p className="text-white font-medium">{vault.name}</p>
                     </div>
                   </div>
-
                   {/* Chain with Logo (was Lending Pool) */}
                   <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
                     <Image
@@ -587,6 +694,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   >
                     <span className="relative z-2">Deposit</span>
                   </button>
+
                   {userVaultBalances.find(
                     (balance: UserVaultBalance) => balance.vaultId === vault.id,
                   )?.balance &&
@@ -629,11 +737,15 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {displayTotalPages > 1 && (
         <div className="flex justify-center mt-6">
           <div className="flex gap-2">
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => {
+                if (onPageChange) {
+                  onPageChange(Math.max(currentPage - 1, 1));
+                }
+              }}
               disabled={currentPage === 1}
               className={`px-3 py-1 rounded-md ${
                 currentPage === 1
@@ -643,11 +755,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             >
               ←
             </button>
-
-            {Array.from({ length: totalPages }).map((_, index) => (
+            {Array.from({ length: displayTotalPages }).map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentPage(index + 1)}
+                onClick={() => {
+                  if (onPageChange) {
+                    onPageChange(index + 1);
+                  }
+                }}
                 className={`px-3 py-1 rounded-md ${
                   currentPage === index + 1
                     ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
@@ -659,12 +774,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             ))}
 
             <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
+              onClick={() => {
+                if (onPageChange) {
+                  onPageChange(Math.min(currentPage + 1, displayTotalPages));
+                }
+              }}
+              disabled={currentPage === displayTotalPages}
               className={`px-3 py-1 rounded-md ${
-                currentPage === totalPages
+                currentPage === displayTotalPages
                   ? "bg-customNeutral300 text-gray-500 cursor-not-allowed"
                   : "bg-customNeutral300 text-white hover:bg-customNeutral100"
               }`}

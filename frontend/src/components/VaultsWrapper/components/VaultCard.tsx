@@ -59,34 +59,34 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
           handleVaultClick(vault.id);
         }}
         ref={ref}
-        className="w-full min-w-[350px] h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
+        className="w-full h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border"
       >
-        <div className="flex flex-row gap-1 justify-between">
-          <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
+        <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_max-content] justify-between gap-1">
+          <div className="grid grid-cols-[auto_1fr] gap-3 mb-3 p-2 rounded-md col-span-1 items-center">
             <Image
               src={vault.inputToken.imgURL}
               alt={vault.inputToken.symbol}
               width={40}
               height={40}
-              className="rounded-full"
+              className="rounded-full flex-none"
               sizes="36px"
             />
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 flex-auto min-w-0">
               <div className="flex flex-row gap-2 items-baseline">
-                <p className="text-white font-bold md:text-xl leading-5 -tracking-1">
+                <p className="text-white font-[600] md:text-lg leading-5 -tracking-1">
                   {vault.name.replace("Pool", "").replace("Lend", "")}
                 </p>
-                <p className="text-white text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis">
+                <p className="text-white text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis flex-shrink min-w-0">
                   Lend Pool
                 </p>
               </div>
-              <p className="text-white text-sm leading-4">
+              <p className="text-white text-sm leading-4 truncate">
                 on {vault.protocol.name}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-1 col-span-1 self-start flex-none">
             <Image
               src={vault.imgURL || ""}
               alt={vault.protocol.network}

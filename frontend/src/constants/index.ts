@@ -785,6 +785,8 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aAegisYUSD",
     imgURL: "/bnb_logo.png",
     depositFeePaidFromGasTank: true,
+    minDeposit: 1, 
+    maxWithdraw: 1000000,
     inputToken: {
       symbol: "USDT.BSC",
       decimals: 18,
@@ -977,3 +979,22 @@ export const USER_SETTINGS_LOCAL_STORAGE_KEY = "user_settings";
 export const ONE_MINUTE = 60 * 1000;
 
 export const RECEIPT_LOCAL_STORAGE_KEY = 'receipt_local_storage_key'
+
+
+export const ZERO_ACCOUNT = {
+  address: "0x0000000000000000000000000000000000000000",
+  sendTransaction: async () => {
+    throw new Error("sendTransaction not implemented for ZERO_ACCOUNT");
+  },
+  signMessage: async () => {
+    throw new Error("signMessage not implemented for ZERO_ACCOUNT");
+  },
+  signTypedData: async () => {
+    throw new Error("signTypedData not implemented for ZERO_ACCOUNT");
+  },
+};
+
+export const EXCLUDED_VAULTS = [
+  "0x0552d4c51491d9bfed97eb795e101e90a5f16d44",
+  "0x8b934de59fde50a91daa7e788389f8fcad35a14f",
+];

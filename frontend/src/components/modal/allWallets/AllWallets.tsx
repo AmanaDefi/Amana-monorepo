@@ -7,7 +7,7 @@ import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
 import BackedBy from "../shared/BackedBy";
-import { useConnect } from "@account-kit/react";
+import { useConnect, useUser } from "@account-kit/react";
 import { Connector } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
@@ -23,6 +23,8 @@ const AllWAllets = () => {
     setWalletAddress,
   } = useFundWalletStore();
 
+  const activeAccount = useUser();
+
   const fundWalletConnect = () => {
     setStep("confirm");
   };
@@ -35,19 +37,19 @@ const AllWAllets = () => {
     onSuccess: (result) => {
       if (fundWalletStep === "connectWallet") {
         setWalletAddress(result.accounts[0]);
-        console.log('connectorId removed fron success')
-        localStorage.removeItem('connectorId');
+        console.log("connectorId removed fron success");
+        localStorage.removeItem("connectorId");
         return fundWalletConnect();
       }
-      return successAuth();
+      return successAuth(null, activeAccount || undefined, true);
     },
   });
 
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
     setActiveConnector(connector);
-    console.log('connectorId setted')
-    localStorage.setItem('connectorId', connector.id);
+    console.log("connectorId setted");
+    localStorage.setItem("connectorId", connector.id);
     connect(
       { connector },
       {
@@ -56,8 +58,8 @@ const AllWAllets = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            console.log('connectorId removed from error')
-            localStorage.removeItem('connectorId');
+            console.log("connectorId removed from error");
+            localStorage.removeItem("connectorId");
 
             setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");

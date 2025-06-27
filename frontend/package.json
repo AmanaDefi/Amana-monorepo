@@ -41,6 +41,8 @@
     "embla-carousel-react": "^8.6.0",
     "ethers": "^6.13.2",
     "framer-motion": "^12.16.0",
+    "graphql": "^16.11.0",
+    "graphql-request": "^7.2.0",
     "jotai": "2.8.4",
     "js-sha3": "^0.9.3",
     "mixpanel-browser": "^2.55.1",
@@ -64,6 +66,10 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/typescript": "^4.1.6",
+    "@graphql-codegen/typescript-graphql-request": "^6.3.0",
+    "@graphql-codegen/typescript-operations": "^4.6.1",
     "@svgr/webpack": "^8.1.0",
     "@types/mixpanel-browser": "^2.50.0",
     "@types/node": "^20",

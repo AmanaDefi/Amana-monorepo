@@ -367,6 +367,10 @@ export default function InteractionContainer({
     finishedTransaction,
     isTransactionProcessing,
     setIsTransactionProcessing,
+
+    setCurrentInputBalance,
+    setCurrentErrorMessage,
+    setCrosschainInvestHash: setStoreCrosschainInvestHash,
   } = useTransactionStore();
 
   // BlockPI-only feedback system
@@ -799,6 +803,18 @@ export default function InteractionContainer({
     };
   }, []);
 
+  useEffect(() => {
+    setCurrentInputBalance(_inputBalance);
+  }, [_inputBalance, setCurrentInputBalance]);
+
+  useEffect(() => {
+    setCurrentErrorMessage(errorMessage);
+  }, [errorMessage, setCurrentErrorMessage]);
+
+  useEffect(() => {
+    setStoreCrosschainInvestHash(crosschainInvestHash);
+  }, [crosschainInvestHash, setStoreCrosschainInvestHash]);
+
   return (
     <div className="w-full flex flex-col">
       <Interaction
@@ -923,6 +939,7 @@ function Interaction({
     type: "MultiOwnerModularAccount",
   });
   const { currentConnector } = useMultiChain();
+  const { isButtonDisabled } = useTransactionStore();
   const { sendUserOperation } = useSendUserOperation({
     client: scaClient,
     waitForTxn: true,
@@ -1283,9 +1300,9 @@ function Interaction({
             !!errorMessage;
 
           const isDisabled =
+            isButtonDisabled || 
             isDisabledByProcessing ||
-            isDisabledByHash ||
-            isDisabledByValidation;
+            isDisabledByHash;
 
           return (
             <Button

@@ -60,30 +60,35 @@ export const NumberFormatter = Intl.NumberFormat("en", {
 });
 
 export function getVaultErrorMessage(
-  value: string,
-  inputValue: string | undefined,
+  inputValue: string,
+  availableBalance: string,
   steps: Action[],
   vaultData?: any,
   inputTokenPrice?: number,
   isDeposit?: boolean
 ): string {
-  if (Number(value) > 0 && (!inputValue || Number(inputValue) === 0)) {
+  const inputAmount = Number(inputValue);
+  const balanceAmount = Number(availableBalance);
+
+  // If there's input but no available balance
+  if (inputAmount > 0 && balanceAmount === 0) {
     return "Insufficient balance";
   }
-  // Input > Balance
-  if (Number(value) > Number(inputValue)) {
+
+  // If input exceeds available balance
+  if (inputAmount > balanceAmount) {
     return "Insufficient balance";
   }
 
   // Check deposit/withdrawal limits if vaultData is provided
   if (vaultData && inputTokenPrice) {
-    const amountInUSD = Number(value) * inputTokenPrice;
+    const amountInUSD = Number(inputValue) * inputTokenPrice;
     
-    if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(value) > 0) {
+    if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(inputValue) > 0) {
       return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
     }
     
-    if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(value) > 0) {
+    if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(inputValue) > 0) {
       return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
     }
   }

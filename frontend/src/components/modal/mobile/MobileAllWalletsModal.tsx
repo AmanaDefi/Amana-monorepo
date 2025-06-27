@@ -4,10 +4,11 @@ import { useAuthStore } from "@/store/authStore";
 import ModalButton from "../shared/ModalButton";
 import { MobileModal } from "./MobileModal";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
-import { useConnect } from "@account-kit/react";
+import { useConnect, useUser } from "@account-kit/react";
 import { Connector } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -18,7 +19,37 @@ const MobileAllWallets = () => {
     setWalletAddress,
   } = useFundWalletStore();
 
-  const { connectors, connect, isPending: isConnectingWallet } = useConnect();
+  const { walletAddress } = useMultiChain();
+  const activeAccount = useUser();
+
+  const {
+    connectors,
+    connect,
+    isPending: isConnectingWallet,
+  } = useConnect({
+    onSuccess: (result) => {
+      if (fundWalletStep === "connectWallet") {
+        setWalletAddress(result.accounts[0]);
+        return fundWalletConnect();
+      }
+      return successAuth(walletAddress, activeAccount || undefined, true);
+    },
+    onError: (error) => {
+      console.log(error);
+
+      if (error.name === "ConnectorAlreadyConnectedError") {
+        const connectedConnector = connectors.find(
+          (c) => c.id === localStorage.getItem("connectorId"),
+        );
+        if (connectedConnector) {
+          connectedConnector.disconnect();
+          localStorage.removeItem("connectorId");
+          setActiveConnector(null);
+        }
+        showInfoToast("Please try to connect wallet again");
+      }
+    },
+  });
 
   const fundWalletConnect = () => {
     setStep("confirm");
@@ -26,27 +57,9 @@ const MobileAllWallets = () => {
 
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
-    connect(
-      { connector },
-      {
-        onSuccess: (result) => {
-          if (fundWalletStep === "connectWallet") {
-            setActiveConnector(connector);
-            setWalletAddress(result.accounts[0]);
-            return fundWalletConnect();
-          }
-          return successAuth();
-        },
-        onError: (error) => {
-          console.log(error);
-
-          if (error.name === "ConnectorAlreadyConnectedError") {
-            connector.disconnect();
-            showInfoToast("Please try to connect wallet again");
-          }
-        },
-      },
-    );
+    setActiveConnector(connector);
+    localStorage.setItem("connectorId", connector.id);
+    connect({ connector });
   };
 
   const handleClose = () => {

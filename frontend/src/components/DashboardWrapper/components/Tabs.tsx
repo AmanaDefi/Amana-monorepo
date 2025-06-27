@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import cn from "classnames";
 import { useTabsStore } from "@/store/portfolioTabsStore";
 import type {
@@ -23,6 +23,9 @@ import {
   MOCK_TRANSACTIONS,
   type Transaction,
 } from "@/constants/mockTransactions";
+import { useUserTransactionsHistory } from "@/hooks/hooks";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { formatTimestamp, convertStringToBalance } from "@/utils/graphUtils";
 import Image from "next/image";
 import TransactionDetailsIcon from "@/components/svg/TransactionDetailsIcon";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
@@ -215,10 +218,47 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
 }) => {
   const router = useRouter();
   const myVaults = useMyVaults({ vaults, userVaultBalances });
+  const { walletAddress } = useMultiChain();
 
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
 
-  const displayTransactions = transactions || MOCK_TRANSACTIONS;
+  const { 
+    deposits, 
+    withdrawals, 
+    isLoading: txLoading, 
+    hasData 
+  } = useUserTransactionsHistory(walletAddress || undefined);
+
+  // Combine transactions and convert format
+  const subgraphTransactions = useMemo((): Transaction[] => {
+    const allTxs: Transaction[] = [
+      ...deposits.map(dep => ({
+        id: dep.id,
+        type: 'received' as const,
+        timestamp: formatTimestamp(dep.timestamp),
+        from: dep.user,
+        amount: convertStringToBalance(dep.amount, dep.vault.assetDecimals).formatted,
+        token: dep.vault.assetSymbol,
+        status: 'completed' as const
+      })),
+      ...withdrawals.map(wit => ({
+        id: wit.id,
+        type: 'sent' as const,
+        timestamp: formatTimestamp(wit.timestamp),
+        from: wit.user,
+        amount: convertStringToBalance(wit.amount, wit.vault.assetDecimals).formatted,
+        token: wit.vault.assetSymbol,
+        status: 'completed' as const
+      }))
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    
+    return allTxs;
+  }, [deposits, withdrawals]);
+
+  // Choose transaction source: subgraph, passed through props or mock data
+  const displayTransactions = hasData 
+    ? subgraphTransactions 
+    : (transactions || MOCK_TRANSACTIONS);
 
   const handleEarningClick = () => {
     router.push("/");

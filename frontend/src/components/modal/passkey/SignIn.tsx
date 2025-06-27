@@ -27,10 +27,13 @@ export const SignIn = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<PasskeyForm>({
     resolver: zodResolver(passkeySchema),
   });
+
+  const passkeyValue = watch("passkey");
 
   const { authenticate, isPending } = useAuthenticate({
     onSuccess: (result) => {
@@ -43,6 +46,7 @@ export const SignIn = () => {
       setError(err.message);
     },
   });
+
   const onSubmit = (data: PasskeyForm) => {
     if (isPending) return;
     authenticate({
@@ -51,6 +55,9 @@ export const SignIn = () => {
       username: data.passkey,
     });
   };
+
+  const isButtonDisabled =
+    !passkeyValue || passkeyValue.trim().length === 0 || isPending;
 
   return (
     <Modal
@@ -137,6 +144,7 @@ export const SignIn = () => {
         <div className="flex justify-center mt-4">
           <Button
             variant="custom"
+            disabled={isButtonDisabled}
             className="w-full h-12 rounded-[8px] border border-[#3E73C4] text-white shadow-md hover:bg-[#3E73C4]/10 !text-[16px] !font-bold transition-all duration-200 !font-gotham"
           >
             Create new passkey

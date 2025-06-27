@@ -1,4 +1,4 @@
-import { Dispatch, FC, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, FC, useEffect, useRef, useState } from "react";
 import { SetStateAction } from "jotai";
 
 import { VaultData } from "@/types/types";
@@ -8,6 +8,7 @@ import CardsMenuIcon from "@/components/svg/ListMenuCards";
 import ListMenuIcon from "@/components/svg/ListMenuIcon";
 import SearchIcon from "@/components/svg/Search";
 import classNames from "classnames";
+import { NETWORK_FILTER_OPTIONS, PROTOCOL_FILTER_OPTIONS } from "@/constants/chainConfig";
 
 const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "Risk" }];
 
@@ -47,43 +48,47 @@ export const VaultFilters: FC<Props> = ({
   isShownMyVaults,
   setIsShownMyVaults,
 }) => {
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isHiddenFilterButton, setIsHiddenFilterButton] = useState(false);
 
-  const chains = useMemo(() => {
-    const uniqueNetworksMap = new Map();
+  const [localSearch, setLocalSearch] = useState(searchTerm);
 
-    vaults.forEach((vault) => {
-      if (
-        vault &&
-        vault.protocol &&
-        typeof vault.protocol.network === "string"
-      ) {
-        const networkName = vault.protocol.network;
-        const iconUrl = vault.imgURL;
+  // Sync local state when external searchTerm changes from parent (e.g., clear)
+  useEffect(() => {
+    setLocalSearch(searchTerm);
+  }, [searchTerm]);
 
-        if (!uniqueNetworksMap.has(networkName)) {
-          uniqueNetworksMap.set(networkName, {
-            value: networkName,
-            icon: iconUrl,
-          });
-        }
+  // Debounce: update parent after delay
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      if (localSearch !== searchTerm) {
+        setSearchTerm(localSearch);
       }
-    });
+    }, 800);
 
-    return Array.from(uniqueNetworksMap.values());
-  }, [vaults]);
+    return () => clearTimeout(timerId);
+  }, [localSearch]);
 
-  const protocols = useMemo(() => {
-    const uniqueProtocols = Array.from(
-      new Set(vaults.map((vault) => vault.protocol.name)),
-    );
+  const chains = NETWORK_FILTER_OPTIONS;
+  const protocols = PROTOCOL_FILTER_OPTIONS;
 
-    return uniqueProtocols.map((prot) => {
-      return { value: prot };
-    });
-  }, [vaults]);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        filterRef.current &&
+        !filterRef.current.contains(event.target as Node)
+      ) {
+        setShowMobileFilters(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const toggleSortOrder = () => {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -160,21 +165,23 @@ export const VaultFilters: FC<Props> = ({
         <div className="flex flex-row-reverse lg:flex-row  lg:gap-6 items-center w-full lg:w-auto justify-between lg:justify-normal">
           <div className="flex flex-row gap-2 items-center">
             <button
-              className="hidden lg:block"
+              className="hidden lg:block transition-all duration-200 hover:scale-105"
               type="button"
               onClick={() => handleChangeVaultsDisplay("list")}
             >
               <ListMenuIcon
                 color={displayType !== "list" ? "#535E73" : "#1B46E0"}
+                className="hover:fill-[#1B46E0] transition-colors duration-200"
               />
             </button>
             <button
-              className="hidden lg:block"
+              className="hidden lg:block transition-all duration-200 hover:scale-105"
               type="button"
               onClick={() => handleChangeVaultsDisplay("cards")}
             >
               <CardsMenuIcon
                 color={displayType !== "cards" ? "#535E73" : "#1B46E0"}
+                className="hover:fill-[#1B46E0] transition-colors duration-200"
               />
             </button>
             <div
@@ -193,35 +200,37 @@ export const VaultFilters: FC<Props> = ({
           </div>
           <div
             onClick={() => inputRef?.current?.focus()}
-            className="focus-within:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
           >
             <>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={
-                "Search name or paste address"
-              }
-              className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
-              value={searchTerm}
-              onFocus={() => setIsHiddenFilterButton(true)}
-              onBlur={() => setIsHiddenFilterButton(false)}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={
-                !isHiddenFilterButton
-                  ? "Search name..."
-                  : "Search name or paste address"
-              }
-              className="text-white lg:hidden focus:outline-none bg-transparent w-full"
-              value={searchTerm}
-              onFocus={() => setIsHiddenFilterButton(true)}
-              onBlur={() => setIsHiddenFilterButton(false)}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={
+                  "Search"
+                }
+                maxLength={100}
+                className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
+                value={localSearch}
+                onFocus={() => setIsHiddenFilterButton(true)}
+                onBlur={() => setIsHiddenFilterButton(false)}
+                onChange={(e) => setLocalSearch(e.target.value)}
+              />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={
+                  !isHiddenFilterButton
+                    ? "Search"
+                    : "Search"
+                }
+                maxLength={100}
+                className="text-white lg:hidden focus:outline-none bg-transparent w-full"
+                value={localSearch}
+                onFocus={() => setIsHiddenFilterButton(true)}
+                onBlur={() => setIsHiddenFilterButton(false)}
+                onChange={(e) => setLocalSearch(e.target.value)}
+              />
             </>
             <div className="absolute left-4 top-3">
               <SearchIcon />

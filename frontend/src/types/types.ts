@@ -1,4 +1,4 @@
-import { Chain, PreparedTransaction, ThirdwebClient } from "thirdweb";
+import { PreparedTransaction, ThirdwebClient } from "thirdweb";
 import { ChainOptions } from "thirdweb/chains";
 import { Address } from "viem";
 
@@ -36,6 +36,7 @@ export interface VaultData {
   minDeposit?: number; // Minimum deposit amount in USD
   maxWithdraw?: number; // Maximum instant withdrawal amount in USD
   inputToken: Token;
+  strategyNetwork?: string;
   protocol: {
     name: string;
     strategyAddress: string;

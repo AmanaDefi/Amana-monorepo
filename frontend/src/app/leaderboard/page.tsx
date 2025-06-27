@@ -6,7 +6,7 @@ import { formatCurrency, shortAddressForm } from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
 import { TrophyIcon } from "@heroicons/react/24/outline";
 import {useUser} from "@account-kit/react";
-import { ZERO_ACCOUNT } from "@/containers/VaultsContainer";
+import { ZERO_ACCOUNT } from "@/constants";
 import { useLeaderboardData } from "@/hooks/useLeaderboardData";
 
 const initialSearchParams = {
