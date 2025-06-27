@@ -70,6 +70,7 @@ export interface VaultInputsProps {
   selectedToken?: Token;
   selectedChain?: Chain | null;
   onSelectChain?: (chain: Chain) => void;
+  onSelectChainAndToken?: (chain: Chain, token: Token) => void;
   vaultId: string;
   isDeposit: boolean;
   onTabChange: (tab: string) => void;
@@ -97,6 +98,7 @@ export default function VaultInputs({
   onTokenSelect,
   selectedToken,
   onSelectChain,
+  onSelectChainAndToken,
   vaultId,
   isDeposit,
   onTabChange,
@@ -196,6 +198,7 @@ export default function VaultInputs({
       decimals: vaultData.inputToken.decimals,
       address: vaultData.id,
       imgURL: "",
+      chainId: vaultData.protocol.chainId,
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
@@ -1271,6 +1274,8 @@ export default function VaultInputs({
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
@@ -1321,6 +1326,8 @@ export default function VaultInputs({
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
@@ -1374,6 +1381,8 @@ export default function VaultInputs({
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
@@ -1418,6 +1427,8 @@ export default function VaultInputs({
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
+                  vaultData={vaultData}
+                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>

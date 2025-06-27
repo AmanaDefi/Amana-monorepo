@@ -51,7 +51,6 @@ import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInv
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
-import { useAuthStore } from "@/store/authStore";
 import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
 import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDepositInstruction";
 import GiftIcon from "@/components/svg/GiftIcon";
@@ -63,10 +62,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultHeaderInfo";
 import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
 
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import ChainsModal from "@/components/modal/chains/ChainsModal";
+
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
   setVaultSymbol?: (symbol: string) => void;
-}> = ({ vaultID, setVaultSymbol }) => {
+  isFromTopUp?: boolean;
+}> = ({ vaultID, setVaultSymbol, isFromTopUp }) => {
   const [vaultData, setVaultData] = useState<VaultData>();
   const router = useRouter();
   const pathname = usePathname();
@@ -119,9 +122,6 @@ const VaultsDetailContainer: React.FC<{
 
   const { switchToChain, walletAddress } = useMultiChain();
   const { chain: activeChain } = useChain();
-
-  const { openStep } = useAuthStore();
-
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
   useEffect(() => {
@@ -190,18 +190,19 @@ const VaultsDetailContainer: React.FC<{
   );
 
   useEffect(() => {
-    if (vaultID) {
+    if (vaultID && activeChain) {
       const vaultInfo = getLocalStorageObject(vaultID.toString());
-      if (vaultInfo?.selectedChain && activeChain) {
+      if (vaultInfo?.selectedChain) {
         try {
           const savedChain = JSON.parse(vaultInfo.selectedChain, bigIntReviver);
           if (savedChain.id !== activeChain.id) {
-            switchToChain(savedChain);
           }
-        } catch (error) {}
+        } catch (error) {
+          console.error("Error parsing selectedChain from localStorage", error);
+        }
       }
     }
-  }, [vaultID, switchToChain, activeChain]);
+  }, [vaultID, activeChain]);
 
   useEffect(() => {
     const checkTransactionState = () => {
@@ -365,6 +366,14 @@ const VaultsDetailContainer: React.FC<{
     [vaultID],
   );
 
+  const handleChainAndTokenSelect = useCallback(
+    (chain: Chain, token: Token) => {
+      handleChainSelect(chain);
+      handleTokenSelect(token);
+    },
+    [handleChainSelect, handleTokenSelect],
+  );
+
   const isProcessingTx =
     isTransactionProcessing ||
     (!finishedTransaction && Object.keys(transactionStepFeedback).length > 0);
@@ -412,11 +421,7 @@ const VaultsDetailContainer: React.FC<{
           <button
             ref={giftButtonRef}
             onClick={() => {
-              if (!walletAddress || isDeposit) {
-                openStep("mobileInfo");
-              } else {
-                setShowMobileInvestment((prev) => !prev);
-              }
+              setShowMobileInvestment((prev) => !prev);
             }}
             className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
             type="button"
@@ -575,6 +580,7 @@ const VaultsDetailContainer: React.FC<{
                   selectedToken={selectedToken}
                   selectedChain={activeChain}
                   onSelectChain={handleChainSelect}
+                  onSelectChainAndToken={handleChainAndTokenSelect}
                   vaultId={vaultID.toString()}
                 />
               </div>
@@ -679,6 +685,8 @@ const VaultsDetailContainer: React.FC<{
           </Dropdown>
         </div>
       </section>
+
+      {vaultData && <ChainsModal vaultData={vaultData} />}
     </div>
   ) : (
     <div></div>
