@@ -93,7 +93,6 @@ export interface Token {
   symbol: string;
   decimals: number;
   imgURL: string;
-  chainId: number;
   price: number;
   balance: Balance;
   isNative: boolean;
