@@ -212,6 +212,11 @@ if (inputLoaderVisible) {
 
   return (
     <div className={disabled ? "opacity-50 cursor-default" : ""}>
+      {captionText && (
+        <p className="text-white text-sm lg:text-lg font-medium mb-2">
+          {captionText}
+        </p>
+      )}
       <div className="relative flex w-full flex-col">
         <div
           style={{
@@ -284,7 +289,7 @@ if (inputLoaderVisible) {
               />
             ) : (
               <div className="flex items-center">
-                <div className="md:mr-2 relative flex-none w-5 h-5">
+                <div className="md:mr-2 relative flex-none w-5 h-5 border border-white rounded-full">
                   <TokenIcon
                     token={selectedToken as Token}
                     icon={selectedToken?.imgURL}

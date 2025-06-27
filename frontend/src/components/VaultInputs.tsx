@@ -1246,11 +1246,21 @@ export default function VaultInputs({
           </p>
         </div>
       )}
-      <TabSelector
-        availableTabs={["Invest", "Withdraw"]}
-        activeTab={isDeposit ? "Invest" : "Withdraw"}
-        setActiveTab={handleTabChange}
-      />
+      <div className="relative mb-6 ">
+        <TabSelector
+          availableTabs={["Invest", "Withdraw"]}
+          activeTab={isDeposit ? "Invest" : "Withdraw"}
+          setActiveTab={handleTabChange}
+        />
+        <div className="absolute top-0 right-0 z-30 mt-3">
+          <SlippageSettingsBlock
+            setInputBalance={setInputBalance}
+            vaultId={vaultData.id}
+            showTransactionSettings={isSlippageExceedingLimit}
+          />
+        </div>
+      </div>
+
       <AnimatePresence mode="wait" initial={false}>
         {isDeposit ? (
           <motion.div
@@ -1260,14 +1270,6 @@ export default function VaultInputs({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-4">
-              <SlippageSettingsBlock
-                setInputBalance={setInputBalance}
-                vaultId={vaultData.id}
-                showTransactionSettings={isSlippageExceedingLimit}
-              />
-            </div>
-
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && isDeposit && (
                 <ChainSelector
@@ -1366,15 +1368,7 @@ export default function VaultInputs({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {(!isConnected || !isDeposit) && (
-              <div className="mb-4">
-                <SlippageSettingsBlock
-                  setInputBalance={setInputBalance}
-                  vaultId={vaultData.id}
-                  showTransactionSettings={isSlippageExceedingLimit}
-                />
-              </div>
-            )}
+            
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && isDeposit && (
                 <ChainSelector

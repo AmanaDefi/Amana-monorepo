@@ -50,9 +50,9 @@ export default function ChainTokenSelector({
             <img
               src={currentToken.imgURL}
               alt={currentToken.symbol}
-              width={24}
-              height={24}
-              className="rounded-full"
+              width={20}
+              height={21}
+              className="rounded-full border border-white"
             />
             <p className="max-w-[82px] md:max-w-[200px] truncate">
               {getOnlyTokenSymbol(currentToken.symbol)}

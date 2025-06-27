@@ -133,7 +133,7 @@ export default function SlippageSettingsDropdown({
   return (
     <div className="relative" ref={dropdownRef}>
       <button onClick={() => setIsOpen(!isOpen)} className="group">
-        <Cog6ToothIcon className="w-6 h-6 text-customGray300 group-hover:text-customGray200 group-hover:rotate-180 transition-transform duration-700" />
+        <Cog6ToothIcon className="w-6 h-6 text-customGray300 group-hover:text-[#1B46E0] group-hover:color-[#1B46E0] transition-transform duration-700" />
       </button>
 
       <AnimatePresence>

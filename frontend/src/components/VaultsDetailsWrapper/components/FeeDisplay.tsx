@@ -150,11 +150,11 @@ export default function FeeDisplay({
 
     return (
       <span className="flex flex-row items-center justify-between text-white py-1 text-sm md:text-[16px]">
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          <p className="ml-[10px]">Fee</p>
           <InfoBlock>
             💡 {performanceFee}% deducted from the profit earned in the vault
           </InfoBlock>
-          <p className="ml-[10px]">Fee</p>
         </div>
         <span className="font-bold">0%</span>
       </span>
@@ -169,15 +169,6 @@ export default function FeeDisplay({
       <div className="w-full">
         <EthereumDepositFee />
         <NonEthereumDepositFee />
-
-        <ExpectedSlippageBlock
-          conversionOutput={conversionOutput}
-          isVisible={
-            conversionOutput.slippageActualValue !== null &&
-            conversionOutput.slippageActualValue < 100 &&
-            Number(debouncedInputBalance.value) > 0
-          }
-        />
       </div>
     </div>
   );
