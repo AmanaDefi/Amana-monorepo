@@ -12,7 +12,7 @@ import { Token, VaultData, Balance } from "@/types/types";
 import { Chain } from "viem";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import TokenIcon from "@/components/common/TokenIcon";
-import { useTokenBalanceForModal } from "@/hooks/useTokenBalanceForModal";
+import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBalanceForModal";
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { MiniSpinner } from "@/components/PendingDots";
@@ -101,7 +101,6 @@ const TokenBalanceItem = React.memo(
     isSelected,
     onClick,
     onBalanceUpdate,
-    refreshTrigger,
     index,
   }: {
     token: Token;
@@ -117,11 +116,18 @@ const TokenBalanceItem = React.memo(
     refreshTrigger?: number;
     index: number;
   }) => {
-    const { balance, isLoading } = useTokenBalanceForModal(
+    const { balance, isLoading } = useMultichainTokenBalanceForModal(
       token,
-      refreshTrigger,
+      selectedChain,
     );
     const price = useTokenPriceBySymbol(token.symbol) || 0;
+    console.log("🔍 TokenBalanceItem Debug:", {
+      tokenSymbol: token.symbol,
+      selectedChainFromModal: selectedChain?.name,
+      selectedChainId: selectedChain?.id,
+      balance: balance?.formatted,
+      isLoading,
+    });
 
     useEffect(() => {
       onBalanceUpdate(token, balance, price, isLoading);
@@ -171,7 +177,12 @@ const TokenBalanceItem = React.memo(
             whileHover={{ rotate: 5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <TokenIcon token={token} icon={token.imgURL} imageSize="w-8 h-8" />
+            <TokenIcon
+              token={token}
+              icon={token.imgURL}
+              imageSize="w-8 h-8"
+              
+            />
           </motion.div>
           <div className="flex-1 text-left">
             <motion.div
@@ -271,10 +282,8 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   } = useChainTokenModalStore();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // Стан для зберігання балансів всіх токенів
   const [tokenBalances, setTokenBalances] = useState<
     Map<
       string,
@@ -292,18 +301,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   const [selectedTokenLocal, setSelectedTokenLocal] = useState<Token | null>(
     selectedTokenFromModal || null,
   );
-
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedChainLocal(
-        selectedChainFromModal || SUPPORTED_CHAINS[0].chain,
-      );
-      setSelectedTokenLocal(selectedTokenFromModal || null);
-      setSearchQuery("");
-      setTokenBalances(new Map());
-      setRefreshTrigger((prev) => prev + 1);
-    }
-  }, [isOpen, selectedChainFromModal, selectedTokenFromModal]);
 
   const getTokensForChain = useCallback(
     (chain: Chain): Token[] => {
@@ -326,19 +323,30 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   useEffect(() => {
     setTokenBalances(new Map());
-    setRefreshTrigger((prev) => prev + 1);
-  }, [selectedChainLocal]);
+  }, [selectedChainLocal?.id]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedChainLocal(
+        selectedChainFromModal || SUPPORTED_CHAINS[0].chain,
+      );
+      setSelectedTokenLocal(selectedTokenFromModal || null);
+      setSearchQuery("");
+      setTokenBalances(new Map());
+    }
+  }, [isOpen, selectedChainFromModal, selectedTokenFromModal]);
 
   const handleBalanceUpdate = useCallback(
     (token: Token, balance: Balance, price: number, isLoading: boolean) => {
-      const tokenKey = token.address.toLowerCase();
+      const tokenKey = `${token.address.toLowerCase()}-${selectedChainLocal?.id}`;
+
       setTokenBalances((prev) => {
         const newMap = new Map(prev);
         newMap.set(tokenKey, { balance, price, isLoading });
         return newMap;
       });
     },
-    [],
+    [selectedChainLocal],
   );
 
   const filteredTokens = useMemo(() => {
@@ -354,8 +362,8 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   const sortedTokens = useMemo(() => {
     return [...filteredTokens].sort((a, b) => {
-      const keyA = a.address.toLowerCase();
-      const keyB = b.address.toLowerCase();
+      const keyA = `${a.address.toLowerCase()}-${selectedChainLocal?.id}`;
+      const keyB = `${b.address.toLowerCase()}-${selectedChainLocal?.id}`;
 
       const dataA = tokenBalances.get(keyA);
       const dataB = tokenBalances.get(keyB);
@@ -375,7 +383,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
       return a.symbol.localeCompare(b.symbol);
     });
-  }, [filteredTokens, tokenBalances]);
+  }, [filteredTokens, tokenBalances, selectedChainLocal]);
 
   const handleTokenSelect = (token: Token) => {
     if (selectedChainLocal) {
@@ -615,7 +623,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                           isSelected={isTokenSelected(token)}
                           onClick={() => handleTokenSelect(token)}
                           onBalanceUpdate={handleBalanceUpdate}
-                          refreshTrigger={refreshTrigger}
                           index={index}
                         />
                       ))}

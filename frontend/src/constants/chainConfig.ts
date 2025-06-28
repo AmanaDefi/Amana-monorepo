@@ -28,7 +28,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   ZETA: "/ZetaChainLogo.png",
   BTC: "/bitcoin_logo.png",
   CBBTC: "/cbbtc.png",
-  ETH: "/ETH.png",
+  ETH: "/ETHsepolia.png",
   SOL: "/solana_logo.png",
   POL: "/polygon_logo.png",
   AVAX: "/avalanche-avax-logo.png",
