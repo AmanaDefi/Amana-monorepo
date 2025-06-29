@@ -8,8 +8,11 @@ import PopularOptions from "../shared/PopularOptions";
 import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
-import BackedBy from "../shared/BackedBy";
-import { useRouter } from "next/navigation";
+import GoogleEmailIcon from "@/components/svg/GoogleEmailIcon";
+import GooglePasskeyIcon from "@/components/svg/GooglePasskeyIcon";
+import PhantomIcon from "@/components/svg/PhantomIcon";
+import MetaMaskIcon from "@/components/svg/MetaMaskIcon";
+import BaseIcon from "@/components/svg/BaseIcon";
 
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
@@ -47,20 +50,36 @@ const OptionsModalA = () => {
           <div className="flex flex-col justify-between">
             <ConnectWallet />
           </div>
-          <div className="flex flex-col ">
+          <div className="flex flex-col pt-4">
             <PopularOptions />
-            <p className="text-sm text-[#535E73] mt-4">Popular options</p>
             <div className="flex flex-col gap-4 mt-6">
               <ModalButton
                 label="Smart Wallet"
-                icon={<SmartWalletIcon width={29} height={25} />}
+                icon={<SmartWalletIcon width={22} height={19} />}
                 onClick={handleSmartWallets}
-              />
+              >
+                <div className="flex flex-row gap-2 mr-4 items-center">
+                  <GoogleEmailIcon width={19} height={14} />
+                  <GooglePasskeyIcon width={19} height={19} />
+                </div>
+              </ModalButton>
               <ModalButton
                 label="All Wallets"
-                icon={<AllWalletsIcon width={28} height={27} />}
+                icon={<AllWalletsIcon width={20} height={20} />}
                 onClick={() => openStep("allWallets")}
-              />
+              >
+                <div className="flex flex-row items-center mr-4">
+                  <div className="rounded-full bg-[#0C1015] w-5 h-5 border border-[#d9d9d9]/50 flex items-center justify-center z-10">
+                    <PhantomIcon width={12} height={10} />
+                  </div>
+                  <div className="rounded-full bg-[#0C1015] w-5 h-5 border border-[#d9d9d9]/50 flex items-center justify-center -ml-1 z-20">
+                    <BaseIcon width={12} height={12} />
+                  </div>
+                  <div className="rounded-full bg-[#0C1015] w-5 h-5 border border-[#d9d9d9]/50 flex items-center justify-center -ml-1 z-30">
+                    <MetaMaskIcon width={13} height={12} />
+                  </div>
+                </div>
+              </ModalButton>
             </div>
           </div>
         </div>

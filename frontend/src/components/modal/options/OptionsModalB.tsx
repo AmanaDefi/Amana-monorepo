@@ -45,7 +45,7 @@ const OptionsModalB = () => {
       paddingClass="pt-[45px] pl-[57px] pb-[26px] pr-[91px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[761px]"
-      minHeight="min-h-[560px]"
+      minHeight="h-[370px]"
       customCloseButton={
         <button
           onClick={closeAll}
@@ -61,7 +61,7 @@ const OptionsModalB = () => {
           <div className="flex flex-col justify-between">
             <ConnectWallet />
           </div>
-          <div className="flex flex-col ">
+          <div className="flex flex-col pt-4">
             <PopularOptions />
             <div className="flex flex-col gap-4 mt-6">
               <ModalButton
@@ -81,9 +81,6 @@ const OptionsModalB = () => {
               />
             </div>
           </div>
-        </div>
-        <div>
-          <BackedBy />
         </div>
       </div>
     </Modal>
