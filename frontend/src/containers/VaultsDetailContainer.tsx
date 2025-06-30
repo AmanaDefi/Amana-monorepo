@@ -132,12 +132,16 @@ const VaultsDetailContainer: React.FC<{
       if (isTxInProgress && TxInfo?.tab) {
         setIsDeposit(TxInfo.tab === Tabs.DEPOSIT);
       } else {
-        setIsDeposit(shouldBeDeposit);
+        if (isDeposit !== shouldBeDeposit) {
+          setIsDeposit(shouldBeDeposit);
+        }
       }
     } else {
-      setIsDeposit(shouldBeDeposit);
+      if (isDeposit !== shouldBeDeposit) {
+        setIsDeposit(shouldBeDeposit);
+      }
     }
-  }, [searchParams, vaultData]);
+  }, [searchParams, vaultData?.id]);
 
   const handleTabChange = (tab: string) => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
@@ -257,26 +261,43 @@ const VaultsDetailContainer: React.FC<{
     if (vaultFromGraph?.vault) {
       const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
       setVaultData(vd);
-      setVaultAPYs([convertGraphVaultToAPY(vaultFromGraph.vault)]);
+
+      const newAPY = convertGraphVaultToAPY(vaultFromGraph.vault);
+      setVaultAPYs((prevAPYs) => {
+        const existingAPY = prevAPYs.find(
+          (apy) => apy.vaultId === vaultID.toString(),
+        );
+        if (!existingAPY || existingAPY.APY7d !== newAPY.APY7d) {
+          return [newAPY];
+        }
+        return prevAPYs;
+      });
+
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
 
-    if (vaultID) {
-      const vaultInfo = getLocalStorageObject(vaultID.toString());
-      const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
-      if (isTxInProgress) {
-        if (vaultInfo?.selectedToken) {
-          setSelectedToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+  }, [vaultID, vaultFromGraph]);
+
+  useEffect(() => {
+    if (vaultFromGraph?.vault) {
+      const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
+      setVaultData(vd);
+
+      const newAPY = convertGraphVaultToAPY(vaultFromGraph.vault);
+      setVaultAPYs((prevAPYs) => {
+        const existingAPY = prevAPYs.find(
+          (apy) => apy.vaultId === vaultID.toString(),
+        );
+        if (!existingAPY || existingAPY.APY7d !== newAPY.APY7d) {
+          return [newAPY];
         }
-        setTransactionCompleted(vaultInfo?.transactionCompleted ?? false);
-      } else {
-        localStorage.removeItem(vaultID.toString());
-        updateLocalStorageObject(vaultID.toString(), {
-          tab: initialIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW,
-        });
-      }
+        return prevAPYs;
+      });
+
+      setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
-  }, [vaultID, initialIsDeposit, vaultFromGraph]);
+
+  }, [vaultID, vaultFromGraph]); 
 
   // Set user vault balance from graph data
   useEffect(() => {
@@ -549,6 +570,7 @@ const VaultsDetailContainer: React.FC<{
                     (a) => a.vaultId === vaultID.toString(),
                   )}
                   totalAssets={vaultTotalAsset}
+                  isLoading={loading || !vaultAPYs.length}
                 />
               </div>
               <div className="hidden md:block">
