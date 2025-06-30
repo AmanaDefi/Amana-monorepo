@@ -65,25 +65,25 @@ const OnboardingContainer = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-[34px]">
+      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-2">
         <AmanaLogo
           width={86}
           height={61}
           className="w-[86px] h-[61px] md:w-[122px] md:h-[85px] mb-6 md:mb-4"
         />
 
-        <h1 className="text-[20px] sm:text-[48px] l:text-[64px] font-bold gradient-text text-center mb-4 md:mb-6">
+        <h1 className="text-[20px] sm:text-[48px] lg:text-[64px] font-bold gradient-text text-center mb-4  md:max-h-[71px]">
           What are <span className="">smart accounts?</span>
         </h1>
 
-        <p className="text-[14px] sm:text-[20px] md:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] sm:max-w-3xl mb-6 md:mb-10 font-gotham">
+        <p className="text-[14px] sm:text-[20px] md:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] sm:max-w-3xl max-h-[58px] mb-6 md:mb-10 font-gotham">
           A new, secure way to use DeFi — no seed phrases, no gas fees, just
           simple login and powerful features.
         </p>
       </div>
 
       {/* Desktop Grid */}
-      <div className="hidden lg:grid grid-cols-3 gap-6 sm:gap-10 w-full mx-auto px-0 md:px-4 max-w-[1560px]">
+      <div className="hidden lg:grid grid-cols-4 gap-6 sm:gap-4 w-full mx-auto px-0 md:px-4 max-w-[1320px]">
         {smartAccountInfo.map((info, index) => (
           <motion.div
             key={index}
@@ -99,17 +99,21 @@ const OnboardingContainer = () => {
       {/* Mobile/Tablet Carousel */}
       <div className="lg:hidden w-full px-4">
         <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex">
+          <div className="flex" style={{ willChange: "transform" }}>
             {smartAccountInfo.map((info, index) => (
               <div
                 key={index}
-                className="flex-[0_0_100%] min-w-0 px-2 flex justify-center"
+                className="flex-[0_0_100%] min-w-0 px-2 flex justify-center items-center"
+                style={{
+                  transform: "translate3d(0, 0, 0)",
+                  willChange: "transform",
+                }}
               >
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.2, duration: 0.4 }}
-                  className="h-full w-full max-w-[480px]"
+                  className="h-full w-full max-w-[318px]"
                 >
                   <SmartAccountCard
                     {...info}
@@ -138,7 +142,7 @@ const OnboardingContainer = () => {
         </div>
       </div>
 
-      <div className="max-w-[352px] mt-8 md:mt-10 mb-6 mx-auto w-full px-4">
+      <div className="max-w-[352px] mt-8 md:mt-6 mb-6 mx-auto w-full px-4">
         <div
           className={`transition-opacity duration-300 ${
             isCarouselView && !isLastSlide
@@ -148,7 +152,7 @@ const OnboardingContainer = () => {
         >
           <Button
             onClick={handleCreateWallet}
-            className="!w-full !h-[48px]"
+            className="!w-[352px] !h-[48px]"
             variant="custom"
           >
             Create Wallet

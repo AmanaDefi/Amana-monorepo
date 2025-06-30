@@ -66,17 +66,17 @@ const OptionsModalB = () => {
             <div className="flex flex-col gap-4 mt-6">
               <ModalButton
                 label="E-mail"
-                icon={<EmailOptionsIcon width={26} height={26} />}
+                icon={<EmailOptionsIcon width={20} height={16} />}
                 onClick={() => openStep("signup")}
               />
               <ModalButton
                 label="Passkey"
-                icon={<PasskeyOptionsIcon width={28} height={27} />}
+                icon={<PasskeyOptionsIcon width={19} height={19} />}
                 onClick={() => openStep("passkey")}
               />
               <ModalButton
                 label="Google"
-                icon={<GoogleOptionsIcon width={27} height={28} />}
+                icon={<GoogleOptionsIcon width={20} height={20} />}
                 onClick={handleLogin}
               />
             </div>
