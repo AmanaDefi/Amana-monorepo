@@ -42,7 +42,7 @@ const OnboardingModal = () => {
           <div className="absolute bottom-0 left-0 w-[300px] h-[300px] blur-[160px] bg-[#3E73C4] opacity-20 pointer-events-none overflow-hidden" />
 
           <div className="relative min-h-screen flex flex-col items-center px-4 sm:px-10 pt-[20px] sm:pt-[34px] pb-12 sm:pb-16 overflow-y-auto">
-            <div className="w-full max-w-[1560px] hidden md:flex justify-start">
+            <div className="w-full hidden md:flex justify-start">
               <BackButton onClick={closeAll} />
             </div>
             <OnboardingContainer />

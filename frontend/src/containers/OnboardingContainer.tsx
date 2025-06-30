@@ -102,25 +102,25 @@ const OnboardingContainer = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-2">
+      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-2 3xl:mt-4">
         <AmanaLogo
           width={86}
           height={61}
-          className="w-[86px] h-[61px] xl:w-[122px] md:h-[85px] mb-6 md:mb-0 xl:mb-4"
+          className="w-[86px] h-[61px] xl:w-[122px] md:h-[85px] mb-6 md:mb-0 xl:mb-4 3xl:mb-10"
         />
 
-        <h1 className="text-[20px] xl:text-[64px] font-bold gradient-text text-center mb-2 xl:mb-4 max-h-[61px] xl:max-h-[71px]">
+        <h1 className="text-[20px] xl:text-[64px] font-bold gradient-text text-center mb-2 xl:mb-4 3xl:mb-6 max-h-[61px] xl:max-h-[71px]">
           What are <span className="">smart accounts?</span>
         </h1>
 
-        <p className="text-[14px] sm:text-[18px] xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] sm:max-w-3xl max-h-[58px] mb-6 xl:mb-10 font-gotham">
+        <p className="text-[14px] sm:text-[18px] xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] sm:max-w-3xl max-h-[58px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
           A new, secure way to use DeFi — no seed phrases, no gas fees, just
           simple login and powerful features.
         </p>
       </div>
 
       {/* Desktop Grid */}
-      <div className="hidden xl:grid grid-cols-4 gap-[24px] w-full mx-auto px-4 max-w-[1320px]">
+      <div className="hidden xl:grid grid-cols-4 gap-6 w-full max-w-[1320px]">
         {smartAccountInfo.map((info, index) => (
           <motion.div
             key={index}
@@ -239,7 +239,7 @@ const OnboardingContainer = () => {
         </div>
       </div>
 
-      <div className="max-w-[352px] mt-8 md:mt-6 mb-6 mx-auto w-full">
+      <div className="max-w-[352px] mt-8 md:mt-6 3xl:mt-12 mb-6 mx-auto w-full">
         <div
           className={`transition-opacity duration-300 ${
             (isMobile && !isLastSlide) || (isTablet && !isLastSlideTablet)

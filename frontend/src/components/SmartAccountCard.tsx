@@ -1,10 +1,11 @@
+import Image from "next/image";
 import OnboardingIcon from "./svg/OnboardingIcon";
 import DoneIcon from "./svg/onboarding/DoneIcon";
 import VisaIcon from "./svg/onboarding/VisaIcon";
 import MastercardIcon from "./svg/onboarding/MastercardIcon";
 import {
   IconTypes,
-  getIconComponent,
+  getIconImage,
   ListItem,
   SubItem,
 } from "@/constants/smartAccountInfo";
@@ -23,7 +24,7 @@ const SmartAccountCard = ({
   img,
   className = "",
 }: SmartAccountCardProps) => {
-  const IconComponent = getIconComponent(img);
+  const iconImageSrc = getIconImage(img);
 
   const renderListItem = (item: ListItem, idx: number) => {
     if (typeof item === "string") {
@@ -53,16 +54,20 @@ const SmartAccountCard = ({
             {item.subItems.map((subItem: SubItem, subIdx: number) => (
               <li
                 key={subIdx}
-                className="flex items-center gap-1 text-[#3E73C4] text-xs"
+                className="flex items-center text-[#3E73C4] text-xs"
               >
                 <DoneIcon
                   width={12}
                   height={8}
-                  className="text-[#3E73C4] flex-shrink-0"
+                  className="text-[#3E73C4] flex-shrink-0 mr-1"
                 />
-                <span className=" leading-tight">{subItem.text}</span>
+                <span className="leading-tight">{subItem.text}</span>
 
-                {img === IconTypes.FUND && subIdx === 0 && <CryptoIcons />}
+                {img === IconTypes.FUND && subIdx === 0 && (
+                  <div>
+                    <CryptoIcons />
+                  </div>
+                )}
                 {img === IconTypes.FUND && subIdx === 1 && (
                   <div className="flex gap-1 ml-2">
                     <div className="w-6 h-4 rounded-sm flex items-center ">
@@ -87,10 +92,12 @@ const SmartAccountCard = ({
              pl-10 pr-6 py-10 rounded-[16px] shadow-md bg-dark-card 
              transition-all backdrop-blur-[20px] cursor-pointer before-gradient-border font-gotham ${className}`}
     >
-      <div className="flex items-center justify-center rounded-lg w-[56px] h-[56px] bg-gradient-to-r from-[#4a4a4a] to-[#2a2a2a] relative shadow-[inset_1px_0_0_0_rgba(255,255,255,0.15),1px_0_3px_rgba(0,0,0,0.3)]">
-        <IconComponent
-          width={28}
-          height={28}
+      <div className="rounded-lg w-[56px] h-[56px] ">
+        <Image
+          src={iconImageSrc}
+          alt={title}
+          width={56}
+          height={56}
           className="object-contain flex-shrink-0 relative z-20"
         />
       </div>
