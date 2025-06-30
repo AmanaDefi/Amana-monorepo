@@ -1371,7 +1371,10 @@ function Interaction({
     });
   }
 
-  async function interactionPostHook(success: boolean) {
+  async function interactionPostHook(
+    success: boolean,
+    needCallMainAction?: boolean,
+  ) {
     console.log("=== INTERACTION POST HOOK CALLED ===");
     console.log("🔍 [POST-HOOK] Success:", success);
     console.log(
@@ -1420,8 +1423,7 @@ function Interaction({
             action: actions[nextStep + 1],
             step: nextStep + 1,
           });
-          console.log('crosschainInvestHash', crosschainInvestHash)
-          if (!crosschainInvestHash) {
+          if (needCallMainAction) {
             handleMainAction(actions[nextStep + 1]);
           }
         }, 100);
@@ -1851,8 +1853,9 @@ function Interaction({
     console.log(
       "📞 [MAIN-ACTION] === CALLING INTERACTION POST HOOK ===",
       action,
+      currenAction,
     );
-    await interactionPostHook(!!success);
+    await interactionPostHook(!!success, !currenAction);
     console.log("🏁 [MAIN-ACTION] === MAIN ACTION COMPLETED ===");
   }
 
