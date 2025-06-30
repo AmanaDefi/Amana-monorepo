@@ -769,6 +769,25 @@ export async function fetchYieldFiAPY(): Promise<number> {
   }
 }
 
+export async function fetchNoonCapitalAPY(): Promise<number> {
+  try {
+    const response = await fetch("https://back.noon.capital/api/v1/protocol-metrics");
+    const json = await response.json();
+
+    if (!json.apy && json.apy !== 0) {
+      throw new Error("Invalid response from NoonCapital API - missing apy field");
+    }
+
+    // apy is already a 7-day average and returned as a decimal (e.g., 0.0537 for 5.37%)
+    const apy = Number(json.apy);
+
+    return apy;
+  } catch (error) {
+    console.error("Failed to fetch NoonCapital APY:", error);
+    throw error;
+  }
+}
+
 export const executeDeposit = async (
   vaultData: VaultData,
   inputToken: Token,

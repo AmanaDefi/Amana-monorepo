@@ -14,6 +14,7 @@ import {
   fetchReceiptTokens,
   fetchAegisAPR,
   fetchYieldFiAPY,
+  fetchNoonCapitalAPY,
 
   fetchTotalAssets,
   fetchUserVaultMaxWithdraw,
@@ -392,9 +393,11 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Aegis") {
                 APY7d = await fetchAegisAPR();
-              } else if (vault.protocol.name === "YieldFi") {
-                APY7d = await fetchYieldFiAPY();
-              } else if (vault.protocol.name === "Compound") {
+               } else if (vault.protocol.name === "YieldFi") {
+                 APY7d = await fetchYieldFiAPY();
+               } else if (vault.protocol.name === "NoonCapital") {
+                 APY7d = await fetchNoonCapitalAPY();
+               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
