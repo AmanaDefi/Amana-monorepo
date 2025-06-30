@@ -3,19 +3,20 @@
 import React from "react";
 import InvestIcon from "./svg/InvestIcon";
 import Button from "./Button";
-import { useUser } from "@account-kit/react";
 import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useWallets } from "@privy-io/react-auth";
 
 const InvestBlock = () => {
   const { walletAddress } = useMultiChain();
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
-  const user = useUser();
+  const {wallets} = useWallets()
+  const user = wallets[0];
 
   const handleFundWallet = () => {
-    if (user?.type === "eoa") {
+    if (user?.walletClientType !== "privy") {
       openStep("recieve");
     } else {
       setStep("chooseBuyWith");

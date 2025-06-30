@@ -13,7 +13,7 @@ interface ChainTokenSelectorProps {
   selectedChain?: Chain | null;
   className?: string;
   vaultData?: VaultData;
-  onClick?: () => void; 
+  onClick?: () => void;
 }
 
 export default function ChainTokenSelector({
@@ -24,7 +24,6 @@ export default function ChainTokenSelector({
   vaultData,
   onClick,
 }: ChainTokenSelectorProps) {
- 
   const { selectedChainFromModal, selectedTokenFromModal } =
     useChainTokenModalStore();
 
@@ -45,7 +44,7 @@ export default function ChainTokenSelector({
         onClick={onClick}
         className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
-        {currentToken && (
+        {currentToken ? (
           <>
             <img
               src={currentToken.imgURL}
@@ -58,6 +57,8 @@ export default function ChainTokenSelector({
               {getOnlyTokenSymbol(currentToken.symbol)}
             </p>
           </>
+        ) : (
+          <p className="max-w-[82px] md:max-w-[200px] truncate">Select token</p>
         )}
       </button>
     </div>

@@ -341,7 +341,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   useEffect(() => {
     if (isOpen) {
       setSelectedChainLocal(
-        selectedChainFromModal || SUPPORTED_CHAINS[0].chain,
+        selectedChainFromModal || SUPPORTED_CHAINS[0],
       );
       setSelectedTokenLocal(selectedTokenFromModal || null);
       setSearchQuery("");
@@ -506,15 +506,15 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
             >
               {chainList.map((chainConfig, index) => {
                 const isSelected =
-                  selectedChainLocal?.id === chainConfig.chain.id;
+                  selectedChainLocal?.id === chainConfig.id;
                 return (
                   <motion.div
-                    key={chainConfig.chain.id}
+                    key={chainConfig.id}
                     variants={itemVariants}
                     custom={index}
                   >
                     <motion.button
-                      onClick={() => handleChainOnlySelect(chainConfig.chain)}
+                      onClick={() => handleChainOnlySelect(chainConfig)}
                       variants={buttonVariants}
                       initial="idle"
                       whileHover="hover"
@@ -534,8 +534,8 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                         transition={{ type: "spring", stiffness: 300 }}
                       >
                         <img
-                          src={CHAIN_ICONS[chainConfig.chain.id]?.url}
-                          alt={chainConfig.chain.name}
+                          src={CHAIN_ICONS[chainConfig.id]?.url}
+                          alt={chainConfig.name}
                           className="w-full h-full object-cover"
                           width={20}
                           height={20}
@@ -548,7 +548,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                           letterSpacing: "-0.06em",
                         }}
                       >
-                        {chainConfig.chain.name}
+                        {chainConfig.name}
                       </span>
                    
                       {isSelected && (

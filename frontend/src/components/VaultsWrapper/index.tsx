@@ -11,7 +11,6 @@ import { VaultCard } from "./components/VaultCard";
 import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
 import { useLayoutStore } from "@/store/store";
-import { useUser } from "@account-kit/react";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { EmptyState } from "../DashboardWrapper/components/Tabs";
 import { BreathingValue } from "../PendingDots";
@@ -132,7 +131,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
   const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
-  const user = useUser();
 
   useEffect(() => {
     setSortBy(externalSortBy);

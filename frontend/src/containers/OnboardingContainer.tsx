@@ -34,14 +34,14 @@ const OnboardingContainer = () => {
 
   useEffect(() => {
     const checkScreenSize = () => {
-      const width = window.innerWidth;
+      const width = window?.innerWidth;
       setIsMobile(width <= 767);
       setIsTablet(width >= 768 && width < 1280);
     };
 
     checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
+    window?.addEventListener("resize", checkScreenSize);
+    return () => window?.removeEventListener("resize", checkScreenSize);
   }, []);
 
   const onSelect = useCallback(() => {

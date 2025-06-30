@@ -8,6 +8,7 @@ import PopularOptions from "../shared/PopularOptions";
 import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
+import BackedBy from "../shared/BackedBy";
 import GoogleEmailIcon from "@/components/svg/GoogleEmailIcon";
 import GooglePasskeyIcon from "@/components/svg/GooglePasskeyIcon";
 import CryptoIcons from "../shared/CryptoIcons";
