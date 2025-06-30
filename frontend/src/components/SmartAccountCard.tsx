@@ -1,11 +1,14 @@
 import OnboardingIcon from "./svg/OnboardingIcon";
 import DoneIcon from "./svg/onboarding/DoneIcon";
+import VisaIcon from "./svg/onboarding/VisaIcon";
+import MastercardIcon from "./svg/onboarding/MastercardIcon";
 import {
   IconTypes,
   getIconComponent,
   ListItem,
   SubItem,
 } from "@/constants/smartAccountInfo";
+import CryptoIcons from "./modal/shared/CryptoIcons";
 
 type SmartAccountCardProps = {
   title: string;
@@ -31,7 +34,7 @@ const SmartAccountCard = ({
             height={8}
             className="mt-[6px] flex-shrink-0"
           />
-          <p className="max-w-[227px]">{item}</p>
+          <p className="max-w-[227px] leading-tight">{item}</p>
         </li>
       );
     }
@@ -43,7 +46,7 @@ const SmartAccountCard = ({
             height={8}
             className="mt-[6px] flex-shrink-0"
           />
-          <p className="max-w-[227px]">{item.text}</p>
+          <p className="max-w-[227px] leading-tight">{item.text}</p>
         </div>
         {item.subItems && (
           <ul className="flex flex-col gap-2">
@@ -57,7 +60,19 @@ const SmartAccountCard = ({
                   height={8}
                   className="text-[#3E73C4] flex-shrink-0"
                 />
-                <span>{subItem.text}</span>
+                <span className=" leading-tight">{subItem.text}</span>
+
+                {img === IconTypes.FUND && subIdx === 0 && <CryptoIcons />}
+                {img === IconTypes.FUND && subIdx === 1 && (
+                  <div className="flex gap-1 ml-2">
+                    <div className="w-6 h-4 rounded-sm flex items-center ">
+                      <VisaIcon width={20} height={12} />
+                    </div>
+                    <div className="w-6 h-4 rounded-sm flex items-center ">
+                      <MastercardIcon width={20} height={12} />
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -10,9 +10,7 @@ import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
 import GoogleEmailIcon from "@/components/svg/GoogleEmailIcon";
 import GooglePasskeyIcon from "@/components/svg/GooglePasskeyIcon";
-import PhantomIcon from "@/components/svg/PhantomIcon";
-import MetaMaskIcon from "@/components/svg/MetaMaskIcon";
-import BaseIcon from "@/components/svg/BaseIcon";
+import CryptoIcons from "../shared/CryptoIcons";
 
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
@@ -68,17 +66,7 @@ const OptionsModalA = () => {
                 icon={<AllWalletsIcon width={20} height={20} />}
                 onClick={() => openStep("allWallets")}
               >
-                <div className="flex flex-row items-center mr-4">
-                  <div className="rounded-full bg-[#0C1015] w-5 h-5 border border-[#d9d9d9]/50 flex items-center justify-center z-10">
-                    <PhantomIcon width={12} height={10} />
-                  </div>
-                  <div className="rounded-full bg-[#0C1015] w-5 h-5 border border-[#d9d9d9]/50 flex items-center justify-center -ml-1 z-20">
-                    <BaseIcon width={12} height={12} />
-                  </div>
-                  <div className="rounded-full bg-[#0C1015] w-5 h-5 border border-[#d9d9d9]/50 flex items-center justify-center -ml-1 z-30">
-                    <MetaMaskIcon width={13} height={12} />
-                  </div>
-                </div>
+                <CryptoIcons />
               </ModalButton>
             </div>
           </div>
