@@ -127,9 +127,6 @@ const AllWAllets = () => {
             </div>
           </div>
         </div>
-        <div className="absolute bottom-[26px] left-[50px]">
-          <BackedBy />
-        </div>
       </div>
     </Modal>
   );
