@@ -21,10 +21,10 @@ import { Chain, formatEther, WalletClient } from "viem";
 import { getPublicClient, getWalletClient } from "@/utils/getPublicClient";
 import { usePathname, useRouter } from "next/navigation";
 import { PREVIOUS_ADDRESS } from "@/hooks/hooks";
-import { Connector } from "wagmi";
+import { useConnect } from "wagmi";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
-import { useAuthStore } from "@/store/authStore";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
@@ -121,11 +121,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [selectedChain, setSelectedChain] = useState<ChainType | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { logout: evmDisconnect } = usePrivy();
+  const { logout } = usePrivy();
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
-  const {step} = useAuthStore();
-  console.log('authStep',step)
+  const { connectors } = useConnect();
+  const { step } = useFundWalletStore();
 
   const router = useRouter();
   const path = usePathname();
@@ -150,9 +150,22 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const latestChainRef = useRef<string | null>(null);
 
-  // useEffect(() => {
-  //   setIsHydrated(true);
-  // }, []);
+  const disconnectConnectors = useCallback(() => {
+    if (!!wallets?.length) {
+      wallets.forEach((wallet) => {
+        connectors?.find((con) => con.id === wallet.meta.id)?.disconnect();
+      });
+    }
+  }, [connectors, wallets]);
+
+  const evmDisconnect = useCallback(() => {
+    disconnectConnectors();
+    logout();
+  }, [logout, disconnectConnectors]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   // HYDRATION FIX: Load saved state only after hydration
   // useEffect(() => {
@@ -222,9 +235,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (selectedChain == "evm") {
         debugLog("Disconnecting EVM wallet before Solana connection");
-        if (privyWallet) {
-          privyWallet.disconnect();
-        }
         evmDisconnect();
       }
       setVisible(true);
@@ -238,9 +248,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (privyWallet?.address) {
-      if (!(privyWallet.walletClientType !== "privy" && !!user?.wallet)) {
+      if (!step) {
         setWalletAddress(privyWallet?.address);
         setSelectedChain("evm");
+
+        if (wallets.length > 1 && user?.wallet) {
+          disconnectConnectors();
+        }
       }
 
       if (connected) {
@@ -251,7 +265,15 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } else if (!privyWallet?.address && !connected) {
       setWalletAddress(null);
     }
-  }, [privyWallet?.address, connected, disconnect, user]);
+  }, [
+    privyWallet,
+    connected,
+    disconnect,
+    user,
+    step,
+    disconnectConnectors,
+    wallets,
+  ]);
 
   //  Disconnect Wallet
   const disconnectWallet = useCallback(async () => {
@@ -262,9 +284,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setSelectedChain(null);
     disconnect();
     evmDisconnect();
-    if (privyWallet) {
-      privyWallet.disconnect();
-    }
     setIsModalOpen(false);
     clearWalletState();
     debugLog("All wallets disconnected");
@@ -278,7 +297,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     ) {
       router.push("/");
     }
-  }, [disconnect, evmDisconnect, router, path, privyWallet]);
+  }, [disconnect, evmDisconnect, router, path]);
 
   const getEvmBalance = useCallback(
     async (walletAddress: string) => {
@@ -294,13 +313,15 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
         const formattedBalance = formatEther(balanceInEth);
 
-        setBalance({ formatted: formattedBalance, value: balanceInEth });
+        if (!step) {
+          setBalance({ formatted: formattedBalance, value: balanceInEth });
+        }
         return { formatted: formattedBalance, value: balanceInEth };
       } catch (error) {
         console.error("Error get balance:", error);
       }
     },
-    [privyWallet, setBalance],
+    [privyWallet, setBalance, step],
   );
 
   // IMPROVED: Better connection detection logic with initialization delay
@@ -338,7 +359,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           setSelectedChain("solana");
           setIsModalOpen(false);
         } else if (privyWallet?.address) {
-          if (!(privyWallet.walletClientType !== "privy" && !!user?.wallet)) {
+          if (!step) {
             debugLog("EVM wallet connected:", privyWallet?.address);
             setWalletAddress(privyWallet?.address);
             // getEvmBalance(activeAccount.address);
@@ -353,13 +374,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
     return () => clearTimeout(initTimer);
   }, [
-    privyWallet?.address,
+    privyWallet,
     publicKey,
     disconnectWallet,
     getEvmBalance,
     isHydrated,
     selectedChain,
     user,
+    step,
   ]);
 
   // Enhanced storage event handling for cross-tab synchronization
@@ -385,13 +407,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         } else if (e.newValue !== e.oldValue) {
           // Wallet state changed in another tab
           try {
-            const newState = JSON.parse(e.newValue);
-            debugLog("Wallet state changed in another tab:", newState);
-            setSelectedChain(newState.selectedChain);
-            console.log("set wallet from newState");
-            setWalletAddress(newState.walletAddress);
-            if (newState.selectedChain && newState.walletAddress) {
-              setIsModalOpen(false);
+            if (!step) {
+              const newState = JSON.parse(e.newValue);
+              debugLog("Wallet state changed in another tab:", newState);
+              setSelectedChain(newState.selectedChain);
+              setWalletAddress(newState.walletAddress);
+              if (newState.selectedChain && newState.walletAddress) {
+                setIsModalOpen(false);
+              }
             }
           } catch (error) {
             debugLog("Error parsing storage event data:", error);
@@ -412,7 +435,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       window?.removeEventListener("storage", handleStorageChange);
       window?.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [isHydrated]);
+  }, [isHydrated, step]);
 
   // Recovery mechanism for wallet reconnection
   useEffect(() => {

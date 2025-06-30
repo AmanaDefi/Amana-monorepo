@@ -120,6 +120,7 @@ export default function VaultInputs({
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
   const {wallets} = useWallets()
   const activeWallet = wallets[0];
+  const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
   const { setIsButtonDisabled } = useTransactionStore();
 
@@ -188,7 +189,7 @@ export default function VaultInputs({
   );
 
   const { walletAddress } = useMultiChain();
-  const isConnected = !!walletAddress;
+
   const activeChain = chainConfigs[Number(activeWallet?.chainId?.split(":")[1] ?? 7000)]
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
@@ -206,18 +207,18 @@ export default function VaultInputs({
       balance: EMPTY_BALANCE,
       isNative: false,
     };
-  }, [vaultData.id, vaultData.inputToken.decimals, vaultData.symbol]);
+  }, [vaultData]);
 
   useEffect(() => {
     const setToken = () => {
       if (
-        selectedChain &&
-        (selectedChain.id === 7001 || selectedChain.id === 7000) &&
+        selectChain &&
+        (selectChain.id === 7001 || selectChain.id === 7000) &&
         vaultData?.inputToken
       ) {
         setInputToken(vaultData.inputToken);
-      } else if (vaultData?.inputToken && selectedChain) {
-        const tokens = APPROVED_TOKENS[selectedChain.id] || [];
+      } else if (vaultData?.inputToken && selectChain) {
+        const tokens = APPROVED_TOKENS[selectChain.id] || [];
         const defaultToken =
           tokens.find((token) => token.symbol === "USDC") || tokens[0];
 
@@ -246,7 +247,7 @@ export default function VaultInputs({
     }
 
     setAllowInput(true);
-  }, [selectedChain?.id, vaultData, onTokenSelect]);
+  }, [selectChain, vaultData, onTokenSelect]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const { balance: tokenBalance, fetchBalance } =
@@ -259,19 +260,19 @@ export default function VaultInputs({
     // which could cause AbiDecodingZeroDataError when fetching token balances
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
 
-    if (selectedChain?.id && !isTxInProgress) {
+    if (selectChain?.id && !isTxInProgress) {
       setInputBalance(EMPTY_BALANCE);
       updateLocalStorageObject(vaultData.id, {
         inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
       });
       setDisplayValue("0.00");
     }
-  }, [selectedChain?.id, vaultData.id]);
+  }, [selectChain?.id, vaultData.id]);
 
   // Force refresh token balance when token or chain changes
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-    if (inputToken && selectedChain && !isTxInProgress) {
+    if (inputToken && selectChain && !isTxInProgress) {
       fetchBalance();
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
@@ -281,7 +282,7 @@ export default function VaultInputs({
         displayValue: "0.00",
       });
     }
-  }, [inputToken, selectedChain, fetchBalance, vaultData.id]);
+  }, [inputToken, selectChain, fetchBalance, vaultData.id]);
 
   // Trigger error message handling
   useEffect(() => {
@@ -388,6 +389,8 @@ export default function VaultInputs({
     vaultData,
     selectedChain,
     walletAddress,
+    activeWallet,
+    activeChain
   ]);
 
   const handleTokenSelect = (selectedToken: Token) => {
@@ -891,13 +894,13 @@ export default function VaultInputs({
     [
       activeChain?.id,
       debouncedInputBalance.value,
-      inputToken?.ZRC20equivalent,
-      inputToken?.address,
-      inputToken?.decimals,
+      inputToken,
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
       ethPriceUsd,
+      activeWallet,
+      selectedChain?.id
     ],
   );
 

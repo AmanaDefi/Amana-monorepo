@@ -12,7 +12,7 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 import { format, getERC20TokenBalance } from "@/utils/utils";
 import { useWallets } from "@privy-io/react-auth";
 import clsx from "clsx";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
 import { formatEther } from "viem";
 
 export const DepositInput = ({
@@ -36,7 +36,7 @@ export const DepositInput = ({
   const {wallets} = useWallets();
   const activeWallet = wallets[0];
 
-  const fetchTokenBalance = async (token: Token) => {
+  const fetchTokenBalance = useCallback(async (token: Token) => {
     if (walletAddress && token && chain) {
       let balance = EMPTY_BALANCE;
       if (token.isNative) {
@@ -65,19 +65,19 @@ export const DepositInput = ({
 
       setTokenBalance(balance);
     }
-  };
+  }, [walletAddress, chain, activeWallet]);
 
   useEffect(() => {
     setTokenBalance(EMPTY_BALANCE);
     setError("");
     setDepositAmount("");
-  }, [chain]);
+  }, [chain, setDepositAmount, setError]);
 
   useEffect(() => {
     if (walletAddress && currency) {
       fetchTokenBalance(currency);
     }
-  }, [walletAddress, currency]);
+  }, [walletAddress, currency, fetchTokenBalance]);
 
   const onTokenSelect = (token: Token) => {
     setCurrency(token);
@@ -93,8 +93,6 @@ export const DepositInput = ({
   };
 
   const handleSetAmount = (e: React.FormEvent<HTMLInputElement>) => {
-    e.preventDefault();
-
     setDepositAmount(e.currentTarget.value);
     if (
       e.currentTarget.value &&
@@ -140,7 +138,7 @@ export const DepositInput = ({
           </div>
 
           <div className="flex items-center mt-1">
-            <span className="text-white text-2xl">
+            <span className="text-white text-2xl w-[50%]">
               {<InputNumber value={depositAmount} onChange={handleSetAmount} />}
             </span>
             <div className="flex flex-center">

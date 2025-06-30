@@ -21,7 +21,6 @@ import {
   executeWithdrawal,
   getAssetsFromShares,
 } from "@/actions/actions";
-import MainActionButton from "@/components/button/MainActionButton";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
 import { isZetachain } from "@/utils/utils";
@@ -1333,7 +1332,7 @@ function Interaction({
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
 }): JSX.Element {
-  const {wallets} = useWallets()
+  const { wallets } = useWallets();
   const activeAccount = wallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
@@ -1421,6 +1420,7 @@ function Interaction({
             action: actions[nextStep + 1],
             step: nextStep + 1,
           });
+          handleMainAction(actions[nextStep + 1]);
         }, 100);
       }
 
@@ -1701,12 +1701,13 @@ function Interaction({
     console.log("🏁 [POST-HOOK] === INTERACTION POST HOOK COMPLETED ===");
   }
 
-  const handleMainAction = async () => {
+  async function handleMainAction(directAction?: Action) {
+    const currenAction = directAction ?? action;
     console.log("=== HANDLE MAIN ACTION CALLED ===");
     console.log(
       "🎯 [MAIN-ACTION] Current action:",
-      action,
-      `(${Action[action]})`,
+      currenAction,
+      `(${Action[currenAction]})`,
     );
     console.log(
       "🔄 [MAIN-ACTION] isTransactionProcessing:",
@@ -1729,19 +1730,19 @@ function Interaction({
     console.log("Set component as active");
 
     // Show warning toast to inform users not to leave the page during transaction processing
-    if (action === Action.deposit || action === Action.withdraw) {
+    if (currenAction === Action.deposit || currenAction === Action.withdraw) {
       showWarningToast(
         "📌 Please stay on this page to monitor progress across all networks!",
       );
     }
 
-    if (action == Action.depositApprove) {
+    if (currenAction == Action.depositApprove) {
       trackEvent("Approve Clicked", {
         vaultSymbol: vaultData.symbol,
         token: inputToken.symbol,
       });
       updateLocalTransactionFeedback(
-        action,
+        currenAction,
         TransactionStepStatus.processing,
         "Approval in progress",
       );
@@ -1752,7 +1753,7 @@ function Interaction({
       });
     }
 
-    if (action == Action.deposit) {
+    if (currenAction == Action.deposit) {
       trackEvent("Deposit Clicked", {
         vaultSymbol: vaultData.symbol,
         amount: inputBalance.formatted,
@@ -1776,13 +1777,13 @@ function Interaction({
 
       console.log("🏦 [MAIN-ACTION] Deposit description:", description);
       updateLocalTransactionFeedback(
-        action,
+        currenAction,
         TransactionStepStatus.processing,
         description,
       );
     }
 
-    if (action == Action.withdraw) {
+    if (currenAction == Action.withdraw) {
       // Determine withdrawal transaction type for better UI feedback
       const isUserOnZetachain = isZetachain(activeChain.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
@@ -1801,7 +1802,7 @@ function Interaction({
 
       console.log("🏧 [MAIN-ACTION] Withdraw description:", description);
       updateLocalTransactionFeedback(
-        action,
+        currenAction,
         TransactionStepStatus.processing,
         description,
       );
@@ -1822,7 +1823,7 @@ function Interaction({
       activeChain.name,
       `(${activeChain.id})`,
     );
-    console.log("📋 [MAIN-ACTION] - action:", Action[action]);
+    console.log("📋 [MAIN-ACTION] - action:", Action[currenAction]);
 
     const success = await handleInteraction(
       vaultData,
@@ -1832,7 +1833,7 @@ function Interaction({
       walletContext,
       setTransactionCompleted,
       activeChain,
-      action,
+      currenAction,
       setCrosschainInvestHash,
       setcrossChainTxId,
       setInputBalance,
@@ -1847,7 +1848,7 @@ function Interaction({
     console.log("📞 [MAIN-ACTION] === CALLING INTERACTION POST HOOK ===");
     await interactionPostHook(!!success);
     console.log("🏁 [MAIN-ACTION] === MAIN ACTION COMPLETED ===");
-  };
+  }
 
   const handleDone = useCallback(() => {
     console.log("[UI] handleDone called - clearing all transaction state");
@@ -1962,16 +1963,14 @@ function Interaction({
             !!errorMessage;
 
           const isDisabled =
-            isButtonDisabled || 
-            isDisabledByProcessing ||
-            isDisabledByHash;
+            isButtonDisabled || isDisabledByProcessing || isDisabledByHash;
 
           return (
             <Button
               variant="special"
               disabled={isDisabled}
               className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
-              onClick={handleMainAction}
+              onClick={() => handleMainAction()}
             >
               {label ?? (isDeposit ? "Invest" : "Withdraw")}
             </Button>

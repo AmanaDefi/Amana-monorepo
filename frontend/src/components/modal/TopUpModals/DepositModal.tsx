@@ -40,14 +40,14 @@ export const Deposit = () => {
     setStep("connectWallet");
   };
 
-  const handleClose = () => {
-    activeConnector?.disconnect();
+  const handleClose = async () => {
+    await activeConnector?.disconnect();
     closeAll();
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     showSuccessToast("Successfully Topped Up");
-    activeConnector?.disconnect();
+    await activeConnector?.disconnect();
     handleClose();
   };
 

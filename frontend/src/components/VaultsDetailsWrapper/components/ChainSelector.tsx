@@ -32,9 +32,7 @@ export default function ChainSelector({
   isFromTopUp,
   vaultData,
 }: ChainSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const { activeChain, switchToChain, walletAddress } = useMultiChain();
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
   const { openModal } = useChainTokenModalStore();
@@ -58,13 +56,6 @@ export default function ChainSelector({
   };
 
   const displayedChain = selectedChain || activeChain;
-
-  const chainList = isFromTopUp ? chainsWithCustomRpcs().slice(1) : chainsWithCustomRpcs();
-
-  const chainOptions = chainList.map((chainConfig) => ({
-    value: chainConfig.name,
-    icon: CHAIN_ICONS[chainConfig.id]?.url,
-  }));
 
   return (
     <div className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
