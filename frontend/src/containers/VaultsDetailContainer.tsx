@@ -202,6 +202,7 @@ const VaultsDetailContainer: React.FC<{
         }
       }
     }
+
   }, [vaultID, activeChain]);
 
   useEffect(() => {

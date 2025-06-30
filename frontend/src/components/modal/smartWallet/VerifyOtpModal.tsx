@@ -53,8 +53,6 @@ export const VerifyOtpModal = () => {
     inputRefs.current[0]?.focus();
   };
 
-  console.log(isResentdedOtp, "isResentdedOtp");
-
   const handleChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
     const newCode = [...code];

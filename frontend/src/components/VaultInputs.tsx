@@ -213,6 +213,9 @@ export default function VaultInputs({
         vaultData?.inputToken
       ) {
         setInputToken(vaultData.inputToken);
+        if (onTokenSelect) {
+          onTokenSelect(vaultData.inputToken);
+        }
       } else if (vaultData?.inputToken && selectedChain) {
         const tokens = APPROVED_TOKENS[selectedChain.id] || [];
         const defaultToken =
@@ -1200,7 +1203,6 @@ export default function VaultInputs({
     conversionOutput.gasFeeInUSD,
     setIsButtonDisabled,
   ]);
-  console.log(conversionOutput);
   // 🧪 TESTING: Log final values being displayed
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {

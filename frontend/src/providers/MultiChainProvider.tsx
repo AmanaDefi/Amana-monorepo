@@ -9,7 +9,6 @@ import {
   SetStateAction,
   useCallback,
   useRef,
-  useMemo,
 } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -248,7 +247,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (activeAccount?.address) {
       if (!(activeAccount.type === "eoa" && !!scaAccount?.address)) {
         const connectorID = localStorage.getItem('connectorId')
-        console.log(connectorID, 'connectorId', connectors.find(con => con.id === connectorID))
         setCurrentConnector(connectors.find(con => con.id === connectorID))
         setWalletAddress(activeAccount?.address);
         setSelectedChain("evm");
