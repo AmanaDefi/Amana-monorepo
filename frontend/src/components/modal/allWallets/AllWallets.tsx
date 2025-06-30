@@ -109,6 +109,7 @@ const AllWAllets = () => {
               <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
                 {connectors.map((connector) => (
                   <ModalButton
+                    variant="allWallets"
                     key={connector.id}
                     label={connector.name}
                     icon={

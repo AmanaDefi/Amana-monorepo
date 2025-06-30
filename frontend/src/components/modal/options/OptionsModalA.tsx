@@ -8,8 +8,9 @@ import PopularOptions from "../shared/PopularOptions";
 import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
 import ModalButton from "../shared/ModalButton";
 import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
-import BackedBy from "../shared/BackedBy";
-import { useRouter } from "next/navigation";
+import GoogleEmailIcon from "@/components/svg/GoogleEmailIcon";
+import GooglePasskeyIcon from "@/components/svg/GooglePasskeyIcon";
+import CryptoIcons from "../shared/CryptoIcons";
 
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
@@ -31,7 +32,7 @@ const OptionsModalA = () => {
       paddingClass="pt-[45px] pl-[57px] pb-[26px] pr-[91px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[761px]"
-      minHeight="min-h-[560px]"
+      minHeight="min-h-[355px]"
       customCloseButton={
         <button
           onClick={closeAll}
@@ -42,29 +43,33 @@ const OptionsModalA = () => {
         </button>
       }
     >
-      <div className="flex flex-col justify-between min-h-[489px]">
+      <div className="flex flex-col justify-between">
         <div className="flex max-w-[761px] flex-row gap-[56px]">
           <div className="flex flex-col justify-between">
             <ConnectWallet />
           </div>
-          <div className="flex flex-col ">
+          <div className="flex flex-col pt-4">
             <PopularOptions />
             <div className="flex flex-col gap-4 mt-6">
               <ModalButton
                 label="Smart Wallet"
-                icon={<SmartWalletIcon width={29} height={25} />}
+                icon={<SmartWalletIcon width={22} height={19} />}
                 onClick={handleSmartWallets}
-              />
+              >
+                <div className="flex flex-row gap-2 mr-4 items-center">
+                  <GoogleEmailIcon width={19} height={14} />
+                  <GooglePasskeyIcon width={19} height={19} />
+                </div>
+              </ModalButton>
               <ModalButton
                 label="All Wallets"
-                icon={<AllWalletsIcon width={28} height={27} />}
+                icon={<AllWalletsIcon width={20} height={20} />}
                 onClick={() => openStep("allWallets")}
-              />
+              >
+                <CryptoIcons />
+              </ModalButton>
             </div>
           </div>
-        </div>
-        <div>
-          <BackedBy />
         </div>
       </div>
     </Modal>

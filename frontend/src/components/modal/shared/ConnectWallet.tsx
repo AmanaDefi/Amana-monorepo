@@ -15,20 +15,20 @@ const ConnectWallet = () => {
         <AmanaLogo width={78} height={55} className="w-[78px] h-[55px]" />
         <h1 className="text-[34px] font-bold">AMANA</h1>
       </div>
-      <div className="flex flex-col gap-6 mb-8">
+      <div className="flex flex-col gap-4 mb-[46px]">
         <span className="text-white text-[18px] font-bold">
           Connect your wallet
         </span>
-        <p className="text-white text-[16px] w-[320px]">
+        <p className="text-white text-sm w-[263px]">
           Connecting your wallet is like &ldquo;logging in&rdquo; to Web3.
           Select your wallet from the options to get started
         </p>
       </div>
       <button
         onClick={handleWalletInfoClick}
-        className="text-[#3E73C4] text-[16px] underline font-normal flex items-center gap-1"
+        className="text-[#3E73C4] text-base font-normal flex items-center gap-1 hover:text-[#535E73] transition-all ease-in "
       >
-        I DON&apos;T HAVE A WALLET
+        I don&apos;t have a wallet
         <ErrorInputIcon width={16} height={17} className="fill-[#3E73C4]" />
       </button>
     </div>

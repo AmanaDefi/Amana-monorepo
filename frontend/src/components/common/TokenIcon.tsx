@@ -26,7 +26,7 @@ export default function TokenIcon({
     height={32}
     style={{ width: 'auto', height: 'auto' }}
     className="mr-2 rounded-full"
-    sizes="32px"
+   
     />;
   }
   return (

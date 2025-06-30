@@ -1,20 +1,11 @@
 "use client";
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
+
+import React from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Token, VaultData } from "@/types/types";
-import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import { Chain } from "viem";
-
-import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
-import { DropdownList } from "../VaultsWrapper/components/DropdownList";
-import { warningToast } from "@/toasts/toastStyles";
-import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { getOnlyTokenSymbol } from "@/utils/utils";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -22,6 +13,7 @@ interface ChainTokenSelectorProps {
   selectedChain?: Chain | null;
   className?: string;
   vaultData?: VaultData;
+  onClick?: () => void; 
 }
 
 export default function ChainTokenSelector({
@@ -30,58 +22,16 @@ export default function ChainTokenSelector({
   selectedChain,
   className = "",
   vaultData,
+  onClick,
 }: ChainTokenSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const { walletAddress } = useMultiChain();
+ 
+  const { selectedChainFromModal, selectedTokenFromModal } =
+    useChainTokenModalStore();
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const currentChain = selectedChainFromModal || selectedChain;
+  const currentToken = selectedTokenFromModal || selectedToken;
 
-  const getTokensForChain = useCallback(
-    (chain: Chain) => {
-      if (chain.id === 7000 || chain.id === 7001) {
-        return vaultData?.inputToken ? [vaultData.inputToken] : [];
-      }
-      return APPROVED_TOKENS[chain.id] || [];
-    },
-    [vaultData],
-  );
-
-  const availableTokens = useMemo(() => {
-    if (!selectedChain) return [];
-    return getTokensForChain(selectedChain);
-  }, [selectedChain, getTokensForChain]);
-
-  const handleSelectToken = (
-    event:
-      | React.MouseEvent<HTMLParagraphElement>
-      | React.MouseEvent<HTMLButtonElement>,
-    tokenSymbol: string,
-  ) => {
-    event.stopPropagation();
-    event.preventDefault();
-
-    if (vaultData?.id && CheckTheTxIsInProgress(vaultData.id)) return;
-
-    const selected = availableTokens.find((t) => t.symbol === tokenSymbol);
-    if (selected) {
-      onSelectToken(selected);
-      setIsOpen(false);
-    }
-  };
-
-  if (!selectedChain) {
+  if (!currentChain) {
     return (
       <div className={`flex items-center opacity-50 ${className}`}>
         <span className="text-gray-400">Select chain first</span>
@@ -89,54 +39,27 @@ export default function ChainTokenSelector({
     );
   }
 
-  const options = availableTokens.map((token) => ({
-    value: token.symbol,
-    icon: token.imgURL,
-  }));
-
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className}`}>
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (vaultData?.id && CheckTheTxIsInProgress(vaultData.id)) return;
-          setIsOpen(!isOpen);
-        }}
+        onClick={onClick}
         className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
-        {selectedToken ? (
+        {currentToken && (
           <>
             <img
-              src={selectedToken.imgURL}
-              alt={selectedToken.symbol}
-              width={24}
-              height={24}
-              className="rounded-full"
+              src={currentToken.imgURL}
+              alt={currentToken.symbol}
+              width={20}
+              height={21}
+              className="rounded-full border border-white"
             />
             <p className="max-w-[82px] md:max-w-[200px] truncate">
-              {selectedToken.symbol}
+              {getOnlyTokenSymbol(currentToken.symbol)}
             </p>
           </>
-        ) : (
-          <span>Select Token</span>
         )}
-        <ChevronDownIcon
-          className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
       </button>
-
-      <DropdownList
-        variant="token"
-        width={240}
-        isIconButton={false}
-        options={options}
-        selectedOption={selectedToken?.symbol || ""}
-        handleSelectedOption={handleSelectToken}
-        isShownList={isOpen}
-        needReset={false}
-      />
     </div>
   );
 }
