@@ -14,7 +14,7 @@ import {
   ChevronLeftIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
-import { CHAIN_ICONS, SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { CHAIN_ICONS, chainsWithCustomRpcs } from "@/constants/chainConfig";
 
 const sendSchema = z.object({
   recipientAddress: z
@@ -82,15 +82,15 @@ export const Send = () => {
   const selectedNetworkValue = watch("network") || "";
 
   // Filter networks based on search query
-  const filteredNetworks = SUPPORTED_CHAINS.filter((chainConfig) =>
-    chainConfig.chain.name
+  const filteredNetworks = chainsWithCustomRpcs().filter((chainConfig) =>
+    chainConfig.name
       .toLowerCase()
       .includes(networkSearchQuery.toLowerCase()),
   );
 
   const handleNetworkSelect = async (chainName: string) => {
-    const chainConfig = SUPPORTED_CHAINS.find(
-      (config) => config.chain.name === chainName,
+    const chainConfig = chainsWithCustomRpcs().find(
+      (config) => config.name === chainName,
     );
 
     if (!chainConfig) {
@@ -98,7 +98,7 @@ export const Send = () => {
       return;
     }
 
-    const chain = chainConfig.chain;
+    const chain = chainConfig;
 
     setValue("network", chainName, { shouldValidate: true });
 
@@ -211,26 +211,26 @@ export const Send = () => {
                 <p className="text-[#4874DB] text-[16px]">Popular</p>
                 {filteredNetworks.map((chainConfig, index) => (
                   <motion.div
-                    key={chainConfig.chain.id}
+                    key={chainConfig.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.03, duration: 0.2 }}
                     className="group hover:cursor-pointer hover:shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] hover:bg-[#1D2A41] hover:rounded-[4px] max-h-9 flex rounded-[4px] py-3 w-full flex-row justify-between items-center transition-colors duration-200"
-                    onClick={() => handleNetworkSelect(chainConfig.chain.name)}
+                    onClick={() => handleNetworkSelect(chainConfig.name)}
                     whileHover={{ scale: 1 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="font-normal flex flex-row gap-2 items-center py-2 px-4">
-                      {CHAIN_ICONS[chainConfig.chain.id]?.url && (
+                      {CHAIN_ICONS[chainConfig.id]?.url && (
                         <img
-                          src={CHAIN_ICONS[chainConfig.chain.id]?.url}
-                          alt={chainConfig.chain.name}
+                          src={CHAIN_ICONS[chainConfig.id]?.url}
+                          alt={chainConfig.name}
                           className="w-[20px] h-[20px] rounded-full"
                         />
                       )}
-                      <p className="text-white">{chainConfig.chain.name}</p>
+                      <p className="text-white">{chainConfig.name}</p>
                     </div>
-                    {selectedNetworkValue === chainConfig.chain.name && (
+                    {selectedNetworkValue === chainConfig.name && (
                       <div className="w-2 h-2 bg-[#3E73C4] rounded-full mr-4"></div>
                     )}
                   </motion.div>
@@ -300,12 +300,12 @@ export const Send = () => {
                       (() => {
                         const networkName =
                           selectedNetworkValue || activeChain?.name;
-                        const chainConfig = SUPPORTED_CHAINS.find(
-                          (config) => config.chain.name === networkName,
+                        const chainConfig = chainsWithCustomRpcs().find(
+                          (config) => config.name === networkName,
                         );
                         return chainConfig ? (
                           <img
-                            src={CHAIN_ICONS[chainConfig.chain.id]?.url}
+                            src={CHAIN_ICONS[chainConfig.id]?.url}
                             alt={networkName}
                             className="w-[20px] h-[20px] rounded-full"
                           />

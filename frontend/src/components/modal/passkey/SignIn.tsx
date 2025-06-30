@@ -1,63 +1,31 @@
 "use client";
 
 import { useAuthStore } from "@/store/authStore";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
-import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import Button from "@/components/Button";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
-import { useAuthenticate } from "@account-kit/react";
-
-const passkeySchema = z.object({
-  passkey: z
-    .string()
-    .min(2, "Label must be at least 2 characters")
-    .max(32, "Label must be less than 32 characters"),
-});
-
-type PasskeyForm = z.infer<typeof passkeySchema>;
+import { useSignupWithPasskey, useCreateWallet } from "@privy-io/react-auth";
 
 export const SignIn = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
+  const { createWallet } = useCreateWallet();
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<PasskeyForm>({
-    resolver: zodResolver(passkeySchema),
-  });
-
-  const passkeyValue = watch("passkey");
-
-  const { authenticate, isPending } = useAuthenticate({
-    onSuccess: (result) => {
-      console.log(result);
-      console.log("Success passkey auth", result);
-      successAuth();
+  const { signupWithPasskey, state } = useSignupWithPasskey({
+    onComplete: async (result) => {
+      await createWallet();
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
+      }
     },
     onError: (err) => {
       console.log("Error passkey auth:", err);
-      setError(err.message);
+      setError(err);
     },
   });
 
-  const onSubmit = (data: PasskeyForm) => {
-    if (isPending) return;
-    authenticate({
-      type: "passkey",
-      createNew: true,
-      username: data.passkey,
-    });
-  };
-
-  const isButtonDisabled =
-    !passkeyValue || passkeyValue.trim().length === 0 || isPending;
+  const isButtonDisabled = state.status === "submitting-response";
 
   return (
     <Modal
@@ -117,32 +85,15 @@ export const SignIn = () => {
         </h2>
       </motion.div>
 
-      <motion.form
-        onSubmit={handleSubmit(onSubmit)}
+      <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 220, damping: 20, delay: 0.1 }}
         className="flex flex-col gap-4 mt-6 px-0 md:px-[26px]"
       >
-        <input
-          type="text"
-          autoComplete="name"
-          placeholder="Passkey label (only visible for you)"
-          {...register("passkey")}
-          className={`font-gotham w-full rounded-[8px] px-4 py-3 text-[14px] font-normal text-[#535E73] !bg-transparent border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
-            errors.passkey
-              ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
-              : "border-[#2C2F36]"
-          }`}
-        />
-        {errors.passkey && (
-          <div className="flex gap-1 text-[#FFC700]">
-            <ErrorInputIcon width={16} height={16} className="fill-[#FFC700]" />
-            <p className="text-[12px] font-normal">{errors.passkey.message}</p>
-          </div>
-        )}
         <div className="flex justify-center mt-4">
           <Button
+            onClick={signupWithPasskey}
             variant="custom"
             disabled={isButtonDisabled}
             className="w-full h-12 rounded-[8px] border border-[#3E73C4] text-white shadow-md hover:bg-[#3E73C4]/10 !text-[16px] !font-bold transition-all duration-200 !font-gotham"
@@ -150,7 +101,7 @@ export const SignIn = () => {
             Create new passkey
           </Button>
         </div>
-      </motion.form>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}

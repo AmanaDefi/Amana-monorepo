@@ -37,16 +37,8 @@ import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
-import { useChain, useUser } from "@account-kit/react";
-import {
-  useVaultDetailsFromGraph,
-  useUserVaultBalancesFromGraph,
-} from "@/hooks/useVaultsGraph";
-import {
-  convertGraphVaultToVaultData,
-  convertGraphVaultToAPY,
-  convertGraphVaultToTotalAssets,
-} from "@/utils/graphUtils";
+import { useVaultDetailsFromGraph, useUserVaultBalancesFromGraph } from "@/hooks/useVaultsGraph";
+import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -57,12 +49,13 @@ import GiftIcon from "@/components/svg/GiftIcon";
 import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
 import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
 import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
+import { useWallets } from "@privy-io/react-auth";
+import { zetachain } from "viem/chains";
 
 import { motion, AnimatePresence } from "framer-motion";
 import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultHeaderInfo";
 import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
 
-import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import ChainsModal from "@/components/modal/chains/ChainsModal";
 
 const VaultsDetailContainer: React.FC<{
@@ -76,7 +69,8 @@ const VaultsDetailContainer: React.FC<{
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
-  const user = useUser();
+  const { wallets } = useWallets();
+  const user = wallets[0];
   const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -120,8 +114,8 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress } = useMultiChain();
-  const { chain: activeChain } = useChain();
+  const { switchToChain, walletAddress, activeChain } = useMultiChain();
+
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
   useEffect(() => {
@@ -150,13 +144,13 @@ const VaultsDetailContainer: React.FC<{
       tab: newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW,
     });
 
-    const newUrl = new URL(window.location.href);
+    const newUrl = new URL(window?.location.href);
     if (newIsDeposit) {
       newUrl.searchParams.delete("tab");
     } else {
       newUrl.searchParams.set("tab", "withdraw");
     }
-    window.history.replaceState({}, "", newUrl.toString());
+    window?.history.replaceState({}, "", newUrl.toString());
   };
 
   const handleDepositDataUpdate = useCallback(
@@ -355,6 +349,7 @@ const VaultsDetailContainer: React.FC<{
     memoizedPrices.eth,
     memoizedPrices.comp,
     memoizedPrices.op,
+    user
   );
 
   const handleTokenSelect = useCallback(
@@ -439,7 +434,7 @@ const VaultsDetailContainer: React.FC<{
             walletAddress={walletAddress || undefined}
             isWithdraw={isWithdraw}
             selectedToken={selectedToken}
-            selectedChain={activeChain}
+            selectedChain={activeChain ?? zetachain}
             vaultExplorerBaseUrl={vaultExplorerBaseUrl}
             strategyExplorerBaseUrl={strategyExplorerBaseUrl}
             depositData={depositData}

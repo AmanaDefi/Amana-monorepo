@@ -10,11 +10,11 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useAuthStore } from "@/store/authStore";
 import Button from "./Button";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
-import { useAccount, useUser } from "@account-kit/react";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
+import { useWallets } from "@privy-io/react-auth";
 
 interface HeaderProps {
   activeSection?: string;
@@ -24,8 +24,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
-  const activeAccount = useUser();
-  const account = useAccount({ type: "ModularAccountV2" });
+  const {wallets} = useWallets();
+  const activeAccount = wallets[0];
   const { walletAddress} =
     useMultiChain();
   const isConnected = !!walletAddress;
@@ -37,19 +37,19 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const { openStep } = useAuthStore();
 
   const checkScreenSize = () => {
-    setIsMobile(window.innerWidth <= 768);
+    setIsMobile(window?.innerWidth <= 768);
   };
 
   useEffect(() => {
     checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
+    window?.addEventListener("resize", checkScreenSize);
     return () => {
-      window.removeEventListener("resize", checkScreenSize);
+      window?.removeEventListener("resize", checkScreenSize);
     };
   }, []);
 
   const handleSignInClick = () => {
-    const currentWidth = window.innerWidth;
+    const currentWidth = window?.innerWidth;
     if (currentWidth <= 768) {
       openStep("mobileOptionsA");
     } else {
@@ -98,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-6">
-          {isConnected && activeAccount?.type === "eoa" && !isMenuOpened && (
+          {isConnected && activeAccount?.walletClientType !== "privy" && !isMenuOpened && (
             <ChainSwitcher />
           )}
 

@@ -6,7 +6,7 @@ import SearchToken from "@/components/input/SearchToken";
 import { Tooltip } from "react-tooltip";
 import {getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
 import Modal from "../modal/Modal";
-import { useChain } from "@account-kit/react";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 
 export interface SelectTokenProps {
@@ -20,7 +20,7 @@ export default function SelectToken({
   selectedToken,
   selectToken
 }: SelectTokenProps): JSX.Element {
-  const activeChain = useChain().chain;
+  const activeChain = useMultiChain().activeChain;
 
   const [show, setShow] = useState(false);
   const selectTokenId = selectedToken?.symbol.split(" ").join("");

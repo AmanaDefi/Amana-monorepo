@@ -1,4 +1,4 @@
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { chainsWithCustomRpcs } from "@/constants/chainConfig";
 import { Token } from "@/types/types";
 import { Chain } from "viem";
 import { Connector } from "wagmi";
@@ -19,7 +19,7 @@ export enum BuyWithEnum {
 const initialState = {
   step: null,
   buyWith: null,
-  chain: SUPPORTED_CHAINS[1].chain,
+  chain: chainsWithCustomRpcs()[1],
   depositAmount: "",
   currency: undefined,
   activeConnector: null,

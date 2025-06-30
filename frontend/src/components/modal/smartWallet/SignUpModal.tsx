@@ -12,7 +12,7 @@ import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import Button from "@/components/Button";
 import { useEffect } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
-import { useAuthenticate } from "@account-kit/react";
+import { useLoginWithEmail } from "@privy-io/react-auth";
 
 const schema = z.object({
   // username: z
@@ -31,22 +31,15 @@ type FormData = z.infer<typeof schema>;
 export const SignUpModal = () => {
   const { step, closeAll, updateField, setLoading, setError, openStep } =
     useAuthStore();
-  const { authenticate, isPending, error } = useAuthenticate({
-    onSuccess: (result) => {
+  const { sendCode } = useLoginWithEmail({
+    onComplete: (result) => {
       console.log("Success email auth", result);
     },
     onError: (err) => {
       console.log("Error email auth:", err);
-      setError(err.message);
+      setError(err);
     },
   });
-
-  const handleLogin = (email: string) => {
-    authenticate({
-      type: "email",
-      email,
-    });
-  };
 
   const {
     register,
@@ -62,9 +55,8 @@ export const SignUpModal = () => {
     try {
       setLoading(true);
       updateField("email", data.email);
-      // updateField("username", data.username);
 
-      handleLogin(data.email);
+      sendCode({ email: data.email });
 
       openStep("verify");
     } catch (err: any) {

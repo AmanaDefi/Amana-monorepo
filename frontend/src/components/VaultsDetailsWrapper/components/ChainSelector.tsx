@@ -1,13 +1,13 @@
 "use client";
-import React from "react";
+import React, { useRef, useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Chain } from "viem";
-import { CHAIN_ICONS } from "@/constants/chainConfig";
+import { chainsWithCustomRpcs, CHAIN_ICONS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
-import { useUser } from "@account-kit/react";
+import { useWallets } from "@privy-io/react-auth";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { Token, VaultData } from "@/types/types";
 
@@ -32,26 +32,19 @@ export default function ChainSelector({
   isFromTopUp,
   vaultData,
 }: ChainSelectorProps) {
-  const { activeChain, walletAddress } = useMultiChain();
-  const activeAccount = useUser();
+  const { activeChain, switchToChain, walletAddress } = useMultiChain();
+  const {wallets} = useWallets();
+  const activeAccount = wallets[0];
   const { openModal } = useChainTokenModalStore();
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (walletAddress && activeAccount?.type !== "eoa") {
-      return;
-    }
 
     if (vaultId) {
       const isTxInProgress = CheckTheTxIsInProgress(vaultId);
       if (isTxInProgress) return;
     }
 
-    if (!walletAddress) {
-      warningToast("Please connect your wallet to select a chain");
-      return;
-    }
     openModal(
       selectedChain || null,
       selectedToken || null,
@@ -83,7 +76,7 @@ export default function ChainSelector({
         <button
           onClick={handleOpenModal}
           className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
-            walletAddress && activeAccount?.type !== "eoa"
+            walletAddress && activeAccount?.walletClientType === "privy" && !isFromTopUp
               ? ""
               : "cursor-pointer"
           }`}
@@ -103,7 +96,7 @@ export default function ChainSelector({
               </div>
             ))}
           </div>
-          {(!walletAddress || activeAccount?.type === "eoa") && (
+          {(!walletAddress) && (
             <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
           )}
         </button>

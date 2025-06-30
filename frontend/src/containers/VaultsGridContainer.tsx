@@ -6,7 +6,6 @@ import VaultsGrid from "../components/VaultsGrid";
 import { useLayoutStore } from "@/store/store";
 
 const VaultsGridContainer = () => {
-
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('tvl');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');

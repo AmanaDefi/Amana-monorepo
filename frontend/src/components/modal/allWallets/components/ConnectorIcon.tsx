@@ -34,7 +34,6 @@ export const ConnectorIcon = ({
     return (
       <img
         src={connectorIcon}
-        // width={35}
         height={30}
         alt={name}
         onError={handleImageError}
