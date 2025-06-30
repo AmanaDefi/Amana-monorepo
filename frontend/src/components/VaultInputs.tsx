@@ -217,6 +217,9 @@ export default function VaultInputs({
         vaultData?.inputToken
       ) {
         setInputToken(vaultData.inputToken);
+        if (onTokenSelect) {
+          onTokenSelect(vaultData.inputToken);
+        }
       } else if (vaultData?.inputToken && selectChain) {
         const tokens = APPROVED_TOKENS[selectChain.id] || [];
         const defaultToken =
@@ -1206,7 +1209,6 @@ export default function VaultInputs({
     conversionOutput.gasFeeInUSD,
     setIsButtonDisabled,
   ]);
-  console.log(conversionOutput);
   // 🧪 TESTING: Log final values being displayed
   useEffect(() => {
     if (inputToken && vaultTotalAssetinToken) {
@@ -1268,7 +1270,7 @@ export default function VaultInputs({
           activeTab={isDeposit ? "Invest" : "Withdraw"}
           setActiveTab={handleTabChange}
         />
-        <div className="absolute top-0 right-0 z-30 mt-3">
+        <div className="absolute top-0 right-0 z-9 mt-3">
           <SlippageSettingsBlock
             setInputBalance={setInputBalance}
             vaultId={vaultData.id}

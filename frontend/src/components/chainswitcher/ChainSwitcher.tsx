@@ -11,6 +11,7 @@ import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
 import { useWallets } from "@privy-io/react-auth";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 // Destructure chainsWithCustomRpcs() to get zetaChain for default
 const [zetachain] = chainsWithCustomRpcs();
@@ -20,6 +21,7 @@ const ChainSwitcher: React.FC = () => {
   const { wallets } = useWallets();
   const wallet = wallets[0];
   const [isOpen, setIsOpen] = useState(false);
+  const { switchToChain, activeChain: currentChain} = useMultiChain();
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousChainRef = useRef<string | null>(null);
@@ -61,6 +63,7 @@ const ChainSwitcher: React.FC = () => {
       } catch (error) {
         console.error("Toast error:", error);
       }
+      console.log('Successfully switched', chain?.id)
     }
 
     // Update the previous chain ref
@@ -99,7 +102,7 @@ const ChainSwitcher: React.FC = () => {
     setIsLoading(chain.id);
     try {
       // Switch chain
-      wallet.switchChain(chain.id);
+      switchToChain(chain);
 
       // Close dropdown
       setIsOpen(false);
@@ -156,8 +159,8 @@ const ChainSwitcher: React.FC = () => {
       >
         <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
           <Image
-            src={CHAIN_ICONS[Number(wallet?.chainId?.split(":")[1] ?? 7000)]?.url}
-            alt={"active chain"}
+            src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
+            alt={currentChain?.name ?? 'Zetachain'}
             fill
           />
         </div>
