@@ -153,14 +153,19 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const disconnectConnectors = useCallback(async () => {
     if (!!wallets?.length) {
       wallets.forEach(async (wallet) => {
-        await connectors?.find((con) => con.id === wallet.meta.id)?.disconnect();
+        await connectors
+          ?.find((con) => con.id === wallet.meta.id)
+          ?.disconnect();
       });
     }
   }, [connectors, wallets]);
 
   const evmDisconnect = useCallback(async () => {
-    await disconnectConnectors();
-    await logout();
+    try {
+      await disconnectConnectors();
+    } finally {
+      await logout();
+    }
   }, [logout, disconnectConnectors]);
 
   useEffect(() => {
