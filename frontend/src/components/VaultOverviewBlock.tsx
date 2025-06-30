@@ -1,11 +1,14 @@
 import React from "react";
 import { VaultAPY, VaultTotalAssets, VaultData } from "@/types/types";
-import { formatNumberWithSuffix } from "@/utils/utils";
+import { formatTVLInUSD } from "@/utils/utils";
 
 import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { RISK_LEVELS } from "./VaultsGrid";
+import PointsIcon from "./svg/PointsIcon";
+import { getPointsInfo } from "@/utils/helpers";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
 type Props = {
   vault: VaultData;
@@ -20,7 +23,9 @@ export const VaultOverviewBlock: React.FC<Props> = ({
 }) => {
   const apyValue = Number(vaultAPY?.APY7d || 0);
   const riskRating = calculateRiskLevel(vault);
-
+  
+  // Get token price for USD conversion
+  const tokenPrice = useTokenPriceBySymbol(vault.inputToken.symbol);
 
   return (
     <>
@@ -37,7 +42,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             </InfoBlock>
           </div>
           <p className="text-blue-digits font-bold text-xl leading-6">
-            ${totalAssets?.totalAssets ? formatNumberWithSuffix(Number(totalAssets.totalAssets)) : "0"}
+            ${totalAssets?.totalAssets ? formatTVLInUSD(Number(totalAssets.totalAssets), vault.inputToken.symbol, tokenPrice) : "0"}
           </p>
         </div>
 
@@ -68,14 +73,41 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               rewards, liquidity, and market changes.
             </InfoBlock>
           </div>
-          <p
-            className={classNames("font-bold text-xl leading-6", {
-              "text-green-accent": apyValue > 0,
-              "text-red-error": apyValue <= 0,
-            })}
-          >
-            {(apyValue * 100).toFixed(2)}%
-          </p>
+          <div className="flex flex-row items-center gap-1">
+            <p
+              className={classNames("font-bold text-xl leading-6", {
+                "text-green-accent": apyValue > 0,
+                "text-red-error": apyValue <= 0,
+              })}
+            >
+              {(apyValue * 100).toFixed(2)}%
+            </p>
+            {getPointsInfo(vault.protocol.name).displayPoints && (
+              <InfoBlock 
+                isRight
+                customIcon={<PointsIcon className="w-5 h-5" color="#ffffff" />}
+              >
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300 text-sm">
+                      {getPointsInfo(vault.protocol.name).nativeYield}
+                    </span>
+                    <span className="text-cyan-400 font-medium text-base">
+                      {(apyValue * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300 text-sm">
+                      {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
+                    </span>
+                    <span className="text-white font-medium text-base">
+                      {getPointsInfo(vault.protocol.name).points}
+                    </span>
+                  </div>
+                </div>
+              </InfoBlock>
+            )}
+          </div>
         </div>
       </div>
     </>

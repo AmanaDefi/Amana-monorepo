@@ -19,48 +19,7 @@ import { formatTokenBalance } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import PointsIcon from "@/components/svg/PointsIcon";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-
-// Helper function to get points message for specific protocols
-const getPointsMessage = (protocolName: string) => {
-  switch (protocolName) {
-    case 'Aegis':
-      return {
-        message: 'Earn 15 points daily per $1 deposited',
-        logo: '/aegis.jpeg'
-      };
-    case 'YieldFi':
-      return {
-        message: 'Earn 5 YieldCrumbs daily per $1 deposited',
-        logo: '/yieldfi.png'
-      };
-    default:
-      return null;
-  }
-};
-
-// Helper function to get points information for tooltip
-const getPointsInfo = (protocolName: string) => {
-  switch (protocolName) {
-    case 'Aegis':
-      return {
-        points: '15 pts/$/day',
-        nativeYield: 'Aegis native yield',
-        displayPoints: true
-      };
-    case 'YieldFi':
-      return {
-        points: '5 pts/$/day',
-        nativeYield: 'YieldFi native yield',
-        displayPoints: true
-      };
-    default:
-      return {
-        points: '',
-        nativeYield: '',
-        displayPoints: false
-      };
-  }
-};
+import { getPointsInfo } from "@/utils/helpers";
 
 export default function VaultHeader({
   vaultData,

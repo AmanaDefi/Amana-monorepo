@@ -14,6 +14,7 @@ import { useMultiChain } from '@/providers/MultiChainProvider';
 import { useTokenPriceBySymbol } from '@/hooks/hooks';
 import PointsIcon from "@/components/svg/PointsIcon";
 import ResponsiveTooltip from "@/components/common/Tooltip";
+import { getPointsInfo } from "@/utils/helpers";
 
 import { useLayoutStore } from "@/store/store";
 // import { formatTokenBalance } from '@/utils/utils';
@@ -88,29 +89,7 @@ interface VaultsGridProps {
   onSortChange?: (sortBy: string, sortOrder: "asc" | "desc") => void;
 }
 
-// Helper function to get points information
-const getPointsInfo = (protocolName: string) => {
-  switch (protocolName) {
-    case 'Aegis':
-      return {
-        points: '15 pts/$/day',
-        nativeYield: 'Aegis native yield',
-        displayPoints: true
-      };
-    case 'YieldFi':
-      return {
-        points: '5 pts/$/day',
-        nativeYield: 'YieldFi native yield',
-        displayPoints: true
-      };
-    default:
-      return {
-        points: '',
-        nativeYield: '',
-        displayPoints: false
-      };
-  }
-};
+
 
 const VaultsGrid: React.FC<VaultsGridProps> = ({
   loading,

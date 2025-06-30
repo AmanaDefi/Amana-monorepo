@@ -8,14 +8,16 @@ export const InfoBlock = ({
   children,
   isRight,
   isMiddle,
+  customIcon,
 }: {
   children: ReactNode;
   isRight?: boolean;
   isMiddle?: boolean;
+  customIcon?: React.ReactNode;
 }) => {
   return (
     <div className="hover:cursor-pointer relative group">
-      <InfoIcon />
+      {customIcon || <InfoIcon />}
       <div
         className={classNames(
           "absolute bottom-10 -left-5 hidden group-hover:block transition-all",
