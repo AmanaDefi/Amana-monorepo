@@ -103,7 +103,7 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
             />
           </Dropdown>
           {!isWithdraw && (
-            <Dropdown title="What happens to my deposit?" defaultOpen={true}>
+            <Dropdown title="What happens to my deposit?" defaultOpen={false}>
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}

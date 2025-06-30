@@ -15,6 +15,33 @@ interface FeeDisplayProps {
   performanceFee?: number;
 }
 
+interface ExpectedSlippageProps {
+  conversionOutput: ConversionOutput;
+  isVisible?: boolean;
+  className?: string;
+}
+
+export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
+  conversionOutput,
+  isVisible = true,
+  className = "",
+}) => {
+  if (!isVisible || conversionOutput.slippageActualValue === null) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`flex justify-between items-center py-1 text-white mt-8 ${className}`}
+    >
+      <span className="text-white">Expected slippage:</span>
+      <span className="font-medium">
+        {conversionOutput.slippageActualValue.toFixed(2)}%
+      </span>
+    </div>
+  );
+};
+
 export default function FeeDisplay({
   isDeposit,
   vaultData,
@@ -83,26 +110,6 @@ export default function FeeDisplay({
     );
   };
 
-  // Slippage display
-  // const SlippageDisplay = () => {
-  //   if (
-  //     conversionOutput.slippageActualValue === null ||
-  //     conversionOutput.slippageActualValue >= 100
-  //   ) {
-  //     return null;
-  //   }
-
-  //   return (
-  //     <p className="text-white font-bold mb-2 text-start">
-  //       Estimated slippage value:
-  //       <span className="text-green-500 whitespace-pre">
-  //         {" "}
-  //         {conversionOutput.slippageActualValue}%
-  //       </span>
-  //     </p>
-  //   );
-  // };
-
   // Ethereum Vault Deposit Fee
   const EthereumDepositFee = () => {
     if (!isDeposit || !isEthereumVault || !hasValidGasFee) {
@@ -143,33 +150,19 @@ export default function FeeDisplay({
 
     return (
       <span className="flex flex-row items-center justify-between text-white py-1 text-sm md:text-[16px]">
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          <p className="ml-[10px]">Fee</p>
           <InfoBlock>
             💡 {performanceFee}% deducted from the profit earned in the vault
           </InfoBlock>
-          <p className="ml-[10px]">Fee</p>
         </div>
         <span className="font-bold">0%</span>
       </span>
     );
   };
 
-//   const WithdrawalFee = () => {
-//     if (isDeposit) {
-//       return null;
-//     }
-
-//     return (
-//       <span className="flex flex-row items-center justify-between text-white py-1">
-//         <p>Fee</p>
-//         <span className="font-bold">0%</span>
-//       </span>
-//     );
-//   };
-
   return (
     <div>
-      {/* <SlippageDisplay /> */}
       <NetDepositDisplay />
       <GasFeeWarning />
 

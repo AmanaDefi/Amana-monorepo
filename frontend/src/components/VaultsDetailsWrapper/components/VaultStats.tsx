@@ -7,34 +7,19 @@ import {
   Balance,
 } from "@/types/types";
 import LargeCardStat from "@/components/common/LargeCardStat";
-import Image from "next/image";
-import {
-  determineVaultTokenFromApprovedTokens,
-  formatCurrency,
-} from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { formatTokenBalance } from "@/utils/utils";
+import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import PointsIcon from "@/components/svg/PointsIcon";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 import { getPointsInfo } from "@/utils/helpers";
 
-export default function VaultHeader({
-  vaultData,
-  userVaultBalance,
-  selectedVaultId,
-  vaultAPYs,
-  transactionCompleted,
-  selectedToken,
-  onDepositDataUpdate,
-  isDeposit,
-}: {
+interface VaultStatsProps {
   vaultData: VaultData;
   userVaultBalance?: Balance | string;
   selectedVaultId: string;
-  vaultTotalAsset?: VaultTotalAssets;
   vaultAPYs: VaultAPY[];
   transactionCompleted: boolean;
   selectedToken?: Token;
@@ -44,27 +29,29 @@ export default function VaultHeader({
     symbol: string,
     usdValue: number,
   ) => void;
-}): JSX.Element {
+}
+
+export default function VaultStats({
+  vaultData,
+  userVaultBalance,
+  selectedVaultId,
+  vaultAPYs,
+  transactionCompleted,
+  selectedToken,
+  onDepositDataUpdate,
+  isDeposit,
+}: VaultStatsProps): JSX.Element {
   const { activeChain, walletAddress } = useMultiChain();
   const [inputToken, setInputToken] = useState<Token | undefined>();
   const [depositAmount, setDepositAmount] = useState("0");
   const lastVaultIdRef = useRef<string | null>(null);
   const lastActiveChainRef = useRef<number | null>(null);
 
-  // Debug full userVaultBalance object
-
   // Determine input token based on user selection or active chain
   useEffect(() => {
     const vaultId = vaultData.id as string;
     const isNewVault = vaultId !== lastVaultIdRef.current;
     const isChainChanged = activeChain?.id !== lastActiveChainRef.current;
-
-    // Always log vault changes
-    if (isNewVault) {
-    }
-
-    if (isChainChanged) {
-    }
 
     // First priority: If there's a user-selected token from parent component, use it
     if (selectedToken) {
@@ -240,170 +227,38 @@ export default function VaultHeader({
     onDepositDataUpdate,
   ]);
 
+  if (!walletAddress || !isDeposit) {
+    return <></>;
+  }
+
   return (
-    <section className="flex flex-col mt-6 md:mt-10">
-      <div className="hidden md:flex w-full mb-10 flex-row items-center">
-        <div className="flex items-center gap-4 max-w-full flex-wrap md:flex-nowrap flex-1">
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Image
-                src={vaultData.imgURL ?? ""}
-                alt={vaultData.protocol.network}
-                width={1200}
-                height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                sizes="(max-width: 768px) 24px, 40px"
-              />
-            </div>
-            <h2 className="font-bold text-white">
-              {vaultData.protocol.network}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Image
-                src={vaultData.protocol.imgURL}
-                alt={vaultData.protocol.name}
-                width={1200}
-                height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                sizes="(max-width: 768px) 24px, 40px"
-              />
-            </div>
-            <h2 className="font-bold text-white">{vaultData.protocol.name}</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Image
-                src={vaultData.inputToken.imgURL}
-                alt={vaultData.name}
-                width={1200}
-                height={800}
-                className={`w-6 md:w-10 h-6 md:h-10 mr-2 rounded-full`}
-                sizes="(max-width: 768px) 24px, 40px"
-              />
-            </div>
-            <h2 className="font-bold text-white">{vaultData.name}</h2>
-          </div>
-        </div>
+    <div className="w-full flex flex-col md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
+      <div className="grid grid-cols-3 px-[26px] py-4 gap-4 md:gap-6 before-gradient-border rounded-lg max-h-[80px] w-full ">
+        <LargeCardStat
+          id="deposits"
+          label="Deposits"
+          value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
+            vaultData.inputToken.symbol
+              ? getOnlyTokenSymbol(vaultData.inputToken.symbol)
+              : ""
+          }`}
+          tooltip="Value of your vault deposits"
+        />
+        <LargeCardStat
+          id="wallet"
+          label="Your Wallet"
+          value={`${formattedWalletBalance} ${
+            symbol ? getOnlyTokenSymbol(symbol) : ""
+          }`}
+          tooltip="Value of deposit assets held in your wallet"
+        />
+        <LargeCardStat
+          id="rewards"
+          label="Your rewards"
+          value="0 Points"
+          tooltip="Your rewards"
+        />
       </div>
-      {walletAddress && isDeposit && (
-        <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0 block">
-          <div className="grid grid-cols-2 sm:grid-cols-2 px-[26px] py-4 md:py-0 md:pr-10 md:px-0 gap-4 md:gap-[56px] before-gradient-border md:before:hidden rounded-lg">
-            <LargeCardStat
-              id="deposits"
-              label="Deposits"
-              value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
-                vaultData.inputToken.symbol
-              }`}
-              secondaryValue={`$ ${formatCurrency(
-                depositAmountNumber * vaultTokenPrice,
-              )}`}
-              tooltip="Value of your vault deposits"
-            />
-            <LargeCardStat
-              id="wallet"
-              label="Your Wallet"
-              value={`${formattedWalletBalance} ${symbol}`}
-              secondaryValue={`$ ${formatCurrency(
-                Number(walletTokenBalance.formatted) * price,
-              )}`}
-              tooltip="Value of deposit assets held in your wallet"
-            />
-            {/* <LargeCardStat
-            id="APY"
-            label="7d APY"
-            value={
-              Number.isNaN(
-                Number(
-                  vaultAPYs[0]?.APY7d
-                )
-              )
-                ? "0%"
-                : `${(
-                    Number(
-                      vaultAPYs[0]?.APY7d
-                    ) * 100
-                  ).toFixed(2)}%`
-            }
-            tooltip="APY for the last 7 days"
-          /> */}
-          </div>
-
-
-
-      {/* <div className="w-full md:flex md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:pr-10 gap-4 md:gap-8">
-          <LargeCardStat
-            id="deposits"
-            label="Deposits"
-            value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
-              vaultData.inputToken.symbol
-            }`}
-            secondaryValue={`$ ${formatCurrency(
-              depositAmountNumber * vaultTokenPrice
-            )}`}
-            tooltip="Value of your vault deposits"
-          />
-          <LargeCardStat
-            id="wallet"
-            label="Your Wallet"
-            value={`${formattedWalletBalance} ${symbol}`}
-            secondaryValue={`$ ${formatCurrency(
-              Number(walletTokenBalance.formatted) * price
-            )}`}
-            tooltip="Value of deposit assets held in your wallet"
-          />
-          <LargeCardStat
-            id="APY"
-            label="7d APY"
-            // tooltip="APY for the last 7 days"
-          >
-            <div className="flex items-center gap-1">
-              <p className="text-2xl lg:text-3xl font-bold whitespace-nowrap text-white leading-0">
-                { Number.isNaN(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d))
-                  ? "0%"
-                  : `${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d) * 100).toFixed(2)}%`
-                }
-              </p>
-              {getPointsInfo(vaultData.protocol.name).displayPoints && (
-                <div className="flex items-center">
-                  <button
-                    id={`apy-points-tooltip-${selectedVaultId}`}
-                    className="ml-1"
-                  >
-                    <PointsIcon className="w-8 h-8" color="#06afbc" />
-                  </button>
-                  <ResponsiveTooltip
-                    id={`apy-points-tooltip-${selectedVaultId}`}
-                    content={
-                      <div className="w-48">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-gray-300 text-sm">
-                            {getPointsInfo(vaultData.protocol.name).nativeYield}
-                          </span>
-                          <span className="text-cyan-400 font-medium">
-                            {`${(Number(vaultAPYs.find((apy) => apy.vaultId === selectedVaultId)?.APY7d || 0) * 100).toFixed(2)}%`}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300 text-sm">
-                            {vaultData.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
-                          </span>
-                          <span className="text-white font-medium">
-                            {getPointsInfo(vaultData.protocol.name).points
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          </LargeCardStat> */}
-        </div>
-      )}
-    </section>
+    </div>
   );
 }

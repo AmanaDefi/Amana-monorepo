@@ -9,11 +9,13 @@ export const InfoBlock = ({
   isRight,
   isMiddle,
   customIcon,
+  isLeft,
 }: {
   children: ReactNode;
   isRight?: boolean;
   isMiddle?: boolean;
   customIcon?: React.ReactNode;
+  isLeft?: boolean;
 }) => {
   return (
     <div className="hover:cursor-pointer relative group">
@@ -23,9 +25,10 @@ export const InfoBlock = ({
           "absolute bottom-10 -left-5 hidden group-hover:block transition-all",
           { "-left-[295px] ": isRight },
           { "-left-[130px] ": isMiddle },
+          { "-left-2 ": isLeft },
         )}
       >
-        <InfoPopup isRight={isRight} isMiddle={isMiddle}>
+        <InfoPopup isRight={isRight} isMiddle={isMiddle} isLeft={isLeft}>
           {children}
         </InfoPopup>
       </div>
