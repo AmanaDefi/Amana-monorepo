@@ -575,22 +575,32 @@ export default function VaultInputs({
     if (!inputToken || isTxInProgress) return;
 
     if (isDeposit) {
-      setInputBalance(tokenBalance);
-      setDisplayValue(tokenBalance.formatted);
+      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
+      const cleanAmount = Number(formattedAmount).toString();
+
+      setInputBalance({
+        ...tokenBalance,
+        formatted: cleanAmount,
+      });
+      setDisplayValue(cleanAmount);
       updateLocalStorageObject(vaultData.id, {
-        inputBal: JSON.stringify(tokenBalance, bigIntReplacer),
-        displayValue: tokenBalance.formatted,
+        inputBal: JSON.stringify(
+          {
+            ...tokenBalance,
+            formatted: cleanAmount,
+          },
+          bigIntReplacer,
+        ),
+        displayValue: cleanAmount,
       });
     } else {
       const maxValue =
         vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
-      console.log("VaultInputs - MAX click for withdraw:", {
-        vaultTotalAssetinToken,
-        maxValue,
-        isDeposit,
-      });
+      const formattedMaxValue = Number(maxValue).toFixed(7);
+      const cleanMaxValue = Number(formattedMaxValue).toString();
+
       handleChangeInput({
-        currentTarget: { value: maxValue },
+        currentTarget: { value: cleanMaxValue },
       } as React.ChangeEvent<HTMLInputElement>);
     }
   }, [
@@ -1237,18 +1247,18 @@ export default function VaultInputs({
     vaultTotalAssetinToken,
   ]);
 
-  const userSlippage = getCurrentSlippage(); 
+  const userSlippage = getCurrentSlippage();
   const minReceived = useMemo(() => {
     if (!conversionOutput.outputAmountInUSDFormatted) return "0.0";
 
     const expectedOutputUSD = parseFloat(
       conversionOutput.outputAmountInUSDFormatted.replace(/[^0-9.]/g, ""),
     );
-    const slippageDecimal = userSlippage / 100; 
+    const slippageDecimal = userSlippage / 100;
 
     const calculatedMinReceived = expectedOutputUSD * (1 - slippageDecimal);
 
-    return formatUSDValue(calculatedMinReceived); 
+    return formatUSDValue(calculatedMinReceived);
   }, [conversionOutput.outputAmountInUSDFormatted, userSlippage]);
 
   return (
@@ -1386,7 +1396,6 @@ export default function VaultInputs({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && isDeposit && (
                 <ChainSelector

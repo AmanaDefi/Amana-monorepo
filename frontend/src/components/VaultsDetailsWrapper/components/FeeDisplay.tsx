@@ -149,9 +149,9 @@ export default function FeeDisplay({
     }
 
     return (
-      <span className="flex flex-row items-center justify-between text-white py-1 text-sm md:text-[16px]">
+      <span className="flex flex-row items-center justify-between text-white mt-6 md:mt-0 py-1 text-sm md:text-[16px]">
         <div className="flex items-center gap-2">
-          <p className="ml-[10px]">Fee</p>
+          <p>Fee</p>
           <InfoBlock>
             💡 {performanceFee}% deducted from the profit earned in the vault
           </InfoBlock>

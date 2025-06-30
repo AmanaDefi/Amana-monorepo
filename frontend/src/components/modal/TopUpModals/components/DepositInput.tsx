@@ -87,7 +87,10 @@ export const DepositInput = ({
 
   const onMaxClick = () => {
     if (tokenBalance) {
-      setDepositAmount(tokenBalance?.formatted);
+      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
+
+      const cleanAmount = parseFloat(formattedAmount).toString();
+      setDepositAmount(cleanAmount);
       setError("");
     }
   };
