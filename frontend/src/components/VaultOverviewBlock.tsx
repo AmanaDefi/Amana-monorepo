@@ -15,12 +15,10 @@ type Props = {
   isLoading?: boolean;
 };
 
-// Skeleton component
 const SkeletonBox: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`bg-gray-600/20 animate-pulse rounded ${className}`} />
 );
 
-// Animated value component
 const AnimatedValue: React.FC<{
   value: string | number;
   className?: string;
@@ -70,7 +68,6 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   const riskRating = calculateRiskLevel(vault);
   const isHexColor = titleColor.startsWith("#");
 
-  // Check if we're still loading APY data specifically
   const isAPYLoading = isLoading || vaultAPY === undefined;
   const isTVLLoading = isLoading || totalAssets === undefined;
 
