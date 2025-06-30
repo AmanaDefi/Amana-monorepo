@@ -1272,7 +1272,7 @@ export default function VaultInputs({
           activeTab={isDeposit ? "Invest" : "Withdraw"}
           setActiveTab={handleTabChange}
         />
-        <div className="absolute top-0 right-0 z-30 mt-3">
+        <div className="absolute top-0 right-0 z-9 mt-3">
           <SlippageSettingsBlock
             setInputBalance={setInputBalance}
             vaultId={vaultData.id}
