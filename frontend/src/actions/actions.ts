@@ -950,12 +950,14 @@ export const Approvedeposit = async (
       abi: erc20ApproveAbi,
       functionName: "approve",
       args: [spender, transactionAmount],
-      account: activeAccount?.address,
+      account: activeAccount.address,
       chain: activeChain,
     });
+    console.log({txHash});
 
-    const publicClient = await getPublicClient(activeAccount);
+    const publicClient = await getPublicClient(activeAccount, activeChain.id);
     if (!publicClient) {
+      console.log('no public client')
       return false;
     }
 
@@ -965,9 +967,11 @@ export const Approvedeposit = async (
     if (receipt.status === "success") {
       return receipt;
     } else {
+      console.log(receipt.status);
       return false;
     }
   } catch (error: any) {
+    console.log('error approve:', error)
     return false;
   }
 };

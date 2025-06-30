@@ -1420,7 +1420,10 @@ function Interaction({
             action: actions[nextStep + 1],
             step: nextStep + 1,
           });
-          handleMainAction(actions[nextStep + 1]);
+          console.log('crosschainInvestHash', crosschainInvestHash)
+          if (!crosschainInvestHash) {
+            handleMainAction(actions[nextStep + 1]);
+          }
         }, 100);
       }
 
@@ -1845,7 +1848,10 @@ function Interaction({
     console.log("🆔 [MAIN-ACTION] Success result type:", typeof success);
     console.log("🔢 [MAIN-ACTION] Success result as boolean:", !!success);
 
-    console.log("📞 [MAIN-ACTION] === CALLING INTERACTION POST HOOK ===");
+    console.log(
+      "📞 [MAIN-ACTION] === CALLING INTERACTION POST HOOK ===",
+      action,
+    );
     await interactionPostHook(!!success);
     console.log("🏁 [MAIN-ACTION] === MAIN ACTION COMPLETED ===");
   }
@@ -1926,6 +1932,7 @@ function Interaction({
 
   useEffect(() => {
     if (prevLebel.current !== "" && prevLebel.current !== label) {
+      console.log("handleDone, ", prevLebel.current, label);
       handleDone();
     }
     prevLebel.current = label;

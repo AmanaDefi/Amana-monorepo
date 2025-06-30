@@ -138,7 +138,7 @@ export const DepositInput = ({
           </div>
 
           <div className="flex items-center mt-1">
-            <span className="text-white text-2xl w-[50%]">
+            <span className="text-white text-2xl">
               {<InputNumber value={depositAmount} onChange={handleSetAmount} />}
             </span>
             <div className="flex flex-center">
