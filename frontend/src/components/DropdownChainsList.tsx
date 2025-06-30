@@ -12,6 +12,7 @@ export const DropdownChainsList = ({
   minWidth,
   maxWidth,
   alignment = "left",
+  variant = "chain",
 }: {
   width: number;
   isIconButton: boolean;
@@ -28,7 +29,10 @@ export const DropdownChainsList = ({
   minWidth?: number | string;
   maxWidth?: number | string;
   alignment?: "left" | "right";
+  variant?: "chain" | "token";
 }) => {
+  const isToken = variant === "token";
+
   return (
     <AnimatePresence>
       {isShownList && (
@@ -42,7 +46,7 @@ export const DropdownChainsList = ({
             width,
             top: !needReset ? 65 : isIconButton ? 30 : 40,
           }}
-          className={`dropdown-scrollbar z-10 ${minWidth && "xl:min-w-[263px] md:!w-[220px] !w-[90vw]"} rounded-2xl absolute top-14 flex flex-col gap-2 bg-[#14171F] shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] p-2 md:p-4 ${alignment === "right" ? "md:right-0 -left-[160px] md:left-auto" : "left-0"} max-h-[260px] overflow-y-auto`}
+          className={`dropdown-scrollbar z-10 ${minWidth && "xl:min-w-[263px] md:!w-[263px] !w-[90vw]"} rounded-2xl absolute top-14 flex flex-col gap-2 bg-[#14171F] shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] p-2 md:p-4 ${alignment === "right" ? "md:right-0 -left-[160px] md:left-auto" : "left-0"} max-h-[260px] overflow-y-auto`}
           role="menu"
         >
           {isIconButton && (
@@ -52,6 +56,7 @@ export const DropdownChainsList = ({
               </p>
             </div>
           )}
+
           {options.map((option, index) => (
             <motion.div
               key={option.value}
@@ -74,10 +79,31 @@ export const DropdownChainsList = ({
                     sizes="20px"
                   />
                 )}
-                <p>{option.value}</p>
+                <p className={`${isToken ? "text-white" : "text-white"}`}>
+                  {option.value}
+                </p>
               </div>
             </motion.div>
           ))}
+
+          {needReset && (
+            <motion.button
+              type="button"
+              onClick={(event) => handleSelectedOption(event, "")}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: options.length * 0.03 + 0.1 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`pt-2  underline font-normal text-sm leading-4 transition-all duration-200 lg:hidden ${
+                isToken
+                  ? "text-white hover:text-gray-300"
+                  : "text-[#535E73] hover:text-blue-button"
+              }`}
+            >
+              Reset to default
+            </motion.button>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

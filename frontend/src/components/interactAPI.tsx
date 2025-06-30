@@ -1338,6 +1338,8 @@ function Interaction({
   const walletContext = useWallet();
   const prevLebel = useRef(label);
 
+  const { isButtonDisabled } = useTransactionStore();
+
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
     actionKey: Action,
@@ -1960,9 +1962,9 @@ function Interaction({
             !!errorMessage;
 
           const isDisabled =
+            isButtonDisabled || 
             isDisabledByProcessing ||
-            isDisabledByHash ||
-            isDisabledByValidation;
+            isDisabledByHash;
 
           return (
             <Button

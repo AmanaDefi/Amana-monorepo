@@ -44,14 +44,48 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       }
     };
 
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    const handleScroll = () => {
+      onClose();
+    };
+
+    const handleResize = () => {
+      onClose();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        onClose();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscapeKey);
+      window.addEventListener("scroll", handleScroll, true);
+      window.addEventListener("resize", handleResize);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscapeKey);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [isOpen, onClose, triggerRef]);
+
+  useEffect(() => {
+    if (!walletAddress && isOpen) {
+      onClose();
+    }
+  }, [walletAddress, isOpen, onClose]);
 
   const dropdownVariants = {
     hidden: {
@@ -133,13 +167,16 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
               <p className="text-[14px] text-[#535E73] font-normal">
                 {walletAddress.slice(0, 1)}...{walletAddress.slice(-6)}
               </p>
-              <div onClick={handleCopy}>
+              <div
+                onClick={handleCopy}
+                className="cursor-pointer p-1 hover:bg-gray-700 rounded transition-colors"
+              >
                 {copySuccess ? <CheckIcon /> : <CopyIcon />}
               </div>
             </div>
             <button
               onClick={handleDisconnect}
-              className="p-1 text-[#535E73] hover:text-white"
+              className="p-1 text-[#535E73] hover:text-white transition-colors"
             >
               <LogOutIcon width={19} height={18} className="fill-[#535E73]" />
             </button>

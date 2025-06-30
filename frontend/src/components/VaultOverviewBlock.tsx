@@ -1,7 +1,6 @@
 import React from "react";
 import { VaultAPY, VaultTotalAssets, VaultData } from "@/types/types";
 import { formatNumberWithSuffix } from "@/utils/utils";
-
 import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
@@ -11,23 +10,32 @@ type Props = {
   vault: VaultData;
   vaultAPY?: VaultAPY;
   totalAssets?: VaultTotalAssets;
+  titleColor?: string;
 };
 
 export const VaultOverviewBlock: React.FC<Props> = ({
   vault,
   vaultAPY,
   totalAssets,
+  titleColor = "text-white",
 }) => {
   const apyValue = Number(vaultAPY?.APY7d || 0);
   const riskRating = calculateRiskLevel(vault);
 
+  const isHexColor = titleColor.startsWith("#");
 
   return (
     <>
       <div className="flex flex-row justify-between items-center w-full">
         <div className="flex flex-col gap-2">
           <div className="flex flex-row gap-1 items-center">
-            <p className="font-normal text-base leading-4 uppercase text-white">
+            <p
+              className={classNames(
+                "font-normal text-base leading-4 uppercase",
+                { [titleColor]: !isHexColor },
+              )}
+              style={isHexColor ? { color: titleColor } : undefined}
+            >
               TVL
             </p>
             <InfoBlock>
@@ -37,13 +45,23 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             </InfoBlock>
           </div>
           <p className="text-blue-digits font-bold text-xl leading-6">
-            ${totalAssets?.totalAssets ? formatNumberWithSuffix(Number(totalAssets.totalAssets)) : "0"}
+            $
+            {totalAssets?.totalAssets
+              ? formatNumberWithSuffix(Number(totalAssets.totalAssets))
+              : "0"}
           </p>
         </div>
 
         <div className="flex flex-col gap-2 items-center">
           <div className="flex flex-row gap-1 items-center">
-            <p className="font-normal text-base leading-4 text-white">Risk</p>
+            <p
+              className={classNames("font-normal text-base leading-4", {
+                [titleColor]: !isHexColor,
+              })}
+              style={isHexColor ? { color: titleColor } : undefined}
+            >
+              Risk
+            </p>
             <InfoBlock isMiddle>
               💡 Risk Rating: {riskRating} <br />
               This vault has low protocol and slippage risk. Risk scores are
@@ -59,7 +77,13 @@ export const VaultOverviewBlock: React.FC<Props> = ({
 
         <div className="flex flex-col gap-2">
           <div className="flex flex-row gap-1 items-end">
-            <p className="font-normal text-base leading-4 uppercase text-white">
+            <p
+              className={classNames(
+                "font-normal text-base leading-4 uppercase",
+                { [titleColor]: !isHexColor },
+              )}
+              style={isHexColor ? { color: titleColor } : undefined}
+            >
               APY (7d)
             </p>
             <InfoBlock isRight>

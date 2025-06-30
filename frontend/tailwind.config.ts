@@ -55,7 +55,8 @@ const config: Config = {
       md: "768px",
       lg: "1024px",
       xl: "1280px",
-      "2xl": "1536px",
+      "2xl": "1440px",
+      "3xl": "1536px",
     },
     extend: {
       backgroundImage: {
@@ -64,7 +65,8 @@ const config: Config = {
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
         "deep-blue-gradient":
           "linear-gradient(90deg, rgba(20, 23, 31, 0.15), #1B46E0)",
-        'custom-gradient': 'linear-gradient(139deg, #14171f 0%, #14171f 55%, rgba(27,70,224,0.25) 70%, rgba(27,70,224,0.5) 90%, #1b46e0 120%)',
+        "custom-gradient":
+          "linear-gradient(139deg, #14171f 0%, #14171f 55%, rgba(27,70,224,0.25) 70%, rgba(27,70,224,0.5) 90%, #1b46e0 120%)",
       },
       borderRadius: {
         "4xl": "2rem",

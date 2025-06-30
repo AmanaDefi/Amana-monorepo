@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import VaultHeader from "@/components/VaultHeader";
 import VaultInputs from "@/components/VaultInputs";
 import {
   VaultData,
@@ -12,9 +11,7 @@ import {
   Balance,
   Tabs,
 } from "@/types/types";
-import {
-  useUpdateAPYs,
-} from "@/hooks/hooks";
+import { useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -27,6 +24,7 @@ import {
 } from "@/utils/localStorageUtils";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
+import ChartDropdown from "@/components/VaultsDetailsWrapper/components/ChartDropdown";
 
 import Button from "@/components/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
@@ -45,7 +43,6 @@ import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInv
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
-import { useAuthStore } from "@/store/authStore";
 import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
 import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDepositInstruction";
 import GiftIcon from "@/components/svg/GiftIcon";
@@ -55,10 +52,17 @@ import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/Withd
 import { useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 
+import { motion, AnimatePresence } from "framer-motion";
+import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultHeaderInfo";
+import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
+
+import ChainsModal from "@/components/modal/chains/ChainsModal";
+
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
   setVaultSymbol?: (symbol: string) => void;
-}> = ({ vaultID, setVaultSymbol }) => {
+  isFromTopUp?: boolean;
+}> = ({ vaultID, setVaultSymbol, isFromTopUp }) => {
   const [vaultData, setVaultData] = useState<VaultData>();
   const router = useRouter();
   const pathname = usePathname();
@@ -81,6 +85,18 @@ const VaultsDetailContainer: React.FC<{
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
 
+  const [openDropdown, setOpenDropdown] = useState<string | null>(
+    "transaction-progress",
+  );
+
+  const handleDropdownToggle = (dropdownId: string, isOpen: boolean) => {
+    if (isOpen) {
+      setOpenDropdown(dropdownId);
+    } else {
+      setOpenDropdown(null);
+    }
+  };
+
   const [depositData, setDepositData] = useState({
     amount: "0",
     symbol: "",
@@ -99,8 +115,6 @@ const VaultsDetailContainer: React.FC<{
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain } = useMultiChain();
-
-  const { openStep } = useAuthStore();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -170,18 +184,19 @@ const VaultsDetailContainer: React.FC<{
   );
 
   useEffect(() => {
-    if (vaultID) {
+    if (vaultID && activeChain) {
       const vaultInfo = getLocalStorageObject(vaultID.toString());
-      if (vaultInfo?.selectedChain && activeChain) {
+      if (vaultInfo?.selectedChain) {
         try {
           const savedChain = JSON.parse(vaultInfo.selectedChain, bigIntReviver);
           if (savedChain.id !== activeChain.id) {
-            switchToChain(savedChain);
           }
-        } catch (error) { }
+        } catch (error) {
+          console.error("Error parsing selectedChain from localStorage", error);
+        }
       }
     }
-  }, [vaultID, switchToChain, activeChain]);
+  }, [vaultID, activeChain]);
 
   useEffect(() => {
     const checkTransactionState = () => {
@@ -220,13 +235,17 @@ const VaultsDetailContainer: React.FC<{
   }, [vaultData?.id]);
 
   const { data: vaultFromGraph } = useVaultDetailsFromGraph(vaultIdStr);
-  const memoizedWalletAddress = useMemo(() => walletAddress || undefined, [walletAddress]);
-  const { userVaultBalances } = useUserVaultBalancesFromGraph(memoizedWalletAddress);
-  
+  const memoizedWalletAddress = useMemo(
+    () => walletAddress || undefined,
+    [walletAddress],
+  );
+  const { userVaultBalances } = useUserVaultBalancesFromGraph(
+    memoizedWalletAddress,
+  );
+
   const backPath: string = pathname.includes("old-vaults")
     ? "/old-vaults"
     : "/";
-
 
   useEffect(() => {
     if (vaultFromGraph?.vault) {
@@ -255,28 +274,33 @@ const VaultsDetailContainer: React.FC<{
 
   // Set user vault balance from graph data
   useEffect(() => {
-    const userBalance = userVaultBalances?.find(balance => balance.vaultId === vaultIdStr);
-    
+    const userBalance = userVaultBalances?.find(
+      (balance) => balance.vaultId === vaultIdStr,
+    );
+
     if (userVaultBalances?.length && vaultIdStr) {
       if (userBalance) {
         // Convert formatted balance string to Balance object
         const balanceValue = String(userBalance.balance);
-        
+
         if (userVaultBalance?.formatted !== balanceValue) {
           const balance: Balance = {
             value: BigInt(0), // We don't have raw value from graph, using 0
             formatted: balanceValue,
-            formattedUSD: "$0.00" // Will be calculated in VaultHeader
+            formattedUSD: "$0.00", // Will be calculated in VaultHeader
           };
-          
+
           setUserVaultBalance(balance);
-          
+
           setVaultTotalAssetinToken({
             vaultId: vaultIdStr,
-            totalAssetsinToken: balanceValue
+            totalAssetsinToken: balanceValue,
           });
         }
-      } else if (userVaultBalance !== undefined || vaultTotalAssetinToken !== undefined) {
+      } else if (
+        userVaultBalance !== undefined ||
+        vaultTotalAssetinToken !== undefined
+      ) {
         setUserVaultBalance(undefined);
         setVaultTotalAssetinToken(undefined);
       }
@@ -297,21 +321,24 @@ const VaultsDetailContainer: React.FC<{
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
-  
-  const memoizedPrices = useMemo(() => ({
-    crv: crvTokenPrice,
-    cvx: cvxTokenPrice,
-    eth: ethTokenPrice,
-    comp: compTokenPrice,
-    op: opTokenPrice
-  }), [
-    Math.floor((crvTokenPrice || 0) * 100),
-    Math.floor((cvxTokenPrice || 0) * 100),
-    Math.floor((ethTokenPrice || 0) * 100),
-    Math.floor((compTokenPrice || 0) * 100),
-    Math.floor((opTokenPrice || 0) * 100)
-  ]);
-  
+
+  const memoizedPrices = useMemo(
+    () => ({
+      crv: crvTokenPrice,
+      cvx: cvxTokenPrice,
+      eth: ethTokenPrice,
+      comp: compTokenPrice,
+      op: opTokenPrice,
+    }),
+    [
+      Math.floor((crvTokenPrice || 0) * 100),
+      Math.floor((cvxTokenPrice || 0) * 100),
+      Math.floor((ethTokenPrice || 0) * 100),
+      Math.floor((compTokenPrice || 0) * 100),
+      Math.floor((opTokenPrice || 0) * 100),
+    ],
+  );
+
   useUpdateAPYs(
     currentVault,
     setVaultAPYs,
@@ -332,6 +359,14 @@ const VaultsDetailContainer: React.FC<{
       });
     },
     [vaultID],
+  );
+
+  const handleChainAndTokenSelect = useCallback(
+    (chain: Chain, token: Token) => {
+      handleChainSelect(chain);
+      handleTokenSelect(token);
+    },
+    [handleChainSelect, handleTokenSelect],
   );
 
   const isProcessingTx =
@@ -381,11 +416,7 @@ const VaultsDetailContainer: React.FC<{
           <button
             ref={giftButtonRef}
             onClick={() => {
-              if (!walletAddress || isDeposit) {
-                openStep("mobileInfo");
-              } else {
-                setShowMobileInvestment((prev) => !prev);
-              }
+              setShowMobileInvestment((prev) => !prev);
             }}
             className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
             type="button"
@@ -441,17 +472,23 @@ const VaultsDetailContainer: React.FC<{
         </div>
       </div>
       {walletAddress && isWithdraw && <WithdrawPendingBlock />}
-      <VaultHeader
-        vaultData={vaultData}
-        userVaultBalance={userVaultBalance}
-        selectedVaultId={vaultID.toString()}
-        vaultTotalAsset={vaultTotalAsset}
-        vaultAPYs={vaultAPYs}
-        transactionCompleted={transactionCompleted}
-        selectedToken={selectedToken}
-        onDepositDataUpdate={handleDepositDataUpdate}
-        isDeposit={isDeposit}
-      />
+
+      <VaultHeaderInfo vaultData={vaultData} />
+
+      {walletAddress && isDeposit && (
+        <div className="block lg:hidden mt-6 lg:mt-0">
+          <VaultStats
+            vaultData={vaultData}
+            userVaultBalance={userVaultBalance}
+            selectedVaultId={vaultID.toString()}
+            vaultAPYs={vaultAPYs}
+            transactionCompleted={transactionCompleted}
+            selectedToken={selectedToken}
+            onDepositDataUpdate={handleDepositDataUpdate}
+            isDeposit={isDeposit}
+          />
+        </div>
+      )}
 
       <div className="block md:hidden mt-4">
         <MobileDepositInstruction
@@ -465,27 +502,41 @@ const VaultsDetailContainer: React.FC<{
         />
       </div>
 
-      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-[56px] font-gotham">
-        <div>
+      <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-10 font-gotham">
+        <AnimatePresence mode="wait" initial={false}>
           {shouldShowDepositComplete ? (
-            <DepositComplete
-              vaultData={vaultData}
-              selectedToken={selectedToken}
-              userVaultBalance={userVaultBalance}
-              onClose={() => {
-                setFinishedTransaction(false);
-                setLastTransactionStepFeedback({});
-                setTransactionStepFeedback({});
-                setIsTransactionProcessing(false);
+            <motion.div
+              key="deposit-complete-block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DepositComplete
+                vaultData={vaultData}
+                selectedToken={selectedToken}
+                userVaultBalance={userVaultBalance}
+                onClose={() => {
+                  setFinishedTransaction(false);
+                  setLastTransactionStepFeedback({});
+                  setTransactionStepFeedback({});
+                  setIsTransactionProcessing(false);
 
-                if (vaultID) {
-                  localStorage.removeItem(vaultID.toString());
-                }
-                setTransactionCompleted(true);
-              }}
-            />
+                  if (vaultID) {
+                    localStorage.removeItem(vaultID.toString());
+                  }
+                  setTransactionCompleted(true);
+                }}
+              />
+            </motion.div>
           ) : (
-            <>
+            <motion.div
+              key="vault-inputs-block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
               <div className="block md:hidden">
                 <VaultOverviewBlock
                   vault={vaultData}
@@ -503,13 +554,14 @@ const VaultsDetailContainer: React.FC<{
                       (a) => a.vaultId === vaultID.toString(),
                     )}
                     totalAssets={vaultTotalAsset}
+                    titleColor="#535E73"
                   />
                 </VaultCardInfoBlock>
               </div>
 
               {walletAddress && isWithdraw && <WithdrawalNotice />}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] xl:min-w-[426px] 2xl:min-w-[707px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-8">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[470px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}
@@ -523,20 +575,35 @@ const VaultsDetailContainer: React.FC<{
                   selectedToken={selectedToken}
                   selectedChain={activeChain}
                   onSelectChain={handleChainSelect}
+                  onSelectChainAndToken={handleChainAndTokenSelect}
                   vaultId={vaultID.toString()}
                 />
               </div>
-            </>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
-        <div className="hidden md:flex flex-col w-full xl:max-w-[576px] 2xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] 3xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress && (
             <YourInvestment
               depositAmount={depositData.amount}
               vaultTokenSymbol={depositData.symbol}
               depositUSDValue={depositData.usdValue}
             />
+          )}
+          {walletAddress && isDeposit && (
+            <div className="hidden lg:block">
+              <VaultStats
+                vaultData={vaultData}
+                userVaultBalance={userVaultBalance}
+                selectedVaultId={vaultID.toString()}
+                vaultAPYs={vaultAPYs}
+                transactionCompleted={transactionCompleted}
+                selectedToken={selectedToken}
+                onDepositDataUpdate={handleDepositDataUpdate}
+                isDeposit={isDeposit}
+              />
+            </div>
           )}
           <Dropdown
             title={
@@ -547,6 +614,10 @@ const VaultsDetailContainer: React.FC<{
                   : "Deposit flow"
             }
             defaultOpen={true}
+            isOpen={openDropdown === "transaction-progress"}
+            onToggle={(isOpen) =>
+              handleDropdownToggle("transaction-progress", isOpen)
+            }
           >
             <DepositInstruction
               transactionStepFeedback={transactionStepFeedback}
@@ -558,8 +629,27 @@ const VaultsDetailContainer: React.FC<{
               isProcessing={isTransactionProcessing}
             />
           </Dropdown>
+          <Dropdown
+            title="Historical APY"
+            defaultOpen={false}
+            isOpen={openDropdown === "chart"}
+            onToggle={(isOpen) => handleDropdownToggle("chart", isOpen)}
+            transparentDesktop={true}
+          >
+            <ChartDropdown
+              vaultId={vaultID.toString()}
+              vaultName={vaultData.name.replace("Pool", "").replace("Lend", "")}
+            />
+          </Dropdown>
           {isDeposit && (
-            <Dropdown title="What happens to my deposit?" defaultOpen={true}>
+            <Dropdown
+              title="What happens to my deposit?"
+              defaultOpen={false}
+              isOpen={openDropdown === "deposit-info"}
+              onToggle={(isOpen) =>
+                handleDropdownToggle("deposit-info", isOpen)
+              }
+            >
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}
@@ -571,7 +661,13 @@ const VaultsDetailContainer: React.FC<{
               />
             </Dropdown>
           )}
-          <Dropdown title="Information" defaultOpen={false}>
+
+          <Dropdown
+            title="Information"
+            defaultOpen={false}
+            isOpen={openDropdown === "information"}
+            onToggle={(isOpen) => handleDropdownToggle("information", isOpen)}
+          >
             <VaultInformationContent
               vaultData={vaultData}
               vaultExplorerBaseUrl={vaultExplorerBaseUrl}
@@ -584,6 +680,8 @@ const VaultsDetailContainer: React.FC<{
           </Dropdown>
         </div>
       </section>
+
+      {vaultData && <ChainsModal vaultData={vaultData} />}
     </div>
   ) : (
     <div></div>

@@ -12,7 +12,7 @@ export const SignIn = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
   const { createWallet } = useCreateWallet();
 
-  const { signupWithPasskey } = useSignupWithPasskey({
+  const { signupWithPasskey, state } = useSignupWithPasskey({
     onComplete: async (result) => {
       await createWallet();
       if (!result.wasAlreadyAuthenticated) {
@@ -24,6 +24,8 @@ export const SignIn = () => {
       setError(err);
     },
   });
+
+  const isButtonDisabled = state.status === "submitting-response";
 
   return (
     <Modal
@@ -93,6 +95,7 @@ export const SignIn = () => {
           <Button
             onClick={signupWithPasskey}
             variant="custom"
+            disabled={isButtonDisabled}
             className="w-full h-12 rounded-[8px] border border-[#3E73C4] text-white shadow-md hover:bg-[#3E73C4]/10 !text-[16px] !font-bold transition-all duration-200 !font-gotham"
           >
             Create new passkey

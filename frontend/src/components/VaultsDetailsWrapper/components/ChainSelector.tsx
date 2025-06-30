@@ -1,91 +1,60 @@
-import React, { useState, useEffect, useRef } from "react";
+"use client";
+import React, { useRef, useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Chain } from "viem";
 import { chainsWithCustomRpcs, CHAIN_ICONS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
-import { DropdownChainsList } from "@/components/DropdownChainsList";
 import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
 import { useWallets } from "@privy-io/react-auth";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { Token, VaultData } from "@/types/types";
 
 interface ChainSelectorProps {
   selectedChain?: Chain;
   onSelectChain: (chain: Chain) => void;
+  selectedToken?: Token;
+  onSelectChainAndToken?: (chain: Chain, token: Token) => void;
   className?: string;
   vaultId?: string;
   isFromTopUp?: boolean;
+  vaultData?: VaultData;
 }
 
 export default function ChainSelector({
   selectedChain,
   onSelectChain,
+  selectedToken,
+  onSelectChainAndToken,
   className = "",
   vaultId,
   isFromTopUp,
+  vaultData,
 }: ChainSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { activeChain, switchToChain, walletAddress } = useMultiChain();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
+  const { openModal } = useChainTokenModalStore();
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleChainSelect = async (
-    event:
-      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
-      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    chainName: string,
-  ) => {
-    event.stopPropagation();
-    event.preventDefault();
+  const handleOpenModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
 
     if (vaultId) {
       const isTxInProgress = CheckTheTxIsInProgress(vaultId);
       if (isTxInProgress) return;
     }
 
-    if (!walletAddress) {
-      warningToast("Please connect your wallet to select a chain");
-      return;
-    }
-
-    const chainConfig = chainsWithCustomRpcs().find(
-      (config) => config.name === chainName,
+    openModal(
+      selectedChain || null,
+      selectedToken || null,
+      onSelectChain,
+      onSelectChainAndToken,
+      vaultData,
+      isFromTopUp,
     );
-    if (!chainConfig) return;
-
-    const chain = chainConfig;
-
-    if (selectedChain?.id === chain.id) {
-      setIsOpen(false);
-      return;
-    }
-
-    onSelectChain(chain);
-
-    if (activeChain?.id !== chain.id) {
-      try {
-        await switchToChain(chain);
-      } catch (error) {
-        console.log("Failed to switch chain:", error);
-      }
-    }
-
-    setIsOpen(false);
   };
 
   const displayedChain = selectedChain || activeChain;
@@ -112,18 +81,9 @@ export default function ChainSelector({
         </p>
       </div>
 
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (walletAddress && activeAccount?.walletClientType === "privy" && !isFromTopUp) return;
-
-            if (vaultId) {
-              const isTxInProgress = CheckTheTxIsInProgress(vaultId);
-              if (isTxInProgress) return;
-            }
-            setIsOpen(!isOpen);
-          }}
+          onClick={handleOpenModal}
           className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
             walletAddress && activeAccount?.walletClientType === "privy" && !isFromTopUp
               ? ""
@@ -145,26 +105,10 @@ export default function ChainSelector({
               </div>
             ))}
           </div>
-          {(!walletAddress || activeAccount?.walletClientType !== "privy") && (
-            <ChevronDownIcon
-              className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
-                isOpen ? "rotate-180" : ""
-              }`}
-            />
+          {(!walletAddress) && (
+            <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
           )}
         </button>
-        {(!walletAddress || activeAccount?.walletClientType !== "privy") && (
-          <DropdownChainsList
-            width={263}
-            isIconButton={false}
-            options={chainOptions}
-            selectedOption={displayedChain?.name || ""}
-            handleSelectedOption={handleChainSelect}
-            isShownList={isOpen}
-            needReset={false}
-            alignment="right"
-          />
-        )}
       </div>
     </div>
   );

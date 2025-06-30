@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import ProfileCircle from "@/components/svg/ProfileCircle";
 import ProfileIcon from "@/components/svg/Profile";
@@ -16,7 +15,7 @@ const ProfileInfo = () => {
 
   return (
     <>
-      {isConnected && ( 
+      {isConnected && (
         <div className="w-full mt-0 md:mt-8 flex relative flex-col items-center bg-[rgba(20,23,31,0.15)] border border-[#3E3C59] shadow-custom md:flex-row md:items-start md:bg-transparent md:backdrop-blur-none md:shadow-none md:p-0 md:rounded-none md:border-none backdrop-blur-[20px] py-8 px-[23px] rounded-3xl">
           <ProfileCircle
             width={100}
@@ -52,8 +51,10 @@ const ProfileInfo = () => {
               Total Portfolio
             </p>
             <div className="text-[32px] font-normal md:font-medium md:text-[24px]">
-              {Number(balance.formatted).toFixed(4)}{" "}
-              {activeChain?.nativeCurrency.symbol ?? 'Zeta'}
+              {balance?.formatted && Number(balance.formatted) > 0
+                ? Number(balance.formatted).toFixed(4)
+                : "0"}{" "}
+              {activeChain?.nativeCurrency?.symbol || ""}
             </div>
             <p
               className={`md:hidden ${205.6 > 0 ? "text-[#05D47F]" : "text-white"}`}

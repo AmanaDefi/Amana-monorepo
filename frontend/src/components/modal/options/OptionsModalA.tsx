@@ -29,7 +29,7 @@ const OptionsModalA = () => {
       paddingClass="pt-[45px] pl-[57px] pb-[26px] pr-[91px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[761px]"
-      minHeight="min-h-[560px]"
+      minHeight="min-h-[355px]"
       customCloseButton={
         <button
           onClick={closeAll}
@@ -40,13 +40,14 @@ const OptionsModalA = () => {
         </button>
       }
     >
-      <div className="flex flex-col justify-between min-h-[489px]">
+      <div className="flex flex-col justify-between">
         <div className="flex max-w-[761px] flex-row gap-[56px]">
           <div className="flex flex-col justify-between">
             <ConnectWallet />
           </div>
           <div className="flex flex-col ">
             <PopularOptions />
+            <p className="text-sm text-[#535E73] mt-4">Popular options</p>
             <div className="flex flex-col gap-4 mt-6">
               <ModalButton
                 label="Smart Wallet"
@@ -60,9 +61,6 @@ const OptionsModalA = () => {
               />
             </div>
           </div>
-        </div>
-        <div>
-          <BackedBy />
         </div>
       </div>
     </Modal>
