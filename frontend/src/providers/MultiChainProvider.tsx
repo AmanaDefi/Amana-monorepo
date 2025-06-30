@@ -150,17 +150,17 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const latestChainRef = useRef<string | null>(null);
 
-  const disconnectConnectors = useCallback(() => {
+  const disconnectConnectors = useCallback(async () => {
     if (!!wallets?.length) {
-      wallets.forEach((wallet) => {
-        connectors?.find((con) => con.id === wallet.meta.id)?.disconnect();
+      wallets.forEach(async (wallet) => {
+        await connectors?.find((con) => con.id === wallet.meta.id)?.disconnect();
       });
     }
   }, [connectors, wallets]);
 
-  const evmDisconnect = useCallback(() => {
-    disconnectConnectors();
-    logout();
+  const evmDisconnect = useCallback(async () => {
+    await disconnectConnectors();
+    await logout();
   }, [logout, disconnectConnectors]);
 
   useEffect(() => {
@@ -235,7 +235,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (selectedChain == "evm") {
         debugLog("Disconnecting EVM wallet before Solana connection");
-        evmDisconnect();
+        await evmDisconnect();
       }
       setVisible(true);
       setSelectedChain("solana");
@@ -283,7 +283,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("connectorId");
     setSelectedChain(null);
     disconnect();
-    evmDisconnect();
+    await evmDisconnect();
     setIsModalOpen(false);
     clearWalletState();
     debugLog("All wallets disconnected");
