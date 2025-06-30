@@ -15,11 +15,11 @@ const ConnectWallet = () => {
         <AmanaLogo width={78} height={55} className="w-[78px] h-[55px]" />
         <h1 className="text-[34px] font-bold">AMANA</h1>
       </div>
-      <div className="flex flex-col gap-6 mb-8">
+      <div className="flex flex-col gap-4 mb-[46px]">
         <span className="text-white text-[18px] font-bold">
           Connect your wallet
         </span>
-        <p className="text-white text-[16px] w-[320px]">
+        <p className="text-white text-sm w-[263px]">
           Connecting your wallet is like &ldquo;logging in&rdquo; to Web3.
           Select your wallet from the options to get started
         </p>
