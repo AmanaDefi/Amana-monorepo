@@ -53,6 +53,7 @@ import type { IConnection } from "codemelt-retro-api-sdk";
 import { Connector } from "wagmi";
 import { ConnectedWallet } from "@privy-io/react-auth";
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
+import { showErrorToast } from "@/toasts";
 
 dotenv.config();
 
@@ -76,7 +77,7 @@ const BLOCK_TIME: { [chainId: number]: number } = {
 export async function calculateEddyAPY(
   receiptTokenAddress: Address,
   strategyChain: Chain,
-  wallet: ConnectedWallet
+  wallet: ConnectedWallet,
 ) {
   const minterAbi = [
     {
@@ -331,22 +332,22 @@ export async function calculateConvexEthereumRewardsAPY(
     },
   ];
 
-    const multicallData = await provider.call({
-      to: mcAddr,
-      data: mcIface.encodeFunctionData("aggregate3", [calls]),
-    });
-    const [results] = mcIface.decodeFunctionResult(
-      "aggregate3",
-      multicallData,
-    ) as any;
-  
-    // Decode batched results
-    const crvRewardRate = BigInt(results[0].returnData);
-    const totalSupply = BigInt(results[1].returnData);
-    const extraAddrRaw = results[2].success
-      ? hexDataSlice(results[2].returnData, 12)
-      : null;
-    const virtualPrice = BigInt(results[3].returnData);
+  const multicallData = await provider.call({
+    to: mcAddr,
+    data: mcIface.encodeFunctionData("aggregate3", [calls]),
+  });
+  const [results] = mcIface.decodeFunctionResult(
+    "aggregate3",
+    multicallData,
+  ) as any;
+
+  // Decode batched results
+  const crvRewardRate = BigInt(results[0].returnData);
+  const totalSupply = BigInt(results[1].returnData);
+  const extraAddrRaw = results[2].success
+    ? hexDataSlice(results[2].returnData, 12)
+    : null;
+  const virtualPrice = BigInt(results[3].returnData);
 
   const secondsPerYear = 365 * 24 * 60 * 60;
   const crvPerLpPerYear =
@@ -953,11 +954,11 @@ export const Approvedeposit = async (
       account: activeAccount.address,
       chain: activeChain,
     });
-    console.log({txHash});
+    console.log({ txHash });
 
     const publicClient = await getPublicClient(activeAccount, activeChain.id);
     if (!publicClient) {
-      console.log('no public client')
+      console.log("no public client");
       return false;
     }
 
@@ -971,7 +972,13 @@ export const Approvedeposit = async (
       return false;
     }
   } catch (error: any) {
-    console.log('error approve:', error)
+    console.log("error approve:", error.message);
+    if (
+      error?.message?.includes("executing this transaction exceeds the balance") &&
+      activeAccount.walletClientType === "privy"
+    ) {
+      showErrorToast("Insufficient ZETA balance for perform transaction.");
+    }
     return false;
   }
 };
@@ -1003,7 +1010,10 @@ const getPathDataAndMinSharesOut = async (
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
   }
-  const publicClient = await getPublicClient(activeWallet, vaultData.protocol.chainId);
+  const publicClient = await getPublicClient(
+    activeWallet,
+    vaultData.protocol.chainId,
+  );
   if (!publicClient) throw new Error("Error get public client");
 
   const sharesOutForUnderlying = await publicClient.readContract({
@@ -1690,7 +1700,10 @@ export const fetchUserVaultBalance = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeAccount, chainsWithCustomRpcs()[0].id);
+  const publicClient = await getPublicClient(
+    activeAccount,
+    chainsWithCustomRpcs()[0].id,
+  );
   if (!publicClient) {
     console.log(
       `Failed to fetch public client for chai id ID ${chainsWithCustomRpcs()[0].id}`,
@@ -1735,7 +1748,10 @@ export const fetchUserVaultMaxRedeem = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeWallet, chainsWithCustomRpcs()[0].id);
+  const publicClient = await getPublicClient(
+    activeWallet,
+    chainsWithCustomRpcs()[0].id,
+  );
   if (!publicClient) {
     console.log(`Error get public client ${chainsWithCustomRpcs()[0].id}`);
     return null;
@@ -1768,7 +1784,10 @@ export const fetchUserVaultMaxWithdraw = async (
     decimals,
   });
 
-  const publicClient = await getPublicClient(activeWallet, chainsWithCustomRpcs()[0].id);
+  const publicClient = await getPublicClient(
+    activeWallet,
+    chainsWithCustomRpcs()[0].id,
+  );
   if (!publicClient) throw new Error("failed to get publicClient");
   const maxWithdraw = await publicClient.readContract({
     address: vaultAddress,
@@ -1924,7 +1943,10 @@ export const getSharesFromDeposit = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeWallet, chainsWithCustomRpcs()[0].id);
+  const publicClient = await getPublicClient(
+    activeWallet,
+    chainsWithCustomRpcs()[0].id,
+  );
 
   if (!publicClient) {
     const errorMsg = `can't get publicClient for chain with id: ${chainsWithCustomRpcs()[0].id}`;
@@ -2057,7 +2079,7 @@ export async function fetchReceiptTokens(
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
     const rpcUrl = chainConfigs[chainId].rpcUrls.default.http[0];
-    
+
     if (!rpcUrl) continue;
     const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);
     const mcAddr = MULTICALL_ADDRS[chainId]?.address;
@@ -2105,7 +2127,7 @@ export async function fetchReceiptTokens(
           });
           result[v.id] = receiptTokenAddress;
         } catch (e) {
-          console.log('get address error', e)
+          console.log("get address error", e);
           result[v.id] = ethers.ZeroAddress;
         }
       }
