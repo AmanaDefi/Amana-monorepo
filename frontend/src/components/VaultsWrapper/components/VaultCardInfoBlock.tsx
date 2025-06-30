@@ -9,7 +9,7 @@ export const VaultCardInfoBlock = ({
 }) => {
   return (
     <div
-      className={`flex w-full rounded-lg justify-center items-center py-4 px-8 before-gradient-border ${titleColor}`}
+      className={`flex w-full rounded-lg justify-center items-center py-4 px-4 before-gradient-border ${titleColor}`}
     >
       {children}
     </div>
