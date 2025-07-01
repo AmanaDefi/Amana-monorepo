@@ -10,8 +10,6 @@ import "./interfaces/IAlgebraPool.sol";
 
 import "./CurvePoolRegistry.sol";
 
-import "hardhat/console.sol";
-
 contract SwapHelperZetachain is SwapHelperParent {
     enum SwapType {
         None,
@@ -493,17 +491,10 @@ contract SwapHelperZetachain is SwapHelperParent {
             amount,
             slippageBps
         );
-        console.log(
-            "Swapping %s for %s with min out %s",
-            zrc20,
-            targetZRC20,
-            minimumOut
-        );
         bytes memory path;
         address router;
 
         if (swapData.length > 0) {
-            console.log("Using provided swapData for Beam");
             // Force Beam with provided path
             path = swapData;
             router = SWAPROUTER_BEAM;
