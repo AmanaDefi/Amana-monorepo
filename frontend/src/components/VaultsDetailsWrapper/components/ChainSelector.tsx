@@ -1,10 +1,13 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Chain } from "viem";
-import { chainsWithCustomRpcs, CHAIN_ICONS } from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  CHAIN_ICONS,
+  SUPPORTED_CHAINS,
+} from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
 import { useWallets } from "@privy-io/react-auth";
@@ -33,7 +36,7 @@ export default function ChainSelector({
   vaultData,
 }: ChainSelectorProps) {
   const { activeChain, switchToChain, walletAddress } = useMultiChain();
-  const {wallets} = useWallets();
+  const { wallets } = useWallets();
   const activeAccount = wallets[0];
   const { openModal } = useChainTokenModalStore();
 
@@ -57,8 +60,31 @@ export default function ChainSelector({
 
   const displayedChain = selectedChain || activeChain;
 
+  const handleChainSelect = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    chainId: number,
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const chainToSelect = SUPPORTED_CHAINS.find(
+      (chain) => chain.id === chainId,
+    );
+    if (chainToSelect) {
+      const tokens = APPROVED_TOKENS[chainId] ?? [];
+      const defaultToken =
+        tokens.find((token) => token.symbol === "USDC") || tokens[0];
+      if (onSelectChainAndToken) {
+        onSelectChainAndToken(chainToSelect, defaultToken);
+      }
+    }
+  };
+
   return (
-    <div className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
+    <div
+      onClick={handleOpenModal}
+      className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center hover:cursor-pointer"
+    >
       <div className="flex items-center gap-4">
         {displayedChain?.id && (
           <img
@@ -74,18 +100,20 @@ export default function ChainSelector({
 
       <div className="relative">
         <button
-          onClick={handleOpenModal}
           className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
-            walletAddress && activeAccount?.walletClientType === "privy" && !isFromTopUp
+            walletAddress &&
+            activeAccount?.walletClientType === "privy" &&
+            !isFromTopUp
               ? ""
               : "cursor-pointer"
           }`}
         >
           <div className="flex items-center -space-x-2">
             {CHAINS_ICONS_BUTTON.map((icon, index) => (
-              <div
+              <button
+                onClick={(e) => handleChainSelect(e, icon.id)}
                 key={icon.symbol}
-                className="w-[20px] h-[20px] rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
+                className="w-[30px] h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
                 style={{ zIndex: index }}
               >
                 <img
@@ -93,10 +121,10 @@ export default function ChainSelector({
                   alt={icon.name}
                   className="w-full h-full object-cover"
                 />
-              </div>
+              </button>
             ))}
           </div>
-          {(!walletAddress) && (
+          {!walletAddress && (
             <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
           )}
         </button>
