@@ -117,6 +117,7 @@ const config: Config = {
         custom: "0 4px 6px 0 rgba(0, 0, 0, 0.1)",
         sidebar:
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
+        black15: "0 4px 6px 0 rgba(0, 0, 0, 0.15)",
       },
     },
   },

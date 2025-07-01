@@ -187,10 +187,11 @@ export const DEFAULT_SETTINGS: UserSettings = {
 };
 
 export type LeaderboardUserData = {
-  user_address: Address,
-  points: number,
-  position: number
-}
+  user_address: Address;
+  points: number;
+  position: number;
+  username: string;
+};
 
 export type SearchParams = {
   userAddress: string,
