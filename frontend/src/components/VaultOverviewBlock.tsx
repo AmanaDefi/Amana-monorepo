@@ -6,6 +6,7 @@ import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { RISK_LEVELS } from "./VaultsGrid";
+import Image from "next/image";
 
 type Props = {
   vault: VaultData;
@@ -13,6 +14,7 @@ type Props = {
   totalAssets?: VaultTotalAssets;
   titleColor?: string;
   isLoading?: boolean;
+  isDeposit?: boolean;
 };
 
 const SkeletonBox: React.FC<{ className?: string }> = ({ className = "" }) => (
@@ -63,6 +65,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   totalAssets,
   titleColor = "text-white",
   isLoading = false,
+  isDeposit,
 }) => {
   const apyValue = Number(vaultAPY?.APY7d || 0);
   const riskRating = calculateRiskLevel(vault);
@@ -154,16 +157,25 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             rewards, liquidity, and market changes.
           </InfoBlock>
         </div>
-
-        <AnimatedValue
-          value={`${(apyValue * 100).toFixed(2)}%`}
-          className={classNames("font-bold text-xl leading-6", {
-            "text-green-accent": apyValue > 0,
-            "text-red-error": apyValue <= 0,
-          })}
-          isLoading={isAPYLoading}
-          skeletonClassName="h-6 w-16"
-        />
+        <div className="flex flex-row justify-between items-center">
+          <AnimatedValue
+            value={`${(apyValue * 100).toFixed(2)}%`}
+            className={classNames("font-bold text-xl leading-6", {
+              "text-green-accent": apyValue > 0,
+              "text-red-error": apyValue <= 0,
+            })}
+            isLoading={isAPYLoading}
+            skeletonClassName="h-6 w-16"
+          />
+          {!isDeposit && (
+            <Image
+              src="/rewards.png"
+              alt="reward star"
+              width={23}
+              height={18}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

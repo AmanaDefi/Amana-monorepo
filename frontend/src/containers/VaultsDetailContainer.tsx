@@ -37,8 +37,15 @@ import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
-import { useVaultDetailsFromGraph, useUserVaultBalancesFromGraph } from "@/hooks/useVaultsGraph";
-import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
+import {
+  useVaultDetailsFromGraph,
+  useUserVaultBalancesFromGraph,
+} from "@/hooks/useVaultsGraph";
+import {
+  convertGraphVaultToVaultData,
+  convertGraphVaultToAPY,
+  convertGraphVaultToTotalAssets,
+} from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -57,6 +64,7 @@ import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultH
 import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
 
 import ChainsModal from "@/components/modal/chains/ChainsModal";
+import Image from "next/image";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -200,7 +208,6 @@ const VaultsDetailContainer: React.FC<{
         }
       }
     }
-
   }, [vaultID, activeChain]);
 
   useEffect(() => {
@@ -270,7 +277,6 @@ const VaultsDetailContainer: React.FC<{
 
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
-
   }, [vaultID, vaultFromGraph]);
 
   useEffect(() => {
@@ -291,8 +297,7 @@ const VaultsDetailContainer: React.FC<{
 
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
-
-  }, [vaultID, vaultFromGraph]); 
+  }, [vaultID, vaultFromGraph]);
 
   // Set user vault balance from graph data
   useEffect(() => {
@@ -370,7 +375,7 @@ const VaultsDetailContainer: React.FC<{
     memoizedPrices.eth,
     memoizedPrices.comp,
     memoizedPrices.op,
-    user
+    user,
   );
 
   const handleTokenSelect = useCallback(
@@ -446,7 +451,14 @@ const VaultsDetailContainer: React.FC<{
             {!walletAddress || isDeposit ? (
               <ErrorInputIcon className="w-5 h-5 text-white" />
             ) : (
-              <GiftIcon size={20} className="text-white" />
+              <div className="rounded-[4px] w-6 h-6 flex items-center justify-center bg-[#0C1015]">
+                <Image
+                  src="/rewards.png"
+                  alt="reward star"
+                  width={20}
+                  height={18}
+                />
+              </div>
             )}
           </button>
 
@@ -567,6 +579,7 @@ const VaultsDetailContainer: React.FC<{
                   )}
                   totalAssets={vaultTotalAsset}
                   isLoading={loading || !vaultAPYs.length}
+                  isDeposit={isDeposit}
                 />
               </div>
               <div className="hidden md:block">
@@ -578,6 +591,7 @@ const VaultsDetailContainer: React.FC<{
                     )}
                     totalAssets={vaultTotalAsset}
                     titleColor="#535E73"
+                    isDeposit={isDeposit}
                   />
                 </VaultCardInfoBlock>
               </div>
