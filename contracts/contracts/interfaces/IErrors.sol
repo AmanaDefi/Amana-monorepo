@@ -36,4 +36,10 @@ interface IErrors {
     error InvalidMessage();
     error InvalidAmanaVault();
     error InvalidNonce();
+
+    error UserSharesInsufficientForWithdrawal(
+        address user,
+        uint256 required,
+        uint256 actual
+    );
 }

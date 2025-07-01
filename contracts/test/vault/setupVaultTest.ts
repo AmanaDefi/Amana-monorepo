@@ -3,7 +3,7 @@ import { Signer } from "ethers";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
-import { AmanaConnectedChainVault } from "../../typechain";
+import { AmanaConnectedChainVaultV1 } from "../../typechain";
 import { vaultTestMatrix } from "../config/vault.config";
 import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
@@ -99,9 +99,9 @@ export async function setupVaultFixture() {
 
   await zapContract.updateRegistryAddress(amanaRegistry.address);
 
-  const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
+  const Vault = await ethers.getContractFactory("AmanaConnectedChainVaultV1", owner);
   console.log("About to deploy vault");
-  const amanaVault: AmanaConnectedChainVault = await upgrades.deployProxy(
+  const amanaVault: AmanaConnectedChainVaultV1 = await upgrades.deployProxy(
     Vault,
     [
       vaultConfig.name,
@@ -120,7 +120,7 @@ export async function setupVaultFixture() {
   );
   console.log("Vault deployed, waiting for confirmation");
   await amanaVault.deployed();
-  console.log(`AmanaConnectedChainVault deployed at: ${amanaVault.address}`);
+  console.log(`AmanaConnectedChainVaultV1 deployed at: ${amanaVault.address}`);
 
   await gasTank.authorizeVault(amanaVault.address);
   console.log(`Vault authorized with GasTank.`);

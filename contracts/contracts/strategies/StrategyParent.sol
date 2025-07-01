@@ -349,6 +349,13 @@ abstract contract StrategyParent is
     /// @notice Invests assets into the yield source
     function _invest() internal virtual;
 
+    function depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) external onlyOwner {
+        _depositFundsIntoYieldSource(amount, minimumOut);
+    }
+
     /**
      * @notice Deposits funds into the configured yield source.
      * @dev This function is intended to be overridden in derived contracts to define specific deposit logic.
@@ -625,48 +632,6 @@ abstract contract StrategyParent is
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 1);
-            _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
-            emit ReturnFundsFromStrategyFailed(
-                vaultNonce,
-                withdrawnAmount,
-                totalAssetsAfter
-            );
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
-        ) {
-            emit SendTotalUnderlyingAssetsFailed(vaultNonce, totalAssetsAfter);
-        } else {
-            revert("Revert not handled");
-        }
-    }
-
-    /// @notice Handles reverts from the Gateway.
-    /// @param context Context of the revert.
-    function onAbort(
-        AbortContext calldata context
-    ) external virtual onlyGateway {
-        (
-            string memory revertMessage,
-            uint256 withdrawnAmount,
-            uint256 totalAssetsAfter,
-            uint256 vaultNonce
-        ) = abi.decode(
-                context.revertMessage,
-                (string, uint256, uint256, uint256)
-            );
-
-        if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_investConfirmFailed"))
-        ) {
-            _sendUpdateToVault(vaultNonce, TX_DEPOSIT_REVERTED);
-            emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_returnFundsFromStrategyFailed"))
-        ) {
-            // _depositFundsIntoYieldSource(context.amount, 1);
             _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,
