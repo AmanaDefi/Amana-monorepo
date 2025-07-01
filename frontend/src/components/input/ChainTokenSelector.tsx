@@ -14,6 +14,8 @@ interface ChainTokenSelectorProps {
   className?: string;
   vaultData?: VaultData;
   onClick?: () => void;
+  onSelectChain: ((chain: Chain) => void) | undefined;
+  onSelectChainAndToken: ((chain: Chain, token: Token) => void) | undefined;
 }
 
 export default function ChainTokenSelector({
@@ -23,8 +25,10 @@ export default function ChainTokenSelector({
   className = "",
   vaultData,
   onClick,
+  onSelectChain,
+  onSelectChainAndToken,
 }: ChainTokenSelectorProps) {
-  const { selectedChainFromModal, selectedTokenFromModal } =
+  const { selectedChainFromModal, selectedTokenFromModal, openModal } =
     useChainTokenModalStore();
 
   const currentChain = selectedChainFromModal || selectedChain;
@@ -38,10 +42,26 @@ export default function ChainTokenSelector({
     );
   }
 
+  const handleOpenModal = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    openModal(
+      currentChain,
+      currentToken ?? null,
+      onSelectChain,
+      onSelectChainAndToken,
+      vaultData,
+      false,
+    );
+  };
+
   return (
     <div className={`relative ${className}`}>
       <button
-        onClick={onClick}
+        onClick={(e) => handleOpenModal(e)}
         className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
         {currentToken ? (

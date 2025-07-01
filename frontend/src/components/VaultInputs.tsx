@@ -1321,6 +1321,8 @@ export default function VaultInputs({
             </div>
 
             <InputTokenWithError
+             onSelectChain={onSelectChain}
+             onSelectChainAndToken={handleSelectChainAngToken}
               onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
               allowInput={allowInput}
               vaultData={vaultData}
@@ -1367,12 +1369,14 @@ export default function VaultInputs({
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
                   vaultData={vaultData}
-                  onSelectChainAndToken={onSelectChainAndToken}
+                  onSelectChainAndToken={handleSelectChainAngToken}
                 />
               )}
             </div>
 
             <InputTokenWithError
+             onSelectChain={onSelectChain}
+             onSelectChainAndToken={handleSelectChainAngToken}
               captionText={isDeposit ? "Output Amount" : ""}
               onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
               allowInput={allowInput}
@@ -1411,13 +1415,15 @@ export default function VaultInputs({
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
+                  onSelectChainAndToken={handleSelectChainAngToken}
                   vaultId={vaultId}
                   vaultData={vaultData}
-                  onSelectChainAndToken={onSelectChainAndToken}
                 />
               )}
             </div>
             <InputTokenWithError
+              onSelectChain={onSelectChain}
+              onSelectChainAndToken={handleSelectChainAngToken}
               onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
               allowInput={allowInput}
               vaultData={vaultData}
@@ -1459,11 +1465,13 @@ export default function VaultInputs({
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
                   vaultData={vaultData}
-                  onSelectChainAndToken={onSelectChainAndToken}
+                  onSelectChainAndToken={handleSelectChainAngToken}
                 />
               )}
             </div>
             <InputTokenWithError
+             onSelectChain={onSelectChain}
+             onSelectChainAndToken={handleSelectChainAngToken}
               captionText={isDeposit ? "Output Amount" : ""}
               onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
               allowInput={allowInput}

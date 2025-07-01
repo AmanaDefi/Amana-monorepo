@@ -1,10 +1,13 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Chain } from "viem";
-import { chainsWithCustomRpcs, CHAIN_ICONS } from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  CHAIN_ICONS,
+  SUPPORTED_CHAINS,
+} from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { warningToast } from "@/toasts/toastStyles";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
 import { useWallets } from "@privy-io/react-auth";
@@ -57,6 +60,26 @@ export default function ChainSelector({
 
   const displayedChain = selectedChain || activeChain;
 
+  const handleChainSelect = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    chainId: number,
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const chainToSelect = SUPPORTED_CHAINS.find(
+      (chain) => chain.id === chainId,
+    );
+    if (chainToSelect) {
+      const tokens = APPROVED_TOKENS[chainId] ?? [];
+      const defaultToken =
+        tokens.find((token) => token.symbol === "USDC") || tokens[0];
+      if (onSelectChainAndToken) {
+        onSelectChainAndToken(chainToSelect, defaultToken);
+      }
+    }
+  };
+
   return (
     <div
       onClick={handleOpenModal}
@@ -87,9 +110,10 @@ export default function ChainSelector({
         >
           <div className="flex items-center -space-x-2">
             {CHAINS_ICONS_BUTTON.map((icon, index) => (
-              <div
+              <button
+                onClick={(e) => handleChainSelect(e, icon.id)}
                 key={icon.symbol}
-                className="w-[20px] h-[20px] rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
+                className="w-[30px] h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
                 style={{ zIndex: index }}
               >
                 <img
@@ -97,7 +121,7 @@ export default function ChainSelector({
                   alt={icon.name}
                   className="w-full h-full object-cover"
                 />
-              </div>
+              </button>
             ))}
           </div>
           {!walletAddress && (

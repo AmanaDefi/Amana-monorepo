@@ -1,8 +1,14 @@
+import { CHAIN_ID } from "./chainConfig";
+
 export interface TokenInfo {
   symbol: string;
   name: string;
   icon: string;
   bgColor?: string;
+}
+
+interface ChainInfo extends TokenInfo {
+  id: number;
 }
 
 export const SUPPORTED_TOKENS: TokenInfo[] = [
@@ -38,31 +44,36 @@ export const SUPPORTED_TOKENS: TokenInfo[] = [
   },
 ];
 
-export const CHAINS_ICONS_BUTTON: TokenInfo[] = [
+export const CHAINS_ICONS_BUTTON: ChainInfo[] = [
   {
     symbol: "ZETA",
     name: "ZETA",
     icon: "/ZetaChainLogo.png",
+    id: CHAIN_ID["zetachain"],
   },
   {
     symbol: "ETH",
     name: "Ethereum",
     icon: "/ETH.png",
+    id: CHAIN_ID["ethereum"],
   },
   {
     symbol: "BNB",
     name: "BNB",
     icon: "/bnb-bnb-logo.png",
+    id: CHAIN_ID["bsc"],
   },
   {
     symbol: "AVALANCHE",
     name: "AVALANCHE",
     icon: "/avalanche-avax-logo.png",
+    id: CHAIN_ID["avalanche"],
   },
   {
     symbol: "ARBITRUM",
     name: "ARBITRUM",
     icon: "/arbitrum-arb-logo.png",
+    id: CHAIN_ID["arbitrum"],
   },
 ];
 
