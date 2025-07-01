@@ -62,6 +62,7 @@ import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
 import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -126,6 +127,13 @@ export default function VaultInputs({
   const activeWallet = wallets[0];
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
+  const handleSelectChainAngToken = (chain: Chain, token: Token) => {
+    setInputToken(token);
+    if (onSelectChainAndToken) {
+      onSelectChainAndToken(chain, token);
+    }
+  };
+
   const { setIsButtonDisabled } = useTransactionStore();
 
   // Update label when isDeposit prop changes
@@ -137,6 +145,8 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
   const [performanceFee, setPerformanceFee] = useState<number>(0);
+  const { selectedChainFromModal, selectedTokenFromModal } =
+    useChainTokenModalStore();
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -212,6 +222,7 @@ export default function VaultInputs({
   }, [vaultData]);
 
   useEffect(() => {
+    if (selectChain?.id === selectedChainFromModal?.id) return;
     const setToken = () => {
       if (
         selectChain &&
@@ -252,7 +263,7 @@ export default function VaultInputs({
     }
 
     setAllowInput(true);
-  }, [selectChain, vaultData, onTokenSelect]);
+  }, [selectChain, vaultData, onTokenSelect, selectedChainFromModal]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const { balance: tokenBalance, fetchBalance } =
@@ -1304,7 +1315,7 @@ export default function VaultInputs({
                   onSelectChain={onSelectChain}
                   vaultId={vaultId}
                   vaultData={vaultData}
-                  onSelectChainAndToken={onSelectChainAndToken}
+                  onSelectChainAndToken={handleSelectChainAngToken}
                 />
               )}
             </div>

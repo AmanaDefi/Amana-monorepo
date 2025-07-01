@@ -15,10 +15,11 @@ import { showInfoToast } from "@/toasts";
 import { ConnectorIcon } from "./components/ConnectorIcon";
 import { chainConfigs } from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
-import { useWallets } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 const AllWAllets = () => {
   const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window?.innerWidth < 1024);
@@ -35,10 +36,11 @@ const AllWAllets = () => {
     setStep,
     setActiveConnector,
     setWalletAddress,
-    setChain
+    setChain,
   } = useFundWalletStore();
 
-  const {wallets} = useWallets();
+  const { wallets } = useWallets();
+  const { logout } = usePrivy();
   const activeAccount = wallets[0];
 
   const fundWalletConnect = () => {
@@ -63,8 +65,16 @@ const AllWAllets = () => {
     },
   });
 
-  const handleExternalWalletConnect = (connector: Connector) => {
+  const handleExternalWalletConnect = async (connector: Connector) => {
     if (isConnectingWallet) return;
+    if (activeAccount?.walletClientType === "privy") {
+      const confirmResult = confirm(
+        "You smart wallet account will be disconnected",
+      );
+      if (!confirmResult) return;
+
+      await logout();
+    }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
@@ -96,7 +106,10 @@ const AllWAllets = () => {
 
   return (
     <Modal
-      isOpen={!isMobile && (step === "allWallets" || fundWalletStep === "connectWallet")}
+      isOpen={
+        !isMobile &&
+        (step === "allWallets" || fundWalletStep === "connectWallet")
+      }
       onClose={handleClose}
       paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px] flex"
       roundedClass="rounded-[16px]"

@@ -1994,14 +1994,14 @@ function Interaction({
             Number(inputBalance.formatted) <= 0 ||
             !!errorMessage;
 
-          const isDisabled = activeAccount
-            ? isButtonDisabled || isDisabledByProcessing || isDisabledByHash
-            : false;
-
           const isConnectWalletSHown =
             !activeAccount ||
             (activeAccount.walletClientType === "privy" &&
               activeChain.id !== zetachain.id);
+
+          const isDisabled = !isConnectWalletSHown
+            ? isButtonDisabled || isDisabledByProcessing || isDisabledByHash
+            : false;
 
           return (
             <Button
@@ -2009,7 +2009,9 @@ function Interaction({
               disabled={isDisabled}
               className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
               onClick={() => {
-                !isConnectWalletSHown ? handleMainAction() : handleWalletConnect();
+                !isConnectWalletSHown
+                  ? handleMainAction()
+                  : handleWalletConnect();
               }}
             >
               {!isConnectWalletSHown
