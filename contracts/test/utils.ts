@@ -71,12 +71,6 @@ export async function setTokenBalance(
 
   // Check if the balance was successfully set
   const newBalance = await token.balanceOf(account);
-  console.log(
-    `[setTokenBalance] New balance for ${tokenAddress} at ${account}: ${newBalance.toString()}`
-  );
-  console.log("newBalance.isZero():", newBalance.isZero());
-  console.log("WHALE_ADDRESSES[tokenAddress]:", WHALE_ADDRESSES[tokenAddress]);
-  console.log("tokenAddress:", tokenAddress);
   if (newBalance.isZero() && WHALE_ADDRESSES[tokenAddress]) {
     console.warn(`[setTokenBalance] Storage set failed. Falling back to whale transfer for ${tokenAddress}`);
 
@@ -208,7 +202,7 @@ export async function simulateRevertCallToStrategy(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity decode for Revert tx
     [TxType.Revert, 0, 0, ethers.constants.AddressZero, vaultNonce]
   );
-
+  console.log("Revert message:", revertMessage);
   const tx = await strategy.connect(gatewaySigner).onCall(
     {
       sender: vaultAddress,

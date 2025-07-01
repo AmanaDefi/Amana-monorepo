@@ -500,7 +500,6 @@ abstract contract AmanaVaultBaseV1 is
                     recipient,
                     txn.withdrawZRC20,
                     outputAmount,
-                    registry,
                     vaultNonce
                 );
         }

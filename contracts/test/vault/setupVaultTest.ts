@@ -3,12 +3,13 @@ import { Signer } from "ethers";
 import GatewayZEVMABI from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import { ZC_USDT_BSC_ADDRESS, ZC_USDC_BSC_ADDRESS, ZC_ETH_BASE_ADDRESS } from "../../../constants";
 import { setTokenBalance } from "../utils";
-import { AmanaConnectedChainVaultV1 } from "../../typechain";
+import { AmanaConnectedChainVault } from "../../typechain";
 import { vaultTestMatrix } from "../config/vault.config";
 import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
 import type { IConnection } from "codemelt-retro-api-sdk"; import axios from "axios";
 import { formatUnits } from "ethers/lib/utils";
+import { withdraw } from "codemelt-retro-api-sdk/functional/api/venft";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43";
@@ -17,7 +18,7 @@ export async function setupVaultFixture() {
   const config = vaultTestMatrix[0]; // ⬅️ use just the first config
 
   const { vaultConfig, strategyConfig, txConfig } = config;
-  const FORK_BLOCK_NUMBER = 8736520;
+  const FORK_BLOCK_NUMBER = 9006264;
   await network.provider.request({
     method: "hardhat_reset",
     params: [
@@ -54,7 +55,8 @@ export async function setupVaultFixture() {
 
   const treasury = await deployAndLog("Treasury", [owner.address]);
   const withdrawalReceiver = await deployAndLog("WithdrawalReceiver", [owner.address])
-  const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS]);
+  const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS,
+    ethers.constants.AddressZero]); // this is only used on SwapHelperEthereum, for Stork address
   const SwapHelperFactory = await ethers.getContractFactory("SwapHelperZetachain", owner);
 
   const swapHelper = await upgrades.deployProxy(
@@ -76,7 +78,8 @@ export async function setupVaultFixture() {
   const withdrawHelper = await upgrades.deployProxy(
     WithdrawHelperFactory,
     [
-      ZEVM_GATEWAY_ADDRESS
+      ZEVM_GATEWAY_ADDRESS,
+      ethers.constants.AddressZero // this will be set later
     ],
     {
       initializer: "initialize",
@@ -92,11 +95,13 @@ export async function setupVaultFixture() {
     swapHelper.address,
     zapContract.address,
   ]);
+  withdrawHelper.setRegistry(amanaRegistry.address);
+
   await zapContract.updateRegistryAddress(amanaRegistry.address);
 
-  const Vault = await ethers.getContractFactory("AmanaConnectedChainVaultV1", owner);
+  const Vault = await ethers.getContractFactory("AmanaConnectedChainVault", owner);
   console.log("About to deploy vault");
-  const amanaVault: AmanaConnectedChainVaultV1 = await upgrades.deployProxy(
+  const amanaVault: AmanaConnectedChainVault = await upgrades.deployProxy(
     Vault,
     [
       vaultConfig.name,
@@ -115,7 +120,7 @@ export async function setupVaultFixture() {
   );
   console.log("Vault deployed, waiting for confirmation");
   await amanaVault.deployed();
-  console.log(`AmanaConnectedChainVaultV1 deployed at: ${amanaVault.address}`);
+  console.log(`AmanaConnectedChainVault deployed at: ${amanaVault.address}`);
 
   await gasTank.authorizeVault(amanaVault.address);
   console.log(`Vault authorized with GasTank.`);

@@ -36,10 +36,7 @@ interface IManager {
 contract YieldFiERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    address public receiptToken;
-    uint256 public inputTokenIndex;
-    address public stakingContract; // sYUSD 4626 vault
-    address public manager;
+    // address public manager;
 
     function initialize(
         string memory _name,
@@ -49,7 +46,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         address _swapHelper,
         address _receiptTokenAddress, // this is YUSD
         address _inputTokenAddress, // inputToken
-        address _stakingContractAddress, // _liquidityGaugeAddress, // this is the YUSD staking gauge
+        address, // _liquidityGaugeAddress, // this is the YUSD staking gauge
         address /* _rewardsTokenAddress — not needed */,
         uint256 // _inputTokenIndex - not needed
     ) external initializer {
@@ -64,9 +61,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
 
         swapHelper = _swapHelper;
 
-        receiptToken = _receiptTokenAddress;
-        stakingContract = _stakingContractAddress;
-        manager = 0x03ACc35286bAAE6D73d99a9f14Ef13752208C8dC;
+        // manager = 0x03ACc35286bAAE6D73d99a9f14Ef13752208C8dC;
     }
 
     function _depositFundsIntoYieldSource(
@@ -75,16 +70,16 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
     ) internal override {
         require(amount > 0, "Deposit amount must be greater than zero");
 
-        approveOrIncreaseAllowance(inputToken, receiptToken, amount);
+        approveOrIncreaseAllowance(inputToken, receiptTokenAddress, amount);
 
-        uint256 amountOut = I4626Vault(receiptToken).deposit(
+        uint256 amountOut = I4626Vault(receiptTokenAddress).deposit(
             amount,
             address(this)
         );
         // approveOrIncreaseAllowance(IERC20(inputToken), manager, amount);
         // uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
         // IManager(manager).deposit(
-        //     receiptToken,
+        //     receiptTokenAddress,
         //     address(inputToken),
         //     amount,
         //     address(this),
@@ -105,23 +100,23 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         uint256 vyusdToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
 
         approveOrIncreaseAllowance(
-            IERC20(receiptToken),
+            IERC20(receiptTokenAddress),
             address(this),
             vyusdToWithdraw
         );
         uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
 
-        uint256 amountOut = I4626Vault(receiptToken).redeem(
+        uint256 amountOut = I4626Vault(receiptTokenAddress).redeem(
             vyusdToWithdraw,
             address(this),
             address(this)
         );
 
-        // IERC20(receiptToken).approve(manager, type(uint256).max);
+        // IERC20(receiptTokenAddress).approve(manager, type(uint256).max);
 
         // IManager(manager).redeem(
         //     address(this),
-        //     receiptToken,
+        //     receiptTokenAddress,
         //     address(inputToken),
         //     vyusdToWithdraw,
         //     address(this),
@@ -142,10 +137,12 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
             revert InvalidAmanaVault();
 
         // Withdraw all BPT from the liquidity gauge
-        uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
+        uint256 totalinvyUsd = IERC20(receiptTokenAddress).balanceOf(
+            address(this)
+        );
 
         // Transfer the LP tokens to the new strategy
-        IERC20(receiptToken).transfer(txn.newStrategy, totalinvyUsd);
+        IERC20(receiptTokenAddress).transfer(txn.newStrategy, totalinvyUsd);
 
         IStrategy(txn.newStrategy).depositFromOldStrategy(
             totalinvyUsd,
@@ -185,26 +182,28 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
     }
 
     function totalUnderlyingAssets() public view override returns (uint256) {
-        uint256 total = IERC20(receiptToken).balanceOf(address(this));
+        uint256 total = IERC20(receiptTokenAddress).balanceOf(address(this));
         return total > 0 ? convertToAssets(total) : 0;
     }
 
     function convertToAssets(
         uint256 shares
     ) public view override returns (uint256 assets) {
-        assets = I4626Vault(receiptToken).convertToAssets(shares);
+        assets = I4626Vault(receiptTokenAddress).convertToAssets(shares);
     }
 
     function convertToShares(
         uint256 assets
     ) public view override returns (uint256 shares) {
-        shares = I4626Vault(receiptToken).convertToShares(assets);
+        shares = I4626Vault(receiptTokenAddress).convertToShares(assets);
     }
 
     function getStrategyWithdrawShareAmount(
         uint256 assetAmount
     ) public view override returns (uint256 yusdToWithdraw) {
-        uint256 totalinvyUsd = IERC20(receiptToken).balanceOf(address(this));
+        uint256 totalinvyUsd = IERC20(receiptTokenAddress).balanceOf(
+            address(this)
+        );
         yusdToWithdraw = convertToShares(assetAmount);
 
         if (yusdToWithdraw > totalinvyUsd) {
