@@ -15,6 +15,8 @@ type Props = {
   titleColor?: string;
   isLoading?: boolean;
   isDeposit?: boolean;
+  isReward?: boolean;
+  
 };
 
 const SkeletonBox: React.FC<{ className?: string }> = ({ className = "" }) => (
@@ -66,6 +68,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   titleColor = "text-white",
   isLoading = false,
   isDeposit,
+  isReward = false,
 }) => {
   const apyValue = Number(vaultAPY?.APY7d || 0);
   const riskRating = calculateRiskLevel(vault);
@@ -167,7 +170,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             isLoading={isAPYLoading}
             skeletonClassName="h-6 w-16"
           />
-          {!isDeposit && (
+          {!isDeposit && isReward && (
             <Image
               src="/rewards.png"
               alt="reward star"

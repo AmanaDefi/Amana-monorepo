@@ -13,7 +13,7 @@ import {
 } from "@/types/types";
 import { useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
+import { CHAINS_EXPLORER_BASE_URL_MAINNET, CHAIN_ICONS } from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
@@ -580,6 +580,7 @@ const VaultsDetailContainer: React.FC<{
                   totalAssets={vaultTotalAsset}
                   isLoading={loading || !vaultAPYs.length}
                   isDeposit={isDeposit}
+                  isReward={true}
                 />
               </div>
               <div className="hidden md:block">
@@ -592,6 +593,7 @@ const VaultsDetailContainer: React.FC<{
                     totalAssets={vaultTotalAsset}
                     titleColor="#535E73"
                     isDeposit={isDeposit}
+                    isReward={true}
                   />
                 </VaultCardInfoBlock>
               </div>
