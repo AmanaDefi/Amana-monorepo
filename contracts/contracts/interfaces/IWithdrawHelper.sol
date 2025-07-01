@@ -6,7 +6,6 @@ interface IWithdrawHelper {
         bytes memory recipient,
         address withdrawZRC20,
         uint256 amount,
-        address registry,
         uint256 vaultNonce
     ) external;
 
@@ -20,7 +19,6 @@ interface IWithdrawHelper {
         uint256 amount,
         uint256 minimumOut,
         uint32 gasLimitForWithdrawAndCall,
-        address registry,
         uint256 vaultNonce
     ) external;
 
@@ -34,7 +32,6 @@ interface IWithdrawHelper {
         uint256 amount,
         uint256 minimumOut,
         uint32 gasLimitForWithdrawAndCall,
-        address registry,
         uint256 vaultNonce
     ) external;
 
@@ -42,7 +39,6 @@ interface IWithdrawHelper {
         address strategyAddress,
         uint256 gasLimitForCall,
         address vaultAsset,
-        address registry,
         address user,
         address withdrawZRC20,
         uint256 vaultSharesToBeBurnt,
@@ -56,7 +52,6 @@ interface IWithdrawHelper {
         uint256 gasLimitForCall,
         uint256 gasLimitForWithdrawAndCall,
         address vaultAsset,
-        address registry,
         uint256 minAmountOut,
         uint256 minSharesOut,
         uint256 vaultNonce

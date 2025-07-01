@@ -36,6 +36,7 @@ contract WithdrawHelper is
         Switch,
         Revert
     }
+    IAmanaRegistry public registry;
 
     modifier onlyGateway() {
         if (msg.sender != GATEWAY_ADDRESS) revert IErrors.OnlyGateway();
@@ -80,20 +81,29 @@ contract WithdrawHelper is
     );
     event SwitchStrategyFailed(uint256 indexed vaultNonce, address vault);
 
-    function initialize(address _gatewayAddress) public initializer {
+    function initialize(
+        address _gatewayAddress,
+        address _registryAddress
+    ) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
 
         GATEWAY_ADDRESS = _gatewayAddress;
         gasLimitForRevertCall = 200000;
+        registry = IAmanaRegistry(_registryAddress);
     }
 
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
 
-    function setGasLimitForRevertCall(uint256 _gasLimitForRevertCall) external {
-        // TODO - add access control
+    function setRegistry(address _registryAddress) external onlyOwner {
+        registry = IAmanaRegistry(_registryAddress);
+    }
+
+    function setGasLimitForRevertCall(
+        uint256 _gasLimitForRevertCall
+    ) external onlyOwner {
         gasLimitForRevertCall = _gasLimitForRevertCall;
     }
 
@@ -101,14 +111,13 @@ contract WithdrawHelper is
         bytes memory recipient,
         address withdrawZRC20,
         uint256 amount,
-        address registry,
         uint256 vaultNonce
     ) public {
         // TODO does this need an access modifier? do any of the others need to have public?
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(withdrawZRC20)
             .withdrawGasFeeWithGasLimit(IZRC20(withdrawZRC20).GAS_LIMIT());
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
+        IGasTank(registry.gasTank()).getGas(gas_zrc20, gasFee);
 
         approveOrIncreaseAllowance(
             IERC20(withdrawZRC20),
@@ -168,13 +177,12 @@ contract WithdrawHelper is
         uint256 amount,
         uint256 minimumOut,
         uint32 gasLimitForWithdrawAndCall,
-        address registry,
         uint256 vaultNonce
     ) external {
         // Request gas
         (address gas_zrc20, uint256 gasFee) = IZRC20(vaultAsset)
             .withdrawGasFeeWithGasLimit(gasLimitForWithdrawAndCall);
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gas_zrc20, gasFee);
+        IGasTank(registry.gasTank()).getGas(gas_zrc20, gasFee);
         if (gas_zrc20 != vaultAsset) {
             approveOrIncreaseAllowance(
                 IERC20(gas_zrc20),
@@ -244,7 +252,6 @@ contract WithdrawHelper is
         uint256 amount,
         uint256 minimumOut,
         uint32 gasLimitForWithdrawAndCall,
-        address registry,
         uint256 vaultNonce
     ) external {
         (address gas_zrc20, uint256 gasFee) = IZRC20(vaultAsset)
@@ -252,50 +259,23 @@ contract WithdrawHelper is
         uint256 amountToDeduct = gasFee;
 
         if (gas_zrc20 != vaultAsset) {
-            if (IAmanaRegistry(registry).swapHelper() == address(0))
-                revert IErrors.InvalidAddress();
+            // Get input token equivalent of gasFee
+            amountToDeduct = ISwapHelper(registry.swapHelper())
+                .getEquivalentInputAmount(vaultAsset, gas_zrc20, gasFee);
 
+            if (amountToDeduct > amount) {
+                revert("AmountTooLowToPayForGas");
+            }
+
+            // Charge user input tokens to treasury
             SafeERC20.safeTransfer(
                 IERC20(vaultAsset),
-                IAmanaRegistry(registry).swapHelper(),
-                amount
+                registry.treasury(),
+                amountToDeduct
             );
 
-            try
-                ISwapHelper(IAmanaRegistry(registry).swapHelper()).swapExactOut(
-                    amount,
-                    vaultAsset,
-                    gasFee,
-                    gas_zrc20,
-                    250, // first attempt slippage
-                    address(this),
-                    200, // deadline
-                    "" // future-proofing param
-                )
-            returns (uint256 result) {
-                amountToDeduct = result;
-            } catch {
-                try
-                    ISwapHelper(IAmanaRegistry(registry).swapHelper())
-                        .swapExactOut(
-                            amount,
-                            vaultAsset,
-                            gasFee,
-                            gas_zrc20,
-                            750, // fallback slippage
-                            address(this),
-                            200, // deadline
-                            ""
-                        )
-                returns (uint256 result) {
-                    amountToDeduct = result;
-                } catch {
-                    revert("Swap failed at both slippage levels");
-                }
-            }
-        }
-        if (amountToDeduct > amount) {
-            revert("AmountTooLowToPayForGas");
+            // Pull gas token from gas tank
+            IGasTank(registry.gasTank()).getGas(gas_zrc20, gasFee);
         }
 
         if (gas_zrc20 == vaultAsset) {
@@ -361,14 +341,13 @@ contract WithdrawHelper is
         address strategyAddress,
         uint256 gasLimitForCall,
         address vaultAsset,
-        address registry,
         address user,
         address withdrawZRC20,
         uint256 assets,
         uint256 minimumOut,
         uint256 vaultNonce
     ) external {
-        _handleGasFee(gasLimitForCall, vaultAsset, registry);
+        _handleGasFee(gasLimitForCall, vaultAsset);
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
@@ -416,16 +395,11 @@ contract WithdrawHelper is
         uint256 gasLimitForCall,
         uint256 gasLimitForWithdrawAndCall,
         address vaultAsset,
-        address registry,
         uint256 minAmountOut,
         uint256 minSharesOut,
         uint256 vaultNonce
     ) external {
-        _handleGasFee(
-            gasLimitForCall + gasLimitForWithdrawAndCall,
-            vaultAsset,
-            registry
-        ); // we combine these two limits as this tx involves a divest and an invest
+        _handleGasFee(gasLimitForCall + gasLimitForWithdrawAndCall, vaultAsset); // we combine these two limits as this tx involves a divest and an invest
 
         bytes memory recipient = abi.encodePacked(strategyAddress);
 
@@ -514,32 +488,29 @@ contract WithdrawHelper is
      **/
     function _handleGasFee(
         uint256 gasLimit,
-        address vaultAsset,
-        address registry
+        address vaultAsset
     ) private returns (address gasZRC20, uint256 gasFee) {
         (gasZRC20, gasFee) = IZRC20(vaultAsset).withdrawGasFeeWithGasLimit(
             gasLimit
         );
-        IGasTank(IAmanaRegistry(registry).gasTank()).getGas(gasZRC20, gasFee);
+        IGasTank(registry.gasTank()).getGas(gasZRC20, gasFee);
         approveOrIncreaseAllowance(IERC20(gasZRC20), GATEWAY_ADDRESS, gasFee);
     }
 
     function sendRevertToStrategy(
         address strategy,
         address vaultAsset,
-        uint256 vaultNonce,
-        address registry
+        uint256 vaultNonce
     ) external onlyOwner {
-        _sendRevertToStrategy(strategy, vaultAsset, vaultNonce, registry);
+        _sendRevertToStrategy(strategy, vaultAsset, vaultNonce);
     }
 
     function _sendRevertToStrategy(
         address strategy,
         address vaultAsset,
-        uint256 vaultNonce,
-        address registry
+        uint256 vaultNonce
     ) private {
-        _handleGasFee(gasLimitForRevertCall, vaultAsset, registry);
+        _handleGasFee(gasLimitForRevertCall, vaultAsset);
 
         bytes memory outgoingMessage = abi.encode(
             TxType.Revert,
@@ -591,7 +562,6 @@ contract WithdrawHelper is
             address withdrawZRC20,
             address withdrawERC20,
             address vaultAsset,
-            address registry,
             address vault,
             uint256 vaultNonce,
             bytes memory nonEvmAddress
@@ -601,7 +571,6 @@ contract WithdrawHelper is
                     string,
                     address,
                     uint256,
-                    address,
                     address,
                     address,
                     address,
@@ -621,11 +590,10 @@ contract WithdrawHelper is
                 if (withdrawZRC20 == withdrawERC20) {
                     console.log("Withdrawing ZRC20");
                     IERC20(withdrawZRC20).approve(
-                        IAmanaRegistry(registry).zapContract(),
+                        registry.zapContract(),
                         context.amount
                     );
-                    IZapContract(IAmanaRegistry(registry).zapContract())
-                        .zapSwapAndReturnToUser(
+                    IZapContract(registry.zapContract()).zapSwapAndReturnToUser(
                             context.amount,
                             address(this),
                             withdrawZRC20,
@@ -641,17 +609,17 @@ contract WithdrawHelper is
                     } else {
                         recipient = abi.encodePacked(receiver);
                     }
-                    if (IAmanaRegistry(registry).swapHelper() == address(0))
+                    if (registry.swapHelper() == address(0))
                         revert IErrors.InvalidAddress();
 
                     SafeERC20.safeTransfer(
                         IERC20(vaultAsset),
-                        IAmanaRegistry(registry).swapHelper(),
+                        registry.swapHelper(),
                         context.amount
                     );
                     uint256 amountToWithdraw;
                     try
-                        ISwapHelper(IAmanaRegistry(registry).swapHelper()).swap(
+                        ISwapHelper(registry.swapHelper()).swap(
                             vaultAsset,
                             context.amount,
                             withdrawZRC20,
@@ -664,16 +632,15 @@ contract WithdrawHelper is
                         amountToWithdraw = result;
                     } catch {
                         try
-                            ISwapHelper(IAmanaRegistry(registry).swapHelper())
-                                .swap(
-                                    vaultAsset,
-                                    context.amount,
-                                    withdrawZRC20,
-                                    750, // first attempt slippage
-                                    address(this),
-                                    200,
-                                    ""
-                                )
+                            ISwapHelper(registry.swapHelper()).swap(
+                                vaultAsset,
+                                context.amount,
+                                withdrawZRC20,
+                                750, // first attempt slippage
+                                address(this),
+                                200,
+                                ""
+                            )
                         returns (uint256 result) {
                             amountToWithdraw = result;
                         } catch {
@@ -685,17 +652,11 @@ contract WithdrawHelper is
                         recipient,
                         withdrawZRC20,
                         context.amount,
-                        registry,
                         vaultNonce
                     );
                 }
             }
-            _sendRevertToStrategy(
-                strategyAddress,
-                vaultAsset,
-                vaultNonce,
-                registry
-            );
+            _sendRevertToStrategy(strategyAddress, vaultAsset, vaultNonce);
             emit CrossChainInvestFailed(
                 vaultNonce,
                 vault,
@@ -707,12 +668,7 @@ contract WithdrawHelper is
             keccak256(bytes("_divestConnectedChainStrategyFailed"))
         ) {
             IAmanaVault(vault).decreasePendingWithdrawals(receiver, amount);
-            _sendRevertToStrategy(
-                strategyAddress,
-                vaultAsset,
-                vaultNonce,
-                registry
-            );
+            _sendRevertToStrategy(strategyAddress, vaultAsset, vaultNonce);
             emit DivestFailed(vaultNonce, vault, receiver, amount);
         } else if (
             keccak256(bytes(revertMessage)) ==
@@ -729,12 +685,7 @@ contract WithdrawHelper is
             keccak256(bytes("_switchStrategyFailed"))
         ) {
             IAmanaVault(vault).setStrategy(strategyAddress);
-            _sendRevertToStrategy(
-                strategyAddress,
-                vaultAsset,
-                vaultNonce,
-                registry
-            );
+            _sendRevertToStrategy(strategyAddress, vaultAsset, vaultNonce);
             emit SwitchStrategyFailed(vaultNonce, vault);
         } else {
             revert("Revert not handled");
@@ -747,10 +698,9 @@ contract WithdrawHelper is
             address strategyAddress,
             uint256 amount,
             address receiver,
-            address withdrawZRC20,
-            address withdrawERC20,
+            ,
+            ,
             address vaultAsset,
-            address registry,
             address vault,
             uint256 vaultNonce,
             bytes memory nonEvmAddress
@@ -760,7 +710,6 @@ contract WithdrawHelper is
                     string,
                     address,
                     uint256,
-                    address,
                     address,
                     address,
                     address,
@@ -776,24 +725,14 @@ contract WithdrawHelper is
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
             console.log("Aborting");
-            _sendRevertToStrategy(
-                strategyAddress,
-                vaultAsset,
-                vaultNonce,
-                registry
-            );
+            _sendRevertToStrategy(strategyAddress, vaultAsset, vaultNonce);
             emit CrossChainInvestFailed(vaultNonce, vault, receiver, amount);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_divestConnectedChainStrategyFailed"))
         ) {
             IAmanaVault(vault).decreasePendingWithdrawals(receiver, amount);
-            _sendRevertToStrategy(
-                strategyAddress,
-                vaultAsset,
-                vaultNonce,
-                registry
-            );
+            _sendRevertToStrategy(strategyAddress, vaultAsset, vaultNonce);
             emit DivestFailed(vaultNonce, vault, receiver, amount);
         } else if (
             keccak256(bytes(revertMessage)) ==
@@ -810,12 +749,7 @@ contract WithdrawHelper is
             keccak256(bytes("_switchStrategyFailed"))
         ) {
             IAmanaVault(vault).setStrategy(strategyAddress);
-            _sendRevertToStrategy(
-                strategyAddress,
-                vaultAsset,
-                vaultNonce,
-                registry
-            );
+            _sendRevertToStrategy(strategyAddress, vaultAsset, vaultNonce);
             emit SwitchStrategyFailed(vaultNonce, vault);
         } else {
             revert("Revert not handled");

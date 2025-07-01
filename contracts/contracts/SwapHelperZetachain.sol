@@ -10,6 +10,8 @@ import "./interfaces/IAlgebraPool.sol";
 
 import "./CurvePoolRegistry.sol";
 
+import "hardhat/console.sol";
+
 contract SwapHelperZetachain is SwapHelperParent {
     enum SwapType {
         None,
@@ -147,6 +149,43 @@ contract SwapHelperZetachain is SwapHelperParent {
             token == USDT_ARB_ADDRESS ||
             token == USDC_AVAX_ADDRESS ||
             token == USDT_AVAX_ADDRESS);
+    }
+
+    function getEquivalentInputAmount(
+        address inputToken,
+        address gasToken,
+        uint256 gasFee
+    ) external view returns (uint256 inputAmount) {
+        bytes32 inputPriceFeed = getPriceFeedId(inputToken);
+        bytes32 gasPriceFeed = getPriceFeedId(gasToken);
+
+        require(
+            inputPriceFeed != bytes32(0) || isStablecoin(inputToken),
+            "Invalid input token"
+        );
+        require(
+            gasPriceFeed != bytes32(0) || isStablecoin(gasToken),
+            "Invalid gas token"
+        );
+
+        uint256 inputPrice = isStablecoin(inputToken)
+            ? 1e8
+            : IPriceOracle(priceOracleAddress).fetchPrice(inputPriceFeed);
+        uint256 gasPrice = isStablecoin(gasToken)
+            ? 1e8
+            : IPriceOracle(priceOracleAddress).fetchPrice(gasPriceFeed);
+
+        require(inputPrice > 0 && gasPrice > 0, "Invalid price data");
+
+        uint256 inputDecimals = getTokenDecimals(inputToken);
+        uint256 gasDecimals = getTokenDecimals(gasToken);
+
+        // Convert gasFee (in gasToken units) to USD
+        uint256 gasFeeInUsd = (gasFee * gasPrice) / (10 ** gasDecimals);
+
+        // Convert USD to inputToken amount
+        inputAmount = (gasFeeInUsd * (10 ** inputDecimals)) / inputPrice;
+        inputAmount = (inputAmount * 10050) / 10000; // 0.5% buffer
     }
 
     function _existsV3PoolEddy(
@@ -454,11 +493,17 @@ contract SwapHelperZetachain is SwapHelperParent {
             amount,
             slippageBps
         );
-
+        console.log(
+            "Swapping %s for %s with min out %s",
+            zrc20,
+            targetZRC20,
+            minimumOut
+        );
         bytes memory path;
         address router;
 
         if (swapData.length > 0) {
+            console.log("Using provided swapData for Beam");
             // Force Beam with provided path
             path = swapData;
             router = SWAPROUTER_BEAM;

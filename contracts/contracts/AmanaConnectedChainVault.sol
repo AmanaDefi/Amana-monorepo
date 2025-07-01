@@ -261,7 +261,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 gasLimitForCall,
                 gasLimitForWithdrawAndCall,
                 address(asset()),
-                registry,
                 minAmountOut,
                 minSharesOut,
                 vaultNonce
@@ -357,7 +356,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     txn.amount,
                     txn.minOut,
                     gasLimitForWithdrawAndCall,
-                    registry,
                     vaultNonce
                 );
         } else {
@@ -372,7 +370,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     txn.amount,
                     txn.minOut,
                     gasLimitForWithdrawAndCall,
-                    registry,
                     vaultNonce
                 );
         }
@@ -452,7 +449,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 strategyAddress,
                 gasLimitForCall,
                 address(asset()),
-                registry,
                 user,
                 withdrawZRC20,
                 assets,
@@ -484,7 +480,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 strategyAddress,
                 gasLimitForCall,
                 address(asset()),
-                registry,
                 txn.user,
                 txn.withdrawZRC20,
                 txn.amount,
