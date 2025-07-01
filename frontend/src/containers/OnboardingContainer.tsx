@@ -18,10 +18,11 @@ const OnboardingContainer = () => {
   const [isTablet, setIsTablet] = useState(false);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "center",
+    align: "start",
     slidesToScroll: 1,
     skipSnaps: false,
     dragFree: false,
+    containScroll: "trimSnaps",
   });
 
   const [emblaRefTablet, emblaApiTablet] = useEmblaCarousel({
@@ -56,20 +57,28 @@ const OnboardingContainer = () => {
 
   useEffect(() => {
     if (!emblaApi) return;
+
     onSelect();
     emblaApi.on("select", onSelect);
-    return () => {
+
+    const cleanup = () => {
       emblaApi.off("select", onSelect);
     };
+
+    return cleanup;
   }, [emblaApi, onSelect]);
 
   useEffect(() => {
     if (!emblaApiTablet) return;
+
     onSelectTablet();
     emblaApiTablet.on("select", onSelectTablet);
-    return () => {
+
+    const cleanup = () => {
       emblaApiTablet.off("select", onSelectTablet);
     };
+
+    return cleanup;
   }, [emblaApiTablet, onSelectTablet]);
 
   const scrollTo = useCallback(
@@ -102,7 +111,7 @@ const OnboardingContainer = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-2 3xl:mt-4">
+      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-0 3xl:mt-4">
         <AmanaLogo
           width={86}
           height={61}
@@ -113,7 +122,7 @@ const OnboardingContainer = () => {
           What are <span className="">smart accounts?</span>
         </h1>
 
-        <p className="text-[14px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] sm:max-w-3xl max-h-[58px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
+        <p className="text-[14px] md:text-[16px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] md:max-w-2xl 2xl:max-w-3xl max-h-[58px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
           A new, secure way to use DeFi — no seed phrases, no gas fees, just
           simple login and powerful features.
         </p>
@@ -134,7 +143,7 @@ const OnboardingContainer = () => {
       </div>
 
       {/* Tablet Carousel */}
-      <div className="hidden md:block xl:hidden w-full ">
+      <div className="hidden md:block xl:hidden w-full">
         <div className="overflow-hidden pl-4 pr-4" ref={emblaRefTablet}>
           <div className="flex" style={{ willChange: "transform" }}>
             {groupedItemsTablet.map((group, slideIndex) => (
@@ -146,12 +155,16 @@ const OnboardingContainer = () => {
                     : "flex-[0_0_100%]"
                 }`}
                 style={{
-                  transform: "translate6d(0, 0, 0)",
+                  transform: "translate3d(0, 0, 0)",
                   willChange: "transform",
                 }}
               >
                 <div
-                  className={`grid gap-2 md:gap-4 ${slideIndex === groupedItemsTablet.length - 1 ? "pr-10" : "pr-4"} ${group.length === 2 ? "grid-cols-2" : "grid-cols-1 justify-items-center"}`}
+                  className={`grid gap-2 md:gap-4 ${
+                    slideIndex === groupedItemsTablet.length - 1
+                      ? "pr-10"
+                      : "pr-4"
+                  } ${group.length === 2 ? "grid-cols-2" : "grid-cols-1 justify-items-center"}`}
                 >
                   {group.map((info, index) => (
                     <motion.div
@@ -177,7 +190,7 @@ const OnboardingContainer = () => {
         </div>
 
         {/* Dots Navigation for Tablet */}
-        <div className="flex justify-center mt-6 space-x-2">
+        <div className="flex justify-center mt-4 space-x-2">
           {groupedItemsTablet.map((_, index) => (
             <button
               key={index}
@@ -194,23 +207,19 @@ const OnboardingContainer = () => {
       </div>
 
       {/* Mobile Carousel */}
-      <div className="md:hidden w-full px-4">
+      <div className="md:hidden w-full">
         <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex" style={{ willChange: "transform" }}>
+          <div className="flex">
             {smartAccountInfo.map((info, index) => (
               <div
                 key={index}
-                className="flex-[0_0_100%] min-w-0 px-2 flex justify-center items-center"
-                style={{
-                  transform: "translate3d(0, 0, 0)",
-                  willChange: "transform",
-                }}
+                className="flex-[0_0_100%] min-w-0 flex justify-center items-center"
               >
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.2, duration: 0.4 }}
-                  className="h-full w-full max-w-[318px]"
+                  className="w-full max-w-[318px]"
                 >
                   <SmartAccountCard
                     {...info}
@@ -222,7 +231,6 @@ const OnboardingContainer = () => {
           </div>
         </div>
 
-        {/* Dots Navigation for Mobile */}
         <div className="flex justify-center mt-6 space-x-2">
           {smartAccountInfo.map((_, index) => (
             <button

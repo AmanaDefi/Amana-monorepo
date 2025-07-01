@@ -32,7 +32,7 @@ const OnboardingModal = () => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] bg-[#0C1015] text-white font-gotham overflow-hidden"
+          className="fixed inset-0 z-[100] bg-[#0C1015] text-white font-gotham "
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
