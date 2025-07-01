@@ -493,29 +493,39 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
      */
+
     function _confirmWithdrawAndBurn() internal {
         Transaction storage txn = pendingTransactions[lastProcessedNonce + 1];
-        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter + txn.amount;
 
         uint256 userShares = balanceOf(txn.user);
         uint256 vaultSharesToBeBurnt = previewWithdraw(txn.amount);
-        // (a) Cap burn amount to avoid over-burn
+
+        uint256 tolerance = 1e3;
+
+        // If the required burn exceeds user's balance by more than the tolerance, revert
+        if (vaultSharesToBeBurnt > userShares + tolerance) {
+            revert UserSharesInsufficientForWithdrawal(
+                txn.user,
+                vaultSharesToBeBurnt,
+                userShares
+            );
+        }
+
+        // Cap burn to actual user shares if it's within tolerance
         if (vaultSharesToBeBurnt > userShares) {
             vaultSharesToBeBurnt = userShares;
         }
 
-        // (b) If burning leaves tiny residual shares, burn all instead
         uint256 remainingShares = userShares - vaultSharesToBeBurnt;
-        uint256 minResidual = 1e3;
-
-        if (remainingShares > 0 && remainingShares < minResidual) {
+        if (remainingShares > 0 && remainingShares < tolerance) {
             vaultSharesToBeBurnt = userShares;
         }
 
         uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
-            balanceOf(txn.user);
+            userShares;
         uint256 principalWithdrawn = (fractionOfUserShares *
             userPrincipal[txn.user]) / 1e18;
+
         uint256 feeToWithdraw;
         if (txn.amount > principalWithdrawn) {
             feeToWithdraw =
@@ -528,6 +538,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 feeToWithdraw
             );
         }
+
         txn.amount -= feeToWithdraw;
 
         userPrincipal[txn.user] -= principalWithdrawn;
