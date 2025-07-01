@@ -1335,6 +1335,21 @@ function Interaction({
   const walletContext = useWallet();
   const prevLebel = useRef(label);
   const { openStep } = useAuthStore();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window?.innerWidth < 1024);
+    };
+
+    checkIsMobile();
+
+    window?.addEventListener("resize", checkIsMobile);
+
+    return () => {
+      window?.removeEventListener("resize", checkIsMobile);
+    };
+  }, []);
 
   const { isButtonDisabled } = useTransactionStore();
 
@@ -1942,9 +1957,9 @@ function Interaction({
 
   const handleWalletConnect = () => {
     if (activeChain.id === zetachain.id) {
-      openStep("optionsA");
+      openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
-      openStep("allWallets");
+      openStep(isMobile ? "mobileAllWallets" : "allWallets");
     }
   };
 
@@ -1983,16 +1998,21 @@ function Interaction({
             ? isButtonDisabled || isDisabledByProcessing || isDisabledByHash
             : false;
 
+          const isConnectWalletSHown =
+            !activeAccount ||
+            (activeAccount.walletClientType === "privy" &&
+              activeChain.id !== zetachain.id);
+
           return (
             <Button
               variant="special"
               disabled={isDisabled}
               className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
               onClick={() => {
-                activeAccount ? handleMainAction() : handleWalletConnect();
+                !isConnectWalletSHown ? handleMainAction() : handleWalletConnect();
               }}
             >
-              {activeAccount
+              {!isConnectWalletSHown
                 ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
                 : "Connect wallet"}
             </Button>
