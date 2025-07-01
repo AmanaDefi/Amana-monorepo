@@ -80,6 +80,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
 
   return (
     <>
+      {/* TVL Section */}
       <div className="flex flex-row justify-between items-center w-full">
         <div className="flex flex-col gap-2">
           <div className="flex flex-row gap-1 items-center">
@@ -98,16 +99,6 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               users across all chains.
             </InfoBlock>
           </div>
-          <p className="text-blue-digits font-bold text-xl leading-6">
-            ${totalAssets?.totalAssets ? formatTVLInUSD(Number(totalAssets.totalAssets), vault.inputToken.symbol, tokenPrice) : "0"}
-          </p>
-          <InfoBlock>
-            💡 TVL (Total Value Locked) <br />
-            This is the total amount of assets deposited in this vault by all
-            users across all chains.
-          </InfoBlock>
-        </div>
-
         <AnimatedValue
           value={
             totalAssets?.totalAssets
@@ -118,26 +109,28 @@ export const VaultOverviewBlock: React.FC<Props> = ({
           isLoading={isTVLLoading}
           skeletonClassName="h-6 w-20"
         />
+        </div>
+
       </div>
 
       {/* Risk Section */}
-      <div className="flex flex-col gap-2 items-center">
-        <div className="flex flex-row gap-1 items-center">
-          <p
-            className={classNames("font-normal text-base leading-4", {
-              [titleColor]: !isHexColor,
-            })}
-            style={isHexColor ? { color: titleColor } : undefined}
-          >
-            Risk
-          </p>
-          <InfoBlock isMiddle>
-            💡 Risk Rating: {riskRating} <br />
-            This vault has low protocol and slippage risk. Risk scores are based
-            on volatility, smart contract audits, and liquidity depth.
-          </InfoBlock>
-        </div>
-
+      <div className="flex flex-row justify-between items-center w-full">
+        <div className="flex flex-col gap-2 items-center">
+          <div className="flex flex-row gap-1 items-center">
+            <p
+              className={classNames("font-normal text-base leading-4", {
+                [titleColor]: !isHexColor,
+              })}
+              style={isHexColor ? { color: titleColor } : undefined}
+            >
+              Risk
+            </p>
+            <InfoBlock isMiddle>
+              💡 Risk Rating: {riskRating} <br />
+              This vault has low protocol and slippage risk. Risk scores are based
+              on volatility, smart contract audits, and liquidity depth.
+            </InfoBlock>
+          </div>
         {isLoading ? (
           <SkeletonBox className="h-6 w-6 rounded-full" />
         ) : (
@@ -152,26 +145,28 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             </p>
           </motion.div>
         )}
+        </div>
+
       </div>
 
       {/* APY Section */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-row gap-1 items-end">
-          <p
-            className={classNames("font-normal text-base leading-4 uppercase", {
-              [titleColor]: !isHexColor,
-            })}
-            style={isHexColor ? { color: titleColor } : undefined}
-          >
-            APY (7d)
-          </p>
-          <InfoBlock isRight>
-            💡 APY (Annual Percentage Yield) <br />
-            Estimated yearly return with compounding. It may vary based on
-            rewards, liquidity, and market changes.
-          </InfoBlock>
-        </div>
-
+      <div className="flex flex-row justify-between items-center w-full">
+        <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-row gap-1 items-end">
+            <p
+              className={classNames("font-normal text-base leading-4 uppercase", {
+                [titleColor]: !isHexColor,
+              })}
+              style={isHexColor ? { color: titleColor } : undefined}
+            >
+              APY (7d)
+            </p>
+            <InfoBlock isRight>
+              💡 APY (Annual Percentage Yield) <br />
+              Estimated yearly return with compounding. It may vary based on
+              rewards, liquidity, and market changes.
+            </InfoBlock>
+          </div>
         <div className="flex flex-row items-center gap-1">
           <AnimatedValue
             value={`${(apyValue * 100).toFixed(2)}%`}
@@ -208,6 +203,8 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             </InfoBlock>
           )}
         </div>
+        </div>
+
       </div>
     </>
   );
