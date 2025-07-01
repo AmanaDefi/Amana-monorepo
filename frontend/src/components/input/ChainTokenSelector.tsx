@@ -28,7 +28,7 @@ export default function ChainTokenSelector({
     useChainTokenModalStore();
 
   const currentChain = selectedChainFromModal || selectedChain;
-  const currentToken = selectedTokenFromModal || selectedToken;
+  const currentToken = selectedToken;
 
   if (!currentChain) {
     return (

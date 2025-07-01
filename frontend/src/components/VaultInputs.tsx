@@ -14,7 +14,11 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Address, parseAbiItem, parseUnits } from "viem";
 import { Chain } from "viem";
-import { APPROVED_TOKENS, chainConfigs, chainsWithCustomRpcs} from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  chainConfigs,
+  chainsWithCustomRpcs,
+} from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
   formatCurrency,
@@ -118,7 +122,7 @@ export default function VaultInputs({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
-  const {wallets} = useWallets()
+  const { wallets } = useWallets();
   const activeWallet = wallets[0];
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
@@ -138,8 +142,8 @@ export default function VaultInputs({
     async function handlePerformanceFee() {
       const perfFee = await getPerformanceFee(
         vaultData.id,
-        chainsWithCustomRpcs()[0].id,
-        activeWallet
+        vaultData.protocol.chainId ?? chainsWithCustomRpcs()[0].id,
+        activeWallet,
       );
       const percentagePerformanceFee = Number((perfFee / 100).toFixed(2));
       setPerformanceFee(percentagePerformanceFee);
@@ -147,7 +151,7 @@ export default function VaultInputs({
     if (vaultData) {
       handlePerformanceFee();
     }
-  }, [vaultData, activeWallet]);
+  }, [vaultData, activeWallet, selectChain]);
 
   useEffect(() => {
     if (vaultData?.id) {
@@ -188,9 +192,7 @@ export default function VaultInputs({
     initialConversionOutput,
   );
 
-  const { walletAddress } = useMultiChain();
-
-  const activeChain = chainConfigs[Number(activeWallet?.chainId?.split(":")[1] ?? 7000)]
+  const { walletAddress, activeChain } = useMultiChain();
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
@@ -368,7 +370,7 @@ export default function VaultInputs({
           walletAddress as any,
           inputBalance,
           inputToken,
-          activeWallet
+          activeWallet,
         );
 
         setSteps(newStepsConfig);
@@ -393,7 +395,7 @@ export default function VaultInputs({
     selectedChain,
     walletAddress,
     activeWallet,
-    activeChain
+    activeChain,
   ]);
 
   const handleTokenSelect = (selectedToken: Token) => {
@@ -450,7 +452,7 @@ export default function VaultInputs({
           walletAddress as any,
           inputBalance,
           inputToken,
-          activeWallet
+          activeWallet,
         );
         setSteps(steps);
         updateLocalStorageObject(vaultData.id, {
@@ -719,7 +721,7 @@ export default function VaultInputs({
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
-      inputToken
+      inputToken,
     ],
   );
 
@@ -768,7 +770,10 @@ export default function VaultInputs({
         let netDepositToVaultUSD = "0";
         if (!selectedChain?.id) return;
 
-        const publicClient = await getPublicClient(activeWallet, selectedChain.id);
+        const publicClient = await getPublicClient(
+          activeWallet,
+          selectedChain.id,
+        );
         if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
           const gasLimitForWithdrawAndCall = await publicClient.readContract({
             address: vaultData.id as Address,
@@ -831,7 +836,7 @@ export default function VaultInputs({
         const sharesAmountRaw = await getSharesFromDeposit(
           finalConvertedAmount,
           vaultData,
-          activeWallet
+          activeWallet,
         );
 
         // Use formatTokenBalance for the output amount formatting
@@ -913,7 +918,7 @@ export default function VaultInputs({
       vaultTokenPrice,
       ethPriceUsd,
       activeWallet,
-      selectedChain?.id
+      selectedChain?.id,
     ],
   );
 
@@ -1156,11 +1161,6 @@ export default function VaultInputs({
   ]);
 
   const isButtonDisabled = useMemo(() => {
-    if (!walletAddress) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-
     if (
       !inputBalance.formatted ||
       inputBalance.formatted === "0" ||
@@ -1205,7 +1205,6 @@ export default function VaultInputs({
     setIsButtonDisabled(false);
     return false;
   }, [
-    walletAddress,
     inputBalance.formatted,
     inputBalance.value,
     errorMessage,

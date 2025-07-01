@@ -19,7 +19,6 @@ import {
   Approvedeposit,
   executeDeposit,
   executeWithdrawal,
-  getAssetsFromShares,
 } from "@/actions/actions";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
@@ -43,10 +42,9 @@ import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import Button from "./Button";
 import { useTransactionStore } from "@/store/transactionStore";
-import { useFundWalletStore } from "@/store/fundWalletStore";
-import { Connector } from "wagmi";
-import { useMultiChain } from "@/providers/MultiChainProvider";
 import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
+import { useAuthStore } from "@/store/authStore";
+import { zetachain } from "viem/chains";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -1336,6 +1334,7 @@ function Interaction({
   const activeAccount = wallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
+  const { openStep } = useAuthStore();
 
   const { isButtonDisabled } = useTransactionStore();
 
@@ -1941,6 +1940,14 @@ function Interaction({
     prevLebel.current = label;
   }, [label, handleDone]);
 
+  const handleWalletConnect = () => {
+    if (activeChain.id === zetachain.id) {
+      openStep("optionsA");
+    } else {
+      openStep("allWallets");
+    }
+  };
+
   return (
     <>
       {!hideStepsDisplay && (
@@ -1972,17 +1979,22 @@ function Interaction({
             Number(inputBalance.formatted) <= 0 ||
             !!errorMessage;
 
-          const isDisabled =
-            isButtonDisabled || isDisabledByProcessing || isDisabledByHash;
+          const isDisabled = activeAccount
+            ? isButtonDisabled || isDisabledByProcessing || isDisabledByHash
+            : false;
 
           return (
             <Button
               variant="special"
               disabled={isDisabled}
               className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
-              onClick={() => handleMainAction()}
+              onClick={() => {
+                activeAccount ? handleMainAction() : handleWalletConnect();
+              }}
             >
-              {label ?? (isDeposit ? "Invest" : "Withdraw")}
+              {activeAccount
+                ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
+                : "Connect wallet"}
             </Button>
           );
         })()

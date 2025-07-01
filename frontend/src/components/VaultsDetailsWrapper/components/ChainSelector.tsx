@@ -33,7 +33,7 @@ export default function ChainSelector({
   vaultData,
 }: ChainSelectorProps) {
   const { activeChain, switchToChain, walletAddress } = useMultiChain();
-  const {wallets} = useWallets();
+  const { wallets } = useWallets();
   const activeAccount = wallets[0];
   const { openModal } = useChainTokenModalStore();
 
@@ -58,7 +58,10 @@ export default function ChainSelector({
   const displayedChain = selectedChain || activeChain;
 
   return (
-    <div className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
+    <div
+      onClick={handleOpenModal}
+      className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center hover:cursor-pointer"
+    >
       <div className="flex items-center gap-4">
         {displayedChain?.id && (
           <img
@@ -74,9 +77,10 @@ export default function ChainSelector({
 
       <div className="relative">
         <button
-          onClick={handleOpenModal}
           className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
-            walletAddress && activeAccount?.walletClientType === "privy" && !isFromTopUp
+            walletAddress &&
+            activeAccount?.walletClientType === "privy" &&
+            !isFromTopUp
               ? ""
               : "cursor-pointer"
           }`}
@@ -96,7 +100,7 @@ export default function ChainSelector({
               </div>
             ))}
           </div>
-          {(!walletAddress) && (
+          {!walletAddress && (
             <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
           )}
         </button>
