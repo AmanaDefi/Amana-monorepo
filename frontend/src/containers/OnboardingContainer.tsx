@@ -106,14 +106,14 @@ const OnboardingContainer = () => {
         <AmanaLogo
           width={86}
           height={61}
-          className="w-[86px] h-[61px] xl:w-[122px] md:h-[85px] mb-6 md:mb-0 xl:mb-4 3xl:mb-10"
+          className="w-[86px] h-[61px] 2xl:w-[122px] md:h-[85px] mb-6 md:mb-0 3xl:mb-10"
         />
 
-        <h1 className="text-[20px] xl:text-[64px] font-bold gradient-text text-center mb-2 xl:mb-4 3xl:mb-6 max-h-[61px] xl:max-h-[71px]">
+        <h1 className="text-[20px] lg:text-[36px] 2xl:text-[64px] font-bold gradient-text text-center mb-2 xl:mb-4 3xl:mb-6 max-h-[61px] xl:max-h-[71px]">
           What are <span className="">smart accounts?</span>
         </h1>
 
-        <p className="text-[14px] sm:text-[18px] xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] sm:max-w-3xl max-h-[58px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
+        <p className="text-[14px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] sm:max-w-3xl max-h-[58px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
           A new, secure way to use DeFi — no seed phrases, no gas fees, just
           simple login and powerful features.
         </p>
