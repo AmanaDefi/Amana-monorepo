@@ -15,6 +15,16 @@ const WalletButtons = ({
   handleSmartWallets,
   openStep,
 }: WalletButtonsProps) => {
+  const handleAllWalletsClick = () => {
+    const isMobile = window.innerWidth < 1024;
+
+    if (isMobile) {
+      openStep("mobileAllWallets");
+    } else {
+      openStep("allWallets");
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 mt-6">
       <ModalButton
@@ -30,7 +40,7 @@ const WalletButtons = ({
       <ModalButton
         label="All Wallets"
         icon={<AllWalletsIcon width={20} height={20} />}
-        onClick={() => openStep("allWallets")}
+        onClick={handleAllWalletsClick}
       >
         <CryptoIcons />
       </ModalButton>

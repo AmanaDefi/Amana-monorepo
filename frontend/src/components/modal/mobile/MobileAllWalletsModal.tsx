@@ -101,7 +101,7 @@ const MobileAllWallets = () => {
       paddingClass="p-5 pb-0"
       showHeader={true}
     >
-      <div className="flex flex-col h-full pt-14">
+      <div className="flex flex-col h-full pt-14 pb-6">
         <div
           style={{ scrollbarColor: "#1B46E0 transparent" }}
           className="overflow-auto flex-1 scrollbar-thin"

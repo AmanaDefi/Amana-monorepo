@@ -6,7 +6,6 @@ import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
-import BackedBy from "../shared/BackedBy";
 import { Connector, useConnect } from "wagmi";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";

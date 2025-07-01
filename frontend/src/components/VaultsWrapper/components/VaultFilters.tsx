@@ -69,7 +69,7 @@ export const VaultFilters: FC<Props> = ({
       if (localSearch !== searchTerm) {
         setSearchTerm(localSearch);
       }
-    }, 300);
+    }, 800);
 
     return () => clearTimeout(timerId);
   }, [localSearch]);
