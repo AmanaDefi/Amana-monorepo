@@ -8,12 +8,15 @@ import {
   isEthereumAddress,
   isSolanaAddress,
 } from "@/utils/utils";
+import { useWallets } from "@privy-io/react-auth";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 
 const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 
 export const useMultichainTokenBalance = (token: Token | undefined) => {
   const currentToken = useMemo(() => token, [token]);
+  const {wallets} = useWallets();
+  const activeWallet = wallets[0];
 
   const {
     walletAddress,
@@ -97,6 +100,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
             walletAddress,
             currentToken.address,
             activeChain,
+            activeWallet
           );
           newBalance = {
             value: ercBalance,

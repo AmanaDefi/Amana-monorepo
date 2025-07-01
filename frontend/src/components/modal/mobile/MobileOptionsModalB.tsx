@@ -6,33 +6,33 @@ import ModalButton from "../shared/ModalButton";
 import EmailOptionsIcon from "@/components/svg/EmailOptionsIcon";
 import PasskeyOptionsIcon from "@/components/svg/PasskeyOptionsIcon";
 import GoogleOptionsIcon from "@/components/svg/GoogleOptionsButton";
-import { useAuthenticate } from "@account-kit/react";
+
 import { MobileModal } from "./MobileModal";
+import { useLoginWithOAuth, useCreateWallet } from "@privy-io/react-auth";
 
 const MobileOptionsModalB = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
+  const { createWallet } = useCreateWallet();
 
-  const { authenticate, isPending, error } = useAuthenticate({
-    onSuccess: (result) => {
-      console.log("Success google auth", result);
-      successAuth();
+  const { initOAuth } = useLoginWithOAuth({
+    onError: (e) => {
+      setError(e);
     },
-    onError: (err) => {
-      console.log("Error google auth:", err);
-      setError(err.message);
+    onComplete: async (result) => {
+      if (!result?.user?.wallet) {
+        await createWallet();
+      }
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
+      }
     },
   });
 
   const handleLogin = () => {
-    if (isPending) return;
-    authenticate({
-      type: "oauth",
-      authProviderId: "google",
-      isCustomProvider: false,
-      mode: "popup",
+    initOAuth({
+      provider: "google",
     });
   };
-
   return (
     <MobileModal
       isOpen={step === "mobileOptionsB"}

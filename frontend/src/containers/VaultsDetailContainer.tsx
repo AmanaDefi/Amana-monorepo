@@ -37,16 +37,8 @@ import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
-import { useChain, useUser } from "@account-kit/react";
-import {
-  useVaultDetailsFromGraph,
-  useUserVaultBalancesFromGraph,
-} from "@/hooks/useVaultsGraph";
-import {
-  convertGraphVaultToVaultData,
-  convertGraphVaultToAPY,
-  convertGraphVaultToTotalAssets,
-} from "@/utils/graphUtils";
+import { useVaultDetailsFromGraph, useUserVaultBalancesFromGraph } from "@/hooks/useVaultsGraph";
+import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -57,12 +49,13 @@ import GiftIcon from "@/components/svg/GiftIcon";
 import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
 import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
 import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
+import { useWallets } from "@privy-io/react-auth";
+import { zetachain } from "viem/chains";
 
 import { motion, AnimatePresence } from "framer-motion";
 import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultHeaderInfo";
 import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
 
-import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import ChainsModal from "@/components/modal/chains/ChainsModal";
 
 const VaultsDetailContainer: React.FC<{
@@ -76,7 +69,8 @@ const VaultsDetailContainer: React.FC<{
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
-  const user = useUser();
+  const { wallets } = useWallets();
+  const user = wallets[0];
   const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -120,8 +114,8 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress } = useMultiChain();
-  const { chain: activeChain } = useChain();
+  const { switchToChain, walletAddress, activeChain } = useMultiChain();
+
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
   useEffect(() => {
@@ -132,12 +126,16 @@ const VaultsDetailContainer: React.FC<{
       if (isTxInProgress && TxInfo?.tab) {
         setIsDeposit(TxInfo.tab === Tabs.DEPOSIT);
       } else {
-        setIsDeposit(shouldBeDeposit);
+        if (isDeposit !== shouldBeDeposit) {
+          setIsDeposit(shouldBeDeposit);
+        }
       }
     } else {
-      setIsDeposit(shouldBeDeposit);
+      if (isDeposit !== shouldBeDeposit) {
+        setIsDeposit(shouldBeDeposit);
+      }
     }
-  }, [searchParams, vaultData]);
+  }, [searchParams, vaultData?.id]);
 
   const handleTabChange = (tab: string) => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
@@ -150,13 +148,13 @@ const VaultsDetailContainer: React.FC<{
       tab: newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW,
     });
 
-    const newUrl = new URL(window.location.href);
+    const newUrl = new URL(window?.location.href);
     if (newIsDeposit) {
       newUrl.searchParams.delete("tab");
     } else {
       newUrl.searchParams.set("tab", "withdraw");
     }
-    window.history.replaceState({}, "", newUrl.toString());
+    window?.history.replaceState({}, "", newUrl.toString());
   };
 
   const handleDepositDataUpdate = useCallback(
@@ -202,6 +200,7 @@ const VaultsDetailContainer: React.FC<{
         }
       }
     }
+
   }, [vaultID, activeChain]);
 
   useEffect(() => {
@@ -257,26 +256,43 @@ const VaultsDetailContainer: React.FC<{
     if (vaultFromGraph?.vault) {
       const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
       setVaultData(vd);
-      setVaultAPYs([convertGraphVaultToAPY(vaultFromGraph.vault)]);
+
+      const newAPY = convertGraphVaultToAPY(vaultFromGraph.vault);
+      setVaultAPYs((prevAPYs) => {
+        const existingAPY = prevAPYs.find(
+          (apy) => apy.vaultId === vaultID.toString(),
+        );
+        if (!existingAPY || existingAPY.APY7d !== newAPY.APY7d) {
+          return [newAPY];
+        }
+        return prevAPYs;
+      });
+
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
 
-    if (vaultID) {
-      const vaultInfo = getLocalStorageObject(vaultID.toString());
-      const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
-      if (isTxInProgress) {
-        if (vaultInfo?.selectedToken) {
-          setSelectedToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+  }, [vaultID, vaultFromGraph]);
+
+  useEffect(() => {
+    if (vaultFromGraph?.vault) {
+      const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
+      setVaultData(vd);
+
+      const newAPY = convertGraphVaultToAPY(vaultFromGraph.vault);
+      setVaultAPYs((prevAPYs) => {
+        const existingAPY = prevAPYs.find(
+          (apy) => apy.vaultId === vaultID.toString(),
+        );
+        if (!existingAPY || existingAPY.APY7d !== newAPY.APY7d) {
+          return [newAPY];
         }
-        setTransactionCompleted(vaultInfo?.transactionCompleted ?? false);
-      } else {
-        localStorage.removeItem(vaultID.toString());
-        updateLocalStorageObject(vaultID.toString(), {
-          tab: initialIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW,
-        });
-      }
+        return prevAPYs;
+      });
+
+      setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
-  }, [vaultID, initialIsDeposit, vaultFromGraph]);
+
+  }, [vaultID, vaultFromGraph]); 
 
   // Set user vault balance from graph data
   useEffect(() => {
@@ -354,6 +370,7 @@ const VaultsDetailContainer: React.FC<{
     memoizedPrices.eth,
     memoizedPrices.comp,
     memoizedPrices.op,
+    user
   );
 
   const handleTokenSelect = useCallback(
@@ -438,7 +455,7 @@ const VaultsDetailContainer: React.FC<{
             walletAddress={walletAddress || undefined}
             isWithdraw={isWithdraw}
             selectedToken={selectedToken}
-            selectedChain={activeChain}
+            selectedChain={activeChain ?? zetachain}
             vaultExplorerBaseUrl={vaultExplorerBaseUrl}
             strategyExplorerBaseUrl={strategyExplorerBaseUrl}
             depositData={depositData}
@@ -549,6 +566,7 @@ const VaultsDetailContainer: React.FC<{
                     (a) => a.vaultId === vaultID.toString(),
                   )}
                   totalAssets={vaultTotalAsset}
+                  isLoading={loading || !vaultAPYs.length}
                 />
               </div>
               <div className="hidden md:block">
@@ -566,7 +584,7 @@ const VaultsDetailContainer: React.FC<{
 
               {walletAddress && isWithdraw && <WithdrawalNotice />}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[470px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setTransactionCompleted}

@@ -68,10 +68,10 @@ const WelcomeContainer = () => {
         onComplete={() => closeAll()}
       />
       <p className="hidden md:block text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
-        <p className="hidden md:block text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
+        <span className="hidden md:block text-lg md:text-xl font-medium mt-8 px-4 md:px-0 max-w-[700px]">
           Congratulations! You&apos;ve successfully created a wallet on
           ZetaChain!
-        </p>
+        </span>
       </p>
       <div className="hidden md:flex flex-wrap justify-center gap-6 sm:gap-8 mt-10 sm:mt-12 max-w-[940px] w-full px-4 sm:px-6">
         {benefits.map(({ title, Icon }, index) => (

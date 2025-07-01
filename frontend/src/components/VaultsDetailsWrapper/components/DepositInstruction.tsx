@@ -287,9 +287,9 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                     isHighlighted
                       ? {
                           boxShadow: [
-                            "0 0 0 0 rgba(156, 163, 175, 0)",
-                            "0 0 0 4px rgba(156, 163, 175, 0.1)",
-                            "0 0 0 0 rgba(156, 163, 175, 0)",
+                            "0 0 0 0 rgba(62, 115, 196, 0)",
+                            "0 0 0 4px rgba(62, 115, 196, 0.2)",
+                            "0 0 0 0 rgba(62, 115, 196, 0)",
                           ],
                         }
                       : {}
@@ -299,7 +299,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                   <AnimatePresence>
                     {isHighlighted && (
                       <motion.div
-                        className="absolute inset-0 rounded-full border-2 border-gray-400"
+                        className="absolute inset-0 rounded-full border-2 border-[#3E73C4]"
                         initial={{ scale: 1, opacity: 0.5 }}
                         animate={{
                           scale: [1, 1.3, 1],

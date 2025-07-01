@@ -3,6 +3,12 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 import { PublicKey } from "@solana/web3.js";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import {
+  bsc,
+  bscTestnet,
+  avalanche,
+  avalancheFuji,
+  zetachain,
+  zetachainAthensTestnet,
   mainnet,
   sepolia,
   base,
@@ -11,15 +17,6 @@ import {
   polygonAmoy,
   arbitrum,
   arbitrumSepolia,
-  defineAlchemyChain,
-} from "@account-kit/infra";
-import {
-  bsc,
-  bscTestnet,
-  avalanche,
-  avalancheFuji,
-  zetachain,
-  zetachainAthensTestnet,
 } from "viem/chains";
 
 export const zeroSolAddress = PublicKey.default.toBase58();
@@ -46,7 +43,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   ARB: "/arbitrum-arb-logo.png",
   AMANAZ: "/amana-token-logo.svg",
   BASE: "/base.png",
-  USDT_TOKEN: '/tether.png',
+  USDT_TOKEN: "/tether.png",
   BALANCER: "/balancer.png",
   ZEROLEND: "/ZeroLend.png",
 };
@@ -199,6 +196,24 @@ export enum CHAIN_ID {
   avalanche = deployEnv === "testnet" ? 43113 : 43114,
 }
 
+export const customRpcsMap: Record<number, string> = {
+  1: ethMainnetRpcUrl,
+  8453: baseMainnetRpcUrl,
+  137: polygonMainnetRpcUrl,
+  56: bscMainnetRpcUrl,
+  43114: avalancheMainnetRpcUrl,
+  42161: arbitrumMainnetRpcUrl,
+  7000: zetaRpcUrl,
+
+  11155111: sepoliaRpcUrl,
+  84532: baseSepoliaRpcUrl,
+  80001: polygonAmoyRpcUrl,
+  97: bscTestnetRpcUrl,
+  43113: avalancheFujiRpcUrl,
+  421613: arbitrumSepoliaRpcUrl,
+  7001: zetaRpcUrl,
+};
+
 export enum MulticallVersion {
   V1 = 1,
   V2 = 2,
@@ -234,83 +249,65 @@ const solanaChain = {
   slug: "solana",
 };
 
-const bscChain = defineAlchemyChain({
-  chain: bsc,
-  rpcBaseUrl: bscMainnetRpcUrl,
-});
-const bscTestnetChain = defineAlchemyChain({
-  chain: bscTestnet,
-  rpcBaseUrl: bscTestnetRpcUrl,
-});
-const avalancheChain = defineAlchemyChain({
-  chain: avalanche,
-  rpcBaseUrl: avalancheMainnetRpcUrl,
-});
-const avalancheFujiChain = defineAlchemyChain({
-  chain: avalancheFuji,
-  rpcBaseUrl: avalancheFujiRpcUrl,
-});
-const zetachainChain = defineAlchemyChain({
-  chain: zetachain,
-  rpcBaseUrl: zetaRpcUrl,
-});
-const zetachainAthensTestnetChain = defineAlchemyChain({
-  chain: zetachainAthensTestnet,
-  rpcBaseUrl: zetaRpcUrl,
-});
-
-export const AlchemyZetachain =
-  deployEnv === "testnet" ? zetachainAthensTestnetChain : zetachainChain;
-
-const chainsMainnet = [
-  {
-    chain: zetachainChain,
-  },
-  {
-    chain: mainnet,
-  },
-  {
-    chain: base,
-  },
-  {
-    chain: polygon,
-  },
-  {
-    chain: bscChain,
-  },
-  {
-    chain: avalancheChain,
-  },
-  {
-    chain: arbitrum,
-  },
+export const chainsMainnet = [
+  zetachain,
+  mainnet,
+  base,
+  polygon,
+  bsc,
+  avalanche,
+  arbitrum,
 ];
 const chainsTestnet = [
-  {
-    chain: zetachainAthensTestnetChain,
-  },
-  {
-    chain: sepolia,
-  },
-  {
-    chain: baseSepolia,
-  },
-  {
-    chain: polygonAmoy,
-  },
-  {
-    chain: bscTestnetChain,
-  },
-  {
-    chain: avalancheFujiChain,
-  },
-  {
-    chain: arbitrumSepolia,
-  },
+  zetachainAthensTestnet,
+  sepolia,
+  baseSepolia,
+  polygonAmoy,
+  bscTestnet,
+  avalancheFuji,
+  arbitrumSepolia,
 ];
 
 export const SUPPORTED_CHAINS =
   deployEnv === "testnet" ? chainsTestnet : chainsMainnet;
+
+const zetaChain = deployEnv === "testnet" ? zetachainAthensTestnet : zetachain;
+export const customZetachain = zetaRpcUrl
+  ? {
+      ...zetaChain,
+      rpcUrls: {
+        ...zetaChain.rpcUrls,
+        public: {
+          http: [zetaRpcUrl],
+        },
+        default: {
+          http: [zetaRpcUrl],
+        },
+      },
+    }
+  : zetaChain;
+
+export const chainsWithCustomRpcs = () => {
+  return SUPPORTED_CHAINS.map((chain) => {
+    const customUrl = customRpcsMap[chain.id];
+
+    if (customUrl) {
+      return {
+        ...chain,
+        rpcUrls: {
+          ...chain.rpcUrls,
+          public: {
+            http: [customUrl],
+          },
+          default: {
+            http: [customUrl],
+          },
+        },
+      };
+    }
+    return chain;
+  });
+};
 
 export const MULTICALL_ADDRS: Record<
   number,
@@ -373,17 +370,6 @@ export const MULTICALL_ADDRS: Record<
     address: "0xcA11bde05977b3631167028862bE2a173976CA11", // Base
   },
 };
-
-// export const SUPPORTED_CHAINS = [
-//   deployEnv === "testnet" ? zetachainAthensTestnet : zetachain,
-//   deployEnv === "testnet" ? sepolia : mainnet,
-//   deployEnv === "testnet" ? baseSepolia : base,
-//   deployEnv === "testnet" ? polygonAmoy : polygon,
-//   deployEnv === "testnet" ? bscTestnet : bsc,
-//   deployEnv === "testnet" ? avalancheFuji : avalanche,
-//   deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
-//   solanaChain,
-// ];
 
 export const chainConfigs = {
   [CHAIN_ID.zetachain]:
@@ -1171,5 +1157,5 @@ export const PROTOCOL_FILTER_OPTIONS = [
   {
     value: "ZeroLend",
     icon: TOKEN_LOGO_URLS.ZEROLEND,
-  }
+  },
 ];

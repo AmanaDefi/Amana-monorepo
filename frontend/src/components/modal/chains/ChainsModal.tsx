@@ -121,13 +121,6 @@ const TokenBalanceItem = React.memo(
       selectedChain,
     );
     const price = useTokenPriceBySymbol(token.symbol) || 0;
-    console.log("🔍 TokenBalanceItem Debug:", {
-      tokenSymbol: token.symbol,
-      selectedChainFromModal: selectedChain?.name,
-      selectedChainId: selectedChain?.id,
-      balance: balance?.formatted,
-      isLoading,
-    });
 
     useEffect(() => {
       onBalanceUpdate(token, balance, price, isLoading);
@@ -138,9 +131,36 @@ const TokenBalanceItem = React.memo(
       return parseFloat(balance.formatted) * price;
     }, [balance, price]);
 
-    const formattedBalance = balance
-      ? formatTokenBalance(balance.formatted, token.symbol)
-      : "0";
+    const formattedBalance = useMemo(() => {
+      if (
+        !balance ||
+        balance.formatted === "0" ||
+        parseFloat(balance.formatted) === 0
+      ) {
+        return `0 ${getOnlyTokenSymbol(token.symbol)}`;
+      }
+      const formatted = formatTokenBalance(balance.formatted, token.symbol);
+      if (formatted.includes(getOnlyTokenSymbol(token.symbol))) {
+        return formatted;
+      }
+      return `${formatted} ${getOnlyTokenSymbol(token.symbol)}`;
+    }, [balance, token.symbol]);
+
+    const displayUSDValue = useMemo(() => {
+      if (
+        !balance ||
+        balance.formatted === "0" ||
+        parseFloat(balance.formatted) === 0
+      ) {
+        return "$0.00";
+      }
+
+      if (balanceUSD > 0 && balanceUSD < 0.01) {
+        return "<$0.01";
+      }
+
+      return `$${balanceUSD.toFixed(2)}`;
+    }, [balanceUSD, balance]);
 
     return (
       <motion.div
@@ -177,12 +197,7 @@ const TokenBalanceItem = React.memo(
             whileHover={{ rotate: 5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <TokenIcon
-              token={token}
-              icon={token.imgURL}
-              imageSize="w-8 h-8"
-              
-            />
+            <TokenIcon token={token} icon={token.imgURL} imageSize="w-8 h-8" />
           </motion.div>
           <div className="flex-1 text-left">
             <motion.div
@@ -242,19 +257,17 @@ const TokenBalanceItem = React.memo(
                   >
                     {formattedBalance}
                   </div>
-                  {balanceUSD > 0 && (
-                    <motion.div
-                      className="text-[#9A9CB3] text-[12px] font-normal"
-                      style={{
-                        fontWeight: 400,
-                      }}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      ${balanceUSD.toFixed(2)}
-                    </motion.div>
-                  )}
+                  <motion.div
+                    className="text-[#9A9CB3] text-[12px] font-normal"
+                    style={{
+                      fontWeight: 400,
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    {displayUSDValue}
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -328,7 +341,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   useEffect(() => {
     if (isOpen) {
       setSelectedChainLocal(
-        selectedChainFromModal || SUPPORTED_CHAINS[0].chain,
+        selectedChainFromModal || SUPPORTED_CHAINS[0],
       );
       setSelectedTokenLocal(selectedTokenFromModal || null);
       setSearchQuery("");
@@ -446,7 +459,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       }
     >
       <motion.div
-        className="w-full"
+        className="w-full min-w-[679px]"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -474,8 +487,8 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
           transition={{ duration: 0.5, delay: 0.1 }}
         />
 
-        <motion.div className="w-full flex gap-6" variants={itemVariants}>
-          <div className="flex-1">
+        <motion.div className="w-full flex" variants={itemVariants}>
+          <div className="flex-1 max-w-[240px]">
             <motion.h3
               className="text-[#535E73] text-[24px] font-normal leading-none mb-3"
               style={{
@@ -493,21 +506,21 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
             >
               {chainList.map((chainConfig, index) => {
                 const isSelected =
-                  selectedChainLocal?.id === chainConfig.chain.id;
+                  selectedChainLocal?.id === chainConfig.id;
                 return (
                   <motion.div
-                    key={chainConfig.chain.id}
+                    key={chainConfig.id}
                     variants={itemVariants}
                     custom={index}
                   >
                     <motion.button
-                      onClick={() => handleChainOnlySelect(chainConfig.chain)}
+                      onClick={() => handleChainOnlySelect(chainConfig)}
                       variants={buttonVariants}
                       initial="idle"
                       whileHover="hover"
                       whileTap="tap"
                       animate={isSelected ? "selected" : "unselected"}
-                      className={`flex items-center gap-3 px-3 py-[10px] rounded-[8px] border transition-colors duration-200 w-full ${
+                      className={`relative flex items-center gap-3 px-3 py-[10px] rounded-[8px] border transition-colors duration-200 w-full ${
                         isSelected
                           ? "bg-[#0C1015] border-[#3E73C4]"
                           : "bg-transparent border-[#1D2A41] hover:bg-[#0C1015] hover:border-[#3E73C4] focus:bg-[#0C1015] focus:border-[#3E73C4]"
@@ -521,8 +534,8 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                         transition={{ type: "spring", stiffness: 300 }}
                       >
                         <img
-                          src={CHAIN_ICONS[chainConfig.chain.id]?.url}
-                          alt={chainConfig.chain.name}
+                          src={CHAIN_ICONS[chainConfig.id]?.url}
+                          alt={chainConfig.name}
                           className="w-full h-full object-cover"
                           width={20}
                           height={20}
@@ -535,8 +548,14 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                           letterSpacing: "-0.06em",
                         }}
                       >
-                        {chainConfig.chain.name}
+                        {chainConfig.name}
                       </span>
+                   
+                      {isSelected && (
+                        <div
+                          className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm transition-opacity duration-500 opacity-100`}
+                        ></div>
+                      )}
                     </motion.button>
                   </motion.div>
                 );
@@ -600,7 +619,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="text-center text-gray-400 py-8"
+                      className="text-center text-gray-400 py-8 w-full"
                     >
                       {searchQuery
                         ? "No tokens found"

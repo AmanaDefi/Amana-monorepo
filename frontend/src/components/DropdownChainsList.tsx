@@ -95,7 +95,7 @@ export const DropdownChainsList = ({
               transition={{ delay: options.length * 0.03 + 0.1 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`pt-2  underline font-normal text-sm leading-4 transition-all duration-200 lg:hidden ${
+              className={`py-3 underline font-normal text-sm leading-4 transition-all duration-200 lg:hidden ${
                 isToken
                   ? "text-white hover:text-gray-300"
                   : "text-[#535E73] hover:text-blue-button"

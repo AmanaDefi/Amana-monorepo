@@ -18,11 +18,31 @@ import {
 import { useUpdateAPYs } from "@/hooks/hooks";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useVaultsFromGraph, useVaultsPaginatedFromGraph, useVaultsCountFromGraph, useUserVaultBalancesFromGraph, useSearchVaultsPaginatedFromGraph, useSearchVaultsCountFromGraph, useSearchVaultsPaginatedWithNetworkFromGraph, useSearchVaultsWithNetworkCountFromGraph, useVaultsByNetworkFromGraph, useVaultsByNetworkCountFromGraph, useVaultsByProtocolFromGraph, useVaultsByProtocolCountFromGraph, useSearchVaultsPaginatedWithProtocolFromGraph, useSearchVaultsWithProtocolCountFromGraph, useVaultsByNetworkAndProtocolFromGraph, useVaultsByNetworkAndProtocolCountFromGraph, useSearchVaultsPaginatedWithNetworkAndProtocolFromGraph, useSearchVaultsWithNetworkAndProtocolCountFromGraph } from "@/hooks/useVaultsGraph";
+import { useWallets } from "@privy-io/react-auth";
+import {
+  useVaultsFromGraph,
+  useVaultsPaginatedFromGraph,
+  useVaultsCountFromGraph,
+  useUserVaultBalancesFromGraph,
+  useSearchVaultsPaginatedFromGraph,
+  useSearchVaultsCountFromGraph,
+  useSearchVaultsPaginatedWithNetworkFromGraph,
+  useSearchVaultsWithNetworkCountFromGraph,
+  useVaultsByNetworkFromGraph,
+  useVaultsByNetworkCountFromGraph,
+  useVaultsByProtocolFromGraph,
+  useVaultsByProtocolCountFromGraph,
+  useSearchVaultsPaginatedWithProtocolFromGraph,
+  useSearchVaultsWithProtocolCountFromGraph,
+  useVaultsByNetworkAndProtocolFromGraph,
+  useVaultsByNetworkAndProtocolCountFromGraph,
+  useSearchVaultsPaginatedWithNetworkAndProtocolFromGraph,
+  useSearchVaultsWithNetworkAndProtocolCountFromGraph,
+} from "@/hooks/useVaultsGraph";
 import {
   convertGraphVaultToVaultData,
   convertGraphVaultToAPY,
-  convertGraphVaultToTotalAssets
+  convertGraphVaultToTotalAssets,
 } from "@/utils/graphUtils";
 import { EXCLUDED_VAULTS } from "@/constants";
 
@@ -40,6 +60,8 @@ export const useVaultData = () => {
   >([]);
 
   const { walletAddress } = useMultiChain();
+  const { wallets } = useWallets();
+  const wallet = wallets[0];
 
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {
     setVaultAPYs(vaultAPYs);
@@ -51,7 +73,7 @@ export const useVaultData = () => {
 
   const {
     loading: userBalancesLoading,
-    userVaultBalances: graphUserVaultBalances
+    userVaultBalances: graphUserVaultBalances,
   } = useUserVaultBalancesFromGraph(walletAddress || undefined);
 
   const stableUserVaultBalances = useMemo(() => {
@@ -66,7 +88,11 @@ export const useVaultData = () => {
     }
   }, [walletAddress, stableUserVaultBalances]);
 
-  const { data: subgraphData, isLoading: subgraphLoading, error: subgraphError } = useVaultsFromGraph();
+  const {
+    data: subgraphData,
+    isLoading: subgraphLoading,
+    error: subgraphError,
+  } = useVaultsFromGraph();
 
   const useGraphData = !subgraphError && subgraphData !== undefined;
 
@@ -75,7 +101,7 @@ export const useVaultData = () => {
     if (!useGraphData || !subgraphData?.vaults) return [];
 
     return subgraphData.vaults
-      .filter(vault => !EXCLUDED_VAULTS.includes(vault.id))
+      .filter((vault) => !EXCLUDED_VAULTS.includes(vault.id))
       .map(convertGraphVaultToVaultData);
   }, [useGraphData, subgraphData]);
 
@@ -83,7 +109,7 @@ export const useVaultData = () => {
   const shouldUseGraphAPY = useMemo(() => {
     if (!useGraphData) return false;
 
-    return subgraphData.vaults.some(v => {
+    return subgraphData.vaults.some((v) => {
       try {
         return parseFloat(v.apy7d) > 0;
       } catch (error) {
@@ -96,9 +122,9 @@ export const useVaultData = () => {
   const shouldUseGraphTVL = useMemo(() => {
     if (!useGraphData) return false;
 
-    return subgraphData.vaults.some(v => {
+    return subgraphData.vaults.some((v) => {
       try {
-        return BigInt(v.tvl || '0') > BigInt(0);
+        return BigInt(v.tvl || "0") > BigInt(0);
       } catch (error) {
         return false;
       }
@@ -113,13 +139,22 @@ export const useVaultData = () => {
   const rawOpTokenPrice = useTokenPriceBySymbol("OP");
 
   // Memoize token prices to avoid constant changes
-  const tokenPrices = useMemo(() => ({
-    crvTokenPrice: rawCrvTokenPrice,
-    cvxTokenPrice: rawCvxTokenPrice,
-    ethTokenPrice: rawEthTokenPrice,
-    compTokenPrice: rawCompTokenPrice,
-    opTokenPrice: rawOpTokenPrice,
-  }), [rawCrvTokenPrice, rawCvxTokenPrice, rawEthTokenPrice, rawCompTokenPrice, rawOpTokenPrice]);
+  const tokenPrices = useMemo(
+    () => ({
+      crvTokenPrice: rawCrvTokenPrice,
+      cvxTokenPrice: rawCvxTokenPrice,
+      ethTokenPrice: rawEthTokenPrice,
+      compTokenPrice: rawCompTokenPrice,
+      opTokenPrice: rawOpTokenPrice,
+    }),
+    [
+      rawCrvTokenPrice,
+      rawCvxTokenPrice,
+      rawEthTokenPrice,
+      rawCompTokenPrice,
+      rawOpTokenPrice,
+    ],
+  );
 
   const isDataReady = useMemo(() => {
     if (useGraphData) {
@@ -131,7 +166,15 @@ export const useVaultData = () => {
     }
 
     return false;
-  }, [useGraphData, subgraphLoading, vaults.length, shouldUseGraphAPY, vaultAPYs.length, shouldUseGraphTVL, vaultTotalAssets.length]);
+  }, [
+    useGraphData,
+    subgraphLoading,
+    vaults.length,
+    shouldUseGraphAPY,
+    vaultAPYs.length,
+    shouldUseGraphTVL,
+    vaultTotalAssets.length,
+  ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
   useUpdateAPYs(
@@ -143,6 +186,7 @@ export const useVaultData = () => {
     tokenPrices.ethTokenPrice,
     tokenPrices.compTokenPrice,
     tokenPrices.opTokenPrice,
+    wallet,
     false,
   );
 
@@ -152,7 +196,9 @@ export const useVaultData = () => {
     }
 
     // Set all data at once to avoid flickering
-    const filteredVaults = subgraphData.vaults.filter(vault => !EXCLUDED_VAULTS.includes(vault.id));
+    const filteredVaults = subgraphData.vaults.filter(
+      (vault) => !EXCLUDED_VAULTS.includes(vault.id),
+    );
 
     /*// Set APY from subgraph
     if (shouldUseGraphAPY) {
@@ -162,7 +208,9 @@ export const useVaultData = () => {
 
     // Set TVL from subgraph
     if (shouldUseGraphTVL) {
-      const graphTotalAssets = filteredVaults.map(convertGraphVaultToTotalAssets);
+      const graphTotalAssets = filteredVaults.map(
+        convertGraphVaultToTotalAssets,
+      );
       setVaultTotalAssets(graphTotalAssets);
     }
   }, [subgraphData, shouldUseGraphAPY, shouldUseGraphTVL]);
@@ -209,11 +257,11 @@ export const useVaultData = () => {
       finalLoading,
       hasError,
       dataSource: {
-        vaults: useGraphData ? 'subgraph' : 'static',
-        apy: shouldUseGraphAPY ? 'subgraph' : 'blockchain',
-        tvl: shouldUseGraphTVL ? 'subgraph' : 'blockchain'
-      }
-    }
+        vaults: useGraphData ? "subgraph" : "static",
+        apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
+        tvl: shouldUseGraphTVL ? "subgraph" : "blockchain",
+      },
+    },
   };
 };
 
@@ -221,9 +269,11 @@ export const useVaultData = () => {
 export const useVaultDataPaginated = (
   page: number = 1,
   pageSize: number = 10,
-  sortBy: string = 'tvl',
-  sortOrder: 'asc' | 'desc' = 'desc'
+  sortBy: string = "tvl",
+  sortOrder: "asc" | "desc" = "desc",
 ) => {
+  const { wallets } = useWallets();
+  const wallet = wallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<
@@ -250,7 +300,7 @@ export const useVaultDataPaginated = (
   // User balances from subgraph
   const {
     loading: userBalancesLoading,
-    userVaultBalances: graphUserVaultBalances
+    userVaultBalances: graphUserVaultBalances,
   } = useUserVaultBalancesFromGraph(walletAddress || undefined);
 
   // Memoize user balances to avoid infinite loop
@@ -271,29 +321,31 @@ export const useVaultDataPaginated = (
 
   const graphSortBy = useMemo(() => {
     switch (sortBy.toLowerCase()) {
-      case 'apy':
-        return 'apy7d';
-      case 'tvl':
-        return 'tvl';
-      case 'risk':
-        return 'riskLevel';
+      case "apy":
+        return "apy7d";
+      case "tvl":
+        return "tvl";
+      case "risk":
+        return "riskLevel";
       default:
-        return 'tvl';
+        return "tvl";
     }
   }, [sortBy]);
 
-  const { data: subgraphData, isLoading: subgraphLoading, error: subgraphError } = useVaultsPaginatedFromGraph(
-    pageSize,
-    skip,
-    graphSortBy,
-    sortOrder
-  );
+  const {
+    data: subgraphData,
+    isLoading: subgraphLoading,
+    error: subgraphError,
+  } = useVaultsPaginatedFromGraph(pageSize, skip, graphSortBy, sortOrder);
 
-  const { data: countData, isLoading: countLoading } = useVaultsCountFromGraph();
+  const { data: countData, isLoading: countLoading } =
+    useVaultsCountFromGraph();
   const totalCount = useMemo(() => {
     if (!countData?.vaults) return 0;
     const allVaults = countData.vaults.length;
-    const filteredVaults = countData.vaults.filter(vault => !EXCLUDED_VAULTS.includes(vault.id)).length;
+    const filteredVaults = countData.vaults.filter(
+      (vault) => !EXCLUDED_VAULTS.includes(vault.id),
+    ).length;
     return filteredVaults;
   }, [countData]);
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -303,14 +355,14 @@ export const useVaultDataPaginated = (
     if (!useGraphData || !subgraphData?.vaults) return [];
 
     return subgraphData.vaults
-      .filter(vault => !EXCLUDED_VAULTS.includes(vault.id))
+      .filter((vault) => !EXCLUDED_VAULTS.includes(vault.id))
       .map(convertGraphVaultToVaultData);
   }, [useGraphData, subgraphData]);
 
   const shouldUseGraphAPY = useMemo(() => {
     if (!useGraphData) return false;
 
-    return subgraphData.vaults.some(v => {
+    return subgraphData.vaults.some((v) => {
       try {
         return parseFloat(v.apy7d) > 0;
       } catch (error) {
@@ -322,9 +374,9 @@ export const useVaultDataPaginated = (
   const shouldUseGraphTVL = useMemo(() => {
     if (!useGraphData) return false;
 
-    return subgraphData.vaults.some(v => {
+    return subgraphData.vaults.some((v) => {
       try {
-        return BigInt(v.tvl || '0') > BigInt(0);
+        return BigInt(v.tvl || "0") > BigInt(0);
       } catch (error) {
         return false;
       }
@@ -337,13 +389,22 @@ export const useVaultDataPaginated = (
   const rawCompTokenPrice = useTokenPriceBySymbol("COMP");
   const rawOpTokenPrice = useTokenPriceBySymbol("OP");
 
-  const tokenPrices = useMemo(() => ({
-    crvTokenPrice: rawCrvTokenPrice,
-    cvxTokenPrice: rawCvxTokenPrice,
-    ethTokenPrice: rawEthTokenPrice,
-    compTokenPrice: rawCompTokenPrice,
-    opTokenPrice: rawOpTokenPrice,
-  }), [rawCrvTokenPrice, rawCvxTokenPrice, rawEthTokenPrice, rawCompTokenPrice, rawOpTokenPrice]);
+  const tokenPrices = useMemo(
+    () => ({
+      crvTokenPrice: rawCrvTokenPrice,
+      cvxTokenPrice: rawCvxTokenPrice,
+      ethTokenPrice: rawEthTokenPrice,
+      compTokenPrice: rawCompTokenPrice,
+      opTokenPrice: rawOpTokenPrice,
+    }),
+    [
+      rawCrvTokenPrice,
+      rawCvxTokenPrice,
+      rawEthTokenPrice,
+      rawCompTokenPrice,
+      rawOpTokenPrice,
+    ],
+  );
 
   const isDataReady = useMemo(() => {
     if (useGraphData || (!subgraphError && !subgraphLoading)) {
@@ -355,7 +416,16 @@ export const useVaultDataPaginated = (
     }
 
     return false;
-  }, [useGraphData, subgraphLoading, countLoading, subgraphError, shouldUseGraphAPY, vaultAPYs.length, shouldUseGraphTVL, vaultTotalAssets.length]);
+  }, [
+    useGraphData,
+    subgraphLoading,
+    countLoading,
+    subgraphError,
+    shouldUseGraphAPY,
+    vaultAPYs.length,
+    shouldUseGraphTVL,
+    vaultTotalAssets.length,
+  ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
   useUpdateAPYs(
@@ -367,6 +437,7 @@ export const useVaultDataPaginated = (
     tokenPrices.ethTokenPrice,
     tokenPrices.compTokenPrice,
     tokenPrices.opTokenPrice,
+    wallet,
     false,
   );
 
@@ -377,7 +448,9 @@ export const useVaultDataPaginated = (
     }
 
     // Set all data at once to avoid flickering
-    const filteredVaults = subgraphData.vaults.filter(vault => !EXCLUDED_VAULTS.includes(vault.id));
+    const filteredVaults = subgraphData.vaults.filter(
+      (vault) => !EXCLUDED_VAULTS.includes(vault.id),
+    );
 
     // Set APY from subgraph
     if (shouldUseGraphAPY) {
@@ -387,7 +460,9 @@ export const useVaultDataPaginated = (
 
     // Set TVL from subgraph
     if (shouldUseGraphTVL) {
-      const graphTotalAssets = filteredVaults.map(convertGraphVaultToTotalAssets);
+      const graphTotalAssets = filteredVaults.map(
+        convertGraphVaultToTotalAssets,
+      );
       setVaultTotalAssets(graphTotalAssets);
     }
   }, [subgraphData, shouldUseGraphAPY, shouldUseGraphTVL]);
@@ -445,23 +520,25 @@ export const useVaultDataPaginated = (
       totalPages,
       skip,
       dataSource: {
-        vaults: useGraphData ? 'subgraph' : 'static',
-        apy: shouldUseGraphAPY ? 'subgraph' : 'blockchain',
-        tvl: shouldUseGraphTVL ? 'subgraph' : 'blockchain'
-      }
-    }
+        vaults: useGraphData ? "subgraph" : "static",
+        apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
+        tvl: shouldUseGraphTVL ? "subgraph" : "blockchain",
+      },
+    },
   };
 };
 
 export const useVaultDataWithSearch = (
-  searchTerm: string = '',
+  searchTerm: string = "",
   page: number = 1,
   pageSize: number = 10,
-  sortBy: string = 'tvl',
-  sortOrder: 'asc' | 'desc' = 'desc',
-  networkFilter: string = '',
-  protocolFilter: string = ''
+  sortBy: string = "tvl",
+  sortOrder: "asc" | "desc" = "desc",
+  networkFilter: string = "",
+  protocolFilter: string = "",
 ) => {
+  const { wallets } = useWallets();
+  const wallet = wallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<
@@ -489,7 +566,7 @@ export const useVaultDataWithSearch = (
   // User balances from subgraph
   const {
     loading: userBalancesLoading,
-    userVaultBalances: graphUserVaultBalances
+    userVaultBalances: graphUserVaultBalances,
   } = useUserVaultBalancesFromGraph(walletAddress || undefined);
 
   // Memoize user balances to avoid infinite loop
@@ -512,137 +589,197 @@ export const useVaultDataWithSearch = (
   // Mapping sortBy for subgraph
   const graphSortBy = useMemo(() => {
     switch (sortBy.toLowerCase()) {
-      case 'apy':
-        return 'apy7d';
-      case 'tvl':
-        return 'normalizedTVL';
-      case 'risk':
-        return 'riskLevel';
+      case "apy":
+        return "apy7d";
+      case "tvl":
+        return "normalizedTVL";
+      case "risk":
+        return "riskLevel";
       default:
-        return 'tvl';
+        return "tvl";
     }
   }, [sortBy]);
 
   // Determine if search should be used - memoized to prevent constant recalculation
   const trimmedSearchTerm = useMemo(() => searchTerm.trim(), [searchTerm]);
-  const hasNetworkFilter = useMemo(() => networkFilter && networkFilter.length > 0, [networkFilter]);
-  const hasProtocolFilter = useMemo(() => protocolFilter && protocolFilter.length > 0, [protocolFilter]);
+  const hasNetworkFilter = useMemo(
+    () => networkFilter && networkFilter.length > 0,
+    [networkFilter],
+  );
+  const hasProtocolFilter = useMemo(
+    () => protocolFilter && protocolFilter.length > 0,
+    [protocolFilter],
+  );
   const hasSearchTerm = useMemo(() => {
-    return trimmedSearchTerm.length > 0 &&
+    return (
+      trimmedSearchTerm.length > 0 &&
       trimmedSearchTerm.length <= 100 && // Maximum 100 characters
-      (
-        // Minimum 6 characters for addresses (0x + 4 characters)
-        !trimmedSearchTerm.startsWith('0x') || trimmedSearchTerm.length >= 6
-      );
+      // Minimum 6 characters for addresses (0x + 4 characters)
+      (!trimmedSearchTerm.startsWith("0x") || trimmedSearchTerm.length >= 6)
+    );
   }, [trimmedSearchTerm]);
 
   // All possible hook calls (always called at top level)
-  const searchWithNetworkAndProtocolData = useSearchVaultsPaginatedWithNetworkAndProtocolFromGraph(
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? skip : 0,
-    graphSortBy,
-    sortOrder
-  );
+  const searchWithNetworkAndProtocolData =
+    useSearchVaultsPaginatedWithNetworkAndProtocolFromGraph(
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+        ? trimmedSearchTerm
+        : "",
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+        ? networkFilter
+        : "",
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+        ? protocolFilter
+        : "",
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? skip : 0,
+      graphSortBy,
+      sortOrder,
+    );
 
   const searchWithNetworkData = useSearchVaultsPaginatedWithNetworkFromGraph(
-    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : '',
-    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : '',
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter
+      ? trimmedSearchTerm
+      : "",
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter
+      ? networkFilter
+      : "",
     hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
     hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? skip : 0,
     graphSortBy,
-    sortOrder
+    sortOrder,
   );
 
   const searchWithProtocolData = useSearchVaultsPaginatedWithProtocolFromGraph(
-    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
-    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter
+      ? trimmedSearchTerm
+      : "",
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter
+      ? protocolFilter
+      : "",
     hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
     hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? skip : 0,
     graphSortBy,
-    sortOrder
+    sortOrder,
   );
 
   const networkAndProtocolData = useVaultsByNetworkAndProtocolFromGraph(
-    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
-    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+      ? networkFilter
+      : "",
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+      ? protocolFilter
+      : "",
     !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
     !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? skip : 0,
     graphSortBy,
-    sortOrder
+    sortOrder,
   );
 
   const searchOnlyData = useSearchVaultsPaginatedFromGraph(
-    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : '',
+    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter
+      ? trimmedSearchTerm
+      : "",
     hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
     hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? skip : 0,
     graphSortBy,
-    sortOrder
+    sortOrder,
   );
 
   const networkOnlyData = useVaultsByNetworkFromGraph(
-    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : '',
+    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter
+      ? networkFilter
+      : "",
     !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
     !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? skip : 0,
     graphSortBy,
-    sortOrder
+    sortOrder,
   );
 
   const protocolOnlyData = useVaultsByProtocolFromGraph(
-    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : '',
+    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter
+      ? protocolFilter
+      : "",
     !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? pageSize : 0,
     !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? skip : 0,
     graphSortBy,
-    sortOrder
+    sortOrder,
   );
 
   const defaultData = useVaultsPaginatedFromGraph(
     !hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? pageSize : 0,
     !hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? skip : 0,
     graphSortBy,
-    sortOrder
+    sortOrder,
   );
 
   // Count hooks (always called at top level)
-  const searchWithNetworkAndProtocolCount = useSearchVaultsWithNetworkAndProtocolCountFromGraph(
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
-    hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
-  );
+  const searchWithNetworkAndProtocolCount =
+    useSearchVaultsWithNetworkAndProtocolCountFromGraph(
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+        ? trimmedSearchTerm
+        : "",
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+        ? networkFilter
+        : "",
+      hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+        ? protocolFilter
+        : "",
+    );
 
   const searchWithNetworkCount = useSearchVaultsWithNetworkCountFromGraph(
-    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : '',
-    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : ''
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter
+      ? trimmedSearchTerm
+      : "",
+    hasSearchTerm && hasNetworkFilter && !hasProtocolFilter
+      ? networkFilter
+      : "",
   );
 
   const searchWithProtocolCount = useSearchVaultsWithProtocolCountFromGraph(
-    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? trimmedSearchTerm : '',
-    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter
+      ? trimmedSearchTerm
+      : "",
+    hasSearchTerm && !hasNetworkFilter && hasProtocolFilter
+      ? protocolFilter
+      : "",
   );
 
   const networkAndProtocolCount = useVaultsByNetworkAndProtocolCountFromGraph(
-    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? networkFilter : '',
-    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+      ? networkFilter
+      : "",
+    !hasSearchTerm && hasNetworkFilter && hasProtocolFilter
+      ? protocolFilter
+      : "",
   );
 
   const searchOnlyCount = useSearchVaultsCountFromGraph(
-    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter ? trimmedSearchTerm : ''
+    hasSearchTerm && !hasNetworkFilter && !hasProtocolFilter
+      ? trimmedSearchTerm
+      : "",
   );
 
   const networkOnlyCount = useVaultsByNetworkCountFromGraph(
-    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter ? networkFilter : ''
+    !hasSearchTerm && hasNetworkFilter && !hasProtocolFilter
+      ? networkFilter
+      : "",
   );
 
   const protocolOnlyCount = useVaultsByProtocolCountFromGraph(
-    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter ? protocolFilter : ''
+    !hasSearchTerm && !hasNetworkFilter && hasProtocolFilter
+      ? protocolFilter
+      : "",
   );
 
   const defaultCount = useVaultsCountFromGraph();
 
   // Select the appropriate data and counts based on filters
-  const { data: subgraphData, isLoading: subgraphLoading, error: subgraphError } = useMemo(() => {
+  const {
+    data: subgraphData,
+    isLoading: subgraphLoading,
+    error: subgraphError,
+  } = useMemo(() => {
     if (hasSearchTerm && hasNetworkFilter && hasProtocolFilter) {
       return searchWithNetworkAndProtocolData;
     } else if (hasSearchTerm && hasNetworkFilter) {
@@ -661,9 +798,17 @@ export const useVaultDataWithSearch = (
       return defaultData;
     }
   }, [
-    hasSearchTerm, hasNetworkFilter, hasProtocolFilter,
-    searchWithNetworkAndProtocolData, searchWithNetworkData, searchWithProtocolData,
-    networkAndProtocolData, searchOnlyData, networkOnlyData, protocolOnlyData, defaultData
+    hasSearchTerm,
+    hasNetworkFilter,
+    hasProtocolFilter,
+    searchWithNetworkAndProtocolData,
+    searchWithNetworkData,
+    searchWithProtocolData,
+    networkAndProtocolData,
+    searchOnlyData,
+    networkOnlyData,
+    protocolOnlyData,
+    defaultData,
   ]);
 
   const { data: countData, isLoading: countLoading } = useMemo(() => {
@@ -685,16 +830,26 @@ export const useVaultDataWithSearch = (
       return defaultCount;
     }
   }, [
-    hasSearchTerm, hasNetworkFilter, hasProtocolFilter,
-    searchWithNetworkAndProtocolCount, searchWithNetworkCount, searchWithProtocolCount,
-    networkAndProtocolCount, searchOnlyCount, networkOnlyCount, protocolOnlyCount, defaultCount
+    hasSearchTerm,
+    hasNetworkFilter,
+    hasProtocolFilter,
+    searchWithNetworkAndProtocolCount,
+    searchWithNetworkCount,
+    searchWithProtocolCount,
+    networkAndProtocolCount,
+    searchOnlyCount,
+    networkOnlyCount,
+    protocolOnlyCount,
+    defaultCount,
   ]);
 
   // Apply EXCLUDED_VAULTS filter to total count
   const totalCount = useMemo(() => {
     if (!countData?.vaults) return 0;
     const allVaults = countData.vaults.length;
-    const filteredVaults = countData.vaults.filter(vault => !EXCLUDED_VAULTS.includes(vault.id)).length;
+    const filteredVaults = countData.vaults.filter(
+      (vault) => !EXCLUDED_VAULTS.includes(vault.id),
+    ).length;
     return filteredVaults;
   }, [countData]);
 
@@ -708,7 +863,7 @@ export const useVaultDataWithSearch = (
     if (!useGraphData || !subgraphData?.vaults) return [];
 
     return subgraphData.vaults
-      .filter(vault => !EXCLUDED_VAULTS.includes(vault.id))
+      .filter((vault) => !EXCLUDED_VAULTS.includes(vault.id))
       .map(convertGraphVaultToVaultData);
   }, [useGraphData, subgraphData]);
 
@@ -716,7 +871,7 @@ export const useVaultDataWithSearch = (
   const shouldUseGraphAPY = useMemo(() => {
     if (!useGraphData) return false;
 
-    return subgraphData.vaults.some(v => {
+    return subgraphData.vaults.some((v) => {
       try {
         return parseFloat(v.apy7d) > 0;
       } catch (error) {
@@ -729,9 +884,9 @@ export const useVaultDataWithSearch = (
   const shouldUseGraphTVL = useMemo(() => {
     if (!useGraphData) return false;
 
-    return subgraphData.vaults.some(v => {
+    return subgraphData.vaults.some((v) => {
       try {
-        return BigInt(v.tvl || '0') > BigInt(0);
+        return BigInt(v.tvl || "0") > BigInt(0);
       } catch (error) {
         return false;
       }
@@ -746,13 +901,22 @@ export const useVaultDataWithSearch = (
   const rawOpTokenPrice = useTokenPriceBySymbol("OP");
 
   // Memoize token prices to avoid constant changes
-  const tokenPrices = useMemo(() => ({
-    crvTokenPrice: rawCrvTokenPrice,
-    cvxTokenPrice: rawCvxTokenPrice,
-    ethTokenPrice: rawEthTokenPrice,
-    compTokenPrice: rawCompTokenPrice,
-    opTokenPrice: rawOpTokenPrice,
-  }), [rawCrvTokenPrice, rawCvxTokenPrice, rawEthTokenPrice, rawCompTokenPrice, rawOpTokenPrice]);
+  const tokenPrices = useMemo(
+    () => ({
+      crvTokenPrice: rawCrvTokenPrice,
+      cvxTokenPrice: rawCvxTokenPrice,
+      ethTokenPrice: rawEthTokenPrice,
+      compTokenPrice: rawCompTokenPrice,
+      opTokenPrice: rawOpTokenPrice,
+    }),
+    [
+      rawCrvTokenPrice,
+      rawCvxTokenPrice,
+      rawEthTokenPrice,
+      rawCompTokenPrice,
+      rawOpTokenPrice,
+    ],
+  );
 
   // Determine if all data is ready
   const isDataReady = useMemo(() => {
@@ -768,7 +932,16 @@ export const useVaultDataWithSearch = (
 
     // If not using subgraph - no vaults
     return false;
-  }, [useGraphData, subgraphLoading, countLoading, subgraphError, shouldUseGraphAPY, vaultAPYs.length, shouldUseGraphTVL, vaultTotalAssets.length]);
+  }, [
+    useGraphData,
+    subgraphLoading,
+    countLoading,
+    subgraphError,
+    shouldUseGraphAPY,
+    vaultAPYs.length,
+    shouldUseGraphTVL,
+    vaultTotalAssets.length,
+  ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
   useUpdateAPYs(
@@ -780,6 +953,7 @@ export const useVaultDataWithSearch = (
     tokenPrices.ethTokenPrice,
     tokenPrices.compTokenPrice,
     tokenPrices.opTokenPrice,
+    wallet,
     false,
   );
 
@@ -790,7 +964,9 @@ export const useVaultDataWithSearch = (
     }
 
     // Set all data at once to avoid flickering
-    const filteredVaults = subgraphData.vaults.filter(vault => !EXCLUDED_VAULTS.includes(vault.id));
+    const filteredVaults = subgraphData.vaults.filter(
+      (vault) => !EXCLUDED_VAULTS.includes(vault.id),
+    );
 
     // Set APY from subgraph
     if (shouldUseGraphAPY) {
@@ -800,7 +976,9 @@ export const useVaultDataWithSearch = (
 
     // Set TVL from subgraph
     if (shouldUseGraphTVL) {
-      const graphTotalAssets = filteredVaults.map(convertGraphVaultToTotalAssets);
+      const graphTotalAssets = filteredVaults.map(
+        convertGraphVaultToTotalAssets,
+      );
       setVaultTotalAssets(graphTotalAssets);
     }
   }, [subgraphData, shouldUseGraphAPY, shouldUseGraphTVL]);
@@ -832,7 +1010,15 @@ export const useVaultDataWithSearch = (
     if (subgraphError) return false;
     // If not using subgraph, show default loading
     return loading;
-  }, [timedOut, useGraphData, subgraphLoading, countLoading, isDataReady, subgraphError, loading]);
+  }, [
+    timedOut,
+    useGraphData,
+    subgraphLoading,
+    countLoading,
+    isDataReady,
+    subgraphError,
+    loading,
+  ]);
 
   // Error state
   const hasError = useMemo(() => {
@@ -879,13 +1065,13 @@ export const useVaultDataWithSearch = (
       hasProtocolFilter,
       timedOut,
       dataSource: {
-        vaults: useGraphData ? 'subgraph' : 'static',
-        apy: shouldUseGraphAPY ? 'subgraph' : 'blockchain',
-        tvl: shouldUseGraphTVL ? 'subgraph' : 'blockchain',
-        search: hasSearchTerm ? 'subgraph' : 'none',
-        networkFilter: hasNetworkFilter ? 'subgraph' : 'none',
-        protocolFilter: hasProtocolFilter ? 'subgraph' : 'none'
-      }
+        vaults: useGraphData ? "subgraph" : "static",
+        apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
+        tvl: shouldUseGraphTVL ? "subgraph" : "blockchain",
+        search: hasSearchTerm ? "subgraph" : "none",
+        networkFilter: hasNetworkFilter ? "subgraph" : "none",
+        protocolFilter: hasProtocolFilter ? "subgraph" : "none",
+      },
     },
     timedOut,
   };

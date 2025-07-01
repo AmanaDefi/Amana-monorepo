@@ -31,13 +31,13 @@ const TopTokens = ({}) => {
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 597);
+      setIsMobile(window?.innerWidth < 597);
     };
 
     checkIsMobile();
-    window.addEventListener("resize", checkIsMobile);
+    window?.addEventListener("resize", checkIsMobile);
 
-    return () => window.removeEventListener("resize", checkIsMobile);
+    return () => window?.removeEventListener("resize", checkIsMobile);
   }, []);
 
   const itemsToShow =

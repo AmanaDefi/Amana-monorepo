@@ -5,7 +5,7 @@ import SaveIcon from "@/components/svg/SaveIcon";
 import TopUpIcon from "@/components/svg/TopUpIcon";
 import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
-import { useUser } from "@account-kit/react";
+import { useWallets } from "@privy-io/react-auth";
 import React from "react";
 
 const WalletActions = () => {
@@ -13,7 +13,8 @@ const WalletActions = () => {
      useAuthStore();
 
   const { setStep } = useFundWalletStore();
-  const user = useUser();
+  const {wallets} = useWallets();
+  const user = wallets[0];
 
   const handleSend = () => {
     openStep("send")
@@ -35,7 +36,7 @@ const WalletActions = () => {
         Receive
       </Button>
 
-      {user?.type === "sca" && (
+      {user?.walletClientType === "privy" && (
         <Button variant="wallet" onClick={handleTopUp}>
           <TopUpIcon width={12} height={12} className="mr-1" />
           Top Up

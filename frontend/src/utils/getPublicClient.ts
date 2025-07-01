@@ -1,78 +1,85 @@
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
+import { chainsWithCustomRpcs, customZetachain } from "@/constants/chainConfig";
+import { ConnectedWallet } from "@privy-io/react-auth";
 import {
   createPublicClient,
-  http,
   PublicClient,
   WalletClient,
   createWalletClient,
   custom,
-  EIP1193Provider,
+  http,
 } from "viem";
 
-import type { Chain } from "viem/chains";
-import { alchemyApiKey } from "../../alchemyConfig";
-import { Connector } from "wagmi";
+const clientCache = new Map<string, PublicClient>();
+const walletClientCache = new Map<string, WalletClient>();
 
-const clientCache = new Map<number, PublicClient>();
-const walletClientCache = new Map<number, WalletClient>();
-
-export const getRpcUrl = (chain: Chain): string => {
-  if (alchemyApiKey) {
-    const alchemyUrl = chain.rpcUrls.alchemy?.http[0];
-    if (alchemyUrl) {
-      return `${alchemyUrl}/${alchemyApiKey}`;
-    }
+export const getPublicClient = async (
+  wallet?: ConnectedWallet,
+  activeChainId?: number,
+): Promise<PublicClient | null> => {
+  const chainId = activeChainId
+    ? activeChainId.toString()
+    : (wallet?.chainId?.split(":")[1] ?? "7000");
+    
+  if (clientCache.has(chainId)) {
+    return clientCache.get(chainId)!;
   }
-  return chain.rpcUrls.default.http[0];
-};
 
-export const getPublicClient = (chainId: number): PublicClient | null => {
-  // if (clientCache.has(chainId)) {
-  //   return clientCache.get(chainId)!;
-  // }
+  const chain =
+    chainsWithCustomRpcs().find((chain) => chain.id === Number(chainId)) ?? customZetachain;
+    console.log('chain.rpcUrls.default.http[0]',chain.rpcUrls.default.http[0])
 
-  const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
-  if (!chain) {
-    console.log(`Chain with id:${chainId} doesn't supported`);
+  if (!wallet || !!activeChainId) {
+    return createPublicClient({
+      chain: chain,
+      transport: http(chain.rpcUrls.default.http[0]),
+    }) as PublicClient;
+  }
+
+  const provider = await wallet?.getEthereumProvider();
+
+  if (!chain || !provider) {
+    console.log(
+      `Chain with id:${wallet?.chainId?.split(":")[1]} doesn't supported`,
+    );
     return null;
   }
 
   const client = createPublicClient({
     chain: chain,
-    transport: http(getRpcUrl(chain)),
-    batch: {
-      multicall: true,
-    },
-  });
+    transport: custom(provider),
+  }) as PublicClient;
 
-  clientCache.set(chainId, client);
-
+  clientCache.set(wallet?.chainId?.split(":")[1], client);
 
   return client;
 };
 
-export const getWalletClient = async (chainId: number, connector?: Connector | null): Promise<WalletClient | null> => {
-  if (walletClientCache.has(chainId)) {
-    return walletClientCache.get(chainId)!;
+export const getWalletClient = async (
+  wallet: ConnectedWallet,
+): Promise<WalletClient | null> => {
+  if (walletClientCache.has(wallet?.chainId?.split(":")[1])) {
+    return walletClientCache.get(wallet?.chainId?.split(":")[1])!;
   }
 
-  const chain = SUPPORTED_CHAINS.find((c) => c.chain.id === chainId)?.chain;
+  const chain = chainsWithCustomRpcs().find(
+    (c) => c.id.toString() === wallet?.chainId?.split(":")[1],
+  );
   if (!chain) {
-    console.log(`Chain with id:${chainId} doesn't supported`);
+    console.log(
+      `Chain with id:${wallet?.chainId?.split(":")[1]} doesn't supported`,
+    );
     return null;
   }
-  if (!window || !window?.ethereum || window.ethereum === undefined || !connector) {
-    console.log(`There is no wallet providers`);
-    return null;
-  }
-  const providerInstance = await connector.getProvider() as EIP1193Provider;
 
-  const client = createWalletClient({
+  const provider = await wallet?.getEthereumProvider();
+
+  const walletClient = createWalletClient({
+    account: wallet.address,
     chain: chain,
-    transport: custom(providerInstance),
+    transport: custom(provider),
   });
 
-  walletClientCache.set(chainId, client);
+  walletClientCache.set(wallet?.chainId?.split(":")[1], walletClient);
 
-  return client;
+  return walletClient;
 };

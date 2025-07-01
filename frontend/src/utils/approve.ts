@@ -1,6 +1,7 @@
 import { Chain, getContract, erc20Abi } from "viem";
 import { EVM_GATEWAY_ADDRESSES } from "@/constants/chainConfig"; // adjust path if needed
 import { getPublicClient} from "./getPublicClient";
+import { ConnectedWallet } from "@privy-io/react-auth";
 
 interface HandleAllowanceProps {
   token: string;
@@ -8,6 +9,7 @@ interface HandleAllowanceProps {
   activeAccount: string;
   spender: string;
   amount: Number;
+  activeWallet: ConnectedWallet
 }
 
 export async function isApproved({
@@ -16,8 +18,9 @@ export async function isApproved({
   activeAccount,
   spender,
   amount,
+  activeWallet
 }: HandleAllowanceProps): Promise<boolean> {
-  const publicClient = getPublicClient(activeChain.id);
+  const publicClient = await getPublicClient(activeWallet);
   if (!publicClient) return false;
 
   const contract = getContract({

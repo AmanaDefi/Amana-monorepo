@@ -10,6 +10,7 @@ import {
 } from "@/utils/utils";
 import { Chain } from "viem";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useWallets } from "@privy-io/react-auth";
 
 const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 
@@ -19,6 +20,8 @@ export const useMultichainTokenBalanceForModal = (
 ) => {
   const currentToken = useMemo(() => token, [token]);
   const currentChain = useMemo(() => targetChain, [targetChain]);
+  const {wallets} = useWallets();
+  const activeWallet = wallets[0];
 
   const { walletAddress, refetchBalance: refetchNativeBalance } =
     useMultiChain();
@@ -74,7 +77,7 @@ export const useMultichainTokenBalanceForModal = (
           const { getPublicClient } = await import("@/utils/getPublicClient");
           const { formatEther } = await import("viem");
 
-          const publicClient = getPublicClient(currentChain.id);
+          const publicClient = await getPublicClient(activeWallet, currentChain.id);
           if (publicClient) {
             const nativeBalance = await publicClient.getBalance({
               address: walletAddress as `0x${string}`,
@@ -154,6 +157,7 @@ export const useMultichainTokenBalanceForModal = (
                 walletAddress,
                 currentToken.address,
                 currentChain,
+                activeWallet
               );
             newBalance = {
               value: ercBalance,
@@ -186,7 +190,7 @@ export const useMultichainTokenBalanceForModal = (
       setBalance({ value: 0n, formatted: "0" });
       setIsLoading(false);
     }
-  }, [currentToken, walletAddress, currentChain, error, refetchNativeBalance]);
+  }, [currentToken, walletAddress, currentChain, error, refetchNativeBalance, activeWallet]);
 
   useEffect(() => {
     const currentChainId = currentChain?.id;

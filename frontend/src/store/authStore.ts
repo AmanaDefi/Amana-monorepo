@@ -1,3 +1,4 @@
+import { ConnectedWallet } from "@privy-io/react-auth";
 import { create } from "zustand";
 
 export type AuthStep =
@@ -36,7 +37,7 @@ interface AuthState {
   closeAll: () => void;
   successAuth: (
     walletAddress?: string | null,
-    activeAccount?: { type: string },
+    activeAccount?: ConnectedWallet,
     fromAllWallets?: boolean,
   ) => void;
   updateField: (name: "username" | "email" | "otp", value: string) => void;
@@ -76,7 +77,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         otp: "",
       });
     } else {
-      if (activeAccount?.type !== "eoa") {
+      if (activeAccount?.walletClientType === "privy") {
         set({
           step: "success",
           isLoading: false,

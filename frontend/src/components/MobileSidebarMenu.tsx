@@ -4,10 +4,8 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
-import CloseSidebarIcon from "./svg/CloseSidebarIcon";
 import { bottomMenuItems, menuItems } from "@/constants/sidebarMenu";
 import { NAV_LINKS } from "@/constants/navigation";
-import { SUPPORTED_CHAINS } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useSidebarActions } from "@/hooks/useSidebarActions";
 

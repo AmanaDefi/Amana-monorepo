@@ -8,7 +8,12 @@ import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import clsx from "clsx";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
-import { useAuthenticate } from "@account-kit/react";
+import {
+  useLoginWithEmail,
+  usePrivy,
+  useCreateWallet,
+  useWallets,
+} from "@privy-io/react-auth";
 
 const formatEmail = (email: string) => {
   const [local, domain] = email.split("@");
@@ -23,44 +28,45 @@ const formatEmail = (email: string) => {
 
 export const VerifyOtpModal = () => {
   const { step, email, closeAll, authenticate, successAuth } = useAuthStore();
-  const [error, setError] = useState<"sent" | "invalid" | "">();
-  const { authenticate: OTPAuth } = useAuthenticate({
-    onSuccess: (result) => {
-      console.log(result);
+  const [error, setError] = useState(false);
+  const { logout } = usePrivy();
+  const { createWallet } = useCreateWallet();
+  const { sendCode, loginWithCode } = useLoginWithEmail({
+    onComplete: async (result) => {
       console.log("Success email auth", result);
-      authenticate(result.address);
-      successAuth();
-    },
-    onError: (error) => {
-      console.log("Error email auth:", error.message);
-      if (
-        error.message.includes("otpId not found") ||
-        error.message.includes("Invalid OTP code")
-      ) {
-        setError("invalid");
-      } else if (error.message.includes("Max number of OTPs")) {
-        setError("sent");
+      authenticate(result?.user?.wallet?.address ?? "");
+      if (!result?.user?.wallet) {
+        await createWallet();
+      }
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
       }
     },
+    onError: (err) => {
+      console.log("Error email auth:", err);
+      if (err === "linked_to_another_user") {
+        logout();
+      }
+      setError(true);
+    },
   });
+
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isResentdedOtp, setIsResendedOtp] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const clearAllFields = () => {
     setCode(["", "", "", "", "", ""]);
-    setError("");
+    setError(false);
     inputRefs.current[0]?.focus();
   };
-
-  console.log(isResentdedOtp, "isResentdedOtp");
 
   const handleChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-    setError("");
+    setError(false);
 
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
@@ -75,7 +81,7 @@ export const VerifyOtpModal = () => {
       } else {
         newCode[index] = "";
         setCode(newCode);
-        setError("");
+        setError(false);
       }
     }
 
@@ -104,7 +110,7 @@ export const VerifyOtpModal = () => {
         newCode[i] = digits[i] || "";
       }
       setCode(newCode);
-      setError("");
+      setError(false);
 
       const lastFilledIndex = Math.min(digits.length - 1, 5);
       inputRefs.current[lastFilledIndex]?.focus();
@@ -112,23 +118,21 @@ export const VerifyOtpModal = () => {
   };
 
   const handleSendOTP = (code: string) => {
-    OTPAuth({
-      type: "otp",
-      otpCode: code,
+    loginWithCode({
+      code,
     });
   };
 
   const resendEmail = () => {
     if (isResentdedOtp) return;
-    OTPAuth({
-      type: "email",
-      email: email,
+    sendCode({
+      email,
     });
 
     setIsResendedOtp(true);
     setTimeout(() => {
       setIsResendedOtp(false);
-    }, 30000)
+    }, 30000);
   };
 
   const handleSubmit = () => {
@@ -146,7 +150,7 @@ export const VerifyOtpModal = () => {
   useEffect(() => {
     if (step !== "verify") {
       setCode(["", "", "", "", "", ""]);
-      setError("");
+      setError(false);
     }
   }, [step]);
 
@@ -178,7 +182,6 @@ export const VerifyOtpModal = () => {
           </div>
         </div>
         <div className="w-full flex justify-center items-center">
-          
           <h2 className="max-w-[210px] md:max-w-[400px] text-center text-[24px] font-medium text-white mb-4">
             Enter the code we sent to
           </h2>
@@ -210,7 +213,7 @@ export const VerifyOtpModal = () => {
                     "border border-[#3E73C4]": digit !== "" && !error,
                     "border border-transparent hover:border-[#3E73C4] focus:border-[#3E73C4]":
                       digit === "" && !error,
-                    "border border-[#FF1E1E]": error === "invalid",
+                    "border border-[#FF1E1E]": error,
                   },
                 )}
               />
@@ -226,9 +229,10 @@ export const VerifyOtpModal = () => {
                   className="fill-[#FF1E1E]"
                 />
                 <p className="text-[12px] font-normal">
-                  {error === "invalid"
+                  Invalid OTP code
+                  {/* {error 
                     ? "Invalid OTP code"
-                    : "Max number of OTPs was send. Try again later"}
+                    : "Max number of OTPs was send. Try again later"} */}
                 </p>
               </div>
             </div>
@@ -245,7 +249,7 @@ export const VerifyOtpModal = () => {
               { "text-gray-500 hover:no-underline": isResentdedOtp },
             )}
           >
-            {isResentdedOtp && error !== "sent"
+            {isResentdedOtp
               ? "New code was send to your email"
               : "Not received the email?"}
           </button>

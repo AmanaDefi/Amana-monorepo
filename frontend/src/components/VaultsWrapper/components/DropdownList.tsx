@@ -88,7 +88,7 @@ export const DropdownList = ({
         <button
           type="button"
           onClick={(event) => handleSelectedOption(event, "")}
-          className={`underline font-normal text-sm leading-4 active:scale-90 ${
+          className={`underline py-3 font-normal text-sm leading-4 active:scale-90 ${
             isToken
               ? "text-white hover:text-gray-300"
               : "text-[#535E73] hover:text-blue-button"

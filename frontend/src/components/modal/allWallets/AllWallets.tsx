@@ -7,23 +7,39 @@ import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
 import BackedBy from "../shared/BackedBy";
-import { useConnect, useUser } from "@account-kit/react";
-import { Connector } from "wagmi";
+import { Connector, useConnect } from "wagmi";
+
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
+import { chainConfigs } from "@/constants/chainConfig";
+import { useEffect, useState } from "react";
+import { useWallets } from "@privy-io/react-auth";
 
 const AllWAllets = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window?.innerWidth < 1024);
+    };
+
+    checkIsMobile();
+    window?.addEventListener("resize", checkIsMobile);
+
+    return () => window?.removeEventListener("resize", checkIsMobile);
+  }, []);
   const { step, successAuth, closeAll } = useAuthStore();
   const {
     step: fundWalletStep,
     setStep,
     setActiveConnector,
     setWalletAddress,
+    setChain
   } = useFundWalletStore();
 
-  const activeAccount = useUser();
+  const {wallets} = useWallets();
+  const activeAccount = wallets[0];
 
   const fundWalletConnect = () => {
     setStep("confirm");
@@ -34,21 +50,22 @@ const AllWAllets = () => {
     connect,
     isPending: isConnectingWallet,
   } = useConnect({
-    onSuccess: (result) => {
-      if (fundWalletStep === "connectWallet") {
-        setWalletAddress(result.accounts[0]);
-        console.log("connectorId removed fron success");
-        localStorage.removeItem("connectorId");
-        return fundWalletConnect();
-      }
-      return successAuth(null, activeAccount || undefined, true);
+    mutation: {
+      onSuccess: (result) => {
+        if (fundWalletStep === "connectWallet") {
+          setWalletAddress(result.accounts[0]);
+          setChain(chainConfigs[result.chainId]);
+          localStorage.removeItem("connectorId");
+          return fundWalletConnect();
+        }
+        return successAuth(null, activeAccount || undefined, true);
+      },
     },
   });
 
   const handleExternalWalletConnect = (connector: Connector) => {
     if (isConnectingWallet) return;
     setActiveConnector(connector);
-    console.log("connectorId setted");
     localStorage.setItem("connectorId", connector.id);
     connect(
       { connector },
@@ -79,7 +96,7 @@ const AllWAllets = () => {
 
   return (
     <Modal
-      isOpen={step === "allWallets" || fundWalletStep === "connectWallet"}
+      isOpen={!isMobile && (step === "allWallets" || fundWalletStep === "connectWallet")}
       onClose={handleClose}
       paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px] flex"
       roundedClass="rounded-[16px]"
@@ -88,7 +105,7 @@ const AllWAllets = () => {
       customCloseButton={
         <button
           onClick={handleClose}
-          className="absolute top-[20px] right-[16px] z-10 rounded-[8px] flex items-center justify-center w-10 h-10"
+          className="absolute top-[20px] right-[16px] z-20 rounded-[8px] flex items-center justify-center w-10 h-10"
           aria-label="Close"
         >
           <CloseModalIcon width={16} height={16} />
@@ -109,6 +126,7 @@ const AllWAllets = () => {
               <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
                 {connectors.map((connector) => (
                   <ModalButton
+                    variant="allWallets"
                     key={connector.id}
                     label={connector.name}
                     icon={
@@ -126,9 +144,6 @@ const AllWAllets = () => {
               </div>
             </div>
           </div>
-        </div>
-        <div className="absolute bottom-[26px] left-[50px]">
-          <BackedBy />
         </div>
       </div>
     </Modal>

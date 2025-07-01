@@ -23,8 +23,8 @@ const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
     };
 
     updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
+    window?.addEventListener("resize", updateWidth);
+    return () => window?.removeEventListener("resize", updateWidth);
   }, []);
 
   useEffect(() => {

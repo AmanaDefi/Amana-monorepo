@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import ClientLayout from "@/app/ClientLayout";
 import React from "react";
-import { cookieToInitialState } from "@account-kit/core";
-import { alchemyConfig } from "../../alchemyConfig";
-import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   title: "App AmanaDefi - Decentralized Yield Generation Platform",
@@ -30,9 +27,5 @@ export const metadata: Metadata = {
 };
 
 export default function MyApp({ children }: { children: React.ReactNode }) {
-  const initialState = cookieToInitialState(
-    alchemyConfig,
-    headers().get("cookie") ?? undefined,
-  );
-  return <ClientLayout initialState={initialState}>{children}</ClientLayout>;
+  return <ClientLayout >{children}</ClientLayout>;
 }
