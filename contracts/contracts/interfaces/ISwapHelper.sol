@@ -121,4 +121,10 @@ interface ISwapHelper {
         uint256 maxDeadline,
         address pool
     ) external returns (uint256 amountOut);
+
+    function getEquivalentInputAmount(
+        address inputToken,
+        address gasToken,
+        uint256 gasFee
+    ) external view returns (uint256 inputAmount);
 }
