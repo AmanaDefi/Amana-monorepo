@@ -556,4 +556,69 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             lastProcessedNonce + 1
         );
     }
+
+    /// @notice Handles aborts from the Strategy.
+    /// @param context Context of the abort.
+    function onAbort(
+        AbortContext calldata context
+    ) external virtual onlyGateway {
+        (
+            string memory revertMessage,
+            uint256 withdrawnAmount,
+            uint256 totalAssetsAfter,
+            uint256 _vaultNonce
+        ) = abi.decode(
+                context.revertMessage,
+                (string, uint256, uint256, uint256)
+            );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_investConfirmFailed"))
+        ) {
+            pendingTransactions[_vaultNonce]
+                .totalAssetsAfter = totalAssetsAfter;
+            pendingTransactions[_vaultNonce].txStatus = TX_DEPOSIT_REVERTED;
+            if (_vaultNonce == lastProcessedNonce + 1) {
+                // If this is the next transaction in line, process it immediately
+                _processBufferedpendingTransactions(true);
+            }
+            emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsFromStrategyFailed"))
+        ) {
+            pendingTransactions[_vaultNonce]
+                .totalAssetsAfter = totalAssetsAfter;
+            pendingTransactions[_vaultNonce].txStatus = TX_WITHDRAW_REVERTED;
+
+            address user = pendingTransactions[_vaultNonce].user;
+            if (
+                pendingTransactions[_vaultNonce].amount >=
+                pendingWithdrawals[user]
+            ) {
+                pendingWithdrawals[user] = 0;
+            } else {
+                pendingWithdrawals[user] -= pendingTransactions[_vaultNonce]
+                    .amount;
+            }
+            pendingTransactions[_vaultNonce].amount = withdrawnAmount;
+            if (_vaultNonce == lastProcessedNonce + 1) {
+                // If this is the next transaction in line, process it immediately
+                _processBufferedpendingTransactions(true);
+            }
+            emit ReturnFundsFromStrategyFailed(
+                vaultNonce,
+                withdrawnAmount,
+                totalAssetsAfter
+            );
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
+        ) {
+            emit SendTotalUnderlyingAssetsFailed(vaultNonce, totalAssetsAfter);
+        } else {
+            revert("Abort not handled");
+        }
+    }
 }
