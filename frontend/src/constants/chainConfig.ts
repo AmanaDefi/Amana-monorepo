@@ -21,6 +21,9 @@ import {
 
 export const zeroSolAddress = PublicKey.default.toBase58();
 
+// Bitcoin native address - represents native BTC token (similar to Solana's pattern)
+export const zeroBtcAddress = "bc1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0ct5lx";
+
 export const TOKEN_LOGO_URLS: Record<string, string> = {
   ZETA: "/ZetaChainLogo.png",
   BTC: "/bitcoin_logo.png",
@@ -139,7 +142,19 @@ export const CHAIN_ICONS: { [chainId: number]: Icon } = {
     width: 32,
     height: 32,
     format: "png",
-  }, // Solana Mainnet;
+  }, // Solana Mainnet
+  8332: {
+    url: TOKEN_LOGO_URLS.BTC,
+    width: 32,
+    height: 32,
+    format: "png",
+  }, // Bitcoin Mainnet
+  18332: {
+    url: TOKEN_LOGO_URLS.BTC,
+    width: 32,
+    height: 32,
+    format: "png",
+  }, // Bitcoin Testnet
 };
 
 // Load environment variables
@@ -194,6 +209,7 @@ export enum CHAIN_ID {
   solana = deployEnv === "testnet" ? 901 : 900,
   arbitrum = deployEnv === "testnet" ? 421613 : 42161,
   avalanche = deployEnv === "testnet" ? 43113 : 43114,
+  bitcoin = deployEnv === "testnet" ? 18332 : 8332, // Bitcoin testnet : mainnet
 }
 
 export const customRpcsMap: Record<number, string> = {
@@ -249,6 +265,39 @@ const solanaChain = {
   slug: "solana",
 };
 
+const bitcoinChain = {
+  id: CHAIN_ID.bitcoin,
+  name: deployEnv === "testnet" ? "Bitcoin Testnet" : "Bitcoin",
+  shortName: "btc",
+  chain: "Bitcoin",
+  rpcUrls: {
+    default: {
+      http: [
+        deployEnv === "testnet"
+          ? "https://blockstream.info/testnet/api"
+          : "https://blockstream.info/api"
+      ],
+    },
+  },
+  nativeCurrency: {
+    name: "Bitcoin",
+    symbol: "BTC",
+    decimals: 8,
+  },
+  explorers: [
+    {
+      name: "Blockstream Explorer",
+      url:
+        deployEnv === "testnet"
+          ? "https://blockstream.info/testnet"
+          : "https://blockstream.info",
+      standard: "none",
+    },
+  ],
+  testnet: deployEnv === "testnet",
+  slug: "bitcoin",
+};
+
 export const chainsMainnet = [
   zetachain,
   mainnet,
@@ -257,6 +306,7 @@ export const chainsMainnet = [
   bsc,
   avalanche,
   arbitrum,
+  bitcoinChain, // Added Bitcoin to mainnet chains
 ];
 const chainsTestnet = [
   zetachainAthensTestnet,
@@ -266,6 +316,7 @@ const chainsTestnet = [
   bscTestnet,
   avalancheFuji,
   arbitrumSepolia,
+  bitcoinChain, // Added Bitcoin to testnet chains 
 ];
 
 export const SUPPORTED_CHAINS =
@@ -381,6 +432,7 @@ export const chainConfigs = {
   [CHAIN_ID.arbitrum]: deployEnv === "testnet" ? arbitrumSepolia : arbitrum,
   [CHAIN_ID.avalanche]: deployEnv === "testnet" ? avalancheFuji : avalanche,
   [CHAIN_ID.solana]: solanaChain,
+  [CHAIN_ID.bitcoin]: bitcoinChain,
 };
 
 // Define approved tokens per chain
@@ -988,6 +1040,20 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
         ZRC20_TOKENS_BY_ADDRESS["0x2Db395976CDb9eeFCc8920F4F2f0736f1D575794"],
     },
   ],
+  // Bitcoin mainnet tokens
+  [CHAIN_ID.bitcoin]: [
+    {
+      symbol: "BTC",
+      address: zeroBtcAddress, // Bitcoin's native address
+      decimals: 8,
+      imgURL: TOKEN_LOGO_URLS.BTC,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: true,
+      ZRC20equivalent: 
+        ZRC20_TOKENS_BY_ADDRESS["0x13A0c5930C028511Dc02665E7285134B6d11A5f4"], // ZRC20 BTC on ZetaChain
+    },
+  ],
   // 901: [
   //   {
   //     symbol: "SOL",
@@ -1023,6 +1089,7 @@ export const HERMES_URL = "https://hermes.pyth.network/";
 export const PRICE_IDS: { [key: string]: string } = {
   // Base tokens
   ETH: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  BTC: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
   BNB: "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
   POL: "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
   USDC: "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
@@ -1076,6 +1143,7 @@ export const CHAINS_EXPLORER_BASE_URL_MAINNET: { [key: number]: string } = {
   [CHAIN_ID.solana]: "https://solscan.io",
   [CHAIN_ID.arbitrum]: "https://arbiscan.io",
   [CHAIN_ID.avalanche]: "https://snowtrace.io",
+  [CHAIN_ID.bitcoin]:  "https://blockstream.info",
 };
 
 // Cross-chain explorer URLs for ZetaChain cross-chain transactions (cc/tx format)

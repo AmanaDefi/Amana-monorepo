@@ -82,7 +82,7 @@ declare global {
   }
 }
 
-export type ChainType = "solana" | "evm" | null;
+export type ChainType = "solana" | "evm" | "bitcoin" | null;
 
 interface MultiChainContextType {
   selectedChain: ChainType | null;

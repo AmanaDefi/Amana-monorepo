@@ -103,6 +103,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           )}
 
           <div className="hidden lg:block">
+            
             {!isConnected ? (
               <Button variant="signIn" onClick={handleSignInClick}>
                 Sign in

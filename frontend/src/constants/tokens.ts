@@ -64,6 +64,11 @@ export const CHAINS_ICONS_BUTTON: TokenInfo[] = [
     name: "ARBITRUM",
     icon: "/arbitrum-arb-logo.png",
   },
+  {
+    symbol: "BTC",
+    name: "Bitcoin",
+    icon: "/bitcoin_logo.png",
+  },
 ];
 
 export const getTokenBySymbol = (symbol: string): TokenInfo | undefined => {
