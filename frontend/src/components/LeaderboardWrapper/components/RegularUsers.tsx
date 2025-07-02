@@ -100,7 +100,9 @@ export default function RegularUsers({ users, searchTerm }: RegularUsersProps) {
 
             <div className="flex items-center justify-start gap-2 text-lg font-bold min-w-0">
               <span className="min-w-6 flex-shrink-0">{item.position}</span>
-              <div className="w-8 h-8 flex-shrink-0 rounded-full border border-[#535E73] bg-gray-600 flex items-center justify-center ml-2"></div>
+              <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center relative overflow-hidden flex-shrink-0 ml-2">
+                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500" />
+              </div>
               <span className="font-bold text-lg tracking-tight text-white ml-2 truncate min-w-0">
                 {item.username}
               </span>

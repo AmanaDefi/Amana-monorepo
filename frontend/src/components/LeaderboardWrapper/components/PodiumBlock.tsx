@@ -67,6 +67,35 @@ export default function PodiumBlock({
 
   if (arrangedUsers.length === 0) return null;
 
+  const getPodiumStyles = (position: number) => {
+    switch (position) {
+      case 1:
+        return {
+          backgroundColor: "#799BFF",
+          width: "91px",
+          height: "186px",
+        };
+      case 2:
+        return {
+          backgroundColor: "#3E6BFF",
+          width: "91px",
+          height: "140px",
+        };
+      case 3:
+        return {
+          backgroundColor: "#3E6BFF",
+          width: "91px",
+          height: "117px",
+        };
+      default:
+        return {
+          backgroundColor: "#3E6BFF",
+          width: "91px",
+          height: "117px",
+        };
+    }
+  };
+
   const getRankBadge = (position: number) => {
     switch (position) {
       case 1:
@@ -74,8 +103,8 @@ export default function PodiumBlock({
           <Image
             src="/goldBadges.png"
             alt="Gold Badge"
-            width={32}
-            height={32}
+            width={24}
+            height={24}
           />
         );
       case 2:
@@ -83,8 +112,8 @@ export default function PodiumBlock({
           <Image
             src="/silverBadges.png"
             alt="Silver Badge"
-            width={28}
-            height={28}
+            width={24}
+            height={24}
           />
         );
       case 3:
@@ -101,32 +130,6 @@ export default function PodiumBlock({
     }
   };
 
-  const getPodiumHeight = (position: number) => {
-    switch (position) {
-      case 1:
-        return "h-24";
-      case 2:
-        return "h-20";
-      case 3:
-        return "h-16";
-      default:
-        return "h-16";
-    }
-  };
-
-  const getPodiumColor = (position: number) => {
-    switch (position) {
-      case 1:
-        return "from-yellow-400/20 to-yellow-600/40";
-      case 2:
-        return "from-gray-300/20 to-gray-500/40";
-      case 3:
-        return "from-orange-400/20 to-orange-600/40";
-      default:
-        return "from-gray-400/20 to-gray-600/40";
-    }
-  };
-
   return (
     <motion.div
       className={`mb-6 ${className}`}
@@ -135,11 +138,11 @@ export default function PodiumBlock({
       animate="visible"
     >
       <motion.div
-        className="relative z-10 -mt-60 w-screen max-w-none rounded-b-[2000px] rounded-t-none"
+        className="relative z-10 -mt-60 w-screen max-w-none rounded-b-[250px] rounded-t-none overflow-hidden"
         style={{
-          height: "509px",
+          height: "500px",
           background: "linear-gradient(180deg, #101219 21%, #1b46e0 100%)",
-          aspectRatio: "1 / 1",
+          aspectRatio: "2 / 1",
         }}
         variants={podiumVariants}
         whileHover={{
@@ -147,12 +150,17 @@ export default function PodiumBlock({
           transition: { duration: 0.3 },
         }}
       >
-        <div className="absolute inset-0 flex items-end justify-center pb-12">
-          <div className="flex items-end justify-center gap-4 px-4">
+        <div className="absolute inset-0 flex items-end justify-center overflow-hidden">
+          <div className="flex items-end justify-center gap-4 px-4 relative">
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: "transparent",
+                clipPath: "ellipse(80% 100% at 50% 100%)",
+              }}
+            />
             {arrangedUsers.map((user, index) => {
-              const isCenter = user.position === 1;
-              const isLeft = user.position === 2;
-              const isRight = user.position === 3;
+              const podiumStyles = getPodiumStyles(user.position);
 
               return (
                 <motion.div
@@ -170,49 +178,20 @@ export default function PodiumBlock({
                     whileHover={{ rotate: [0, -5, 5, 0] }}
                     transition={{ duration: 0.3 }}
                   >
-                    <div
-                      className={`rounded-full border-4 ${
-                        isCenter
-                          ? "border-yellow-400 w-16 h-16"
-                          : isLeft
-                            ? "border-gray-300 w-14 h-14"
-                            : "border-orange-400 w-12 h-12"
-                      } bg-gray-600 flex items-center justify-center relative overflow-hidden`}
-                    >
+                    <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center relative overflow-hidden">
                       <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500" />
-                    </div>
-                    <div className="absolute -top-2 -right-2">
-                      {getRankBadge(user.position)}
                     </div>
                   </motion.div>
 
-                  <div className="text-center mb-2">
-                    <div
-                      className={`font-bold text-white mb-1 ${
-                        isCenter ? "text-lg" : "text-base"
-                      }`}
-                    >
-                      {user.username}
-                    </div>
-                    <div
-                      className={`text-gray-300 ${
-                        isCenter ? "text-base" : "text-sm"
-                      }`}
-                    >
-                      {formatCurrency(user.points)}
-                    </div>
-                  </div>
-
                   <motion.div
-                    className={`w-16 ${getPodiumHeight(user.position)} bg-gradient-to-t ${getPodiumColor(user.position)} rounded-t-lg border-t-2 ${
-                      isCenter
-                        ? "border-yellow-400"
-                        : isLeft
-                          ? "border-gray-300"
-                          : "border-orange-400"
-                    }`}
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
+                    className="flex flex-col items-center justify-start relative"
+                    style={{
+                      ...podiumStyles,
+                      borderRadius: "16px 16px 0 0",
+                      transform: "translateY(20px)",
+                    }}
+                    initial={{ height: 0, y: 50 }}
+                    animate={{ height: podiumStyles.height, y: 0 }}
                     transition={{
                       delay: index * 0.1 + 0.5,
                       duration: 0.6,
@@ -220,14 +199,23 @@ export default function PodiumBlock({
                       stiffness: 200,
                     }}
                   >
-                    <div className="flex items-center justify-center h-full">
-                      <span
-                        className={`font-bold text-white ${
-                          isCenter ? "text-2xl" : "text-xl"
-                        }`}
-                      >
-                        {user.position}
-                      </span>
+                    <div
+                      className="flex justify-center"
+                      style={{ marginTop: "8px" }}
+                    >
+                      {getRankBadge(user.position)}
+                    </div>
+
+                    <div
+                      className="text-center"
+                      style={{
+                        marginTop: "4px",
+                        fontWeight: 400,
+                        fontSize: "10px",
+                        color: "#fff",
+                      }}
+                    >
+                      {formatCurrency(user.points)}
                     </div>
                   </motion.div>
                 </motion.div>

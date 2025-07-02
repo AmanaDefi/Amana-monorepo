@@ -33,7 +33,7 @@ const itemVariants = {
       damping: 25,
     },
   },
-};
+} as const;
 
 export default function Page() {
   const topUsers = [
