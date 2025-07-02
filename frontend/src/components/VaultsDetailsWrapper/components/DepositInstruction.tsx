@@ -104,7 +104,7 @@ const stepVariants = {
     opacity: 1,
     x: 0,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 20,
     },
@@ -122,7 +122,7 @@ const stepVariants = {
     opacity: 1,
     x: 0,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 400,
       damping: 25,
     },
@@ -343,7 +343,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{
-                          type: "spring",
+                          type: "spring" as const,
                           stiffness: 400,
                           damping: 20,
                         }}

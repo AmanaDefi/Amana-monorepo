@@ -35,7 +35,7 @@ const userRowVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -86,7 +86,7 @@ export default function RegularUsers({ users, searchTerm }: RegularUsersProps) {
               scale: 0.96,
             }}
             transition={{
-              type: "spring",
+              type: "spring" as const,
               stiffness: 400,
               damping: 25,
             }}

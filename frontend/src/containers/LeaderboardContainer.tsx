@@ -33,7 +33,7 @@ const itemVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -49,7 +49,7 @@ const LoadingRow = () => (
       duration: 0.5,
       repeat: Infinity,
       repeatType: "reverse",
-      type: "spring",
+      type: "spring" as const,
       stiffness: 200,
     }}
   >
@@ -66,7 +66,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.1,
-          type: "spring",
+          type: "spring" as const,
         }}
       />
       <motion.div
@@ -76,7 +76,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.2,
-          type: "spring",
+          type: "spring" as const,
         }}
       />
     </div>
@@ -88,7 +88,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.3,
-          type: "spring",
+          type: "spring" as const,
         }}
       />
     </div>
@@ -100,7 +100,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.4,
-          type: "spring",
+          type: "spring" as const,
         }}
       />
       <motion.div
@@ -110,7 +110,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.5,
-          type: "spring",
+          type: "spring" as const,
         }}
       />
     </div>

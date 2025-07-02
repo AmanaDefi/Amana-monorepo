@@ -36,7 +36,7 @@ const userRowVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -124,7 +124,7 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
               scale: 0.96,
             }}
             transition={{
-              type: "spring",
+              type: "spring" as const,
               stiffness: 400,
               damping: 25,
             }}
@@ -139,7 +139,7 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{
                   delay: index * 0.02 + 0.3,
-                  type: "spring",
+                  type: "spring" as const,
                   stiffness: 300,
                   damping: 25,
                 }}

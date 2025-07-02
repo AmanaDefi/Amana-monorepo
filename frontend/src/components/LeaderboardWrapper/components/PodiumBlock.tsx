@@ -30,7 +30,7 @@ const userVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -43,7 +43,7 @@ const podiumVariants = {
     opacity: 1,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 200,
       damping: 20,
       delay: 0.2,
@@ -195,7 +195,7 @@ export default function PodiumBlock({
                     transition={{
                       delay: index * 0.1 + 0.5,
                       duration: 0.6,
-                      type: "spring",
+                      type: "spring" as const,
                       stiffness: 200,
                     }}
                   >
