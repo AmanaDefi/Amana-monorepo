@@ -39,6 +39,8 @@ export type InputTokenWithErrorProps = {
   performanceFee?: number;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSelectChain:((chain: Chain) => void) | undefined;
+  onSelectChainAndToken: ((chain: Chain, token: Token) => void) | undefined;
 } & Omit<HTMLProps<HTMLInputElement>, "value" | "onChange">;
 
 export default function InputTokenWithError({
@@ -65,6 +67,8 @@ export default function InputTokenWithError({
   performanceFee,
   value,
   onChange,
+  onSelectChain,
+  onSelectChainAndToken,
   ...props
 }: InputTokenWithErrorProps): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
@@ -286,6 +290,8 @@ if (inputLoaderVisible) {
                 onSelectToken={onSelectToken}
                 vaultData={vaultData}
                 className="justify-end"
+                onSelectChain={onSelectChain}
+                onSelectChainAndToken={onSelectChainAndToken}
               />
             ) : (
               <div className="flex items-center">

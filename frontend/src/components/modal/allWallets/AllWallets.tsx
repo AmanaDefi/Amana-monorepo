@@ -6,7 +6,6 @@ import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
-import BackedBy from "../shared/BackedBy";
 import { Connector, useConnect } from "wagmi";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
@@ -15,10 +14,11 @@ import { showInfoToast } from "@/toasts";
 import { ConnectorIcon } from "./components/ConnectorIcon";
 import { chainConfigs } from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
-import { useWallets } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 const AllWAllets = () => {
   const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window?.innerWidth < 1024);
@@ -35,10 +35,11 @@ const AllWAllets = () => {
     setStep,
     setActiveConnector,
     setWalletAddress,
-    setChain
+    setChain,
   } = useFundWalletStore();
 
-  const {wallets} = useWallets();
+  const { wallets } = useWallets();
+  const { logout } = usePrivy();
   const activeAccount = wallets[0];
 
   const fundWalletConnect = () => {
@@ -63,8 +64,16 @@ const AllWAllets = () => {
     },
   });
 
-  const handleExternalWalletConnect = (connector: Connector) => {
+  const handleExternalWalletConnect = async (connector: Connector) => {
     if (isConnectingWallet) return;
+    if (activeAccount?.walletClientType === "privy") {
+      const confirmResult = confirm(
+        "You smart wallet account will be disconnected",
+      );
+      if (!confirmResult) return;
+
+      await logout();
+    }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
@@ -96,12 +105,15 @@ const AllWAllets = () => {
 
   return (
     <Modal
-      isOpen={!isMobile && (step === "allWallets" || fundWalletStep === "connectWallet")}
+      isOpen={
+        !isMobile &&
+        (step === "allWallets" || fundWalletStep === "connectWallet")
+      }
       onClose={handleClose}
-      paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px] flex"
+      paddingClass="pt-[28px] w-full pl-[57px] pb-10 pr-[24px] flex"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[940px]"
-      minHeight="min-h-[560px]"
+      minHeight="max-h-[560px]"
       customCloseButton={
         <button
           onClick={handleClose}
@@ -112,8 +124,8 @@ const AllWAllets = () => {
         </button>
       }
     >
-      <div className="flex w-full flex-col justify-between min-h-[489px]">
-        <div className="flex w-full h-[95%] mt-[5%] flex-row justify-between gap-5">
+      <div className="flex w-full flex-col justify-between">
+        <div className="flex w-full h-[95%] flex-row justify-between gap-5">
           <div className="flex flex-col justify-between mt-3">
             <ConnectWallet />
           </div>
