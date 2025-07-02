@@ -91,7 +91,7 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
 
   return (
     <motion.div
-      className="border-b border-[#181d29] pb-6 mb-5 md:mb-6"
+      className="border-b border-[#181d29] pb-2 md:pb-6 mb-5 md:mb-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

@@ -327,7 +327,7 @@ export default function LeaderboardContainer() {
       </motion.div>
 
       <motion.div
-        className="grid before-gradient-none md:before-gradient-border rounded-[24px] pt-0 md:pt-12 px-0 md:px-6 pb-6 md:pb-6 md-0 md:mt-3"
+        className="grid before-gradient-none md:before-gradient-border rounded-[24px] pt-0 md:pt-12 px-0 md:px-6 pb-0 md:pb-6 md-0 md:mt-3"
         style={{
           backdropFilter: "blur(20px)",
           background: "rgba(20, 23, 31, 0.15)",
