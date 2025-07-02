@@ -10,7 +10,7 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 import { useEffect, useState } from "react";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useWallets } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -36,6 +36,7 @@ const MobileAllWallets = () => {
   const { walletAddress } = useMultiChain();
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
+  const { logout } = usePrivy();
 
   const {
     connectors,
@@ -58,8 +59,16 @@ const MobileAllWallets = () => {
     setStep("confirm");
   };
 
-  const handleExternalWalletConnect = (connector: Connector) => {
+  const handleExternalWalletConnect = async (connector: Connector) => {
     if (isConnectingWallet) return;
+    if (activeAccount?.walletClientType === "privy") {
+      const confirmResult = confirm(
+        "You smart wallet account will be disconnected",
+      );
+      if (!confirmResult) return;
+
+      await logout();
+    }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(

@@ -3,7 +3,6 @@
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
-import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
 import CardIcon from "@/components/svg/CardIcon";
 import { BuyWithEnum, useFundWalletStore } from "@/store/fundWalletStore";
 import ModalButton from "../shared/ModalButton";
