@@ -12,6 +12,7 @@ import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../Button";
 import { useWallets } from "@privy-io/react-auth";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 // Destructure chainsWithCustomRpcs() to get zetaChain for default
 const [zetachain] = chainsWithCustomRpcs();
@@ -20,6 +21,7 @@ const [zetachain] = chainsWithCustomRpcs();
 const ChainSwitcher: React.FC = () => {
   const { wallets } = useWallets();
   const wallet = wallets[0];
+  const {wallet: solanaWallet} = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const { switchToChain, activeChain: currentChain} = useMultiChain();
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
@@ -145,7 +147,7 @@ const ChainSwitcher: React.FC = () => {
     <div className="z-50 relative rounded-full " ref={dropdownRef}>
       <Button
         variant="secondary"
-        disabled={!wallet}
+        disabled={!wallet && !solanaWallet}
         onClick={() => setIsOpen(!isOpen)}
         className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
         data-tooltip-id="chain-switcher-tooltip"

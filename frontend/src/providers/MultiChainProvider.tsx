@@ -119,7 +119,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { logout } = usePrivy();
-  const { publicKey, disconnect, connected } = useWallet();
+  const { publicKey, disconnect, connected, wallets: solanaWallets } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const { connectors } = useConnect();
   const { step } = useFundWalletStore();
@@ -134,6 +134,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 7000)],
   );
   const [isInitialized, setIsInitialized] = useState(false);
+
+  console.log(solanaWallets)
 
   debugLog("Provider initialized with hydration-safe state:", {
     selectedChain,
@@ -248,8 +250,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       console.error("Solana connection error:", error);
     }
   };
-
-  console.log(activeChain, "activeChain", latestChainRef.current);
 
   useEffect(() => {
     if (

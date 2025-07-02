@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const router = useRouter();
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
-  const { walletAddress} =
+  const { walletAddress, connectSolana } =
     useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
@@ -49,12 +49,13 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   }, []);
 
   const handleSignInClick = () => {
-    const currentWidth = window?.innerWidth;
-    if (currentWidth <= 768) {
-      openStep("mobileOptionsA");
-    } else {
-      openStep("optionsA");
-    }
+    connectSolana()
+    // const currentWidth = window?.innerWidth;
+    // if (currentWidth <= 768) {
+    //   openStep("mobileOptionsA");
+    // } else {
+    //   openStep("optionsA");
+    // }
   };
 
   const navLinks = isConnected
