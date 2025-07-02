@@ -9,7 +9,7 @@ import {
 } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
-import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
+import { CHAINS_ICONS_BUTTON, CHAINS_ICONS_BUTTON_WITHOUT_ZETA } from "@/constants/tokens";
 import { useFundWallet, useWallets } from "@privy-io/react-auth";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { Token, VaultData } from "@/types/types";
@@ -87,6 +87,8 @@ export default function ChainSelector({
     }
   };
 
+  const chainIconsList = isFromTopUp ? CHAINS_ICONS_BUTTON_WITHOUT_ZETA : CHAINS_ICONS_BUTTON;
+
   return (
     <div
       onClick={handleOpenModal}
@@ -116,7 +118,7 @@ export default function ChainSelector({
           }`}
         >
           <div className="flex items-center -space-x-2">
-            {CHAINS_ICONS_BUTTON.map((icon, index) => (
+            {chainIconsList.map((icon, index) => (
               <button
                 onClick={(e) => handleChainSelect(e, icon.id)}
                 key={icon.symbol}

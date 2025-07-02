@@ -3,6 +3,7 @@
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import WarningIcon from "@/components/svg/WarningIcon";
+import { DropdownList } from "@/components/VaultsWrapper/components/DropdownList";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { useFundWalletStore } from "@/store/fundWalletStore";
@@ -92,7 +93,6 @@ export const DepositInput = ({
   const onTokenSelect = (token: Token) => {
     setCurrency(token);
     setError("");
-    setDepositAmount("");
   };
 
   const onMaxClick = () => {
@@ -124,9 +124,17 @@ export const DepositInput = ({
     }
   };
 
+  const handleChainSelect = (chain: Chain) => {
+    setChain(chain);
+    if (!!walletAddress && activeWallet.walletClientType !== "privy") {
+      activeWallet.switchChain(chain.id);
+    }
+  };
+
   const onSelectChainAndToken = (chain: Chain, token: Token) => {
     onTokenSelect(token);
-    setChain(chain);
+
+    handleChainSelect(chain);
   };
 
   const usdValue = Number(tokenBalance?.formatted ?? 0) * selectedTokenPrice;
@@ -152,7 +160,9 @@ export const DepositInput = ({
                 MAX
               </button>
             )}
-            <p className="group-hover/max:text-white">${usdValue.toFixed(2)}</p>
+            <p className="group-hover/max:text-white">
+              {Number(tokenBalance?.formatted ?? "").toFixed(4)}
+            </p>
           </div>
 
           <div className="flex items-center mt-1">
@@ -165,18 +175,18 @@ export const DepositInput = ({
                 selectedChain={chain}
                 onSelectToken={onTokenSelect}
                 className="justify-end flex min-w-[150px]"
-                onSelectChain={(chain: Chain) => setChain(chain)}
+                onSelectChain={handleChainSelect}
                 onSelectChainAndToken={onSelectChainAndToken}
+                isFromTopUp={true}
               />
             </div>
           </div>
         </div>
-        {!!error && (
-          <div className="flex flex-row items-center gap-[10px] mt-[10px]">
-            <WarningIcon height={16} width={16} />
-            <p className={`text-[#FFC700] text-xs leading-4`}>{error}</p>
-          </div>
-        )}
+
+        <div className="flex flex-row h-4 items-center gap-[10px] mt-[10px]">
+          {!!error && <WarningIcon height={16} width={16} />}
+          <p className={`text-[#FFC700] text-xs leading-4`}>{error}</p>
+        </div>
       </div>
     </div>
   );

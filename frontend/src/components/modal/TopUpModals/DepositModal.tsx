@@ -13,6 +13,8 @@ import { AppButton } from "@/components/button/AppButton";
 import { showSuccessToast } from "@/toasts";
 import { useState } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
+import { Token } from "@/types/types";
+import { useWallets } from "@privy-io/react-auth";
 
 export const Deposit = () => {
   const {
@@ -26,12 +28,19 @@ export const Deposit = () => {
     activeConnector,
     setCurrency,
     setDepositAmount,
+    walletAddress,
   } = useFundWalletStore();
 
   const [error, setError] = useState("");
 
+  const { wallets } = useWallets();
+  const activeWallet = wallets[0];
+
   const handleSelectChain = (chain: Chain) => {
     setChain(chain);
+    if (!!walletAddress && activeWallet.walletClientType !== "privy") {
+      activeWallet.switchChain(chain.id);
+    }
     setCurrency(undefined);
     setDepositAmount("");
   };
@@ -59,6 +68,19 @@ export const Deposit = () => {
     }
   };
 
+  const onTokenSelect = (token: Token) => {
+    setCurrency(token);
+    setError("");
+  };
+
+  const onSelectChainAndToken = (chain: Chain, token: Token) => {
+    onTokenSelect(token);
+    setChain(chain);
+    if (!!walletAddress && activeWallet.walletClientType !== "privy") {
+      activeWallet.switchChain(chain.id);
+    }
+  };
+
   const isButtonDisabled =
     (!chain || !currency || !depositAmount || !!error) && step === "confirm";
 
@@ -83,7 +105,7 @@ export const Deposit = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
       >
-        <div className="flex flex-col justify-center items-center gap-[32px] px-7 w-full font-gotham">
+        <div className="flex flex-col justify-center items-center gap-[24px] px-7 w-full font-gotham">
           <div className="flex flex-col w-full">
             <h2 className="text-[24px] font-medium text-white">Deposit</h2>
             <p className="text-[16px] font-normal text-[#4874DB]">
@@ -95,6 +117,7 @@ export const Deposit = () => {
               <ChainSelector
                 selectedChain={chain}
                 onSelectChain={handleSelectChain}
+                onSelectChainAndToken={onSelectChainAndToken}
                 isFromTopUp
               />
             </div>

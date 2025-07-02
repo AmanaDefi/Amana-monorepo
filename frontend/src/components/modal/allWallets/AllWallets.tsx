@@ -36,6 +36,7 @@ const AllWAllets = () => {
     setActiveConnector,
     setWalletAddress,
     setChain,
+    chain,
   } = useFundWalletStore();
 
   const { wallets } = useWallets();
@@ -55,7 +56,6 @@ const AllWAllets = () => {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
-          setChain(chainConfigs[result.chainId]);
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
@@ -66,7 +66,10 @@ const AllWAllets = () => {
 
   const handleExternalWalletConnect = async (connector: Connector) => {
     if (isConnectingWallet) return;
-    if (activeAccount?.walletClientType === "privy") {
+    if (
+      activeAccount?.walletClientType === "privy" &&
+      fundWalletStep !== "connectWallet"
+    ) {
       const confirmResult = confirm(
         "You smart wallet account will be disconnected",
       );
@@ -77,7 +80,10 @@ const AllWAllets = () => {
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
-      { connector },
+      {
+        connector,
+        chainId: fundWalletStep === "connectWallet" ? chain.id : undefined,
+      },
       {
         onError: (error) => {
           console.log(error);
