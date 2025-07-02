@@ -60,6 +60,9 @@ export function getVaultErrorMessage(
   inputValue: string,
   availableBalance: string,
   steps: Action[],
+  vaultData?: any,
+  inputTokenPrice?: number,
+  isDeposit?: boolean
 ): string {
   const inputAmount = Number(inputValue);
   const balanceAmount = Number(availableBalance);
@@ -74,7 +77,19 @@ export function getVaultErrorMessage(
     return "Insufficient balance";
   }
 
-  // No error
+  // Check deposit/withdrawal limits if vaultData is provided
+  if (vaultData && inputTokenPrice) {
+    const amountInUSD = Number(inputValue) * inputTokenPrice;
+    
+    if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(inputValue) > 0) {
+      return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
+    }
+    
+    if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(inputValue) > 0) {
+      return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+    }
+  }
+
   return "";
 }
 
@@ -775,6 +790,42 @@ export function formatNumberWithSuffix(num: number): string {
   return num.toFixed(2);
 }
 
+/**
+ * Helper function to check if a token is a stablecoin
+ * @param symbol - The token symbol to check
+ * @returns boolean - True if the token is a stablecoin
+ */
+export const isStablecoin = (symbol: string): boolean => {
+  if (!symbol) return false;
+  const baseSymbol = symbol.split('.')[0].toUpperCase();
+  return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(baseSymbol);
+};
+
+/**
+ * Helper function to format TVL in USD terms with proper K/M/B suffix
+ * @param totalAssets - The total assets value (can be string or number)
+ * @param inputTokenSymbol - The symbol of the input token
+ * @param tokenPrice - The price of the token in USD (default: 0)
+ * @returns string - Formatted TVL in USD with K/M/B suffix
+ */
+export const formatTVLInUSD = (totalAssets: string | number, inputTokenSymbol: string, tokenPrice: number = 0): string => {
+  const totalAssetsNumber = Number(totalAssets || 0);
+  
+  if (totalAssetsNumber === 0) {
+    return "0";
+  }
+  
+  // Check if the token is a stablecoin
+  if (isStablecoin(inputTokenSymbol)) {
+    // For stablecoins, the value is already in USD terms
+    return formatNumberWithSuffix(totalAssetsNumber);
+  } else {
+    // For native tokens (like ETH), convert to USD using token price
+    const usdValue = totalAssetsNumber * tokenPrice;
+    return formatNumberWithSuffix(usdValue);
+  }
+};
+
 // Add the formatTokenBalance function
 export const formatTokenBalance = (
   balance: string | number,
@@ -810,3 +861,16 @@ export function bigIntReviver(key: string, value: any) {
   }
   return value;
 }
+
+export const checkAmount = (amountString: string, amount: string) => {
+  if (!/^([0-9,]*|[0-9]*\.[0-9,]*)$/g.test(amountString.replace(",", "."))) {
+    return null;
+  } else if (
+    (amountString === "." || amountString === "," || amountString === "0") &&
+    amount === ""
+  ) {
+    return "0.";
+  } else {
+    return amountString.replace(",", ".");
+  }
+};

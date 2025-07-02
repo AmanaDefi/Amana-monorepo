@@ -288,7 +288,8 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
             <div
               className="grid gap-4"
               style={{
-                gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+                justifyContent: "start",
               }}
             >
               {myVaults.map((vault) => (

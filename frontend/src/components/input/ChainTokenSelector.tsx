@@ -1,12 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { getOnlyTokenSymbol } from "@/utils/utils";
 import { useFundWalletStore } from "@/store/fundWalletStore";
+import { DropdownList } from "../VaultsWrapper/components/DropdownList";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -33,10 +35,16 @@ export default function ChainTokenSelector({
 }: ChainTokenSelectorProps) {
   const { selectedChainFromModal, selectedTokenFromModal, openModal } =
     useChainTokenModalStore();
-  const { setStep } = useFundWalletStore();
+  const { setStep, chain, currency, setCurrency } = useFundWalletStore();
+  const [isOpenDropDown, setIsOpenDropdown] = useState(false);
 
   const currentChain = selectedChainFromModal || selectedChain;
   const currentToken = selectedToken;
+
+  const availableTokens = useMemo(() => {
+    if (!chain) return [];
+    return APPROVED_TOKENS[chain.id];
+  }, [chain]);
 
   if (!currentChain) {
     return (
@@ -52,7 +60,7 @@ export default function ChainTokenSelector({
     e.preventDefault();
     e.stopPropagation();
     if (isFromTopUp) {
-      setStep("selectChain");
+      setIsOpenDropdown(true);
     } else {
       openModal(
         currentChain,
@@ -63,6 +71,35 @@ export default function ChainTokenSelector({
         false,
       );
     }
+  };
+
+  const tokenOptions = availableTokens.map((token) => {
+    return {
+      value: token.symbol,
+      icon: token.imgURL,
+    };
+  });
+
+  const handleSelectToken = (
+    e:
+      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
+      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    tokenSymbol: string,
+  ) => {
+    if (!isFromTopUp) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const selected = availableTokens.find(
+      (token) => token.symbol === tokenSymbol,
+    );
+
+    if (selected) {
+      onSelectToken(selected);
+    }
+
+    setIsOpenDropdown(false);
   };
 
   return (
@@ -88,6 +125,16 @@ export default function ChainTokenSelector({
           <p className="max-w-[82px] md:max-w-[200px] truncate">Select token</p>
         )}
       </button>
+      <DropdownList
+        handleSelectedOption={handleSelectToken}
+        options={tokenOptions}
+        selectedOption={currency?.symbol ?? ""}
+        isShownList={isOpenDropDown}
+        variant="token"
+        isIconButton={false}
+        width={150}
+        needReset={false}
+      />
     </div>
   );
 }

@@ -76,6 +76,38 @@ export const CHAINS_ICONS_BUTTON: ChainInfo[] = [
     id: CHAIN_ID["arbitrum"],
   },
 ];
+export const CHAINS_ICONS_BUTTON_WITHOUT_ZETA: ChainInfo[] = [
+  {
+    symbol: "BASE",
+    name: "BASE",
+    icon: "/base.png",
+    id: CHAIN_ID['base'],
+  },
+  {
+    symbol: "ETH",
+    name: "Ethereum",
+    icon: "/ETH.png",
+    id: CHAIN_ID["ethereum"],
+  },
+  {
+    symbol: "BNB",
+    name: "BNB",
+    icon: "/bnb-bnb-logo.png",
+    id: CHAIN_ID["bsc"],
+  },
+  {
+    symbol: "AVALANCHE",
+    name: "AVALANCHE",
+    icon: "/avalanche-avax-logo.png",
+    id: CHAIN_ID["avalanche"],
+  },
+  {
+    symbol: "ARBITRUM",
+    name: "ARBITRUM",
+    icon: "/arbitrum-arb-logo.png",
+    id: CHAIN_ID["arbitrum"],
+  },
+];
 
 export const getTokenBySymbol = (symbol: string): TokenInfo | undefined => {
   return SUPPORTED_TOKENS.find((token) => token.symbol === symbol);

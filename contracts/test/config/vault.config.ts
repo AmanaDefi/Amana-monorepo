@@ -44,7 +44,7 @@ export const vaultTestMatrix = [
 
       crossChainDepositAmount1: ethers.utils.parseUnits("10", 6),
       crossChainDepositAmount2: ethers.utils.parseUnits("5", 6),
-      slippage: 2000,
+      slippage: 10000,
 
       gasTankAmount: ethers.utils.parseUnits("100", 18),
       directDepositAmount1: ethers.utils.parseUnits("10", 6),

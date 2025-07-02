@@ -15,7 +15,6 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
 import "../interfaces/IDistributor.sol";
 import "../interfaces/ISwapHelper.sol";
-import "hardhat/console.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
@@ -59,8 +58,10 @@ abstract contract StrategyParent is
 
     mapping(uint256 => BufferedTx) public pendingByNonce;
 
-    IERC20 public inputToken;
-    address public receiptTokenAddress;
+    IERC20 internal inputToken;
+    address internal receiptTokenAddress;
+
+    // uint256[50] private __gap;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");
@@ -195,46 +196,55 @@ abstract contract StrategyParent is
         });
 
         if (vaultNonce == lastProcessedNonce + 1) {
-            _processBufferedTransactions();
+            _processBufferedTransactions(); // process all
         }
 
         return abi.encode(true);
     }
 
     function processBufferedTransactions() external onlyOwner {
-        _processBufferedTransactions();
+        _processBufferedTransactions(); // just one
     }
 
     function _processBufferedTransactions() internal {
-        while (true) {
-            uint256 nextNonce = lastProcessedNonce + 1;
-            BufferedTx storage txData = pendingByNonce[nextNonce];
+        while (_processNextBufferedTransaction()) {}
+    }
 
-            // Break if nothing is pending for this nonce
-            if (
-                txData.txType == TxType(0) &&
-                txData.assetAmount == 0 &&
-                txData.minimumOut == 0 &&
-                txData.newStrategy == address(0)
-            ) {
-                break;
-            }
+    function processNextBufferedTransaction() external onlyOwner {
+        _processNextBufferedTransaction(); // just one
+    }
 
-            if (txData.txType == TxType.Deposit) {
-                _invest();
-            } else if (txData.txType == TxType.Withdraw) {
-                _divest();
-            } else if (txData.txType == TxType.Switch) {
-                _transferAssetsToNewStrategy();
-            } else if (txData.txType == TxType.Revert) {
-                _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
-            } else {
-                revert("Unknown TxType");
-            }
+    function _processNextBufferedTransaction()
+        internal
+        returns (bool didProcess)
+    {
+        uint256 nextNonce = lastProcessedNonce + 1;
+        BufferedTx storage txData = pendingByNonce[nextNonce];
 
-            delete pendingByNonce[nextNonce];
-            lastProcessedNonce = nextNonce;
+        if (
+            txData.txType == TxType(0) &&
+            txData.assetAmount == 0 &&
+            txData.minimumOut == 0 &&
+            txData.newStrategy == address(0)
+        ) {
+            return false;
         }
+
+        if (txData.txType == TxType.Deposit) {
+            _invest();
+        } else if (txData.txType == TxType.Withdraw) {
+            _divest();
+        } else if (txData.txType == TxType.Switch) {
+            _transferAssetsToNewStrategy();
+        } else if (txData.txType == TxType.Revert) {
+            _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
+        } else {
+            revert("Unknown TxType");
+        }
+
+        delete pendingByNonce[nextNonce];
+        lastProcessedNonce = nextNonce;
+        return true;
     }
 
     function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {
@@ -332,6 +342,13 @@ abstract contract StrategyParent is
 
     /// @notice Invests assets into the yield source
     function _invest() internal virtual;
+
+    function depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) external onlyOwner {
+        _depositFundsIntoYieldSource(amount, minimumOut);
+    }
 
     /**
      * @notice Deposits funds into the configured yield source.
@@ -609,48 +626,6 @@ abstract contract StrategyParent is
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
             _depositFundsIntoYieldSource(context.amount, 1);
-            _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
-            emit ReturnFundsFromStrategyFailed(
-                vaultNonce,
-                withdrawnAmount,
-                totalAssetsAfter
-            );
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
-        ) {
-            emit SendTotalUnderlyingAssetsFailed(vaultNonce, totalAssetsAfter);
-        } else {
-            revert("Revert not handled");
-        }
-    }
-
-    /// @notice Handles reverts from the Gateway.
-    /// @param context Context of the revert.
-    function onAbort(
-        AbortContext calldata context
-    ) external virtual onlyGateway {
-        (
-            string memory revertMessage,
-            uint256 withdrawnAmount,
-            uint256 totalAssetsAfter,
-            uint256 vaultNonce
-        ) = abi.decode(
-                context.revertMessage,
-                (string, uint256, uint256, uint256)
-            );
-
-        if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_investConfirmFailed"))
-        ) {
-            _sendUpdateToVault(vaultNonce, TX_DEPOSIT_REVERTED);
-            emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
-        } else if (
-            keccak256(bytes(revertMessage)) ==
-            keccak256(bytes("_returnFundsFromStrategyFailed"))
-        ) {
-            // _depositFundsIntoYieldSource(context.amount, 1);
             _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,

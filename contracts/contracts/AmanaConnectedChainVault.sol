@@ -261,7 +261,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 gasLimitForCall,
                 gasLimitForWithdrawAndCall,
                 address(asset()),
-                registry,
                 minAmountOut,
                 minSharesOut,
                 vaultNonce
@@ -274,8 +273,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
     }
 
-    function incrementLastProcessedNonce() external onlyOwner {
-        lastProcessedNonce++;
+    function setLastProcessedNonce(
+        uint256 _lastProcessedNonce
+    ) external onlyOwner {
+        lastProcessedNonce = _lastProcessedNonce;
     }
 
     /**
@@ -357,7 +358,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     txn.amount,
                     txn.minOut,
                     gasLimitForWithdrawAndCall,
-                    registry,
                     vaultNonce
                 );
         } else {
@@ -372,7 +372,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                     txn.amount,
                     txn.minOut,
                     gasLimitForWithdrawAndCall,
-                    registry,
                     vaultNonce
                 );
         }
@@ -425,9 +424,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal override {
         Transaction storage txn = pendingTransactions[vaultNonce];
 
-        uint256 maxAmount = maxWithdraw(txn.user);
-        if (txn.amount > maxAmount - pendingWithdrawals[txn.user]) {
-            revert ERC4626ExceededMaxWithdraw(txn.user, txn.amount, maxAmount);
+        uint256 maxAmount = maxWithdraw(user);
+        if (assets > maxAmount - pendingWithdrawals[user]) {
+            revert ERC4626ExceededMaxWithdraw(user, assets, maxAmount);
         }
 
         txn.user = caller;
@@ -452,7 +451,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 strategyAddress,
                 gasLimitForCall,
                 address(asset()),
-                registry,
                 user,
                 withdrawZRC20,
                 assets,
@@ -484,7 +482,6 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 strategyAddress,
                 gasLimitForCall,
                 address(asset()),
-                registry,
                 txn.user,
                 txn.withdrawZRC20,
                 txn.amount,
@@ -498,29 +495,39 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
 
      * @notice Ensures that fees are correctly deducted, shares are burned, and assets are returned to the user.
      */
+
     function _confirmWithdrawAndBurn() internal {
         Transaction storage txn = pendingTransactions[lastProcessedNonce + 1];
-        latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter + txn.amount;
 
         uint256 userShares = balanceOf(txn.user);
         uint256 vaultSharesToBeBurnt = previewWithdraw(txn.amount);
-        // (a) Cap burn amount to avoid over-burn
+
+        uint256 tolerance = 1e3;
+
+        // If the required burn exceeds user's balance by more than the tolerance, revert
+        if (vaultSharesToBeBurnt > userShares + tolerance) {
+            revert UserSharesInsufficientForWithdrawal(
+                txn.user,
+                vaultSharesToBeBurnt,
+                userShares
+            );
+        }
+
+        // Cap burn to actual user shares if it's within tolerance
         if (vaultSharesToBeBurnt > userShares) {
             vaultSharesToBeBurnt = userShares;
         }
 
-        // (b) If burning leaves tiny residual shares, burn all instead
         uint256 remainingShares = userShares - vaultSharesToBeBurnt;
-        uint256 minResidual = 1e3;
-
-        if (remainingShares > 0 && remainingShares < minResidual) {
+        if (remainingShares > 0 && remainingShares < tolerance) {
             vaultSharesToBeBurnt = userShares;
         }
 
         uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
-            balanceOf(txn.user);
+            userShares;
         uint256 principalWithdrawn = (fractionOfUserShares *
             userPrincipal[txn.user]) / 1e18;
+
         uint256 feeToWithdraw;
         if (txn.amount > principalWithdrawn) {
             feeToWithdraw =
@@ -533,6 +540,7 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 feeToWithdraw
             );
         }
+
         txn.amount -= feeToWithdraw;
 
         userPrincipal[txn.user] -= principalWithdrawn;
@@ -549,5 +557,70 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
             vaultSharesToBeBurnt,
             lastProcessedNonce + 1
         );
+    }
+
+    /// @notice Handles aborts from the Strategy.
+    /// @param context Context of the abort.
+    function onAbort(
+        AbortContext calldata context
+    ) external virtual onlyGateway {
+        (
+            string memory revertMessage,
+            uint256 withdrawnAmount,
+            uint256 totalAssetsAfter,
+            uint256 _vaultNonce
+        ) = abi.decode(
+                context.revertMessage,
+                (string, uint256, uint256, uint256)
+            );
+
+        if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_investConfirmFailed"))
+        ) {
+            pendingTransactions[_vaultNonce]
+                .totalAssetsAfter = totalAssetsAfter;
+            pendingTransactions[_vaultNonce].txStatus = TX_DEPOSIT_REVERTED;
+            if (_vaultNonce == lastProcessedNonce + 1) {
+                // If this is the next transaction in line, process it immediately
+                _processBufferedpendingTransactions(true);
+            }
+            emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_returnFundsFromStrategyFailed"))
+        ) {
+            pendingTransactions[_vaultNonce]
+                .totalAssetsAfter = totalAssetsAfter;
+            pendingTransactions[_vaultNonce].txStatus = TX_WITHDRAW_REVERTED;
+
+            address user = pendingTransactions[_vaultNonce].user;
+            if (
+                pendingTransactions[_vaultNonce].amount >=
+                pendingWithdrawals[user]
+            ) {
+                pendingWithdrawals[user] = 0;
+            } else {
+                pendingWithdrawals[user] -= pendingTransactions[_vaultNonce]
+                    .amount;
+            }
+            pendingTransactions[_vaultNonce].amount = withdrawnAmount;
+            if (_vaultNonce == lastProcessedNonce + 1) {
+                // If this is the next transaction in line, process it immediately
+                _processBufferedpendingTransactions(true);
+            }
+            emit ReturnFundsFromStrategyFailed(
+                vaultNonce,
+                withdrawnAmount,
+                totalAssetsAfter
+            );
+        } else if (
+            keccak256(bytes(revertMessage)) ==
+            keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
+        ) {
+            emit SendTotalUnderlyingAssetsFailed(vaultNonce, totalAssetsAfter);
+        } else {
+            revert("Abort not handled");
+        }
     }
 }

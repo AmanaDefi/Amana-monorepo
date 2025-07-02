@@ -1,22 +1,22 @@
-import { useState, useMemo, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import {
-  VaultData,
-  VaultAPY,
-  VaultTotalAssets,
-  VaultTotalAssetsinToken,
-  UserVaultBalance,
-} from "@/types/types";
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { 
+  VaultData, 
+  VaultAPY, 
+  VaultTotalAssets, 
+  VaultTotalAssetsinToken, 
+  UserVaultBalance 
+} from '@/types/types';
+import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
+import LoadingLogo from './LoadingLogo';
+import { useMultiChain } from '@/providers/MultiChainProvider';
+import { useTokenPriceBySymbol } from '@/hooks/hooks';
+import PointsIcon from "@/components/svg/PointsIcon";
+import ResponsiveTooltip from "@/components/common/Tooltip";
+import { getPointsInfo } from "@/utils/helpers";
+
 import { useLayoutStore } from "@/store/store";
-import {
-  formatNumberWithSuffix,
-  getOnlyTokenSymbol,
-  formatBalance,
-  formatTokenBalance,
-} from "@/utils/utils";
-import LoadingLogo from "./LoadingLogo";
-import { useMultiChain } from "@/providers/MultiChainProvider";
 // import { formatTokenBalance } from '@/utils/utils';
 
 // Risk levels mapping
@@ -30,6 +30,31 @@ export const RISK_LEVELS: Record<number, { level: string; color: string }> = {
 const calculateRiskLevel = (vault: VaultData): number => {
   // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
   return 1;
+};
+
+// Helper function to check if a token is a stablecoin
+const isStablecoin = (symbol: string): boolean => {
+  const baseSymbol = symbol.split('.')[0].toUpperCase();
+  return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(baseSymbol);
+};
+
+// Helper function to format TVL in USD terms with proper K/M/B suffix
+const formatTVLInUSD = (totalAssets: string | number, inputTokenSymbol: string, tokenPrice: number = 0): string => {
+  const totalAssetsNumber = Number(totalAssets || 0);
+  
+  if (totalAssetsNumber === 0) {
+    return "0";
+  }
+  
+  // Check if the token is a stablecoin
+  if (isStablecoin(inputTokenSymbol)) {
+    // For stablecoins, the value is already in USD terms
+    return formatNumberWithSuffix(totalAssetsNumber);
+  } else {
+    // For native tokens (like ETH), convert to USD using token price
+    const usdValue = totalAssetsNumber * tokenPrice;
+    return formatNumberWithSuffix(usdValue);
+  }
 };
 
 // Generate a deterministic capacity percentage based on vault ID
@@ -63,6 +88,8 @@ interface VaultsGridProps {
   sortOrder?: "asc" | "desc";
   onSortChange?: (sortBy: string, sortOrder: "asc" | "desc") => void;
 }
+
+
 
 const VaultsGrid: React.FC<VaultsGridProps> = ({
   loading,
@@ -286,6 +313,35 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     router.push(`/vaults/${vaultId}`);
   };
 
+  // Create a mapping of token prices
+  const tokenPrices = useMemo(() => {
+    const prices: Record<string, number> = {};
+    return prices;
+  }, []);
+
+  // Use hooks to get prices for each unique token
+  const ethPrice = useTokenPriceBySymbol("ETH");
+  const wethPrice = useTokenPriceBySymbol("WETH");
+  const msethPrice = useTokenPriceBySymbol("msETH");
+  
+  // Update tokenPrices object
+  useEffect(() => {
+    tokenPrices["ETH.ETH"] = ethPrice;
+    tokenPrices["WETH"] = wethPrice;
+    tokenPrices["msETH"] = msethPrice;
+  }, [ethPrice, wethPrice, msethPrice, tokenPrices]);
+
+  // Helper function to get token price
+  const getTokenPrice = useCallback((tokenSymbol: string): number => {
+    // For stablecoins, return 1 as they're pegged to USD
+    if (isStablecoin(tokenSymbol)) {
+      return 1;
+    }
+    
+    // For other tokens, try to get their price
+    return tokenPrices[tokenSymbol] || 0;
+  }, [tokenPrices]);
+  
   if (loading) {
     return <LoadingLogo />;
   }
@@ -436,9 +492,11 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         {paginatedVaults.map((vault) => {
           const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
 
-          const totalAssets = vaultTotalAssets.find(
-            (asset) => asset.vaultId === vault.id,
-          );
+          // const totalAssets = vaultTotalAssets.find(
+          //   (asset) => asset.vaultId === vault.id,
+          // );
+
+          const vaultTotalAssetsData = vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === vault.id);
 
           const riskLevel = calculateRiskLevel(vault);
           const capacityPercentage = calculateCapacityPercentage(vault.id);
@@ -523,17 +581,51 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 <div className="grid grid-cols-2 gap-2 p-3">
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">APY (7d)</p>
+                    <div className="flex items-center gap-1">
                     <p className="text-cyan-400 font-bold text-xl">
-                      {(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%
+                      {`${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`}
                     </p>
+                      {getPointsInfo(vault.protocol.name).displayPoints && (
+                        <div className="flex items-center">
+                          <button
+                            id={`points-tooltip-${vault.id}`}
+                            className="ml-1"
+                          >
+                            <PointsIcon className="w-4 h-4" color="#06afbc" />
+                          </button>
+                          <ResponsiveTooltip
+                            id={`points-tooltip-${vault.id}`}
+                            content={
+                              <div className="w-48">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-gray-300 text-sm">
+                                    {getPointsInfo(vault.protocol.name).nativeYield}
+                                  </span>
+                                  <span className="text-cyan-400 font-medium">
+                                    { `${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`
+                                    }
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-300 text-sm">
+                                    {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
+                                  </span>
+                                  <span className="text-white font-medium">
+                                    {getPointsInfo(vault.protocol.name).points}
+                                  </span>
+                                </div>
+                              </div>
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-customNeutral300 p-3 rounded-md">
-                    <p className="text-gray-400 text-xs mb-1">TVL</p>
-                    <p className="text-white font-bold text-xl">
-                      {formatNumberWithSuffix(
-                        Number(totalAssets?.totalAssets || 0),
-                      )}
-                    </p>
+                                          <p className="text-gray-400 text-xs mb-1">TVL</p>
+                      <p className="text-white font-bold text-xl">
+                        {formatTVLInUSD(Number(vaultTotalAssetsData?.totalAssets || 0), vault.inputToken.symbol, getTokenPrice(vault.inputToken.symbol))}
+                      </p>
                   </div>
                 </div>
 

@@ -12,6 +12,9 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
+import PointsIcon from "@/components/svg/PointsIcon";
+import ResponsiveTooltip from "@/components/common/Tooltip";
+import { getPointsInfo } from "@/utils/helpers";
 
 interface VaultStatsProps {
   vaultData: VaultData;

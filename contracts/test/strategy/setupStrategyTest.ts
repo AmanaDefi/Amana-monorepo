@@ -10,7 +10,8 @@ import {
   PYTH_CONTRACT_ADDRESS_ZETACHAIN,
   PYTH_CONTRACT_ADDRESS_POLYGON,
   PYTH_CONTRACT_ADDRESS_ARBITRUM,
-  PYTH_CONTRACT_ADDRESS_BNB
+  PYTH_CONTRACT_ADDRESS_BNB,
+  STORK_CONTRACT_ADDRESS_ETHEREUM
 } from "../../../constants";
 import { isBalancerStrategy, isConvexStrategy } from "../utils";
 
@@ -56,6 +57,15 @@ function getPythContractAddress(chainId: number): string {
   }
 }
 
+function getStorkContractAddress(chainId: number): string {
+  switch (chainId) {
+    case 1:
+      return STORK_CONTRACT_ADDRESS_ETHEREUM;
+    default:
+      return ethers.constants.AddressZero; // Default to zero address for unsupported chains
+  }
+}
+
 export async function deployStrategyFixture(config: StrategyTestConfig): Promise<StrategyTestContext> {
   const {
     forkBlock,
@@ -77,6 +87,8 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
   const rpcUrl = getRpcUrl(strategyChainId);
   console.info(`Forking from ${rpcUrl} at block ${forkBlock}`);
   const pythAddress = getPythContractAddress(strategyChainId);
+  const storkAddress = getStorkContractAddress(strategyChainId);
+  console.log("storkAddress", storkAddress);
 
   await network.provider.request({
     method: "hardhat_reset",
@@ -114,7 +126,7 @@ export async function deployStrategyFixture(config: StrategyTestConfig): Promise
   }
 
   const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
-  const priceOracle = await PriceOracleFactory.deploy(pythAddress); // Pyth contract address on specified chain
+  const priceOracle = await PriceOracleFactory.deploy(pythAddress, storkAddress); // Pyth contract address on specified chain
   await priceOracle.deployed();
   console.log(`PriceOracle deployed to: ${priceOracle.address}`);
   const SwapHelperFactory = await ethers.getContractFactory(swapHelperContractName);
