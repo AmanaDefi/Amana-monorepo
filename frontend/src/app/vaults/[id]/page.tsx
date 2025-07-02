@@ -27,7 +27,7 @@ function Index({}) {
   return (
     <>
       {(account || wallet) && (
-        <div className="flex-1 flex flex-col w-full justify-between pl-0 lg:pl-6">
+        <div className="flex-1 flex flex-col w-full justify-between pl-0">
           <div className={clsx("flex-1", !wallet && "mt-8", wallet && "mt-0")}>
             <VaultsDetailContainer
               vaultID={id}

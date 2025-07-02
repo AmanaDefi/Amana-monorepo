@@ -6,7 +6,6 @@ import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
-import BackedBy from "../shared/BackedBy";
 import { Connector, useConnect } from "wagmi";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
@@ -111,10 +110,10 @@ const AllWAllets = () => {
         (step === "allWallets" || fundWalletStep === "connectWallet")
       }
       onClose={handleClose}
-      paddingClass="pt-[28px] w-full pl-[40px] pb-[26px] pr-[24px] flex"
+      paddingClass="pt-[28px] w-full pl-[57px] pb-10 pr-[24px] flex"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[940px]"
-      minHeight="min-h-[560px]"
+      minHeight="max-h-[560px]"
       customCloseButton={
         <button
           onClick={handleClose}
@@ -125,8 +124,8 @@ const AllWAllets = () => {
         </button>
       }
     >
-      <div className="flex w-full flex-col justify-between min-h-[489px]">
-        <div className="flex w-full h-[95%] mt-[5%] flex-row justify-between gap-5">
+      <div className="flex w-full flex-col justify-between">
+        <div className="flex w-full h-[95%] flex-row justify-between gap-5">
           <div className="flex flex-col justify-between mt-3">
             <ConnectWallet />
           </div>

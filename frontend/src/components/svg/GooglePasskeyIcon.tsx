@@ -7,8 +7,8 @@ const GooglePasskeyIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     viewBox="0 0 48 48"
     width="48px"
     height="48px"
-    fill-rule="evenodd"
-    clip-rule="evenodd"
+    fillRule="evenodd"
+    clipRule="evenodd"
     baseProfile="basic"
     className={className}
     {...props}
@@ -88,8 +88,8 @@ const GooglePasskeyIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
       gradientTransform="translate(294.02 170.725)"
       gradientUnits="userSpaceOnUse"
     >
-      <stop offset="0" stop-color="#f44f5b" />
-      <stop offset="1" stop-color="#e5202e" />
+      <stop offset="0" stopColor="#f44f5b" />
+      <stop offset="1" stopColor="#e5202e" />
     </linearGradient>
     <path
       fill="url(#9C-9aFF8pVbUiT-vTlaz4e)"
