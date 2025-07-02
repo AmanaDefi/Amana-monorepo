@@ -3,7 +3,7 @@
 import { useAuthStore } from "@/store/authStore";
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
 import { useSignupWithPasskey, useCreateWallet } from "@privy-io/react-auth";

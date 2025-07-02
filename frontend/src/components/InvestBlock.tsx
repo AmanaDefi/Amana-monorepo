@@ -2,7 +2,7 @@
 
 import React from "react";
 import InvestIcon from "./svg/InvestIcon";
-import Button from "./Button";
+import Button from "./common/Button";
 import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useMultiChain } from "@/providers/MultiChainProvider";

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import { useState, useEffect } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";

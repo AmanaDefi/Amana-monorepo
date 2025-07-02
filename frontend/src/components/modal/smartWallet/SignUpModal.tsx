@@ -9,7 +9,7 @@ import { Modal } from "../base/Modal";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { motion } from "framer-motion";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import { useEffect } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { useLoginWithEmail } from "@privy-io/react-auth";

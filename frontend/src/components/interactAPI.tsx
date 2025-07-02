@@ -40,7 +40,7 @@ import {
 } from "@/utils/localStorageUtils";
 import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
-import Button from "./Button";
+import Button from "./common/Button";
 import { useTransactionStore } from "@/store/transactionStore";
 import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";

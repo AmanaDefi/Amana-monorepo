@@ -15,7 +15,7 @@ import type {
   VaultTotalAssets,
   UserVaultBalance,
 } from "@/types/types";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { VaultCard } from "@/components/VaultsWrapper/components/VaultCard";
