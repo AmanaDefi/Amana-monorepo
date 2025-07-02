@@ -42,7 +42,7 @@ const itemVariants = {
 
 const LoadingRow = () => (
   <motion.div
-    className="grid grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-8 py-4 mb-4 border border-[#3E73C4] rounded-lg bg-transparent"
+    className="grid grid-cols-[112px_83px_103px] md:grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-0 md:px-8 py-2 md:py-4 mb-4 border border-[#3E73C4] rounded-lg bg-transparent"
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{
@@ -53,14 +53,14 @@ const LoadingRow = () => (
       stiffness: 200,
     }}
   >
-    <div className="flex items-center justify-start gap-2">
+    <div className="flex items-center justify-start gap-1 md:gap-2">
       <motion.div
-        className="h-6 w-6 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
+        className="h-3 w-3 md:h-6 md:w-6 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 1.5, repeat: Infinity, type: "spring" }}
       />
       <motion.div
-        className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 ml-2"
+        className="w-4 h-4 md:w-8 md:h-8 rounded-full bg-gradient-to-r from-gray-700 to-gray-600"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{
           duration: 1.5,
@@ -70,7 +70,7 @@ const LoadingRow = () => (
         }}
       />
       <motion.div
-        className="h-6 w-24 bg-gradient-to-r from-gray-700 to-gray-600 rounded ml-2"
+        className="h-3 w-12 md:h-6 md:w-24 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{
           duration: 1.5,
@@ -82,7 +82,7 @@ const LoadingRow = () => (
     </div>
     <div className="flex items-center justify-center">
       <motion.div
-        className="h-6 w-20 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
+        className="h-3 w-10 md:h-6 md:w-20 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{
           duration: 1.5,
@@ -92,9 +92,9 @@ const LoadingRow = () => (
         }}
       />
     </div>
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-1">
       <motion.div
-        className="h-6 w-32 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
+        className="h-3 w-16 md:h-6 md:w-32 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{
           duration: 1.5,
@@ -104,7 +104,7 @@ const LoadingRow = () => (
         }}
       />
       <motion.div
-        className="h-6 w-6 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
+        className="h-3 w-3 md:h-6 md:w-6 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{
           duration: 1.5,
@@ -257,11 +257,11 @@ export default function LeaderboardContainer() {
   return (
     <>
       <motion.div
-        className="flex items-center justify-between"
+        className="flex  items-center flex-col md:flex-row justify-start  md:justify-between px-4 md:px-0 gap-4 md:gap-0"
         variants={itemVariants}
       >
         {/* Tabs Section */}
-        <div className="rounded-lg shadow-custom bg-[#14171F] flex gap-2 h-10">
+        <div className="rounded-lg shadow-custom bg-[#14171F] flex justify-between gap-2 w-full md:max-w-[363px]">
           {leaderboardTabs.map((tab, index) => (
             <motion.div
               key={tab.id}
@@ -273,7 +273,7 @@ export default function LeaderboardContainer() {
                 variant="signIn"
                 onClick={() => handleTabChange(tab.id)}
                 className={`
-                  !font-bold !text-[18px] !tracking-[-0.06em] !transition-all !duration-200
+                  !font-bold !font-gotham !text-sm md:!text-[18px] !tracking-[-0.06em] !transition-all !duration-200
                   !px-3 !py-[6px] !rounded-lg !whitespace-nowrap !h-auto !w-auto 
                   ${
                     activeTab === tab.id
@@ -298,8 +298,8 @@ export default function LeaderboardContainer() {
           className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] 
              w-full min-w-[48px] sm:min-w-[190px] 
              focus-within:w-full sm:focus-within:md:w-[340px] sm:md:w-[340px]
-             px-3 sm:px-4 py-3 pl-[44px] sm:pl-[56px] 
-             rounded-lg border border-[#454363] relative justify-self-end"
+             px-3 sm:px-4 py-2 md:py-3 pl-[44px] sm:pl-[56px] 
+             rounded-lg border border-[#454363] relative justify-self-end items-center"
           whileHover={{
             y: -1,
             scale: 1.02,
@@ -310,7 +310,7 @@ export default function LeaderboardContainer() {
           }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         >
-          <div className="absolute left-3 sm:left-4 top-3">
+          <div className="absolute left-3 sm:left-4 top-2 md:top-3">
             <SearchIcon />
           </div>
           <input
@@ -327,7 +327,7 @@ export default function LeaderboardContainer() {
       </motion.div>
 
       <motion.div
-        className="grid before-gradient-border rounded-[24px] pt-12 px-6 pb-6 mt-3"
+        className="grid before-gradient-none md:before-gradient-border rounded-[24px] pt-0 md:pt-12 px-0 md:px-6 pb-6 md:pb-6 md-0 md:mt-3"
         style={{
           backdropFilter: "blur(20px)",
           background: "rgba(20, 23, 31, 0.15)",
@@ -338,20 +338,22 @@ export default function LeaderboardContainer() {
         <div>
           {/* Header */}
           <motion.div
-            className="grid grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-8 py-3 text-[#9A9CB3] text-lg font-normal mb-6"
+            className="grid grid-cols-[112px_83px_103px] md:grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-0 md:px-8 py-0 md:py-3 text-[#9A9CB3] text-xs md:text-lg font-normal mb-5 md:mb-6"
             variants={itemVariants}
           >
             <div className="text-left">Rank</div>
-            <div className="flex items-center gap-2">
-              Points
-              <InfoBlock isLeft>
-                💡 Points are earned for total amount deposited across vaults
-                (converted to USD equivalent at current asset price) multiplied
-                by the length of time the deposits have been / were in the
-                vault.
-              </InfoBlock>
+            <div className="flex items-center gap-1 md:gap-2 justify-center md:justify-start">
+              <span className="truncate">Points</span>
+              <div>
+                <InfoBlock isLeft>
+                  💡 Points are earned for total amount deposited across vaults
+                  (converted to USD equivalent at current asset price)
+                  multiplied by the length of time the deposits have been / were
+                  in the vault.
+                </InfoBlock>
+              </div>
             </div>
-            <div>User Address</div>
+            <div className="text-left">User Address</div>
           </motion.div>
 
           {/* Content */}
