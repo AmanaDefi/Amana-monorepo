@@ -9,29 +9,7 @@ import "./ERC20StrategyParent.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/I4626Vault.sol";
 
-import "hardhat/console.sol";
-
-interface IManager {
-    function deposit(
-        address _yToken,
-        address _asset,
-        uint256 _amount,
-        address _receiver,
-        address _callback,
-        bytes calldata _callbackData,
-        bytes32 _referralCode
-    ) external;
-
-    function redeem(
-        address caller,
-        address _yToken,
-        address _asset,
-        uint256 _shares,
-        address _receiver,
-        address _callback,
-        bytes calldata _callbackData
-    ) external;
-}
+// import "../interfaces/IYieldFiManager.sol";
 
 contract YieldFiERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -78,7 +56,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         );
         // approveOrIncreaseAllowance(IERC20(inputToken), manager, amount);
         // uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
-        // IManager(manager).deposit(
+        // IYieldFiManager(manager).deposit(
         //     receiptTokenAddress,
         //     address(inputToken),
         //     amount,
@@ -114,7 +92,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
 
         // IERC20(receiptTokenAddress).approve(manager, type(uint256).max);
 
-        // IManager(manager).redeem(
+        // IYieldFiManager(manager).redeem(
         //     address(this),
         //     receiptTokenAddress,
         //     address(inputToken),
@@ -136,7 +114,6 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         if (IStrategy(txn.newStrategy).amanaVault() != amanaVault)
             revert InvalidAmanaVault();
 
-        // Withdraw all BPT from the liquidity gauge
         uint256 totalinvyUsd = IERC20(receiptTokenAddress).balanceOf(
             address(this)
         );
@@ -164,7 +141,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
      */
     function depositFromOldStrategy(
         uint256 amount,
-        uint256 minimumSharesOut,
+        uint256, // minimumSharesOut
         uint256 currentExecutionNonce
     ) external override {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
