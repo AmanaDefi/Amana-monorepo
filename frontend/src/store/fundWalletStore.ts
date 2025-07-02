@@ -1,5 +1,6 @@
 import { chainsWithCustomRpcs } from "@/constants/chainConfig";
 import { Token } from "@/types/types";
+import { Adapter } from "@solana/wallet-adapter-base";
 import { Chain } from "viem";
 import { Connector } from "wagmi";
 import { create } from "zustand";
@@ -33,7 +34,7 @@ interface FundWalletState {
   chain: Chain;
   depositAmount: string;
   currency: Token | undefined;
-  activeConnector: Connector | null;
+  activeConnector: Connector | Adapter | null;
   walletAddress: string;
 
   setStep: (step: FundStep) => void;
@@ -42,7 +43,7 @@ interface FundWalletState {
   setDepositAmount: (depositAmount: string) => void;
   setCurrency: (currency: Token | undefined) => void;
   closeAll: () => void;
-  setActiveConnector: (connector: Connector | null) => void;
+  setActiveConnector: (connector: Connector | Adapter | null) => void;
   setWalletAddress: (walletAddress: string) => void;
 }
 export const useFundWalletStore = create<FundWalletState>((set) => ({

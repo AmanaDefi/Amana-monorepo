@@ -16,7 +16,12 @@ import { chainConfigs } from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Adapter, WalletReadyState } from "@solana/wallet-adapter-base";
+import {
+  Adapter,
+  WalletAdapter,
+  WalletAdapterNetwork,
+  WalletReadyState,
+} from "@solana/wallet-adapter-base";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 
 const AllWAllets = () => {
@@ -38,7 +43,6 @@ const AllWAllets = () => {
     setStep,
     setActiveConnector,
     setWalletAddress,
-    setChain,
     chain,
   } = useFundWalletStore();
 
@@ -46,8 +50,11 @@ const AllWAllets = () => {
   const { logout } = usePrivy();
   const activeAccount = wallets[0];
 
-  const { wallets: solanaAdapters } = useWallet();
-  const { connectSolana } = useMultiChain();
+  const {
+    wallets: solanaAdapters,
+    select,
+    connect: solanaConnect,
+  } = useWallet();
 
   const fundWalletConnect = () => {
     setStep("confirm");
@@ -115,13 +122,47 @@ const AllWAllets = () => {
     }
   };
 
+  console.log(solanaAdapters);
+
   const solanaConnectors = solanaAdapters
-    .filter((adapter) => adapter.readyState === WalletReadyState.Installed)
+    .filter((adapter) => {
+      if (
+        adapter.adapter.name.toLowerCase() === "metamask" &&
+        !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
+          ?.wallet?.client
+      ) {
+        return false;
+      }
+      return adapter.readyState === WalletReadyState.Installed;
+    })
     .map((adapter) => adapter.adapter);
 
   const handleSolanaConnect = async (connector: Adapter) => {
-    await connector.connect();
-    connectSolana();
+    if (
+      activeAccount?.walletClientType === "privy" &&
+      fundWalletStep !== "connectWallet"
+    ) {
+      const confirmResult = confirm(
+        "You smart wallet account will be disconnected",
+      );
+      if (!confirmResult) return;
+
+      await logout();
+    }
+    setActiveConnector(connector);
+    try {
+      select(connector.name);
+      await solanaConnect();
+    } catch (error) {
+      console.log(error);
+
+      if (connector.connected) {
+        connector.disconnect();
+
+        setActiveConnector(null);
+        showInfoToast("Please try to connect wallet again");
+      }
+    }
   };
 
   return (
@@ -179,7 +220,9 @@ const AllWAllets = () => {
                 </div>
               </div>
               <div className="flex flex-col gap-3 w-full">
-                <p className="text-lg text-[#3E73C4]">Solana chain connectors</p>
+                <p className="text-lg text-[#3E73C4]">
+                  Solana chain connectors
+                </p>
                 <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
                   {solanaConnectors.map((connector) => (
                     <ModalButton

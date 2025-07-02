@@ -23,29 +23,11 @@ import {
 import { createConfig, WagmiProvider } from "wagmi";
 import { http } from "wagmi";
 import { walletConnect } from "wagmi/connectors";
-import { useWallet } from "@solana/wallet-adapter-react";
-
-import {
-  CoinbaseWalletAdapter,
-  MathWalletAdapter,
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TrustWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
 
 export default function CustomPrivyProvider({ children }: PropsWithChildren) {
   const walletConnectProjectId =
     process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ||
     "fc48f2e065ff110cc6683b9af8b654c5";
-
-  // const { wallets } = useWallet();
-  // const solanaConnectors = [
-  //   new CoinbaseWalletAdapter(),
-  //   new MathWalletAdapter(),
-  //   new PhantomWalletAdapter(),
-  //   new SolflareWalletAdapter(),
-  //   new TrustWalletAdapter(),
-  // ];
 
   const wagmiConfig = createConfig({
     ssr: true,
@@ -111,10 +93,6 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
         },
         defaultChain: customZetachain,
         supportedChains: chainsWithCustomRpcs(),
-        externalWallets: {
-          // solana: { connectors: solanaConnectors},
-          // walletConnect: { enabled: true },
-        },
       }}
     >
       <QueryClientProvider client={queryClient}>

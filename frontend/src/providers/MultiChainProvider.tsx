@@ -25,6 +25,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { convertStringToBalance } from "@/utils/graphUtils";
+import { useAuthStore } from "@/store/authStore";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
@@ -122,7 +123,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const { connectors } = useConnect();
-  const { step } = useFundWalletStore();
+  const { step, setWalletAddress: setFundWalletAddress, setStep } = useFundWalletStore();
+  const {successAuth} = useAuthStore()
+  const isConnectedRef = useRef(connected);
 
   const router = useRouter();
   const path = usePathname();
@@ -134,8 +137,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 7000)],
   );
   const [isInitialized, setIsInitialized] = useState(false);
-
-  console.log({ privyWallet });
 
   debugLog("Provider initialized with hydration-safe state:", {
     selectedChain,
@@ -244,7 +245,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const connectSolana = async () => {
     setIsModalOpen(false);
     try {
-      if (selectedChain == "evm") {
+      if (selectedChain == "evm" && privyWallet?.address) {
         debugLog("Disconnecting EVM wallet before Solana connection");
         await evmDisconnect();
       }
@@ -253,6 +254,21 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       console.error("Solana connection error:", error);
     }
   };
+
+  useEffect(() => {
+    if (connected && !isConnectedRef.current) {
+      connectSolana();
+      isConnectedRef.current = true;
+
+      if (step === "connectWallet") {
+        localStorage.removeItem("connectorId");
+        return setStep("confirm");
+      }
+      return successAuth(null, undefined, true);
+    } else if (!connected) {
+      isConnectedRef.current = false;
+    }
+  }, [connected, step]);
 
   useEffect(() => {
     if (
@@ -379,6 +395,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           setWalletAddress(publicKey.toBase58());
           setSelectedChain("solana");
           setIsModalOpen(false);
+          if (step) {
+            setFundWalletAddress(publicKey.toBase58());
+          }
         } else if (privyWallet?.address) {
           if (!step) {
             debugLog("EVM wallet connected:", privyWallet?.address);
