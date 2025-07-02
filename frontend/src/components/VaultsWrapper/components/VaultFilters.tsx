@@ -211,7 +211,7 @@ export const VaultFilters: FC<Props> = ({
                 type="text"
                 placeholder={"Search"}
                 maxLength={100}
-                className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
+                className="text-white focus:outline-none bg-transparent w-full"
                 value={localSearch}
                 onFocus={() => setIsHiddenFilterButton(true)}
                 onBlur={() => setIsHiddenFilterButton(false)}
