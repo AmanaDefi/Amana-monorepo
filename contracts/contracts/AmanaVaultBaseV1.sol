@@ -132,6 +132,21 @@ abstract contract AmanaVaultBaseV1 is
 
     event TotalAssetsUpdated(uint256 totalAssets, uint256 vaultNonce);
 
+    event InvestConfirmFailed(
+        uint256 indexed vaultNonce,
+        uint256 totalAssetsAfter
+    );
+    event ReturnFundsFromStrategyFailed(
+        uint256 indexed vaultNonce,
+        uint256 withdrawnAmount,
+        uint256 totalAssetsAfter
+    );
+
+    event SendTotalUnderlyingAssetsFailed(
+        uint256 indexed vaultNonce,
+        uint256 totalAssetsAfter
+    );
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
