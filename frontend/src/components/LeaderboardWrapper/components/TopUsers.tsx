@@ -107,7 +107,7 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
             key={`top3-user-${index}`}
             role="button"
             className={`
-    grid grid-cols-[112px_83px_103px] md:grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-0 md:px-8 py-2 md:py-4 transition-colors relative mb-4 cursor-pointer
+    grid grid-cols-[112px_83px_103px] md:grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-0 md:px-8 py-0 md:py-4 transition-colors relative mb-4 cursor-pointer
     ${isCurrentUser ? "bg-blue-900/30 hover:bg-blue-900/40" : "hover:bg-gray-800"}
     md:bg-gradient-to-b md:from-[#0a1a5c] md:to-[#1b46e0] md:rounded-lg
   `}
