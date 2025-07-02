@@ -12,12 +12,13 @@ import { useState, useEffect, useCallback } from 'react';
 // Bitcoin wallet interface
 export interface TemporaryBitcoinWallet {
   address: string;
+  publicKey: string;
   network: 'mainnet' | 'testnet';
   walletType: 'unisat' | 'xverse' | 'leather';
-  signTransaction?: (tx: any) => Promise<string>;
-  signMessage?: (message: string) => Promise<string>;
-  getBalance?: () => Promise<number>;
-  getPublicKey?: () => string;
+  signTransaction: (tx: any) => Promise<string>;
+  signMessage: (message: string) => Promise<string>;
+  getBalance: () => Promise<number>;
+  provider: any;
 }
 
 // Window interface extensions for Bitcoin wallets
@@ -165,6 +166,7 @@ export const useTemporaryBitcoinWallet = () => {
     
     return {
       address: accounts[0],
+      publicKey: publicKey,
       network: network === 'livenet' ? 'mainnet' : 'testnet',
       walletType: 'unisat',
       signTransaction: window.unisat.signTx,
@@ -173,7 +175,7 @@ export const useTemporaryBitcoinWallet = () => {
         const balance = await window.unisat?.getBalance();
         return balance?.total || 0;
       },
-      getPublicKey: () => publicKey
+      provider: window.unisat
     };
   };
 
@@ -200,6 +202,7 @@ export const useTemporaryBitcoinWallet = () => {
 
     return {
       address: response.addresses[0].address,
+      publicKey: response.addresses[0].publicKey,
       network: 'mainnet', // Xverse typically uses mainnet
       walletType: 'xverse',
       signTransaction: provider.signTransaction,
@@ -208,7 +211,7 @@ export const useTemporaryBitcoinWallet = () => {
         const balance = await provider.getBalance();
         return balance.total;
       },
-      getPublicKey: () => response.addresses[0].publicKey
+      provider: provider
     };
   };
 
@@ -227,6 +230,7 @@ export const useTemporaryBitcoinWallet = () => {
 
     return {
       address: response.addresses.bitcoin.p2wpkh, // Use native segwit
+      publicKey: response.addresses.bitcoin.publicKey,
       network: 'mainnet',
       walletType: 'leather',
       signTransaction: (tx: any) => provider.request('signTx', { tx }),
@@ -235,7 +239,7 @@ export const useTemporaryBitcoinWallet = () => {
         const balance = await provider.request('getBalance');
         return balance.total;
       },
-      getPublicKey: () => response.addresses.bitcoin.publicKey
+      provider: provider
     };
   };
 

@@ -59,6 +59,8 @@ import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
 import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
+import { CHAIN_ID } from "@/constants/chainConfig";
+import { getBitcoinBalance } from "@/actions/bitcoinActions";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -203,7 +205,7 @@ export default function VaultInputs({
       decimals: vaultData.inputToken.decimals,
       address: vaultData.id,
       imgURL: "",
-      chainId: vaultData.protocol.chainId,
+      // chainId: vaultData.protocol.chainId,
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: false,
@@ -288,11 +290,62 @@ export default function VaultInputs({
     }
   }, [inputToken, selectChain, fetchBalance, vaultData.id]);
 
-  // Trigger error message handling
+  // Bitcoin wallet integration from MultiChainProvider
+  const { 
+    bitcoinWallet, 
+    bitcoinBalance, 
+    selectedChain: providerSelectedChain 
+  } = useMultiChain();
+  
+  // Bitcoin balance state
+  const [bitcoinBalanceFormatted, setBitcoinBalanceFormatted] = useState<string>("0");
+
+  // Bitcoin balance fetching effect
+  useEffect(() => {
+    const fetchBitcoinBalance = async () => {
+      if (selectedChain?.id === CHAIN_ID.bitcoin && bitcoinWallet) {
+        try {
+          const balance = await getBitcoinBalance(bitcoinWallet);
+          const balanceInBTC = Number(balance) / 100000000; // Convert satoshis to BTC
+          setBitcoinBalanceFormatted(balanceInBTC.toFixed(8));
+        } catch (error) {
+          console.error("Error fetching Bitcoin balance:", error);
+          setBitcoinBalanceFormatted("0");
+        }
+      }
+    };
+
+    fetchBitcoinBalance();
+  }, [selectedChain?.id, bitcoinWallet]);
+
+  // Update error message handling to include Bitcoin validation
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
     if (inputToken && vaultTotalAssetinToken && !isTxInProgress) {
       if (isDeposit) {
+        // Bitcoin-specific validation
+        if (selectedChain?.id === CHAIN_ID.bitcoin) {
+          if (!bitcoinWallet) {
+            setErrorMessage("Bitcoin wallet not connected. Please connect a Bitcoin wallet.");
+            return;
+          }
+          
+          // Minimum Bitcoin deposit validation (0.00001 BTC = 1000 satoshis)
+          const minBitcoinDeposit = 0.00001;
+          const currentAmount = parseFloat(inputBalance.formatted || "0");
+          if (currentAmount > 0 && currentAmount < minBitcoinDeposit) {
+            setErrorMessage(`Minimum Bitcoin deposit is ${minBitcoinDeposit} BTC`);
+            return;
+          }
+          
+          // Bitcoin balance validation
+          const bitcoinBalanceNumber = parseFloat(bitcoinBalanceFormatted || "0");
+          if (currentAmount > bitcoinBalanceNumber) {
+            setErrorMessage("Insufficient Bitcoin balance");
+            return;
+          }
+        }
+
         // For Ethereum vaults, use net deposit amount for validation
         // For other vaults, use input amount
         const amountToValidate = !vaultData.depositFeePaidFromGasTank 
@@ -306,7 +359,7 @@ export default function VaultInputs({
         setErrorMessage(
           getVaultErrorMessage(
             amountToValidate,
-            tokenBalance.formatted,
+            selectedChain?.id === CHAIN_ID.bitcoin ? bitcoinBalanceFormatted : tokenBalance.formatted,
             steps,
             vaultData,
             priceToUse,
@@ -341,6 +394,10 @@ export default function VaultInputs({
     vaultTokenPrice,
     conversionOutput.netDepositToVaultUSD,
     loadingOutputToken,
+    selectedChain?.id,
+    bitcoinWallet,
+    bitcoinBalanceFormatted,
+    tokenBalance.formatted,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -565,19 +622,36 @@ export default function VaultInputs({
     if (!inputToken || isTxInProgress) return;
 
     if (isDeposit) {
-      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
+      let maxBalance: string;
+      
+      if (selectedChain?.id === CHAIN_ID.bitcoin) {
+        // For Bitcoin, use the Bitcoin balance
+        maxBalance = bitcoinBalanceFormatted || "0";
+      } else {
+        // For other chains, use token balance
+        maxBalance = tokenBalance.formatted;
+      }
+      
+      const formattedAmount = Number(maxBalance).toFixed(7);
       const cleanAmount = Number(formattedAmount).toString();
 
       setInputBalance({
-        ...tokenBalance,
+        // ...tokenBalance,
+        value: selectedChain?.id === CHAIN_ID.bitcoin 
+          ? BigInt(Math.floor(parseFloat(cleanAmount) * 100000000)) // Convert BTC to satoshis
+          : parseUnits(cleanAmount, inputToken.decimals),
         formatted: cleanAmount,
+        formattedUSD: String(Number(cleanAmount) * inputTokenPrice)
       });
       setDisplayValue(cleanAmount);
       updateLocalStorageObject(vaultData.id, {
         inputBal: JSON.stringify(
           {
-            ...tokenBalance,
+            value: selectedChain?.id === CHAIN_ID.bitcoin 
+              ? BigInt(Math.floor(parseFloat(cleanAmount) * 100000000))
+              : parseUnits(cleanAmount, inputToken.decimals),
             formatted: cleanAmount,
+            formattedUSD: String(Number(cleanAmount) * inputTokenPrice)
           },
           bigIntReplacer,
         ),
@@ -600,6 +674,9 @@ export default function VaultInputs({
     isDeposit,
     vaultTotalAssetinToken,
     vaultData.id,
+    selectedChain?.id,
+    bitcoinBalanceFormatted,
+    inputTokenPrice,
   ]);
 
   const tokenList = useMemo(() => {
@@ -614,13 +691,27 @@ export default function VaultInputs({
       if (vaultData.inputToken) {
         tokens = [vaultData.inputToken];
       }
+    } else if (selectedChain.id === CHAIN_ID.bitcoin) {
+      // ✅ Use existing Bitcoin token configuration from APPROVED_TOKENS
+      const bitcoinTokens = APPROVED_TOKENS[selectedChain.id] || [];
+      if (bitcoinTokens.length > 0) {
+        // Update the existing Bitcoin token with current balance and price
+        tokens = bitcoinTokens.map(token => ({
+          ...token, // Use existing configuration (symbol, decimals, address, imgURL, etc.)
+          balance: { 
+            value: BigInt(Math.floor(parseFloat(bitcoinBalanceFormatted || "0") * 100000000)), 
+            formatted: bitcoinBalanceFormatted || "0"
+          },
+          price: inputTokenPrice || token.price || 0
+        }));
+      }
     } else {
       tokens = (APPROVED_TOKENS[selectedChain.id] || []).filter(
         (token): token is Token => token !== undefined,
       );
     }
     return tokens;
-  }, [selectedChain?.id, vaultData.inputToken]);
+  }, [selectedChain?.id, vaultData.inputToken, bitcoinBalanceFormatted, inputTokenPrice]);
 
   const getWithdrawOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
@@ -1064,6 +1155,12 @@ export default function VaultInputs({
       return true;
     }
 
+    // Bitcoin-specific wallet check
+    if (selectedChain?.id === CHAIN_ID.bitcoin && !bitcoinWallet) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
     if (
       !inputBalance.formatted ||
       inputBalance.formatted === "0" ||
@@ -1080,7 +1177,15 @@ export default function VaultInputs({
     }
 
     if (isDeposit) {
-      if (Number(inputBalance.value) > Number(tokenBalance.value)) {
+      const maxBalance = selectedChain?.id === CHAIN_ID.bitcoin 
+        ? parseFloat(bitcoinBalanceFormatted || "0")
+        : Number(tokenBalance.value);
+      
+      const currentBalance = selectedChain?.id === CHAIN_ID.bitcoin
+        ? parseFloat(inputBalance.formatted || "0")
+        : Number(inputBalance.value);
+        
+      if (currentBalance > maxBalance) {
         setIsButtonDisabled(true);
         return true;
       }
@@ -1121,6 +1226,9 @@ export default function VaultInputs({
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
     setIsButtonDisabled,
+    selectedChain?.id,
+    bitcoinWallet,
+    bitcoinBalanceFormatted,
   ]);
   // 🧪 TESTING: Log final values being displayed
   useEffect(() => {
@@ -1224,7 +1332,7 @@ export default function VaultInputs({
               selectedToken={isDeposit ? inputToken : vaultData.inputToken}
               inputTokenbalance={
                 isDeposit
-                  ? tokenBalance.formatted
+                  ? (selectedChain?.id === CHAIN_ID.bitcoin ? bitcoinBalanceFormatted : tokenBalance.formatted)
                   : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
                     "0.00")
               }
@@ -1279,7 +1387,7 @@ export default function VaultInputs({
                 isDeposit
                   ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
                     "0.00")
-                  : tokenBalance.formatted
+                  : (selectedChain?.id === CHAIN_ID.bitcoin ? bitcoinBalanceFormatted : tokenBalance.formatted)
               }
               errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
               tokenList={isDeposit ? [] : tokenList}
@@ -1321,9 +1429,9 @@ export default function VaultInputs({
               selectedToken={isDeposit ? inputToken : vaultData.inputToken}
               inputTokenbalance={
                 isDeposit
-                  ? tokenBalance.formatted
-                  : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
+                  ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
                     "0.00")
+                  : (selectedChain?.id === CHAIN_ID.bitcoin ? bitcoinBalanceFormatted : tokenBalance.formatted)
               }
               errorMessage={errorMessage}
               tokenList={isDeposit ? tokenList : []}
@@ -1370,7 +1478,7 @@ export default function VaultInputs({
                 isDeposit
                   ? (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
                     "0.00")
-                  : tokenBalance.formatted
+                  : (selectedChain?.id === CHAIN_ID.bitcoin ? bitcoinBalanceFormatted : tokenBalance.formatted)
               }
               errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
               tokenList={isDeposit ? [] : tokenList}

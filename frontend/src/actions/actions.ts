@@ -61,6 +61,7 @@ import { showErrorToast } from "@/toasts";
 
 import { trackEvent } from "@/utils/trackEvent";
 import { RevertOptions } from "@/lib/solanaGateway/cli/lib/scripts";
+import { executeBitcoinDeposit, validateBitcoinDeposit } from "./bitcoinActions";
 
 const abiCoder = new AbiCoder();
 dotenv.config();
@@ -802,6 +803,7 @@ export const executeDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   setcrossChainTxId: Function,
+  bitcoinWallet?: any, // Optional Bitcoin wallet for Bitcoin deposits
 ) => {
   if (activeChain.id === CHAIN_ID.zetachain) {
     return executeDirectDeposit(
@@ -821,6 +823,29 @@ export const executeDeposit = async (
       setcrossChainTxId,
       activeAccount,
     );
+  } else if (activeChain.id === CHAIN_ID.bitcoin) {
+    // Bitcoin deposit flow
+    console.log("🟠 Executing Bitcoin deposit flow");
+    
+    // Validate Bitcoin wallet is provided
+    if (!bitcoinWallet) {
+      throw new Error("Bitcoin wallet not connected. Please connect a Bitcoin wallet first.");
+    }
+    
+    // Validate Bitcoin deposit parameters
+    const validation = validateBitcoinDeposit(bitcoinWallet, transactionAmount, vaultData);
+    if (!validation.isValid) {
+      throw new Error(validation.error || "Invalid Bitcoin deposit parameters");
+    }
+    
+    // Execute Bitcoin deposit using our dedicated function
+    return executeBitcoinDeposit({
+      vaultData,
+      bitcoinWallet,
+      transactionAmount,
+      inputToken,
+      setcrossChainTxId,
+    });
   } else {
     return executeCrossChainDeposit(
       vaultData,
@@ -1813,21 +1838,73 @@ const beamConnection: IConnection = {
 export const getBeamTokenId = async (
   tokenAddress: string,
 ): Promise<number | null> => {
+  console.log("🔍 === BEAM TOKEN ID LOOKUP START ===");
+  console.log("🔍 Looking for token address:", tokenAddress);
+  
   try {
+    console.log("🔍 Calling Beam API for partners...");
     const response = await api.functional.api.currency.partners.getPartners(
       beamConnection,
-      "7000",
-    ); // hardcoded for ZC
+      "7000", // ZetaChain chain ID
+    );
+
+    console.log("🔍 Beam API Response:", {
+      hasData: !!response.data,
+      dataType: typeof response.data,
+      responseKeys: Object.keys(response || {}),
+    });
 
     const data = response.data as {
       data: { address: string; id: number }[];
     };
 
+    console.log("🔍 Available tokens in Beam:", {
+      tokenCount: data?.data?.length || 0,
+      tokens: data?.data?.slice(0, 10).map(t => ({ 
+        address: t.address, 
+        id: t.id 
+      })) || [], // Show first 10 tokens
+      hasMore: (data?.data?.length || 0) > 10
+    });
+
+    // Check if our target token exists
     const token = data.data.find(
       (t) => t.address.toLowerCase() === tokenAddress.toLowerCase(),
     );
+
+    console.log("🔍 Token lookup result:", {
+      targetAddress: tokenAddress,
+      found: !!token,
+      tokenId: token?.id || null,
+      matchedToken: token || null
+    });
+
+    // If not found, show similar addresses for debugging
+    if (!token) {
+      console.error("❌ TOKEN NOT FOUND IN BEAM!");
+      console.error("❌ Searching for similar addresses...");
+      const similarTokens = data.data.filter(t => 
+        t.address.toLowerCase().includes(tokenAddress.toLowerCase().substring(2, 8)) ||
+        tokenAddress.toLowerCase().includes(t.address.toLowerCase().substring(2, 8))
+      );
+      console.error("❌ Similar tokens found:", similarTokens);
+      
+      // Show all Bitcoin-related tokens
+      const bitcoinTokens = data.data.filter(t => 
+        t.address.toLowerCase().includes('btc') || 
+        t.address.toLowerCase().includes('bitcoin')
+      );
+      console.error("❌ Bitcoin-related tokens found:", bitcoinTokens);
+    }
+
     return token?.id ?? null;
-  } catch (err) {
+  } catch (err: any) {
+    console.error("❌ === BEAM TOKEN ID LOOKUP FAILED ===");
+    console.error("❌ Error details:", {
+      message: err.message,
+      stack: err.stack,
+      tokenAddress
+    });
     return null;
   }
 };
@@ -1839,12 +1916,48 @@ export const getPathDataAndAmountOut = async (
   userAddress: string,
   slippage: Number,
 ): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
+  console.log("🔥 === BEAM SWAP ROUTING START ===");
+  console.log("🔥 Input Parameters:", {
+    amount: amount.toString(),
+    amountFormatted: formatUnits(amount, inputToken.decimals),
+    inputToken: {
+      address: inputToken.address,
+      symbol: inputToken.symbol,
+      decimals: inputToken.decimals
+    },
+    outputToken: {
+      address: outputToken.address,
+      symbol: outputToken.symbol,
+      decimals: outputToken.decimals
+    },
+    userAddress,
+    slippage: Number(slippage)
+  });
+
+  console.log("🔥 Fetching Beam token IDs...");
   const [inputTokenId, outputTokenId] = await Promise.all([
     getBeamTokenId(inputToken.address),
     getBeamTokenId(outputToken.address),
   ]);
 
+  console.log("🔥 Beam Token ID Results:", {
+    inputTokenId,
+    outputTokenId,
+    inputTokenAddress: inputToken.address,
+    outputTokenAddress: outputToken.address
+  });
+
   if (!inputTokenId || !outputTokenId) {
+    console.error("❌ BEAM TOKEN ID MISSING!");
+    console.error("❌ This is likely the root cause of the swap route issue");
+    console.error("❌ Missing token IDs:", {
+      inputTokenId: inputTokenId || "MISSING",
+      outputTokenId: outputTokenId || "MISSING",
+      inputTokenAddress: inputToken.address,
+      outputTokenAddress: outputToken.address,
+      inputTokenSymbol: inputToken.symbol,
+      outputTokenSymbol: outputToken.symbol
+    });
     return { encodedPath: null, amountOut: BigInt(0) };
   }
 
@@ -1857,7 +1970,10 @@ export const getPathDataAndAmountOut = async (
     recipient: userAddress,
   };
 
+  console.log("🔥 Beam Swap Request Details:", swapDetails);
+
   try {
+    console.log("🔥 Calling Beam API for swap data...");
     const beamQuote = await swap.native.getSwapData(
       beamConnection,
       swapDetails,
@@ -1870,15 +1986,42 @@ export const getPathDataAndAmountOut = async (
       };
     };
 
+    console.log("🔥 Beam API Response:", {
+      hasData: !!beamQuote.data,
+      hasNestedData: !!beamQuote.data?.data,
+      path: beamQuote.data?.data?.path,
+      expectedAmountOut: beamQuote.data?.data?.expectedAmountOut,
+      fullResponse: beamQuote
+    });
+
     const path = beamQuote.data?.data?.path;
     const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
+    
     if (expectedAmountOut == null) {
+      console.error("❌ Beam quote is missing expectedAmountOut");
+      console.error("❌ Full Beam response:", JSON.stringify(beamQuote, null, 2));
       throw new Error("Beam quote is missing expectedAmountOut");
     }
 
     if (!path || !Array.isArray(path) || path.length < 2) {
+      console.error("❌ Beam quote returned invalid path");
+      console.error("❌ Path details:", {
+        path,
+        isArray: Array.isArray(path),
+        length: path?.length,
+        pathType: typeof path
+      });
+      console.error("❌ Full Beam response:", JSON.stringify(beamQuote, null, 2));
       throw new Error("Beam quote returned invalid path");
     }
+
+    console.log("🔥 Valid swap path found!");
+    console.log("🔥 Path details:", {
+      pathAddresses: path,
+      pathLength: path.length,
+      expectedAmountOut,
+      expectedAmountOutFormatted: expectedAmountOut.toFixed(6)
+    });
 
     const encodedPath = solidityPacked(
       Array(path.length).fill("address"),
@@ -1886,11 +2029,31 @@ export const getPathDataAndAmountOut = async (
     ) as `0x${string}`;
 
     const amountOutRaw = (expectedAmountOut * 10 ** outputToken.decimals).toFixed(0);
+    
+    console.log("🔥 === BEAM SWAP ROUTING SUCCESS ===");
+    console.log("🔥 Final Results:", {
+      encodedPath,
+      encodedPathLength: encodedPath.length,
+      amountOut: amountOutRaw,
+      amountOutFormatted: formatUnits(BigInt(amountOutRaw), outputToken.decimals)
+    });
+
     return {
       encodedPath,
       amountOut: BigInt(amountOutRaw),
     };
   } catch (e: any) {
+    console.error("❌ === BEAM SWAP ROUTING FAILED ===");
+    console.error("❌ Error details:", {
+      message: e.message,
+      stack: e.stack,
+      name: e.name
+    });
+    console.error("❌ Request details:", {
+      swapDetails,
+      beamConnectionHost: beamConnection.host,
+      hasApiKey: !!beamConnection.headers?.["x-api-key"]
+    });
     return { encodedPath: null, amountOut: BigInt(0) };
   }
 };

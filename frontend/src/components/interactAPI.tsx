@@ -64,6 +64,7 @@ const handleDepositTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  bitcoinWallet?: any, // Add Bitcoin wallet parameter
 ) => {
   console.log("deposit", activeAccount);
   if (!activeAccount) return;
@@ -85,6 +86,7 @@ const handleDepositTransaction = async (
       activeChain,
       depositAmount,
       setcrossChainTxId,
+      bitcoinWallet, // Pass Bitcoin wallet to executeDeposit
     );
     if (!receipt || !receipt.transactionHash) {
       throw new Error("Failed Tx");
@@ -928,6 +930,9 @@ function Interaction({
   const prevLebel = useRef(label);
 
   const { isButtonDisabled } = useTransactionStore();
+  
+  // Get Bitcoin wallet from MultiChainProvider for Bitcoin deposits
+  const { bitcoinWallet } = useMultiChain();
 
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
@@ -1201,6 +1206,7 @@ function Interaction({
       setcrossChainTxId,
       setInputBalance,
       setLastEventTxHash,
+      bitcoinWallet, // Pass Bitcoin wallet
     )();
 
    
@@ -1412,6 +1418,7 @@ function handleInteraction(
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  bitcoinWallet?: any, // Add Bitcoin wallet parameter
 ) {
   switch (action) {
     case Action.depositApprove:
@@ -1440,6 +1447,7 @@ function handleInteraction(
           setcrossChainTxId,
           setInputBalance,
           setLastEventTxHash,
+          bitcoinWallet, // Pass Bitcoin wallet to handleDepositTransaction
         );
         return result;
       };

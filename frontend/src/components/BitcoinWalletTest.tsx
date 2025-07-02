@@ -1,7 +1,16 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTemporaryBitcoinWallet } from '../hooks/useBitcoinWallet';
+import { debugBitcoinIntegration } from '@/actions/bitcoinActions';
+
+interface DebugResult {
+  bitcoinTokenId: number | null;
+  isConfiguredInBeam: boolean;
+  needsSwap: boolean | null;
+  canProceed: boolean;
+  error?: string;
+}
 
 // ========================================
 // TEMPORARY BITCOIN WALLET TEST COMPONENT
@@ -22,7 +31,39 @@ export const BitcoinWalletTest: React.FC = () => {
     debugWalletDetection
   } = useTemporaryBitcoinWallet();
 
+  const [debugResult, setDebugResult] = useState<DebugResult | null>(null);
+  const [isDebugging, setIsDebugging] = useState(false);
   const availableWallets = getAvailableWallets();
+
+  // Auto-run debug utility when component mounts
+  useEffect(() => {
+    runBitcoinDebugUtility();
+  }, []);
+
+  const runBitcoinDebugUtility = async () => {
+    setIsDebugging(true);
+    try {
+      console.log("🔧 Running Bitcoin Debug Utility...");
+      const result = await debugBitcoinIntegration();
+      setDebugResult(result);
+      
+      // Show results in UI alert as well
+      if (!result.isConfiguredInBeam) {
+        alert("❌ BITCOIN ROUTING ISSUE FOUND!\n\nBitcoin token is not configured in the Beam swap router.\n\nCheck the browser console for detailed logs and fix recommendations.");
+      }
+    } catch (error: any) {
+      console.error("Debug utility failed:", error);
+      setDebugResult({
+        bitcoinTokenId: null,
+        isConfiguredInBeam: false,
+        needsSwap: null,
+        canProceed: false,
+        error: error.message
+      });
+    } finally {
+      setIsDebugging(false);
+    }
+  };
 
   return (
     <div style={{ 
@@ -35,6 +76,61 @@ export const BitcoinWalletTest: React.FC = () => {
       <h3 style={{ color: '#8b4513', marginBottom: '15px' }}>
         🧪 Bitcoin Wallet Test (Temporary)
       </h3>
+
+      {/* Debug Results Section */}
+      <div style={{ 
+        marginBottom: '15px', 
+        padding: '10px', 
+        backgroundColor: debugResult?.isConfiguredInBeam ? '#d4edda' : '#f8d7da',
+        border: `1px solid ${debugResult?.isConfiguredInBeam ? '#c3e6cb' : '#f5c6cb'}`,
+        borderRadius: '4px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>🔍 Bitcoin Integration Status</h4>
+        {isDebugging ? (
+          <p>⏳ Running diagnostics...</p>
+        ) : debugResult ? (
+          <div>
+            <p><strong>Bitcoin Token ID:</strong> {debugResult.bitcoinTokenId || 'NOT FOUND'}</p>
+            <p><strong>Configured in Beam:</strong> {debugResult.isConfiguredInBeam ? '✅ YES' : '❌ NO'}</p>
+            <p><strong>Can Proceed:</strong> {debugResult.canProceed ? '✅ YES' : '❌ NO'}</p>
+            {debugResult.error && (
+              <p style={{ color: 'red' }}><strong>Error:</strong> {debugResult.error}</p>
+            )}
+            
+            {!debugResult.isConfiguredInBeam && (
+              <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
+                <strong>🚨 SWAP ROUTE ISSUE IDENTIFIED:</strong>
+                <p>Bitcoin token is not configured in the Beam swap router.</p>
+                <strong>📋 FIXES:</strong>
+                <ol style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                  <li>Contact Beam team to add Bitcoin ZRC-20 token</li>
+                  <li>Create Bitcoin-only vaults (no swap needed)</li>
+                  <li>Use ZetaChain native swaps instead</li>
+                </ol>
+              </div>
+            )}
+          </div>
+        ) : (
+                          <p>Click &quot;Re-run Debug&quot; to diagnose Bitcoin integration issues</p>
+        )}
+        
+        <button 
+          onClick={runBitcoinDebugUtility}
+          disabled={isDebugging}
+          style={{
+            marginTop: '8px',
+            padding: '6px 12px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px'
+          }}
+        >
+          {isDebugging ? '⏳ Running...' : '🔧 Re-run Debug'}
+        </button>
+      </div>
       
       <div style={{ marginBottom: '15px' }}>
         <strong>Available Bitcoin Wallets:</strong> {availableWallets.length > 0 ? availableWallets.join(', ') : 'None detected'}
