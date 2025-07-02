@@ -10,9 +10,10 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
-import { useWallets } from "@privy-io/react-auth";
+import { useFundWallet, useWallets } from "@privy-io/react-auth";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { Token, VaultData } from "@/types/types";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 
 interface ChainSelectorProps {
   selectedChain?: Chain;
@@ -39,6 +40,7 @@ export default function ChainSelector({
   const { wallets } = useWallets();
   const activeAccount = wallets[0];
   const { openModal } = useChainTokenModalStore();
+  const { setStep } = useFundWalletStore();
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,14 +50,18 @@ export default function ChainSelector({
       if (isTxInProgress) return;
     }
 
-    openModal(
-      selectedChain || null,
-      selectedToken || null,
-      onSelectChain,
-      onSelectChainAndToken,
-      vaultData,
-      isFromTopUp,
-    );
+    if (isFromTopUp) {
+      setStep("selectChain");
+    } else {
+      openModal(
+        selectedChain || null,
+        selectedToken || null,
+        onSelectChain,
+        onSelectChainAndToken,
+        vaultData,
+        isFromTopUp,
+      );
+    }
   };
 
   const displayedChain = selectedChain || activeChain;
@@ -74,6 +80,7 @@ export default function ChainSelector({
       const tokens = APPROVED_TOKENS[chainId] ?? [];
       const defaultToken =
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
+
       if (onSelectChainAndToken) {
         onSelectChainAndToken(chainToSelect, defaultToken);
       }

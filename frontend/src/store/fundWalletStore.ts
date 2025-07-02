@@ -8,6 +8,7 @@ export type FundStep =
   | "chooseBuyWith"
   | "setValues"
   | "connectWallet"
+  | "selectChain"
   | "confirm"
   | null;
 
