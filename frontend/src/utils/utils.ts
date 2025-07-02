@@ -730,7 +730,7 @@ export async function getSplTokenBalance(
 }
 
 export function shortAddressForm(address: string) {
-  return address.slice(0, 6) + "..." + address.slice(-4);
+  return address.slice(0, 9) + "..." + address.slice(-8);
 }
 
 export function getSolanaEVMAddress(solanaPublicKey: string) {

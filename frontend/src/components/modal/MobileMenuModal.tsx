@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import VaultsMobileMenuIcon from "../svg/mobileMenu/VaultsMobileMenu";
 import LeaderboardIcon from "../svg/mobileMenu/LeaderBoard";
-import RoadmapIcon from "../svg/mobileMenu/Roadmap";
 import AboutIcon from "../svg/mobileMenu/AboutIcon";
 import classNames from "classnames";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
@@ -35,11 +34,7 @@ const GUEST_MENU_ITEMS = [
     icon: <AboutIcon height={19} width={19} fill="#1B46E0" />,
     title: "About",
   },
-  {
-    path: "/roadmap",
-    icon: <RoadmapIcon height={19} width={19} stroke="#1B46E0" />,
-    title: "Roadmap",
-  },
+
 ];
 
 const USER_MENU_ITEMS = [
@@ -67,11 +62,6 @@ const USER_MENU_ITEMS = [
     path: "/about",
     icon: <AboutIcon height={19} width={19} fill="#1B46E0" />,
     title: "About",
-  },
-  {
-    path: "/roadmap",
-    icon: <RoadmapIcon height={19} width={19} stroke="#1B46E0" />,
-    title: "Roadmap",
   },
 ];
 

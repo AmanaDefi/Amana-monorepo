@@ -52,8 +52,6 @@ export default function AccountProvider({ children }: PropsWithChildren) {
             ? "About"
             : route === "/leaderboard"
               ? "Leaderboard"
-              : route === "/roadmap"
-                ? "Roadmap"
                 : route;
 
     if (!hasTrackedPage) {

@@ -27,6 +27,7 @@ export const InfoBlock = ({
           { "-left-[130px] ": isMiddle },
           { "-left-2 ": isLeft },
         )}
+        
       >
         <InfoPopup isRight={isRight} isMiddle={isMiddle} isLeft={isLeft}>
           {children}

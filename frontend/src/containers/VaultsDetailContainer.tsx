@@ -26,7 +26,7 @@ import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
 import ChartDropdown from "@/components/VaultsDetailsWrapper/components/ChartDropdown";
 
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import InvestBlock from "@/components/InvestBlock";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
