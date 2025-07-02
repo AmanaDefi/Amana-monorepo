@@ -26,7 +26,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   BTC: "/bitcoin_logo.png",
   CBBTC: "/cbbtc.png",
   ETH: "/ETH.png",
-  SOL: "/solana_logo.png",
+  SOL: "/solana.png",
   POL: "/polygon_logo.png",
   AVAX: "/avalanche-avax-logo.png",
   BNB: "/bnb-bnb-logo.png",
@@ -220,7 +220,7 @@ export enum MulticallVersion {
   V3 = 3,
 }
 
-const solanaChain = {
+export const solanaChain = {
   id: CHAIN_ID.solana,
   name: deployEnv === "testnet" ? "devnet" : "mainnet",
   shortName: "sol",

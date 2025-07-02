@@ -1,6 +1,7 @@
 import React, { HTMLProps } from "react";
 import clsx from "clsx";
 import { useNumberInput } from "@/hooks/useNumberInput";
+import { checkAmount } from "@/utils/utils";
 
 export type InputNumberProps = {
   value: string;
@@ -21,6 +22,16 @@ export default function InputNumber({
     onFocus,
     onBlur,
   });
+
+  const handleAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const amountString = e.target.value;
+    const newAmount = checkAmount(amountString, value);
+    if (newAmount !== "" && !newAmount) {
+      return;
+    } else {
+      onChange(e);
+    }
+  };
 
   return (
     <input

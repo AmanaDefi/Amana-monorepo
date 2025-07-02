@@ -111,7 +111,7 @@ export const ZRC20_TOKENS_BY_ADDRESS: { [address: string]: Token } = {
     symbol: "SOL.SOL",
     address: ZC_SOL_SOL_ADDRESS,
     decimals: 9,
-    imgURL: "/solana_logo.png",
+    imgURL: "/solana.png",
     price: 1,
     balance: EMPTY_BALANCE,
     isNative: false,
