@@ -41,6 +41,11 @@ export default function ChainTokenSelector({
   const currentChain = selectedChainFromModal || selectedChain;
   const currentToken = selectedToken;
 
+  const availableTokens = useMemo(() => {
+    if (!chain) return [];
+    return APPROVED_TOKENS[chain.id];
+  }, [chain]);
+
   if (!currentChain) {
     return (
       <div className={`flex items-center opacity-50 ${className}`}>
@@ -67,11 +72,6 @@ export default function ChainTokenSelector({
       );
     }
   };
-
-  const availableTokens = useMemo(() => {
-    if (!chain) return [];
-    return APPROVED_TOKENS[chain.id];
-  }, [chain]);
 
   const tokenOptions = availableTokens.map((token) => {
     return {

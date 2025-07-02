@@ -11,6 +11,7 @@ import PointsIcon from "./svg/PointsIcon";
 import { getPointsInfo } from "@/utils/helpers";
 
 import Image from "next/image";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
 
 type Props = {
