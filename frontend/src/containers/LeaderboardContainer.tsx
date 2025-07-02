@@ -1,23 +1,21 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SearchParams } from "@/types/types";
 import SearchIcon from "@/components/svg/Search";
 import { InfoBlock } from "@/components/VaultsWrapper/components/InfoBlock.tsx";
 import Button from "@/components/common/Button";
 import TopUsers from "@/components/LeaderboardWrapper/components/TopUsers";
 import RegularUsers from "@/components/LeaderboardWrapper/components/RegularUsers";
+import { useLeaderboardStore } from "@/store/leaderboardStore";
+import { useWallets } from "@privy-io/react-auth";
+import { ZERO_ACCOUNT } from "@/constants";
+// import { useLeaderboardData } from "@/hooks/useLeaderboardData"; // Uncomment when the API is ready
 
-const initialSearchParams = {
-  userAddress: "",
-  page: 1,
-  perPage: 8,
-};
-
-type LeaderboardTabType = "all-time" | "daily" | "weekly" | "monthly";
-
-const leaderboardTabs: { id: LeaderboardTabType; label: string }[] = [
+const leaderboardTabs: {
+  id: "all-time" | "daily" | "weekly" | "monthly";
+  label: string;
+}[] = [
   { id: "all-time", label: "All Time" },
   { id: "daily", label: "Daily" },
   { id: "weekly", label: "Weekly" },
@@ -120,25 +118,32 @@ const LoadingRow = () => (
 );
 
 export default function LeaderboardContainer() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeLeaderboardTab, setActiveLeaderboardTab] =
-    useState<LeaderboardTabType>("all-time");
-  const [searchParams, setSearchParams] =
-    useState<SearchParams>(initialSearchParams);
-  
-  // const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
+  const {
+    searchTerm,
+    activeTab,
+    searchParams,
+    setSearchTerm,
+    handleSearch,
+    handlePageChange,
+    handleTabChange,
+  } = useLeaderboardStore();
+
+  const { wallets } = useWallets();
+  const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
+
+  // Коли API буде готовий, розкоментуйте цей блок:
   // const {
   //   data: leaderboardData,
   //   isLoading,
   //   error,
   // } = useLeaderboardData(searchParams);
 
-  // Temporary hardcoded data for styling
+  // Тимчасові дані для стилізації
   const leaderboardData = {
     data: [
       {
         position: 1,
-        user_address: "0x5095a40f8c4257124679a9659d3c6b2a8e123456",
+        user_address: "0x5095a40f8c4257124679a9659d3c6b2a8e123456 ",
         points: 125000,
         username: "CryptoKing",
       },
@@ -168,21 +173,21 @@ export default function LeaderboardContainer() {
       },
       {
         position: 6,
-        user_address: "0x3456c60f0e6479346890c2345d8e5f6g0h345678",
-        points: 87200,
-        username: "VaultHero",
+        user_address: "0x3456c60f0e6479346890c2345d8e5f6g0h345679",
+        points: 54300,
+        username: "StakeHolder",
       },
       {
         position: 7,
-        user_address: "0x9012d70g1f7580457901d3456e9f6g7h1i901234",
-        points: 76300,
-        username: "TokenWhale",
+        user_address: "0x9012d70g1f7580457901d3456e9f6g7h1i901235",
+        points: 43200,
+        username: "LiquidityPro",
       },
       {
         position: 8,
-        user_address: "0x5678e80h2g8691568012e4567f0g7h8i2j567890",
-        points: 65400,
-        username: "YieldFarmer",
+        user_address: "0x5678e80h2g8691568012e4567f0g7h8i2j567891",
+        points: 32100,
+        username: "DeFiExplorer",
       },
     ],
     total_records: 8,
@@ -197,14 +202,6 @@ export default function LeaderboardContainer() {
 
   const totalPages = Math.ceil(totalItems / searchParams.perPage);
 
-  const handleSearch = useCallback(() => {
-    setSearchParams((prev: SearchParams) => ({
-      ...prev,
-      page: 1,
-      userAddress: searchTerm,
-    }));
-  }, [searchTerm]);
-
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
@@ -212,17 +209,6 @@ export default function LeaderboardContainer() {
       }
     },
     [handleSearch],
-  );
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setSearchParams((prev) => ({ ...prev, page: newPage }));
-  }, []);
-
-  const handleLeaderboardTabChange = useCallback(
-    (tabId: LeaderboardTabType) => {
-      setActiveLeaderboardTab(tabId);
-    },
-    [],
   );
 
   const PaginationControls = () => (
@@ -285,12 +271,12 @@ export default function LeaderboardContainer() {
             >
               <Button
                 variant="signIn"
-                onClick={() => handleLeaderboardTabChange(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`
                   !font-bold !text-[18px] !tracking-[-0.06em] !transition-all !duration-200
                   !px-3 !py-[6px] !rounded-lg !whitespace-nowrap !h-auto !w-auto 
                   ${
-                    activeLeaderboardTab === tab.id
+                    activeTab === tab.id
                       ? "!text-white !border !border-[#1B46E0] ![background:linear-gradient(139deg,#14171f_0%,#14171f_55%,rgba(27,70,224,0.25)_70%,rgba(27,70,224,0.5)_90%,#1b46e0_120%)!important] hover:![background:linear-gradient(139deg,#14171f_0%,#14171f_55%,rgba(27,70,224,0.25)_70%,rgba(27,70,224,0.5)_90%,#1b46e0_120%)!important]"
                       : "!text-[#535E73] hover:!text-white !border-transparent !bg-transparent !font-bold hover:!border hover:!border-[#1B46E0] hover:![background:linear-gradient(139deg,#14171f_0%,#14171f_55%,rgba(27,70,224,0.25)_70%,rgba(27,70,224,0.5)_90%,#1b46e0_120%)!important]"
                   }
@@ -349,7 +335,7 @@ export default function LeaderboardContainer() {
         }}
         variants={itemVariants}
       >
-        <div className="">
+        <div>
           {/* Header */}
           <motion.div
             className="grid grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-8 py-3 text-[#9A9CB3] text-lg font-normal mb-6"
