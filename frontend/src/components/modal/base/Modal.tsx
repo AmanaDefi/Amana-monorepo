@@ -1,6 +1,8 @@
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Fragment, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Footer from "@/components/Footer";
+import GlowIcon from "@/components/svg/GlowIcon";
 
 type ModalProps = {
   isOpen: boolean;
@@ -38,11 +40,15 @@ export const Modal = ({
               className={`fixed h-[100vh] inset-0 ${
                 noBlur
                   ? "bg-transparent"
-                  : "bg-[rgba(12,16,21,0.5)] backdrop-blur-[10px]"
+                  : "md:bg-[rgba(12,16,21,0.5)] md:backdrop-blur-[10px] bg-[#0C1015]"
               }`}
-            />
-
-            <div className="fixed inset-0 flex h-[100vh] items-center justify-center p-4">
+            >
+              <div className="md:hidden">
+                <GlowIcon position="top-mobile" />
+                <GlowIcon position="bottom-mobile" />
+              </div>
+            </motion.div>
+            <div className="fixed inset-0 flex flex-col h-[100vh] md:items-center md:justify-center justify-between items-center pt-10 p-4">
               <DialogPanel as={Fragment}>
                 <motion.div
                   key="modal"
@@ -60,6 +66,9 @@ export const Modal = ({
                   <div className={paddingClass}>{children}</div>
                 </motion.div>
               </DialogPanel>
+              <div className="block md:hidden mb-3">
+                <Footer isConnected={false} />
+              </div>
             </div>
           </div>
         </Dialog>

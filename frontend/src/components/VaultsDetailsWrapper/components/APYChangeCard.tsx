@@ -14,7 +14,7 @@ export default function APYChangeCard({
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <span>Implemented APY Change</span>
-          <span className="font-bold text-sm">0.00 %</span>
+          <span className="font-medium text-sm">0.00 %</span>
         </div>
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1">
@@ -27,7 +27,7 @@ export default function APYChangeCard({
             </InfoBlock>
           </div>
 
-          <span className="font-bold text-sm">${minReceived}</span>
+          <span className="font-medium text-sm">${minReceived}</span>
         </div>
       </div>
       {/* <p className="text-[12px] text-[#535E73] mt-4">

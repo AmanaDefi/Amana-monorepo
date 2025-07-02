@@ -6,6 +6,7 @@ import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { getOnlyTokenSymbol } from "@/utils/utils";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -16,6 +17,7 @@ interface ChainTokenSelectorProps {
   onClick?: () => void;
   onSelectChain: ((chain: Chain) => void) | undefined;
   onSelectChainAndToken: ((chain: Chain, token: Token) => void) | undefined;
+  isFromTopUp?: boolean;
 }
 
 export default function ChainTokenSelector({
@@ -27,9 +29,11 @@ export default function ChainTokenSelector({
   onClick,
   onSelectChain,
   onSelectChainAndToken,
+  isFromTopUp = false,
 }: ChainTokenSelectorProps) {
   const { selectedChainFromModal, selectedTokenFromModal, openModal } =
     useChainTokenModalStore();
+  const { setStep } = useFundWalletStore();
 
   const currentChain = selectedChainFromModal || selectedChain;
   const currentToken = selectedToken;
@@ -47,15 +51,18 @@ export default function ChainTokenSelector({
   ) => {
     e.preventDefault();
     e.stopPropagation();
-
-    openModal(
-      currentChain,
-      currentToken ?? null,
-      onSelectChain,
-      onSelectChainAndToken,
-      vaultData,
-      false,
-    );
+    if (isFromTopUp) {
+      setStep("selectChain");
+    } else {
+      openModal(
+        currentChain,
+        currentToken ?? null,
+        onSelectChain,
+        onSelectChainAndToken,
+        vaultData,
+        false,
+      );
+    }
   };
 
   return (
