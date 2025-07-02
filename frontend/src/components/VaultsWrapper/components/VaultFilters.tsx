@@ -217,17 +217,6 @@ export const VaultFilters: FC<Props> = ({
                 onBlur={() => setIsHiddenFilterButton(false)}
                 onChange={(e) => setLocalSearch(e.target.value)}
               />
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder={!isHiddenFilterButton ? "Search" : "Search"}
-                maxLength={100}
-                className="text-white lg:hidden focus:outline-none bg-transparent w-full"
-                value={localSearch}
-                onFocus={() => setIsHiddenFilterButton(true)}
-                onBlur={() => setIsHiddenFilterButton(false)}
-                onChange={(e) => setLocalSearch(e.target.value)}
-              />
             </>
             <div className="absolute left-4 top-3">
               <SearchIcon />

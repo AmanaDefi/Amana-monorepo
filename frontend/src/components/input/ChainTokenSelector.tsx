@@ -6,6 +6,7 @@ import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { getOnlyTokenSymbol } from "@/utils/utils";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -14,6 +15,9 @@ interface ChainTokenSelectorProps {
   className?: string;
   vaultData?: VaultData;
   onClick?: () => void;
+  onSelectChain: ((chain: Chain) => void) | undefined;
+  onSelectChainAndToken: ((chain: Chain, token: Token) => void) | undefined;
+  isFromTopUp?: boolean;
 }
 
 export default function ChainTokenSelector({
@@ -23,12 +27,16 @@ export default function ChainTokenSelector({
   className = "",
   vaultData,
   onClick,
+  onSelectChain,
+  onSelectChainAndToken,
+  isFromTopUp = false,
 }: ChainTokenSelectorProps) {
-  const { selectedChainFromModal, selectedTokenFromModal } =
+  const { selectedChainFromModal, selectedTokenFromModal, openModal } =
     useChainTokenModalStore();
+  const { setStep } = useFundWalletStore();
 
   const currentChain = selectedChainFromModal || selectedChain;
-  const currentToken = selectedTokenFromModal || selectedToken;
+  const currentToken = selectedToken;
 
   if (!currentChain) {
     return (
@@ -38,10 +46,29 @@ export default function ChainTokenSelector({
     );
   }
 
+  const handleOpenModal = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFromTopUp) {
+      setStep("selectChain");
+    } else {
+      openModal(
+        currentChain,
+        currentToken ?? null,
+        onSelectChain,
+        onSelectChainAndToken,
+        vaultData,
+        false,
+      );
+    }
+  };
+
   return (
     <div className={`relative ${className}`}>
       <button
-        onClick={onClick}
+        onClick={(e) => handleOpenModal(e)}
         className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
         {currentToken ? (

@@ -2014,6 +2014,7 @@ export const getPerformanceFee = async (
   chainId: number,
   activeWallet: ConnectedWallet,
 ) => {
+  console.log(chainId, 'getPerformanceFee')
   const publicClient = await getPublicClient(activeWallet, chainId);
   if (!publicClient) return 1;
   const abi = [

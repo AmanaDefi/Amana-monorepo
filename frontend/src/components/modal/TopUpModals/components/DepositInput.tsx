@@ -12,8 +12,14 @@ import { EMPTY_BALANCE } from "@/utils/helpers";
 import { format, getERC20TokenBalance } from "@/utils/utils";
 import { useWallets } from "@privy-io/react-auth";
 import clsx from "clsx";
-import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
-import { formatEther } from "viem";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import { Chain, formatEther } from "viem";
 
 export const DepositInput = ({
   setError,
@@ -30,42 +36,46 @@ export const DepositInput = ({
     currency,
     activeConnector,
     walletAddress,
+    setChain,
   } = useFundWalletStore();
   const selectedTokenPrice = useTokenPriceBySymbol(currency?.symbol);
   const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
-  const {wallets} = useWallets();
+  const { wallets } = useWallets();
   const activeWallet = wallets[0];
 
-  const fetchTokenBalance = useCallback(async (token: Token) => {
-    if (walletAddress && token && chain) {
-      let balance = EMPTY_BALANCE;
-      if (token.isNative) {
-        const publicClient = await getPublicClient(activeWallet, chain.id);
-        if (!publicClient) return;
+  const fetchTokenBalance = useCallback(
+    async (token: Token) => {
+      if (walletAddress && token && chain) {
+        let balance = EMPTY_BALANCE;
+        if (token.isNative) {
+          const publicClient = await getPublicClient(activeWallet, chain.id);
+          if (!publicClient) return;
 
-        const balanceInEth = await publicClient.getBalance({
-          address: walletAddress,
-        });
+          const balanceInEth = await publicClient.getBalance({
+            address: walletAddress,
+          });
 
-        const formattedBalance = formatEther(balanceInEth);
-        balance = { formatted: formattedBalance, value: balanceInEth };
-      } else {
-        const { balance: ercBalance, decimals } = await getERC20TokenBalance(
-          walletAddress,
-          token.address,
-          chain,
-          activeWallet
-        );
+          const formattedBalance = formatEther(balanceInEth);
+          balance = { formatted: formattedBalance, value: balanceInEth };
+        } else {
+          const { balance: ercBalance, decimals } = await getERC20TokenBalance(
+            walletAddress,
+            token.address,
+            chain,
+            activeWallet,
+          );
 
-        balance = {
-          value: ercBalance,
-          formatted: format(ercBalance, decimals),
-        };
+          balance = {
+            value: ercBalance,
+            formatted: format(ercBalance, decimals),
+          };
+        }
+
+        setTokenBalance(balance);
       }
-
-      setTokenBalance(balance);
-    }
-  }, [walletAddress, chain, activeWallet]);
+    },
+    [walletAddress, chain, activeWallet],
+  );
 
   useEffect(() => {
     setTokenBalance(EMPTY_BALANCE);
@@ -114,6 +124,11 @@ export const DepositInput = ({
     }
   };
 
+  const onSelectChainAndToken = (chain: Chain, token: Token) => {
+    onTokenSelect(token);
+    setChain(chain);
+  };
+
   const usdValue = Number(tokenBalance?.formatted ?? 0) * selectedTokenPrice;
   return (
     <div>
@@ -150,6 +165,8 @@ export const DepositInput = ({
                 selectedChain={chain}
                 onSelectToken={onTokenSelect}
                 className="justify-end flex min-w-[150px]"
+                onSelectChain={(chain: Chain) => setChain(chain)}
+                onSelectChainAndToken={onSelectChainAndToken}
               />
             </div>
           </div>

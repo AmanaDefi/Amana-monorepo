@@ -149,13 +149,7 @@ const ChainSwitcher: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
         data-tooltip-id="chain-switcher-tooltip"
-        // data-tooltip-content={
-        //   wallet?.type === "eoa"
-        //     ? "Switch network"
-        //     : wallet?.type === "sca"
-        //       ? "Connect EOA wallet for change chain"
-        //       : "Connect wallet to switch networks"
-        // }
+        data-tooltip-content={"Switch network"}
       >
         <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
           <Image
