@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { usePathname } from "next/navigation";
 import ProfileDropdownIcon from "./svg/ProfileDropdownIcon";
 import CheckIcon from "./svg/CheckIcon";
 import CopyIcon from "./svg/CopyIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { LogOutIcon } from "./svg/sidebar/LogOutIcon";
+
 
 interface MenuItem {
   label: string;
@@ -108,7 +109,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     }
   }, [walletAddress, isOpen, onClose]);
 
-  const dropdownVariants = {
+  const dropdownVariants: Variants = {
     hidden: {
       opacity: 0,
       y: -10,

@@ -1,5 +1,5 @@
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   TransactionStepMessages,
   TransactionStepStatus,
@@ -93,7 +93,7 @@ const getStepState = (
   return "pending";
 };
 
-const stepVariants = {
+const stepVariants: Variants = {
   pending: {
     scale: 1,
     opacity: 0.7,
@@ -104,7 +104,7 @@ const stepVariants = {
     opacity: 1,
     x: 0,
     transition: {
-      type: "spring" as const,
+      type: "spring",
       stiffness: 300,
       damping: 20,
     },
@@ -122,7 +122,7 @@ const stepVariants = {
     opacity: 1,
     x: 0,
     transition: {
-      type: "spring" as const,
+      type: "spring",
       stiffness: 400,
       damping: 25,
     },
@@ -140,7 +140,7 @@ const stepVariants = {
   },
 };
 
-const highlightVariants = {
+const highlightVariants: Variants = {
   hidden: {
     opacity: 0,
     scale: 0.95,
@@ -156,7 +156,7 @@ const highlightVariants = {
   },
 };
 
-const progressVariants = {
+const progressVariants: Variants = {
   initial: { width: "0%" },
   animate: (progress: number) => ({
     width: `${progress}%`,
@@ -343,7 +343,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{
-                          type: "spring" as const,
+                          type: "spring",
                           stiffness: 400,
                           damping: 20,
                         }}

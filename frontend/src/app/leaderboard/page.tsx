@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { Address } from "viem";
 import LeaderboardContainer from "@/containers/LeaderboardContainer";
 import PodiumBlock from "@/components/LeaderboardWrapper/components/PodiumBlock";
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -17,7 +17,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: {
     opacity: 0,
     y: 10,
@@ -28,12 +28,12 @@ const itemVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring" as const,
+      type: "spring",
       stiffness: 300,
       damping: 25,
     },
   },
-} as const;
+};
 
 export default function Page() {
   const topUsers = [
