@@ -75,22 +75,22 @@ abstract contract AmanaVaultBase is
 
     // Transaction type identifiers (simulate enum)
     bytes32 internal constant TX_DEPOSIT_INITIATED =
-        keccak256("DepositInitiated");
+        keccak256("DepositInitiated"); // 0xf866f3240a23781df215edb9db220e56c77241c8a1627af6edc5d87877b7af10
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
-        keccak256("DepositConfirmed");
+        keccak256("DepositConfirmed"); // 0x782d11976f990fc98f6baa859e0ca32be1f057564961da9c94a318cb9975a255
     bytes32 internal constant TX_WITHDRAW_INITIATED =
-        keccak256("WithdrawInitiated");
+        keccak256("WithdrawInitiated"); // 0x0282f521c69b2bc696552b9e141009d3c84f2df75e2e7b7716644d31e60f23b1
     bytes32 internal constant TX_WITHDRAW_CONFIRMED =
-        keccak256("WithdrawConfirmed");
+        keccak256("WithdrawConfirmed"); // 0x7a5775814269eec48efc6bfaf9097b87c7f5dc8298cbbbd8003a741bd2004709
     bytes32 internal constant TX_SWITCH_CONFIRMED =
-        keccak256("SwitchConfirmed");
+        keccak256("SwitchConfirmed"); // 0x4a799410cad8b73af71c25102e20b9dd32bceaf107c437ac509da47fef0e50b7
     bytes32 internal constant TX_DEPOSIT_REVERTED =
-        keccak256("DepositReverted");
+        keccak256("DepositReverted"); // 0x234277bc4e8f38a87a539fcfac6b77c91276b9db6b46c7adbcb21c86f10a428f
     bytes32 internal constant TX_WITHDRAW_REVERTED =
-        keccak256("WithdrawReverted");
-    bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted");
+        keccak256("WithdrawReverted"); // 0xf37792b058d51910ef816afd8a02206346420c1dbc05414546919983727e8d37
+    bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted"); // 0x4d5884c4e745df39a8cb06755ef08f97ef99c034d9a6b2197e20f49e1b539b50
     bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
-        keccak256("TotalAssetsUpdate");
+        keccak256("TotalAssetsUpdate"); // 0x1a5eb25eae3505c87bde113e8a522aeef51796f8b20ec0f3bd218813b8ac35d2
 
     mapping(uint256 => bytes) public swapDataByNonce;
 
@@ -134,6 +134,21 @@ abstract contract AmanaVaultBase is
     );
 
     event TotalAssetsUpdated(uint256 totalAssets, uint256 vaultNonce);
+
+    event InvestConfirmFailed(
+        uint256 indexed vaultNonce,
+        uint256 totalAssetsAfter
+    );
+    event ReturnFundsFromStrategyFailed(
+        uint256 indexed vaultNonce,
+        uint256 withdrawnAmount,
+        uint256 totalAssetsAfter
+    );
+
+    event SendTotalUnderlyingAssetsFailed(
+        uint256 indexed vaultNonce,
+        uint256 totalAssetsAfter
+    );
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -502,7 +517,6 @@ abstract contract AmanaVaultBase is
                     recipient,
                     txn.withdrawZRC20,
                     outputAmount,
-                    registry,
                     vaultNonce
                 );
         }

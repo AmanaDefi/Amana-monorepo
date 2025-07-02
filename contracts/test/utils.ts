@@ -19,7 +19,7 @@ const WHALE_ADDRESSES: Record<string, string> = {
   "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d":
     "0x8894E0a0c962CB723c1976a4421c95949bE2D4E3",
   // USDT BNB
-  "0x55d398326f99059fF775485246999027B3197955":
+  "0x55d398326f99059ff775485246999027b3197955":
     "0xfD5840Cd36d94D7229439859C0112a4185BC0255",
 };
 
@@ -71,9 +71,6 @@ export async function setTokenBalance(
 
   // Check if the balance was successfully set
   const newBalance = await token.balanceOf(account);
-  console.log(
-    `[setTokenBalance] New balance for ${tokenAddress} at ${account}: ${newBalance.toString()}`
-  );
   if (newBalance.isZero() && WHALE_ADDRESSES[tokenAddress]) {
     console.warn(`[setTokenBalance] Storage set failed. Falling back to whale transfer for ${tokenAddress}`);
 
@@ -205,7 +202,7 @@ export async function simulateRevertCallToStrategy(
     ["uint8", "uint256", "uint256", "address", "uint256"], // Matches Solidity decode for Revert tx
     [TxType.Revert, 0, 0, ethers.constants.AddressZero, vaultNonce]
   );
-
+  console.log("Revert message:", revertMessage);
   const tx = await strategy.connect(gatewaySigner).onCall(
     {
       sender: vaultAddress,
@@ -554,6 +551,12 @@ export function isConvexStrategy(name: string): boolean {
     "ConvexERC20Strategy",
     "ConvexERC20StrategyArbitrum",
     "ConvexEthStrategyArbitrum"
+  ].includes(name);
+}
+
+export function isAegisStrategy(name: string): boolean {
+  return [
+    "AegisERC20Strategy"
   ].includes(name);
 }
 

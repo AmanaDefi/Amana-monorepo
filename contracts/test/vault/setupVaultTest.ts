@@ -9,6 +9,7 @@ import { swap } from "codemelt-retro-api-sdk/functional/api";
 import api from "codemelt-retro-api-sdk";
 import type { IConnection } from "codemelt-retro-api-sdk"; import axios from "axios";
 import { formatUnits } from "ethers/lib/utils";
+import { withdraw } from "codemelt-retro-api-sdk/functional/api/venft";
 
 const ZEVM_GATEWAY_ADDRESS = "0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E";
 const PYTH_CONTRACT_ADDRESS = "0x2880aB155794e7179c9eE2e38200202908C17B43";
@@ -17,7 +18,7 @@ export async function setupVaultFixture() {
   const config = vaultTestMatrix[0]; // ⬅️ use just the first config
 
   const { vaultConfig, strategyConfig, txConfig } = config;
-  const FORK_BLOCK_NUMBER = 8736520;
+  const FORK_BLOCK_NUMBER = 9006264;
   await network.provider.request({
     method: "hardhat_reset",
     params: [
@@ -54,7 +55,8 @@ export async function setupVaultFixture() {
 
   const treasury = await deployAndLog("Treasury", [owner.address]);
   const withdrawalReceiver = await deployAndLog("WithdrawalReceiver", [owner.address])
-  const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS]);
+  const priceOracle = await deployAndLog("PriceOracle", [PYTH_CONTRACT_ADDRESS,
+    ethers.constants.AddressZero]); // this is only used on SwapHelperEthereum, for Stork address
   const SwapHelperFactory = await ethers.getContractFactory("SwapHelperZetachain", owner);
 
   const swapHelper = await upgrades.deployProxy(
@@ -71,7 +73,19 @@ export async function setupVaultFixture() {
   await swapHelper.deployed();
   console.log("✅ SwapHelperZetachain deployed at:", swapHelper.address);
   const gasTank = await deployAndLog("GasTank", []);
-  const withdrawHelper = await deployAndLog("WithdrawHelper", [ZEVM_GATEWAY_ADDRESS]);
+  const WithdrawHelperFactory = await ethers.getContractFactory("WithdrawHelper", owner);
+
+  const withdrawHelper = await upgrades.deployProxy(
+    WithdrawHelperFactory,
+    [
+      ZEVM_GATEWAY_ADDRESS,
+      ethers.constants.AddressZero // this will be set later
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups",
+    }
+  );
   const zapContract = await deployAndLog("ZapContract", [], owner);
   const amanaRegistry = await deployAndLog("AmanaRegistry", [
     gasTank.address,
@@ -81,6 +95,8 @@ export async function setupVaultFixture() {
     swapHelper.address,
     zapContract.address,
   ]);
+  withdrawHelper.setRegistry(amanaRegistry.address);
+
   await zapContract.updateRegistryAddress(amanaRegistry.address);
 
   const Vault = await ethers.getContractFactory("AmanaConnectedChainVaultV1", owner);

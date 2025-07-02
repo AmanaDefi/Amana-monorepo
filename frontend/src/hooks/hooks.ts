@@ -12,8 +12,11 @@ import {
   calculateConvexArbitrumRewardsAPY,
   calculateCombinedBalancerAPY,
   fetchReceiptTokens,
+  fetchAegisAPR,
+  fetchYieldFiAPY,
+  fetchNoonCapitalAPY,
+
   fetchTotalAssets,
-  fetchUserVaultMaxRedeem,
   fetchUserVaultMaxWithdraw,
   fetchUserVaultBalance,
 } from "@/actions/actions";
@@ -546,12 +549,14 @@ export const useUpdateAPYs = (
                   activeAccount
                 );
               } else if (vault.protocol.name === "ZeroLend") {
-                APY7d = await calculateAaveAPY(
-                  receiptTokenAddress as Address,
-                  strategyChain,
-                  activeAccount
-                );
-              } else if (vault.protocol.name === "Compound") {
+                APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain, activeAccount);
+              } else if (vault.protocol.name === "Aegis") {
+                APY7d = await fetchAegisAPR();
+               } else if (vault.protocol.name === "YieldFi") {
+                 APY7d = await fetchYieldFiAPY();
+               } else if (vault.protocol.name === "NoonCapital") {
+                 APY7d = await fetchNoonCapitalAPY();
+               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
@@ -564,17 +569,8 @@ export const useUpdateAPYs = (
                   51,
                 );
                 APY7d = APY7d + RewardsAPY;
-              } else if (
-                vault.protocol.name === "Moonwell" ||
-                vault.protocol.name === "Euler" ||
-                vault.protocol.name === "Fluid"
-              ) {
-                // TO DO This only works for Base right now - it's hardcoded
-
-                APY7d = await calculateMoonwellAPY(
-                  receiptTokenAddress as Address,
-                  strategyChain,
-                );
+              } else if (vault.protocol.name === "Moonwell" || vault.protocol.name === "Euler" || vault.protocol.name === "Fluid") {
+                APY7d = await calculateMoonwellAPY(receiptTokenAddress as Address, strategyChain);
               } else if (vault.protocol.name === "Venus") {
                 APY7d = await calculateVenusAPY(
                   receiptTokenAddress as Address,
@@ -639,11 +635,6 @@ export const useUpdateAPYs = (
                       activeAccount
                     );
                   }
-                } else {
-                  console.warn(
-                    "Skipping Curve rewards APY due to missing token prices",
-                    { crvTokenPrice, ethTokenPrice },
-                  );
                 }
                 APY7d = RewardsAPY;
               }
@@ -656,7 +647,6 @@ export const useUpdateAPYs = (
                 ], //mocked
               };
             } catch (error) {
-              console.error(`Error fetching APY for vault ${vault.id}:`, error);
               return { vaultId: vault.id, APY7d: 0 };
             }
           }),
@@ -675,7 +665,6 @@ export const useUpdateAPYs = (
       }
     };
 
-    // Trigger the function if vaults and prices are available
     if (
       vaults &&
       vaults.length > 0 &&
@@ -724,30 +713,22 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
-    // Normalize the symbol format:
-    // Convert "USDC (ETH)" to "USDC.ETH" format for price lookup
-    const normalizedSymbol = symbol.includes("(")
-      ? symbol.replace(/\s*\((.*?)\)\s*/, ".$1")
-      : symbol;
+    const normalizedSymbol = symbol.includes('(') ?
+      symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
 
-    // Try to find price using normalized symbol first
-    const fullSymbolPrice =
-      priceContext.prices?.[normalizedSymbol.toUpperCase()];
+    const fullSymbolPrice = priceContext.prices?.[normalizedSymbol.toUpperCase()];
     if (fullSymbolPrice !== undefined) {
       return fullSymbolPrice;
     }
 
-    // If full symbol price not found, check if it's a stablecoin by checking the base symbol
-    // For both formats: "USDC (ETH)" -> "USDC" and "USDC.ETH" -> "USDC"
-    const baseSymbol = symbol.includes("(")
-      ? symbol.split(" (")[0].toUpperCase()
-      : getOnlyTokenSymbol(symbol).toUpperCase();
+    const baseSymbol = symbol.includes('(') ?
+      symbol.split(' (')[0].toUpperCase() :
+      getOnlyTokenSymbol(symbol).toUpperCase();
 
     if (baseSymbol === "USDC" || baseSymbol === "USDT") {
       return 1;
     }
 
-    // Fallback to base symbol if full symbol price not found
     return priceContext.prices?.[baseSymbol] ?? 0;
   }, [priceContext, symbol]);
 }

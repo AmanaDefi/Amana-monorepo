@@ -13,59 +13,112 @@ import { CHAIN_ID } from "@/constants/chainConfig";
 
 const SEED = 'meta';
 
-export const createSolanaDepositTx = async (payer: PublicKey, amount: number, recipient: string, program: anchor.Program) => {
+// Helper function to convert Uint8Array to Buffer without changing length
+const formatMessage = (data: Uint8Array): Buffer => {
+  return Buffer.from(data);  // Just convert type, preserve original length
+};
+
+// Helper function to ensure receiver is exactly 20 bytes
+const formatReceiver = (recipient: string): Uint8Array => {
+  const bytes = ethers.getBytes(recipient);
+  const buffer = new Uint8Array(20);
+  if (bytes.length <= 20) {
+    buffer.set(bytes, 0);
+  } else {
+    buffer.set(bytes.slice(0, 20), 0);
+  }
+  return buffer;
+};
+
+// RevertOptions type definition - Anchor handles camelCase to snake_case conversion
+export interface RevertOptions {
+  revertAddress: PublicKey;       // pubkey
+  abortAddress: Uint8Array;       // array [u8, 20]
+  callOnRevert: boolean;          // bool
+  revertMessage: Buffer;          // bytes
+  onRevertGasLimit: anchor.BN;    // u64
+}
+
+export const createSolanaDepositTx = async (payer: PublicKey, amount: number, recipient: string, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
     program.programId
   );
-  const ix = await program.methods
-    .deposit(
-      new anchor.BN(amount),
-      ethers.getBytes(recipient)
-    ).accounts({
-      pda: pdaAccount,
-      signer: payer,
-      systemProgram: SystemProgram.programId
-    }).instruction();
+  
+  try {
+    const ix = await program.methods
+      .deposit(
+        new anchor.BN(amount),
+        formatReceiver(recipient),
+        revertOptions
+      ).accounts({
+        signer: payer,
+        pda: pdaAccount,
+        systemProgram: SystemProgram.programId
+      }).instruction();
 
-  console.log({ ix })
-  return ix;
+    return ix;
+  } catch (error) {
+    throw error;
+  }
 }
 
-export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: number, recipient: string, args: any, program: anchor.Program) => {
+export const createSolanaDepositAndCallTx = async (payer: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, "utf-8")];
   const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     seeds,
     program.programId
   );
-  const message = Buffer.from(
-    getBytes(
-      new AbiCoder().encode(args.types, args.values)
-    )
+
+  const encodedData = getBytes(new AbiCoder().encode(args.types, args.values));
+  const message = formatMessage(encodedData);
+  
+  try {
+    const ix = await program.methods
+      .depositAndCall(
+        new anchor.BN(amount),
+        formatReceiver(recipient),
+        message,
+        revertOptions
+      ).accounts({
+        signer: payer,
+        pda: pdaAccount,
+        systemProgram: SystemProgram.programId
+      }).instruction();
+
+    return ix;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
+  const seeds = [Buffer.from(SEED, "utf-8")];
+  const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+    seeds,
+    program.programId
   );
+
+  const encodedData = getBytes(new AbiCoder().encode(args.types, args.values));
+  const message = formatMessage(encodedData);
+  
   const ix = await program.methods
-    .depositAndCall(
-      new anchor.BN(amount),
-      ethers.getBytes(recipient),
-      message
+    .call(
+      formatReceiver(recipient),
+      message,
+      revertOptions 
     ).accounts({
-      pda: pdaAccount,
-      signer: payer,
-      systemProgram: SystemProgram.programId
+      signer: payer
     }).instruction();
 
   return ix;
-}
+};
 
-export const createSolanaWithdrawalTx = async (payer: PublicKey, recipient: string, args: any, program: anchor.Program) => {
-  return await createSolanaDepositAndCallTx(payer, 1, recipient, args, program);
-}
-
-export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, program: anchor.Program) => {
+export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: PublicKey, amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null, program: anchor.Program) => {
   const seeds = [Buffer.from(SEED, 'utf-8')];
   const whiteListEntrySeeds = [Buffer.from("whitelist", 'utf-8'), mint.toBytes()]
-  const whiteListEntry = anchor.web3.PublicKey.findProgramAddressSync(
+  const [whiteListEntry] = anchor.web3.PublicKey.findProgramAddressSync(
     whiteListEntrySeeds,
     program.programId
   )
@@ -75,26 +128,34 @@ export const createDepositSplTokenAndCallTx = async (payer: PublicKey, mint: Pub
   );
   const from = getAssociatedTokenAddressSync(mint, payer);
   const to = getAssociatedTokenAddressSync(mint, pdaAccount, true);
-  const message = Buffer.from(getBytes(new AbiCoder().encode(args.types, args.values)));
 
-  const ix = await program.methods
-    .depositSplTokenAndCall(
-      new anchor.BN(amount),
-      ethers.getBytes(recipient),
-      message
-    ).accounts({
-      pda: pdaAccount,
-      signer: payer,
-      whiteListEntry,
-      mintAccount: mint,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      from,
-      to,
-      systemProgram: SystemProgram.programId
-    }).instruction();
+  const encodedData = getBytes(new AbiCoder().encode(args.types, args.values));
+  const message = formatMessage(encodedData);
 
-  return ix;
+  try {
+    const ix = await program.methods
+      .depositSplTokenAndCall(
+        new anchor.BN(amount),
+        formatReceiver(recipient),
+        message,
+        revertOptions  
+      )
+      .accounts({
+        signer: payer,
+        pda: pdaAccount,
+        whitelistEntry: whiteListEntry,
+        mintAccount: mint,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        from,
+        to,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+
+    return ix;
+  } catch (error) {
+    throw error;
+  }
 }
 
-
-export const createWithdrawSplTokenTx = async () => {}
+export const createWithdrawSplTokenTx = async () => { }

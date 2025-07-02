@@ -40,7 +40,8 @@ import {
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { useRouter, usePathname } from "next/navigation";
+import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -305,32 +306,41 @@ export default function VaultInputs({
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
     if (inputToken && vaultTotalAssetinToken && !isTxInProgress) {
       if (isDeposit) {
-        const hasInsufficientBalance =
-          Number(inputBalance.value) > 0 &&
-          Number(inputBalance.value) > Number(tokenBalance.value);
+        // For Ethereum vaults, use net deposit amount for validation
+        // For other vaults, use input amount
+        const amountToValidate = !vaultData.depositFeePaidFromGasTank 
+          ? conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, '') || inputBalance.formatted
+          : inputBalance.formatted;
+        
+        const priceToUse = !vaultData.depositFeePaidFromGasTank 
+          ? 1 // netDepositToVaultUSD is already in USD
+          : inputTokenPrice;
 
-        if (!walletAddress && Number(inputBalance.value) > 0) {
-          setErrorMessage("Connect wallet to continue");
-        } else if (hasInsufficientBalance) {
-          setErrorMessage("Insufficient balance");
-        } else {
-          setErrorMessage("");
-        }
+        setErrorMessage(
+          getVaultErrorMessage(
+            amountToValidate,
+            tokenBalance.formatted,
+            steps,
+            vaultData,
+            priceToUse,
+            isDeposit
+          )
+        );
       } else {
-        const maxWithdrawAmount =
-          vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
-        const hasInsufficientBalance =
-          Number(inputBalance.formatted) > 0 &&
-          Number(inputBalance.formatted) > Number(maxWithdrawAmount);
-
-        if (!walletAddress && Number(inputBalance.formatted) > 0) {
-          setErrorMessage("Connect wallet to continue");
-        } else if (hasInsufficientBalance) {
-          setErrorMessage("Insufficient vault balance");
-        } else {
-          setErrorMessage("");
-        }
+        setErrorMessage(
+          getVaultErrorMessage(
+            inputBalance.formatted,
+            vaultTotalAssetinToken.toString(),
+            steps,
+            vaultData,
+            vaultTokenPrice,
+            isDeposit
+          )
+        );
       }
+    } else if (loadingOutputToken) {
+      // Clear error message while loading
+      setErrorMessage("");
     }
   }, [
     inputToken,
@@ -340,8 +350,10 @@ export default function VaultInputs({
     action,
     vaultTotalAssetinToken,
     steps,
-    tokenBalance.value,
-    walletAddress,
+    inputTokenPrice,
+    vaultTokenPrice,
+    conversionOutput.netDepositToVaultUSD,
+    loadingOutputToken,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -351,29 +363,7 @@ export default function VaultInputs({
         const actionType = isDeposit
           ? SmartVaultActionType.Deposit
           : SmartVaultActionType.Withdrawal;
-
-        console.log("🔧 [ACTIONS] === SELECTING ACTIONS ===");
-        console.log(
-          "🔧 [ACTIONS] - actionType:",
-          actionType === SmartVaultActionType.Deposit
-            ? "Deposit"
-            : "Withdrawal",
-        );
-        console.log("🔧 [ACTIONS] - vaultData.symbol:", vaultData.symbol);
-        console.log(
-          "🔧 [ACTIONS] - activeChain:",
-          activeChain?.name,
-          `(${activeChain?.id})`,
-        );
-        console.log("🔧 [ACTIONS] - walletAddress:", walletAddress);
-        console.log(
-          "🔧 [ACTIONS] - inputBalance.value:",
-          inputBalance.value.toString(),
-        );
-        console.log("🔧 [ACTIONS] - inputToken.symbol:", inputToken.symbol);
-        console.log("🔧 [ACTIONS] - inputToken.address:", inputToken.address);
-        console.log("🔧 [ACTIONS] - inputToken.isNative:", inputToken.isNative);
-
+        
         const newStepsConfig = await selectActions(
           actionType,
           vaultData,
@@ -647,84 +637,57 @@ export default function VaultInputs({
 
   const getWithdrawOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
-      try {
-        console.log("Double Box - Starting getWithdrawOutputAmount:", {
-          inputAmountValue: inputAmountValue.toString(),
-        });
+      // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
+      // So we don't need to convert from shares to assets - the input IS the asset amount
+      let assetsAmount = inputAmountValue;
+      
+      const actualInputToken = isZetachain(activeChain?.id as number)
+        ? inputToken
+        : inputToken?.ZRC20equivalent;
+      if (!actualInputToken) return;
 
-        // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
-        // So we don't need to convert from shares to assets - the input IS the asset amount
-        let assetsAmount = inputAmountValue;
+      let tokenConversionAmount = assetsAmount;
+      if (actualInputToken.address !== vaultData.inputToken.address) {
+         const result = await getPathDataAndAmountOut(
+          assetsAmount,
+          vaultData.inputToken,
+          actualInputToken,
+          vaultData.id as Address,
+          getCurrentSlippage() * 100
+        );
+        tokenConversionAmount = result.amountOut
+      }
 
-        console.log("Double Box - Assets amount (direct from input):", {
-          assetsAmount: assetsAmount.toString(),
-        });
+      const assetsConversionInUSD =
+        (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
+        vaultTokenPrice;
+      const tokenConversionFromWei =
+        Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
+      const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
 
-        const actualInputToken = isZetachain(activeChain?.id as number)
-          ? inputToken
-          : inputToken?.ZRC20equivalent;
-        if (!actualInputToken) return;
-        console.log("Double Box - Token addresses:", {
-          inputToken: actualInputToken?.address,
-          isZetachain: isZetachain(activeChain?.id as number),
-          vaultInputToken: vaultData.inputToken.address,
-        });
-        let tokenConversionAmount = assetsAmount;
-        if (actualInputToken.address !== vaultData.inputToken.address) {
-          const result = await getPathDataAndAmountOut(
-            assetsAmount,
-            vaultData.inputToken,
-            actualInputToken,
-            vaultData.id as Address,
-            getCurrentSlippage() * 100,
-          );
-          tokenConversionAmount = result.amountOut;
-        }
-        console.log("Double Box - Conversion amounts:", {
-          tokenConversionAmount: tokenConversionAmount.toString(),
-        });
+      const slippageActualValue = Math.max(
+        0,
+        100 - (tokenConversionInUSD * 100) / assetsConversionInUSD
+      );
 
-        const assetsConversionInUSD =
-          (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
-          vaultTokenPrice;
-        const tokenConversionFromWei =
-          Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
-        const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
-
-        const slippageActualValue = Math.max(
-          0,
-          100 - (tokenConversionInUSD * 100) / assetsConversionInUSD,
+      if (inputAmountValue === debouncedInputBalance.value) {
+        // Use formatTokenBalance for the output amount formatting
+        const formattedOutputAmount = formatTokenBalance(
+          tokenConversionFromWei,
+          inputToken?.symbol || ""
         );
 
-        if (inputAmountValue === debouncedInputBalance.value) {
-          // Use formatTokenBalance for the output amount formatting
-          const formattedOutputAmount = formatTokenBalance(
-            tokenConversionFromWei,
-            inputToken?.symbol || "",
-          );
-
-          console.log("Double Box - Conversion Output:", {
-            slippageActualValue: Number(slippageActualValue.toFixed(2)),
-            finalConvertedAmountInUSDFormatted: formatCurrency(
-              assetsConversionInUSD,
-            ).toString(),
-            outputAmountFormatted: formattedOutputAmount,
-            outputAmountInUSDFormatted:
-              formatCurrency(tokenConversionInUSD).toString(),
-          });
-          setConversionOutput({
-            slippageActualValue: Number(slippageActualValue.toFixed(2)),
-            finalConvertedAmountInUSDFormatted: formatCurrency(
-              assetsConversionInUSD,
-            ).toString(),
-            outputAmountFormatted: formattedOutputAmount,
-            outputAmountInUSDFormatted:
-              formatCurrency(tokenConversionInUSD).toString(),
-          });
-        }
-      } finally {
-        setLoadingOutputToken(false);
+        setConversionOutput({
+          slippageActualValue: Number(slippageActualValue.toFixed(2)),
+          finalConvertedAmountInUSDFormatted: formatCurrency(
+            assetsConversionInUSD
+          ).toString(),
+          outputAmountFormatted: formattedOutputAmount,
+          outputAmountInUSDFormatted:
+            formatCurrency(tokenConversionInUSD).toString(),
+        });
       }
+      setLoadingOutputToken(false);
     },
     [
       activeChain?.id,
@@ -735,39 +698,30 @@ export default function VaultInputs({
       inputToken,
     ],
   );
-
-  const getDepositOutputAmount = useCallback(
+  
+    const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
-      try {
-        console.log("Double Box - Starting getDepositOutputAmount:", {
-          inputAmountValue: inputAmountValue.toString(),
-        });
-        const actualInputToken = isZetachain(activeChain?.id as number)
-          ? inputToken
-          : inputToken?.ZRC20equivalent;
-        console.log("inputToken: ", inputToken);
-        console.log(
-          "inputToken.ZRC20equivalent: ",
-          inputToken?.ZRC20equivalent,
+      const actualInputToken = isZetachain(activeChain?.id as number)
+        ? inputToken
+        : inputToken?.ZRC20equivalent;
+      
+      if (!actualInputToken) {
+        return;
+      }
+
+      let assetsConversionAmount: bigint = inputAmountValue;
+      
+      // Step 1: Convert input token to vault token if needed
+      if (actualInputToken.address !== vaultData.inputToken.address) {
+        const result = await getPathDataAndAmountOut(
+          inputAmountValue,
+          actualInputToken,
+          vaultData.inputToken,
+          vaultData.id as Address,
+          getCurrentSlippage() *100
         );
-        console.log("actualInputToken: ", actualInputToken);
-        if (!actualInputToken) return;
-        console.log("Double Box - 🏦 Token addresses:", {
-          inputToken: actualInputToken.address,
-          isZetachain: isZetachain(activeChain?.id as number),
-          vaultInputToken: vaultData.inputToken.address,
-        });
-        let assetsConversionAmount: bigint = inputAmountValue;
-        if (actualInputToken.address !== vaultData.inputToken.address) {
-          const result = await getPathDataAndAmountOut(
-            inputAmountValue,
-            actualInputToken,
-            vaultData.inputToken,
-            vaultData.id as Address,
-            getCurrentSlippage() * 100,
-          );
-          assetsConversionAmount = result.amountOut;
-        }
+        assetsConversionAmount = result.amountOut;
+      }
 
         console.log("Double Box - Pre Gas Conversion amounts:", {
           assetsConversionAmount: assetsConversionAmount.toString(),
@@ -781,11 +735,13 @@ export default function VaultInputs({
         let netDepositToVaultUSD = "0";
         if (!selectedChain?.id) return;
 
+
         const publicClient = await getPublicClient(
           activeWallet,
           selectedChain.id,
         );
         if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
+
           const gasLimitForWithdrawAndCall = await publicClient.readContract({
             address: vaultData.id as Address,
             abi: [
@@ -870,55 +826,33 @@ export default function VaultInputs({
           finalConvertedAmountInUSD,
         ).toString();
 
-        // Calculate slippage excluding gas fee
-        const slippageActualValue = Math.max(
-          0,
-          100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD,
-        );
+      // Calculate slippage excluding gas fee
+      const slippageActualValue = Math.max(
+        0,
+        100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD
+      );
 
-        // === LOGGING FOR DEBUGGING ===
-        if (!vaultData.depositFeePaidFromGasTank) {
-          const slippageFeeUSD =
-            inputAmountValueInUSD - finalConvertedAmountInUSD;
-          const slippageFeeETH = convertUsdToEth(slippageFeeUSD, ethPriceUsd);
-          const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ""));
-          const gasFeeETH = parseFloat(gasFeeInETH);
-          console.log("==== FEE BREAKDOWN ====");
-          console.log("Gas Fee (ETH):", gasFeeETH);
-          console.log("Gas Fee (USD):", gasFeeUSD);
-          console.log("Slippage Fee (USD):", slippageFeeUSD.toFixed(5));
-          console.log("Slippage Fee (ETH):", slippageFeeETH.toFixed(5));
-          console.log(
-            "Difference (Gas Fee USD - Slippage Fee USD):",
-            (gasFeeUSD - slippageFeeUSD).toFixed(5),
-          );
-          console.log(
-            "Difference (Gas Fee ETH - Slippage Fee ETH):",
-            (gasFeeETH - slippageFeeETH).toFixed(5),
-          );
-          console.log("=======================");
-        }
-
-        if (inputAmountValue === debouncedInputBalance.value) {
-          setConversionOutput({
-            slippageActualValue: Number(slippageActualValue.toFixed(2)),
-            finalConvertedAmountInUSDFormatted: formatUSDValue(
-              finalConvertedAmountInUSD,
-            ),
-            outputAmountFormatted: sharesAmountFormatted,
-            outputAmountInUSDFormatted: formatUSDValue(
-              finalConvertedAmountInUSD,
-            ),
-            gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-            gasFeeInUSD,
-            gasFeeInETH,
-            netDepositToVaultUSD: formatUSDValue(finalConvertedAmountInUSD),
-            inputAmountInUSDFormatted: formatUSDValue(inputAmountValueInUSD),
-          });
-        }
-      } finally {
-        setLoadingOutputToken(false);
+      if (!vaultData.depositFeePaidFromGasTank && gasFeeInVaultAsset > 0n) {
+        const totalLossUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
+        const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ''));
+        const gasFeeETH = parseFloat(gasFeeInETH);
+        const swapLossUSD = totalLossUSD - gasFeeUSD;
       }
+
+      if (inputAmountValue === debouncedInputBalance.value) {
+        setConversionOutput({
+          slippageActualValue: Number(slippageActualValue.toFixed(2)),
+          finalConvertedAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
+          outputAmountFormatted: sharesAmountFormatted,
+          outputAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
+          gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
+          gasFeeInUSD,
+          gasFeeInETH,
+          netDepositToVaultUSD: formatUSDValue(finalConvertedAmountInUSD),
+          inputAmountInUSDFormatted: formatUSDValue(inputAmountValueInUSD),
+        });
+      }
+      setLoadingOutputToken(false);
     },
     [
       activeChain?.id,
@@ -930,6 +864,7 @@ export default function VaultInputs({
       ethPriceUsd,
       activeWallet,
       selectedChain?.id,
+
     ],
   );
 
@@ -1026,43 +961,16 @@ export default function VaultInputs({
 
   // Reset input state after transaction completes or fails
   useEffect(() => {
-    console.log("🔄 [VAULT-INPUTS] transactionCompleted effect triggered:", {
-      transactionCompleted,
-      timestamp: new Date().toISOString(),
-      inputBalance: inputBalance.formatted,
-      displayValue,
-    });
-
     if (transactionCompleted) {
-      console.log(
-        "✅ [VAULT-INPUTS] Transaction completed - resetting input state...",
-        {
-          timestamp: new Date().toISOString(),
-          previousInputBalance: inputBalance.formatted,
-          previousDisplayValue: displayValue,
-        },
-      );
-
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(EMPTY_BALANCE);
       setOutputBoxErrorMessage("");
       setIsSlippageExceedingLimit(false);
-      localStorage.removeItem(vaultData.id);
-
-      console.log("🧹 [VAULT-INPUTS] Input state reset completed!", {
-        timestamp: new Date().toISOString(),
-      });
-
+      
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
-        console.log(
-          "⏰ [VAULT-INPUTS] Resetting transactionCompleted to false after timeout...",
-          {
-            timestamp: new Date().toISOString(),
-          },
-        );
         setTransactionCompleted(false);
       }, 1000);
     }
@@ -1290,7 +1198,7 @@ export default function VaultInputs({
           activeTab={isDeposit ? "Invest" : "Withdraw"}
           setActiveTab={handleTabChange}
         />
-        <div className="absolute top-0 right-0 z-9 mt-3">
+        <div className="absolute top-0 right-0 z-30 mt-3">
           <SlippageSettingsBlock
             setInputBalance={setInputBalance}
             vaultId={vaultData.id}
@@ -1533,6 +1441,8 @@ export default function VaultInputs({
             label={label}
           />
         )}
+
+      
     </>
   );
 }

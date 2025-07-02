@@ -480,12 +480,12 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_crossChainInvestFailed", strategyConfig.address, txConfig.crossChainDepositAmount1, await user1.getAddress(), txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_crossChainInvestFailed", strategyConfig.address, txConfig.crossChainDepositAmount1, await user1.getAddress(), txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     // the revert will send back some vault asset
-    await setTokenBalance(txConfig.originZRC20Input, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
+    await setTokenBalance(vaultAsset.address, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
     console.log("user balance of zrc20 before revert", await originZRC20Input.balanceOf(await user1.getAddress()));
     await expect(
       withdrawHelper.connect(gatewaySigner).onRevert({
@@ -528,8 +528,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_divestConnectedChainStrategyFailed", strategyConfig.address, userMaxRedeem, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_divestConnectedChainStrategyFailed", strategyConfig.address, userMaxRedeem, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     await expect(
@@ -561,8 +561,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_returnFundsToUserFailed", strategyConfig.address, amount, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_returnFundsToUserFailed", strategyConfig.address, amount, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     await expect(
@@ -590,8 +590,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_switchStrategyFailed", strategyConfig.address, 0, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_switchStrategyFailed", strategyConfig.address, 0, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     await expect(
@@ -619,12 +619,12 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const mockRevertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_crossChainInvestFailed", strategyConfig.address, txConfig.crossChainDepositAmount1, await user1.getAddress(), txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_crossChainInvestFailed", strategyConfig.address, txConfig.crossChainDepositAmount1, await user1.getAddress(), txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     // the abort will send back some vault asset
-    await setTokenBalance(txConfig.originZRC20Input, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
+    await setTokenBalance(vaultAsset.address, withdrawHelper.address, txConfig.crossChainDepositAmount1, 3);
     await expect(
       withdrawHelper.connect(gatewaySigner).onAbort({
         sender: strategyConfig.address,
@@ -667,8 +667,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_divestConnectedChainStrategyFailed", strategyConfig.address, userMaxRedeem, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_divestConnectedChainStrategyFailed", strategyConfig.address, userMaxRedeem, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     await expect(
@@ -700,8 +700,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_returnFundsToUserFailed", strategyConfig.address, txConfig.crossChainDepositAmount1, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_returnFundsToUserFailed", strategyConfig.address, txConfig.crossChainDepositAmount1, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     const tx = await withdrawHelper.connect(gatewaySigner).onAbort({
@@ -741,8 +741,8 @@ describe("AmanaConnectedChainVault Tests", function () {
     const vaultNonce = 1;
     const nonEvmAddress = "0x";
     const revertMessage = ethers.utils.defaultAbiCoder.encode(
-      ["string", "address", "uint256", "address", "address", "address", "address", "address", "address", "uint256", "bytes"],
-      ["_switchStrategyFailed", strategyConfig.address, 0, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaRegistry.address, amanaVault.address, vaultNonce, nonEvmAddress]
+      ["string", "address", "uint256", "address", "address", "address", "address", "address", "uint256", "bytes"],
+      ["_switchStrategyFailed", strategyConfig.address, 0, user1.address, txConfig.originZRC20Input, txConfig.originERC20Input, vaultAsset.address, amanaVault.address, vaultNonce, nonEvmAddress]
     );
 
     await expect(
