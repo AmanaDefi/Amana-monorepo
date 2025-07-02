@@ -24,10 +24,9 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
-  const {wallets} = useWallets();
+  const { wallets } = useWallets();
   const activeAccount = wallets[0];
-  const { walletAddress, connectSolana } =
-    useMultiChain();
+  const { walletAddress } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -49,13 +48,12 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   }, []);
 
   const handleSignInClick = () => {
-    connectSolana()
-    // const currentWidth = window?.innerWidth;
-    // if (currentWidth <= 768) {
-    //   openStep("mobileOptionsA");
-    // } else {
-    //   openStep("optionsA");
-    // }
+    const currentWidth = window?.innerWidth;
+    if (currentWidth <= 768) {
+      openStep("mobileOptionsA");
+    } else {
+      openStep("optionsA");
+    }
   };
 
   const navLinks = isConnected
@@ -99,9 +97,9 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-6">
-          {isConnected && activeAccount?.walletClientType !== "privy" && !isMenuOpened && (
-            <ChainSwitcher />
-          )}
+          {isConnected &&
+            activeAccount?.walletClientType !== "privy" &&
+            !isMenuOpened && <ChainSwitcher />}
 
           <div className="hidden lg:block">
             {!isConnected ? (

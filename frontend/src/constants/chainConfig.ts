@@ -222,7 +222,7 @@ export enum MulticallVersion {
 
 export const solanaChain = {
   id: CHAIN_ID.solana,
-  name: deployEnv === "testnet" ? "devnet" : "mainnet",
+  name: "Solana",
   shortName: "sol",
   chain: "Solana",
   rpcUrls: {

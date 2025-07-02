@@ -27,7 +27,7 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { convertStringToBalance } from "@/utils/graphUtils";
 
 // Constants for localStorage
-const WALLET_STATE_KEY = 'amana-wallet-state';
+const WALLET_STATE_KEY = "amana-wallet-state";
 const DEBUG_WALLET = false; // Set to false in production
 
 // Helper function for debug logging
@@ -58,12 +58,13 @@ const loadWalletState = (): {
       const saved = localStorage.getItem(WALLET_STATE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        
-        return { selectedChain: parsed.selectedChain, walletAddress: parsed.walletAddress };
+
+        return {
+          selectedChain: parsed.selectedChain,
+          walletAddress: parsed.walletAddress,
+        };
       }
-    } catch (error) {
-     
-    }
+    } catch (error) {}
   }
 
   return { selectedChain: null, walletAddress: null };
@@ -72,7 +73,6 @@ const loadWalletState = (): {
 const clearWalletState = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(WALLET_STATE_KEY);
- 
   }
 };
 
@@ -119,7 +119,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { logout } = usePrivy();
-  const { publicKey, disconnect, connected, wallets: solanaWallets } = useWallet();
+  const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const { connectors } = useConnect();
   const { step } = useFundWalletStore();
@@ -135,14 +135,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   );
   const [isInitialized, setIsInitialized] = useState(false);
 
-  console.log(solanaWallets)
+  console.log({ privyWallet });
 
   debugLog("Provider initialized with hydration-safe state:", {
     selectedChain,
     walletAddress,
     isHydrated,
   });
-  const { setVisible, visible } = useWalletModal();
 
   const { balance: solanaBalance, refetch: refetchSolBalance } =
     useSolanaBalance();
@@ -153,7 +152,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (!!wallets?.length) {
       wallets.forEach(async (wallet) => {
         await connectors
-          ?.find((con) => con.id === wallet.meta.id)
+          ?.find(
+            (con) =>
+              con.id === wallet.meta.id ||
+              (con.id === "walletConnect" &&
+                wallet.connectorType.includes("wallet_connect")),
+          )
           ?.disconnect();
       });
     }
@@ -244,7 +248,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         debugLog("Disconnecting EVM wallet before Solana connection");
         await evmDisconnect();
       }
-      setVisible(true);
       setSelectedChain("solana");
     } catch (error) {
       console.error("Solana connection error:", error);
@@ -357,8 +360,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     // Add initialization delay to allow wallets to load
     const initTimer = setTimeout(() => {
       setIsInitialized(true);
-     
-      
+
       // Now check wallet connections
       const checkTimer = setTimeout(() => {
         debugLog("Checking wallet connections after initialization:", {
@@ -371,11 +373,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         if (!privyWallet?.address && !publicKey) {
           // No active connections detected
           if (selectedChain) {
-            
             setIsModalOpen(true);
-          } 
+          }
         } else if (publicKey) {
-         
           setWalletAddress(publicKey.toBase58());
           setSelectedChain("solana");
           setIsModalOpen(false);
@@ -411,10 +411,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (!isHydrated) return;
 
     const handleStorageChange = (e: StorageEvent) => {
-     
-      
       if (e.key === WALLET_STATE_KEY) {
-
         if (e.newValue === null) {
           // Wallet was disconnected in another tab
           debugLog("Wallet disconnected in another tab");

@@ -539,7 +539,6 @@ export const useUpdateAPYs = (
                 return { vaultId: vault.id, APY7d: 0 };
               }
               const receiptTokenAddress = receiptTokenAddresses[vault.id];
-              console.log({receiptTokenAddress})
               let APY7d = 0;
               let RewardsAPY = 0;
               if (vault.protocol.name === "Aave") {
