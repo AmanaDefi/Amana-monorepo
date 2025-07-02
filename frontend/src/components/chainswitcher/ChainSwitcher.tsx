@@ -9,7 +9,7 @@ import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
-import Button from "../Button";
+import Button from "../common/Button";
 import { useWallets } from "@privy-io/react-auth";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 

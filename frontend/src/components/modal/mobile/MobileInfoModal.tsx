@@ -3,7 +3,7 @@ import { VaultData, Token } from "@/types/types";
 import { Chain } from "viem";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import { useAuthStore } from "@/store/authStore";
 import GlowIcon from "@/components/svg/GlowIcon";

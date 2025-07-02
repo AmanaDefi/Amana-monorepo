@@ -1,6 +1,7 @@
 import { ClipboardIcon } from "@heroicons/react/24/outline";
 import { ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline";
 import React, {useState} from "react";
+import CopyIcon from "../svg/CopyIcon";
 
 type CopyTextButtonProps = {
     text: string
@@ -25,7 +26,7 @@ export default function CopyTextButton(props: CopyTextButtonProps) {
             {
                 copiedToClipboard ?
                     <ClipboardDocumentCheckIcon width={16} height={16} className='size-4 text-white' /> :
-                    <ClipboardIcon width={16} height={16} className='size-4 text-customGray300 hover:text-white transition-colors' />
+                    <CopyIcon  width={16} height={16} className='size-4 text-customGray300 hover:text-white transition-colors' />
             }
         </button>
     )

@@ -8,7 +8,7 @@ import { useRef, useState, useEffect } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useAuthStore } from "@/store/authStore";
-import Button from "./Button";
+import Button from "./common/Button";
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";

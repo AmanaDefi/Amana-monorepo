@@ -1,5 +1,5 @@
 "use client";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import SmartAccountCard from "@/components/SmartAccountCard";
 import { smartAccountInfo } from "@/constants/smartAccountInfo";
 import { useAuthStore } from "@/store/authStore";

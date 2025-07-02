@@ -1,4 +1,4 @@
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import InvestmentStarIcon from "@/components/svg/InvestmentStar";
 import { formatTokenBalance } from "@/utils/utils";
