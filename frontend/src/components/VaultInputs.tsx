@@ -1350,15 +1350,7 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="mb-6 md:mb-10">
-              <FeeDisplay
-                isDeposit={isDeposit}
-                vaultData={vaultData}
-                conversionOutput={conversionOutput}
-                debouncedInputBalance={debouncedInputBalance}
-                performanceFee={performanceFee}
-              />
-            </div>
+            <div className="mb-6 md:mb-10"></div>
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && !isDeposit && (
                 <ChainSelector
