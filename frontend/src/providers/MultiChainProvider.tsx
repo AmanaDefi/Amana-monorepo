@@ -505,6 +505,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       console.log(chain, "switchToChain");
       try {
         if (chain.id === CHAIN_ID.solana) {
+          
           setSelectedChain("solana");
           setActiveChain(chainConfigs[CHAIN_ID.solana]);
           latestChainRef.current = CHAIN_ID.solana.toString();

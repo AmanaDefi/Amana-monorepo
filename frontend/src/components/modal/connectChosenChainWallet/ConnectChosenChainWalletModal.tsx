@@ -2,41 +2,26 @@
 
 import { Modal } from "../base/Modal";
 import { useAuthStore } from "@/store/authStore";
-import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
-import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
 import { Connector, useConnect } from "wagmi";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
-import { ConnectorIcon } from "./components/ConnectorIcon";
-import { chainConfigs } from "@/constants/chainConfig";
-import { useEffect, useState } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Adapter,
   WalletAdapter,
-  WalletAdapterNetwork,
   WalletReadyState,
 } from "@solana/wallet-adapter-base";
+import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 
-const AllWAllets = () => {
-  const [isMobile, setIsMobile] = useState(false);
+const ConnectChosenChain = () => {
+  const { selectedChain } = useMultiChain();
 
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window?.innerWidth < 1024);
-    };
-
-    checkIsMobile();
-    window?.addEventListener("resize", checkIsMobile);
-
-    return () => window?.removeEventListener("resize", checkIsMobile);
-  }, []);
   const { step, successAuth, closeAll } = useAuthStore();
   const {
     step: fundWalletStep,
@@ -137,11 +122,11 @@ const AllWAllets = () => {
 
   const handleSolanaConnect = async (connector: Adapter) => {
     if (
-      activeAccount?.walletClientType === "privy" &&
-      fundWalletStep !== "connectWallet"
+      activeAccount?.address &&
+      fundWalletStep !== "reconnectChain"
     ) {
       const confirmResult = confirm(
-        "You smart wallet account will be disconnected",
+        "Your EVM wallet will be disconnected",
       );
       if (!confirmResult) return;
 
@@ -166,14 +151,12 @@ const AllWAllets = () => {
   return (
     <Modal
       isOpen={
-        !isMobile &&
-        (step === "allWallets" || fundWalletStep === "connectWallet")
+        step === "connectInChosenChain" || fundWalletStep === "reconnectChain"
       }
       onClose={handleClose}
       paddingClass="pt-[28px] w-full pl-[57px] pb-10 pr-[24px] flex"
       roundedClass="rounded-[16px]"
-      maxWidth="max-w-[940px]"
-      minHeight="max-h-[560px]"
+      maxWidth="max-w-[526px]"
       customCloseButton={
         <button
           onClick={handleClose}
@@ -184,69 +167,59 @@ const AllWAllets = () => {
         </button>
       }
     >
-      <div className="flex w-full flex-col justify-between">
-        <div className="flex w-full h-[95%] flex-row justify-between gap-5">
-          <div className="flex flex-col justify-between mt-3">
-            <ConnectWallet />
-          </div>
-          <div className="flex flex-col min-w-[50%] overflow-hidden">
-            <PopularOptions />
-            <div
-              style={{ scrollbarColor: "#1B46E0 transparent" }}
-              className="overflow-auto h-full mt-6 flex-1 flex flex-col gap-3"
-            >
-              <div className="flex flex-col gap-3 w-full">
-                <p className="text-lg text-[#3E73C4]">EVM chains connectors</p>
-                <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
-                  {connectors.map((connector) => (
-                    <ModalButton
-                      variant="allWallets"
-                      key={connector.id}
-                      label={`${connector.name}`}
-                      icon={
-                        <ConnectorIcon
-                          connectorId={connector.id}
-                          name={connector.name}
-                          connectorIcon={connector.icon}
-                        />
-                      }
-                      onClick={() => {
-                        handleExternalWalletConnect(connector);
-                      }}
+      <div className="flex flex-col overflow-hidden gap-8">
+        <p className="text-base text-white">
+          Connect your wallet in chosen chain
+        </p>
+        <div
+          style={{ scrollbarColor: "#1B46E0 transparent" }}
+          className="overflow-auto h-full mt-6 flex-1 flex flex-col "
+        >
+          {selectedChain === "evm" ? (
+            <div className="flex flex-col gap-4 min-h-fit">
+              {connectors.map((connector) => (
+                <ModalButton
+                  variant="allWallets"
+                  key={connector.id}
+                  label={`${connector.name}`}
+                  icon={
+                    <ConnectorIcon
+                      connectorId={connector.id}
+                      name={connector.name}
+                      connectorIcon={connector.icon}
                     />
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col gap-3 w-full">
-                <p className="text-lg text-[#3E73C4]">
-                  Solana chain connectors
-                </p>
-                <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
-                  {solanaConnectors.map((connector) => (
-                    <ModalButton
-                      variant="allWallets"
-                      key={connector.name}
-                      label={connector.name}
-                      icon={
-                        <ConnectorIcon
-                          connectorId={connector.name}
-                          name={connector.name}
-                          connectorIcon={connector.icon}
-                        />
-                      }
-                      onClick={() => {
-                        handleSolanaConnect(connector);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+                  }
+                  onClick={() => {
+                    handleExternalWalletConnect(connector);
+                  }}
+                />
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-4 min-h-fit">
+              {solanaConnectors.map((connector) => (
+                <ModalButton
+                  variant="allWallets"
+                  key={connector.name}
+                  label={connector.name}
+                  icon={
+                    <ConnectorIcon
+                      connectorId={connector.name}
+                      name={connector.name}
+                      connectorIcon={connector.icon}
+                    />
+                  }
+                  onClick={() => {
+                    handleSolanaConnect(connector);
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </Modal>
   );
 };
 
-export default AllWAllets;
+export default ConnectChosenChain;

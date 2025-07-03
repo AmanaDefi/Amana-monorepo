@@ -21,6 +21,7 @@ export type AuthStep =
   | "recieve"
   | "send"
   | "mobileInfo"
+  | "connectInChosenChain"
   | null;
 
 interface AuthState {
