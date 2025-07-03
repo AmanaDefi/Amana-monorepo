@@ -67,13 +67,13 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   return (
     <>
       <header
-        className={`w-full flex items-center justify-between font-gotham ${
+        className={`w-full flex items-center justify-between font-gotham relative z-50 ${
           isConnected
             ? "px-0 lg:px-11 mb-7 lg:mb-10 h-[60px] lg:h-[40px]"
             : "px-0 lg:pl-11 lg:pr-0 h-[80px] mb-0 lg:mb-9"
         }`}
       >
-        <div className="flex items-center gap-[41px]">
+        <div className="flex items-center gap-[41px] flex-1 relative z-50">
           <Link
             href="/"
             className={`flex items-center ${!isConnected ? "block" : "lg:hidden"}`}
@@ -85,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             {navLinks.map(({ label, href }) => (
               <span
                 key={href}
-                className={`cursor-pointer transition font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center ${
+                className={`cursor-pointer transition font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center relative z-50 ${
                   path === href ? "border-[#1B46E0]" : "border-transparent"
                 }`}
                 onClick={() => router.push(href)}
@@ -96,7 +96,14 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2 lg:gap-6">
+        {path === "/leaderboard" && (
+          <div className="absolute left-1/2 transform -translate-x-1/2 lg:hidden z-50">
+            <span className="text-[20px] font-bold text-white leading-[-0.5]">
+              Leaderboard
+            </span>
+          </div>
+        )}
+        <div className="flex items-center gap-2 lg:gap-6 flex-1 justify-end relative z-50">
           {isConnected &&
             activeAccount?.walletClientType !== "privy" &&
             !isMenuOpened && <ChainSwitcher />}
@@ -111,7 +118,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                 ref={profileButtonRef}
                 variant="secondary"
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="py-4 !px-[31px] !h-[56px]"
+                className="py-4 !px-[31px] !h-[56px] relative z-50"
               >
                 <div className="flex flex-row gap-2 leading-[18px] items-center">
                   <ProfileIcon width={18} height={18} />
@@ -139,7 +146,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                     onClick={() =>
                       setIsProfileDropdownOpen(!isProfileDropdownOpen)
                     }
-                    className="!px-4 !h-10"
+                    className="!px-4 !h-10 relative z-50"
                   >
                     <div className="flex flex-row gap-2 leading-[18px] items-center">
                       <ProfileIcon width={18} height={18} />
@@ -156,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             )}
             <button
               onClick={toggleMenu}
-              className="lg:hidden h-10"
+              className="lg:hidden h-10 relative z-50"
               aria-label="Toggle mobile menu"
             >
               <BurgerMenuIcon />
