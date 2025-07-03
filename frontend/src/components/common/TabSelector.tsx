@@ -1,15 +1,13 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
-import SlippageSettingsBlock from "../VaultsDetailsWrapper/components/SlippageSettingsBlock";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface TabSelectorProps {
   activeTab: any;
   setActiveTab: Function;
   availableTabs: any[];
   className?: string;
- 
 }
 
 export default function TabSelector({
@@ -32,17 +30,21 @@ export default function TabSelector({
           }`}
           onClick={() => setActiveTab(tab)}
         >
-          {activeTab === tab && (
-            <motion.div
-              layoutId="activeTabIndicator"
-              className="absolute inset-0 bg-[#1B46E0] rounded-lg shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
-              transition={{
-                type: "spring" as const,
-                stiffness: 300,
-                damping: 35,
-              }}
-            />
-          )}
+          <AnimatePresence mode="wait">
+            {activeTab === tab && (
+              <motion.div
+                key={tab}
+                className="absolute inset-0 bg-[#1B46E0] rounded-lg shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{
+                  duration: 0.4,
+                  ease: [0.25, 0.1, 0.25, 1],
+                }}
+              />
+            )}
+          </AnimatePresence>
           <span className="relative z-9">{tab}</span>
         </button>
       ))}
