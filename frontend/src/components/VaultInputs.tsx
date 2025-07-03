@@ -92,6 +92,7 @@ export type ConversionOutput = {
   gasFeeInETH?: string;
   netDepositToVaultUSD?: string;
   inputAmountInUSDFormatted?: string;
+  slippageAmountInUSDFormatted?: string;
 };
 
 export default function VaultInputs({
@@ -662,6 +663,7 @@ export default function VaultInputs({
       const assetsConversionInUSD =
         (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
         vaultTokenPrice;
+
       const tokenConversionFromWei =
         Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
       const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
@@ -669,6 +671,13 @@ export default function VaultInputs({
       const slippageActualValue = Math.max(
         0,
         100 - (tokenConversionInUSD * 100) / assetsConversionInUSD,
+      );
+
+      const calculatedSlippageUSD =
+        assetsConversionInUSD - tokenConversionInUSD;
+
+      const slippageAmountInUSDFormatted = formatUSDValue(
+        calculatedSlippageUSD,
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
@@ -680,6 +689,7 @@ export default function VaultInputs({
 
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
+          slippageAmountInUSDFormatted: slippageAmountInUSDFormatted,
           finalConvertedAmountInUSDFormatted: formatCurrency(
             assetsConversionInUSD,
           ).toString(),
@@ -818,9 +828,11 @@ export default function VaultInputs({
       const inputAmountValueInUSD =
         (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
         inputTokenPrice;
+
       const finalConvertedAmountInUSD =
         (Number(finalConvertedAmount) / 10 ** vaultData.inputToken.decimals) *
         vaultTokenPrice;
+
       const finalConvertedAmountInUSDFormatted = formatCurrency(
         finalConvertedAmountInUSD,
       ).toString();

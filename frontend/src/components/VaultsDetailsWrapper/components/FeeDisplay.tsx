@@ -27,17 +27,24 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
   isVisible = true,
   className = "",
 }) => {
-  if (!isVisible || conversionOutput.slippageActualValue === null) {
+  if (
+    !isVisible ||
+    conversionOutput.slippageActualValue === null ||
+    !conversionOutput.slippageAmountInUSDFormatted
+  ) {
     return null;
   }
+
+  const formattedUSDSlippage = conversionOutput.slippageAmountInUSDFormatted;
 
   return (
     <div
       className={`flex justify-between items-center py-1 text-white mt-8 ${className}`}
     >
       <span className="text-white">Expected slippage:</span>
-      <span className="font-medium">
-        {conversionOutput.slippageActualValue.toFixed(2)}%
+      <span className="font-normal flex-row gap-1">
+        ({conversionOutput.slippageActualValue.toFixed(2)}%){" "}
+        <span className="font-medium">{formattedUSDSlippage} </span>
       </span>
     </div>
   );
