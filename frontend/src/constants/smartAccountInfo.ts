@@ -1,8 +1,8 @@
-import { ComponentType } from "react";
-import BrainIcon from "@/components/svg/onboarding/BrainIcon";
-import SecureIcon from "@/components/svg/onboarding/SecureIcon";
-import PowerIcon from "@/components/svg/onboarding/PowerIcon";
-import FundIcon from "@/components/svg/onboarding/FundIcon";
+import { StaticImageData } from "next/image";
+import BrainImage from "@/brainImage.png";
+import SecureImage from "@/secureImage.png";
+import PowerImage from "@/powerImage.png";
+import FundImage from "@/fundImage.png";
 
 export enum IconTypes {
   PASSKEY = "PASSKEY",
@@ -11,14 +11,11 @@ export enum IconTypes {
   FUND = "FUND",
 }
 
-export const iconComponents: Record<
-  IconTypes,
-  ComponentType<React.SVGProps<SVGSVGElement>>
-> = {
-  [IconTypes.PASSKEY]: BrainIcon,
-  [IconTypes.EMAIL]: SecureIcon,
-  [IconTypes.SMART]: PowerIcon,
-  [IconTypes.FUND]: FundIcon,
+export const iconImages: Record<IconTypes, string> = {
+  [IconTypes.PASSKEY]: "/brainImage.png",
+  [IconTypes.EMAIL]: "/secureImage.png",
+  [IconTypes.SMART]: "/powerImage.png",
+  [IconTypes.FUND]: "/fundImage.png",
 };
 
 export type SubItem = {
@@ -44,7 +41,7 @@ export const smartAccountInfo: SmartAccountInfo[] = [
     title: "What's a Smart Account?",
     list: [
       "A smart account is a new kind of crypto wallet powered by smart contracts — no extensions, no seed phrases, no setup.",
-      "It's created automatically when you log in with email, Google, or a passkey.",
+      "It's created automatically when you log in with email, Google, or a passkey. Linked to you, not your device.",
       "It works like a wallet - just smarter and easier.",
     ],
   },
@@ -83,16 +80,16 @@ export const smartAccountInfo: SmartAccountInfo[] = [
     title: "How do I get funds into it?",
     list: [
       {
-        text: "You can do this by:",
+        text: "You can do this by either:",
         subItems: [
           { text: "Send crypto from another wallet" },
-          { text: "Or pay by card" },
+          { text: "Paying by credit card" },
         ],
       },
     ],
   },
 ];
 
-export const getIconComponent = (iconType: IconTypes) => {
-  return iconComponents[iconType];
+export const getIconImage = (iconType: IconTypes): string => {
+  return iconImages[iconType];
 };

@@ -701,7 +701,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       </div>
 
       {/* Empty State */}
-      {paginatedVaults.length === 0 && (
+      {paginatedVaults.length === 0 && !loading && (
         <div className="text-center py-12 bg-customNeutral200 rounded-lg">
           <p className="text-white text-lg">
             No vaults found matching your filters

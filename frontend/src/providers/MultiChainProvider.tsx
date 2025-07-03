@@ -24,6 +24,7 @@ import { useConnect } from "wagmi";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
+import { convertStringToBalance } from "@/utils/graphUtils";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = 'amana-wallet-state';
@@ -114,7 +115,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   // HYDRATION FIX: Start with consistent state for SSR
   const [isHydrated, setIsHydrated] = useState(false);
 
-  const [selectedChain, setSelectedChain] = useState<ChainType | null>(null);
+  const [selectedChain, setSelectedChain] = useState<ChainType | null>("evm");
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { logout } = usePrivy();
@@ -155,6 +156,18 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       });
     }
   }, [connectors, wallets]);
+
+  useEffect(() => {
+    const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
+    if (
+      !isVaultAddressPath.test(path) &&
+      privyWallet?.walletClientType === "privy" &&
+      activeChain?.id !== zetachain.id
+    ) {
+      setActiveChain(zetachain);
+      latestChainRef.current = zetachain.id.toString();
+    }
+  }, [path, activeChain, privyWallet]);
 
   const evmDisconnect = useCallback(async () => {
     try {
@@ -218,16 +231,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       setActiveChain(chainConfigs[CHAIN_ID.solana]);
       latestChainRef.current = CHAIN_ID.solana.toString();
       return;
-    } else if (privyWallet?.chainId) {
-      setActiveChain(
-        chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 7000)],
-      );
-      latestChainRef.current = privyWallet?.chainId?.split(":")[1];
-    } else {
-      setActiveChain(zetachain);
-      latestChainRef.current = null;
     }
-  }, [selectedChain, privyWallet?.chainId]);
+  }, [selectedChain]);
 
   // Connect Solana Wallet
   const connectSolana = async () => {
@@ -244,14 +249,35 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  console.log(activeChain, "activeChain", latestChainRef.current);
+
   useEffect(() => {
-    if (privyWallet?.address) {
+    if (
+      privyWallet?.address &&
+      activeChain?.id.toString() !== privyWallet?.chainId?.split(":")[1]
+    ) {
       if (!step) {
         setWalletAddress(privyWallet?.address);
         setSelectedChain("evm");
 
         if (wallets.length > 1 && user?.wallet) {
           disconnectConnectors();
+        }
+        if (
+          privyWallet?.walletClientType === "privy" &&
+          privyWallet?.chainId?.split(":")[1] !== zetachain.id.toString()
+        ) {
+          privyWallet?.switchChain(zetachain.id);
+          setActiveChain(zetachain);
+        }
+
+        if (
+          privyWallet?.chainId &&
+          activeChain?.id &&
+          privyWallet?.walletClientType !== "privy" &&
+          activeChain?.id.toString() !== privyWallet?.chainId?.split(":")[1]
+        ) {
+          privyWallet.switchChain(activeChain.id);
         }
       }
 
@@ -271,6 +297,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     step,
     disconnectConnectors,
     wallets,
+    activeChain?.id,
   ]);
 
   //  Disconnect Wallet
@@ -279,7 +306,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setWalletAddress(null);
     localStorage.setItem(PREVIOUS_ADDRESS, "");
     localStorage.removeItem("connectorId");
-    setSelectedChain(null);
+    setSelectedChain("evm");
     disconnect();
     await evmDisconnect();
     setIsModalOpen(false);
@@ -387,8 +414,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
      
       
       if (e.key === WALLET_STATE_KEY) {
-        if (e.newValue === null) {  
-          setSelectedChain(null);
+
+        if (e.newValue === null) {
+          // Wallet was disconnected in another tab
+          debugLog("Wallet disconnected in another tab");
+          setSelectedChain("evm");
+
           setWalletAddress(null);
           localStorage.setItem(PREVIOUS_ADDRESS, "");
           setIsModalOpen(true);
@@ -455,6 +486,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const switchToChain = useCallback(
     async (chain: Chain) => {
+      console.log(chain, "switchToChain");
       try {
         if (chain.id === CHAIN_ID.solana) {
           setSelectedChain("solana");
@@ -463,49 +495,47 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           return Promise.resolve(); // Resolve immediately for Solana
         } else {
           // For EVM chains, we need to request the wallet to switch chains
-          if (privyWallet?.walletClientType !== "privy") {
-            try {
-              // This will prompt the user's wallet to switch chains
+          try {
+            // This will prompt the user's wallet to switch chains
+            if (privyWallet && privyWallet?.walletClientType !== "privy") {
               privyWallet?.switchChain(chain.id);
-
-              // Set the chain type first
-              setSelectedChain("evm");
-
-              // Then update the active chain
-              setActiveChain(chain);
-
-              // Update our ref immediately (won't be affected by closures)
-              latestChainRef.current = chain.id.toString();
-
-              // Return a promise that resolves when the chain is actually switched
-              return new Promise<void>((resolve, reject) => {
-                // Keep track of our own checking
-                let checkAttempts = 0;
-                const maxAttempts = 100; // 10 seconds at 100ms intervals
-
-                const checkChain = setInterval(() => {
-                  checkAttempts++;
-                  if (latestChainRef.current === chain.id.toString()) {
-                    console.log(
-                      `Chain switch successful: Now on chain ${chain.id}`,
-                    );
-                    clearInterval(checkChain);
-                    resolve();
-                  } else if (checkAttempts >= maxAttempts) {
-                    console.error(
-                      `Chain switch timeout: Current ref shows chain ${latestChainRef.current}`,
-                    );
-                    clearInterval(checkChain);
-                    reject(new Error("Chain switch timeout"));
-                  }
-                }, 100);
-              });
-            } catch (error) {
-              console.error("Failed to switch chain in wallet:", error);
-              throw error;
             }
-          } else {
-            throw new Error("No active wallet found");
+
+            // Set the chain type first
+            setSelectedChain("evm");
+
+            // Then update the active chain
+            setActiveChain(chain);
+
+            // Update our ref immediately (won't be affected by closures)
+            latestChainRef.current = chain.id.toString();
+
+            // Return a promise that resolves when the chain is actually switched
+            return new Promise<void>((resolve, reject) => {
+              // Keep track of our own checking
+              let checkAttempts = 0;
+              const maxAttempts = 100; // 10 seconds at 100ms intervals
+
+              const checkChain = setInterval(() => {
+                checkAttempts++;
+                if (latestChainRef.current === chain.id.toString()) {
+                  console.log(
+                    `Chain switch successful: Now on chain ${chain.id}`,
+                  );
+                  clearInterval(checkChain);
+                  resolve();
+                } else if (checkAttempts >= maxAttempts) {
+                  console.error(
+                    `Chain switch timeout: Current ref shows chain ${latestChainRef.current}`,
+                  );
+                  clearInterval(checkChain);
+                  reject(new Error("Chain switch timeout"));
+                }
+              }, 100);
+            });
+          } catch (error) {
+            console.error("Failed to switch chain in wallet:", error);
+            throw error;
           }
         }
       } catch (error) {

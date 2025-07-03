@@ -78,7 +78,7 @@ const ElephantLoader = ({ isLoading, onComplete }: ElephantLoaderProps) => {
               x: Math.max(0, (progress / 100) * containerWidth - 20),
             }}
             transition={{
-              type: "spring",
+              type: "spring" as const,
               stiffness: 300,
               damping: 30,
             }}

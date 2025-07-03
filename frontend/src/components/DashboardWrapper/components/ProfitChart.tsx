@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import { ApexOptions } from "apexcharts";
 
@@ -78,27 +78,26 @@ const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
     },
   ];
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
         duration: 0.6,
-        ease: "easeOut",
         staggerChildren: 0.1,
       },
     },
   };
 
-  const chartVariants = {
+  const chartVariants: Variants = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: {
       opacity: 1,
       scale: 1,
       transition: {
         duration: 0.8,
-        ease: "easeOut",
+        ease: [0.25, 0.1, 0.25, 1],
       },
     },
     exit: {
@@ -108,7 +107,7 @@ const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
     },
   };
 
-  const buttonVariants = {
+  const buttonVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: {
       opacity: 1,
@@ -122,7 +121,7 @@ const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
     tap: { scale: 0.95 },
   };
 
-  const lineVariants = {
+  const lineVariants: Variants = {
     hidden: { scaleY: 0, opacity: 0 },
     visible: (i: number) => ({
       scaleY: 1,
@@ -130,7 +129,7 @@ const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
       transition: {
         delay: i * 0.1,
         duration: 0.6,
-        ease: "easeOut",
+        ease: [0.25, 0.1, 0.25, 1],
       },
     }),
   };

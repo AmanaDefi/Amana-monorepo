@@ -15,7 +15,7 @@ import type {
   VaultTotalAssets,
   UserVaultBalance,
 } from "@/types/types";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { VaultCard } from "@/components/VaultsWrapper/components/VaultCard";
@@ -288,7 +288,8 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
             <div
               className="grid gap-4"
               style={{
-                gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+                justifyContent: "start",
               }}
             >
               {myVaults.map((vault) => (

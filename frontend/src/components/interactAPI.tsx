@@ -19,7 +19,6 @@ import {
   Approvedeposit,
   executeDeposit,
   executeWithdrawal,
-  getAssetsFromShares,
 } from "@/actions/actions";
 import { MoonLoader } from "react-spinners";
 import { AiOutlineCheck, AiOutlineExclamation } from "react-icons/ai";
@@ -41,12 +40,11 @@ import {
 } from "@/utils/localStorageUtils";
 import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
-import Button from "./Button";
+import Button from "./common/Button";
 import { useTransactionStore } from "@/store/transactionStore";
-import { useFundWalletStore } from "@/store/fundWalletStore";
-import { Connector } from "wagmi";
-import { useMultiChain } from "@/providers/MultiChainProvider";
 import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
+import { useAuthStore } from "@/store/authStore";
+import { zetachain } from "viem/chains";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -926,6 +924,22 @@ function Interaction({
   const activeAccount = wallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
+  const { openStep } = useAuthStore();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window?.innerWidth < 1024);
+    };
+
+    checkIsMobile();
+
+    window?.addEventListener("resize", checkIsMobile);
+
+    return () => {
+      window?.removeEventListener("resize", checkIsMobile);
+    };
+  }, []);
 
   const { isButtonDisabled } = useTransactionStore();
 
@@ -1258,6 +1272,14 @@ function Interaction({
   
  
 
+  const handleWalletConnect = () => {
+    if (activeChain.id === zetachain.id) {
+      openStep(isMobile ? "mobileOptionsA" : "optionsA");
+    } else {
+      openStep(isMobile ? "mobileAllWallets" : "allWallets");
+    }
+  };
+
   return (
     <>
       {!hideStepsDisplay && (
@@ -1289,17 +1311,29 @@ function Interaction({
             Number(inputBalance.formatted) <= 0 ||
             !!errorMessage;
 
-          const isDisabled =
-            isButtonDisabled || isDisabledByProcessing || isDisabledByHash;
+          const isConnectWalletSHown =
+            !activeAccount ||
+            (activeAccount.walletClientType === "privy" &&
+              activeChain.id !== zetachain.id);
+
+          const isDisabled = !isConnectWalletSHown
+            ? isButtonDisabled || isDisabledByProcessing || isDisabledByHash
+            : false;
 
           return (
             <Button
               variant="special"
               disabled={isDisabled}
               className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
-              onClick={() => handleMainAction()}
+              onClick={() => {
+                !isConnectWalletSHown
+                  ? handleMainAction()
+                  : handleWalletConnect();
+              }}
             >
-              {label ?? (isDeposit ? "Invest" : "Withdraw")}
+              {!isConnectWalletSHown
+                ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
+                : "Connect wallet"}
             </Button>
           );
         })()

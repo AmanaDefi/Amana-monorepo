@@ -242,27 +242,6 @@ body .page-container {
   opacity: 1;
 }
 
-.roadmap-gradient {
-  background: linear-gradient(
-    155deg,
-    rgba(40, 116, 105, 0.6) 0%,
-    rgba(0, 0, 0, 0.4) 25%,
-    rgba(0, 0, 0, 0.4) 50%,
-    rgba(40, 116, 105, 0.6) 78%,
-    rgba(31, 79, 255, 1) 110%
-  );
-}
-
-.milestone-gradient {
-  background: linear-gradient(
-    125deg,
-    rgba(40, 116, 105, 1) 0%,
-    rgba(0, 0, 0, 0.2) 45%,
-    rgba(0, 0, 0, 0.2) 55%,
-    rgba(31, 79, 255, 1) 130%
-  );
-}
-
 .modal-open {
   overflow: hidden !important;
 }

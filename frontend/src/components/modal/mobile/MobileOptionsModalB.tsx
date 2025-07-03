@@ -44,8 +44,6 @@ const MobileOptionsModalB = () => {
       <div className="h-full flex flex-col justify-center items-center">
         <div className="flex flex-col flex-1 mt-[72px] ">
           <PopularOptions />
-          <p className="text-sm text-[#535E73] mt-4">Popular options</p>
-
           <div className="flex flex-col gap-4 mt-6">
             <ModalButton
               label="E-mail"
