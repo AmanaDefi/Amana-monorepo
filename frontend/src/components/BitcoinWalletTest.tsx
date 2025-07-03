@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTemporaryBitcoinWallet } from '../hooks/useBitcoinWallet';
 import { debugBitcoinIntegration } from '@/actions/bitcoinActions';
-import BitcoinIntegrationTest from './BitcoinIntegrationTest';
 
 interface DebugResult {
   bitcoinTokenId: number | null;
@@ -62,9 +61,7 @@ export const BitcoinWalletTest: React.FC = () => {
     try {
       console.log("🔧 === RUNNING BITCOIN INTEGRATION DIAGNOSTICS ===");
       
-      // Run the main debug function
-      const result = await debugBitcoinIntegration();
-      setDebugResult(result);
+
       
       // Test both addresses individually
       const { getBeamTokenId } = await import('@/actions/actions');
@@ -167,139 +164,14 @@ export const BitcoinWalletTest: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('wallet')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'wallet'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            🔧 Bitcoin Wallet Test
-          </button>
-          <button
-            onClick={() => setActiveTab('comprehensive')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'comprehensive'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            🧪 Comprehensive Test Suite
-          </button>
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'comprehensive' ? (
-        <BitcoinIntegrationTest />
-      ) : (
-        <div>
-          {isLoading ? (
-            <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">🔧 Running Bitcoin Integration Diagnostics...</h3>
-              <div className="animate-pulse">
-                <div className="h-4 bg-blue-200 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-blue-200 rounded w-1/2 mb-2"></div>
-                <div className="h-4 bg-blue-200 rounded w-2/3"></div>
-              </div>
-            </div>
-          ) : (
-            <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">🔧 Bitcoin Integration Diagnostics & Fix Verification</h3>
       
-      {/* Fix Status */}
-      <div className={`p-4 rounded-lg mb-6 ${fixStatus.status === 'FIXED' ? 'bg-green-50 border border-green-200' : 
-        fixStatus.status === 'BROKEN' ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-        <h4 className="font-semibold mb-2">🎯 Fix Status</h4>
-        <p className={`font-medium ${fixStatus.color}`}>{fixStatus.message}</p>
-      </div>
 
-      {/* Address Test Results */}
-      <div className="mb-6">
-        <h4 className="font-semibold mb-3">🧪 Address Test Results</h4>
-        <div className="space-y-3">
-          {addressTests.map((test, index) => (
-            <div key={index} className={`p-3 rounded-lg border ${test.isConfigured ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{test.addressType}</span>
-                <span className={`px-2 py-1 rounded text-sm ${test.isConfigured ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {test.isConfigured ? '✅ Found' : '❌ Not Found'}
-                </span>
-              </div>
-              <div className="text-sm text-gray-600 mt-1">
-                {test.address}
-              </div>
-              <div className="text-sm text-gray-500 mt-1">
-                Token ID: {test.tokenId ?? 'null'}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Debug Results */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="space-y-2">
-          <p><strong>Bitcoin Token ID:</strong> {debugResult.bitcoinTokenId || 'NOT FOUND'}</p>
-          <p><strong>Configured in Beam:</strong> 
-            <span className={debugResult.isConfiguredInBeam ? 'text-green-600' : 'text-red-600'}>
-              {debugResult.isConfiguredInBeam ? ' ✅ Yes' : ' ❌ No'}
-            </span>
-          </p>
-        </div>
-        <div className="space-y-2">
-          <p><strong>Can Proceed:</strong> 
-            <span className={debugResult.canProceed ? 'text-green-600' : 'text-red-600'}>
-              {debugResult.canProceed ? ' ✅ Yes' : ' ❌ No'}
-            </span>
-          </p>
-          <p><strong>Needs Swap:</strong> {debugResult.needsSwap === null ? 'Unknown' : debugResult.needsSwap ? 'Yes' : 'No'}</p>
-        </div>
-      </div>
-
-      {/* Error Display */}
-      {debugResult.error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-          <h4 className="font-semibold text-red-800 mb-2">❌ Error</h4>
-          <p className="text-red-700">{debugResult.error}</p>
-        </div>
-      )}
-
-      {/* Bitcoin Wallet Connection Section */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-semibold text-blue-800 mb-3">🔗 Bitcoin Wallet Connection</h4>
-        
-        {/* Wallet Status */}
-        <div className="mb-4">
-          <p className="text-sm text-blue-700">
-            <strong>Status:</strong> 
-            <span className={isConnected ? 'text-green-600 ml-2' : 'text-red-600 ml-2'}>
-              {isConnected ? '✅ Connected' : '❌ Not Connected'}
-            </span>
-          </p>
-          {wallet && (
-            <p className="text-sm text-blue-700 mt-1">
-              <strong>Address:</strong> <code className="bg-blue-100 px-1 rounded">{wallet.address}</code>
-            </p>
-          )}
-          {error && (
-            <p className="text-sm text-red-600 mt-1">
-              <strong>Error:</strong> {error}
-            </p>
-          )}
-        </div>
-
-        {/* Available Wallets */}
+  {/* Available Wallets */}
         <div className="mb-4">
           <h5 className="font-medium text-blue-800 mb-2">Available Wallets:</h5>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {availableWallets.map((walletType) => (
               <div key={walletType} className="flex items-center space-x-2">
-                <span className={`w-2 h-2 rounded-full ${isWalletAvailable(walletType) ? 'bg-green-500' : 'bg-red-500'}`}></span>
                 <span className="text-sm text-blue-700 capitalize">{walletType}</span>
               </div>
             ))}
@@ -366,38 +238,8 @@ export const BitcoinWalletTest: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3">
-        <button 
-          onClick={runDiagnostics}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        >
-          🔄 Re-run Diagnostics
-        </button>
-        
-        <button 
-          onClick={() => console.clear()}
-          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-        >
-          🧹 Clear Console
-        </button>
-      </div>
-
-      {/* Instructions */}
-      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <h4 className="font-semibold mb-2">📋 What This Test Shows</h4>
-        <ul className="text-sm text-gray-600 space-y-1">
-          <li>• <strong>ZRC-20 Address:</strong> Should be found in Beam (Token ID should be a number)</li>
-          <li>• <strong>Native Bitcoin Address:</strong> Should NOT be found in Beam (Token ID should be null)</li>
-          <li>• <strong>Fix Working:</strong> When ZRC-20 works and Native fails, the fix is successful</li>
-          <li>• Check browser console for detailed logs and debugging information</li>
-        </ul>
-      </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+   
   );
-}; 
+};
+
+export default BitcoinWalletTest;

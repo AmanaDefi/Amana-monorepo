@@ -54,9 +54,7 @@ import { RECEIPT_LOCAL_STORAGE_KEY } from "@/constants";
 import { updateLocalStorageObject } from "@/utils/localStorageUtils";
 import { getPublicClient, getWalletClient } from "@/utils/getPublicClient";
 import type { IConnection } from "codemelt-retro-api-sdk";
-import { Connector } from "wagmi";
 import { ConnectedWallet } from "@privy-io/react-auth";
-import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import { showErrorToast } from "@/toasts";
 
 import { trackEvent } from "@/utils/trackEvent";
@@ -832,9 +830,7 @@ export const executeDeposit = async (
       throw new Error("Bitcoin wallet not connected. Please connect a Bitcoin wallet first.");
     }
     
-    // Import Bitcoin functions and validate parameters
-    const { executeBitcoinDeposit, validateBitcoinDeposit } = await import('./bitcoinActions');
-    
+  
     const validation = validateBitcoinDeposit(bitcoinWallet, transactionAmount, vaultData);
     if (!validation.isValid) {
       throw new Error(validation.error || "Invalid Bitcoin deposit parameters");
