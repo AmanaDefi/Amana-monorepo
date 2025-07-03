@@ -56,7 +56,7 @@ export const MobileModal = ({
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: "100%", opacity: 0 }}
                   transition={{
-                    type: "spring",
+                    type: "spring" as const,
                     stiffness: 300,
                     damping: 30,
                   }}

@@ -39,7 +39,7 @@ const itemVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -60,7 +60,7 @@ const buttonVariants = {
     scale: 0.98,
     zIndex: 30,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 400,
       damping: 25,
     },
@@ -77,7 +77,7 @@ const searchVariants = {
   focus: {
     scale: 1.02,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },

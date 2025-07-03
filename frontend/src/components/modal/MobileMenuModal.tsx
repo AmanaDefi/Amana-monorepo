@@ -34,7 +34,6 @@ const GUEST_MENU_ITEMS = [
     icon: <AboutIcon height={19} width={19} fill="#1B46E0" />,
     title: "About",
   },
-
 ];
 
 const USER_MENU_ITEMS = [
@@ -78,7 +77,7 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
 
   return (
     <div
-      className={`z-10 py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
+      className={`z-[100] py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
         isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       }`}
     >
@@ -91,7 +90,7 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
             <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
             <button
               onClick={toggleMenu}
-              className="z-10 flex items-center justify-center w-10 h-10"
+              className="z-[110] flex items-center justify-center w-10 h-10"
               aria-label="Close"
             >
               <CloseModalIcon width={16} height={16} />
@@ -106,7 +105,7 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
                   onClick={toggleMenu}
                   href={link.path}
                   className={classNames(
-                    "flex cursor-pointer flex-row items-center gap-[6px] text-white",
+                    "flex cursor-pointer flex-row items-center gap-[6px] text-white z-[105]",
                     {
                       "text-blue-button":
                         path === link.path ||
@@ -137,21 +136,21 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
             <Link
               href="https://www.linkedin.com/company/amana-defi"
               target="_blank"
-              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center z-[105]"
             >
               <LinkedInLogo height={20} className="w-[20px] h-[20px]" />
             </Link>
             <Link
               href="https://x.com/Amana_DeFi"
               target="_blank"
-              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center z-[105]"
             >
               <XLogo height={24} className="w-[24px] h-[24px]" />
             </Link>
             <Link
               href="https://discord.gg/kG3Gfn3B9V"
               target="_blank"
-              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center z-[105]"
             >
               <DiscordLogo height={18} className="w-[22px] h-[26px]" />
             </Link>

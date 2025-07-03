@@ -36,7 +36,7 @@ const userRowVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -91,7 +91,7 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
 
   return (
     <motion.div
-      className="border-b border-[#181d29] pb-6 mb-6"
+      className="border-b border-[#181d29] pb-2 md:pb-6 mb-5 md:mb-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -107,13 +107,10 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
             key={`top3-user-${index}`}
             role="button"
             className={`
-              grid grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-8 py-4 transition-colors relative mb-4 cursor-pointer
-              ${isCurrentUser ? "bg-blue-900/30 hover:bg-blue-900/40" : "hover:bg-gray-800"}
-            `}
-            style={{
-              background: "linear-gradient(180deg, #0a1a5c, #1b46e0 100%)",
-              borderRadius: "8px",
-            }}
+    grid grid-cols-[112px_83px_103px] md:grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-0 md:px-8 py-0 md:py-4 transition-colors relative mb-4 cursor-pointer
+    ${isCurrentUser ? "bg-blue-900/30 hover:bg-blue-900/40" : "hover:bg-gray-800"}
+    md:bg-gradient-to-b md:from-[#0a1a5c] md:to-[#1b46e0] md:rounded-lg
+  `}
             variants={userRowVariants}
             whileHover={{
               y: -2,
@@ -127,7 +124,7 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
               scale: 0.96,
             }}
             transition={{
-              type: "spring",
+              type: "spring" as const,
               stiffness: 400,
               damping: 25,
             }}
@@ -136,38 +133,40 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
               <div className="absolute left-0 top-0 w-1 h-full bg-blue-500 rounded-l-lg" />
             )}
 
-            <div className="flex items-center justify-start gap-2 min-w-0">
+            <div className="flex items-center justify-start gap-1 md:gap-2 min-w-0">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{
                   delay: index * 0.02 + 0.3,
-                  type: "spring",
+                  type: "spring" as const,
                   stiffness: 300,
                   damping: 25,
                 }}
-                className="flex-shrink-0"
+                className="flex-shrink-0 w-3 h-3 md:w-6 md:h-6"
                 whileHover={{ scale: 1.1, rotate: 5 }}
               >
                 {getRankBadge(item.position)}
               </motion.div>
-              <div className="w-8 h-8 flex-shrink-0 rounded-full border border-[#535E73] bg-gray-600 flex items-center justify-center ml-2"></div>
-              <span className="font-bold text-lg tracking-tight text-white ml-2 truncate min-w-0">
+              <div className="w-4 h-4 md:w-10 md:h-10 rounded-full flex items-center justify-center relative overflow-hidden flex-shrink-0">
+                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500" />
+              </div>
+              <span className="font-bold text-xs md:text-lg tracking-tight text-white truncate min-w-0">
                 {item.username}
               </span>
             </div>
 
-            <div className="flex items-center">
-              <span className="font-normal text-base text-white">
+            <div className="flex items-center justify-center md:justify-start">
+              <span className="font-normal text-xs md:text-base text-white truncate">
                 {formatCurrency(item.points)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between min-w-0">
-              <span className="line-clamp-1 font-normal text-base text-white truncate min-w-0 mr-2">
+            <div className="flex items-center justify-between min-w-0 gap-1">
+              <span className="line-clamp-1 font-normal text-xs md:text-base text-white truncate min-w-0">
                 {shortAddressForm(item.user_address)}
               </span>
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 w-3 md:w-4">
                 <CopyTextButton text={item.user_address} />
               </div>
             </div>
