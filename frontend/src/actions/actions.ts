@@ -1469,14 +1469,6 @@ const executeSolanaWalletTopup = async (
     return { transactionHash: null };
   }
 
-  const walletAddress = walletContext.publicKey.toBase58();
-  
-  // Generate a unique transaction ID
-  const transactionId = generateTransactionId(
-    walletAddress,
-    activeChain
-  );
-
   const wallet = {
     publicKey: walletContext.publicKey,
     signTransaction: walletContext.signTransaction,
@@ -1508,7 +1500,7 @@ const executeSolanaWalletTopup = async (
       );
 
       if (setcrossChainTxId) {
-        setcrossChainTxId(transactionId);
+        setcrossChainTxId(txHash);
       }
       return { transactionHash: txHash };
     } else {
@@ -1521,7 +1513,7 @@ const executeSolanaWalletTopup = async (
       );
 
       if (setcrossChainTxId) {
-        setcrossChainTxId(transactionId);
+        setcrossChainTxId(txHash);
       }
       return { transactionHash: txHash };
     }
@@ -1545,19 +1537,13 @@ const executeCrossChainWalletTopup = async (
     return { transactionHash: null };
   }
 
-  // Generate a unique transaction ID
-  const transactionId = generateTransactionId(
-    activeAccount.address,
-    activeChain,
-  );
-
   const revertOptions = [
     activeAccount.address, // revertAddress
     false, // callOnRevert
     activeAccount.address, // abortAddress
     abiCoder.encode(
-      ["string", "bytes32", "address"],
-      ["_walletTopupFailed", transactionId, activeAccount.address],
+      ["string", "address"],
+      ["_walletTopupFailed", activeAccount.address],
     ) as `0x${string}`, // revertMessage
     BigInt(500000), // onRevertGasLimit - lower than vault deposits
   ] as const;
@@ -1584,7 +1570,7 @@ const executeCrossChainWalletTopup = async (
       if (!publicClient) {
         console.log("No public client found");
         if (setcrossChainTxId) {
-          setcrossChainTxId(transactionId);
+          setcrossChainTxId(txHash);
         }
         return { transactionHash: txHash };
       }
@@ -1594,7 +1580,7 @@ const executeCrossChainWalletTopup = async (
       });
 
       if (setcrossChainTxId) {
-        setcrossChainTxId(transactionId);
+        setcrossChainTxId(txHash);
       }
       return receipt;
     } else {
@@ -1620,7 +1606,7 @@ const executeCrossChainWalletTopup = async (
       if (!publicClient) {
         console.log("No public client found");
         if (setcrossChainTxId) {
-          setcrossChainTxId(transactionId);
+          setcrossChainTxId(txHash);
         }
         return { transactionHash: txHash };
       }
@@ -1630,7 +1616,7 @@ const executeCrossChainWalletTopup = async (
       });
 
       if (setcrossChainTxId) {
-        setcrossChainTxId(transactionId);
+        setcrossChainTxId(txHash);
       }
       return receipt;
     }
