@@ -89,7 +89,6 @@ const VaultsDetailContainer: React.FC<{
   const [vaultTotalAsset, setVaultTotalAsset] = useState<VaultTotalAssets>();
   const [vaultTotalAssetinToken, setVaultTotalAssetinToken] =
     useState<VaultTotalAssetsinToken>();
-  const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
@@ -122,6 +121,8 @@ const VaultsDetailContainer: React.FC<{
     setTransactionStepFeedback,
     setIsTransactionProcessing,
     isTransactionProcessing,
+    setLastDepositInfo,
+    lastDepositInfo,
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain } = useMultiChain();
@@ -516,7 +517,7 @@ const VaultsDetailContainer: React.FC<{
             userVaultBalance={userVaultBalance}
             selectedVaultId={vaultID.toString()}
             vaultAPYs={vaultAPYs}
-            transactionCompleted={transactionCompleted}
+            transactionCompleted={finishedTransaction}
             selectedToken={selectedToken}
             onDepositDataUpdate={handleDepositDataUpdate}
             isDeposit={isDeposit}
@@ -555,12 +556,23 @@ const VaultsDetailContainer: React.FC<{
                   setLastTransactionStepFeedback({});
                   setTransactionStepFeedback({});
                   setIsTransactionProcessing(false);
+                  setLastDepositInfo(null);
 
                   if (vaultID) {
                     localStorage.removeItem(vaultID.toString());
                   }
-                  setTransactionCompleted(true);
+                  // setTransactionCompleted(true);
                 }}
+                depositedInputAmount={lastDepositInfo?.inputAmount || "0"}
+                depositedOutputAmount={lastDepositInfo?.outputAmount || "0"}
+                depositedInputSymbol={
+                  lastDepositInfo?.inputSymbol ||
+                  selectedToken?.symbol ||
+                  vaultData.inputToken.symbol
+                }
+                depositedOutputSymbol={
+                  lastDepositInfo?.outputSymbol || vaultData.symbol
+                }
               />
             </motion.div>
           ) : (
@@ -603,10 +615,10 @@ const VaultsDetailContainer: React.FC<{
               <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
-                  setTransactionCompleted={setTransactionCompleted}
+                  setTransactionCompleted={setFinishedTransaction}
                   userVaultBalance={userVaultBalance}
                   vaultTotalAssetinToken={vaultTotalAssetinToken}
-                  transactionCompleted={transactionCompleted}
+                  transactionCompleted={finishedTransaction}
                   initialIsDeposit={initialIsDeposit}
                   isDeposit={isDeposit}
                   onTabChange={handleTabChange}
@@ -637,7 +649,7 @@ const VaultsDetailContainer: React.FC<{
                 userVaultBalance={userVaultBalance}
                 selectedVaultId={vaultID.toString()}
                 vaultAPYs={vaultAPYs}
-                transactionCompleted={transactionCompleted}
+                transactionCompleted={finishedTransaction}
                 selectedToken={selectedToken}
                 onDepositDataUpdate={handleDepositDataUpdate}
                 isDeposit={isDeposit}

@@ -136,7 +136,7 @@ export default function VaultInputs({
     }
   };
 
-  const { setIsButtonDisabled } = useTransactionStore();
+  const { setIsButtonDisabled, setLastDepositInfo } = useTransactionStore();
 
   // Update label when isDeposit prop changes
   useEffect(() => {
@@ -974,6 +974,13 @@ export default function VaultInputs({
   // Reset input state after transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
+      setLastDepositInfo({
+        inputAmount: displayValue,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        inputSymbol: inputToken?.symbol || "",
+        outputSymbol: vaultData.symbol,
+      });
+
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
       setConversionOutput(initialConversionOutput);
@@ -984,6 +991,7 @@ export default function VaultInputs({
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
         setTransactionCompleted(false);
+        setLastDepositInfo(null);
       }, 1000);
     }
   }, [
@@ -991,6 +999,12 @@ export default function VaultInputs({
     initialConversionOutput,
     setInputBalance,
     vaultData.id,
+    displayValue,
+    conversionOutput.outputAmountFormatted,
+    inputToken?.symbol,
+    vaultData.symbol,
+    setTransactionCompleted,
+    setLastDepositInfo,
   ]);
 
   // Debounce the input balance in order to calculate the output amount
@@ -1098,21 +1112,25 @@ export default function VaultInputs({
       inputBalance.formatted === "0.00" ||
       Number(inputBalance.formatted) <= 0
     ) {
+      setIsButtonDisabled(true);
       return true;
     }
 
     if (errorMessage || outputBoxErrorMessage) {
+      setIsButtonDisabled(true);
       return true;
     }
 
     if (isDeposit) {
       if (Number(inputBalance.value) > Number(tokenBalance.value)) {
+        setIsButtonDisabled(true);
         return true;
       }
     } else {
       const maxWithdrawAmount =
         vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
       if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
+        setIsButtonDisabled(true);
         return true;
       }
     }
@@ -1125,9 +1143,10 @@ export default function VaultInputs({
         conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
       ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
     ) {
+      setIsButtonDisabled(true);
       return true;
     }
-
+    setIsButtonDisabled(false);
     return false;
   }, [
     inputBalance.formatted,
@@ -1141,6 +1160,7 @@ export default function VaultInputs({
     debouncedInputBalance.value,
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
+    setIsButtonDisabled,
   ]);
   // 🧪 TESTING: Log final values being displayed
   useEffect(() => {
