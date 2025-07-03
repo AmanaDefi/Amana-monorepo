@@ -301,7 +301,6 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, vaultFromGraph]);
 
-  // Set user vault balance from graph data
   useEffect(() => {
     const userBalance = userVaultBalances?.find(
       (balance) => balance.vaultId === vaultIdStr,
@@ -309,14 +308,13 @@ const VaultsDetailContainer: React.FC<{
 
     if (userVaultBalances?.length && vaultIdStr) {
       if (userBalance) {
-        // Convert formatted balance string to Balance object
         const balanceValue = String(userBalance.balance);
 
         if (userVaultBalance?.formatted !== balanceValue) {
           const balance: Balance = {
-            value: BigInt(0), // We don't have raw value from graph, using 0
+            value: BigInt(0),
             formatted: balanceValue,
-            formattedUSD: "$0.00", // Will be calculated in VaultHeader
+            formattedUSD: "$0.00",
           };
 
           setUserVaultBalance(balance);
@@ -627,11 +625,9 @@ const VaultsDetailContainer: React.FC<{
         <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress && (
             <YourInvestment
-              depositAmount={userVaultBalance?.formatted || "0"} // Передаємо фактичний відформатований баланс
-              vaultTokenSymbol={vaultData?.inputToken.symbol || ""} // Передаємо символ токена сховища
-              depositUSDValue={
-                /* Вам потрібно буде обчислити це, якщо потрібно відображати USD */ 0
-              }
+              depositAmount={userVaultBalance?.formatted || "0"}
+              vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
+              depositUSDValue={0}
             />
           )}
           {walletAddress && isDeposit && (
