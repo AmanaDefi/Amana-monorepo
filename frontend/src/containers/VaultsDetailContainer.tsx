@@ -628,9 +628,11 @@ const VaultsDetailContainer: React.FC<{
         <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress && (
             <YourInvestment
-              depositAmount={depositData.amount}
-              vaultTokenSymbol={depositData.symbol}
-              depositUSDValue={depositData.usdValue}
+              depositAmount={userVaultBalance?.formatted || "0"} // Передаємо фактичний відформатований баланс
+              vaultTokenSymbol={vaultData?.inputToken.symbol || ""} // Передаємо символ токена сховища
+              depositUSDValue={
+                /* Вам потрібно буде обчислити це, якщо потрібно відображати USD */ 0
+              }
             />
           )}
           {walletAddress && isDeposit && (
