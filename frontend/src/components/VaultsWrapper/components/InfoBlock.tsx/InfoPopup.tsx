@@ -8,22 +8,32 @@ export const InfoPopup = ({
   isRight,
   isMiddle,
   isLeft,
+  autoWidth = false,
 }: {
   children: ReactNode;
   isRight?: boolean;
   isMiddle?: boolean;
   isLeft?: boolean;
+  autoWidth?: boolean;
 }) => {
   return (
-    <div className="relative w-[330px] rounded-lg px-[19px] py-[14px] z-20 text-white text-sm leading-4 bg-blue-button">
+    <div
+      className={classNames(
+        "relative rounded-lg px-[19px] py-[14px] z-20 text-white text-sm leading-4 bg-blue-button",
+        {
+          "w-[330px]": !autoWidth,
+          "w-max max-w-sm": autoWidth,
+        },
+      )}
+    >
       {children}
       <div
-        className={classNames(
-          "absolute -bottom-4 left-3",
-          { "right-3 !left-auto": isRight },
-          { "left-[125px]": isMiddle },
-          { "left-1": isLeft },
-        )}
+        className={classNames("absolute -bottom-4", {
+          "right-3": isRight,
+          "left-3": !isRight && !isMiddle && !isLeft,
+          "left-1/2 -translate-x-1/2": isMiddle,
+          "left-1": isLeft,
+        })}
       >
         <Polygon />
       </div>

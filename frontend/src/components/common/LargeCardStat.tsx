@@ -1,7 +1,8 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import ResponsiveTooltip from "@/components/common/Tooltip";
+import classNames from "classnames";
 import { CardStatProps } from "@/components/common/CardStat";
+import { InfoPopup } from "../VaultsWrapper/components/InfoBlock.tsx/InfoPopup";
 
 export default function LargeCardStat({
   id,
@@ -13,16 +14,31 @@ export default function LargeCardStat({
   tooltipChild,
 }: CardStatProps): JSX.Element {
   const valueVariants = {
-    initial: { opacity: 0, y: 10 },
+    initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
+    exit: { opacity: 0, y: -20 },
+  };
+
+  const uniformTransition = {
+    duration: 0.4,
+    ease: [0.25, 0.1, 0.25, 1] as const,
   };
 
   return (
     <div className="w-full cursor-pointer" id={id}>
-      <p className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap w-1/2 md:w-full mb-1">
-        {label}
-      </p>
+      <div className="flex items-center gap-2 mb-1 relative group">
+        <p className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap">
+          {label}
+          {(tooltip || tooltipChild) && (
+            <div className="absolute bottom-full -ml-6 mb-4 left-1/2 -translate-x-1/2 hidden group-hover:block transition-all z-[9999]">
+              <InfoPopup isMiddle autoWidth>
+                {tooltip ? <p>{tooltip}</p> : tooltipChild}
+              </InfoPopup>
+            </div>
+          )}
+        </p>
+      </div>
+
       {value ? (
         <>
           <AnimatePresence mode="wait">
@@ -32,7 +48,7 @@ export default function LargeCardStat({
               initial="initial"
               animate="animate"
               exit="exit"
-              transition={{ duration: 0.3 }}
+              transition={uniformTransition}
               className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0"
             >
               {value}
@@ -48,7 +64,7 @@ export default function LargeCardStat({
                 initial="initial"
                 animate="animate"
                 exit="exit"
-                transition={{ duration: 0.3 }}
+                transition={uniformTransition}
               >
                 {secondaryValue}
               </motion.p>
@@ -56,17 +72,17 @@ export default function LargeCardStat({
           )} */}
         </>
       ) : (
-        <>{children}</>
+        <div className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0">
+          {children}
+        </div>
       )}
 
-      {tooltip && tooltip !== "" && (
-        <ResponsiveTooltip
-          id={id}
-          content={<p className="w-52">{tooltip}</p>}
-        />
-      )}
-      {!tooltip && tooltipChild && (
-        <ResponsiveTooltip id={id} content={tooltipChild} />
+      {(tooltip || tooltipChild) && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block transition-all z-[9999]">
+          <InfoPopup isMiddle autoWidth>
+            {tooltip ? <p>{tooltip}</p> : tooltipChild}
+          </InfoPopup>
+        </div>
       )}
     </div>
   );

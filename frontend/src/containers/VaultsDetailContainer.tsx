@@ -13,7 +13,10 @@ import {
 } from "@/types/types";
 import { useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CHAINS_EXPLORER_BASE_URL_MAINNET, CHAIN_ICONS } from "@/constants/chainConfig";
+import {
+  CHAINS_EXPLORER_BASE_URL_MAINNET,
+  CHAIN_ICONS,
+} from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
@@ -622,7 +625,7 @@ const VaultsDetailContainer: React.FC<{
           )}
         </AnimatePresence>
 
-        <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] 3xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress && (
             <YourInvestment
               depositAmount={depositData.amount}
