@@ -381,6 +381,9 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   entity.protocolDescription = metadata.protocolDescription;
   entity.networkDescription = metadata.networkDescription;
   entity.riskLevel = metadata.riskLevel;
+  entity.protocolPoints = metadata.protocolPoints;
+  entity.protocolPointsDescription = metadata.protocolPointsDescription;
+  entity.cooldownPeriod = metadata.cooldownPeriod;
   
   // Set rewards contract address if provided
   if (metadata.rewardsContractAddress != null) {
@@ -454,6 +457,9 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     entity.protocolDescription = metadata.protocolDescription;
     entity.networkDescription = metadata.networkDescription;
     entity.riskLevel = metadata.riskLevel;
+    entity.protocolPoints = metadata.protocolPoints;
+    entity.protocolPointsDescription = metadata.protocolPointsDescription;
+    entity.cooldownPeriod = metadata.cooldownPeriod;
     
     // Set rewards contract address if provided
     if (metadata.rewardsContractAddress != null) {
