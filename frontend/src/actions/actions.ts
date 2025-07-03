@@ -2045,6 +2045,7 @@ export async function fetchReceiptTokens(
 
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
+    console.log(`Fetching receipt tokens for chain ID: ${chainId}, group size: ${group.length}`);
     const rpcUrl = chainConfigs[chainId].rpcUrls.default.http[0];
 
     if (!rpcUrl) continue;

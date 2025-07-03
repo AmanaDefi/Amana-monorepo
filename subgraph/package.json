@@ -7,8 +7,8 @@
         "build": "graph build subgraph.yaml",
         "auth": "graph auth $GRAPH_API_KEY",
         "deploy": "powershell -ExecutionPolicy Bypass -File deploy.ps1",
-        "deploy:unix": "yarn auth && yarn build && graph deploy amana/amana-zetachain --access-token $GRAPH_API_KEY",
-        "deploy:hosted": "yarn build && graph deploy amana/amana-zetachain --access-token $GRAPH_API_KEY",
+        "deploy:unix": "yarn auth && yarn build && graph deploy amana/amana-zetachain --access-token fa453bc5a5192a747d6ed45206563896",
+        "deploy:hosted": "yarn build && graph deploy amana/amana-zetachain --access-token fa453bc5a5192a747d6ed45206563896",
         "test": "graph test"
     },
     "dependencies": {

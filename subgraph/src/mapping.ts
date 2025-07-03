@@ -206,6 +206,29 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645"
     };
   }
+
+    // YieldFi vyUSD Vault -> Ethereum
+  if (addr == "0xcf18fc631e05ba7dcbcadcd212176c381256faa8") {
+    return {
+      type: "Yield-Bearing Stablecoin",
+      name: "YieldFi vyUSD",
+      description: "This strategy deposits USDC into the vyUSD vault on Ethereum, a yield-optimized vault built on top of yUSD. vyUSD amplifies returns through automated DeFi strategies such as stablecoin LP positions and leverage looping. Yield is generated from protocol-driven strategies and auto-compounded within the vault. Because the underlying assets are stablecoins, risk from impermanent loss is minimal. APY is variable and influenced by vault utilization, market conditions, and strategy performance within the YieldFi protocol.",
+      imgURL: "/ETH.png",
+      depositFeePaidFromGasTank: false,
+      assetSymbol: "USDC.ETH",
+      assetDecimals: 6,
+      assetImgURL: "/USDC.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Ethereum",
+      strategyChainId: 1,
+      protocolName: "YieldFi",
+      protocolImgURL: "/yieldfi.png",
+      protocolDescription: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645"
+    };
+  }
   
   // Default fallback
   return {
