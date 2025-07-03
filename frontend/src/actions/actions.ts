@@ -1638,7 +1638,6 @@ export const executeWalletTopup = async (
   activeChain: Chain,
   smartAccountAddress: Address,
   transactionAmount: bigint,
-  setcrossChainTxId?: Function,
   walletContext?: WalletContextState, // Added for Solana support
 ) => {
   // Mock smart account address until Cowchain integration is ready
@@ -1661,7 +1660,6 @@ export const executeWalletTopup = async (
       activeChain,
       actualSmartAccountAddress,
       transactionAmount,
-      setcrossChainTxId,
     );
   } else {
     return executeCrossChainWalletTopup(
@@ -1670,7 +1668,6 @@ export const executeWalletTopup = async (
       activeChain,
       actualSmartAccountAddress,
       transactionAmount,
-      setcrossChainTxId,
     );
   }
 };
