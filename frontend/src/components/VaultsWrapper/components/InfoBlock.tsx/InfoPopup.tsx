@@ -17,9 +17,9 @@ export const InfoPopup = ({
   autoWidth?: boolean;
 }) => {
   return (
-    <div
+    <span
       className={classNames(
-        "relative rounded-lg px-[19px] py-[14px] z-20 text-white text-sm leading-4 bg-blue-button",
+        "relative rounded-lg px-[19px] py-[14px] z-20 text-white text-sm leading-4 bg-blue-button inline-block",
         {
           "w-[330px]": !autoWidth,
           "w-max max-w-sm": autoWidth,
@@ -27,16 +27,16 @@ export const InfoPopup = ({
       )}
     >
       {children}
-      <div
+      <span
         className={classNames("absolute -bottom-4", {
           "right-3": isRight,
           "left-3": !isRight && !isMiddle && !isLeft,
-          "left-1/2 -translate-x-1/2": isMiddle,
+          "left-[125px]": isMiddle,
           "left-1": isLeft,
         })}
       >
         <Polygon />
-      </div>
-    </div>
+      </span>
+    </span>
   );
 };

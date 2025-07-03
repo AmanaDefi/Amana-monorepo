@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import classNames from "classnames";
 import { CardStatProps } from "@/components/common/CardStat";
-import { InfoPopup } from "../VaultsWrapper/components/InfoBlock.tsx/InfoPopup";
+import { WithTooltip } from "./Tooltip";
 
 export default function LargeCardStat({
   id,
@@ -24,19 +24,12 @@ export default function LargeCardStat({
     ease: [0.25, 0.1, 0.25, 1] as const,
   };
 
-  return (
-    <div className="w-full cursor-pointer" id={id}>
-      <div className="flex items-center gap-2 mb-1 relative group">
-        <p className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap">
+  const cardContent = (
+    <div className="w-full">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap">
           {label}
-          {(tooltip || tooltipChild) && (
-            <div className="absolute bottom-full -ml-6 mb-4 left-1/2 -translate-x-1/2 hidden group-hover:block transition-all z-[9999]">
-              <InfoPopup isMiddle autoWidth>
-                {tooltip ? <p>{tooltip}</p> : tooltipChild}
-              </InfoPopup>
-            </div>
-          )}
-        </p>
+        </div>
       </div>
 
       {value ? (
@@ -76,14 +69,28 @@ export default function LargeCardStat({
           {children}
         </div>
       )}
+    </div>
+  );
 
-      {(tooltip || tooltipChild) && (
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block transition-all z-[9999]">
-          <InfoPopup isMiddle autoWidth>
-            {tooltip ? <p>{tooltip}</p> : tooltipChild}
-          </InfoPopup>
-        </div>
-      )}
+  if (tooltip || tooltipChild) {
+    return (
+      <div className="w-full cursor-pointer">
+        <WithTooltip
+          content={typeof tooltip === "string" ? tooltip : ""}
+          tooltipChild={
+            tooltipChild || (typeof tooltip !== "string" ? tooltip : undefined)
+          }
+          subId={id}
+        >
+          <div className="inline-block">{cardContent}</div>
+        </WithTooltip>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full cursor-pointer" id={id}>
+      {cardContent}
     </div>
   );
 }
