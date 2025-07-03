@@ -22,7 +22,7 @@ import {
 export const zeroSolAddress = PublicKey.default.toBase58();
 
 // Bitcoin native address - represents native BTC token (similar to Solana's pattern)
-export const zeroBtcAddress = "bc1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0ct5lx";
+export const zeroBtcAddress = "bc1qm24wp577nk8aacckv8np465z3dvmu7ry45el6y"; // ZetaChain Bitcoin TSS Gateway
 
 export const TOKEN_LOGO_URLS: Record<string, string> = {
   ZETA: "/ZetaChainLogo.png",
@@ -1044,14 +1044,14 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
   [CHAIN_ID.bitcoin]: [
     {
       symbol: "BTC",
-      address: zeroBtcAddress, // Bitcoin's native address
+      address: zeroBtcAddress, // Native Bitcoin address for transactions
       decimals: 8,
       imgURL: TOKEN_LOGO_URLS.BTC,
       price: 1,
       balance: EMPTY_BALANCE,
       isNative: true,
       ZRC20equivalent: 
-        ZRC20_TOKENS_BY_ADDRESS["0x13A0c5930C028511Dc02665E7285134B6d11A5f4"], // ZRC20 BTC on ZetaChain
+        ZRC20_TOKENS_BY_ADDRESS["0x13A0c5930C028511Dc02665E7285134B6d11A5f4"], // ZRC20 BTC for swap routing
     },
   ],
   // 901: [

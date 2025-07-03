@@ -715,6 +715,19 @@ export default function VaultInputs({
 
   const getWithdrawOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
+      // // Skip swap calculations for Bitcoin - TSS handles everything
+      // if (selectedChain?.id === CHAIN_ID.bitcoin) {
+      //   console.log("🟠 Skipping swap calculations for Bitcoin withdrawal");
+      //   setConversionOutput({
+      //     slippageActualValue: 0,
+      //     finalConvertedAmountInUSDFormatted: "0",
+      //     outputAmountFormatted: "0",
+      //     outputAmountInUSDFormatted: "0",
+      //   });
+      //   setLoadingOutputToken(false);
+      //   return;
+      // }
+
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
       let assetsAmount = inputAmountValue;
@@ -779,6 +792,21 @@ export default function VaultInputs({
   
     const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
+      // // Skip swap calculations for Bitcoin - TSS handles everything
+      // if (selectedChain?.id === CHAIN_ID.bitcoin) {
+      //   console.log("🟠 Skipping swap calculations for Bitcoin deposit");
+      //   // For Bitcoin, show simple 1:1 conversion for user feedback
+      //   const simpleConversion = Number(inputAmountValue) / 10 ** 8; // Bitcoin has 8 decimals
+      //   setConversionOutput({
+      //     slippageActualValue: 0,
+      //     finalConvertedAmountInUSDFormatted: "~" + formatCurrency(simpleConversion * inputTokenPrice),
+      //     outputAmountFormatted: "~" + simpleConversion.toFixed(8),
+      //     outputAmountInUSDFormatted: "~" + formatCurrency(simpleConversion * inputTokenPrice),
+      //   });
+      //   setLoadingOutputToken(false);
+      //   return;
+      // }
+
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;

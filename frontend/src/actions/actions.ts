@@ -832,13 +832,13 @@ export const executeDeposit = async (
       throw new Error("Bitcoin wallet not connected. Please connect a Bitcoin wallet first.");
     }
     
-    // Validate Bitcoin deposit parameters
+    // Import Bitcoin functions and validate parameters
+    const { executeBitcoinDeposit, validateBitcoinDeposit } = await import('./bitcoinActions');
+    
     const validation = validateBitcoinDeposit(bitcoinWallet, transactionAmount, vaultData);
     if (!validation.isValid) {
       throw new Error(validation.error || "Invalid Bitcoin deposit parameters");
     }
-    
-    // Execute Bitcoin deposit using our dedicated function
     return executeBitcoinDeposit({
       vaultData,
       bitcoinWallet,
@@ -2208,6 +2208,7 @@ export async function fetchReceiptTokens(
 
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
+    
     const rpcUrl = chainConfigs[chainId].rpcUrls.default.http[0];
 
     if (!rpcUrl) continue;
