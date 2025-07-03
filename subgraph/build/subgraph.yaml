@@ -19,7 +19,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: ZeroLendUSDC_Vault\AmanaVault.json
+          file: ZeroLendUSDC_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -33,7 +33,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: FluidUSDC_Vault
     network: zetachain
@@ -49,7 +49,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: FluidUSDC_Vault\AmanaVault.json
+          file: FluidUSDC_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -63,7 +63,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CompoundUSDT_Vault
     network: zetachain
@@ -79,7 +79,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: CompoundUSDT_Vault\AmanaVault.json
+          file: CompoundUSDT_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -93,7 +93,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: AaveUSDT_Vault
     network: zetachain
@@ -109,7 +109,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: AaveUSDT_Vault\AmanaVault.json
+          file: AaveUSDT_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -123,7 +123,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CurveConvexETH_Vault
     network: zetachain
@@ -139,7 +139,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: CurveConvexETH_Vault\AmanaVault.json
+          file: CurveConvexETH_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -153,7 +153,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CurveConvexUSDT_Vault
     network: zetachain
@@ -169,7 +169,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: CurveConvexUSDT_Vault\AmanaVault.json
+          file: CurveConvexUSDT_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -183,7 +183,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: CurveConvexUSDC_Vault
     network: zetachain
@@ -199,7 +199,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: CurveConvexUSDC_Vault\AmanaVault.json
+          file: CurveConvexUSDC_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -213,7 +213,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: BalancerUSDC_Vault
     network: zetachain
@@ -229,7 +229,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: BalancerUSDC_Vault\AmanaVault.json
+          file: BalancerUSDC_Vault/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -243,7 +243,7 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
   - kind: ethereum
     name: NewVault_7F3B
     network: zetachain
@@ -259,7 +259,7 @@ dataSources:
         - Vault
       abis:
         - name: AmanaVault
-          file: NewVault_7F3B\AmanaVault.json
+          file: NewVault_7F3B/AmanaVault.json
       eventHandlers:
         - event: VaultInitialized(uint8,uint256)
           handler: handleVaultInitialized
@@ -273,4 +273,4 @@ dataSources:
           handler: handleDepositedLegacy
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
-      file: ZeroLendUSDC_Vault\ZeroLendUSDC_Vault.wasm
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
