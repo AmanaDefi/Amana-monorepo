@@ -88,7 +88,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   const isTVLLoading = isLoading || totalAssets === undefined;
 
   return (
-    <>
+    <div className="flex flex-row items-center justify-between w-full">
       {/* TVL Section */}
       <div className="flex flex-row justify-between items-center w-full">
         <div className="flex flex-col gap-2">
@@ -123,7 +123,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
       </div>
 
       {/* Risk Section */}
-      <div className="flex flex-row justify-between items-center w-full">
+      <div className="flex flex-row justify-center items-center w-full">
         <div className="flex flex-col gap-2 items-center">
           <div className="flex flex-row gap-1 items-center">
             <p
@@ -159,7 +159,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
       </div>
 
       {/* APY Section */}
-      <div className="flex flex-row justify-between items-center w-full">
+      <div className="flex flex-row justify-end items-center w-full">
         <div className="flex flex-col gap-2 items-end">
           <div className="flex flex-row gap-1 items-end">
             <p
@@ -186,14 +186,6 @@ export const VaultOverviewBlock: React.FC<Props> = ({
             isLoading={isAPYLoading}
             skeletonClassName="h-6 w-16"
           />
-             {!isDeposit && isReward && (
-            <Image
-              src="/rewards.png"
-              alt="reward star"
-              width={23}
-              height={18}
-            />
-          )}
           {getPointsInfo(vault.protocol.name).displayPoints && (
             <InfoBlock 
               isRight
@@ -223,6 +215,6 @@ export const VaultOverviewBlock: React.FC<Props> = ({
         </div>
 
       </div>
-    </>
+    </div>
   );
 };

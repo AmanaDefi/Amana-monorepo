@@ -12,10 +12,12 @@ export default function APYChangeCard({
   return (
     <div className="bg-transparent md:bg-[#161C27] rounded-2xl px-0 py-0 md:px-12 md:py-6 font-normal text-[12px] md:text-sm text-white mt-8 md:mt-[44px]">
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <span>Implemented APY Change</span>
-          <span className="font-medium text-sm">0.00 %</span>
-        </div>
+        {isDeposit && (
+          <div className="flex justify-between items-center">
+            <span>APY after your deposit</span>
+            <span className="font-medium text-sm">0.00 %</span>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1">
             <span>Min. Received</span>

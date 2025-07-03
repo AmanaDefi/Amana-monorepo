@@ -31,7 +31,7 @@ const DepositComplete = ({
         <div className="flex flex-col mb-10">
           <p className="text-[24px] font-medium mb-1">Deposit complete</p>
           <p className="text-[#4874db] text-[16px] font-normal leading-[1.75] max-w-[440px]">
-            Your deposit and the underlying transaction has been completed
+            Your deposit has been completed
             successfully. You can see your position in Your Earnings now.
           </p>
         </div>
@@ -104,7 +104,7 @@ const DepositComplete = ({
             <p>Socials</p>
           </div>
           <p className="text-[16px] font-normal mt-[13px] max-w-[210px]">
-            Subscribe for our social media.
+            Subscribe to our socials.
           </p>
           <Button variant="custom" className="!w-full !max-h-10 !mt-10">
             Check
