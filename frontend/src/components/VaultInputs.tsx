@@ -226,8 +226,6 @@ export default function VaultInputs({
     };
   }, [vaultData]);
 
-  console.log(selectChain?.id, 'selectChain?.id');
-
   useEffect(() => {
     const setToken = () => {
       if (selectChain?.id === selectedChainFromModal?.id && inputToken) {
